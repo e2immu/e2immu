@@ -20,16 +20,16 @@ package org.e2immu.analyser.analyser;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.e2immu.analyser.analyser.AnalysisResult.*;
+import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 
 public class AnalyserComponents {
 
-    private final List<AnalysisResult.AnalysisResultSupplier> suppliers;
-    private final AnalysisResult[] state;
+    private final List<AnalysisStatus.AnalysisResultSupplier> suppliers;
+    private final AnalysisStatus[] state;
 
-    public AnalyserComponents(List<AnalysisResult.AnalysisResultSupplier> suppliers) {
+    public AnalyserComponents(List<AnalysisStatus.AnalysisResultSupplier> suppliers) {
         this.suppliers = suppliers;
-        state = new AnalysisResult[suppliers.size()];
+        state = new AnalysisStatus[suppliers.size()];
         Arrays.fill(state, DELAYS);
     }
 
@@ -42,14 +42,14 @@ public class AnalyserComponents {
     // done  -> done
 
 
-    public AnalysisResult run() {
+    public AnalysisStatus run(int iteration) {
         int i = 0;
         boolean allDone = true;
         boolean changes = false;
-        for (AnalysisResult.AnalysisResultSupplier supplier : suppliers) {
-            AnalysisResult initialState = state[i];
+        for (AnalysisStatus.AnalysisResultSupplier supplier : suppliers) {
+            AnalysisStatus initialState = state[i];
             if (initialState != DONE) {
-                AnalysisResult afterExec = supplier.get();
+                AnalysisStatus afterExec = supplier.apply(iteration);
                 if (afterExec == PROGRESS) changes = true;
                 if (afterExec != DONE) allDone = false;
                 if (afterExec != initialState) changes = true;

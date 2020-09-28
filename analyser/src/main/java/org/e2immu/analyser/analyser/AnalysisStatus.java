@@ -18,9 +18,8 @@
 package org.e2immu.analyser.analyser;
 
 import java.util.function.Function;
-import java.util.function.Supplier;
 
-public enum AnalysisResult {
+public enum AnalysisStatus {
     PROGRESS(0), // changes, but not yet fully done
     DELAYS(1), // no changes, due to delays
     DONE(2),
@@ -28,18 +27,18 @@ public enum AnalysisResult {
 
     private final int pos;
 
-    AnalysisResult(int pos) {
+    AnalysisStatus(int pos) {
         this.pos = pos;
     }
 
-    public AnalysisResult combine(AnalysisResult other) {
+    public AnalysisStatus combine(AnalysisStatus other) {
         if (other.pos < pos) return other;
         return this;
     }
 
 
     @FunctionalInterface
-    interface AnalysisResultSupplier extends Function<Integer, AnalysisResult> {
+    interface AnalysisResultSupplier extends Function<Integer, AnalysisStatus> {
 
     }
 }

@@ -34,12 +34,12 @@ public class StateData {
     public final SetOnce<Value> valueOfExpression = new SetOnce<>();
 
     @Modified
-    public AnalysisResult apply(EvaluationContext evaluationContext, EvaluationResult evaluationResult) {
-        AnalysisResult result = AnalysisResult.DONE;
+    public AnalysisStatus apply(EvaluationContext evaluationContext, EvaluationResult evaluationResult) {
+        AnalysisStatus result = AnalysisStatus.DONE;
         if (evaluationResult.value != UnknownValue.NO_VALUE) {
             valueOfExpression.set(evaluationResult.value);
         } else {
-            result = AnalysisResult.DELAYS;
+            result = AnalysisStatus.DELAYS;
         }
 
         // state changes get composed into one big operation, applied, and the result is set
@@ -51,7 +51,7 @@ public class StateData {
         if (reducedState != UnknownValue.NO_VALUE) {
             conditionManager.set(new ConditionManager(current.condition, reducedState));
         } else {
-            result = AnalysisResult.DELAYS;
+            result = AnalysisStatus.DELAYS;
         }
 
 

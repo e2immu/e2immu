@@ -49,8 +49,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.AnalysisResult.DELAYS;
-import static org.e2immu.analyser.analyser.AnalysisResult.DONE;
+import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
+import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
@@ -97,9 +97,9 @@ public class MethodAnalyser extends AbstractAnalyser {
         methodAnalysis = new MethodAnalysis(methodInfo, myTypeAnalyser.typeAnalysis, parameterAnalyses, firstStatementAnalyser);
         this.isSAM = isSAM;
 
-        List<AnalysisResult.AnalysisResultSupplier> allSuppliers;
+        List<AnalysisStatus.AnalysisResultSupplier> allSuppliers;
         if (firstStatementAnalyser != null) {
-            List<AnalysisResult.AnalysisResultSupplier> suppliers = List.of(
+            List<AnalysisStatus.AnalysisResultSupplier> suppliers = List.of(
                     firstStatementAnalyser::analyse,
                     (iteration) -> obtainMostCompletePrecondition(),
                     (iteration) -> makeInternalObjectFlowsPermanent(),
@@ -113,8 +113,9 @@ public class MethodAnalyser extends AbstractAnalyser {
                     (iteration) -> computeSize(),
                     (iteration) -> computeSizeCopy()
             );
-            List<AnalysisResult.AnalysisResultSupplier> parameterSuppliers = parameterAnalysers.stream()
-                    .map(pa -> iteration -> pa.analyse()).collect(Collectors.toUnmodifiableList());
+            List<AnalysisStatus.AnalysisResultSupplier> parameterSuppliers = parameterAnalysers.stream()
+                    .map(pa -> (AnalysisStatus.AnalysisResultSupplier) (iteration -> pa.analyse()))
+                    .collect(Collectors.toUnmodifiableList());
             allSuppliers = ListUtil.immutableConcat(suppliers, parameterSuppliers);
         } else allSuppliers = List.of();
         analyserComponents = new AnalyserComponents(allSuppliers);
@@ -218,26 +219,26 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public AnalysisResult analyse(int iteration) {
+    public AnalysisStatus analyse(int iteration) {
         log(ANALYSER, "Analysing method {}", methodInfo.fullyQualifiedName());
         methodLevelData = methodAnalysis.methodLevelData();
 
         try {
-            AnalysisResult analysisResult = analyserComponents.run();
+            AnalysisStatus analysisStatus = analyserComponents.run(iteration);
 
             for (MethodAnalyserVisitor methodAnalyserVisitor : analyserContext.getConfiguration().
                     debugConfiguration.afterMethodAnalyserVisitors) {
                 methodAnalyserVisitor.visit(iteration, methodInfo);
             }
 
-            return analysisResult;
+            return analysisStatus;
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in method analyser: {}", methodInfo.distinguishingName());
             throw rte;
         }
     }
 
-    private AnalysisResult detectMissingStaticModifier() {
+    private AnalysisStatus detectMissingStaticModifier() {
         assert !methodAnalysis.complainedAboutMissingStaticModifier.isSet();
 
         if (!methodInfo.isStatic && !methodInfo.typeInfo.isInterface() && !methodInfo.isTestMethod()) {
@@ -265,14 +266,14 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     // simply copy from last statement
-    private AnalysisResult obtainMostCompletePrecondition() {
+    private AnalysisStatus obtainMostCompletePrecondition() {
         assert !methodAnalysis.precondition.isSet();
         if (!methodLevelData.combinedPrecondition.isSet()) return DELAYS;
         methodAnalysis.precondition.set(methodLevelData.combinedPrecondition.get());
         return DONE;
     }
 
-    private AnalysisResult makeInternalObjectFlowsPermanent() {
+    private AnalysisStatus makeInternalObjectFlowsPermanent() {
         assert !methodAnalysis.internalObjectFlows.isSet();
 
         boolean delays = !methodLevelData.internalObjectFlows.isFrozen();
@@ -307,7 +308,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return parameterAnalyser;
     }
 
-    private AnalysisResult computeOnlyMarkAnnotate() {
+    private AnalysisStatus computeOnlyMarkAnnotate() {
         assert !methodAnalysis.markAndOnly.isSet();
 
         SetOnceMap<String, Value> approvedPreconditions = myTypeAnalyser.typeAnalysis.approvedPreconditions;
@@ -393,7 +394,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private AnalysisResult computeOnlyMarkPrepWork() {
+    private AnalysisStatus computeOnlyMarkPrepWork() {
         assert !methodAnalysis.preconditionForMarkAndOnly.isSet();
 
         TypeInfo typeInfo = methodInfo.typeInfo;
@@ -437,7 +438,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
-    private AnalysisResult methodIsConstant() {
+    private AnalysisStatus methodIsConstant() {
         assert !methodLevelData.singleReturnValue.isSet();
         if (methodLevelData.returnStatementSummaries.isEmpty()) return DONE;
 
@@ -529,18 +530,18 @@ public class MethodAnalyser extends AbstractAnalyser {
         return applicability.get();
     }
 
-    private AnalysisResult propertiesOfReturnStatements() {
+    private AnalysisStatus propertiesOfReturnStatements() {
         if (methodLevelData.returnStatementSummaries.isEmpty()) return DONE;
-        AnalysisResult analysisResult = DONE;
+        AnalysisStatus analysisStatus = DONE;
         for (VariableProperty variableProperty : VariableProperty.RETURN_VALUE_PROPERTIES_IN_METHOD_ANALYSER) {
-            analysisResult = analysisResult.combine(propertyOfReturnStatements(variableProperty));
+            analysisStatus = analysisStatus.combine(propertyOfReturnStatements(variableProperty));
         }
-        return analysisResult;
+        return analysisStatus;
     }
 
     // IMMUTABLE, NOT_NULL, CONTAINER, IDENTITY, FLUENT
     // IMMUTABLE, NOT_NULL can still improve with respect to the static return type computed in methodAnalysis.getProperty()
-    private AnalysisResult propertyOfReturnStatements(VariableProperty variableProperty) {
+    private AnalysisStatus propertyOfReturnStatements(VariableProperty variableProperty) {
         int currentValue = methodAnalysis.getProperty(variableProperty);
         if (currentValue != Level.DELAY && variableProperty != VariableProperty.IMMUTABLE && variableProperty != VariableProperty.NOT_NULL)
             return DONE; // NOT FOR ME
@@ -566,7 +567,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private AnalysisResult computeSize() {
+    private AnalysisStatus computeSize() {
         assert methodAnalysis.getProperty(VariableProperty.SIZE) == Level.DELAY;
 
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
@@ -605,7 +606,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
 
-    private AnalysisResult computeSizeCopy() {
+    private AnalysisStatus computeSizeCopy() {
         assert methodAnalysis.getProperty(VariableProperty.SIZE_COPY) == Level.DELAY;
 
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
@@ -640,11 +641,11 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     // there is a modification that alters the @Size of this type (e.g. put() will cause a @Size(min = 1))
-    private AnalysisResult sizeModifying(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    private AnalysisStatus sizeModifying(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         return DONE; // TODO NYI
     }
 
-    private AnalysisResult writeSize(VariableProperty variableProperty, int value) {
+    private AnalysisStatus writeSize(VariableProperty variableProperty, int value) {
         if (value == Level.DELAY) {
             log(DELAYED, "Not deciding on {} yet for method {}", variableProperty, methodInfo.distinguishingName());
             return DELAYS;
@@ -723,7 +724,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return res == Integer.MAX_VALUE ? Level.DELAY : Math.max(res, Level.IS_A_SIZE);
     }
 
-    private AnalysisResult methodIsModified() {
+    private AnalysisStatus methodIsModified() {
         assert methodAnalysis.getProperty(VariableProperty.MODIFIED) == Level.DELAY;
 
         // first step, check field assignments
@@ -834,7 +835,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                                 mi.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.FALSE);
     }
 
-    private AnalysisResult methodIsIndependent() {
+    private AnalysisStatus methodIsIndependent() {
         assert methodAnalysis.getProperty(VariableProperty.INDEPENDENT) == Level.DELAY;
 
         if (!methodInfo.isConstructor) {

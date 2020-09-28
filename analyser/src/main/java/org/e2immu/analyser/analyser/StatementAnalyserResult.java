@@ -25,11 +25,11 @@ import java.util.stream.Stream;
 
 public class StatementAnalyserResult {
     private final Stream<Analysis.Modification> modifications;
-    public final AnalysisResult analysisResult;
+    public final AnalysisStatus analysisStatus;
 
-    private StatementAnalyserResult(AnalysisResult analysisResult, Stream<Analysis.Modification> modifications) {
+    private StatementAnalyserResult(AnalysisStatus analysisStatus, Stream<Analysis.Modification> modifications) {
         this.modifications = modifications;
-        this.analysisResult = analysisResult;
+        this.analysisStatus = analysisStatus;
     }
 
     public Stream<Analysis.Modification> getModifications() {
@@ -47,8 +47,8 @@ public class StatementAnalyserResult {
             return this;
         }
 
-        public StatementAnalyserResult build(AnalysisResult analysisResult) {
-            return new StatementAnalyserResult(analysisResult, modifications == null ? Stream.empty() : modifications.stream());
+        public StatementAnalyserResult build(AnalysisStatus analysisStatus) {
+            return new StatementAnalyserResult(analysisStatus, modifications == null ? Stream.empty() : modifications.stream());
         }
     }
 }

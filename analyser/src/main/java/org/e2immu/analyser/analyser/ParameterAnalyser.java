@@ -116,7 +116,7 @@ public class ParameterAnalyser {
      *
      * @return true if changes were made
      */
-    public AnalysisResult analyse( ) {
+    public AnalysisStatus analyse( ) {
         boolean changed = false;
         boolean delays = false;
         // TODO we need to make a distinction between the field, and whether it has been assigned or not
@@ -145,7 +145,7 @@ public class ParameterAnalyser {
             }
         }
 
-        return delays ? (changed ? AnalysisResult.PROGRESS : AnalysisResult.DELAYS) : AnalysisResult.DONE;
+        return delays ? (changed ? AnalysisStatus.PROGRESS : AnalysisStatus.DELAYS) : AnalysisStatus.DONE;
     }
 
     /**

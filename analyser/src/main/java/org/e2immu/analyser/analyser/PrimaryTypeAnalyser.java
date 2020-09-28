@@ -141,16 +141,19 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
     }
 
     public void analyse() {
-        boolean changes = true;
         int iteration = 0;
+        List<AnalysisStatus.AnalysisResultSupplier> suppliers = analysers.stream()
+                .map(analyser -> (AnalysisStatus.AnalysisResultSupplier) (analyser::analyse))
+                .collect(Collectors.toList());
+        AnalyserComponents analyserComponents = new AnalyserComponents(suppliers);
+        AnalysisStatus analysisStatus = AnalysisStatus.PROGRESS;
 
-        while (changes) {
+        while (analysisStatus != AnalysisStatus.DONE) {
             log(ANALYSER, "\n******\nStarting iteration {} of the primary type analyser on {}\n******", iteration, primaryType.fullyQualifiedName);
 
             patternMatcher.startNewIteration();
 
-            int finalIteration = iteration;
-            changes = analysers.stream().reduce(false, (prev, analyser) -> analyser.analyse(finalIteration), (v1, v2) -> v1 || v2);
+            analysisStatus = analyserComponents.run(iteration);
 
             iteration++;
             if (iteration > 10) {

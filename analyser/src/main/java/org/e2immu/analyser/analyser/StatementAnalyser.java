@@ -34,7 +34,6 @@ import org.e2immu.analyser.pattern.MatchResult;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.pattern.Replacement;
 import org.e2immu.analyser.pattern.Replacer;
-import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.slf4j.Logger;
@@ -45,6 +44,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
@@ -135,6 +135,11 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
     }
 
     @Override
+    public AnalysisStatus analyse(int iteration) {
+        return analyseAllStatementsInBlock(this, analyserContext);
+    }
+
+    @Override
     public NavigationData<StatementAnalyser> getNavigationData() {
         return navigationData;
     }
@@ -198,8 +203,9 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
     }
 
 
-    public static boolean analyseAllStatementsInBlock(StatementAnalyser firstStatement, AnalyserContext analyserContext) {
-        boolean changes = false;
+    public static AnalysisStatus analyseAllStatementsInBlock(StatementAnalyser firstStatement, AnalyserContext analyserContext) {
+        AnalysisStatus analysisStatus = DONE;
+
 
         StatementAnalyser statementAnalyser = firstStatement.followReplacements();
 
@@ -325,7 +331,7 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
 
             if (!startStatement.breakAndContinueStatements.isSet())
                 startStatement.breakAndContinueStatements.set(ImmutableList.copyOf(breakAndContinueStatementsInBlocks));
-            return changes;
+            return analysisStatus;
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in statement analyser: {}", statementAnalyser);
             throw rte;
@@ -819,11 +825,6 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
     @Override
     public WithInspectionAndAnalysis getMember() {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public AnalysisResult analyse(int iteration) {
-        return false;
     }
 
     @Override

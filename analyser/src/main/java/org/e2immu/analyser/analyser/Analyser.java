@@ -18,13 +18,9 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Analysis;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 import org.e2immu.analyser.parser.Message;
 
-import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 public interface Analyser {
@@ -34,7 +30,7 @@ public interface Analyser {
 
     WithInspectionAndAnalysis getMember();
 
-    AnalysisResult analyse(int iteration);
+    AnalysisStatus analyse(int iteration);
 
     void initialize();
 

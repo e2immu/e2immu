@@ -41,7 +41,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.AnalysisResult.*;
+import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -207,22 +207,22 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public AnalysisResult analyse(int iteration) {
+    public AnalysisStatus analyse(int iteration) {
         log(ANALYSER, "Analysing type {}", typeInfo.fullyQualifiedName);
         try {
-        AnalysisResult analysisResult = analyserComponents.run();
+        AnalysisStatus analysisStatus = analyserComponents.run(iteration);
         for (TypeAnalyserVisitor typeAnalyserVisitor : analyserContext.getConfiguration().debugConfiguration.afterTypePropertyComputations) {
             typeAnalyserVisitor.visit(iteration, typeInfo);
         }
 
-            return analysisResult;
+            return analysisStatus;
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in type analyser: {}", typeInfo.fullyQualifiedName);
             throw rte;
         }
     }
 
-    private AnalysisResult makeInternalObjectFlowsPermanent() {
+    private AnalysisStatus makeInternalObjectFlowsPermanent() {
         if (typeAnalysis.constantObjectFlows.isFrozen()) return DONE;
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
             MethodLevelData methodLevelData = methodAnalyser.methodLevelData();
@@ -248,7 +248,7 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
 
-    private AnalysisResult analyseImplicitlyImmutableTypes() {
+    private AnalysisStatus analyseImplicitlyImmutableTypes() {
         if (typeAnalysis.implicitlyImmutableDataTypes.isSet()) return DONE;
 
         log(E2IMMUTABLE, "Computing implicitly immutable types for {}", typeInfo.fullyQualifiedName);
@@ -319,7 +319,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
           TODO: parents, enclosing types
          */
-    private AnalysisResult analyseOnlyMarkEventuallyE1Immutable() {
+    private AnalysisStatus analyseOnlyMarkEventuallyE1Immutable() {
         if (!typeAnalysis.approvedPreconditions.isFrozen()) {
             return DONE;
         }
@@ -426,11 +426,11 @@ public class TypeAnalyser extends AbstractAnalyser {
         return value.variables().stream().map(Variable::name).distinct().sorted().collect(Collectors.joining("+"));
     }
 
-    private AnalysisResult analyseContainer() {
+    private AnalysisStatus analyseContainer() {
         int container = typeAnalysis.getProperty(VariableProperty.CONTAINER);
         if (container != Level.UNDEFINED) return DONE;
 
-        AnalysisResult parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.CONTAINER, Function.identity(), Level.FALSE);
+        AnalysisStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.CONTAINER, Function.identity(), Level.FALSE);
         if (parentOrEnclosing == DONE || parentOrEnclosing == DELAYS) return parentOrEnclosing;
 
         boolean fieldsReady = myFieldAnalysers.stream().allMatch(
@@ -469,11 +469,11 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private AnalysisResult analyseEffectivelyE1Immutable() {
+    private AnalysisStatus analyseEffectivelyE1Immutable() {
         int typeE1Immutable = MultiLevel.value(typeAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E1IMMUTABLE);
         if (typeE1Immutable != MultiLevel.DELAY) return DONE; // we have a decision already
 
-        AnalysisResult parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.IMMUTABLE,
+        AnalysisStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.IMMUTABLE,
                 i -> convertMultiLevelEffectiveToDelayTrue(MultiLevel.value(i, MultiLevel.E1IMMUTABLE)), MultiLevel.FALSE);
         if (parentOrEnclosing == DELAYS || parentOrEnclosing == DONE) return parentOrEnclosing;
 
@@ -511,11 +511,11 @@ public class TypeAnalyser extends AbstractAnalyser {
      *
      * @return true if a decision was made
      */
-    private AnalysisResult analyseIndependent() {
+    private AnalysisStatus analyseIndependent() {
         int typeIndependent = typeAnalysis.getProperty(VariableProperty.INDEPENDENT);
         if (typeIndependent != Level.DELAY) return DONE;
 
-        AnalysisResult parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.INDEPENDENT, Function.identity(), Level.FALSE);
+        AnalysisStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.INDEPENDENT, Function.identity(), Level.FALSE);
         if (parentOrEnclosing == DONE || parentOrEnclosing == DELAYS) return parentOrEnclosing;
 
         boolean variablesLinkedNotSet = myFieldAnalysers.stream()
@@ -595,7 +595,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DELAYS;
     }
 
-    private AnalysisResult parentOrEnclosingMustHaveTheSameProperty(VariableProperty variableProperty,
+    private AnalysisStatus parentOrEnclosingMustHaveTheSameProperty(VariableProperty variableProperty,
                                                                     Function<Integer, Integer> mapProperty,
                                                                     int falseValue) {
         List<Integer> propertyValues = parentAndOrEnclosingTypeAnalysis.stream()
@@ -625,7 +625,7 @@ public class TypeAnalyser extends AbstractAnalyser {
      *
      * @return true if a change was made to typeAnalysis
      */
-    private AnalysisResult analyseEffectivelyEventuallyE2Immutable() {
+    private AnalysisStatus analyseEffectivelyEventuallyE2Immutable() {
         int typeImmutable = typeAnalysis.getProperty(VariableProperty.IMMUTABLE);
         int typeE2Immutable = MultiLevel.value(typeImmutable, MultiLevel.E2IMMUTABLE);
         if (typeE2Immutable != MultiLevel.DELAY) return DONE; // we have a decision already
@@ -636,7 +636,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
         int no = MultiLevel.compose(typeE1Immutable, MultiLevel.FALSE);
 
-        AnalysisResult parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.IMMUTABLE,
+        AnalysisStatus parentOrEnclosing = parentOrEnclosingMustHaveTheSameProperty(VariableProperty.IMMUTABLE,
                 i -> convertMultiLevelEventualToDelayTrue(MultiLevel.value(i, MultiLevel.E2IMMUTABLE)), no);
         if (parentOrEnclosing == DONE || parentOrEnclosing == DELAYS) return parentOrEnclosing;
 
@@ -763,7 +763,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         return Level.FALSE;
     }
 
-    private AnalysisResult analyseExtensionClass() {
+    private AnalysisStatus analyseExtensionClass() {
         int extensionClass = typeAnalysis.getProperty(VariableProperty.EXTENSION_CLASS);
         if (extensionClass != Level.DELAY) return DONE;
 
@@ -810,7 +810,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private AnalysisResult analyseUtilityClass() {
+    private AnalysisStatus analyseUtilityClass() {
         int utilityClass = typeAnalysis.getProperty(VariableProperty.UTILITY_CLASS);
         if (utilityClass != Level.DELAY) return DELAYS;
 

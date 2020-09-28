@@ -315,7 +315,7 @@ public class EvaluationResult {
             add(new StateData.RemoveVariableFromState(variable));
         }
 
-        public void addResultOfMethodAnalyser(AnalysisResult analysisResult) {
+        public void addResultOfMethodAnalyser(AnalysisStatus analysisStatus) {
         }
     }
 }

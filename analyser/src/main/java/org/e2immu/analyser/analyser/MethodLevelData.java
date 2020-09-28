@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.analyser.AnalysisResult.*;
+import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.NOT_MODIFIED;
 import static org.e2immu.analyser.util.Logger.log;
@@ -71,7 +71,7 @@ public class MethodLevelData {
             StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
 
             // start with a one-off copying
-            AnalysisResult analysisResult = copyFieldAndThisProperties(evaluationContext, variableData)
+            AnalysisStatus analysisStatus = copyFieldAndThisProperties(evaluationContext, variableData)
 
                     // this one can be delayed, it copies the field assignment values
                     .combine(copyFieldAssignmentValue(variableData))
@@ -89,7 +89,7 @@ public class MethodLevelData {
                             .combine(combinePrecondition(previous, stateData))
                     );
 
-            return builder.build(analysisResult);
+            return builder.build(analysisStatus);
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in linking computation, method {}", logLocation);
             throw rte;
@@ -99,7 +99,7 @@ public class MethodLevelData {
     // preconditions come from the precondition object in stateData, and preconditions from method calls; they're accumulated
     // in the state.precondition field
 
-    private AnalysisResult combinePrecondition(MethodLevelData previous, StateData stateData) {
+    private AnalysisStatus combinePrecondition(MethodLevelData previous, StateData stateData) {
         if (!combinedPrecondition.isSet()) {
             Value result;
             if (previous == null) {
@@ -155,7 +155,7 @@ public class MethodLevelData {
 
     */
 
-    private AnalysisResult establishLinks(VariableData variableData, EvaluationContext evaluationContext, String logLocation) {
+    private AnalysisStatus establishLinks(VariableData variableData, EvaluationContext evaluationContext, String logLocation) {
         if (variablesLinkedToFieldsAndParameters.isSet()) return DONE;
 
         // final fields need to have a value set; all the others act as local variables
@@ -210,7 +210,7 @@ public class MethodLevelData {
     }
 
     // only needs to be run on the last statement; not that relevant on others
-    private AnalysisResult updateVariablesLinkedToMethodResult(EvaluationContext evaluationContext, StatementAnalyserResult.Builder builder, String logLocation) {
+    private AnalysisStatus updateVariablesLinkedToMethodResult(EvaluationContext evaluationContext, StatementAnalyserResult.Builder builder, String logLocation) {
 
         if (variablesLinkedToMethodResult.isSet()) return DONE;
 
@@ -277,13 +277,13 @@ public class MethodLevelData {
         reverse.forEach(v -> recursivelyAddLinkedVariables(variablesLinkedToFieldsAndParameters, v, result));
     }
 
-    private AnalysisResult computeContentModifications(EvaluationContext evaluationContext,
+    private AnalysisStatus computeContentModifications(EvaluationContext evaluationContext,
                                                        VariableData variableData,
                                                        StatementAnalyserResult.Builder builder,
                                                        String logLocation) {
         if (!variablesLinkedToFieldsAndParameters.isSet()) return DELAYS;
 
-        AnalysisResult analysisResult = DONE;
+        AnalysisStatus analysisStatus = DONE;
         boolean changes = false;
 
         // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
@@ -310,7 +310,7 @@ public class MethodLevelData {
                         } else fieldModified = summary;
                         if (fieldModified == Level.DELAY) {
                             log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.detailedString(), logLocation);
-                            analysisResult = DELAYS;
+                            analysisStatus = DELAYS;
                         } else {
                             log(NOT_MODIFIED, "Mark {} " + (fieldModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
                                     linkedVariable.detailedString(), logLocation);
@@ -326,7 +326,7 @@ public class MethodLevelData {
                     } else {
                         if (summary == Level.DELAY) {
                             log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.detailedString(), logLocation);
-                            analysisResult = DELAYS;
+                            analysisStatus = DELAYS;
                         } else {
                             log(NOT_MODIFIED, "Mark {} as {} in {}", linkedVariable.detailedString(),
                                     summary == Level.TRUE ? "@Modified" : "@NotModified", logLocation);
@@ -340,7 +340,7 @@ public class MethodLevelData {
                 }
             }
         }
-        return analysisResult == DELAYS ? (changes ? PROGRESS : DELAYS) : DONE;
+        return analysisStatus == DELAYS ? (changes ? PROGRESS : DELAYS) : DONE;
     }
 
 
@@ -352,7 +352,7 @@ public class MethodLevelData {
      * @param evaluationContext context
      * @return if any change happened to methodAnalysis
      */
-    private AnalysisResult copyFieldAndThisProperties(EvaluationContext evaluationContext, VariableData variableData) {
+    private AnalysisStatus copyFieldAndThisProperties(EvaluationContext evaluationContext, VariableData variableData) {
         if (evaluationContext.getIteration() > 0) return DONE;
 
         for (VariableInfo variableInfo : variableData.variableInfos()) {
@@ -398,9 +398,9 @@ public class MethodLevelData {
         }
     }
 
-    private AnalysisResult copyFieldAssignmentValue(VariableData variableData) {
+    private AnalysisStatus copyFieldAssignmentValue(VariableData variableData) {
         boolean changes = false;
-        AnalysisResult analysisResult = DONE;
+        AnalysisStatus analysisStatus = DONE;
         for (VariableInfo variableInfo : variableData.variableInfos()) {
             Variable variable = variableInfo.getVariable();
             if (variable instanceof FieldReference && variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE) {
@@ -408,7 +408,7 @@ public class MethodLevelData {
                 TransferValue tv = fieldSummaries.get(fieldInfo);
                 Value value = variableInfo.getCurrentValue();
                 if (value == UnknownValue.NO_VALUE) {
-                    analysisResult = DELAYS;
+                    analysisStatus = DELAYS;
                 } else if (!tv.value.isSet()) {
                     changes = true;
                     tv.value.set(value);
@@ -416,20 +416,20 @@ public class MethodLevelData {
                 // the values of IMMUTABLE, CONTAINER, NOT_NULL, SIZE will be obtained from the value, they need not copying.
                 Value stateOnAssignment = variableInfo.getStateOnAssignment();
                 if (stateOnAssignment == UnknownValue.NO_VALUE) {
-                    analysisResult = DELAYS;
+                    analysisStatus = DELAYS;
                 } else if (stateOnAssignment != UnknownValue.EMPTY && !tv.stateOnAssignment.isSet()) {
                     tv.stateOnAssignment.set(stateOnAssignment);
                     changes = true;
                 }
             }
         }
-        return analysisResult == DELAYS ? (changes ? PROGRESS : DELAYS) : DONE;
+        return analysisStatus == DELAYS ? (changes ? PROGRESS : DELAYS) : DONE;
     }
 
     // a DELAY should only be possible for good reasons
     // context can generally only be delayed when there is a method delay
 
-    private AnalysisResult copyContextProperties(EvaluationContext evaluationContext,
+    private AnalysisStatus copyContextProperties(EvaluationContext evaluationContext,
                                                  VariableData variableData,
                                                  StatementAnalyserResult.Builder builder) {
         boolean changes = false;
