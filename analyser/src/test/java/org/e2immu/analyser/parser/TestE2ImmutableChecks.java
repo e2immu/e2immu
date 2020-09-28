@@ -23,7 +23,7 @@ import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.VariableValuePlaceholder;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.statement.Block;
@@ -78,7 +78,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
             TransferValue transferValue = methodLevelData.returnStatementSummaries.get("1");
             Assert.assertEquals(MultiLevel.MUTABLE, transferValue.properties.get(VariableProperty.IMMUTABLE));
             Assert.assertEquals("input4", transferValue.value.get().toString());
-            Assert.assertTrue(transferValue.value.get() instanceof VariableValuePlaceholder);
+            Assert.assertTrue(transferValue.value.get() instanceof VariableValue);
             Assert.assertEquals(MultiLevel.MUTABLE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
         }
 

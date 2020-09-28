@@ -306,8 +306,8 @@ public class GreaterThanZeroValue extends PrimitiveValue {
                 MethodValue methodValue = (MethodValue) cnv.value;
                 if (methodValue.methodInfo.typeInfo.sizeMethod() == methodValue.methodInfo) {
                     // I am the size method!
-                    if (methodValue.object instanceof ValueWithVariable) {
-                        ValueWithVariable v = (ValueWithVariable) methodValue.object;
+                    if (methodValue.object instanceof VariableValue) {
+                        VariableValue v = (VariableValue) methodValue.object;
                         return new FilterResult(Map.of(v.variable, this), UnknownValue.NO_VALUE);
                     }
                 }

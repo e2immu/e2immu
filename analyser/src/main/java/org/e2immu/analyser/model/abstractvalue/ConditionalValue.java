@@ -187,8 +187,8 @@ public class ConditionalValue implements Value {
 
     private static int checkSizeRestriction(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse) {
         Map<Variable, Value> sizeRestrictions = condition.filter(FilterMode.REJECT, Value::isIndividualSizeRestriction).accepted;
-        if (ifTrue instanceof ValueWithVariable) {
-            Value sizeRestriction = sizeRestrictions.get(((ValueWithVariable) ifTrue).variable);
+        if (ifTrue instanceof VariableValue) {
+            Value sizeRestriction = sizeRestrictions.get(((VariableValue) ifTrue).variable);
             if (sizeRestriction != null) {
                 // have a size restriction on ifTrue
                 int t = sizeRestriction.encodedSizeRestriction();

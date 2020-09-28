@@ -154,9 +154,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 builder.addAccess(modified == Level.TRUE, methodAccess, objectValue);
             }
         }
-        ValueWithVariable valueWithVariable;
-        if (modified == Level.TRUE && (valueWithVariable = objectValue.asInstanceOf(ValueWithVariable.class)) != null) {
-            builder.modifyingMethodAccess(valueWithVariable.variable);
+        VariableValue variableValue;
+        if (modified == Level.TRUE && (variableValue = objectValue.asInstanceOf(VariableValue.class)) != null) {
+            builder.modifyingMethodAccess(variableValue.variable);
         }
 
         // @Only check
@@ -306,8 +306,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 // special situation
                 // we have an instance object, like new Pair("a", "b"), and then a getter applying to this instance object
                 // this we can resolve immediately
-                if (objectValue instanceof Instance && iv.value instanceof ValueWithVariable) {
-                    Variable variable = ((ValueWithVariable) iv.value).variable;
+                if (objectValue instanceof Instance && iv.value instanceof VariableValue) {
+                    Variable variable = ((VariableValue) iv.value).variable;
                     if (variable instanceof FieldReference) {
                         FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                         FieldAnalysis fieldAnalysis = evaluationContext.getFieldAnalysis(fieldInfo);

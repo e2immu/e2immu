@@ -51,40 +51,44 @@ public class InstanceOf implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult evaluationResult = expression.evaluate(evaluationContext, forwardEvaluationInfo);
-        return new EvaluationResult.Builder(evaluationContext)
-                .compose(evaluationResult)
-                .setValue(localEvaluation(evaluationContext, evaluationResult.value))
-                .build();
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(evaluationResult);
+        return localEvaluation(builder, evaluationContext, evaluationResult.value);
     }
 
-    private Value localEvaluation(EvaluationContext evaluationContext, Value value) {
-        Value result;
+    private EvaluationResult localEvaluation(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Value value) {
         if (value.isUnknown()) {
-            result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
-        } else if (value instanceof NullValue) {
-            result = BoolValue.FALSE;
-        } else if (value instanceof CombinedValue) {
+            return builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE).build();
+        }
+        if (value instanceof NullValue) {
+            return builder.setValue(BoolValue.FALSE).build();
+
+        }
+        if (value instanceof CombinedValue) {
             CombinedValue combinedValue = (CombinedValue) value;
             if (combinedValue.values.size() == 1) {
-                return localEvaluation(evaluationContext, combinedValue.values.get(0));
+                return localEvaluation(builder, evaluationContext, combinedValue.values.get(0));
             }
-            result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
-        } else if (value instanceof ValueWithVariable) {
-            ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(), Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
-            result = new InstanceOfValue(((ValueWithVariable) value).variable, parameterizedType, objectFlow);
-        } else if (value instanceof Instance) {
-            result = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType), evaluationContext, Origin.RESULT_OF_OPERATOR);
-        } else if (value instanceof MethodValue) {
-            result = UnknownPrimitiveValue.UNKNOWN_PRIMITIVE; // no clue, too deep
-        } else if (value instanceof ClassValue) {
-            result = BoolValue.of(parameterizedType.isAssignableFrom(((ClassValue) value).value), evaluationContext, Origin.RESULT_OF_OPERATOR);
-        } else {
-            // this error occurs with a TypeExpression, probably due to our code giving priority to types rather than
-            // variable names, when you use a type name as a variable name, which is perfectly allowed in Java but is
-            // horrible practice. We leave the bug for now.
-            throw new UnsupportedOperationException("? have expression of " + expression.getClass() + " value is " + value + " of " + value.getClass());
+            return builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE).build();
         }
-        return result;
+        if (value instanceof VariableValue) {
+            ObjectFlow objectFlow = builder.createInternalObjectFlow(Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
+            return builder.setValue(new InstanceOfValue(((VariableValue) value).variable, parameterizedType, objectFlow)).build();
+        }
+        if (value instanceof Instance) {
+            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType), evaluationContext, Origin.RESULT_OF_OPERATOR);
+            return builder.compose(er).setValue(er.value).build();
+        }
+        if (value instanceof MethodValue) {
+            return builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE).build(); // no clue, too deep
+        }
+        if (value instanceof ClassValue) {
+            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(((ClassValue) value).value), evaluationContext, Origin.RESULT_OF_OPERATOR);
+            return builder.compose(er).setValue(er.value).build();
+        }
+        // this error occurs with a TypeExpression, probably due to our code giving priority to types rather than
+        // variable names, when you use a type name as a variable name, which is perfectly allowed in Java but is
+        // horrible practice. We leave the bug for now.
+        throw new UnsupportedOperationException("? have expression of " + expression.getClass() + " value is " + value + " of " + value.getClass());
     }
 
     @Override

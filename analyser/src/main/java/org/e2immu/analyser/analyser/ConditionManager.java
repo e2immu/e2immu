@@ -6,7 +6,6 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
-import java.awt.color.CMMException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -219,14 +218,19 @@ public class ConditionManager {
     }
 
     // return that part of the conditional that is NOT covered by @NotNull (individual not null clauses) or @Size (individual size clauses)
-    public Value escapeCondition(EvaluationContext evaluationContext) {
-        if (condition == UnknownValue.EMPTY || delayedCondition()) return UnknownValue.EMPTY;
+    public EvaluationResult escapeCondition(EvaluationContext evaluationContext) {
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+
+        if (condition == UnknownValue.EMPTY || delayedCondition()) {
+            return builder.setValue(UnknownValue.EMPTY).build();
+        }
 
         // TRUE: parameters only FALSE: preconditionSide; OR of 2 filters
         Value.FilterResult filterResult = condition.filter(Value.FilterMode.REJECT, Value::isIndividualNotNullClauseOnParameter,
                 Value::isIndividualSizeRestrictionOnParameter); // those parts that have nothing to do with individual clauses
-        if (filterResult.rest == UnknownValue.EMPTY) return UnknownValue.EMPTY;
-
+        if (filterResult.rest == UnknownValue.EMPTY) {
+            return builder.setValue(UnknownValue.EMPTY).build();
+        }
         // replace all VariableValues in the rest by VVPlaceHolders
         Map<Value, Value> translation = new HashMap<>();
         filterResult.rest.visit(v -> {
@@ -234,12 +238,13 @@ public class ConditionManager {
             if ((variableValue = v.asInstanceOf(VariableValue.class)) != null) {
                 // null evalContext -> do not copy properties (the condition+state may hold a not null, which can
                 // be copied in the property, which can reEvaluate later to constant true/false
-                translation.put(v, new VariableValuePlaceholder(v, variableValue, null, v.getObjectFlow()));
+                translation.put(v, new VariableValue(v, variableValue, null, v.getObjectFlow()));
             }
         });
 
         // and negate. This will become the precondition or "initial state"
-        return NegatedValue.negate(filterResult.rest.reEvaluate(evaluationContext, translation));
+        EvaluationResult reRest = filterResult.rest.reEvaluate(evaluationContext, translation);
+        return builder.compose(reRest).setValue(NegatedValue.negate(reRest.value)).build();
     }
 
     private static Value.FilterResult obtainVariableFilter(Variable variable, Value value) {

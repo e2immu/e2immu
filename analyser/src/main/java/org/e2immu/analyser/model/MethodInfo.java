@@ -323,10 +323,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                     .map(ParameterizedType::stream).collect(Collectors.joining(", ")));
         }
         if (hasBeenInspected() && methodInspection.get().methodBody.isSet()) {
-            if (methodAnalysis.isSet() && methodAnalysis.get().numberedStatements.isSet() &&
-                    methodAnalysis.get().numberedStatements.get().stream().anyMatch(ns -> ns.replacement.isSet())) {
-                sb.append(methodInspection.get().methodBody.get().statementString(indent,
-                        methodAnalysis.get().numberedStatements.get().get(0)));
+            if (methodAnalysis.isSet() && methodAnalysis.get().firstStatement != null) {
+                sb.append(methodInspection.get().methodBody.get().statementString(indent, methodAnalysis.get().firstStatement));
             } else {
                 sb.append(methodInspection.get().methodBody.get().statementString(indent, null));
             }

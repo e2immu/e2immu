@@ -39,7 +39,7 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
     public final ErrorFlags errorFlags = new ErrorFlags();
     public final NavigationData<StatementAnalysis> navigationData = new NavigationData<>();
     public final SetOnce<VariableDataImpl> variableData = new SetOnce<VariableDataImpl>();
-    public final MethodLevelData methodLevelData = new MethodLevelData(variableData);
+    public final MethodLevelData methodLevelData = new MethodLevelData();
     public final StateData stateData = new StateData();
 
     public final SetOnce<Boolean> done = new SetOnce<>(); // if not done, there have been delays

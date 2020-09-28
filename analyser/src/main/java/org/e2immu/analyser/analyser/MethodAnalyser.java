@@ -1010,4 +1010,66 @@ public class MethodAnalyser extends AbstractAnalyser {
     public MethodLevelData methodLevelData() {
         return methodAnalysis.methodLevelData();
     }
+
+    // evaluation context to evaluate a SAM defined in the initialiser of a field
+
+    public EvaluationContext newEvaluationContext(int iteration) {
+        return new EvaluationContextImpl(iteration);
+    }
+
+    private class EvaluationContextImpl implements EvaluationContext {
+
+        private final int iteration;
+
+        private EvaluationContextImpl(int iteration) {
+            this.iteration = iteration;
+        }
+
+        @Override
+        public int getIteration() {
+            return iteration;
+        }
+
+        @Override
+        public Location getLocation() {
+            return new Location(methodInfo);
+        }
+
+        @Override
+        public StatementAnalyser getCurrentStatement() {
+            return null;
+        }
+
+        @Override
+        public FieldAnalyser getCurrentField() {
+            return null;
+        }
+
+        @Override
+        public MethodAnalyser getCurrentMethod() {
+            return MethodAnalyser.this;
+        }
+
+        @Override
+        public AnalyserContext getAnalyserContext() {
+            return analyserContext;
+        }
+
+        @Override
+        public MethodAnalysis getCurrentMethodAnalysis() {
+            return methodAnalysis;
+        }
+
+        @Override
+        public TypeAnalyser getCurrentType() {
+            return myTypeAnalyser;
+        }
+
+        @Override
+        public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
+            throw new UnsupportedOperationException(); // TODO
+        }
+
+        // TODO many others to implement
+    }
 }

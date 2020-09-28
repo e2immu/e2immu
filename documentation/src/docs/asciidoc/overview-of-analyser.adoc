@@ -222,7 +222,7 @@ Properties that are specific to the statement analyser:
 * ASSIGNED_IN_LOOP: values not to be taken too literally
 
 The following list are the assignment properties.
-When encountering a return statement with a value different from NO_VALUE, the statement analyser freezes the value and its properties in a value or `VariableValuePlaceholder`, and stores it in the statement:
+When encountering a return statement with a value different from NO_VALUE, the statement analyser freezes the value and its properties in a value or `VariableValue`, and stores it in the statement:
 
 * `IMMUTABLE`, `CONTAINER`: purely based on the annotations of the values (dynamic type property)
 * `NOT_NULL`, `SIZE`: dynamic type property + occurrence in conditions (if-statement, switch)

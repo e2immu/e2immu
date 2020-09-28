@@ -338,8 +338,8 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
     }
 
     // whatever that has not been picked up by the notNull and the size escapes
-    private static void precondition(VariableProperties variableProperties, NumberedStatement parentStatement) {
-        Value precondition = variableProperties.conditionManager.escapeCondition(variableProperties);
+    private static void precondition(EvaluationContext evaluationContext, StatementAnalyser parentStatement) {
+        EvaluationResult preconditionResult = conditionManager.escapeCondition(variableProperties);
         if (precondition != UnknownValue.EMPTY) {
             boolean atLeastFieldOrParameterInvolved = precondition.variables().stream().anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
             if (atLeastFieldOrParameterInvolved) {
@@ -537,7 +537,7 @@ public class StatementAnalyser extends AbstractAnalyser implements HasNavigation
                     if ((variableValue = value.asInstanceOf(VariableValue.class)) != null) {
                         // we pass on both value and variableValue, as the latter may be wrapped in a
                         // PropertyValue
-                        transferValue.value.set(new VariableValuePlaceholder(value, variableValue, variableProperties, value.getObjectFlow()));
+                        transferValue.value.set(new VariableValue(value, variableValue, variableProperties, value.getObjectFlow()));
                     } else {
                         transferValue.value.set(value);
                     }

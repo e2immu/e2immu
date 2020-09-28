@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model.value;
 
-import org.e2immu.analyser.model.Constant;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Primitives;
@@ -43,9 +40,13 @@ public class BoolValue extends ConstantValue implements Constant<Boolean> {
         this.value = value;
     }
 
-    public static Value of(boolean b, EvaluationContext evaluationContext, Origin origin) {
-        return evaluationContext == null ? (b ? TRUE : FALSE) :
-                new BoolValue(b, evaluationContext.createInternalObjectFlow(Primitives.PRIMITIVES.booleanParameterizedType, origin));
+    public static EvaluationResult of(boolean b, EvaluationContext evaluationContext, Origin origin) {
+        if (evaluationContext == null) {
+            return new EvaluationResult.Builder().setValue(b ? TRUE : FALSE).build();
+        }
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        ObjectFlow objectFlow = builder.createInternalObjectFlow(Primitives.PRIMITIVES.booleanParameterizedType, origin);
+        return builder.setValue(new BoolValue(b, objectFlow)).build();
     }
 
     @Override

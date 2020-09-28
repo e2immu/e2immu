@@ -17,15 +17,14 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.EvaluationResult;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
-import org.e2immu.analyser.model.abstractvalue.ValueWithVariable;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.util.AddOnceSet;
-import org.e2immu.analyser.util.SetOnceMap;
 
 import java.util.stream.Stream;
 
@@ -53,7 +52,7 @@ public abstract class AbstractAnalyser implements Analyser {
 
     protected AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
 
-    protected ValueWithVariable getVariableValue(Variable variable) {
+    protected Value getVariableValue(Variable variable) {
         throw new UnsupportedOperationException();
     }
 }

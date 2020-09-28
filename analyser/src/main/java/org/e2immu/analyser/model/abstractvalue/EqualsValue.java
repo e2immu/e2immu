@@ -151,8 +151,8 @@ public class EqualsValue extends PrimitiveValue {
     }
 
     private FilterResult isIndividualNotNullClause(boolean parametersOnly) {
-        if (lhs instanceof NullValue && rhs instanceof ValueWithVariable) {
-            ValueWithVariable v = (ValueWithVariable) rhs;
+        if (lhs instanceof NullValue && rhs instanceof VariableValue) {
+            VariableValue v = (VariableValue) rhs;
             if (!parametersOnly || v.variable instanceof ParameterInfo) {
                 return new FilterResult(Map.of(v.variable, lhs), UnknownValue.EMPTY);
             }
@@ -172,12 +172,12 @@ public class EqualsValue extends PrimitiveValue {
 
     @Override
     public FilterResult isIndividualFieldCondition() {
-        boolean acceptR = rhs instanceof ValueWithVariable && ((ValueWithVariable) rhs).variable instanceof FieldReference;
-        boolean acceptL = lhs instanceof ValueWithVariable && ((ValueWithVariable) lhs).variable instanceof FieldReference;
+        boolean acceptR = rhs instanceof VariableValue && ((VariableValue) rhs).variable instanceof FieldReference;
+        boolean acceptL = lhs instanceof VariableValue && ((VariableValue) lhs).variable instanceof FieldReference;
         if (acceptL && !acceptR)
-            return new FilterResult(Map.of(((ValueWithVariable) lhs).variable, this), UnknownValue.EMPTY);
+            return new FilterResult(Map.of(((VariableValue) lhs).variable, this), UnknownValue.EMPTY);
         if (acceptR && !acceptL)
-            return new FilterResult(Map.of(((ValueWithVariable) rhs).variable, this), UnknownValue.EMPTY);
+            return new FilterResult(Map.of(((VariableValue) rhs).variable, this), UnknownValue.EMPTY);
         return new FilterResult(Map.of(), this);
     }
 

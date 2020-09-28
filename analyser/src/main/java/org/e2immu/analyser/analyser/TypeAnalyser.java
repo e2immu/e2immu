@@ -26,6 +26,8 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -67,8 +69,6 @@ public class TypeAnalyser extends AbstractAnalyser {
     public final TypeInspection typeInspection;
     public final TypeAnalysis typeAnalysis;
 
-    public final VariableValue thisVariableValue;
-
     // initialized in a separate method
     private List<MethodAnalyser> myMethodAnalysersExcludingSAMs;
     private List<MethodAnalyser> myMethodAndConstructorAnalysersExcludingSAMs;
@@ -88,7 +88,6 @@ public class TypeAnalyser extends AbstractAnalyser {
         typeInspection = typeInfo.typeInspection.get();
 
         typeAnalysis = new TypeAnalysis(typeInfo);
-        thisVariableValue = new VariableValue(new This(typeInfo));
     }
 
     @Override
@@ -255,13 +254,30 @@ public class TypeAnalyser extends AbstractAnalyser {
         return true;
     }
 
+    @Override
+    protected Value getVariableValue(Variable variable) {
+        if (variable instanceof DependentVariable) {
+            throw new UnsupportedOperationException("NYI");
+        }
+        if (variable instanceof This) {
+            Map<VariableProperty, Integer> properties = new HashMap<>();
+            properties.put(VariableProperty.MODIFIED, typeAnalysis.getProperty(VariableProperty.MODIFIED));
+            // TODO this is prob. not correct
+            Set<Variable> linkedVariables = Set.of();
+            // TODO this is prob. not correct
+            ObjectFlow objectFlow = new ObjectFlow(new Location(typeInfo), typeInfo.asParameterizedType(), Origin.NO_ORIGIN);
+            return new VariableValue(variable, variable.name(), properties, linkedVariables, objectFlow, false);
+        }
+        throw new UnsupportedOperationException();
+    }
+
     /*
-      writes: typeAnalysis.approvedPreconditions, the official marker for eventuality in the type
+          writes: typeAnalysis.approvedPreconditions, the official marker for eventuality in the type
 
-      when? all modifying methods must have methodAnalysis.preconditionForOnlyData set with value != NO_VALUE
+          when? all modifying methods must have methodAnalysis.preconditionForOnlyData set with value != NO_VALUE
 
-      TODO: parents, enclosing types
-     */
+          TODO: parents, enclosing types
+         */
     private boolean analyseOnlyMarkEventuallyE1Immutable() {
         if (!typeAnalysis.approvedPreconditions.isEmpty()) {
             return false; // already done

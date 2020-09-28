@@ -627,7 +627,12 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
         This thisVariable = new This(fieldInfo.owner);
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-        return new FinalFieldValue(fieldReference, combinedValue.getObjectFlow());
+        Map<VariableProperty, Integer> properties = new HashMap<>();
+        for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
+            properties.put(variableProperty, fieldAnalysis.getProperty(variableProperty));
+        }
+        Set<Variable> linkedVariables = fieldAnalysis.variablesLinkedToMe.isSet() ? fieldAnalysis.variablesLinkedToMe.get() : Set.of();
+        return new VariableValue(fieldReference, fieldReference.name(), properties, linkedVariables, combinedValue.getObjectFlow(), false);
     }
 
     private boolean analyseLinked() {
@@ -762,6 +767,22 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     @Override
+    protected Value getVariableValue(Variable variable) {
+        FieldReference fieldReference = (FieldReference) variable;
+        FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysers().get(fieldReference.fieldInfo).fieldAnalysis;
+        if (fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.DELAY) return NO_VALUE;
+        // there is a very brief moment between the field being FINAL and effectivelyFinalValue being set; we ignore that for now
+        boolean variableField = !fieldAnalysis.effectivelyFinalValue.isSet();
+        Map<VariableProperty, Integer> properties = new HashMap<>();
+        for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
+            properties.put(variableProperty, fieldAnalysis.getProperty(variableProperty));
+        }
+        Set<Variable> linkedVariables = fieldAnalysis.variablesLinkedToMe.isSet() ? fieldAnalysis.variablesLinkedToMe.get() : Set.of();
+        ObjectFlow objectFlow = fieldAnalysis.objectFlow.get();
+        return new VariableValue(fieldReference, fieldReference.name(), properties, linkedVariables, objectFlow, variableField);
+    }
+
+    @Override
     public void check() {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         // before we check, we copy the properties into annotations
@@ -891,28 +912,12 @@ public class FieldAnalyser extends AbstractAnalyser {
         @Override
         public Value currentValue(Variable variable) {
             if (variable instanceof FieldReference) {
-                FieldReference fieldReference = (FieldReference) variable;
-                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysers().get(fieldReference.fieldInfo).fieldAnalysis;
-                if (fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.DELAY) return NO_VALUE;
-                if (fieldAnalysis.effectivelyFinalValue.isSet())
-                    return safeFinalFieldValue(fieldAnalysis.effectivelyFinalValue.get());
-                return new VariableValue(fieldReference);
+                return getVariableValue(variable);
             }
-            if (variable instanceof This) {
-                This thisVariable = (This) variable;
-                TypeAnalyser theAnalyser = analyserContext.getTypeAnalysers().get(thisVariable.typeInfo);
-                return theAnalyser.thisVariableValue;
-            }
-            // otherwise, handled by the local type
-            if (variable instanceof DependentVariable) {
+            if (variable instanceof This || variable instanceof DependentVariable) {
                 return myTypeAnalyser.getVariableValue(variable);
             }
             throw new UnsupportedOperationException();
-        }
-
-        private Value safeFinalFieldValue(Value v) {
-            FinalFieldValue finalFieldValue;
-            return (finalFieldValue = v.asInstanceOf(FinalFieldValue.class)) != null ? finalFieldValue.copy(this) : v;
         }
 
         @Override

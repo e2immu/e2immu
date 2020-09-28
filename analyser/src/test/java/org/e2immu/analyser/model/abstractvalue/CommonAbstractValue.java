@@ -131,7 +131,7 @@ public abstract class CommonAbstractValue {
     static final Variable vj = createVariable("j");
     static final Variable vk = createVariable("k");
     static final VariableValue i = new VariableValue(vi);
-    static final VariableValuePlaceholder iph = new VariableValuePlaceholder(i, i, minimalEvaluationContext, ObjectFlow.NO_FLOW);
+    static final VariableValue iph = new VariableValue(i, i, minimalEvaluationContext, ObjectFlow.NO_FLOW);
     static final VariableValue j = new VariableValue(vj);
     static final VariableValue k = new VariableValue(vk);
 
