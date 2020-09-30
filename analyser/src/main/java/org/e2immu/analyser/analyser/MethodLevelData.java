@@ -73,6 +73,9 @@ public class MethodLevelData {
             // start with a one-off copying
             AnalysisStatus analysisStatus = copyFieldAndThisProperties(evaluationContext, variableData)
 
+                    //
+                    .combine(escapes ? notNullEscape(evaluationContext, variableData, builder): DONE)
+
                     // this one can be delayed, it copies the field assignment values
                     .combine(copyFieldAssignmentValue(variableData))
 
@@ -96,6 +99,7 @@ public class MethodLevelData {
             throw rte;
         }
     }
+
 
     // preconditions come from the precondition object in stateData, and preconditions from method calls; they're accumulated
     // in the state.precondition field

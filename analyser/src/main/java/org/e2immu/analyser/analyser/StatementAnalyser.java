@@ -301,7 +301,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         // analyse data components
 
         // flow
-        statementAnalysis.flowData.analyse(this);
+        statementAnalysis.flowData.analyse(this, previousStatementAnalysis);
+        StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
+        InterruptsFlow bestAlways = statementAnalysis.flowData.bestAlwaysInterrupt();
+        boolean escapes = bestAlways == InterruptsFlow.ESCAPE;
+        if (escapes) {
+            notNullEscapes(builder);
+        }
 
         // variable data
         VariableDataImpl variableData = variableDataBuilder.build();
@@ -310,57 +316,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         // method level data
         StatementAnalyserResult result = statementAnalysis.methodLevelData.analyse(evaluationContext, variableData,
-                previousStatementAnalysis == null ? null : previousStatementAnalysis.methodLevelData, statementAnalysis.stateData);
+                previousStatementAnalysis == null ? null : previousStatementAnalysis.methodLevelData,
+                statementAnalysis.stateData);
 
         // error flags
         statementAnalysis.errorFlags.analyse(statementAnalysis, previousStatementAnalysis);
 
         // state data
         statementAnalysis.stateData.analyse();
+
+        // check for some errors
+        detectErrors();
         return result;
-    }
-
-    private AnalysisStatus atEndOfBlock(int iteration) {
-
-        // at the end, at the top level, there is a return, even if it is implicit
-        if (statementAnalysis.atTopLevel()) {
-            neverContinues = true;
-        }
-
-        if (!startStatement.neverContinues.isSet()) {
-            log(VARIABLE_PROPERTIES, "Never continues at end of block of {}? {}", startStatement.index, neverContinues);
-            startStatement.neverContinues.set(neverContinues);
-        }
-        if (!startStatement.escapes.isSet()) {
-            if (variableProperties.conditionManager.delayedCondition() || variableProperties.delayedState()) {
-                log(DELAYED, "Delaying escapes because of delayed conditional, {}", startStatement.index);
-            } else {
-                log(VARIABLE_PROPERTIES, "Escapes at end of block of {}? {}", startStatement.index, escapesViaException);
-                startStatement.escapes.set(escapesViaException);
-
-                if (escapesViaException) {
-                    if (startStatement.parent == null) {
-                        log(VARIABLE_PROPERTIES, "Observing unconditional escape");
-                    } else {
-                        notNullEscapes(variableProperties);
-                        sizeEscapes(variableProperties);
-                        precondition(variableProperties, startStatement.parent);
-                    }
-                }
-            }
-        }
-        // order is important, because unused gets priority
-        if (unusedLocalVariablesCheck(variableProperties)) changes = true;
-        if (uselessAssignments(variableProperties, escapesViaException, neverContinues)) changes = true;
-
-        if (isLogEnabled(DEBUG_LINKED_VARIABLES) && !variableProperties.dependencyGraph.isEmpty()) {
-            log(DEBUG_LINKED_VARIABLES, "Dependency graph of linked variables best case:");
-            variableProperties.dependencyGraph.visit((n, list) -> log(DEBUG_LINKED_VARIABLES, " -- {} --> {}", n.detailedString(),
-                    list == null ? "[]" : StringUtil.join(list, Variable::detailedString)));
-        }
-
-        if (!startStatement.breakAndContinueStatements.isSet())
-            startStatement.breakAndContinueStatements.set(ImmutableList.copyOf(breakAndContinueStatementsInBlocks));
     }
 
     /*
@@ -396,14 +363,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    private void notNullEscapes(VariableProperties variableProperties) {
-        Set<Variable> nullVariables = variableProperties.conditionManager.findIndividualNullConditions();
+    private void notNullEscapes(StatementAnalyserResult.Builder builder) {
+        Set<Variable> nullVariables = statementAnalysis.stateData.conditionManager.get().findIndividualNullConditions();
         for (Variable nullVariable : nullVariables) {
             log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.detailedString());
-            ((ParameterInfo) nullVariable).parameterAnalysis.get().improveProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+            ParameterAnalysis parameterAnalysis = myMethodAnalyser.getParameterAnalyser((ParameterInfo) nullVariable).parameterAnalysis;
+            builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
 
             // as a context property
-            variableProperties.addProperty(nullVariable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+            variableDataBuilder.addProperty(nullVariable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
             if (!ignoreErrorsOnCondition) {
                 log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
                 ignoreErrorsOnCondition = true;
@@ -411,17 +379,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    private void sizeEscapes(VariableProperties variableProperties) {
-        Map<Variable, Value> individualSizeRestrictions = variableProperties.conditionManager.findIndividualSizeRestrictionsInCondition();
+    private void sizeEscapes(StatementAnalyserResult.Builder builder) {
+        Map<Variable, Value> individualSizeRestrictions = statementAnalysis.stateData.conditionManager.get().findIndividualSizeRestrictionsInCondition();
         for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
             ParameterInfo parameterInfo = (ParameterInfo) entry.getKey();
             Value negated = NegatedValue.negate(entry.getValue());
             log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", parameterInfo.detailedString(), negated);
             int sizeRestriction = negated.encodedSizeRestriction();
             if (sizeRestriction > 0) { // if the complement is a meaningful restriction
-                parameterInfo.parameterAnalysis.get().improveProperty(VariableProperty.SIZE, sizeRestriction);
+                ParameterAnalysis parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
+                builder.add(parameterAnalysis.new SetProperty(VariableProperty.SIZE, sizeRestriction));
 
-                variableProperties.addProperty(parameterInfo, VariableProperty.SIZE, sizeRestriction);
+                variableDataBuilder.addProperty(parameterInfo, VariableProperty.SIZE, sizeRestriction);
                 if (!ignoreErrorsOnCondition) {
                     log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
                     ignoreErrorsOnCondition = true;
@@ -773,36 +742,40 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      *
      * @return if an error was generated
      */
-    private boolean checkUselessAssignments(boolean escapesViaException, boolean neverContinuesBecauseOfReturn, Location location) {
-        boolean changes = false;
-        // we run at the local level
-        List<String> toRemove = new ArrayList<>();
-        for (VariableInfo variableInfo : variableDataBuilder.variableInfos()) {
-            if (variableInfo.getProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT) == Level.TRUE) {
-                boolean notAssignedInLoop = variableInfo.getProperty(VariableProperty.ASSIGNED_IN_LOOP) != Level.TRUE;
-                // TODO at some point we will do better than "notAssignedInLoop"
-                boolean useless = escapesViaException || notAssignedInLoop && (
-                        neverContinuesBecauseOfReturn && variableDataBuilder.isLocalVariable(variableInfo) ||
-                                variableInfo.isNotLocalCopy() && variableInfo.isLocalVariableReference());
-                if (useless) {
-                    if (!statementAnalysis.errorFlags.uselessAssignments.isSet(variableInfo.getVariable())) {
-                        statementAnalysis.errorFlags.uselessAssignments.put(variableInfo.getVariable(), true);
-                        messages.add(Message.newMessage(location, Message.USELESS_ASSIGNMENT, variableInfo.getName()));
-                        changes = true;
+    private void checkUselessAssignments() {
+        InterruptsFlow bestAlwaysInterrupt = statementAnalysis.flowData.bestAlwaysInterrupt();
+        boolean alwaysInterrupts = bestAlwaysInterrupt != InterruptsFlow.NO;
+        boolean atEndOfBlock = navigationData.next.get().isEmpty();
+        if (atEndOfBlock || alwaysInterrupts) {
+            // we run at the local level
+            List<String> toRemove = new ArrayList<>();
+            for (VariableInfo variableInfo : variableDataBuilder.variableInfos()) {
+                if (variableInfo.getProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT) == Level.TRUE) {
+                    boolean notAssignedInLoop = variableInfo.getProperty(VariableProperty.ASSIGNED_IN_LOOP) != Level.TRUE;
+                    // TODO at some point we will do better than "notAssignedInLoop"
+                    boolean useless = bestAlwaysInterrupt == InterruptsFlow.ESCAPE || notAssignedInLoop && (
+                            alwaysInterrupts && variableDataBuilder.isLocalVariable(variableInfo) ||
+                                    variableInfo.isNotLocalCopy() && variableInfo.isLocalVariableReference());
+                    if (useless) {
+                        if (!statementAnalysis.errorFlags.uselessAssignments.isSet(variableInfo.getVariable())) {
+                            statementAnalysis.errorFlags.uselessAssignments.put(variableInfo.getVariable(), true);
+                            messages.add(Message.newMessage(getLocation(), Message.USELESS_ASSIGNMENT, variableInfo.getName()));
+                        }
+                        if (variableInfo.isLocalCopy()) toRemove.add(variableInfo.getName());
                     }
-                    if (variableInfo.isLocalCopy()) toRemove.add(variableInfo.getName());
                 }
             }
+            if (!toRemove.isEmpty()) {
+                log(VARIABLE_PROPERTIES, "Removing local info for variables {}", toRemove);
+                variableDataBuilder.removeAllVariables(toRemove);
+            }
         }
-        if (!toRemove.isEmpty()) {
-            log(VARIABLE_PROPERTIES, "Removing local info for variables {}", toRemove);
-            variableDataBuilder.removeAllVariables(toRemove);
-        }
-        return changes;
     }
 
 
-    private void unusedLocalVariablesCheck(Location location) {
+    // TODO move to variableData
+
+    private void unusedLocalVariablesCheck() {
         // we run at the local level
         for (VariableInfo variableInfo : variableDataBuilder.variableInfos()) {
             if (variableInfo.isNotLocalCopy() && variableInfo.isLocalVariableReference()
@@ -813,7 +786,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 LocalVariable localVariable = ((LocalVariableReference) variableInfo.getVariable()).variable;
                 if (!statementAnalysis.errorFlags.unusedLocalVariables.isSet(localVariable)) {
                     statementAnalysis.errorFlags.unusedLocalVariables.put(localVariable, true);
-                    messages.add(Message.newMessage(location, Message.UNUSED_LOCAL_VARIABLE, localVariable.name));
+                    messages.add(Message.newMessage(getLocation(), Message.UNUSED_LOCAL_VARIABLE, localVariable.name));
                 }
             }
         }
@@ -822,43 +795,30 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     private void checkUnusedReturnValue() {
         if (statementAnalysis.statement instanceof ExpressionAsStatement &&
-                ((ExpressionAsStatement) statementAnalysis.statement).expression instanceof MethodCall) {
-            if (statementAnalysis.inErrorState()) return;
+                ((ExpressionAsStatement) statementAnalysis.statement).expression instanceof MethodCall &&
+                !statementAnalysis.inErrorState()) {
             MethodCall methodCall = (MethodCall) (((ExpressionAsStatement) statementAnalysis.statement).expression);
             if (methodCall.methodInfo.returnType().isVoid()) return;
             int identity = methodCall.methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY);
             if (identity != Level.FALSE) return;// DELAY: we don't know, wait; true: OK not a problem
-
-            int modified = methodCall.methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+            MethodAnalysis methodAnalysis = getMethodAnalysis(methodCall.methodInfo);
+            int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
             if (modified == Level.FALSE) {
-                messages.add(Message.newMessage(new Location(myMethodAnalyser.methodInfo, statementAnalysis.index),
-                        Message.IGNORING_RESULT_OF_METHOD_CALL));
+                messages.add(Message.newMessage(getLocation(), Message.IGNORING_RESULT_OF_METHOD_CALL));
                 statementAnalysis.errorFlags.errorValue.set(true);
             }
         }
     }
 
+    public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
+        MethodAnalyser methodAnalyser = analyserContext.getMethodAnalysers().get(methodInfo);
+        return methodAnalyser != null ? methodAnalyser.methodAnalysis : methodInfo.methodAnalysis.get();
+    }
 
-    @Override
-    public void check() {
+    private void detectErrors() {
         checkUnusedReturnValue();
+        checkUselessAssignments();
     }
-
-    @Override
-    public WithInspectionAndAnalysis getMember() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void initialize() {
-
-    }
-
-    @Override
-    public Analysis getAnalysis() {
-        return statementAnalysis;
-    }
-
 
     public void initialiseParametersAsVariables(List<ParameterAnalyser> parameterAnalysers) {
         // TODO

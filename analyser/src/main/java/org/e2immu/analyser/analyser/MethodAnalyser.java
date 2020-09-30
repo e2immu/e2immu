@@ -311,7 +311,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private ParameterAnalyser getParameterAnalyser(ParameterInfo info) {
+    ParameterAnalyser getParameterAnalyser(ParameterInfo info) {
         ParameterAnalyser parameterAnalyser = parameterAnalysers.get(info.index);
         assert parameterAnalyser.parameterInfo == info;
         return parameterAnalyser;

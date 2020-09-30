@@ -39,6 +39,11 @@ public class FlowData {
         return interruptsFlow.get().values().stream().reduce(Execution.NEVER, Execution::best);
     }
 
+    public InterruptsFlow bestAlwaysInterrupt() {
+        return interruptsFlow.get().entrySet().stream().filter(e -> e.getValue() == Execution.ALWAYS)
+                .map(Map.Entry::getKey).reduce(NO, InterruptsFlow::best);
+    }
+
     public enum Execution {
         ALWAYS(2), CONDITIONALLY(1), NEVER(0);
         final int level;
@@ -94,6 +99,7 @@ public class FlowData {
     public void analyse(StatementAnalyser statementAnalyser,
                         StatementAnalysis previousStatementAnalysis) {
         computeInterruptsFlow(statementAnalyser, previousStatementAnalysis);
+
     }
 
     private void computeInterruptsFlow(StatementAnalyser statementAnalyser, StatementAnalysis previousStatement) {
