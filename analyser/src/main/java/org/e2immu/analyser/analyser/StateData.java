@@ -18,6 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.AndValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -25,7 +26,10 @@ import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.Modified;
 
+import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class StateData {
 
@@ -62,9 +66,17 @@ public class StateData {
         return result;
     }
 
-    public void analyse() {
-    }
+    public void finalise(StatementAnalyser statementAnalyser, StatementAnalysis previous) {
+        if (!precondition.isSet()) {
+            Stream<Value> fromPrevious = Stream.of(previous == null ? UnknownValue.EMPTY : previous.stateData.precondition.get());
+            Stream<Value> fromBlocks = statementAnalyser.lastStatementsOfSubBlocks().stream()
+                    .map(sa -> sa.statementAnalysis.stateData.precondition.get());
 
+            Value reduced = Stream.concat(fromBlocks, fromPrevious)
+                    .reduce(UnknownValue.EMPTY, (v1, v2) -> new AndValue().append(v1, v2));
+            precondition.set(reduced);
+        }
+    }
 
     public static class RemoveVariableFromState implements StatementAnalysis.StateChange {
         private final Variable variable;

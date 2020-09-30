@@ -35,7 +35,6 @@ import org.e2immu.analyser.pattern.MatchResult;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.pattern.Replacement;
 import org.e2immu.analyser.pattern.Replacer;
-import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +48,6 @@ import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.AnalysisStatus.PROGRESS;
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
-import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
 
 @Container(builds = StatementAnalysis.class)
@@ -300,13 +298,21 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         // analyse data components
 
+        // state changes have been applied, StateData: condition, valueOfExpression
+
         // flow
         statementAnalysis.flowData.analyse(this, previousStatementAnalysis);
         StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
+
         InterruptsFlow bestAlways = statementAnalysis.flowData.bestAlwaysInterrupt();
         boolean escapes = bestAlways == InterruptsFlow.ESCAPE;
         if (escapes) {
-            notNullEscapes(builder);
+            boolean alwaysExecuted = statementAnalysis.flowData.guaranteedToBeReachedInMethod.get() == FlowData.Execution.ALWAYS;
+            if (alwaysExecuted) {
+                notNullEscapes(builder);
+                sizeEscapes(builder);
+                precondition(evaluationContext, statementAnalysis.stateData, previousStatementAnalysis);
+            }
         }
 
         // variable data
@@ -323,7 +329,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         statementAnalysis.errorFlags.analyse(statementAnalysis, previousStatementAnalysis);
 
         // state data
-        statementAnalysis.stateData.analyse();
+        statementAnalysis.stateData.finalise(this, previousStatementAnalysis);
 
         // check for some errors
         detectErrors();
@@ -344,17 +350,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     // whatever that has not been picked up by the notNull and the size escapes
     // + preconditions by calling other methods with preconditions!
 
-    private void precondition(EvaluationContext evaluationContext, StatementAnalyser parentStatement) {
-        EvaluationResult preconditionResult = conditionManager.escapeCondition(variableProperties);
+    private void precondition(EvaluationContext evaluationContext, StateData stateData, StatementAnalysis previous) {
+        EvaluationResult er = stateData.conditionManager.get().escapeCondition(evaluationContext);
+        Value precondition = er.value;
         if (precondition != UnknownValue.EMPTY) {
             boolean atLeastFieldOrParameterInvolved = precondition.variables().stream().anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
             if (atLeastFieldOrParameterInvolved) {
                 log(VARIABLE_PROPERTIES, "Escape with precondition {}", precondition);
 
-                // set the precondition on the top level statement
-                if (!parentStatement.precondition.isSet()) {
-                    parentStatement.precondition.set(precondition);
-                }
+                stateData.precondition.set(precondition);
+
                 if (!ignoreErrorsOnCondition) {
                     log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
                     ignoreErrorsOnCondition = true;
