@@ -19,6 +19,7 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.util.SetOnce;
@@ -171,6 +172,16 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
 
     public boolean atTopLevel() {
         return index.indexOf('.') == 0;
+    }
+
+    public int stepsUpToLoop() {
+        StatementAnalysis sa = this;
+        int steps = 0;
+        while (sa != null) {
+            if (statement instanceof LoopStatement) return steps;
+            sa = sa.parent;
+        }
+        return -1;
     }
 
     public interface StateChange extends Function<Value, Value> {

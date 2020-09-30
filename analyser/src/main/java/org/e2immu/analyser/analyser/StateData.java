@@ -40,32 +40,6 @@ public class StateData {
 
     public final SetOnce<Value> valueOfExpression = new SetOnce<>();
 
-
-    @Modified
-    public AnalysisStatus apply(EvaluationContext evaluationContext, EvaluationResult evaluationResult) {
-        AnalysisStatus result = AnalysisStatus.DONE;
-        if (evaluationResult.value != UnknownValue.NO_VALUE) {
-            valueOfExpression.set(evaluationResult.value);
-        } else {
-            result = AnalysisStatus.DELAYS;
-        }
-
-        // state changes get composed into one big operation, applied, and the result is set
-        // the condition is copied from the evaluation context
-        ConditionManager current = evaluationContext.getConditionManager();
-        Function<Value, Value> composite = evaluationResult.getStateChangeStream()
-                .reduce(v -> v, (f1, f2) -> v -> f2.apply(f1.apply(v)));
-        Value reducedState = composite.apply(current.state);
-        if (reducedState != UnknownValue.NO_VALUE) {
-            conditionManager.set(new ConditionManager(current.condition, reducedState));
-        } else {
-            result = AnalysisStatus.DELAYS;
-        }
-
-
-        return result;
-    }
-
     public void finalise(StatementAnalyser statementAnalyser, StatementAnalysis previous) {
         if (!precondition.isSet()) {
             Stream<Value> fromPrevious = Stream.of(previous == null ? UnknownValue.EMPTY : previous.stateData.precondition.get());

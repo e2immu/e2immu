@@ -93,7 +93,6 @@ public class MethodAnalyser extends AbstractAnalyser {
         } else {
             firstStatementAnalyser = StatementAnalyser.recursivelyCreateAnalysisObjects(analyserContext,
                     this, null, block.structure.statements, "", true);
-            firstStatementAnalyser.initialiseParametersAsVariables(parameterAnalysers);
         }
         methodAnalysis = new MethodAnalysis(methodInfo, myTypeAnalyser.typeAnalysis, parameterAnalyses, firstStatementAnalyser);
         this.isSAM = isSAM;

@@ -22,7 +22,7 @@ import org.e2immu.analyser.util.DependencyGraph;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.stream.Stream;
+import java.util.Set;
 
 public interface VariableData {
 
@@ -30,7 +30,7 @@ public interface VariableData {
 
     Iterable<VariableInfo> variableInfos();
 
-    Collection<Map.Entry<String, VariableInfo>> variables();
+    Set<Map.Entry<String, VariableInfoImpl.Builder>> variables();
 
     DependencyGraph<Variable> getDependencyGraph();
 }

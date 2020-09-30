@@ -114,6 +114,13 @@ public class VariableInfoImpl implements VariableInfo {
         return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 
+    @Override
+    public VariableInfoImpl.Builder localCopy() {
+        Builder builder = new Builder(variable, name, this, initialValue, currentValue, objectFlow, fieldReferenceState);
+        builder.properties.putAll(properties);
+        return builder;
+    }
+
     @Container(builds = VariableInfoImpl.class)
     public static class Builder implements VariableInfo {
         final Value initialValue;
@@ -141,6 +148,16 @@ public class VariableInfoImpl implements VariableInfo {
             this.objectFlow = Objects.requireNonNull(initialObjectFlow);
         }
 
+        public Builder(VariableInfo variableInfo) {
+            this(variableInfo.getVariable(),
+                    variableInfo.getName(),
+                    variableInfo.getLocalCopyOf(),
+                    variableInfo.getInitialValue(),
+                    variableInfo.getResetValue(),
+                    variableInfo.getObjectFlow(),
+                    variableInfo.getFieldReferenceState());
+        }
+
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder();
@@ -151,7 +168,7 @@ public class VariableInfoImpl implements VariableInfo {
             return sb.toString();
         }
 
-        Builder localCopy() {
+        public VariableInfoImpl.Builder localCopy() {
             Builder builder = new Builder(variable, name, this, initialValue, currentValue, objectFlow, fieldReferenceState);
             builder.properties.putAll(properties);
             return builder;

@@ -41,11 +41,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.analyser.AnalysisStatus.PROGRESS;
+import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
@@ -56,6 +56,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     public final StatementAnalysis statementAnalysis;
     private VariableDataImpl.Builder variableDataBuilder = new VariableDataImpl.Builder();
+    private ConditionManager localConditionManager;
 
     private final MethodAnalyser myMethodAnalyser;
 
@@ -262,12 +263,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                                              ForwardAnalysisInfo forwardAnalysisInfo) {
         String statementId = statementAnalysis.index;
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration);
+        boolean startOfNewBlock = previousStatementAnalysis == null;
+        variableDataBuilder.initialise(myMethodAnalyser.getParameterAnalysers(),
+                startOfNewBlock ? statementAnalysis.parent : previousStatementAnalysis, startOfNewBlock);
+        localConditionManager = startOfNewBlock ? (statementAnalysis.parent == null ?
+                new ConditionManager(UnknownValue.EMPTY, UnknownValue.EMPTY) :
+                statementAnalysis.parent.stateData.conditionManager.get()) : previousStatementAnalysis.stateData.conditionManager.get();
 
         if (statementAnalysis.flowData.computeGuaranteedToBeReached(previousStatementAnalysis, forwardAnalysisInfo.execution) &&
                 !statementAnalysis.inErrorState()) {
             messages.add(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
             statementAnalysis.errorFlags.errorValue.set(true);
         }
+
 
         analysisStatus = analyseSingleStatement3(evaluationContext).combine(wasReplacement ? PROGRESS : DONE);
 
@@ -339,8 +347,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     /*
     The main loop calls the apply method with the results of an evaluation.
      */
-    private void apply(EvaluationResult evaluationResult, StatementAnalysis previous) {
-        statementAnalysis.stateData.apply(evaluationResult, previous == null ? null : previous.stateData);
+    private void apply(EvaluationResult evaluationResult) {
+        if (evaluationResult.value == NO_VALUE) analysisStatus = DELAYS;
+
+        // state changes get composed into one big operation, applied, and the result is set
+        // the condition is copied from the evaluation context
+        Function<Value, Value> composite = evaluationResult.getStateChangeStream()
+                .reduce(v -> v, (f1, f2) -> v -> f2.apply(f1.apply(v)));
+        Value reducedState = composite.apply(localConditionManager.state);
+        localConditionManager = new ConditionManager(localConditionManager.condition, reducedState);
+
 
         // all modifications get applied
         evaluationResult.getModificationStream().forEach(statementAnalysis::apply);
@@ -404,168 +420,191 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
+    private LocalVariableReference step1_localVariableInForOrCatch(Structure structure, boolean assignedInLoop) {
+        LocalVariableReference lvr;
+        if (structure.localVariableCreation != null) {
+            lvr = new LocalVariableReference(structure.localVariableCreation,
+                    List.of());
+            variableDataBuilder.createLocalVariableOrParameter(lvr);
+            if (assignedInLoop)
+                variableDataBuilder.addProperty(lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+        } else {
+            lvr = null;
+        }
+        return lvr;
+    }
+
+
+    private void step2_localVariableCreation(EvaluationContext evaluationContext, Structure structure, boolean assignedInLoop) {
+        for (Expression initialiser : structure.initialisers) {
+            if (initialiser instanceof LocalVariableCreation) {
+                LocalVariableReference lvr = new LocalVariableReference(((LocalVariableCreation) initialiser).localVariable, List.of());
+                // the NO_VALUE here becomes the initial (and reset) value, which should not be a problem because variables
+                // introduced here should not become "reset" to an initial value; they'll always be assigned one
+                variableDataBuilder.createLocalVariableOrParameter(lvr);
+                if (assignedInLoop) {
+                    variableDataBuilder.addProperty(lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+                }
+            }
+            try {
+                EvaluationResult result = initialiser.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+                apply(result);
+
+                Value value = result.value;
+                // initialisers size 1 means expression as statement, local variable creation
+                if (structure.initialisers.size() == 1 && value != null && value != NO_VALUE &&
+                        !statementAnalysis.stateData.valueOfExpression.isSet()) {
+                    statementAnalysis.stateData.valueOfExpression.set(value);
+                }
+
+                // TODO move to a place where *every* assignment is verified (assignment-basics)
+                // are we in a loop (somewhere) assigning to a variable that already exists outside that loop?
+                if (initialiser instanceof Assignment && initialiser.assignmentTarget().isPresent()) {
+                    int levelLoop = statementAnalysis.stepsUpToLoop();
+                    if (levelLoop >= 0) {
+                        Variable assignmentTarget = initialiser.assignmentTarget().get();
+                        int levelAssignmentTarget = variableDataBuilder.levelVariable(assignmentTarget);
+                        if (levelAssignmentTarget >= levelLoop) {
+                            variableDataBuilder.addProperty(assignmentTarget, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+                        }
+                    }
+                }
+            } catch (RuntimeException rte) {
+                LOGGER.warn("Failed to evaluate initialiser expression in statement {}", statementAnalysis.index);
+                throw rte;
+            }
+        }
+    }
+
+    private void step3_updaters(EvaluationContext evaluationContext, Structure structure) {
+        for (Expression updater : structure.updaters) {
+            EvaluationResult result = updater.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+            apply(result);
+        }
+    }
+
+    private Value step4_evaluationOfMainExpression(EvaluationContext evaluationContext, Structure structure) {
+        if (structure.expression == EmptyExpression.EMPTY_EXPRESSION) {
+            return null;
+        }
+        try {
+            EvaluationResult result = structure.expression.evaluate(evaluationContext, structure.forwardEvaluationInfo);
+            apply(result);
+            // the evaluation system should be pretty good at always returning NO_VALUE when a NO_VALUE has been encountered
+            Value value = result.value;
+
+            if (value != NO_VALUE && !statementAnalysis.stateData.valueOfExpression.isSet()) {
+                statementAnalysis.stateData.valueOfExpression.set(value);
+            }
+
+
+            return value;
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Failed to evaluate expression in statement {}", statementAnalysis.index);
+            throw rte;
+        }
+    }
+
+    private void step5_forEachNotNullCheck(Value value, LocalVariableReference localVariableReference) {
+        if (statementAnalysis.statement instanceof ForEachStatement && value != null) {
+            ArrayValue arrayValue;
+            if (((arrayValue = value.asInstanceOf(ArrayValue.class)) != null) &&
+                    arrayValue.values.stream().allMatch(v -> localConditionManager.notNull(v) >= MultiLevel.EFFECTIVELY_NOT_NULL)) {
+                variableDataBuilder.addProperty(localVariableReference, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+            }
+        }
+    }
+
+    private void step6_return(Value value, EvaluationContext evaluationContext) {
+        if (!(statementAnalysis.statement instanceof ReturnStatement) || myMethodAnalyser.methodInfo.isVoid()
+                || myMethodAnalyser.methodInfo.isConstructor) {
+            return;
+        }
+        String statementId = statementAnalysis.index;
+        TransferValue transferValue;
+        if (statementAnalysis.methodLevelData.returnStatementSummaries.isSet(statementId)) {
+            transferValue = statementAnalysis.methodLevelData.returnStatementSummaries.get(statementId);
+        } else {
+            transferValue = new TransferValue();
+            statementAnalysis.methodLevelData.returnStatementSummaries.put(statementId, transferValue);
+            int fluent = (((ReturnStatement) statementAnalysis.statement).fluent());
+            transferValue.properties.put(VariableProperty.FLUENT, fluent);
+        }
+        if (value == NO_VALUE) return;
+        if (value == null) {
+            if (!transferValue.linkedVariables.isSet()) {
+                transferValue.linkedVariables.set(Set.of());
+            }
+            if (!transferValue.value.isSet()) transferValue.value.set(NO_VALUE);
+            return;
+        }
+
+        Set<Variable> vars = value.linkedVariables(evaluationContext);
+        if (vars == null) {
+            log(DELAYED, "Linked variables is delayed on transfer");
+            analysisStatus = DELAYS;
+        } else if (!transferValue.linkedVariables.isSet()) {
+            transferValue.linkedVariables.set(vars);
+        }
+        if (!transferValue.value.isSet()) {
+            VariableValue variableValue;
+            if ((variableValue = value.asInstanceOf(VariableValue.class)) != null) {
+                // we pass on both value and variableValue, as the latter may be wrapped in a
+                // PropertyValue
+                transferValue.value.set(new VariableValue(value, variableValue, variableProperties, value.getObjectFlow()));
+            } else {
+                transferValue.value.set(value);
+            }
+        }
+        for (VariableProperty variableProperty : VariableProperty.INTO_RETURN_VALUE_SUMMARY) {
+            int v = variableProperties.getProperty(value, variableProperty);
+            if (variableProperty == VariableProperty.IDENTITY && v == Level.DELAY) {
+                int methodDelay = variableProperties.getProperty(value, VariableProperty.METHOD_DELAY);
+                if (methodDelay != Level.TRUE) {
+                    v = Level.FALSE;
+                }
+            }
+            int current = transferValue.getProperty(variableProperty);
+            if (v > current) {
+                transferValue.properties.put(variableProperty, v);
+            }
+        }
+        int immutable = variableProperties.getProperty(value, VariableProperty.IMMUTABLE);
+        if (immutable == Level.DELAY) immutable = MultiLevel.MUTABLE;
+        int current = transferValue.getProperty(VariableProperty.IMMUTABLE);
+        if (immutable > current) {
+            transferValue.properties.put(VariableProperty.IMMUTABLE, immutable);
+        }
+    }
 
     private AnalysisStatus analyseSingleStatement3(EvaluationContext evaluationContext) {
         boolean changes = false;
 
         Structure structure = statementAnalysis.statement.getStructure();
 
-
-        // PART 1: filling of of the variable properties: parameters of statement "forEach" (duplicated further in PART 10
-        // but then for variables in catch clauses)
-
+        // STEP 1: Create a local variable x for(X x: Xs) {...}, or in catch(Exception e)
         boolean assignedInLoop = statementAnalysis.statement instanceof LoopStatement;
-        LocalVariableReference theLocalVariableReference;
-        if (structure.localVariableCreation != null) {
-            theLocalVariableReference = new LocalVariableReference(structure.localVariableCreation,
-                    List.of());
-            statementAnalysis.variableData.createLocalVariableOrParameter(theLocalVariableReference);
-            if (assignedInLoop)
-                statementAnalysis.variableData.addProperty(theLocalVariableReference, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
-        } else {
-            theLocalVariableReference = null;
-        }
+        LocalVariableReference theLocalVariableReference = step1_localVariableInForOrCatch(structure, assignedInLoop);
 
-        // PART 2: more filling up of the variable properties: local variables in try-resources, for-loop, expression as statement
-        // (normal local variables)
 
-        for (Expression initialiser : structure.initialisers) {
-            if (initialiser instanceof LocalVariableCreation) {
-                LocalVariableReference lvr = new LocalVariableReference(((LocalVariableCreation) initialiser).localVariable, List.of());
-                // the NO_VALUE here becomes the initial (and reset) value, which should not be a problem because variables
-                // introduced here should not become "reset" to an initial value; they'll always be assigned one
-                statementAnalysis.variableData.createLocalVariableOrParameter(lvr);
-                if (assignedInLoop) {
-                    statementAnalysis.variableData.addProperty(lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
-                }
-            }
-            try {
-                EvaluationResult result = initialiser.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-                if (result.changes) changes = true;
+        // STEP 2: More local variables in try-resources, for-loop, expression as statement (normal local variables)
+        step2_localVariableCreation(evaluationContext, structure, assignedInLoop);
 
-                Value value = result.value;
-                if (structure.initialisers.size() == 1 && value != null && value != NO_VALUE &&
-                        !statementAnalysis.stateData.valueOfExpression.isSet()) {
-                    statementAnalysis.stateData.valueOfExpression.set(value);
-                }
-            } catch (RuntimeException rte) {
-                LOGGER.warn("Failed to evaluate initialiser expression in statement {}", statement);
-                throw rte;
-            }
-        }
 
-        if (statementAnalysis.statement instanceof LoopStatement) {
-            if (!statementAnalysis.variableData.existingVariablesAssignedInLoop.isSet()) {
-                Set<Variable> set = computeExistingVariablesAssignedInLoop(statement.statement, variableProperties);
-                log(ASSIGNMENT, "Computed which existing variables are being assigned to in the loop {}: {}", statement.index,
-                        Variable.detailedString(set));
-                statement.existingVariablesAssignedInLoop.set(set);
-            }
-            statement.existingVariablesAssignedInLoop.get().forEach(variable ->
-                    variableProperties.addPropertyAlsoRecords(variable, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE));
-        }
-
-        // PART 12: finally there are the updaters
-        // used in for-statement, and the parameters of an explicit constructor invocation this(...)
-
+        // STEP 3: updaters (only in the classic for statement, and the parameters of an explicit constructor invocation this(...)
         // for now, we put these BEFORE the main evaluation + the main block. One of the two should read the value that is being updated
-        for (Expression updater : structure.updaters) {
-            EvaluationResult result = updater.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-            if (result.changes) changes = true;
-        }
+        step3_updaters(evaluationContext, structure);
 
-        // PART 4: evaluation of the core expression of the statement (if the statement has such a thing)
 
-        final Value value;
-        if (structure.expression == EmptyExpression.EMPTY_EXPRESSION) {
-            value = null;
-        } else {
-            try {
-                EvaluationResult result = structure.expression.evaluate(evaluationContext, structure.forwardEvaluationInfo);
-                if (result.changes) changes = true;
-                value = result.encounteredUnevaluatedVariables ? NO_VALUE : result.value;
-                if (result.encounteredUnevaluatedVariables) {
-                    variableProperties.setDelayedEvaluation(true);
-                }
-            } catch (RuntimeException rte) {
-                LOGGER.warn("Failed to evaluate expression in statement {}", statement);
-                throw rte;
-            }
-        }
-        log(VARIABLE_PROPERTIES, "After eval expression: statement {}: {}", statementAnalysis.index, variableProperties);
+        // STEP 4: evaluation of the main expression of the statement (if the statement has such a thing)
+        final Value value = step4_evaluationOfMainExpression(evaluationContext, structure);
 
-        if (value != null && value != NO_VALUE && !statementAnalysis.stateData.valueOfExpression.isSet()) {
-            statementAnalysis.stateData.valueOfExpression.set(value);
-        }
+        // STEP 5: not-null check on forEach (see step 1)
+        step5_forEachNotNullCheck(value, theLocalVariableReference);
 
-        if (statementAnalysis.statement instanceof ForEachStatement && value != null) {
-            ArrayValue arrayValue;
-            if (((arrayValue = value.asInstanceOf(ArrayValue.class)) != null) &&
-                    arrayValue.values.stream().allMatch(variableProperties::isNotNull0)) {
-                statementAnalysis.variableData.addProperty(theLocalVariableReference, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-            }
-        }
 
-        // PART 5: checks for ReturnStatement
-
-        if (statementAnalysis.statement instanceof ReturnStatement && !myMethodAnalyser.methodInfo.isVoid()
-                && !myMethodAnalyser.methodInfo.isConstructor) {
-            String statementId = statementAnalysis.index;
-            TransferValue transferValue;
-            if (statementAnalysis.methodLevelData.returnStatementSummaries.isSet(statementId)) {
-                transferValue = statementAnalysis.methodLevelData.returnStatementSummaries.get(statementId);
-            } else {
-                transferValue = new TransferValue();
-                statementAnalysis.methodLevelData.returnStatementSummaries.put(statementId, transferValue);
-                int fluent = (((ReturnStatement) statementAnalysis.statement).fluent());
-                transferValue.properties.put(VariableProperty.FLUENT, fluent);
-            }
-            if (value == null) {
-                if (!transferValue.linkedVariables.isSet())
-                    transferValue.linkedVariables.set(Set.of());
-                if (!transferValue.value.isSet()) transferValue.value.set(NO_VALUE);
-            } else if (value != NO_VALUE) {
-                Set<Variable> vars = value.linkedVariables(variableProperties);
-                if (vars == null) {
-                    log(DELAYED, "Linked variables is delayed on transfer");
-                } else if (!transferValue.linkedVariables.isSet()) {
-                    transferValue.linkedVariables.set(vars);
-                }
-                if (!transferValue.value.isSet()) {
-                    VariableValue variableValue;
-                    if ((variableValue = value.asInstanceOf(VariableValue.class)) != null) {
-                        // we pass on both value and variableValue, as the latter may be wrapped in a
-                        // PropertyValue
-                        transferValue.value.set(new VariableValue(value, variableValue, variableProperties, value.getObjectFlow()));
-                    } else {
-                        transferValue.value.set(value);
-                    }
-                }
-                for (VariableProperty variableProperty : VariableProperty.INTO_RETURN_VALUE_SUMMARY) {
-                    int v = variableProperties.getProperty(value, variableProperty);
-                    if (variableProperty == VariableProperty.IDENTITY && v == Level.DELAY) {
-                        int methodDelay = variableProperties.getProperty(value, VariableProperty.METHOD_DELAY);
-                        if (methodDelay != Level.TRUE) {
-                            v = Level.FALSE;
-                        }
-                    }
-                    int current = transferValue.getProperty(variableProperty);
-                    if (v > current) {
-                        transferValue.properties.put(variableProperty, v);
-                    }
-                }
-                int immutable = variableProperties.getProperty(value, VariableProperty.IMMUTABLE);
-                if (immutable == Level.DELAY) immutable = MultiLevel.MUTABLE;
-                int current = transferValue.getProperty(VariableProperty.IMMUTABLE);
-                if (immutable > current) {
-                    transferValue.properties.put(VariableProperty.IMMUTABLE, immutable);
-                }
-
-            } else {
-                log(VARIABLE_PROPERTIES, "NO_VALUE for return statement in {} {} -- delaying",
-                        evaluationContext.logLocation());
-            }
-        }
+        // STEP 6: ReturnStatement, prepare parts of method level data
+        step6_return(value);
 
         // PART 6: checks for IfElse
 
@@ -730,7 +769,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 !structure.subStatements.isEmpty();
     }
 
-    private Set<Variable> computeExistingVariablesAssignedInLoop(Statement statement, VariableProperties variableProperties) {
+    private Set<Variable> computeExistingVariablesAssignedInLoop(Statement statement, VariableProperties
+            variableProperties) {
         return statement.collect(Assignment.class).stream()
                 .flatMap(a -> a.assignmentTarget().stream())
                 .filter(variableProperties::isKnown)
@@ -823,10 +863,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private void detectErrors() {
         checkUnusedReturnValue();
         checkUselessAssignments();
-    }
-
-    public void initialiseParametersAsVariables(List<ParameterAnalyser> parameterAnalysers) {
-        // TODO
     }
 
     public List<StatementAnalyser> lastStatementsOfSubBlocks() {

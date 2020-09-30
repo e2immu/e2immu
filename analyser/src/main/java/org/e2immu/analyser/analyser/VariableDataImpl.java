@@ -27,7 +27,9 @@ import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.analyser.VariableInfo.FieldReferenceState.SINGLE_COPY;
 import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -58,48 +60,61 @@ public class VariableDataImpl implements VariableData {
     }
 
     @Override
-    public Collection<Map.Entry<String, VariableInfo>> variables() {
+    public Set<Map.Entry<String, VariableInfoImpl.Builder>> variables() {
         return variables.entrySet();
     }
 
     @Container(builds = VariableDataImpl.class)
-    public static class Builder implements VariableData {
+    public static class Builder {
 
-        private final Map<String, VariableInfo> variables = new HashMap<>();
+        private final Map<String, VariableInfoImpl.Builder> variables = new HashMap<>();
         private final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
         private boolean delaysInDependencyGraph;
 
-        @Override
-        public Collection<Map.Entry<String, VariableInfo>> variables() {
+
+        public Set<Map.Entry<String, VariableInfoImpl.Builder>> variables() {
             return variables.entrySet();
         }
 
-        @Override
+
         public DependencyGraph<Variable> getDependencyGraph() {
             return dependencyGraph;
         }
 
-        @Override
-        public Iterable<VariableInfo> variableInfos() {
+        public Collection<VariableInfoImpl.Builder> variableInfos() {
             return variables.values();
         }
 
 
-        public void createLocalVariableOrParameter(LocalVariableReference theLocalVariableReference) {
+        public void createLocalVariableOrParameter(Variable variable) {
+            if (variable instanceof LocalVariableReference || variable instanceof ParameterInfo || variable instanceof DependentVariable) {
+                internalCreate(variable, variable.name(), UnknownValue.NO_VALUE, UnknownValue.NO_VALUE, SINGLE_COPY);
+            } else {
+                throw new UnsupportedOperationException("Not allowed to add This or FieldReference using this method");
+            }
+        }
+
+        private void internalCreate(Variable variable,
+                                    String name,
+                                    Value initialValue,
+                                    Value resetValue,
+                                    VariableInfo.FieldReferenceState fieldReferenceState) {
+
         }
 
         public void addProperty(Variable variable, VariableProperty variableProperty, int value) {
+            VariableInfoImpl.Builder variableInfo = findComplain(variable);
+            variableInfo.setProperty(variableProperty, value);
         }
 
-
-        public boolean isLocalVariable(VariableInfo aboutVariable) {
-            if (aboutVariable.isLocalVariableReference()) return true;
-            if (aboutVariable.isLocalCopy() && aboutVariable.localCopyOf.isLocalVariableReference())
+        public boolean isLocalVariable(VariableInfo variableInfo) {
+            if (variableInfo.isLocalVariableReference()) return true;
+            if (variableInfo.isLocalCopy() && variableInfo.getLocalCopyOf().isLocalVariableReference())
                 return true;
-            if (aboutVariable.variable instanceof DependentVariable) {
-                DependentVariable dependentVariable = (DependentVariable) aboutVariable.variable;
+            if (variableInfo.getVariable() instanceof DependentVariable) {
+                DependentVariable dependentVariable = (DependentVariable) variableInfo.getVariable();
                 if (dependentVariable.arrayName != null) {
-                    AboutVariable avArray = find(dependentVariable.arrayName);
+                    VariableInfo avArray = find(dependentVariable.arrayName);
                     return avArray != null && isLocalVariable(avArray);
                 }
             }
@@ -131,9 +146,9 @@ public class VariableDataImpl implements VariableData {
         }
 
 
-        public OldAboutVariable ensureFieldReference(FieldReference fieldReference) {
+        public VariableInfo ensureFieldReference(FieldReference fieldReference) {
             String name = variableName(fieldReference);
-            OldAboutVariable av = find(name);
+            VariableInfoImpl.Builder av = find(name);
             if (find(name) != null) return;
             Value resetValue;
             StatementAnalysis.FieldReferenceState fieldReferenceState = singleCopy(fieldReference);
@@ -170,7 +185,7 @@ public class VariableDataImpl implements VariableData {
         }
 
         private VariableInfoImpl.Builder findComplain(@NotNull Variable variable) {
-            AboutVariable aboutVariable = find(variable);
+            VariableInfo aboutVariable = find(variable);
             if (aboutVariable != null) {
                 return aboutVariable;
             }
@@ -194,27 +209,52 @@ public class VariableDataImpl implements VariableData {
         }
 
         private VariableInfoImpl.Builder find(String name) {
-            StatementAnalysis level = this;
-            while (level != null) {
-                AboutVariable aboutVariable = level.variables.get(name);
-                if (aboutVariable != null) return aboutVariable;
-                level = level.parent;
-            }
-            return null;
+            return variables.get(name);
         }
 
-        @Override
+
         public boolean isDelaysInDependencyGraph() {
             return delaysInDependencyGraph;
         }
 
         public VariableDataImpl build() {
-            return new VariableDataImpl(variables, dependencyGraph);
+            return new VariableDataImpl(variables.entrySet().stream().
+                    collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().build())), dependencyGraph);
         }
 
 
         public void removeAllVariables(List<String> toRemove) {
             variables.keySet().removeAll(toRemove);
+        }
+
+        public void initialise(Collection<ParameterAnalyser> parameterAnalysers, StatementAnalysis statementAnalysis, boolean startOfNewBlock) {
+            if (statementAnalysis == null) {
+                for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
+                    LocalVariableReference lvr = new LocalVariableReference(new LocalVariable(List.of(),
+                            parameterAnalyser.parameterInfo.name, parameterAnalyser.parameterInfo.parameterizedType(), List.of()), List.of());
+                    createLocalVariableOrParameter(lvr);
+                }
+                return;
+            }
+            for (VariableInfo variableInfo : statementAnalysis.variableData.get().variableInfos()) {
+                if (startOfNewBlock) {
+                    VariableInfoImpl.Builder localCopy = variableInfo.localCopy();
+                    variables.put(localCopy.getName(), localCopy);
+                } else {
+                    variables.put(variableInfo.getName(), new VariableInfoImpl.Builder(variableInfo));
+                }
+            }
+        }
+
+        public int levelVariable(Variable assignmentTarget) {
+            VariableInfo variableInfo = find(assignmentTarget);
+            if (variableInfo.getVariable() instanceof FieldReference) return Integer.MAX_VALUE;
+            int steps = 0;
+            while (variableInfo != null) {
+                if (variableInfo.isNotLocalCopy()) return steps;
+                variableInfo = variableInfo.getLocalCopyOf();
+            }
+            return -1;
         }
     }
 }

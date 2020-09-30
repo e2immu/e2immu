@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.LocalVariableReference;
 import org.e2immu.analyser.model.Value;
@@ -27,6 +26,8 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import java.util.Map;
 
 public interface VariableInfo {
+
+    VariableInfoImpl.Builder localCopy();
 
     enum FieldReferenceState {
         EFFECTIVELY_FINAL_DELAYED,
