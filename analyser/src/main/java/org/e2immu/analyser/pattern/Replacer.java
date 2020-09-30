@@ -29,6 +29,8 @@ import java.util.function.BiFunction;
 @UtilityClass
 public class Replacer {
 
+    // TODO this class writes into statement analyser objects; should somehow be integrated with it.
+
     public static <T extends HasNavigationData<T>> void replace(EvaluationContext evaluationContext, MatchResult<T> matchResult, Replacement replacement) {
         if (!matchResult.pattern.equals(replacement.pattern)) throw new UnsupportedOperationException("Double check");
 

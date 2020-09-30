@@ -19,6 +19,9 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
+import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.Modified;
 
@@ -32,6 +35,7 @@ public class StateData {
     public final SetOnce<ConditionManager> conditionManager = new SetOnce<>(); // the state as it is after evaluating the statement
 
     public final SetOnce<Value> valueOfExpression = new SetOnce<>();
+
 
     @Modified
     public AnalysisStatus apply(EvaluationContext evaluationContext, EvaluationResult evaluationResult) {
@@ -57,6 +61,10 @@ public class StateData {
 
         return result;
     }
+
+    public void analyse() {
+    }
+
 
     public static class RemoveVariableFromState implements StatementAnalysis.StateChange {
         private final Variable variable;

@@ -123,7 +123,7 @@ public class ConditionManager {
     public boolean isNotNull(Variable variable) {
         if (state == UnknownValue.EMPTY || isDelayed(state)) return false;
 
-        VariableValue vv = new VariableValue(variable);
+        VariableValue vv = new VariableValue(variable, variable.name(), Map.of(), Set.of(), ObjectFlow.NO_FLOW, false);
         return MultiLevel.isEffectivelyNotNull(notNull(vv));
     }
 
@@ -182,18 +182,18 @@ public class ConditionManager {
     }
 
     private static Value.FilterResult removeVariableFilter(Variable variable, Value value, boolean removeEqualityOnVariable) {
-        ValueWithVariable valueWithVariable;
-        if ((valueWithVariable = value.asInstanceOf(ValueWithVariable.class)) != null && variable.equals(valueWithVariable.variable)) {
+        VariableValue variableValue;
+        if ((variableValue = value.asInstanceOf(VariableValue.class)) != null && variable.equals(variableValue.variable)) {
             return new Value.FilterResult(Map.of(variable, value), UnknownValue.EMPTY);
         }
         EqualsValue equalsValue;
         if (removeEqualityOnVariable && (equalsValue = value.asInstanceOf(EqualsValue.class)) != null) {
-            ValueWithVariable lhs;
-            if ((lhs = equalsValue.lhs.asInstanceOf(ValueWithVariable.class)) != null && variable.equals(lhs.variable)) {
+            VariableValue lhs;
+            if ((lhs = equalsValue.lhs.asInstanceOf(VariableValue.class)) != null && variable.equals(lhs.variable)) {
                 return new Value.FilterResult(Map.of(lhs.variable, value), UnknownValue.EMPTY);
             }
-            ValueWithVariable rhs;
-            if ((rhs = equalsValue.rhs.asInstanceOf(ValueWithVariable.class)) != null && variable.equals(rhs.variable)) {
+            VariableValue rhs;
+            if ((rhs = equalsValue.rhs.asInstanceOf(VariableValue.class)) != null && variable.equals(rhs.variable)) {
                 return new Value.FilterResult(Map.of(rhs.variable, value), UnknownValue.EMPTY);
             }
         }
@@ -238,7 +238,9 @@ public class ConditionManager {
             if ((variableValue = v.asInstanceOf(VariableValue.class)) != null) {
                 // null evalContext -> do not copy properties (the condition+state may hold a not null, which can
                 // be copied in the property, which can reEvaluate later to constant true/false
-                translation.put(v, new VariableValue(v, variableValue, null, v.getObjectFlow()));
+                Variable variable = variableValue.variable;
+                // TODO why do we make a fresh copy?
+                translation.put(v, new VariableValue(variable, variable.name(), Map.of(), Set.of(), v.getObjectFlow(), false));
             }
         });
 

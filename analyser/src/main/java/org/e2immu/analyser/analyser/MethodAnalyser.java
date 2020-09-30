@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -99,8 +100,16 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         List<AnalysisStatus.AnalysisResultSupplier> allSuppliers;
         if (firstStatementAnalyser != null) {
+
+            AnalysisStatus.AnalysisResultSupplier statementAnalyser = (iteration) -> {
+                StatementAnalyserResult result = firstStatementAnalyser.analyse(iteration, ForwardAnalysisInfo.START_OF_METHOD);
+                // apply all modifications
+                result.getModifications().forEach(Runnable::run);
+                return result.analysisStatus;
+            };
+
             List<AnalysisStatus.AnalysisResultSupplier> suppliers = List.of(
-                    firstStatementAnalyser::analyse,
+                    statementAnalyser,
                     (iteration) -> obtainMostCompletePrecondition(),
                     (iteration) -> makeInternalObjectFlowsPermanent(),
                     (iteration) -> methodInfo.isConstructor ? DONE : propertiesOfReturnStatements(),

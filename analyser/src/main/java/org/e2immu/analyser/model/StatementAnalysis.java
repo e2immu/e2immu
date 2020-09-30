@@ -41,6 +41,7 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
     public final SetOnce<VariableDataImpl> variableData = new SetOnce<VariableDataImpl>();
     public final MethodLevelData methodLevelData = new MethodLevelData();
     public final StateData stateData = new StateData();
+    public final FlowData flowData = new FlowData();
 
     public final SetOnce<Boolean> done = new SetOnce<>(); // if not done, there have been delays
 
@@ -166,6 +167,10 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
             previous.navigationData.next.set(Optional.empty());
         }
         return first;
+    }
+
+    public boolean atTopLevel() {
+        return index.indexOf('.') == 0;
     }
 
     public interface StateChange extends Function<Value, Value> {

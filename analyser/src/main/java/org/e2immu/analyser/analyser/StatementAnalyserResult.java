@@ -38,6 +38,13 @@ public class StatementAnalyserResult {
 
     public static class Builder {
         private List<Analysis.Modification> modifications;
+        private AnalysisStatus analysisStatus;
+
+        public Builder add(StatementAnalyserResult other) {
+            other.modifications.forEach(modifications::add);
+            analysisStatus = analysisStatus == null ? other.analysisStatus: analysisStatus.combine(other.analysisStatus);
+            return this;
+        }
 
         public Builder add(Analysis.Modification modification) {
             if (modifications == null) {
@@ -47,7 +54,13 @@ public class StatementAnalyserResult {
             return this;
         }
 
-        public StatementAnalyserResult build(AnalysisStatus analysisStatus) {
+        public Builder setAnalysisStatus(AnalysisStatus analysisStatus) {
+            this.analysisStatus = analysisStatus;
+            return this;
+        }
+
+        public StatementAnalyserResult build() {
+            assert analysisStatus != null;
             return new StatementAnalyserResult(analysisStatus, modifications == null ? Stream.empty() : modifications.stream());
         }
     }

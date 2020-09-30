@@ -63,7 +63,7 @@ public class MethodLevelData {
 
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
 
-    public StatementAnalyserResult finalise(EvaluationContext evaluationContext, VariableData variableData,
+    public StatementAnalyserResult analyse(EvaluationContext evaluationContext, VariableData variableData,
                                             MethodLevelData previous, StateData stateData) {
         MethodInfo methodInfo = evaluationContext.getCurrentMethod().methodInfo;
         String logLocation = methodInfo.distinguishingName();
@@ -77,6 +77,7 @@ public class MethodLevelData {
                     .combine(copyFieldAssignmentValue(variableData))
 
                     // SIZE, NOT_NULL into fieldSummaries
+                    // builder contains changes to parameter analysis properties
                     .combine(copyContextProperties(evaluationContext, variableData, builder))
 
                     // this method computes, unless delayed, the values for
@@ -88,8 +89,8 @@ public class MethodLevelData {
                     .combine(computeContentModifications(evaluationContext, variableData, builder, logLocation)
                             .combine(combinePrecondition(previous, stateData))
                     );
-
-            return builder.build(analysisStatus);
+            builder.setAnalysisStatus(analysisStatus);
+            return builder.build();
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in linking computation, method {}", logLocation);
             throw rte;
@@ -210,7 +211,9 @@ public class MethodLevelData {
     }
 
     // only needs to be run on the last statement; not that relevant on others
-    private AnalysisStatus updateVariablesLinkedToMethodResult(EvaluationContext evaluationContext, StatementAnalyserResult.Builder builder, String logLocation) {
+    private AnalysisStatus updateVariablesLinkedToMethodResult(EvaluationContext evaluationContext,
+                                                               StatementAnalyserResult.Builder builder,
+                                                               String logLocation) {
 
         if (variablesLinkedToMethodResult.isSet()) return DONE;
 

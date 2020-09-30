@@ -131,4 +131,6 @@ public enum VariableProperty {
 
     public static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(SIZE, NOT_NULL, MODIFIED);
 
+    public static final VariableProperty[] PARAMETER_PROPERTIES = {MODIFIED, NOT_NULL, SIZE, NOT_MODIFIED_1};
+
 }

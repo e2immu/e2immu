@@ -22,16 +22,13 @@ import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.abstractvalue.ValueWithVariable;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Pair;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class EvaluateParameters {
 
@@ -121,13 +118,13 @@ public class EvaluateParameters {
             i++;
         }
 
-        ValueWithVariable scopeVariable;
+        VariableValue scopeVariable;
         if (minNotNullOverParameters == MultiLevel.EFFECTIVELY_NOT_NULL &&
                 i > 0 &&
                 methodInfo != null &&
                 scopeObject != null &&
                 methodInfo.typeInfo.isFunctionalInterface() &&
-                (scopeVariable = scopeObject.asInstanceOf(ValueWithVariable.class)) != null) {
+                (scopeVariable = scopeObject.asInstanceOf(VariableValue.class)) != null) {
             builder.addPropertyRestriction(scopeVariable.variable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL);
         }
 
@@ -177,7 +174,13 @@ public class EvaluateParameters {
         int i = 0;
         for (Value parameterValue : parameters) {
             ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(i);
-            Value vv = new VariableValue(parameterInfo);
+            Map<VariableProperty, Integer> properties = new HashMap<>();
+            for (VariableProperty variableProperty : VariableProperty.PARAMETER_PROPERTIES) {
+                properties.put(variableProperty, parameterValue.getProperty(evaluationContext, variableProperty));
+            }
+            Set<Variable> linkedVariables = parameterValue.linkedVariables(evaluationContext);
+            ObjectFlow objectFlow = parameterValue.getObjectFlow();
+            Value vv = new VariableValue(parameterInfo, parameterInfo.name, properties, linkedVariables, objectFlow, false);
             builder.put(vv, parameterValue);
             i++;
         }

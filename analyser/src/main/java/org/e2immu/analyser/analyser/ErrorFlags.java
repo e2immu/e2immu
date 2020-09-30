@@ -34,21 +34,16 @@ public class ErrorFlags {
     public final SetOnceMap<FieldInfo, Boolean> errorAssigningToFieldOutsideType = new SetOnceMap<>();
     public final SetOnceMap<MethodInfo, Boolean> errorCallingModifyingMethodOutsideType = new SetOnceMap<>();
 
-    public void finalise(ErrorFlags parent) {
-        parameterAssignments.putAll(parent.parameterAssignments);
-        unusedLocalVariables.putAll(parent.unusedLocalVariables);
-        uselessAssignments.putAll(parent.uselessAssignments);
-        errorAssigningToFieldOutsideType.putAll(parent.errorAssigningToFieldOutsideType);
-        errorCallingModifyingMethodOutsideType.putAll(errorCallingModifyingMethodOutsideType);
+    public void analyse(StatementAnalysis statementAnalysis, StatementAnalysis previousStatementAnalysis) {
+        if (previousStatementAnalysis != null) copy(previousStatementAnalysis.errorFlags, true);
+        statementAnalysis.navigationData.blocks.get().forEach(sub -> copy(sub.errorFlags, false));
     }
 
-    public void lift(ErrorFlags lastStatementSubBlock) {
-        parameterAssignments.putAll(lastStatementSubBlock.parameterAssignments, false);
-        unusedLocalVariables.putAll(lastStatementSubBlock.unusedLocalVariables, false);
-        uselessAssignments.putAll(lastStatementSubBlock.uselessAssignments, false);
-        errorAssigningToFieldOutsideType.putAll(lastStatementSubBlock.errorAssigningToFieldOutsideType, false);
-        errorCallingModifyingMethodOutsideType.putAll(errorCallingModifyingMethodOutsideType, false);
+    private void copy(ErrorFlags other, boolean complainWhenAlreadySet) {
+        parameterAssignments.putAll(other.parameterAssignments, complainWhenAlreadySet);
+        unusedLocalVariables.putAll(other.unusedLocalVariables, complainWhenAlreadySet);
+        uselessAssignments.putAll(other.uselessAssignments, complainWhenAlreadySet);
+        errorAssigningToFieldOutsideType.putAll(other.errorAssigningToFieldOutsideType, complainWhenAlreadySet);
+        errorCallingModifyingMethodOutsideType.putAll(errorCallingModifyingMethodOutsideType, complainWhenAlreadySet);
     }
-
-
 }
