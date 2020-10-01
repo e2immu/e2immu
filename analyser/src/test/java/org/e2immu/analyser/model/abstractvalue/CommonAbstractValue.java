@@ -133,17 +133,11 @@ public abstract class CommonAbstractValue {
 
     static final Variable vi = createVariable("i");
     static final Variable vj = createVariable("j");
-    static final Variable vk = createVariable("k");
     static final VariableValue i = new VariableValue(vi);
-    static final Value iPropertyWrapper = PropertyWrapper.propertyWrapper(new VariableValue(vi),
-            Map.of(), ObjectFlow.NO_FLOW);
     static final VariableValue j = new VariableValue(vj);
-    static final VariableValue k = new VariableValue(vk);
 
     static final Variable vs = createVariable("s");
-    static final Variable vt = createVariable("t");
     static final VariableValue s = new VariableValue(vs);
-    static final VariableValue t = new VariableValue(vt);
 
     static final Variable vp = createParameter("p");
     static final VariableValue p = new VariableValue(vp);
