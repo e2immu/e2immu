@@ -18,7 +18,9 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -53,6 +55,10 @@ public class TestBooleanAndComparison extends CommonAbstractValue {
         GreaterThanZeroValue jGe0 = (GreaterThanZeroValue) GreaterThanZeroValue.greater(j, new IntValue(0), false);
 
         GreaterThanZeroValue iPropWrapLt0 = (GreaterThanZeroValue) GreaterThanZeroValue.less(iPropertyWrapper, new IntValue(0), true);
+        Assert.assertEquals("(-i,) >= 0", iPropWrapLt0.toString());
+        Assert.assertEquals(BoolValue.TRUE, equals(iPropertyWrapper, iPropertyWrapper));
+        Assert.assertEquals(iPropWrapLt0, new AndValue().append(iPropWrapLt0, iPropWrapLt0));
+        Assert.assertEquals(iPropWrapLt0, new AndValue().append(iLt0, iPropWrapLt0));
 
         Value and1 = new AndValue().append(iLt0, jGe0);
         Assert.assertEquals("(((-1) + j) >= 0 and (-i) >= 0)", and1.toString());
@@ -81,7 +87,7 @@ public class TestBooleanAndComparison extends CommonAbstractValue {
         List<Value> l2 = new ArrayList<>(List.of(iphLt0, jGe0, iLt0));
         Collections.sort(l2);
         Assert.assertEquals(I_0_1_I_0_J_0, l2.toString());
-        List<Value> l3 = new ArrayList<>(List.of(jGe0, iphLt0,  iLt0));
+        List<Value> l3 = new ArrayList<>(List.of(jGe0, iphLt0, iLt0));
         Collections.sort(l3);
         Assert.assertEquals(I_0_1_I_0_J_0, l3.toString());
     }

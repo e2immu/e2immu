@@ -64,7 +64,6 @@ public class PropertyWrapper implements Value, ValueWrapper {
     }
 
     public static Value propertyWrapper(Value value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
-        // TODO this for-loop is a really good candidate to rewrite using streaming
         Map<VariableProperty, Integer> newMap = new HashMap<>();
         for (Map.Entry<VariableProperty, Integer> entry : properties.entrySet()) {
             int newPropertyValue = value.getPropertyOutsideContext(entry.getKey());
@@ -104,6 +103,10 @@ public class PropertyWrapper implements Value, ValueWrapper {
                 .map(e -> e.getKey().toString()).sorted().collect(Collectors.joining(","));
     }
 
+    @Override
+    public boolean isNumeric() {
+        return value.isNumeric();
+    }
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
