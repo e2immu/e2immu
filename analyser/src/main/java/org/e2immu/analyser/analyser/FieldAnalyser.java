@@ -603,7 +603,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             properties.put(variableProperty, fieldAnalysis.getProperty(variableProperty));
         }
         Set<Variable> linkedVariables = fieldAnalysis.variablesLinkedToMe.isSet() ? fieldAnalysis.variablesLinkedToMe.get() : Set.of();
-        return new VariableValue(fieldReference, fieldReference.name(), properties, linkedVariables, combinedValue.getObjectFlow(), false);
+        return new FinalFieldValue(fieldReference, properties, linkedVariables, combinedValue.getObjectFlow());
     }
 
     private AnalysisStatus analyseLinked() {
@@ -741,16 +741,15 @@ public class FieldAnalyser extends AbstractAnalyser {
     protected Value getVariableValue(Variable variable) {
         FieldReference fieldReference = (FieldReference) variable;
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysers().get(fieldReference.fieldInfo).fieldAnalysis;
-        if (fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.DELAY) return NO_VALUE;
-        // there is a very brief moment between the field being FINAL and effectivelyFinalValue being set; we ignore that for now
-        boolean variableField = !fieldAnalysis.effectivelyFinalValue.isSet();
-        Map<VariableProperty, Integer> properties = new HashMap<>();
-        for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
-            properties.put(variableProperty, fieldAnalysis.getProperty(variableProperty));
+        int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+        if (effectivelyFinal == Level.DELAY) return NO_VALUE;
+        if (effectivelyFinal == Level.FALSE) {
+            return new VariableValue(variable, true);
         }
-        Set<Variable> linkedVariables = fieldAnalysis.variablesLinkedToMe.isSet() ? fieldAnalysis.variablesLinkedToMe.get() : Set.of();
-        ObjectFlow objectFlow = fieldAnalysis.objectFlow.get();
-        return new VariableValue(fieldReference, fieldReference.name(), properties, linkedVariables, objectFlow, variableField);
+        if (fieldAnalysis.effectivelyFinalValue.isSet()) {
+            return fieldAnalysis.effectivelyFinalValue.get();
+        }
+        return new VariableValue(variable, false);
     }
 
     @Override
@@ -859,7 +858,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         // used in short-circuiting, inline conditional, and lambda
 
         @Override
-        public EvaluationContext child(Value condition, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement) {
+        public EvaluationContext child(Value condition) {
             Value safeCondition = condition == null ? UnknownValue.EMPTY : condition;
             return FieldAnalyser.this.new EvaluationContextImpl(iteration, ConditionManager.combineWith(this.condition, safeCondition),
                     ConditionManager.combineWith(state, safeCondition));

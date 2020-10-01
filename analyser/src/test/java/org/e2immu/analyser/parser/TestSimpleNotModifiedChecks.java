@@ -5,7 +5,7 @@ import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.FinalFieldValueObjectFlowInContext;
+import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.annotation.AnnotationMode;
@@ -31,8 +31,8 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 if (d.iteration == 0) {
                     Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
                 } else {
-                    Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
-                    FinalFieldValueObjectFlowInContext variableValue = (FinalFieldValueObjectFlowInContext) d.currentValue;
+                    Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
+                    FinalFieldValue variableValue = (FinalFieldValue) d.currentValue;
                     Assert.assertTrue(variableValue.variable instanceof FieldReference);
                     Assert.assertEquals("this.set3", d.currentValue.toString());
                 }
@@ -43,8 +43,8 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 if (d.iteration == 0) {
                     Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
                 } else {
-                    Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
-                    FinalFieldValueObjectFlowInContext variableValue = (FinalFieldValueObjectFlowInContext) d.currentValue;
+                    Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
+                    FinalFieldValue variableValue = (FinalFieldValue) d.currentValue;
                     Assert.assertTrue(variableValue.variable instanceof FieldReference);
                     Assert.assertEquals("this.set4", d.currentValue.toString());
                 }
@@ -58,7 +58,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 if (d.iteration == 0) {
                     Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
                 } else {
-                    Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
+                    Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
                     if (d.iteration > 1) {
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
                     }
@@ -80,7 +80,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             if (d.iteration == 0) {
                 Assert.assertTrue(d.currentValue instanceof Instance);
             } else {
-                Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
+                Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
             }
         }
 

@@ -76,6 +76,8 @@ public class EvaluationResult {
     }
 
     public boolean isNotNull0(EvaluationContext evaluationContext) {
+        // should we go through the modification stream?
+        return evaluationContext.getProperty(value, VariableProperty.NOT_NULL) >= MultiLevel.EFFECTIVELY_NOT_NULL;
     }
 
     // lazy creation of lists
@@ -179,12 +181,12 @@ public class EvaluationResult {
             String name = DependentVariable.dependentVariableName(array.value, indexValue.value);
             Value current = evaluationContext.currentValue(name);
             if (current != null) return current;
-            String arrayName = arrayVariable == null ? null : VariableDataImpl.Builder.variableName(arrayVariable);
+            String arrayName = arrayVariable == null ? null : VariableDataImpl.variableName(arrayVariable);
             DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name, arrayName);
             modifications.add(statementAnalyser.new AddVariable(dependentVariable));
 
-            ObjectFlow objectFlow = createInternalObjectFlow(location, parameterizedType, Origin.FIELD_ACCESS);
-            return new VariableValue(dependentVariable, dependentVariable.name(), Map.of(), Set.of(), objectFlow, false);
+            createInternalObjectFlow(location, parameterizedType, Origin.FIELD_ACCESS);
+            return new VariableValue(dependentVariable, dependentVariable.name(), false);
         }
 
         public Builder markRead(Variable variable) {

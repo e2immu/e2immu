@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.ConstantValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -55,7 +56,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalyser.class);
 
     public final StatementAnalysis statementAnalysis;
-    private VariableDataImpl.Builder variableDataBuilder = new VariableDataImpl.Builder();
+    private VariableDataImpl.Builder variableDataBuilder;
     private ConditionManager localConditionManager;
 
     private final MethodAnalyser myMethodAnalyser;
@@ -79,6 +80,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         this.analyserContext = analyserContext;
         this.myMethodAnalyser = methodAnalyser;
         this.statementAnalysis = new StatementAnalysis(statement, parent, index);
+        boolean inPartOfConstruction = methodAnalyser.methodInfo.methodResolution.get().partOfConstruction.get();
+        variableDataBuilder = new VariableDataImpl.Builder(inPartOfConstruction);
     }
 
     public static StatementAnalyser recursivelyCreateAnalysisObjects(
@@ -154,7 +157,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (statementAnalyser == null) return builder.setAnalysisStatus(DONE).build();
             StatementAnalyser previousStatement = null;
             do {
-                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration);
+                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager);
                 // first attempt at detecting a transformation
                 boolean wasReplacement = checkForPatterns(evaluationContext);
                 statementAnalyser = statementAnalyser.followReplacements();
@@ -262,13 +265,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                                              StatementAnalysis previousStatementAnalysis,
                                                              ForwardAnalysisInfo forwardAnalysisInfo) {
         String statementId = statementAnalysis.index;
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration);
+        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager);
         boolean startOfNewBlock = previousStatementAnalysis == null;
         variableDataBuilder.initialise(myMethodAnalyser.getParameterAnalysers(),
                 startOfNewBlock ? statementAnalysis.parent : previousStatementAnalysis, startOfNewBlock, forwardAnalysisInfo.inSyncBlock);
+
         localConditionManager = startOfNewBlock ? (statementAnalysis.parent == null ?
                 new ConditionManager(UnknownValue.EMPTY, UnknownValue.EMPTY) :
-                statementAnalysis.parent.stateData.conditionManager.get()) : previousStatementAnalysis.stateData.conditionManager.get();
+                statementAnalysis.parent.stateData.conditionManager.get().addCondition(forwardAnalysisInfo.conditionManager.condition)) :
+                previousStatementAnalysis.stateData.conditionManager.get();
 
         if (statementAnalysis.flowData.computeGuaranteedToBeReached(previousStatementAnalysis, forwardAnalysisInfo.execution) &&
                 !statementAnalysis.inErrorState()) {
@@ -553,16 +558,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             transferValue.linkedVariables.set(vars);
         }
         if (!transferValue.value.isSet()) {
-            VariableValue variableValue;
-            if ((variableValue = value.asInstanceOf(VariableValue.class)) != null) {
-                // we pass on both value and variableValue, as the latter may be wrapped in a
-                // PropertyValue
-                // properties are empty, because they are read from the transfer value
-                transferValue.value.set(new VariableValue(variableValue.variable, variableValue.name,
-                        Map.of(), Set.of(), value.getObjectFlow(), false));
-            } else {
-                transferValue.value.set(value);
-            }
+            // just like the VariableValue, the TransferValue has properties separately!
+            transferValue.value.set(value);
         }
         for (VariableProperty variableProperty : VariableProperty.INTO_RETURN_VALUE_SUMMARY) {
             int v = evaluationContext.getProperty(value, variableProperty);
@@ -630,7 +627,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         FlowData.Execution execution = statementAnalysis.flowData.guaranteedToBeReachedInMethod.get();
 
         StatementAnalyserResult recursiveResult = startOfFirstBlock.analyse(evaluationContext.getIteration(),
-                new ForwardAnalysisInfo(execution.worst(executionBlock), value, inSyncBlock, false));
+                new ForwardAnalysisInfo(execution.worst(executionBlock), localConditionManager.addCondition(value), inSyncBlock, false));
         builder.add(recursiveResult);
         return inSyncBlock;
     }
@@ -679,7 +676,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         StatementAnalyser subStatementStart = navigationData.blocks.get().get(count);
         boolean inCatch = structure.localVariableCreation != null;
         StatementAnalyserResult result = subStatementStart.analyse(evaluationContext.getIteration(),
-                new ForwardAnalysisInfo(execution, valueForSubStatement, forwardAnalysisInfo.inSyncBlock, inCatch));
+                new ForwardAnalysisInfo(execution, localConditionManager.addCondition(valueForSubStatement),
+                        forwardAnalysisInfo.inSyncBlock, inCatch));
         builder.add(result);
     }
 
@@ -788,20 +786,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return AnalysisStatus.DONE; // TODO
     }
 
-    private static boolean haveSubBlocks(Structure structure) {
-        return structure.haveNonEmptyBlock() ||
-                structure.statements != null && !structure.statements.isEmpty() ||
-                !structure.subStatements.isEmpty();
-    }
-
-    private Set<Variable> computeExistingVariablesAssignedInLoop(Statement statement, VariableProperties
-            variableProperties) {
-        return statement.collect(Assignment.class).stream()
-                .flatMap(a -> a.assignmentTarget().stream())
-                .filter(variableProperties::isKnown)
-                .collect(Collectors.toSet());
-    }
-
     /**
      * We recognize the following situations, looping over the local variables:
      * <ul>
@@ -842,10 +826,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-
-    // TODO move to variableData
-
-    private void unusedLocalVariablesCheck() {
+    private void checkUnusedLocalVariables() {
         // we run at the local level
         for (VariableInfo variableInfo : variableDataBuilder.variableInfos()) {
             if (variableInfo.isNotLocalCopy() && variableInfo.isLocalVariableReference()
@@ -861,7 +842,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             }
         }
     }
-
 
     private void checkUnusedReturnValue() {
         if (statementAnalysis.statement instanceof ExpressionAsStatement &&
@@ -888,6 +868,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private void detectErrors() {
         checkUnusedReturnValue();
         checkUselessAssignments();
+        checkUnusedLocalVariables();
     }
 
     public List<StatementAnalyser> lastStatementsOfSubBlocks() {
@@ -896,11 +877,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
 
     private class EvaluationContextImpl implements EvaluationContext {
-
+        private final ConditionManager conditionManager;
         private final int iteration;
 
-        private EvaluationContextImpl(int iteration) {
+        private EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
             this.iteration = iteration;
+            this.conditionManager = conditionManager;
+        }
+
+        @Override
+        public Set<String> allUnqualifiedVariableNames() {
+            return variableDataBuilder.allUnqualifiedVariableNames(getCurrentType().typeInfo);
         }
 
         @Override
@@ -944,14 +931,38 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public EvaluationContext child(Value condition, Runnable uponUsingConditional, boolean guaranteedToBeReachedByParentStatement) {
-            return null;
+        public EvaluationContext child(Value condition) {
+            return new EvaluationContextImpl(iteration, conditionManager.addCondition(condition));
+        }
+
+        @Override
+        public int getProperty(Value value, VariableProperty variableProperty) {
+            // IMPORTANT: here we do not want to catch VariableValues wrapped in the PropertyWrapper
+            if (value instanceof VariableValue) {
+                return variableDataBuilder.getProperty(((VariableValue) value).variable, variableProperty, conditionManager);
+            }
+            // the following situation occurs when the state contains, e.g., not (null == map.get(a)),
+            // and we need to evaluate the NOT_NULL property in the return transfer value in StatementAnalyser
+            // See TestSMapList; also, same situation, we may have a conditional value, and the condition will decide...
+            // TODO smells like dedicated code
+            if (!(value.isInstanceOf(ConstantValue.class)) && conditionManager.haveNonEmptyState() && !conditionManager.inErrorState()) {
+                if (VariableProperty.NOT_NULL == variableProperty) {
+                    int notNull = conditionManager.notNull(value);
+                    if (notNull != Level.DELAY) return notNull;
+                }
+                // TODO add SIZE support?
+            }
+            // redirect to Value.getProperty()
+            // this is the only usage of this method; all other evaluation of a Value in an evaluation context
+            // must go via the current method
+            return value.getProperty(this, variableProperty);
+
         }
 
         @Override
         public Value currentValue(Variable variable) {
-
-            return null;
+            VariableInfoImpl.Builder v = variableDataBuilder.find(variable);
+            return v == null ? NO_VALUE : v.getCurrentValue();
         }
 
         @Override
@@ -971,6 +982,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
+    private VariableInfoImpl.Builder find(Variable variable) {
+        if (variable instanceof FieldReference) {
+            FieldReference fieldReference = (FieldReference) variable;
+            FieldAnalyser fieldAnalyser = myMethodAnalyser.getFieldAnalyser(fieldReference.fieldInfo);
+            FieldAnalysis fieldAnalysis = fieldAnalyser != null ? fieldAnalyser.fieldAnalysis : fieldReference.fieldInfo.fieldAnalysis.get();
+            int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+            return variableDataBuilder.ensureFieldReference(fieldReference, effectivelyFinal);
+        }
+        return variableDataBuilder.find(variable);
+    }
 
     public class SetProperty implements StatementAnalysis.StatementAnalysisModification {
         private final Variable variable;
@@ -985,16 +1006,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void run() {
-            VariableInfoImpl.Builder aboutVariable = variableDataBuilder.find(variable);
-            if (aboutVariable == null) {
+            VariableInfoImpl.Builder variableInfo = find(variable);
+            if (variableInfo == null) {
                 return;
             }
-            int current = aboutVariable.getProperty(property);
+            int current = variableInfo.getProperty(property);
             if (current < value) {
-                aboutVariable.setProperty(property, value);
+                variableInfo.setProperty(property, value);
             }
 
-            Value currentValue = aboutVariable.getCurrentValue();
+            Value currentValue = variableInfo.getCurrentValue();
             VariableValue valueWithVariable;
             if ((valueWithVariable = currentValue.asInstanceOf(VariableValue.class)) == null) return;
             Variable other = valueWithVariable.variable;

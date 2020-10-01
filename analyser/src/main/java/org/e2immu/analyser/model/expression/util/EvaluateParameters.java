@@ -174,13 +174,7 @@ public class EvaluateParameters {
         int i = 0;
         for (Value parameterValue : parameters) {
             ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(i);
-            Map<VariableProperty, Integer> properties = new HashMap<>();
-            for (VariableProperty variableProperty : VariableProperty.PARAMETER_PROPERTIES) {
-                properties.put(variableProperty, parameterValue.getProperty(evaluationContext, variableProperty));
-            }
-            Set<Variable> linkedVariables = parameterValue.linkedVariables(evaluationContext);
-            ObjectFlow objectFlow = parameterValue.getObjectFlow();
-            Value vv = new VariableValue(parameterInfo, parameterInfo.name, properties, linkedVariables, objectFlow, false);
+            Value vv = new VariableValue(parameterInfo);
             builder.put(vv, parameterValue);
             i++;
         }

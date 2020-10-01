@@ -18,39 +18,37 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.analyser.VariableDataImpl;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
 /**
- * The evaluation context has to reroute requests for property values, linked variables, and object flow either
- * - to the variable data in the statement analyser, esp. for local variables
- * - to the relevant parameterAnalysis, fieldAnalysis
+ * It is important to note that this value is not a VariableValue, whose properties are kept in the VariableData of the StatementAnalyser.
+ * This value keeps its own, unmodifiable, properties.
+ * <p>
+ * It is used for final fields, and This.
  */
-public class VariableValue implements Value {
-    public final String name; // the name in the variable properties; this will speed up grabbing the variable properties
+public class FinalFieldValue implements Value {
     public final Variable variable;
-    private final boolean variableField;
+    public final ObjectFlow objectFlow;
+    private final Map<VariableProperty, Integer> properties;
+    private final Set<Variable> linkedVariables;
 
-    public VariableValue(Variable variable) {
-        this(variable, false);
-    }
-
-    public VariableValue(Variable variable, boolean variableField) {
-        this(variable, VariableDataImpl.variableName(variable), variableField);
-    }
-
-    // dependent variables have a different name
-    public VariableValue(Variable variable,
-                         String name,
-                         boolean variableField) {
+    public FinalFieldValue(Variable variable,
+                           Map<VariableProperty, Integer> properties,
+                           Set<Variable> linkedVariables,
+                           ObjectFlow objectFlow) {
+        assert variable instanceof FieldReference || variable instanceof This;
         this.variable = variable;
-        this.name = name;
-        this.variableField = variableField;
+        this.objectFlow = Objects.requireNonNull(objectFlow);
+        this.properties = ImmutableMap.copyOf(properties);
+        this.linkedVariables = ImmutableSet.copyOf(linkedVariables);
     }
 
     @Override
@@ -66,12 +64,12 @@ public class VariableValue implements Value {
 
     @Override
     public ObjectFlow getObjectFlow() {
-        throw new UnsupportedOperationException();
+        return objectFlow;
     }
 
     @Override
     public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        throw new UnsupportedOperationException();
+        return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 
     @Override
@@ -81,12 +79,12 @@ public class VariableValue implements Value {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        throw new UnsupportedOperationException();
+        return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 
     @Override
     public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
-        throw new UnsupportedOperationException();
+        return linkedVariables;
     }
 
     @Override
@@ -96,8 +94,8 @@ public class VariableValue implements Value {
 
     @Override
     public int internalCompareTo(Value v) {
-        VariableValue variableValue = (VariableValue) v;
-        return name.compareTo(variableValue.name);
+        FinalFieldValue finalFieldValue = (FinalFieldValue) v;
+        return variable.name().compareTo(finalFieldValue.variable.name());
     }
 
     @Override
@@ -109,10 +107,9 @@ public class VariableValue implements Value {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof VariableValue)) return false;
-        VariableValue that = (VariableValue) o;
-        if (!variable.equals(that.variable)) return false;
-        return !variableField;
+        if (!(o instanceof FinalFieldValue)) return false;
+        FinalFieldValue that = (FinalFieldValue) o;
+        return variable.equals(that.variable);
     }
 
     @Override
@@ -122,6 +119,6 @@ public class VariableValue implements Value {
 
     @Override
     public String toString() {
-        return name;
+        return variable.detailedString();
     }
 }

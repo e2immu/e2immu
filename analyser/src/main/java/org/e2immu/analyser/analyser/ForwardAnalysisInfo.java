@@ -21,17 +21,19 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 
 public class ForwardAnalysisInfo {
-    public static final ForwardAnalysisInfo START_OF_METHOD = new ForwardAnalysisInfo(FlowData.Execution.ALWAYS, UnknownValue.EMPTY, false, false);
+    public static final ForwardAnalysisInfo START_OF_METHOD =
+            new ForwardAnalysisInfo(FlowData.Execution.ALWAYS,
+                    new ConditionManager(UnknownValue.EMPTY, UnknownValue.EMPTY), false, false);
 
     public final FlowData.Execution execution;
-    public final Value condition;
+    public final ConditionManager conditionManager;
     public final boolean inSyncBlock;
     public final boolean inCatch;
 
-    public ForwardAnalysisInfo(FlowData.Execution execution, Value condition, boolean inSyncBlock, boolean inCatch) {
+    public ForwardAnalysisInfo(FlowData.Execution execution, ConditionManager conditionManager, boolean inSyncBlock, boolean inCatch) {
         this.execution = execution;
         this.inSyncBlock = inSyncBlock;
         this.inCatch = inCatch;
-        this.condition = condition;
+        this.conditionManager = conditionManager;
     }
 }

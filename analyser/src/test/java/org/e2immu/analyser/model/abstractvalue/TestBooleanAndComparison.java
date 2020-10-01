@@ -52,7 +52,7 @@ public class TestBooleanAndComparison extends CommonAbstractValue {
         GreaterThanZeroValue iLt0 = (GreaterThanZeroValue) GreaterThanZeroValue.less(i, new IntValue(0), true);
         GreaterThanZeroValue jGe0 = (GreaterThanZeroValue) GreaterThanZeroValue.greater(j, new IntValue(0), false);
 
-        GreaterThanZeroValue iphLt0 = (GreaterThanZeroValue) GreaterThanZeroValue.less(iph, new IntValue(0), true);
+        GreaterThanZeroValue iphLt0 = (GreaterThanZeroValue) GreaterThanZeroValue.less(iPropertyWrapper, new IntValue(0), true);
 
         Value and1 = new AndValue().append(iLt0, jGe0);
         Assert.assertEquals("(((-1) + j) >= 0 and (-i) >= 0)", and1.toString());
@@ -65,7 +65,7 @@ public class TestBooleanAndComparison extends CommonAbstractValue {
 
     @Test
     public void testPlaceHolder2() {
-        GreaterThanZeroValue iLt0 = (GreaterThanZeroValue) GreaterThanZeroValue.less(iph, new IntValue(0), false);
+        GreaterThanZeroValue iLt0 = (GreaterThanZeroValue) GreaterThanZeroValue.less(iPropertyWrapper, new IntValue(0), false);
         GreaterThanZeroValue jGe0 = (GreaterThanZeroValue) GreaterThanZeroValue.greater(j, new IntValue(0), true);
         GreaterThanZeroValue iphLt0 = (GreaterThanZeroValue) GreaterThanZeroValue.less(i, new IntValue(0), false);
 

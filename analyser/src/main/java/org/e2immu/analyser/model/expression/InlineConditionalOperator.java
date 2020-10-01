@@ -69,12 +69,12 @@ public class InlineConditionalOperator implements Expression {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(conditionResult);
 
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
-        EvaluationContext copyForThen = evaluationContext.child(conditionResult.value, null, false);
+        EvaluationContext copyForThen = evaluationContext.child(conditionResult.value);
         EvaluationResult ifTrueResult = ifTrue.evaluate(copyForThen, forwardEvaluationInfo);
         builder.compose(ifTrueResult);
         builder.merge(copyForThen);
 
-        EvaluationContext copyForElse = evaluationContext.child(NegatedValue.negate(conditionResult.value), null, false);
+        EvaluationContext copyForElse = evaluationContext.child(NegatedValue.negate(conditionResult.value));
         EvaluationResult ifFalseResult = ifFalse.evaluate(copyForElse, forwardEvaluationInfo);
         builder.compose(ifFalseResult);
         builder.merge(copyForElse);

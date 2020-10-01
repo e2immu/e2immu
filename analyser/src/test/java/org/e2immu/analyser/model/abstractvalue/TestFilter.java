@@ -38,7 +38,7 @@ public class TestFilter extends CommonAbstractValue {
         Assert.assertEquals(filterResult.rest, andValue);
 
         Value.FilterResult filterResult2 = andValue.filter(Value.FilterMode.ALL, value -> {
-            if (value instanceof ValueWithVariable && ((ValueWithVariable) value).variable == b.variable) {
+            if (value instanceof VariableValue && ((VariableValue) value).variable == b.variable) {
                 return new Value.FilterResult(Map.of(b.variable, b), UnknownValue.EMPTY);
             }
             return new Value.FilterResult(Map.of(), value);
@@ -58,7 +58,7 @@ public class TestFilter extends CommonAbstractValue {
         Value.FilterResult filterResult = andValue.filter(Value.FilterMode.ALL, value -> {
             if (value instanceof EqualsValue) {
                 EqualsValue equalsValue = (EqualsValue) value;
-                if (equalsValue.rhs instanceof ValueWithVariable && ((ValueWithVariable) equalsValue.rhs).variable == s.variable) {
+                if (equalsValue.rhs instanceof VariableValue && ((VariableValue) equalsValue.rhs).variable == s.variable) {
                     return new Value.FilterResult(Map.of(s.variable, s), UnknownValue.EMPTY);
                 }
             }

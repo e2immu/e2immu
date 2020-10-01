@@ -19,6 +19,7 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckOnly;
@@ -45,7 +46,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -69,7 +69,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     public final StatementAnalyser firstStatementAnalyser;
     private final AnalyserComponents analyserComponents;
 
-    private List<FieldAnalyser> myFieldAnalysers;
+    private Map<FieldInfo, FieldAnalyser> myFieldAnalysers;
     private MethodLevelData methodLevelData;
 
     public MethodAnalyser(MethodInfo methodInfo,
@@ -145,10 +145,10 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     @Override
     public void initialize() {
-        ImmutableList.Builder<FieldAnalyser> myFieldAnalysers = new ImmutableList.Builder<>();
+        ImmutableMap.Builder<FieldInfo, FieldAnalyser> myFieldAnalysers = new ImmutableMap.Builder<>();
         analyserContext.getFieldAnalysers().values().forEach(analyser -> {
             if (analyser.fieldInfo.owner == methodInfo.typeInfo) {
-                myFieldAnalysers.add(analyser);
+                myFieldAnalysers.put(analyser.fieldInfo, analyser);
             }
         });
         this.myFieldAnalysers = myFieldAnalysers.build();
@@ -316,6 +316,10 @@ public class MethodAnalyser extends AbstractAnalyser {
         return parameterAnalyser;
     }
 
+    FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
+        return myFieldAnalysers.get(fieldInfo);
+    }
+
     private AnalysisStatus computeOnlyMarkAnnotate() {
         assert !methodAnalysis.markAndOnly.isSet();
 
@@ -407,7 +411,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         while (true) {
-            boolean haveNonFinalFields = myFieldAnalysers.stream().anyMatch(fa -> fa.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE);
+            boolean haveNonFinalFields = myFieldAnalysers.values().stream().anyMatch(fa -> fa.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE);
             if (haveNonFinalFields) {
                 break;
             }
@@ -813,7 +817,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     private Boolean findOtherModifyingElements(MethodLevelData methodLevelData) {
-        boolean nonPrivateFields = myFieldAnalysers.stream()
+        boolean nonPrivateFields = myFieldAnalysers.values().stream()
                 .filter(fa -> fa.fieldInfo.type.isFunctionalInterface() && fa.fieldAnalysis.isDeclaredFunctionalInterface())
                 .anyMatch(fa -> !fa.fieldInfo.isPrivate());
         if (nonPrivateFields) {

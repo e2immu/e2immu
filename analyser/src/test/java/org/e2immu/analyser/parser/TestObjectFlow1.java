@@ -131,7 +131,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
         ObjectFlow keyConstant = objectFlowKey.getPrevious().findAny().orElseThrow();
 
         TypeInfo objectFlow1 = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow1");
-        ObjectFlow inType = objectFlow1.typeAnalysis.get().getConstantObjectFlows().findFirst().orElseThrow();
+        ObjectFlow inType = objectFlow1.typeAnalysis.get().constantObjectFlows.stream().findFirst().orElseThrow();
         Assert.assertSame(inType, keyConstant);
         Assert.assertSame(Origin.LITERAL, inType.origin);
 

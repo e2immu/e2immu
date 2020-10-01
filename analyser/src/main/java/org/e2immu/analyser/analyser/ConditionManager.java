@@ -123,7 +123,7 @@ public class ConditionManager {
     public boolean isNotNull(Variable variable) {
         if (state == UnknownValue.EMPTY || isDelayed(state)) return false;
 
-        VariableValue vv = new VariableValue(variable, variable.name(), Map.of(), Set.of(), ObjectFlow.NO_FLOW, false);
+        VariableValue vv = new VariableValue(variable);
         return MultiLevel.isEffectivelyNotNull(notNull(vv));
     }
 
@@ -239,8 +239,7 @@ public class ConditionManager {
                 // null evalContext -> do not copy properties (the condition+state may hold a not null, which can
                 // be copied in the property, which can reEvaluate later to constant true/false
                 Variable variable = variableValue.variable;
-                // TODO why do we make a fresh copy?
-                translation.put(v, new VariableValue(variable, variable.name(), Map.of(), Set.of(), v.getObjectFlow(), false));
+                translation.put(v, new VariableValue(variable));
             }
         });
 

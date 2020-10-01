@@ -25,6 +25,7 @@ import org.e2immu.analyser.util.Logger;
 import org.junit.BeforeClass;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public abstract class CommonAbstractValue {
@@ -131,7 +132,7 @@ public abstract class CommonAbstractValue {
     static final Variable vj = createVariable("j");
     static final Variable vk = createVariable("k");
     static final VariableValue i = new VariableValue(vi);
-    static final VariableValue iph = new VariableValue(i, i, minimalEvaluationContext, ObjectFlow.NO_FLOW);
+    static final Value iPropertyWrapper = PropertyWrapper.propertyWrapper(new VariableValue(vi), Map.of(), ObjectFlow.NO_FLOW);
     static final VariableValue j = new VariableValue(vj);
     static final VariableValue k = new VariableValue(vk);
 

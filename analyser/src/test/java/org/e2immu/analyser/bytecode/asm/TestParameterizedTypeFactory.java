@@ -27,7 +27,7 @@ import org.junit.Test;
 import java.util.Objects;
 
 public class TestParameterizedTypeFactory {
-    private TypeContext typeContext = new TypeContext();
+    private final TypeContext typeContext = new TypeContext();
 
     @Test
     public void testInt() {

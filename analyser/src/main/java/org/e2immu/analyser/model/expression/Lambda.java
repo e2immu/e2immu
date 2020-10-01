@@ -136,7 +136,7 @@ public class Lambda implements Expression {
 
         if (block != Block.EMPTY_BLOCK) {
             // we have no guarantee that this block will be executed. maybe there are situations?
-            EvaluationContext child = evaluationContext.child(UnknownValue.EMPTY, null, false);
+            EvaluationContext child = evaluationContext.child(UnknownValue.EMPTY);
 
             TypeAnalyser typeAnalyser = evaluationContext.getCurrentType();
             AnalyserContext analyserContext = evaluationContext.getAnalyserContext();

@@ -30,7 +30,7 @@ public interface VariableData {
 
     Iterable<VariableInfo> variableInfos();
 
-    Set<Map.Entry<String, VariableInfoImpl.Builder>> variables();
+    Set<Map.Entry<String, VariableInfo>> variables();
 
     DependencyGraph<Variable> getDependencyGraph();
 }

@@ -240,7 +240,7 @@ public class BinaryOperator implements Expression {
         }
 
         Value condition = and ? l.value : NegatedValue.negate(l.value);
-        EvaluationContext child = evaluationContext.child(condition, null, false);
+        EvaluationContext child = evaluationContext.child(condition);
         EvaluationResult r = rhs.evaluate(child, forward);
         if (r.value == constant) {
             builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);

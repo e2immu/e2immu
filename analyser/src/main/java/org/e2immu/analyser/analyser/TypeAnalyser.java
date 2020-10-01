@@ -24,8 +24,8 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
+import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -210,10 +210,10 @@ public class TypeAnalyser extends AbstractAnalyser {
     public AnalysisStatus analyse(int iteration) {
         log(ANALYSER, "Analysing type {}", typeInfo.fullyQualifiedName);
         try {
-        AnalysisStatus analysisStatus = analyserComponents.run(iteration);
-        for (TypeAnalyserVisitor typeAnalyserVisitor : analyserContext.getConfiguration().debugConfiguration.afterTypePropertyComputations) {
-            typeAnalyserVisitor.visit(iteration, typeInfo);
-        }
+            AnalysisStatus analysisStatus = analyserComponents.run(iteration);
+            for (TypeAnalyserVisitor typeAnalyserVisitor : analyserContext.getConfiguration().debugConfiguration.afterTypePropertyComputations) {
+                typeAnalyserVisitor.visit(iteration, typeInfo);
+            }
 
             return analysisStatus;
         } catch (RuntimeException rte) {
@@ -303,11 +303,11 @@ public class TypeAnalyser extends AbstractAnalyser {
         if (variable instanceof This) {
             Map<VariableProperty, Integer> properties = new HashMap<>();
             properties.put(VariableProperty.MODIFIED, typeAnalysis.getProperty(VariableProperty.MODIFIED));
-            // TODO this is prob. not correct
+            // this is prob. not correct, but is there anything else we use it for?
             Set<Variable> linkedVariables = Set.of();
-            // TODO this is prob. not correct
+            // this is prob. not correct, but is not used
             ObjectFlow objectFlow = new ObjectFlow(new Location(typeInfo), typeInfo.asParameterizedType(), Origin.NO_ORIGIN);
-            return new VariableValue(variable, variable.name(), properties, linkedVariables, objectFlow, false);
+            return new FinalFieldValue(variable, properties, linkedVariables, objectFlow);
         }
         throw new UnsupportedOperationException();
     }
@@ -317,7 +317,6 @@ public class TypeAnalyser extends AbstractAnalyser {
 
           when? all modifying methods must have methodAnalysis.preconditionForOnlyData set with value != NO_VALUE
 
-          TODO: parents, enclosing types
          */
     private AnalysisStatus analyseOnlyMarkEventuallyE1Immutable() {
         if (!typeAnalysis.approvedPreconditions.isFrozen()) {

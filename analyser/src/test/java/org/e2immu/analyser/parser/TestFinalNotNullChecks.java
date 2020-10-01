@@ -3,7 +3,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.FinalFieldValueObjectFlowInContext;
+import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -23,10 +23,10 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
                 Assert.assertTrue(d.currentValue instanceof UnknownValue);
                 Assert.assertEquals(Level.FALSE, notNull);
             } else if (d.iteration == 1) {
-                Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
+                Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
                 Assert.assertEquals(Level.DELAY, notNull);
             } else {
-                Assert.assertTrue(d.currentValue instanceof FinalFieldValueObjectFlowInContext);
+                Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
             }
         }

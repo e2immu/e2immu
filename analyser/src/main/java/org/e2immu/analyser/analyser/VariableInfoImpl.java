@@ -28,6 +28,7 @@ import org.e2immu.annotation.E2Container;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 @E2Container
 public class VariableInfoImpl implements VariableInfo {
@@ -261,5 +262,6 @@ public class VariableInfoImpl implements VariableInfo {
         public void removeAfterAssignment() {
             properties.keySet().removeAll(VariableProperty.REMOVE_AFTER_ASSIGNMENT);
         }
+
     }
 }
