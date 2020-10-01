@@ -70,7 +70,7 @@ public class VariableDataImpl implements VariableData {
         private final Map<String, VariableInfoImpl.Builder> variables = new HashMap<>();
         private final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
         private boolean delaysInDependencyGraph;
-
+        private boolean inSyncBlock;
 
         public Set<Map.Entry<String, VariableInfoImpl.Builder>> variables() {
             return variables.entrySet();
@@ -208,7 +208,7 @@ public class VariableDataImpl implements VariableData {
             return find(name);
         }
 
-        private VariableInfoImpl.Builder find(String name) {
+        VariableInfoImpl.Builder find(String name) {
             return variables.get(name);
         }
 
@@ -227,7 +227,10 @@ public class VariableDataImpl implements VariableData {
             variables.keySet().removeAll(toRemove);
         }
 
-        public void initialise(Collection<ParameterAnalyser> parameterAnalysers, StatementAnalysis statementAnalysis, boolean startOfNewBlock) {
+        public void initialise(Collection<ParameterAnalyser> parameterAnalysers,
+                               StatementAnalysis statementAnalysis,
+                               boolean startOfNewBlock,
+                               boolean inSyncBlock) {
             if (statementAnalysis == null) {
                 for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
                     LocalVariableReference lvr = new LocalVariableReference(new LocalVariable(List.of(),
@@ -255,6 +258,9 @@ public class VariableDataImpl implements VariableData {
                 variableInfo = variableInfo.getLocalCopyOf();
             }
             return -1;
+        }
+
+        public void copyBackLocalCopies(List<StatementAnalyser> lastStatements, boolean noBlockMayBeExecuted) {
         }
     }
 }
