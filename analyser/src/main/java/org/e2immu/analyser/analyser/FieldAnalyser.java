@@ -151,7 +151,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (fieldInspection.initialiser.isSet()) {
             FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.initialiser.get();
             if (fieldInitialiser.initialiser != EmptyExpression.EMPTY_EXPRESSION) {
-                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration);
+                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
                 EvaluationResult evaluationResult = fieldInitialiser.initialiser.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 resultOfObjectFlow = makeInternalObjectFlowsPermanent(evaluationResult);
                 value = evaluationResult.value;
@@ -337,7 +337,9 @@ public class FieldAnalyser extends AbstractAnalyser {
                     // we now check if a not-null is compatible with the pre-condition
                     boolean allCompatible = methodsWhereFieldIsAssigned.stream().allMatch(m -> {
                         Value assignment = m.methodLevelData().fieldSummaries.get(fieldInfo).value.get();
-                        Value fieldIsNotNull = NegatedValue.negate(EqualsValue.equals(NullValue.NULL_VALUE, assignment, ObjectFlow.NO_FLOW));
+                        // the properties of the fieldSummary are in the "properties" of TransferValue, not in the value
+                        // TODO there should be a better way to do this
+                        Value fieldIsNotNull = NegatedValue.negate(EqualsValue.equals(NullValue.NULL_VALUE, assignment, ObjectFlow.NO_FLOW, null));
                         Value andValue = new AndValue(ObjectFlow.NO_FLOW).append(m.methodAnalysis.precondition.get(), fieldIsNotNull);
                         return andValue != BoolValue.FALSE;
                     });
@@ -743,13 +745,14 @@ public class FieldAnalyser extends AbstractAnalyser {
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysers().get(fieldReference.fieldInfo).fieldAnalysis;
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effectivelyFinal == Level.DELAY) return NO_VALUE;
+        ObjectFlow objectFlow = fieldAnalysis.getObjectFlow();
         if (effectivelyFinal == Level.FALSE) {
-            return new VariableValue(variable, true);
+            return new VariableValue(variable, objectFlow, true);
         }
         if (fieldAnalysis.effectivelyFinalValue.isSet()) {
             return fieldAnalysis.effectivelyFinalValue.get();
         }
-        return new VariableValue(variable, false);
+        return new VariableValue(variable, objectFlow, false);
     }
 
     @Override
@@ -797,25 +800,16 @@ public class FieldAnalyser extends AbstractAnalyser {
         return messages.getMessageStream();
     }
 
-    private class EvaluationContextImpl implements EvaluationContext {
+    private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
-        private final int iteration;
-        private final Value condition;
-        private final Value state;
-
-        private EvaluationContextImpl(int iteration) {
-            this(iteration, UnknownValue.EMPTY, UnknownValue.EMPTY);
-        }
-
-        private EvaluationContextImpl(int iteration, Value condition, Value state) {
-            this.iteration = iteration;
-            this.condition = condition;
-            this.state = state;
+        private EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
+            super(iteration, conditionManager);
         }
 
         @Override
-        public int getIteration() {
-            return iteration;
+        public boolean isNotNull0(Value value) {
+            // will crash for variable values, but that should be fine
+            return MultiLevel.isEffectivelyNotNull(value.getProperty(this, VariableProperty.NOT_NULL));
         }
 
         @Override
@@ -859,9 +853,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         @Override
         public EvaluationContext child(Value condition) {
-            Value safeCondition = condition == null ? UnknownValue.EMPTY : condition;
-            return FieldAnalyser.this.new EvaluationContextImpl(iteration, ConditionManager.combineWith(this.condition, safeCondition),
-                    ConditionManager.combineWith(state, safeCondition));
+            return FieldAnalyser.this.new EvaluationContextImpl(iteration, conditionManager.addCondition(condition));
         }
 
         @Override

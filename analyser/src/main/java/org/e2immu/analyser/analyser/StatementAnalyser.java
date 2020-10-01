@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.ConstantValue;
+import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -271,7 +272,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 startOfNewBlock ? statementAnalysis.parent : previousStatementAnalysis, startOfNewBlock, forwardAnalysisInfo.inSyncBlock);
 
         localConditionManager = startOfNewBlock ? (statementAnalysis.parent == null ?
-                new ConditionManager(UnknownValue.EMPTY, UnknownValue.EMPTY) :
+                ConditionManager.INITIAL :
                 statementAnalysis.parent.stateData.conditionManager.get().addCondition(forwardAnalysisInfo.conditionManager.condition)) :
                 previousStatementAnalysis.stateData.conditionManager.get();
 
@@ -516,11 +517,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    private void step5_forEachNotNullCheck(Value value, LocalVariableReference localVariableReference) {
+    private void step5_forEachNotNullCheck(EvaluationContext evaluationContext, Value value, LocalVariableReference localVariableReference) {
         if (statementAnalysis.statement instanceof ForEachStatement && value != null) {
             ArrayValue arrayValue;
             if (((arrayValue = value.asInstanceOf(ArrayValue.class)) != null) &&
-                    arrayValue.values.stream().allMatch(v -> localConditionManager.notNull(v) >= MultiLevel.EFFECTIVELY_NOT_NULL)) {
+                    arrayValue.values.stream().allMatch(evaluationContext::isNotNull0)) {
                 variableDataBuilder.addProperty(localVariableReference, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
             }
         }
@@ -706,7 +707,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         final Value value = step4_evaluationOfMainExpression(evaluationContext, structure);
 
         // STEP 5: not-null check on forEach (see step 1)
-        step5_forEachNotNullCheck(value, theLocalVariableReference);
+        step5_forEachNotNullCheck(evaluationContext, value, theLocalVariableReference);
 
 
         // STEP 6: ReturnStatement, prepare parts of method level data
@@ -876,13 +877,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
 
-    private class EvaluationContextImpl implements EvaluationContext {
-        private final ConditionManager conditionManager;
-        private final int iteration;
+    private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
         private EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
-            this.iteration = iteration;
-            this.conditionManager = conditionManager;
+            super(iteration, conditionManager);
         }
 
         @Override
@@ -937,9 +935,20 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public int getProperty(Value value, VariableProperty variableProperty) {
+
             // IMPORTANT: here we do not want to catch VariableValues wrapped in the PropertyWrapper
             if (value instanceof VariableValue) {
-                return variableDataBuilder.getProperty(((VariableValue) value).variable, variableProperty, conditionManager);
+                Variable variable = ((VariableValue) value).variable;
+                if (VariableProperty.NOT_NULL == variableProperty && MultiLevel.isEffectivelyNotNull(notNullAccordingToConditionManager(value))) {
+                    return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL, variableDataBuilder.getProperty(variable, variableProperty));
+                }
+                if (VariableProperty.SIZE == variableProperty) {
+                    Value sizeRestriction = conditionManager.individualSizeRestrictions().get(variable);
+                    if (sizeRestriction != null) {
+                        return sizeRestriction.encodedSizeRestriction();
+                    }
+                }
+                return variableDataBuilder.getProperty(variable, variableProperty);
             }
             // the following situation occurs when the state contains, e.g., not (null == map.get(a)),
             // and we need to evaluate the NOT_NULL property in the return transfer value in StatementAnalyser
@@ -947,7 +956,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // TODO smells like dedicated code
             if (!(value.isInstanceOf(ConstantValue.class)) && conditionManager.haveNonEmptyState() && !conditionManager.inErrorState()) {
                 if (VariableProperty.NOT_NULL == variableProperty) {
-                    int notNull = conditionManager.notNull(value);
+                    int notNull = notNullAccordingToConditionManager(value);
                     if (notNull != Level.DELAY) return notNull;
                 }
                 // TODO add SIZE support?
@@ -957,6 +966,32 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // must go via the current method
             return value.getProperty(this, variableProperty);
 
+        }
+
+
+        /**
+         * Conversion from state to notNull numeric property value, combined with the existing state
+         *
+         * @param value any non-constant, non-variable value, to be combined with the current state
+         * @return the numeric VariableProperty.NOT_NULL value
+         */
+        private int notNullAccordingToConditionManager(Value value) {
+            if (conditionManager.state == UnknownValue.EMPTY || ConditionManager.isDelayed(conditionManager.state))
+                return Level.DELAY;
+
+            // action: if we add value == null, and nothing changes, we know it is true, we rely on value.getProperty
+            // if the whole thing becomes false, we know it is false, which means we can return Level.TRUE
+            Value equalsNull = EqualsValue.equals(NullValue.NULL_VALUE, value, ObjectFlow.NO_FLOW, this);
+            if (equalsNull == BoolValue.FALSE) return MultiLevel.EFFECTIVELY_NOT_NULL;
+            Value withCondition = conditionManager.combineWithState(equalsNull);
+            if (withCondition == BoolValue.FALSE) return MultiLevel.EFFECTIVELY_NOT_NULL; // we know != null
+            if (withCondition.equals(equalsNull)) return MultiLevel.NULLABLE; // we know == null was already there
+            return Level.DELAY;
+        }
+
+        @Override
+        public boolean isNotNull0(Value value) {
+            return MultiLevel.isEffectivelyNotNull(getProperty(value, VariableProperty.NOT_NULL));
         }
 
         @Override

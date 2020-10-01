@@ -174,7 +174,7 @@ public class EvaluateParameters {
         int i = 0;
         for (Value parameterValue : parameters) {
             ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(i);
-            Value vv = new VariableValue(parameterInfo);
+            Value vv = new VariableValue(parameterInfo, parameterValue.getObjectFlow());
             builder.put(vv, parameterValue);
             i++;
         }

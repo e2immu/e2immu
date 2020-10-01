@@ -18,7 +18,7 @@ public class TestConstrainedNumericValue extends CommonAbstractValue {
     @Test
     public void testEquals0() {
         ConstrainedNumericValue ge0 = ConstrainedNumericValue.lowerBound(i, 0);
-        Value eqGe0 = EqualsValue.equals(ge0, new IntValue(0));
+        Value eqGe0 = equals(ge0, new IntValue(0));
         Assert.assertTrue(eqGe0 instanceof EqualsValue);
         Assert.assertEquals("0 == i,?>=0", eqGe0.toString());
 
@@ -30,7 +30,7 @@ public class TestConstrainedNumericValue extends CommonAbstractValue {
     @Test
     public void testEquals1() {
         ConstrainedNumericValue gt1 = ConstrainedNumericValue.lowerBound(i, 1);
-        Value eqGt1 = EqualsValue.equals(gt1, new IntValue(1));
+        Value eqGt1 = equals(gt1, new IntValue(1));
         Assert.assertTrue(eqGt1 instanceof EqualsValue);
         Assert.assertEquals("1 == i,?>=1", eqGt1.toString());
 
@@ -42,7 +42,7 @@ public class TestConstrainedNumericValue extends CommonAbstractValue {
     @Test
     public void testEquals2() {
         ConstrainedNumericValue gt1 = ConstrainedNumericValue.lowerBound(i, 0);
-        Value eqGt1 = EqualsValue.equals(gt1, new IntValue(2));
+        Value eqGt1 = equals(gt1, new IntValue(2));
         Assert.assertTrue(eqGt1 instanceof EqualsValue);
         Assert.assertEquals("2 == i,?>=0", eqGt1.toString());
 

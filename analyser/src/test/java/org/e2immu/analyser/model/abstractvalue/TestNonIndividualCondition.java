@@ -1,7 +1,9 @@
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -13,11 +15,11 @@ public class TestNonIndividualCondition extends CommonAbstractValue {
 
     @Test
     public void test1() {
-        Value sEqualsNull = EqualsValue.equals(NullValue.NULL_VALUE, s);
+        Value sEqualsNull = equals(NullValue.NULL_VALUE, s);
         Assert.assertEquals("null == s", sEqualsNull.toString());
         Assert.assertEquals("null == s", rest(sEqualsNull, Value.FilterMode.ACCEPT).toString());
 
-        Value pEqualsNull = EqualsValue.equals(NullValue.NULL_VALUE, p);
+        Value pEqualsNull = equals(NullValue.NULL_VALUE, p);
         Assert.assertEquals("null == p", pEqualsNull.toString());
         Assert.assertSame(UnknownValue.EMPTY, rest(pEqualsNull, Value.FilterMode.ACCEPT));
         Assert.assertSame(UnknownValue.EMPTY, rest(NegatedValue.negate(pEqualsNull), Value.FilterMode.ACCEPT));

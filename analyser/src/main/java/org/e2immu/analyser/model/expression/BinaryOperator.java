@@ -137,14 +137,14 @@ public class BinaryOperator implements Expression {
                     r == NullValue.NULL_VALUE && left.isNotNull0(evaluationContext)) {
                 return BoolValue.FALSE;
             }
-            return EqualsValue.equals(l, r, booleanObjectFlow(evaluationContext));
+            return EqualsValue.equals(l, r, booleanObjectFlow(evaluationContext), evaluationContext);
         }
         if (operator == PRIMITIVES.equalsOperatorInt) {
             if (l.equals(r)) return BoolValue.TRUE;
             if (l == NullValue.NULL_VALUE || r == NullValue.NULL_VALUE) {
                 // TODO need more resolution here to distinguish int vs Integer comparison throw new UnsupportedOperationException();
             }
-            return EqualsValue.equals(l, r, booleanObjectFlow(evaluationContext));
+            return EqualsValue.equals(l, r, booleanObjectFlow(evaluationContext), evaluationContext);
         }
         if (operator == PRIMITIVES.notEqualsOperatorObject) {
             if (l.equals(r)) return BoolValue.FALSE;
@@ -154,14 +154,14 @@ public class BinaryOperator implements Expression {
                     r == NullValue.NULL_VALUE && left.isNotNull0(evaluationContext)) {
                 return BoolValue.TRUE;
             }
-            return NegatedValue.negate(EqualsValue.equals(l, r, booleanObjectFlow(evaluationContext)));
+            return NegatedValue.negate(EqualsValue.equals(l, r, booleanObjectFlow(evaluationContext), evaluationContext));
         }
         if (operator == PRIMITIVES.notEqualsOperatorInt) {
             if (l.equals(r)) return BoolValue.FALSE;
             if (l == NullValue.NULL_VALUE || r == NullValue.NULL_VALUE) {
                 // TODO need more resolution throw new UnsupportedOperationException();
             }
-            return NegatedValue.negate(EqualsValue.equals(l, r, booleanObjectFlow(evaluationContext)));
+            return NegatedValue.negate(EqualsValue.equals(l, r, booleanObjectFlow(evaluationContext), evaluationContext));
         }
 
         // from here on, straightforward operations

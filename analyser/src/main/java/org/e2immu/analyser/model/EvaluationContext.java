@@ -146,4 +146,7 @@ public interface EvaluationContext {
         return null;
     }
 
+    default boolean isNotNull0(Value value) {
+        return true;
+    }
 }

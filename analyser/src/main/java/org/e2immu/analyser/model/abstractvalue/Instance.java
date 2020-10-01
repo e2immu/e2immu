@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
@@ -149,7 +148,7 @@ public class Instance implements Value {
                 return MethodValue.checkSize(null, constructor, constructorParameterValues);
 
             case SIZE_COPY:
-                return MethodValue.checkSizeCopy(constructor, constructorParameterValues);
+                return MethodValue.checkSizeCopy(constructor);
 
             case MODIFIED:
             case IDENTITY:

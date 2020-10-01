@@ -53,28 +53,27 @@ public class EqualsValue extends PrimitiveValue {
         EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
         EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setValue(EqualsValue.equals(reLhs.value, reRhs.value, objectFlow)).build();
+        return builder.setValue(EqualsValue.equals(reLhs.value, reRhs.value, objectFlow, evaluationContext)).build();
     }
 
-    // testing only
-    public static Value equals(Value l, Value r) {
-        return equals(l, r, ObjectFlow.NO_FLOW);
-    }
-
-    public static Value equals(Value l, Value r, ObjectFlow objectFlow) {
+    public static Value equals(Value l, Value r, ObjectFlow objectFlow, EvaluationContext evaluationContext) {
         if (l.equals(r)) return BoolValue.TRUE;
 
-        if (l instanceof NullValue && MultiLevel.isEffectivelyNotNull(r.getPropertyOutsideContext(VariableProperty.NOT_NULL)))
-            return BoolValue.FALSE;
-        if (r instanceof NullValue && MultiLevel.isEffectivelyNotNull(l.getPropertyOutsideContext(VariableProperty.NOT_NULL)))
-            return BoolValue.FALSE;
+        if (l instanceof NullValue && isNotNull0(r, evaluationContext)) return BoolValue.FALSE;
+        if (r instanceof NullValue && isNotNull0(l, evaluationContext)) return BoolValue.FALSE;
 
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         if (l instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) l).rejects(r)) return BoolValue.FALSE;
         if (r instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) r).rejects(l)) return BoolValue.FALSE;
 
-
         return new EqualsValue(l, r, objectFlow);
+    }
+
+    private static boolean isNotNull0(Value value, EvaluationContext evaluationContext) {
+        if (evaluationContext == null) {
+            return MultiLevel.isEffectivelyNotNull(value.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+        }
+        return evaluationContext.isNotNull0(value);
     }
 
     @Override

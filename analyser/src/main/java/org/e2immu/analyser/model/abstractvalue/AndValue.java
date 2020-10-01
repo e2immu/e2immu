@@ -340,7 +340,8 @@ public class AndValue extends PrimitiveValue {
                 if (xb1.b > xb2.b) return !xb1.lessThan ? Action.FALSE : Action.ADD;
                 if (xb1.b < xb2.b) return !xb1.lessThan ? Action.ADD : Action.FALSE;
                 if (ge1.allowEquals && ge2.allowEquals) {
-                    Value newValue = EqualsValue.equals(NumericValue.intOrDouble(xb1.b, ge1.getObjectFlow()), xb1.x, ge1.getObjectFlow());
+                    Value newValue = EqualsValue.equals(NumericValue.intOrDouble(xb1.b, ge1.getObjectFlow()),
+                            xb1.x, ge1.getObjectFlow(), null); // null-checks are irrelevant here
                     newConcat.set(newConcat.size() - 1, newValue);
                     return Action.SKIP;
                 }

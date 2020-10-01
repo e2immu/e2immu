@@ -35,21 +35,28 @@ public class VariableValue implements Value {
     public final String name; // the name in the variable properties; this will speed up grabbing the variable properties
     public final Variable variable;
     private final boolean variableField;
+    private final ObjectFlow objectFlow;
 
     public VariableValue(Variable variable) {
-        this(variable, false);
+        this(variable, ObjectFlow.NO_FLOW);
     }
 
-    public VariableValue(Variable variable, boolean variableField) {
-        this(variable, VariableDataImpl.variableName(variable), variableField);
+    public VariableValue(Variable variable, ObjectFlow objectFlow) {
+        this(variable, objectFlow, false);
+    }
+
+    public VariableValue(Variable variable, ObjectFlow objectFlow, boolean variableField) {
+        this(variable, VariableDataImpl.variableName(variable), objectFlow, variableField);
     }
 
     // dependent variables have a different name
     public VariableValue(Variable variable,
                          String name,
+                         ObjectFlow objectFlow,
                          boolean variableField) {
         this.variable = variable;
         this.name = name;
+        this.objectFlow = objectFlow;
         this.variableField = variableField;
     }
 
@@ -66,7 +73,7 @@ public class VariableValue implements Value {
 
     @Override
     public ObjectFlow getObjectFlow() {
-        throw new UnsupportedOperationException();
+        return objectFlow;
     }
 
     @Override

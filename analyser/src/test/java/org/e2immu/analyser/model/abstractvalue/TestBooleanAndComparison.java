@@ -52,13 +52,13 @@ public class TestBooleanAndComparison extends CommonAbstractValue {
         GreaterThanZeroValue iLt0 = (GreaterThanZeroValue) GreaterThanZeroValue.less(i, new IntValue(0), true);
         GreaterThanZeroValue jGe0 = (GreaterThanZeroValue) GreaterThanZeroValue.greater(j, new IntValue(0), false);
 
-        GreaterThanZeroValue iphLt0 = (GreaterThanZeroValue) GreaterThanZeroValue.less(iPropertyWrapper, new IntValue(0), true);
+        GreaterThanZeroValue iPropWrapLt0 = (GreaterThanZeroValue) GreaterThanZeroValue.less(iPropertyWrapper, new IntValue(0), true);
 
         Value and1 = new AndValue().append(iLt0, jGe0);
         Assert.assertEquals("(((-1) + j) >= 0 and (-i) >= 0)", and1.toString());
 
-        Assert.assertEquals(and1, new AndValue().append(and1, iphLt0));
-        Assert.assertEquals(and1, new AndValue().append(iphLt0, and1));
+        Assert.assertEquals(and1, new AndValue().append(and1, iPropWrapLt0));
+        Assert.assertEquals(and1, new AndValue().append(iPropWrapLt0, and1));
     }
 
     public static final String I_0_1_I_0_J_0 = "[((-1) + (-i)) >= 0, ((-1) + (-i)) >= 0, j >= 0]";

@@ -33,6 +33,7 @@ public class PropertyWrapper implements Value, ValueWrapper {
     /*
 
      We are essentially interested in value, but add extra properties.
+     Alternatively, we wrap a dedicated object flow
 
      */
     public final Value value;

@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 public class ConditionManager {
 
+    public static final ConditionManager INITIAL = new ConditionManager(UnknownValue.EMPTY, UnknownValue.EMPTY);
     public final Value condition;
     public final Value state;
 
@@ -24,6 +25,7 @@ public class ConditionManager {
 
     // adding a condition always adds to the state as well (testing only)
     public ConditionManager addCondition(Value value) {
+        if (value == null || value == UnknownValue.EMPTY) return this;
         if (value != BoolValue.TRUE) {
             return new ConditionManager(combineWithCondition(value), combineWithState(value));
         }
@@ -101,32 +103,6 @@ public class ConditionManager {
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 
-    /**
-     * Conversion from state to notNull numeric property value, combined with the existing state
-     *
-     * @param value any non-constant, non-variable value, to be combined with the current state
-     * @return the numeric VariableProperty.NOT_NULL value
-     */
-    public int notNull(Value value) {
-        if (state == UnknownValue.EMPTY || isDelayed(state)) return Level.DELAY;
-
-        // action: if we add value == null, and nothing changes, we know it is true, we rely on value.getProperty
-        // if the whole thing becomes false, we know it is false, which means we can return Level.TRUE
-        Value equalsNull = EqualsValue.equals(NullValue.NULL_VALUE, value, ObjectFlow.NO_FLOW);
-        if (equalsNull == BoolValue.FALSE) return MultiLevel.EFFECTIVELY_NOT_NULL;
-        Value withCondition = combineWithState(equalsNull);
-        if (withCondition == BoolValue.FALSE) return MultiLevel.EFFECTIVELY_NOT_NULL; // we know != null
-        if (withCondition.equals(equalsNull)) return MultiLevel.NULLABLE; // we know == null was already there
-        return Level.DELAY;
-    }
-
-    public boolean isNotNull(Variable variable) {
-        if (state == UnknownValue.EMPTY || isDelayed(state)) return false;
-
-        VariableValue vv = new VariableValue(variable);
-        return MultiLevel.isEffectivelyNotNull(notNull(vv));
-    }
-
     public Map<Variable, Value> findIndividualSizeRestrictionsInCondition() {
         return getIndividualSizeRestrictions(condition, Value.FilterMode.REJECT, true);
     }
@@ -163,7 +139,7 @@ public class ConditionManager {
         return isDelayed(state);
     }
 
-    private static boolean isDelayed(Value value) {
+    static boolean isDelayed(Value value) {
         return value == UnknownValue.NO_VALUE;
     }
 
@@ -239,7 +215,7 @@ public class ConditionManager {
                 // null evalContext -> do not copy properties (the condition+state may hold a not null, which can
                 // be copied in the property, which can reEvaluate later to constant true/false
                 Variable variable = variableValue.variable;
-                translation.put(v, new VariableValue(variable));
+                translation.put(v, new VariableValue(variable, ObjectFlow.NO_FLOW));
             }
         });
 

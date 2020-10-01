@@ -171,11 +171,11 @@ public class TestAbstractValue extends CommonAbstractValue {
         Value v = new AndValue().append(NegatedValue.negate(a), NegatedValue.negate(b), new OrValue().append(a, b));
         Assert.assertEquals(BoolValue.FALSE, v);
 
-        Value cIsA = EqualsValue.equals(new CharValue('a'), c);
-        Value cIsABis = EqualsValue.equals(new CharValue('a'), c);
+        Value cIsA = equals(new CharValue('a'), c);
+        Value cIsABis = equals(new CharValue('a'), c);
         Assert.assertEquals(cIsA, cIsABis);
 
-        Value cIsB = EqualsValue.equals(new CharValue('b'), c);
+        Value cIsB = equals(new CharValue('b'), c);
 
         Value v2 = new AndValue().append(NegatedValue.negate(cIsA), NegatedValue.negate(cIsB), new OrValue().append(cIsA, cIsB));
         Assert.assertEquals(BoolValue.FALSE, v2);

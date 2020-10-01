@@ -501,7 +501,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             ObjectFlow objectFlow = builder.createInternalObjectFlow(location, Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_METHOD);
             return EqualsValue.equals(new IntValue(Level.decodeSizeEquals(requiredSize),
                             builder.createInternalObjectFlow(location, Primitives.PRIMITIVES.intParameterizedType, Origin.RESULT_OF_METHOD)),
-                    constrainedSizeMethod, objectFlow);
+                    constrainedSizeMethod, objectFlow, evaluationContext);
         }
         return ConstrainedNumericValue.lowerBound(sizeMethod, Level.decodeSizeMin(requiredSize));
     }

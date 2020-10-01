@@ -21,9 +21,7 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -121,7 +119,7 @@ public class MethodValue implements Value {
             return checkSize(null, methodInfo, parameters);
         }
         if (variableProperty == VariableProperty.SIZE_COPY) {
-            return checkSizeCopy(methodInfo, parameters);
+            return checkSizeCopy(methodInfo);
         }
         if (variableProperty == VariableProperty.NOT_NULL) {
             int fluent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.FLUENT);
@@ -160,7 +158,7 @@ public class MethodValue implements Value {
         return methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
     }
 
-    public static int checkSizeCopy(MethodInfo methodInfo, List<Value> parameters) {
+    public static int checkSizeCopy(MethodInfo methodInfo) {
         if (methodInfo == null) return Level.DELAY;
         // the method either belongs to a type that has size, or it returns a type that has size
         if (!methodInfo.returnType().hasSize() && !methodInfo.typeInfo.hasSize()) return Level.DELAY;
@@ -249,40 +247,6 @@ public class MethodValue implements Value {
     @Override
     public ParameterizedType type() {
         return methodInfo.returnType();
-    }
-
-    // TODO ??
-
-    private FilterResult isIndividualSizeRestriction(boolean parametersOnly) {
-        MethodInfo sizeMethod = methodInfo.typeInfo.sizeMethod();
-        if (sizeMethod != null) {
-            int size = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
-            int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
-            if (size >= Level.TRUE && modified == Level.FALSE && object instanceof VariableValue) {
-                VariableValue variableValue = (VariableValue) object;
-                if (!parametersOnly || variableValue.variable instanceof ParameterInfo) {
-                    Value cnv = ConstrainedNumericValue.lowerBound(sizeMethod(sizeMethod), 0);
-                    Value comparison;
-                    if (Level.haveEquals(size)) {
-                        comparison = EqualsValue.equals(new IntValue(Level.decodeSizeEquals(size)), cnv, null);
-                    } else {
-                        comparison = GreaterThanZeroValue.greater(cnv, new IntValue(Level.decodeSizeMin(size)), true, null);
-                    }
-                    return new FilterResult(Map.of(variableValue.variable, comparison), UnknownValue.EMPTY);
-                }
-            }
-        }
-        return new FilterResult(Map.of(), this);
-    }
-
-    private MethodValue sizeMethod(MethodInfo sizeMethod) {
-        if (methodInfo.returnType().typeInfo == Primitives.PRIMITIVES.intTypeInfo) {
-            return this;
-        }
-        if (methodInfo.returnType().typeInfo == Primitives.PRIMITIVES.booleanTypeInfo) {
-            return new MethodValue(sizeMethod, object, List.of(), null); // for internal computational use, so no ObjectFlow
-        }
-        throw new UnsupportedOperationException();
     }
 
     @Override

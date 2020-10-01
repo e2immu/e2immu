@@ -51,7 +51,7 @@ public class TestFilter extends CommonAbstractValue {
 
     @Test
     public void testWithEquals() {
-        Value sNotNull = NegatedValue.negate(EqualsValue.equals(NullValue.NULL_VALUE, s));
+        Value sNotNull = NegatedValue.negate(equals(NullValue.NULL_VALUE, s));
         AndValue andValue = (AndValue) new AndValue().append(a, sNotNull);
         Assert.assertEquals("(a and not (null == s))", andValue.toString());
 

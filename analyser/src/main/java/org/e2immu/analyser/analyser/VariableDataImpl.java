@@ -95,7 +95,6 @@ public class VariableDataImpl implements VariableData {
             // parameter, local variable
             name = variable.name();
         }
-        log(VARIABLE_PROPERTIES, "Resolved variable {} to {}", variable.detailedString(), name);
         return name;
     }
 
@@ -212,7 +211,7 @@ public class VariableDataImpl implements VariableData {
                     Variable newVariable = new RecordField(fieldReference, newName);
                     Value newInitialValue = computeInitialValue(recordField);
                     boolean variableField = false;// TODO this is not correct
-                    Value newResetValue = new VariableValue(newVariable, newName, variableField);
+                    Value newResetValue = new VariableValue(newVariable, newName, ObjectFlow.NO_FLOW, variableField);
                     internalCreate(newVariable, newName, newInitialValue, newResetValue, fieldReferenceState);
                 }
             }
@@ -282,7 +281,7 @@ public class VariableDataImpl implements VariableData {
                 Value state = conditionManager.individualStateInfo(valueWithVariable.variable);
                 // now translate the state (j < 0) into state of the assignment target (this.j < 0)
                 // TODO for now we're ignoring messages etc. encountered in the re-evaluation
-                return state.reEvaluate(evaluationContext, Map.of(value, new VariableValue(assignmentTarget))).value;
+                return state.reEvaluate(evaluationContext, Map.of(value, new VariableValue(assignmentTarget, ObjectFlow.NO_FLOW))).value;
             }
             return UnknownValue.EMPTY;
         }
@@ -344,17 +343,8 @@ public class VariableDataImpl implements VariableData {
             }
         }
 
-        public int getProperty(Variable variable, VariableProperty variableProperty, ConditionManager conditionManager) {
+        public int getProperty(Variable variable, VariableProperty variableProperty) {
             VariableInfoImpl.Builder aboutVariable = findComplain(variable);
-            if (VariableProperty.NOT_NULL == variableProperty && conditionManager.isNotNull(variable)) {
-                return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL, aboutVariable.getProperty(variableProperty));
-            }
-            if (VariableProperty.SIZE == variableProperty) {
-                Value sizeRestriction = conditionManager.individualSizeRestrictions().get(variable);
-                if (sizeRestriction != null) {
-                    return sizeRestriction.encodedSizeRestriction();
-                }
-            }
             if (IDENTITY == variableProperty && aboutVariable.variable instanceof ParameterInfo) {
                 return ((ParameterInfo) aboutVariable.variable).index == 0 ? Level.TRUE : Level.FALSE;
             }
@@ -385,7 +375,8 @@ public class VariableDataImpl implements VariableData {
             if (fieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
                 resetValue = UnknownValue.NO_VALUE; // delay
             } else if (fieldReferenceState == MULTI_COPY) {
-                resetValue = new VariableValue(fieldReference, name, true);
+                // TODO resetValue must become a map of properties
+                resetValue = new VariableValue(fieldReference, name, ObjectFlow.NO_FLOW, true);
             } else {
                 // TODO different field analysis
                 FieldAnalysis fieldAnalysis = fieldReference.fieldInfo.fieldAnalysis.get();
@@ -397,11 +388,11 @@ public class VariableDataImpl implements VariableData {
                     } else {
                         // undefined, will never get a value, but may have decent properties
                         // the properties will be copied from fieldAnalysis into properties in internalCreate
-                        resetValue = new VariableValue(fieldReference, name, false);
+                        resetValue = new VariableValue(fieldReference, name, ObjectFlow.NO_FLOW, false);
                     }
                 } else {
                     // local variable situation
-                    resetValue = new VariableValue(fieldReference, name, false);
+                    resetValue = new VariableValue(fieldReference, name, ObjectFlow.NO_FLOW, false);
                 }
             }
             return internalCreate(fieldReference, name, resetValue, resetValue, fieldReferenceState);

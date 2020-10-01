@@ -17,22 +17,26 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.EvaluationContext;
 
-public class ForwardAnalysisInfo {
-    public static final ForwardAnalysisInfo START_OF_METHOD =
-            new ForwardAnalysisInfo(FlowData.Execution.ALWAYS, ConditionManager.INITIAL, false, false);
+public abstract class AbstractEvaluationContextImpl implements EvaluationContext {
 
-    public final FlowData.Execution execution;
+    public final int iteration;
+
     public final ConditionManager conditionManager;
-    public final boolean inSyncBlock;
-    public final boolean inCatch;
 
-    public ForwardAnalysisInfo(FlowData.Execution execution, ConditionManager conditionManager, boolean inSyncBlock, boolean inCatch) {
-        this.execution = execution;
-        this.inSyncBlock = inSyncBlock;
-        this.inCatch = inCatch;
+    protected AbstractEvaluationContextImpl(int iteration, ConditionManager conditionManager) {
+        this.iteration =iteration;
         this.conditionManager = conditionManager;
+    }
+
+    @Override
+    public int getIteration() {
+        return iteration;
+    }
+
+    @Override
+    public ConditionManager getConditionManager() {
+        return conditionManager;
     }
 }

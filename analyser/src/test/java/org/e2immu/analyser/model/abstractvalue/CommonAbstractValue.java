@@ -105,19 +105,22 @@ public abstract class CommonAbstractValue {
         return pi;
     }
 
-    static EvaluationContext minimalEvaluationContext = new EvaluationContext() {
+    protected final static EvaluationContext minimalEvaluationContext = new EvaluationContext() {
 
         @Override
         public Value currentValue(Variable variable) {
             return new VariableValue(variable);
         }
 
-        //@Override
-        // public boolean equals(Variable variable, Variable other) {
-        //    return variable.name().equals(other.name());
-        //}
-
+        @Override
+        public boolean isNotNull0(Value value) {
+            return false; // no opinion
+        }
     };
+
+    protected static Value equals(Value v1, Value v2) {
+        return EqualsValue.equals(v1, v2, ObjectFlow.NO_FLOW, minimalEvaluationContext);
+    }
 
     static final Variable va = createVariable("a");
     static final Variable vb = createVariable("b");
@@ -132,7 +135,8 @@ public abstract class CommonAbstractValue {
     static final Variable vj = createVariable("j");
     static final Variable vk = createVariable("k");
     static final VariableValue i = new VariableValue(vi);
-    static final Value iPropertyWrapper = PropertyWrapper.propertyWrapper(new VariableValue(vi), Map.of(), ObjectFlow.NO_FLOW);
+    static final Value iPropertyWrapper = PropertyWrapper.propertyWrapper(new VariableValue(vi),
+            Map.of(), ObjectFlow.NO_FLOW);
     static final VariableValue j = new VariableValue(vj);
     static final VariableValue k = new VariableValue(vk);
 

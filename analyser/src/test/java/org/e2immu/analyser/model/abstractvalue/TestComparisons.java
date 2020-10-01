@@ -43,17 +43,17 @@ public class TestComparisons extends CommonAbstractValue {
 
     @Test
     public void testEqualsEquals() {
-        Value iEq4 = EqualsValue.equals(i, new IntValue(4));
-        Value iEq3 = EqualsValue.equals(new IntValue(3), i);
+        Value iEq4 = equals(i, new IntValue(4));
+        Value iEq3 = equals(new IntValue(3), i);
         Value and = new AndValue().append(iEq3, iEq4);
         Assert.assertEquals(BoolValue.FALSE, and);
     }
 
     @Test
     public void testEqualsNotEquals() {
-        Value iEq4 = EqualsValue.equals(i, new IntValue(4));
+        Value iEq4 = equals(i, new IntValue(4));
         Assert.assertEquals("4 == i", iEq4.toString());
-        Value iNeq3 = NegatedValue.negate(EqualsValue.equals(new IntValue(3), i));
+        Value iNeq3 = NegatedValue.negate(equals(new IntValue(3), i));
         Assert.assertEquals("not (3 == i)", iNeq3.toString());
         Value and = new AndValue().append(iNeq3, iEq4);
         Assert.assertEquals(iEq4, and);
@@ -61,16 +61,16 @@ public class TestComparisons extends CommonAbstractValue {
 
     @Test
     public void testEqualsGreaterThan0() {
-        Value iEq4 = EqualsValue.equals(i, new IntValue(4));
+        Value iEq4 = equals(i, new IntValue(4));
         Value iGe0 = GreaterThanZeroValue.greater(i, IntValue.ZERO_VALUE, true);
         Value and = new AndValue().append(iGe0, iEq4);
         Assert.assertEquals(iEq4, and);
 
-        Value iEqMinus4 = EqualsValue.equals(i, new IntValue(-4));
+        Value iEqMinus4 = equals(i, new IntValue(-4));
         Value and2 = new AndValue().append(iGe0, iEqMinus4);
         Assert.assertEquals(BoolValue.FALSE, and2);
 
-        Value iEq0 = EqualsValue.equals(i, IntValue.ZERO_VALUE);
+        Value iEq0 = equals(i, IntValue.ZERO_VALUE);
         Value and4 = new AndValue().append(iGe0, iEq0);
         Assert.assertEquals(iEq0, and4);
     }
@@ -78,16 +78,16 @@ public class TestComparisons extends CommonAbstractValue {
     // GE1 follows a different path from GE0, since -1 + x >= 0 is involved
     @Test
     public void testEqualsGreaterThan1() {
-        Value iEq4 = EqualsValue.equals(i, new IntValue(4));
+        Value iEq4 = equals(i, new IntValue(4));
         Value iGe1 = GreaterThanZeroValue.greater(i, new IntValue(1), true);
         Value and = new AndValue().append(iGe1, iEq4);
         Assert.assertEquals(iEq4, and);
 
-        Value iEqMinus4 = EqualsValue.equals(i, new IntValue(-4));
+        Value iEqMinus4 = equals(i, new IntValue(-4));
         Value and2 = new AndValue().append(iGe1, iEqMinus4);
         Assert.assertEquals(BoolValue.FALSE, and2);
 
-        Value iEq0 = EqualsValue.equals(i, IntValue.ZERO_VALUE);
+        Value iEq0 = equals(i, IntValue.ZERO_VALUE);
         Value iGt0 = GreaterThanZeroValue.greater(i, IntValue.ZERO_VALUE, false);
         Value and3 = new AndValue().append(iGt0, iEq0);
         Assert.assertEquals(BoolValue.FALSE, and3);
@@ -96,16 +96,16 @@ public class TestComparisons extends CommonAbstractValue {
     // GE1 follows a different path from GE0, since -1 + x >= 0 is involved
     @Test
     public void testEqualsLessThan1() {
-        Value iEq4 = EqualsValue.equals(i, new IntValue(4));
+        Value iEq4 = equals(i, new IntValue(4));
         Value iLe1 = GreaterThanZeroValue.less(i, new IntValue(1), true);
         Value and = new AndValue().append(iLe1, iEq4);
         Assert.assertEquals(BoolValue.FALSE, and);
 
-        Value iEqMinus4 = EqualsValue.equals(i, new IntValue(-4));
+        Value iEqMinus4 = equals(i, new IntValue(-4));
         Value and2 = new AndValue().append(iLe1, iEqMinus4);
         Assert.assertEquals(iEqMinus4, and2);
 
-        Value iEq0 = EqualsValue.equals(i, IntValue.ZERO_VALUE);
+        Value iEq0 = equals(i, IntValue.ZERO_VALUE);
         Value iLt0 = GreaterThanZeroValue.less(i, IntValue.ZERO_VALUE, false);
         Value and3 = new AndValue().append(iLt0, iEq0);
         Assert.assertEquals(BoolValue.FALSE, and3);
@@ -196,19 +196,19 @@ public class TestComparisons extends CommonAbstractValue {
         Assert.assertEquals(Level.SIZE_NOT_EMPTY, iGe0.encodedSizeRestriction());
         Value iGe3 = GreaterThanZeroValue.greater(i, new IntValue(3), true);
         Assert.assertEquals(Level.encodeSizeMin(3), iGe3.encodedSizeRestriction());
-        Value iEq4 = EqualsValue.equals(i, new IntValue(4));
+        Value iEq4 = equals(i, new IntValue(4));
         Assert.assertEquals(Level.encodeSizeEquals(4), iEq4.encodedSizeRestriction());
     }
 
     @Test
     public void testEquals0AndGreaterThan0() {
-        Value iEq0 = EqualsValue.equals(i, IntValue.ZERO_VALUE);
+        Value iEq0 = equals(i, IntValue.ZERO_VALUE);
         Value iGt0 = GreaterThanZeroValue.greater(i, IntValue.ZERO_VALUE, false);
         Value and = new AndValue().append(iEq0, iGt0);
         Assert.assertEquals(BoolValue.FALSE, and);
 
         Value wrappedI = ConstrainedNumericValue.lowerBound(i, 0);
-        Value iEq0Wrapped = EqualsValue.equals(wrappedI, IntValue.ZERO_VALUE);
+        Value iEq0Wrapped = equals(wrappedI, IntValue.ZERO_VALUE);
         Assert.assertEquals("0 == i,?>=0", iEq0Wrapped.toString());
         Value iGt0Wrapped = GreaterThanZeroValue.greater(wrappedI, IntValue.ZERO_VALUE, false);
         Assert.assertEquals("((-1) + i,?>=0) >= 0", iGt0Wrapped.toString());
