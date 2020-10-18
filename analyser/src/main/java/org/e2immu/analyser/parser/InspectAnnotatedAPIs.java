@@ -100,7 +100,9 @@ public class InspectAnnotatedAPIs {
 
                 ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInGlobalTypeContext, globalTypeContext);
                 typeInGlobalTypeContext.resolveAllAnnotations(expressionContext);
-                typeInGlobalTypeContext.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, true, "merge annotations");
+                if(!typeInGlobalTypeContext.hasBeenDefined()) {
+                    typeInGlobalTypeContext.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, true, "merge annotations");
+                }
             }
         });
         return typesInGlobalTypeContext;

@@ -42,6 +42,8 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -53,6 +55,7 @@ import static org.e2immu.analyser.util.Logger.log;
 @Container
 @E2Immutable(after = "TypeAnalyser.analyse()") // and not MethodAnalyser.analyse(), given the back reference
 public class MethodInfo implements WithInspectionAndAnalysis {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MethodInfo.class);
 
     public final TypeInfo typeInfo; // back reference, only @ContextClass after...
     public final String name;
@@ -560,10 +563,20 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                     .map(parameterInfo -> parameterInfo.parameterAnalysis.get()).collect(Collectors.toList());
             MethodAnalysis methodAnalysis = new MethodAnalysis(this, typeInfo.typeAnalysis.get(), parameterAnalyses, null);
             this.methodAnalysis.set(methodAnalysis);
+            methodAnalysis.overrides.set(overrides(methodAnalysis.methodInfo));
         }
         messages.addAll(methodAnalysis.get().fromAnnotationsIntoProperties(acceptVerify, methodInspection.get().annotations,
                 typeContext, overwrite));
         return messages;
+    }
+
+    private static Set<MethodAnalysis> overrides(MethodInfo methodInfo) {
+        try {
+            return methodInfo.typeInfo.overrides(methodInfo, true).stream().map(mi -> mi.methodAnalysis.get()).collect(Collectors.toSet());
+        } catch (RuntimeException rte) {
+            LOGGER.error("Cannot compute method analysis of {}", methodInfo.distinguishingName());
+            throw rte;
+        }
     }
 
     @Override

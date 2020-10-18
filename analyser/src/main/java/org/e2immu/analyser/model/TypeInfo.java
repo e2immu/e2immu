@@ -1009,7 +1009,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         methodInfo.methodInspection.get().methodBody.set(block);
         typeInfo.typeInspection.set(builder.build(true, typeInfo));
 
-        resolver.sortTypes(Map.of(typeInfo, expressionContext.typeContext), expressionContext.e2ImmuAnnotationExpressions);
+        resolver.sortTypes(Map.of(typeInfo, expressionContext.typeContext));
         ensureLambdaResolutionDefaults();
 
         return methodInfo;
@@ -1069,9 +1069,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public Messages copyAnnotationsIntoTypeAnalysisProperties(E2ImmuAnnotationExpressions typeContext, boolean overwrite, String where) {
-        boolean acceptVerify = !hasBeenDefined() || isInterface();
-        log(RESOLVE, "{}: copy annotations into properties: {}", where, fullyQualifiedName);
+        assert !hasBeenDefined();
         Messages messages = new Messages();
+        boolean acceptVerify = isInterface();
+        log(RESOLVE, "{}: copy annotations into properties: {}", where, fullyQualifiedName);
         if (this.typeAnalysis.isSet()) {
             if (!overwrite)
                 throw new UnsupportedOperationException("Type analysis already set for " + fullyQualifiedName);

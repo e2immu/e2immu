@@ -185,7 +185,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
             if (!overwrite)
                 throw new UnsupportedOperationException("Field analysis already set for " + fullyQualifiedName());
         } else {
-            FieldAnalysis fieldAnalysis = new FieldAnalysis(this);
+            FieldAnalysis fieldAnalysis = new FieldAnalysis(this, owner.typeAnalysis.get());
             this.fieldAnalysis.set(fieldAnalysis);
         }
         boolean acceptVerify = !owner.hasBeenDefined() || owner.isInterface();

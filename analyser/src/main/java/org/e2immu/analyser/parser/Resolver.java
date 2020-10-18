@@ -59,11 +59,10 @@ public class Resolver {
      *
      * @param inspectedTypes              when a subResolver, the map contains only one type, and it will not be a primary type.
      *                                    When not a subResolver, it only contains primary types.
-     * @param e2ImmuAnnotationExpressions The store with annotations
      * @return A list of sorted primary types, each with their sub-elements (sub-types, fields, methods) sorted.
      */
 
-    public List<SortedType> sortTypes(Map<TypeInfo, TypeContext> inspectedTypes, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    public List<SortedType> sortTypes(Map<TypeInfo, TypeContext> inspectedTypes) {
         DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
         Map<TypeInfo, SortedType> toSortedType = new HashMap<>();
         Set<TypeInfo> stayWithin = inspectedTypes.keySet().stream()
@@ -75,7 +74,7 @@ public class Resolver {
                 TypeContext typeContext = entry.getValue();
 
                 assert subResolver || typeInfo.isPrimaryType();
-                SortedType sortedType = addToTypeGraph(typeGraph, stayWithin, typeInfo, typeContext, e2ImmuAnnotationExpressions);
+                SortedType sortedType = addToTypeGraph(typeGraph, stayWithin, typeInfo, typeContext);
                 toSortedType.put(typeInfo, sortedType);
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while resolving type {}", entry.getKey().fullyQualifiedName);
@@ -116,20 +115,13 @@ public class Resolver {
     private SortedType addToTypeGraph(DependencyGraph<TypeInfo> typeGraph,
                                       Set<TypeInfo> stayWithin,
                                       TypeInfo typeInfo,
-                                      TypeContext typeContextOfFile,
-                                      E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+                                      TypeContext typeContextOfFile) {
 
         // main call
         TypeContext typeContextOfType = new TypeContext(typeContextOfFile);
         DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph = new DependencyGraph<>();
         List<MethodInfo> methods = doType(typeInfo, typeContextOfType, methodFieldSubTypeGraph);
 
-        if (subResolver) {
-            typeInfo.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, false, "sub-resolver");
-        } else {
-            typeInfo.allTypesInPrimaryType()
-                    .forEach(ti -> ti.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, false, "resolver"));
-        }
         fillInternalMethodCalls(methodFieldSubTypeGraph);
 
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes

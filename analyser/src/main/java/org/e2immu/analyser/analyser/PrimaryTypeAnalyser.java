@@ -88,6 +88,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
             }
             methodAnalysersBuilder.put(methodInfo, analyser);
         });
+        parameterAnalysers = parameterAnalysersBuilder.build();
         methodAnalysers = methodAnalysersBuilder.build();
 
         // finally fields, and wire everything together
@@ -105,21 +106,22 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
                         samAnalyser.methodAnalysis.overrides.set(overrides(sam, methodAnalysers));
                     }
                 }
-                analyser = new FieldAnalyser(fieldInfo, primaryType, samAnalyser, this);
+                TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).typeAnalysis;
+                analyser = new FieldAnalyser(fieldInfo, primaryType, ownerTypeAnalysis, samAnalyser, this);
                 fieldAnalysersBuilder.put(fieldInfo, (FieldAnalyser) analyser);
                 if (samAnalyser != null) {
                     return List.of(analyser, samAnalyser).stream();
                 }
             } else if (mfs instanceof MethodInfo) {
-                analyser = methodAnalysers.get(mfs);
-                ((MethodAnalyser) analyser).methodAnalysis.overrides.set(overrides((MethodInfo) mfs, methodAnalysers));
+                MethodAnalyser methodAnalyser = methodAnalysers.get(mfs);
+                analyser = methodAnalyser;
+                methodAnalyser.methodAnalysis.overrides.set(overrides((MethodInfo) mfs, methodAnalysers));
             } else if (mfs instanceof TypeInfo) {
                 analyser = typeAnalysers.get(mfs);
             } else throw new UnsupportedOperationException();
             return List.of(analyser).stream();
         }).collect(Collectors.toList());
         fieldAnalysers = fieldAnalysersBuilder.build();
-        parameterAnalysers = parameterAnalysersBuilder.build();
         // all important fields of the interface have been set.
         analysers.forEach(Analyser::initialize);
     }

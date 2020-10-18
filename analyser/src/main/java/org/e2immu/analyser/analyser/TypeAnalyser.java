@@ -111,6 +111,9 @@ public class TypeAnalyser extends AbstractAnalyser {
             List<AnalysisResultSupplier> onlyFirst = List.of((iteration) -> analyseImplicitlyImmutableTypes());
             analyserComponents = new AnalyserComponents(onlyFirst);
         }
+
+        messages.addAll(typeAnalysis.fromAnnotationsIntoProperties(typeInfo.isInterface(), typeInspection.annotations,
+                analyserContext.getE2ImmuAnnotationExpressions(), false));
     }
 
     @Override

@@ -24,7 +24,6 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.NotModified;
 
@@ -33,34 +32,34 @@ import java.util.Set;
 public class FieldAnalysis extends Analysis {
 
     public final TypeInfo bestType;
-    public final TypeInfo owner;
     public final boolean isExplicitlyFinal;
     public final ParameterizedType type;
-    public final Location location;
+    public final FieldInfo fieldInfo;
     public final MethodInfo sam;
+    private final TypeAnalysis typeAnalysisOfOwner;
 
-    public FieldAnalysis(@NotModified FieldInfo fieldInfo) {
+    public FieldAnalysis(@NotModified FieldInfo fieldInfo, TypeAnalysis typeAnalysisOfOwner) {
         super(fieldInfo.hasBeenDefined(), fieldInfo.name);
-        this.owner = fieldInfo.owner;
+        this.typeAnalysisOfOwner = typeAnalysisOfOwner;
         this.bestType = fieldInfo.type.bestTypeInfo();
         isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
         type = fieldInfo.type;
-        location = new Location(fieldInfo);
         this.sam = !fieldInfo.fieldInspection.get().initialiser.isSet() ? null :
                 fieldInfo.fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod;
         ObjectFlow initialObjectFlow = new ObjectFlow(new Location(fieldInfo), type,
                 Origin.INITIAL_FIELD_FLOW);
         objectFlow = new FirstThen<>(initialObjectFlow);
+        this.fieldInfo = fieldInfo;
     }
 
     @Override
     protected Location location() {
-        return location;
+        return new Location(fieldInfo);
     }
 
     @Override
     public AnnotationMode annotationMode() {
-        return owner.typeAnalysis.get().annotationMode();
+        return typeAnalysisOfOwner.annotationMode();
     }
 
     // if the field turns out to be effectively final, it can have a value
@@ -75,8 +74,6 @@ public class FieldAnalysis extends Analysis {
     // or parameters
     public final SetOnce<Set<Variable>> variablesLinkedToMe = new SetOnce<>();
 
-    public final SetOnceMap<MethodInfo, Boolean> errorsForAssignmentsOutsidePrimaryType = new SetOnceMap<>();
-
     public final SetOnce<Boolean> fieldError = new SetOnce<>();
 
     public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
@@ -89,7 +86,7 @@ public class FieldAnalysis extends Analysis {
     public int getProperty(VariableProperty variableProperty) {
         switch (variableProperty) {
             case FINAL:
-                int immutableOwner = owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+                int immutableOwner = typeAnalysisOfOwner.getProperty(VariableProperty.IMMUTABLE);
                 if (MultiLevel.isEffectivelyE1Immutable(immutableOwner)) return Level.TRUE;
                 break;
 
@@ -122,12 +119,12 @@ public class FieldAnalysis extends Analysis {
     @Override
     public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         int effectivelyFinal = getProperty(VariableProperty.FINAL);
-        int ownerImmutable = owner.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+        int ownerImmutable = typeAnalysisOfOwner.getProperty(VariableProperty.IMMUTABLE);
         int modified = getProperty(VariableProperty.MODIFIED);
 
         // @Final(after=), @Final, @Variable
         if (effectivelyFinal == Level.FALSE && MultiLevel.isEventuallyE1Immutable(ownerImmutable)) {
-            String labels = owner.typeAnalysis.get().allLabelsRequiredForImmutable();
+            String labels = typeAnalysisOfOwner.allLabelsRequiredForImmutable();
             annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.get().copyWith("after", labels), true);
         } else {
             if (effectivelyFinal == Level.TRUE && !isExplicitlyFinal) {
@@ -143,7 +140,7 @@ public class FieldAnalysis extends Analysis {
 
         // @NotModified(after=), @NotModified, @Modified
         if (modified == Level.TRUE && MultiLevel.isEventuallyE2Immutable(ownerImmutable)) {
-            String marks = String.join(",", owner.typeAnalysis.get().marksRequiredForImmutable());
+            String marks = String.join(",", typeAnalysisOfOwner.marksRequiredForImmutable());
             annotations.put(e2ImmuAnnotationExpressions.notModified.get().copyWith("after", marks), true);
         } else if (allowModificationAnnotation()) {
             AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
@@ -176,7 +173,7 @@ public class FieldAnalysis extends Analysis {
     }
 
     private int typeImmutable() {
-        return owner == bestType || bestType == null ? MultiLevel.FALSE :
+        return fieldInfo.owner == bestType || bestType == null ? MultiLevel.FALSE :
                 bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
     }
 

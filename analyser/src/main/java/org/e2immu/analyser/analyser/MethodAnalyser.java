@@ -130,7 +130,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     public Collection<ParameterAnalyser> getParameterAnalysers() {
-        return analyserContext.getParameterAnalysers().values();
+        return parameterAnalysers;
     }
 
     @Override

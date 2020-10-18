@@ -334,7 +334,7 @@ public class ExpressionContext {
         TypeInfo typeInfo = new TypeInfo(localName);
         typeInfo.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
         typeContext.addToContext(typeInfo);
-        new Resolver(true).sortTypes(Map.of(typeInfo, typeContext), e2ImmuAnnotationExpressions);
+        new Resolver(true).sortTypes(Map.of(typeInfo, typeContext));
         return new LocalClassDeclaration(typeInfo);
     }
 

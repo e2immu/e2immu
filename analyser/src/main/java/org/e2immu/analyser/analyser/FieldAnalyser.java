@@ -68,12 +68,13 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     public FieldAnalyser(FieldInfo fieldInfo,
                          TypeInfo primaryType,
+                         TypeAnalysis ownerTypeAnalysis,
                          MethodAnalyser sam,
                          AnalyserContext analyserContext) {
         super(analyserContext);
         this.fieldInfo = fieldInfo;
         fieldInspection = fieldInfo.fieldInspection.get();
-        fieldAnalysis = new FieldAnalysis(fieldInfo);
+        fieldAnalysis = new FieldAnalysis(fieldInfo, ownerTypeAnalysis);
         this.primaryType = primaryType;
         this.sam = sam;
         fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord() || !fieldInfo.isPrivate() && !fieldInfo.isExplicitlyFinal();
@@ -153,6 +154,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (fieldInitialiser.initialiser != EmptyExpression.EMPTY_EXPRESSION) {
                 EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
                 EvaluationResult evaluationResult = fieldInitialiser.initialiser.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+                initialiserValue = evaluationResult.value;
                 resultOfObjectFlow = makeInternalObjectFlowsPermanent(evaluationResult);
                 value = evaluationResult.value;
                 log(FINAL, "Set initialiser of field {} to {}", fieldInfo.fullyQualifiedName(), value);
@@ -889,7 +891,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         @Override
         public Value currentValue(String variableName) {
-            return currentValue(variableByName(variableName));
+            FieldInfo fieldInfo = primaryType.getFieldByName(variableName, true);
+            return getVariableValue(new FieldReference(fieldInfo, new This(fieldInfo.owner)));
         }
 
     }

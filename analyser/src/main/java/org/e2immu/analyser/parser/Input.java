@@ -217,10 +217,6 @@ public class Input {
         return byteCodeInspector;
     }
 
-    public AnnotationStore getAnnotationStore() {
-        return annotationStore;
-    }
-
     public TypeStore getSourceTypeStore() {
         return sourceTypeStore;
     }

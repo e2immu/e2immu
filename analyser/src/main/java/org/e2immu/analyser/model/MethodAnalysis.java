@@ -86,7 +86,7 @@ public class MethodAnalysis extends Analysis {
             ObjectFlow initialObjectFlow = new ObjectFlow(new Location(methodInfo), returnType, Origin.INITIAL_METHOD_FLOW);
             objectFlow = new FirstThen<>(initialObjectFlow);
         }
-        firstStatement = firstStatementAnalyser.statementAnalysis;
+        firstStatement = firstStatementAnalyser == null ? null : firstStatementAnalyser.statementAnalysis;
     }
 
     public MethodLevelData methodLevelData() {

@@ -110,7 +110,7 @@ public class Parser {
     private List<SortedType> phase2ResolveAndAnalyse(Map<TypeInfo, TypeContext> inspectedPrimaryTypesToTypeContextOfFile) {
         // phase 2: resolve methods and fields
         Resolver resolver = new Resolver(false);
-        List<SortedType> sortedPrimaryTypes = resolver.sortTypes(inspectedPrimaryTypesToTypeContextOfFile, e2ImmuAnnotationExpressions);
+        List<SortedType> sortedPrimaryTypes = resolver.sortTypes(inspectedPrimaryTypesToTypeContextOfFile);
         messages.addAll(resolver.getMessageStream());
 
         if (configuration.skipAnalysis) return sortedPrimaryTypes;
@@ -156,7 +156,7 @@ public class Parser {
     private void checkTypeAnalysisOfLoadedObjects() {
         globalTypeContext.typeStore.visit(new String[0], (s, list) -> {
             for (TypeInfo typeInfo : list) {
-                if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet()) {
+                if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() && !typeInfo.hasBeenDefined()) {
                     typeInfo.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions, false, "parser");
                 }
             }
