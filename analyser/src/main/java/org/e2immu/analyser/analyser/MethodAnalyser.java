@@ -737,7 +737,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus methodIsModified() {
-        assert methodAnalysis.getProperty(VariableProperty.MODIFIED) == Level.DELAY;
+        if (methodAnalysis.getProperty(VariableProperty.MODIFIED) != Level.DELAY) return DONE;
 
         // first step, check field assignments
         boolean fieldAssignments = methodLevelData.fieldSummaries.stream()

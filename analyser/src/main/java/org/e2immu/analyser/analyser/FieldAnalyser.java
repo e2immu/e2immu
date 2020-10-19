@@ -414,7 +414,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus analyseDynamicTypeAnnotation(VariableProperty property) {
         if (fieldInfo.type.isFunctionalInterface()) return DONE; // not for me
-        assert fieldAnalysis.getProperty(property) == Level.DELAY;
+        // not an assert, because the value is not directly determined by the actual property
+        if (fieldAnalysis.getProperty(property) != Level.DELAY) return DONE;
 
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (isFinal == Level.DELAY) {

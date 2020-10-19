@@ -86,8 +86,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         ImmutableMap.Builder<FieldInfo, FieldAnalyser> fieldAnalysersBuilder = new ImmutableMap.Builder<>();
         analysers = sortedType.methodsFieldsSubTypes.stream().flatMap(mfs -> {
             Analyser analyser;
-            if (mfs instanceof FieldInfo) {
-                FieldInfo fieldInfo = (FieldInfo) mfs;
+            if (mfs instanceof FieldInfo fieldInfo) {
                 MethodAnalyser samAnalyser = null;
                 if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
                     FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
@@ -158,8 +157,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
     public void write() {
         analysers.forEach(analyser -> {
             analyser.getMember().setAnalysis(analyser.getAnalysis());
-            if (analyser instanceof MethodAnalyser) {
-                MethodAnalyser methodAnalyser = (MethodAnalyser) analyser;
+            if (analyser instanceof MethodAnalyser methodAnalyser) {
                 methodAnalyser.getParameterAnalysers().forEach(parameterAnalyser ->
                         parameterAnalyser.parameterInfo.setAnalysis(parameterAnalyser.parameterAnalysis));
             }
@@ -170,7 +168,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         return primaryType;
     }
 
-    public PatternMatcher getPatternMatcher() {
+    public PatternMatcher<StatementAnalyser> getPatternMatcher() {
         return patternMatcher;
     }
 

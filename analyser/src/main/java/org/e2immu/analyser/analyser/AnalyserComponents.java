@@ -50,6 +50,7 @@ public class AnalyserComponents {
             AnalysisStatus initialState = state[i];
             if (initialState != DONE) {
                 AnalysisStatus afterExec = supplier.apply(iteration);
+                state[i] = afterExec;
                 if (afterExec == PROGRESS) changes = true;
                 if (afterExec != DONE) allDone = false;
                 if (afterExec != initialState) changes = true;
