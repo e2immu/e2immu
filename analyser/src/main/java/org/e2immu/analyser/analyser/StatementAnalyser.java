@@ -100,7 +100,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         StatementAnalyser first = null;
         StatementAnalyser previous = null;
         for (Statement statement : statements) {
-            String iPlusSt = indices + "." + statementIndex;
+            String iPlusSt = indices.isEmpty() ? "" + statementIndex : indices + "." + statementIndex;
             StatementAnalyser statementAnalyser = new StatementAnalyser(analyserContext, myMethodAnalyser, statement, parent, iPlusSt);
             if (previous != null) {
                 previous.statementAnalysis.navigationData.next.set(Optional.of(statementAnalyser.statementAnalysis));
@@ -317,13 +317,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             }
         }
 
-        // check for some errors
-        detectErrors();
-
         // variable data
         VariableDataImpl variableData = variableDataBuilder.build();
         statementAnalysis.variableData.set(variableData);
-        variableDataBuilder = null; // drop some data
+
+        // check for some errors
+        detectErrors();
+
 
         // method level data
         StatementAnalyserResult result = statementAnalysis.methodLevelData.analyse(evaluationContext, variableData,
@@ -335,6 +335,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         // state data
         statementAnalysis.stateData.finalise(this, previousStatementAnalysis);
+
+        variableDataBuilder = null; // drop some data
 
         return result;
     }

@@ -55,4 +55,10 @@ public interface AnalyserContext {
         Objects.requireNonNull(parameterAnalyser, "Parameter analyser is null for " + parameterInfo.detailedName());
         return parameterAnalyser.parameterAnalysis;
     }
+
+    default TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
+        TypeAnalyser typeAnalyser = getTypeAnalysers().get(typeInfo);
+        Objects.requireNonNull(typeAnalyser, "Type analyser is null for " + typeInfo.fullyQualifiedName);
+        return typeAnalyser.typeAnalysis;
+    }
 }

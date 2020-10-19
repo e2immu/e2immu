@@ -208,7 +208,8 @@ public class VariableDataImpl implements VariableData {
                     String newName = name + "." + recordField.name;
                     FieldReference fieldReference = new FieldReference(recordField, variable);
                     Variable newVariable = new RecordField(fieldReference, newName);
-                    Value newInitialValue = computeInitialValue(recordField);
+                    FieldAnalysis recordFieldAnalysis = analyserContext.getFieldAnalysis(recordField);
+                    Value newInitialValue = computeInitialValue(recordFieldAnalysis);
                     boolean variableField = false;// TODO this is not correct
                     Value newResetValue = new VariableValue(newVariable, newName, ObjectFlow.NO_FLOW, variableField);
                     internalCreate(analyserContext, newVariable, newName, newInitialValue, newResetValue, fieldReferenceState);
@@ -378,7 +379,7 @@ public class VariableDataImpl implements VariableData {
                 resetValue = new VariableValue(fieldReference, name, ObjectFlow.NO_FLOW, true);
             } else {
                 // TODO different field analysis
-                FieldAnalysis fieldAnalysis = fieldReference.fieldInfo.fieldAnalysis.get();
+                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
                 if (effectivelyFinal == Level.TRUE) {
                     if (fieldAnalysis.effectivelyFinalValue.isSet()) {
                         resetValue = fieldAnalysis.effectivelyFinalValue.get();
@@ -404,10 +405,10 @@ public class VariableDataImpl implements VariableData {
         }
 
 
-        private Value computeInitialValue(FieldInfo recordField) {
-            if (recordField.fieldAnalysis.get().effectivelyFinalValue.isSet()) {
+        private Value computeInitialValue(FieldAnalysis recordFieldAnalysis) {
+            if (recordFieldAnalysis.effectivelyFinalValue.isSet()) {
                 // TODO safe fieldAnalysis
-                return recordField.fieldAnalysis.get().effectivelyFinalValue.get();
+                return recordFieldAnalysis.effectivelyFinalValue.get();
             }
             // ? rest should have been done already
             throw new UnsupportedOperationException();

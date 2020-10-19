@@ -62,7 +62,7 @@ public class TestBasics extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVisitor = d -> {
         if (d.methodInfo.name.equals("getExplicitlyFinal")
                 && "0".equals(d.statementId)
-                && "Basics.this.explicitlyFinal".equals(d.variableName)) {
+                && "org.e2immu.analyser.testexample.Basics.explicitlyFinal".equals(d.variableName)) {
             if (d.iteration == 0) {
                 LOGGER.info("Properties after 1 iteration are {}", d.properties);
                 Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.READ));
@@ -79,7 +79,8 @@ public class TestBasics extends CommonTestRunner {
                 return;
             }
         }
-        Assert.fail();
+        Assert.fail("Method name " + d.methodInfo.name + ", iteration " + d.iteration + ", variable " + d.variableName +
+                ", statement id " + d.statementId);
     };
 
     TypeContextVisitor typeContextVisitor = typeContext -> {

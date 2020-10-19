@@ -918,9 +918,10 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     private Boolean independenceStatusOfReturnType(MethodInfo methodInfo, MethodLevelData methodLevelData) {
-        if (methodInfo.isConstructor || methodInfo.isVoid() ||
-                methodInfo.typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.isSet() &&
-                        methodInfo.typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
+        if (methodInfo.isConstructor || methodInfo.isVoid()) return true;
+        TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(methodInfo.typeInfo);
+        if(typeAnalysis.implicitlyImmutableDataTypes.isSet() &&
+                      typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
             return true;
         }
 

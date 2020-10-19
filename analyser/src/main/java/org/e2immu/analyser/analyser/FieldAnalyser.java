@@ -653,7 +653,11 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus analyseFinal() {
         assert fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.DELAY;
 
-        // explicitly final has been dealt with in FieldInfo.copyAnnotationsIntoFieldAnalysisProperties
+        if (fieldInfo.isExplicitlyFinal()) {
+            fieldAnalysis.setProperty(VariableProperty.FINAL, Level.TRUE);
+            return DONE;
+        }
+
         if (fieldSummariesNotYetSet) return DELAYS;
 
         int isAssignedOutsideConstructors = allMethodsAndConstructors.stream()

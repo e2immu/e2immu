@@ -170,8 +170,8 @@ public class MethodLevelData {
             log(DELAYED, "Dependency graph suffers delays -- delaying establishing links");
             return DELAYS;
         }
-        boolean allFieldsFinalDetermined = evaluationContext.getCurrentMethod().methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().allMatch(fieldInfo ->
-                fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL) != Level.DELAY);
+        boolean allFieldsFinalDetermined = evaluationContext.getCurrentMethod().methodInfo.typeInfo.typeInspection.getPotentiallyRun()
+                .fields.stream().allMatch(fieldInfo -> evaluationContext.getFieldAnalysis(fieldInfo).getProperty(VariableProperty.FINAL) != Level.DELAY);
         if (!allFieldsFinalDetermined) {
             log(DELAYED, "Delay, we don't know about final values for some fields");
             return DELAYS;
