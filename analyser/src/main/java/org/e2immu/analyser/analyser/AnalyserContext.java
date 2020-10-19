@@ -23,6 +23,7 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.pattern.PatternMatcher;
 
 import java.util.Map;
+import java.util.Objects;
 
 public interface AnalyserContext {
     Configuration getConfiguration();
@@ -43,4 +44,15 @@ public interface AnalyserContext {
 
     TypeAnalysis getPrimaryTypeAnalysis();
 
+    default FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
+        FieldAnalyser fieldAnalyser = getFieldAnalysers().get(fieldInfo);
+        Objects.requireNonNull(fieldAnalyser, "Field analyser is null for " + fieldInfo.fullyQualifiedName());
+        return fieldAnalyser.fieldAnalysis;
+    }
+
+    default ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
+        ParameterAnalyser parameterAnalyser = getParameterAnalysers().get(parameterInfo);
+        Objects.requireNonNull(parameterAnalyser, "Parameter analyser is null for " + parameterInfo.detailedName());
+        return parameterAnalyser.parameterAnalysis;
+    }
 }

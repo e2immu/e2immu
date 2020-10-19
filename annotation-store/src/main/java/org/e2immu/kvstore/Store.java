@@ -148,8 +148,7 @@ public class Store {
         try {
             for (Map.Entry<String, Object> entry : body.getMap().entrySet()) {
                 String element = entry.getKey();
-                if (entry.getValue() instanceof String) {
-                    String current = (String) entry.getValue();
+                if (entry.getValue() instanceof String current) {
                     if (current.isEmpty()) {
                         String prev = project.remove(element);
                         if (prev != null) countRemoved++;
@@ -181,8 +180,7 @@ public class Store {
         JsonObject result = new JsonObject();
         Set<String> queried = new HashSet<>();
         for (Object element : body.getList()) {
-            if (element instanceof String) {
-                String key = (String) element;
+            if (element instanceof String key) {
                 queried.add(key);
                 String annotation = project.get(key);
                 result.put(key, Objects.requireNonNullElse(annotation, ""));

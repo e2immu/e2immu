@@ -24,8 +24,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SortedType;
-import org.e2immu.analyser.pattern.ConditionalAssignment;
-import org.e2immu.analyser.pattern.Pattern;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.NotNull;
@@ -54,14 +52,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
 
-        // TODO move to some other place
-        Pattern pattern1 = ConditionalAssignment.pattern1();
-        Pattern pattern2 = ConditionalAssignment.pattern2();
-        Pattern pattern3 = ConditionalAssignment.pattern3();
-        patternMatcher = new PatternMatcher<>(Map.of(pattern1, ConditionalAssignment.replacement1ToPattern1(pattern1),
-                pattern2, ConditionalAssignment.replacement1ToPattern2(pattern2),
-                pattern3, ConditionalAssignment.replacement1ToPattern3(pattern3)));
-
+        patternMatcher = configuration.analyserConfiguration.newPatternMatcher();
 
         this.primaryType = Objects.requireNonNull(sortedType.primaryType);
         assert this.primaryType.isPrimaryType();

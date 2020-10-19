@@ -33,10 +33,7 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.pattern.MatchResult;
 import org.e2immu.analyser.pattern.PatternMatcher;
-import org.e2immu.analyser.pattern.Replacement;
-import org.e2immu.analyser.pattern.Replacer;
 import org.e2immu.annotation.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -234,19 +231,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         PatternMatcher<StatementAnalyser> patternMatcher = analyserContext.getPatternMatcher();
         if (!analyserContext.getConfiguration().analyserConfiguration.skipTransformations) {
             MethodInfo methodInfo = myMethodAnalyser.methodInfo;
-            Optional<MatchResult<StatementAnalyser>> matchResult = patternMatcher.match(methodInfo, this);
-            if (matchResult.isPresent()) {
-                MatchResult<StatementAnalyser> mr = matchResult.get();
-                Optional<Replacement> replacement = patternMatcher.registeredReplacement(mr.pattern);
-                if (replacement.isPresent()) {
-                    Replacement r = replacement.get();
-                    log(TRANSFORM, "Replacing {} with {} in {} at {}", mr.pattern.name, r.name,
-                            methodInfo.distinguishingName(), statementAnalysis.index);
-                    Replacer.replace(evaluationContext, mr, r);
-                    patternMatcher.reset(methodInfo);
-                    return true;
-                }
-            }
+            return patternMatcher.matchAndReplace(methodInfo, this, evaluationContext);
         }
         return false;
     }
@@ -268,8 +253,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         String statementId = statementAnalysis.index;
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager);
         boolean startOfNewBlock = previousStatementAnalysis == null;
-        variableDataBuilder.initialise(myMethodAnalyser.getParameterAnalysers(),
-                startOfNewBlock ? statementAnalysis.parent : previousStatementAnalysis, startOfNewBlock, forwardAnalysisInfo.inSyncBlock);
+        variableDataBuilder.initialise(analyserContext,
+                myMethodAnalyser.getParameterAnalysers(),
+                startOfNewBlock ? statementAnalysis.parent : previousStatementAnalysis,
+                startOfNewBlock);
 
         localConditionManager = startOfNewBlock ? (statementAnalysis.parent == null ?
                 ConditionManager.INITIAL :
@@ -330,6 +317,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             }
         }
 
+        // check for some errors
+        detectErrors();
+
         // variable data
         VariableDataImpl variableData = variableDataBuilder.build();
         statementAnalysis.variableData.set(variableData);
@@ -346,8 +336,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         // state data
         statementAnalysis.stateData.finalise(this, previousStatementAnalysis);
 
-        // check for some errors
-        detectErrors();
         return result;
     }
 
@@ -427,12 +415,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    private LocalVariableReference step1_localVariableInForOrCatch(Structure structure, boolean inCatch, boolean assignedInLoop) {
+    private LocalVariableReference step1_localVariableInForOrCatch(Structure structure,
+                                                                   boolean inCatch,
+                                                                   boolean assignedInLoop) {
         LocalVariableReference lvr;
         if (structure.localVariableCreation != null) {
             lvr = new LocalVariableReference(structure.localVariableCreation,
                     List.of());
-            variableDataBuilder.createLocalVariableOrParameter(lvr);
+            variableDataBuilder.createLocalVariableOrParameter(analyserContext, lvr);
 
             if (inCatch) {
                 variableDataBuilder.addProperty(lvr, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -449,11 +439,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     private void step2_localVariableCreation(EvaluationContext evaluationContext, Structure structure, boolean assignedInLoop) {
         for (Expression initialiser : structure.initialisers) {
-            if (initialiser instanceof LocalVariableCreation) {
-                LocalVariableReference lvr = new LocalVariableReference(((LocalVariableCreation) initialiser).localVariable, List.of());
+            if (initialiser instanceof LocalVariableCreation lvc) {
+                LocalVariableReference lvr = new LocalVariableReference((lvc).localVariable, List.of());
                 // the NO_VALUE here becomes the initial (and reset) value, which should not be a problem because variables
                 // introduced here should not become "reset" to an initial value; they'll always be assigned one
-                variableDataBuilder.createLocalVariableOrParameter(lvr);
+                variableDataBuilder.createLocalVariableOrParameter(analyserContext, lvr);
                 if (assignedInLoop) {
                     variableDataBuilder.addProperty(lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
                 }
@@ -845,8 +835,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private void checkUnusedReturnValue() {
-        if (statementAnalysis.statement instanceof ExpressionAsStatement &&
-                ((ExpressionAsStatement) statementAnalysis.statement).expression instanceof MethodCall &&
+        if (statementAnalysis.statement instanceof ExpressionAsStatement eas && eas.expression instanceof MethodCall &&
                 !statementAnalysis.inErrorState()) {
             MethodCall methodCall = (MethodCall) (((ExpressionAsStatement) statementAnalysis.statement).expression);
             if (methodCall.methodInfo.returnType().isVoid()) return;
@@ -1017,13 +1006,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    private VariableInfoImpl.Builder find(Variable variable) {
-        if (variable instanceof FieldReference) {
-            FieldReference fieldReference = (FieldReference) variable;
+    private VariableInfoImpl.Builder find(AnalyserContext analyserContext, Variable variable) {
+        if (variable instanceof FieldReference fieldReference) {
             FieldAnalyser fieldAnalyser = myMethodAnalyser.getFieldAnalyser(fieldReference.fieldInfo);
             FieldAnalysis fieldAnalysis = fieldAnalyser != null ? fieldAnalyser.fieldAnalysis : fieldReference.fieldInfo.fieldAnalysis.get();
             int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-            return variableDataBuilder.ensureFieldReference(fieldReference, effectivelyFinal);
+            return variableDataBuilder.ensureFieldReference(analyserContext, fieldReference, effectivelyFinal);
         }
         return variableDataBuilder.find(variable);
     }
@@ -1041,7 +1029,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void run() {
-            VariableInfoImpl.Builder variableInfo = find(variable);
+            VariableInfoImpl.Builder variableInfo = find(analyserContext, variable);
             if (variableInfo == null) {
                 return;
             }

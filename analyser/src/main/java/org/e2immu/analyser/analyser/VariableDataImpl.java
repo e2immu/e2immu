@@ -80,16 +80,14 @@ public class VariableDataImpl implements VariableData {
     @NotNull
     public static String variableName(@NotNull Variable variable) {
         String name;
-        if (variable instanceof FieldReference) {
-            FieldReference fieldReference = (FieldReference) variable;
+        if (variable instanceof FieldReference fieldReference) {
             if (fieldReference.scope == null || fieldReference.scope instanceof This) {
                 name = fieldReference.fieldInfo.fullyQualifiedName();
             } else {
                 // scope can be a variable
                 name = fieldReference.fieldInfo.fullyQualifiedName() + "#" + variableName(fieldReference.scope);
             }
-        } else if (variable instanceof This) {
-            This thisVariable = (This) variable;
+        } else if (variable instanceof This thisVariable) {
             name = thisVariable.toString();
         } else {
             // parameter, local variable
@@ -127,29 +125,29 @@ public class VariableDataImpl implements VariableData {
         }
 
 
-        public void createLocalVariableOrParameter(Variable variable) {
+        public void createLocalVariableOrParameter(AnalyserContext analyserContext, Variable variable) {
             if (variable instanceof LocalVariableReference || variable instanceof ParameterInfo || variable instanceof DependentVariable) {
-                internalCreate(variable, variable.name(), UnknownValue.NO_VALUE, UnknownValue.NO_VALUE, SINGLE_COPY);
+                internalCreate(analyserContext, variable, variable.name(), UnknownValue.NO_VALUE, UnknownValue.NO_VALUE, SINGLE_COPY);
             } else {
                 throw new UnsupportedOperationException("Not allowed to add This or FieldReference using this method");
             }
         }
 
-        private VariableInfoImpl.Builder internalCreate(Variable variable,
-                                                        String name,
-                                                        Value initialValue,
-                                                        Value resetValue,
-                                                        VariableInfo.FieldReferenceState fieldReferenceState) {
+        private VariableInfoImpl.Builder internalCreate(
+                AnalyserContext analyserContext,
+                Variable variable,
+                String name,
+                Value initialValue,
+                Value resetValue,
+                VariableInfo.FieldReferenceState fieldReferenceState) {
 
             ObjectFlow objectFlow;
-            if (variable instanceof ParameterInfo) {
-                ParameterInfo parameterInfo = (ParameterInfo) variable;
+            if (variable instanceof ParameterInfo parameterInfo) {
                 objectFlow = new ObjectFlow(new Location(parameterInfo),
                         parameterInfo.parameterizedType, Origin.PARAMETER);
                 if (!internalObjectFlows.add(objectFlow))
                     throw new UnsupportedOperationException("? should not yet be there: " + objectFlow + " vs " + internalObjectFlows);
-            } else if (variable instanceof FieldReference) {
-                FieldReference fieldReference = (FieldReference) variable;
+            } else if (variable instanceof FieldReference fieldReference) {
                 ObjectFlow fieldObjectFlow = new ObjectFlow(new Location(fieldReference.fieldInfo),
                         fieldReference.parameterizedType(), Origin.FIELD_ACCESS);
                 if (internalObjectFlows.contains(fieldObjectFlow)) {
@@ -158,7 +156,8 @@ public class VariableDataImpl implements VariableData {
                     objectFlow = fieldObjectFlow;
                     internalObjectFlows.add(objectFlow);
                 }
-                objectFlow.addPrevious(fieldReference.fieldInfo.fieldAnalysis.get().getObjectFlow());
+                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+                objectFlow.addPrevious(fieldAnalysis.getObjectFlow());
             } else {
                 // local variable, field reference, this
                 // TODO we should have something for fields?
@@ -175,14 +174,15 @@ public class VariableDataImpl implements VariableData {
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                 if (!fieldInfo.hasBeenDefined() || builder.resetValue.isInstanceOf(VariableValue.class)) {
+                    FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
                     for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
-                        int value = fieldInfo.fieldAnalysis.get().getProperty(variableProperty);
+                        int value = fieldAnalysis.getProperty(variableProperty);
                         if (value == Level.DELAY) value = variableProperty.falseValue;
                         builder.setProperty(variableProperty, value);
                     }
                 }
-            } else if (variable instanceof ParameterInfo) {
-                ParameterAnalysis parameterAnalysis = ((ParameterInfo) variable).parameterAnalysis.get();
+            } else if (variable instanceof ParameterInfo parameterInfo) {
+                ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                 int immutable = parameterAnalysis.getProperty(IMMUTABLE);
                 builder.setProperty(IMMUTABLE, immutable == MultiLevel.DELAY ? IMMUTABLE.falseValue : immutable);
 
@@ -191,8 +191,7 @@ public class VariableDataImpl implements VariableData {
 
             } else if (variable instanceof This) {
                 builder.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-            } else if (variable instanceof LocalVariableReference) {
-                LocalVariableReference localVariableReference = (LocalVariableReference) variable;
+            } else if (variable instanceof LocalVariableReference localVariableReference) {
                 builder.setProperty(IMMUTABLE, localVariableReference.concreteReturnType.getProperty(IMMUTABLE));
             } // else: dependentVariable
 
@@ -212,7 +211,7 @@ public class VariableDataImpl implements VariableData {
                     Value newInitialValue = computeInitialValue(recordField);
                     boolean variableField = false;// TODO this is not correct
                     Value newResetValue = new VariableValue(newVariable, newName, ObjectFlow.NO_FLOW, variableField);
-                    internalCreate(newVariable, newName, newInitialValue, newResetValue, fieldReferenceState);
+                    internalCreate(analyserContext, newVariable, newName, newInitialValue, newResetValue, fieldReferenceState);
                 }
             }
             return builder;
@@ -356,17 +355,17 @@ public class VariableDataImpl implements VariableData {
             if (variableInfo.isLocalVariableReference()) return true;
             if (variableInfo.isLocalCopy() && variableInfo.getLocalCopyOf().isLocalVariableReference())
                 return true;
-            if (variableInfo.getVariable() instanceof DependentVariable) {
-                DependentVariable dependentVariable = (DependentVariable) variableInfo.getVariable();
-                if (dependentVariable.arrayName != null) {
-                    VariableInfo avArray = find(dependentVariable.arrayName);
-                    return avArray != null && isLocalVariable(avArray);
-                }
+            if (variableInfo.getVariable() instanceof DependentVariable dependentVariable &&
+                    dependentVariable.arrayName != null) {
+                VariableInfo avArray = find(dependentVariable.arrayName);
+                return avArray != null && isLocalVariable(avArray);
             }
             return false;
         }
 
-        public VariableInfoImpl.Builder ensureFieldReference(FieldReference fieldReference, int effectivelyFinal) {
+        public VariableInfoImpl.Builder ensureFieldReference(AnalyserContext analyserContext,
+                                                             FieldReference fieldReference,
+                                                             int effectivelyFinal) {
             String name = variableName(fieldReference);
             VariableInfoImpl.Builder vi = find(name);
             if (find(name) != null) return vi;
@@ -395,7 +394,7 @@ public class VariableDataImpl implements VariableData {
                     resetValue = new VariableValue(fieldReference, name, ObjectFlow.NO_FLOW, false);
                 }
             }
-            return internalCreate(fieldReference, name, resetValue, resetValue, fieldReferenceState);
+            return internalCreate(analyserContext, fieldReference, name, resetValue, resetValue, fieldReferenceState);
         }
 
         private VariableInfo.FieldReferenceState singleCopy(int effectivelyFinal) {
@@ -420,23 +419,25 @@ public class VariableDataImpl implements VariableData {
             return find(name) != null;
         }
 
-        public DependentVariable ensureArrayVariable(ArrayAccess arrayAccess, String name, Variable arrayVariable) {
+        public DependentVariable ensureArrayVariable(AnalyserContext analyserContext,
+                                                     ArrayAccess arrayAccess, String name, Variable arrayVariable) {
             Set<Variable> dependencies = new HashSet<>(arrayAccess.expression.variables());
             dependencies.addAll(arrayAccess.index.variables());
             ParameterizedType parameterizedType = arrayAccess.expression.returnType();
             String arrayName = arrayVariable == null ? null : variableName(arrayVariable);
             DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name, arrayName);
             if (!isKnown(dependentVariable)) {
-                createLocalVariableOrParameter(dependentVariable);
+                createLocalVariableOrParameter(analyserContext, dependentVariable);
             }
             return dependentVariable;
         }
 
-        public VariableInfoImpl.Builder ensureThisVariable(This thisVariable) {
+        public VariableInfoImpl.Builder ensureThisVariable(AnalyserContext analyserContext, This thisVariable) {
             String name = variableName(thisVariable);
             VariableInfoImpl.Builder vi = find(name);
             if (vi != null) return vi;
-            return internalCreate(thisVariable, name, UnknownValue.NO_VALUE, UnknownValue.NO_VALUE, VariableInfo.FieldReferenceState.SINGLE_COPY);
+            return internalCreate(analyserContext,
+                    thisVariable, name, UnknownValue.NO_VALUE, UnknownValue.NO_VALUE, VariableInfo.FieldReferenceState.SINGLE_COPY);
         }
 
         private VariableInfoImpl.Builder findComplain(@NotNull Variable variable) {
@@ -444,15 +445,8 @@ public class VariableDataImpl implements VariableData {
             if (variableInfo != null) {
                 return variableInfo;
             }
-            if (variable instanceof FieldReference) {
-                throw new UnsupportedOperationException("Field references have to be ensured explicitly");
-            }
-            if (variable instanceof This) {
-                return ensureThisVariable((This) variable);
-            }
             throw new UnsupportedOperationException("Cannot find variable " + variable.detailedString());
         }
-
 
         VariableInfoImpl.Builder find(@NotNull Variable variable) {
             String name = variableName(variable);
@@ -463,7 +457,6 @@ public class VariableDataImpl implements VariableData {
         VariableInfoImpl.Builder find(String name) {
             return variables.get(name);
         }
-
 
         public boolean isDelaysInDependencyGraph() {
             return delaysInDependencyGraph;
@@ -479,15 +472,15 @@ public class VariableDataImpl implements VariableData {
             variables.keySet().removeAll(toRemove);
         }
 
-        public void initialise(Collection<ParameterAnalyser> parameterAnalysers,
+        public void initialise(AnalyserContext analyserContext,
+                               Collection<ParameterAnalyser> parameterAnalysers,
                                StatementAnalysis statementAnalysis,
-                               boolean startOfNewBlock,
-                               boolean inSyncBlock) {
+                               boolean startOfNewBlock) {
             if (statementAnalysis == null) {
                 for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
                     LocalVariableReference lvr = new LocalVariableReference(new LocalVariable(List.of(),
                             parameterAnalyser.parameterInfo.name, parameterAnalyser.parameterInfo.parameterizedType(), List.of()), List.of());
-                    createLocalVariableOrParameter(lvr);
+                    createLocalVariableOrParameter(analyserContext, lvr);
                 }
                 return;
             }

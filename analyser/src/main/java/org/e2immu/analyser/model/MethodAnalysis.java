@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model;
 
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -29,12 +30,16 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationMode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class MethodAnalysis extends Analysis {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalysis.class);
 
     public final ParameterizedType returnType;
     public final MethodInfo methodInfo;
@@ -160,7 +165,7 @@ public class MethodAnalysis extends Analysis {
     }
 
     public int valueFromOverrides(VariableProperty variableProperty) {
-        return overrides.get().stream().mapToInt(ma -> ma.getPropertyAsIs(variableProperty)).max().orElse(Level.DELAY);
+        return getOverrides().stream().mapToInt(ma -> ma.getPropertyAsIs(variableProperty)).max().orElse(Level.DELAY);
     }
 
     private int getPropertyCheckOverrides(VariableProperty variableProperty) {
@@ -169,7 +174,7 @@ public class MethodAnalysis extends Analysis {
         if (hasBeenDefined) {
             theStream = mine;
         } else {
-            IntStream overrideValues = overrides.get().stream().mapToInt(ma -> ma.getPropertyAsIs(variableProperty));
+            IntStream overrideValues = getOverrides().stream().mapToInt(ma -> ma.getPropertyAsIs(variableProperty));
             theStream = IntStream.concat(mine, overrideValues);
         }
         int max = theStream.max().orElse(Level.DELAY);
@@ -270,4 +275,19 @@ public class MethodAnalysis extends Analysis {
         }
     }
 
+    public Set<MethodAnalysis> getOverrides() {
+        if (overrides.isSet()) return overrides.get();
+        Set<MethodAnalysis> computed = overrides(methodInfo);
+        overrides.set(ImmutableSet.copyOf(computed));
+        return computed;
+    }
+
+    private static Set<MethodAnalysis> overrides(MethodInfo methodInfo) {
+        try {
+            return methodInfo.typeInfo.overrides(methodInfo, true).stream().map(mi -> mi.methodAnalysis.get()).collect(Collectors.toSet());
+        } catch (RuntimeException rte) {
+            LOGGER.error("Cannot compute method analysis of {}", methodInfo.distinguishingName());
+            throw rte;
+        }
+    }
 }

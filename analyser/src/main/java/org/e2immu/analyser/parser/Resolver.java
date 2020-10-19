@@ -21,6 +21,7 @@ package org.e2immu.analyser.parser;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -36,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.parser.Primitives.PRIMITIVES;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
@@ -57,8 +59,8 @@ public class Resolver {
     /**
      * Responsible for resolving, circular dependency detection.
      *
-     * @param inspectedTypes              when a subResolver, the map contains only one type, and it will not be a primary type.
-     *                                    When not a subResolver, it only contains primary types.
+     * @param inspectedTypes when a subResolver, the map contains only one type, and it will not be a primary type.
+     *                       When not a subResolver, it only contains primary types.
      * @return A list of sorted primary types, each with their sub-elements (sub-types, fields, methods) sorted.
      */
 
@@ -338,11 +340,9 @@ public class Resolver {
 
         void visit(Element element) {
             element.visit(e -> {
-                if (e instanceof FieldAccess) {
-                    FieldAccess fieldAccess = ((FieldAccess) e);
+                if (e instanceof FieldAccess fieldAccess) {
                     methodsAndFields.add(((FieldReference) fieldAccess.variable).fieldInfo);
-                } else if (e instanceof VariableExpression) {
-                    VariableExpression variableExpression = (VariableExpression) e;
+                } else if (e instanceof VariableExpression variableExpression) {
                     if (variableExpression.variable instanceof FieldReference) {
                         methodsAndFields.add(((FieldReference) variableExpression.variable).fieldInfo);
                     }
@@ -376,8 +376,7 @@ public class Resolver {
 
     private static void fillInternalMethodCalls(DependencyGraph<WithInspectionAndAnalysis> methodGraph) {
         methodGraph.visit((from, toList) -> {
-            if (from instanceof MethodInfo) {
-                MethodInfo methodInfo = ((MethodInfo) from);
+            if (from instanceof MethodInfo methodInfo) {
                 Set<WithInspectionAndAnalysis> dependencies = methodGraph.dependenciesOnlyTerminals(from);
                 Set<MethodInfo> methodsReached = dependencies.stream().filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
 
@@ -391,8 +390,7 @@ public class Resolver {
             }
         });
         methodGraph.visit((from, toList) -> {
-            if (from instanceof MethodInfo) {
-                MethodInfo methodInfo = (MethodInfo) from;
+            if (from instanceof MethodInfo methodInfo) {
                 methodInfo.methodResolution.get().partOfConstruction.set(methodInfo.isConstructor ||
                         methodInfo.isPrivate() && !methodInfo.isCalledFromNonPrivateMethod());
             }
@@ -404,8 +402,7 @@ public class Resolver {
     private static void methodCreatesObjectOfSelf(MethodInfo methodInfo, MethodResolution methodResolution) {
         AtomicBoolean createSelf = new AtomicBoolean();
         methodInfo.methodInspection.get().methodBody.get().visit(element -> {
-            if (element instanceof NewObject) {
-                NewObject newObject = (NewObject) element;
+            if (element instanceof NewObject newObject) {
                 if (newObject.parameterizedType.typeInfo == methodInfo.typeInfo) {
                     createSelf.set(true);
                 }
@@ -422,8 +419,7 @@ public class Resolver {
                 AtomicBoolean atLeastOneCallOnThis = new AtomicBoolean(false);
                 Block block = methodInfo.methodInspection.get().methodBody.get();
                 block.visit(element -> {
-                    if (element instanceof MethodCall) {
-                        MethodCall methodCall = (MethodCall) element;
+                    if (element instanceof MethodCall methodCall) {
                         boolean callOnThis = !methodCall.methodInfo.isStatic &&
                                 methodCall.object == null || ((methodCall.object instanceof This) &&
                                 ((This) methodCall.object).typeInfo == methodInfo.typeInfo);

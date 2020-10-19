@@ -64,7 +64,7 @@ public class MethodLevelData {
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
 
     public StatementAnalyserResult analyse(EvaluationContext evaluationContext, VariableData variableData,
-                                            MethodLevelData previous, StateData stateData) {
+                                           MethodLevelData previous, StateData stateData) {
         MethodInfo methodInfo = evaluationContext.getCurrentMethod().methodInfo;
         String logLocation = methodInfo.distinguishingName();
         try {
@@ -87,8 +87,7 @@ public class MethodLevelData {
                     .combine(establishLinks(variableData, evaluationContext, logLocation))
                     .combine(methodInfo.isConstructor ? DONE : updateVariablesLinkedToMethodResult(evaluationContext, builder, logLocation))
                     .combine(computeContentModifications(evaluationContext, variableData, builder, logLocation)
-                            .combine(combinePrecondition(previous, stateData))
-                    );
+                            .combine(combinePrecondition(previous, stateData)));
             builder.setAnalysisStatus(analysisStatus);
             return builder.build();
         } catch (RuntimeException rte) {
@@ -105,7 +104,7 @@ public class MethodLevelData {
         if (!combinedPrecondition.isSet()) {
             Value result;
             if (previous == null) {
-                result = stateData.precondition.get();
+                result = stateData.precondition.isSet() ? stateData.precondition.get() : UnknownValue.EMPTY;
             } else {
                 Value v1 = previous.combinedPrecondition.get();
                 Value v2 = stateData.precondition.get();

@@ -35,19 +35,22 @@ repositories {
 }
 */
 java {
-    sourceCompatibility = JavaVersion.VERSION_13
-    targetCompatibility = JavaVersion.VERSION_13
+    sourceCompatibility = JavaVersion.VERSION_15
+    targetCompatibility = JavaVersion.VERSION_15
 }
 
-gradle.projectsEvaluated {
-    tasks.withType(JavaCompile) {
-        options.compilerArgs << "-Xmaxerrs" << "400"
-    }
+compileJava {
+    options.compilerArgs.add("--enable-preview")
 }
 
 test {
     maxHeapSize = "2G"
     exclude '**/parserfailing/*.class'
+    jvmArgs("--enable-preview")
+}
+
+compileTestJava {
+    options.compilerArgs.add("--enable-preview")
 }
 
 dependencies {
@@ -57,7 +60,7 @@ dependencies {
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'           // MIT X-11 License
     implementation group: 'com.github.javaparser', name: 'javaparser-symbol-solver-core', version: '3.15.7'
     // LGPL or Apache License 2.0
-    implementation group: 'org.ow2.asm', name: 'asm', version: '7.2'                  // 3-clause BSD permissive license
+    implementation group: 'org.ow2.asm', name: 'asm', version: '9.0'                  // 3-clause BSD permissive license
     implementation group: 'commons-io', name: 'commons-io', version: '2.6'            // Apache License 2.0
     implementation group: 'commons-cli', name: 'commons-cli', version: '1.4'          // Apache License 2.0
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3' // EPL v1.0 and the LGPL 2.1
@@ -89,7 +92,7 @@ task generateAnnotationXml(type: JavaExec) {
     Set<File> reducedClassPath = sourceSets.main.runtimeClasspath.toList()
     reducedClassPath += sourceSets.test.runtimeClasspath
     reducedClassPath.removeIf({ f -> f.path.contains("build/classes") || f.path.contains("build/resources") })
-
+    jvmArgs("--enable-preview")
     args('--classpath=' + reducedClassPath.join(":") + ":src/main/resources/annotatedAPIs:jmods/java.base.jmod",
             '--source=non_existing_dir',
             '-w',
@@ -124,11 +127,13 @@ publishing {
 
             from components.java
         }
-
+/*
         mavenLocalXml(MavenPublication) {
            artifact annotationXmlArtifact
             groupId = 'org.e2immu'
             artifactId = 'annotation-xml'
         }
+
+ */
     }
 }

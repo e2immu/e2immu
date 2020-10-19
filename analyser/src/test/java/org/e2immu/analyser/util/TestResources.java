@@ -19,6 +19,7 @@
 package org.e2immu.analyser.util;
 
 import org.apache.commons.io.IOUtils;
+import org.e2immu.analyser.bytecode.TestByteCodeInspector;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -86,7 +87,7 @@ public class TestResources {
     @Test
     public void testViaJar() throws IOException {
         Resources classPath = new Resources();
-        classPath.addJar(new URL("jar:file:build/libs/analyser.jar!/"));
+        classPath.addJar(new URL("jar:file:build/libs/analyser-" + TestByteCodeInspector.VERSION + ".jar!/"));
         List<String[]> expansions = classPath.expandPaths("org.e2immu.analyser.model");
         AtomicInteger counter = new AtomicInteger();
         expansions.forEach(ss -> {

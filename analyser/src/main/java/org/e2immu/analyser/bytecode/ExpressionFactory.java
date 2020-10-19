@@ -22,25 +22,28 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.AnnotationType;
+import org.objectweb.asm.Type;
 
 public class ExpressionFactory {
 
     public static Expression from(TypeContext typeContext, Object value) {
         if (value == null) return NullConstant.NULL_CONSTANT;
-        if (value instanceof String) return new StringConstant((String) value);
-        if (value instanceof Integer) return new IntConstant((Integer) value);
-        if (value instanceof Short) return new ShortConstant((Short) value);
-        if (value instanceof Long) return new LongConstant((Long) value);
-        if (value instanceof Byte) return new ByteConstant((Byte) value);
-        if (value instanceof Double) return new DoubleConstant((Double) value);
-        if (value instanceof Float) return new FloatConstant((Float) value);
-        if (value instanceof Character) return new CharConstant((Character) value);
-        if (value instanceof Boolean) return new BooleanConstant((Boolean) value);
+        if (value instanceof String s) return new StringConstant(s);
+        if (value instanceof Integer i) return new IntConstant(i);
+        if (value instanceof Short s) return new ShortConstant(s);
+        if (value instanceof Long l) return new LongConstant(l);
+        if (value instanceof Byte b) return new ByteConstant(b);
+        if (value instanceof Double d) return new DoubleConstant(d);
+        if (value instanceof Float f) return new FloatConstant(f);
+        if (value instanceof Character c) return new CharConstant(c);
+        if (value instanceof Boolean b) return new BooleanConstant(b);
+        if (value instanceof Type t)
+            return new TypeExpression(typeContext.getFullyQualified(t.getClassName(), true).asParameterizedType());
 
         if (value instanceof AnnotationType) {
             // TODO
             return NullConstant.NULL_CONSTANT;
         }
-        throw new UnsupportedOperationException("Value " + value + " is of class " + value.getClass());
+        throw new UnsupportedOperationException("Value " + value + " is of " + value.getClass());
     }
 }

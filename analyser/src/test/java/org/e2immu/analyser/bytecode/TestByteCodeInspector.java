@@ -36,6 +36,7 @@ import java.net.URL;
 import java.util.List;
 
 public class TestByteCodeInspector {
+    public static final String VERSION = "0.0.1"; // TODO determine dynamically
     private static final Logger LOGGER = LoggerFactory.getLogger(TestByteCodeInspector.class);
 
     @BeforeClass
@@ -46,7 +47,7 @@ public class TestByteCodeInspector {
 
     private TypeInfo parseFromJar(String path) throws IOException {
         Resources resources = new Resources();
-        resources.addJar(new URL("jar:file:build/libs/analyser.jar!/"));
+        resources.addJar(new URL("jar:file:build/libs/analyser-"+VERSION+".jar!/"));
         resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
@@ -141,7 +142,7 @@ public class TestByteCodeInspector {
 
     @Test
     public void testImplements() throws IOException {
-        TypeInfo type = parseFromJar("org/e2immu/analyser/analyser/NumberedStatement.class");
+        TypeInfo type = parseFromJar("org/e2immu/analyser/analyser/StatementAnalyser.class");
         Assert.assertEquals(TypeNature.CLASS, type.typeInspection.getPotentiallyRun().typeNature);
         LOGGER.info("Stream is\n{}", type.stream(0));
     }

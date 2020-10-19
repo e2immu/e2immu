@@ -39,8 +39,8 @@ repositories {
 }
 */
 java {
-    sourceCompatibility = JavaVersion.VERSION_13
-    targetCompatibility = JavaVersion.VERSION_13
+    sourceCompatibility = JavaVersion.VERSION_15
+    targetCompatibility = JavaVersion.VERSION_15
 }
 
 dependencies {
@@ -52,6 +52,10 @@ dependencies {
     // GRADLE PLUGIN
     implementation(gradleApi())
 
+}
+
+compileJava {
+    options.compilerArgs.add("--enable-preview")
 }
 
 // for now, we publish to maven local, so that we can use the plugin locally

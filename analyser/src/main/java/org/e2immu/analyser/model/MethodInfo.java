@@ -27,14 +27,10 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.TypeParameter;
-import org.e2immu.analyser.analyser.Analyser;
-import org.e2immu.analyser.analyser.MethodAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.parser.*;
-import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetTwice;
 import org.e2immu.analyser.util.StringUtil;
@@ -563,20 +559,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                     .map(parameterInfo -> parameterInfo.parameterAnalysis.get()).collect(Collectors.toList());
             MethodAnalysis methodAnalysis = new MethodAnalysis(this, typeInfo.typeAnalysis.get(), parameterAnalyses, null);
             this.methodAnalysis.set(methodAnalysis);
-            methodAnalysis.overrides.set(overrides(methodAnalysis.methodInfo));
         }
         messages.addAll(methodAnalysis.get().fromAnnotationsIntoProperties(acceptVerify, methodInspection.get().annotations,
                 typeContext, overwrite));
         return messages;
-    }
-
-    private static Set<MethodAnalysis> overrides(MethodInfo methodInfo) {
-        try {
-            return methodInfo.typeInfo.overrides(methodInfo, true).stream().map(mi -> mi.methodAnalysis.get()).collect(Collectors.toSet());
-        } catch (RuntimeException rte) {
-            LOGGER.error("Cannot compute method analysis of {}", methodInfo.distinguishingName());
-            throw rte;
-        }
     }
 
     @Override

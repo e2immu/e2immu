@@ -190,6 +190,7 @@ public class EvaluationResult {
         }
 
         public Builder markRead(Variable variable) {
+            if (modifications == null) modifications = new LinkedList<>();
             modifications.add(statementAnalyser.new SetProperty(variable, VariableProperty.READ, Level.TRUE));
             return this;
         }

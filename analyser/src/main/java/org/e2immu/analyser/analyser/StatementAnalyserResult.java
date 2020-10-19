@@ -41,6 +41,9 @@ public class StatementAnalyserResult {
         private AnalysisStatus analysisStatus;
 
         public Builder add(StatementAnalyserResult other) {
+            if (modifications == null) {
+                modifications = new LinkedList<>();
+            }
             other.modifications.forEach(modifications::add);
             analysisStatus = analysisStatus == null ? other.analysisStatus: analysisStatus.combine(other.analysisStatus);
             return this;
