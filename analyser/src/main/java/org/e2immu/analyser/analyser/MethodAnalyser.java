@@ -38,7 +38,6 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;
@@ -67,7 +66,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     public final TypeAnalyser myTypeAnalyser;
     public final List<ParameterAnalyser> parameterAnalysers;
     public final StatementAnalyser firstStatementAnalyser;
-    private final AnalyserComponents analyserComponents;
+    private final AnalyserComponents<String> analyserComponents;
 
     private Map<FieldInfo, FieldAnalyser> myFieldAnalysers;
     private MethodLevelData methodLevelData;
@@ -76,7 +75,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                           TypeAnalyser myTypeAnalyser,
                           boolean isSAM,
                           AnalyserContext analyserContext) {
-        super(analyserContext);
+        super("Method " + methodInfo.name, analyserContext);
         this.methodInfo = methodInfo;
         methodInspection = methodInfo.methodInspection.get();
         ImmutableList.Builder<ParameterAnalyser> parameterAnalysersBuilder = new ImmutableList.Builder<>();
@@ -97,7 +96,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         methodAnalysis = new MethodAnalysis(methodInfo, myTypeAnalyser.typeAnalysis, parameterAnalyses, firstStatementAnalyser);
         this.isSAM = isSAM;
 
-        List<AnalysisStatus.AnalysisResultSupplier> allSuppliers;
+        AnalyserComponents.Builder<String> builder = new AnalyserComponents.Builder<>();
         if (firstStatementAnalyser != null) {
 
             AnalysisStatus.AnalysisResultSupplier statementAnalyser = (iteration) -> {
@@ -107,35 +106,33 @@ public class MethodAnalyser extends AbstractAnalyser {
                 return result.analysisStatus;
             };
 
-            List<AnalysisStatus.AnalysisResultSupplier> suppliers = List.of(
-                    statementAnalyser,
-                    (iteration) -> obtainMostCompletePrecondition(),
-                    (iteration) -> makeInternalObjectFlowsPermanent(),
-                    (iteration) -> methodInfo.isConstructor ? DONE : propertiesOfReturnStatements(),
-                    (iteration) -> methodInfo.isConstructor ? DONE : methodIsConstant(),
-                    (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier(),
-                    (iteration) -> methodInfo.isConstructor ? DONE : methodIsModified(),
-                    (iteration) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork(),
-                    (iteration) -> methodInfo.isConstructor ? DONE : computeOnlyMarkAnnotate(),
-                    (iteration) -> methodIsIndependent(),
-                    (iteration) -> computeSize(),
-                    (iteration) -> computeSizeCopy()
-            );
-            List<AnalysisStatus.AnalysisResultSupplier> parameterSuppliers = parameterAnalysers.stream()
-                    .map(pa -> (AnalysisStatus.AnalysisResultSupplier) (iteration -> pa.analyse()))
-                    .collect(Collectors.toUnmodifiableList());
-            allSuppliers = ListUtil.immutableConcat(suppliers, parameterSuppliers);
-        } else allSuppliers = List.of();
-        analyserComponents = new AnalyserComponents(allSuppliers);
+            builder.add("StatementAnalyser", statementAnalyser)
+                    .add("obtainMostCompletePrecondition", (iteration) -> obtainMostCompletePrecondition())
+                    .add("makeInternalObjectFlowsPermanent", (iteration) -> makeInternalObjectFlowsPermanent())
+                    .add("propertiesOfReturnStatements", (iteration) -> methodInfo.isConstructor ? DONE : propertiesOfReturnStatements())
+                    .add("methodIsConstant", (iteration) -> methodInfo.isConstructor ? DONE : methodIsConstant())
+                    .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
+                    .add("methodIsModified", (iteration) -> methodInfo.isConstructor ? DONE : methodIsModified())
+                    .add("computeOnlyMarkPrepWork", (iteration) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork())
+                    .add("computeOnlyMarkAnnotate", (iteration) -> methodInfo.isConstructor ? DONE : computeOnlyMarkAnnotate())
+                    .add("methodIsIndependent", (iteration) -> methodIsIndependent())
+                    .add("computeSize", (iteration) -> computeSize())
+                    .add("computeSizeCopy", (iteration) -> computeSizeCopy());
+
+            for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
+                builder.add("Parameter " + parameterAnalyser.parameterInfo.name, (iteration -> parameterAnalyser.analyse()));
+            }
+        }
+        analyserComponents = builder.build();
+    }
+
+    @Override
+    public AnalyserComponents<String> getAnalyserComponents() {
+        return analyserComponents;
     }
 
     public Collection<ParameterAnalyser> getParameterAnalysers() {
         return parameterAnalysers;
-    }
-
-    @Override
-    public boolean isSAM() {
-        return isSAM;
     }
 
     @Override
@@ -795,7 +792,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                 return DELAYS;
             }
             if (methodLevelData.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get()) {
-                Boolean haveModifying = findOtherModifyingElements(methodLevelData);
+                Boolean haveModifying = findOtherModifyingElements();
                 if (haveModifying == null) return DELAYS;
                 isModified = haveModifying;
             }
@@ -816,7 +813,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private Boolean findOtherModifyingElements(MethodLevelData methodLevelData) {
+    private Boolean findOtherModifyingElements() {
         boolean nonPrivateFields = myFieldAnalysers.values().stream()
                 .filter(fa -> fa.fieldInfo.type.isFunctionalInterface() && fa.fieldAnalysis.isDeclaredFunctionalInterface())
                 .anyMatch(fa -> !fa.fieldInfo.isPrivate());
@@ -920,8 +917,8 @@ public class MethodAnalyser extends AbstractAnalyser {
     private Boolean independenceStatusOfReturnType(MethodInfo methodInfo, MethodLevelData methodLevelData) {
         if (methodInfo.isConstructor || methodInfo.isVoid()) return true;
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(methodInfo.typeInfo);
-        if(typeAnalysis.implicitlyImmutableDataTypes.isSet() &&
-                      typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
+        if (typeAnalysis.implicitlyImmutableDataTypes.isSet() &&
+                typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
             return true;
         }
 

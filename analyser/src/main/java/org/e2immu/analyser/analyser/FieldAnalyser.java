@@ -57,7 +57,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     public final FieldAnalysis fieldAnalysis;
     public final MethodAnalyser sam;
     private final boolean fieldCanBeWrittenFromOutsideThisType;
-    private final AnalyserComponents analyserComponents;
+    private final AnalyserComponents<String> analyserComponents;
 
     private List<MethodAnalyser> allMethodsAndConstructors;
     private List<MethodAnalyser> myMethodsAndConstructors;
@@ -71,7 +71,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                          TypeAnalysis ownerTypeAnalysis,
                          MethodAnalyser sam,
                          AnalyserContext analyserContext) {
-        super(analyserContext);
+        super("Field " + fieldInfo.name, analyserContext);
         this.fieldInfo = fieldInfo;
         fieldInspection = fieldInfo.fieldInspection.get();
         fieldAnalysis = new FieldAnalysis(fieldInfo, ownerTypeAnalysis);
@@ -80,21 +80,25 @@ public class FieldAnalyser extends AbstractAnalyser {
         fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord() || !fieldInfo.isPrivate() && !fieldInfo.isExplicitlyFinal();
         haveInitialiser = fieldInspection.initialiser.isSet() && fieldInspection.initialiser.get().initialiser != EmptyExpression.EMPTY_EXPRESSION;
 
-        List<AnalysisStatus.AnalysisResultSupplier> suppliers = List.of(
-                (iteration) -> computeImplicitlyImmutableDataType(),
-                this::evaluateInitialiser,
-                (iteration) -> analyseFinal(),
-                (iteration) -> analyseFinalValue(),
-                (iteration) -> analyseDynamicTypeAnnotation(VariableProperty.IMMUTABLE),
-                (iteration) -> analyseNotNull(),
-                (iteration) -> analyseModified(),
-                (iteration) -> analyseSize(),
-                (iteration) -> analyseSizeAsDynamicTypeAnnotation(),
-                (iteration) -> analyseNotModified1(),
-                (iteration) -> analyseLinked(),
-                (iteration) -> fieldErrors()
-        );
-        analyserComponents = new AnalyserComponents(suppliers);
+        analyserComponents = new AnalyserComponents.Builder<String>()
+                .add("computeImplicitlyImmutableDataType", (iteration) -> computeImplicitlyImmutableDataType())
+                .add("evaluateInitialiser", this::evaluateInitialiser)
+                .add("analyseFinal", (iteration) -> analyseFinal())
+                .add("analyseFinalValue", (iteration) -> analyseFinalValue())
+                .add("analyseDynamicTypeAnnotation:IMMUTABLE", (iteration) -> analyseDynamicTypeAnnotation(VariableProperty.IMMUTABLE))
+                .add("analyseNotNull", (iteration) -> analyseNotNull())
+                .add("analyseModified", (iteration) -> analyseModified())
+                .add("analyseSize", (iteration) -> analyseSize())
+                .add("analyseSizeAsDynamicTypeAnnotation", (iteration) -> analyseSizeAsDynamicTypeAnnotation())
+                .add("analyseNotModified1", (iteration) -> analyseNotModified1())
+                .add("analyseLinked", (iteration) -> analyseLinked())
+                .add("fieldErrors", (iteration) -> fieldErrors())
+                .build();
+    }
+
+    @Override
+    public AnalyserComponents<String> getAnalyserComponents() {
+        return analyserComponents;
     }
 
     @Override
@@ -532,8 +536,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (values.size() == 1) {
             VariableValue variableValue = values.get(0).asInstanceOf(VariableValue.class);
             if (variableValue != null) {
-                if (variableValue.variable instanceof ParameterInfo) {
-                    ParameterInfo parameterInfo = (ParameterInfo) variableValue.variable;
+                if (variableValue.variable instanceof ParameterInfo parameterInfo) {
                     ParameterAnalyser parameterAnalyser = analyserContext.getParameterAnalysers().get(parameterInfo);
                     if (!parameterAnalyser.parameterAnalysis.assignedToField.isSet()) {
                         parameterAnalyser.parameterAnalysis.assignedToField.set(fieldInfo);
@@ -770,7 +773,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         log(ANALYSER, "Checking field {}", fieldInfo.fullyQualifiedName());
 
-        // TODO check the correct field name in @Linked(to="xxxx")
+        // TODO check the correct field name in @Linked(to="")
         check(Linked.class, e2.linked.get());
         check(NotModified.class, e2.notModified.get());
         check(NotNull.class, e2.notNull.get());

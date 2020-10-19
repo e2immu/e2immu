@@ -83,37 +83,39 @@ public class TypeAnalyser extends AbstractAnalyser {
     private List<TypeAnalysis> parentAndOrEnclosingTypeAnalysis;
     private List<FieldAnalyser> myFieldAnalysers;
 
-    private final AnalyserComponents analyserComponents;
+    private final AnalyserComponents<String> analyserComponents;
 
     public TypeAnalyser(@NotModified TypeInfo typeInfo,
                         TypeInfo primaryType,
                         AnalyserContext analyserContext) {
-        super(analyserContext);
+        super("Type " + typeInfo.simpleName, analyserContext);
         this.typeInfo = typeInfo;
         this.primaryType = primaryType;
         typeInspection = typeInfo.typeInspection.get();
 
         typeAnalysis = new TypeAnalysis(typeInfo);
+        AnalyserComponents.Builder<String> builder = new AnalyserComponents.Builder<String>()
+                .add("analyseImplicitlyImmutableTypes", (iteration) -> analyseImplicitlyImmutableTypes());
+
         if (typeInfo.hasBeenDefined() && !typeInfo.isInterface()) {
-            List<AnalysisResultSupplier> allInternal = List.of(
-                    (iteration) -> analyseImplicitlyImmutableTypes(),
-                    (iteration) -> analyseOnlyMarkEventuallyE1Immutable(),
-                    (iteration) -> analyseEffectivelyE1Immutable(),
-                    (iteration) -> analyseIndependent(),
-                    (iteration) -> analyseEffectivelyEventuallyE2Immutable(),
-                    (iteration) -> analyseContainer(),
-                    (iteration) -> analyseUtilityClass(),
-                    (iteration) -> analyseExtensionClass(),
-                    (iteration) -> makeInternalObjectFlowsPermanent()
-            );
-            analyserComponents = new AnalyserComponents(allInternal);
-        } else {
-            List<AnalysisResultSupplier> onlyFirst = List.of((iteration) -> analyseImplicitlyImmutableTypes());
-            analyserComponents = new AnalyserComponents(onlyFirst);
+            builder.add("analyseOnlyMarkEventuallyE1Immutable", (iteration) -> analyseOnlyMarkEventuallyE1Immutable())
+                    .add("analyseEffectivelyE1Immutable", (iteration) -> analyseEffectivelyE1Immutable())
+                    .add("analyseIndependent", (iteration) -> analyseIndependent())
+                    .add("analyseEffectivelyEventuallyE2Immutable", (iteration) -> analyseEffectivelyEventuallyE2Immutable())
+                    .add("analyseContainer", (iteration) -> analyseContainer())
+                    .add("analyseUtilityClass", (iteration) -> analyseUtilityClass())
+                    .add("analyseExtensionClass", (iteration) -> analyseExtensionClass())
+                    .add("makeInternalObjectFlowsPermanent", (iteration) -> makeInternalObjectFlowsPermanent());
         }
+        analyserComponents = builder.build();
 
         messages.addAll(typeAnalysis.fromAnnotationsIntoProperties(typeInfo.isInterface(), typeInspection.annotations,
                 analyserContext.getE2ImmuAnnotationExpressions(), false));
+    }
+
+    @Override
+    public AnalyserComponents<String> getAnalyserComponents() {
+        return analyserComponents;
     }
 
     @Override

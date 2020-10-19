@@ -29,9 +29,11 @@ import java.util.stream.Stream;
 
 public abstract class AbstractAnalyser implements Analyser {
     public final AnalyserContext analyserContext;
+    public final String name;
 
-    protected AbstractAnalyser(AnalyserContext analyserContext) {
+    protected AbstractAnalyser(String name, AnalyserContext analyserContext) {
         this.analyserContext = Objects.requireNonNull(analyserContext);
+        this.name = name;
     }
 
     protected final Messages messages = new Messages();
@@ -45,5 +47,15 @@ public abstract class AbstractAnalyser implements Analyser {
 
     protected Value getVariableValue(Variable variable) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }

@@ -36,7 +36,8 @@ public interface Analyser {
 
     Analysis getAnalysis();
 
-    default boolean isSAM() {
-        return false;
-    }
+    String getName();
+
+    AnalyserComponents<String> getAnalyserComponents();
+
 }

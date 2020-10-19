@@ -25,8 +25,11 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.SortedType;
 import org.e2immu.analyser.pattern.PatternMatcher;
+import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -36,6 +39,7 @@ import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class PrimaryTypeAnalyser implements AnalyserContext {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PrimaryTypeAnalyser.class);
 
     private final PatternMatcher<StatementAnalyser> patternMatcher;
     public final TypeInfo primaryType;
@@ -134,10 +138,12 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
 
     public void analyse() {
         int iteration = 0;
-        List<AnalysisStatus.AnalysisResultSupplier> suppliers = analysers.stream()
-                .map(analyser -> (AnalysisStatus.AnalysisResultSupplier) (analyser::analyse))
-                .collect(Collectors.toList());
-        AnalyserComponents analyserComponents = new AnalyserComponents(suppliers);
+        AnalyserComponents.Builder<Analyser> builder = new AnalyserComponents.Builder<>();
+        for (Analyser analyser : analysers) {
+            builder.add(analyser, analyser::analyse);
+        }
+        AnalyserComponents<Analyser> analyserComponents = builder.build();
+
         AnalysisStatus analysisStatus = AnalysisStatus.PROGRESS;
 
         while (analysisStatus != AnalysisStatus.DONE) {
@@ -149,6 +155,12 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
 
             iteration++;
             if (iteration > 10) {
+                LOGGER.warn("Status of analysers:\n{}", analyserComponents.details());
+                for (Pair<Analyser, AnalysisStatus> pair : analyserComponents.getStatuses()) {
+                    if (pair.v == AnalysisStatus.DELAYS) {
+                        LOGGER.warn("Analyser components of {}:\n{}", pair.k.getName(), pair.k.getAnalyserComponents().details());
+                    }
+                }
                 throw new UnsupportedOperationException("More than 10 iterations needed for primary type " + primaryType.fullyQualifiedName + "?");
             }
         }

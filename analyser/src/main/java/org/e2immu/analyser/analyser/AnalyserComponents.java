@@ -17,20 +17,35 @@
 
 package org.e2immu.analyser.analyser;
 
-import java.util.Arrays;
-import java.util.List;
+import org.e2immu.analyser.util.Pair;
+
+import java.util.*;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 
-public class AnalyserComponents {
+public class AnalyserComponents<T> {
 
-    private final List<AnalysisStatus.AnalysisResultSupplier> suppliers;
+    private final LinkedHashMap<T, AnalysisStatus.AnalysisResultSupplier> suppliers;
     private final AnalysisStatus[] state;
 
-    public AnalyserComponents(List<AnalysisStatus.AnalysisResultSupplier> suppliers) {
+    private AnalyserComponents(LinkedHashMap<T, AnalysisResultSupplier> suppliers) {
         this.suppliers = suppliers;
         state = new AnalysisStatus[suppliers.size()];
         Arrays.fill(state, DELAYS);
+    }
+
+    static class Builder<T> {
+        private final LinkedHashMap<T, AnalysisStatus.AnalysisResultSupplier> suppliers = new LinkedHashMap<>();
+
+        public Builder<T> add(T t, AnalysisResultSupplier supplier) {
+            if (suppliers.put(t, supplier) != null) throw new UnsupportedOperationException();
+            return this;
+        }
+
+        public AnalyserComponents<T> build() {
+            return new AnalyserComponents<>(suppliers);
+        }
     }
 
     // delay, delay -> delay
@@ -46,7 +61,7 @@ public class AnalyserComponents {
         int i = 0;
         boolean allDone = true;
         boolean changes = false;
-        for (AnalysisStatus.AnalysisResultSupplier supplier : suppliers) {
+        for (AnalysisStatus.AnalysisResultSupplier supplier : suppliers.values()) {
             AnalysisStatus initialState = state[i];
             if (initialState != DONE) {
                 AnalysisStatus afterExec = supplier.apply(iteration);
@@ -58,5 +73,20 @@ public class AnalyserComponents {
             i++;
         }
         return allDone ? DONE : changes ? PROGRESS : DELAYS;
+    }
+
+    public String details() {
+        StringBuilder sb = new StringBuilder();
+        getStatuses().forEach(p -> sb.append(p.k).append(": ").append(p.v).append("\n"));
+        return sb.toString();
+    }
+
+    public List<Pair<T, AnalysisStatus>> getStatuses() {
+        List<Pair<T, AnalysisStatus>> res = new LinkedList<>();
+        int i = 0;
+        for (T t : suppliers.keySet()) {
+            res.add(new Pair<>(t, state[i++]));
+        }
+        return res;
     }
 }
