@@ -794,12 +794,12 @@ public class FieldAnalyser extends AbstractAnalyser {
         check(Modified.class, e2.modified.get());
         check(Nullable.class, e2.nullable.get());
 
-        CheckConstant.checkConstantForFields(messages, fieldInfo);
-        CheckSize.checkSizeForFields(messages, fieldInfo);
+        CheckConstant.checkConstantForFields(messages, fieldInfo, fieldAnalysis);
+        CheckSize.checkSizeForFields(messages, fieldInfo, fieldAnalysis);
     }
 
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
-        fieldInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent -> {
+        fieldInfo.error(fieldAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(fieldInfo),
                     mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
             messages.add(error);

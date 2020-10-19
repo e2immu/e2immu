@@ -73,7 +73,7 @@ public class ParameterAnalyser {
         check(Nullable.class, e2.nullable.get());
         check(Modified.class, e2.modified.get());
 
-        CheckSize.checkSizeForParameters(messages, parameterInfo);
+        CheckSize.checkSizeForParameters(messages, parameterInfo, parameterAnalysis);
 
         checkWorseThanParent();
     }
@@ -95,7 +95,7 @@ public class ParameterAnalyser {
     }
 
     private void check(Class<?> annotation, List<AnnotationExpression> annotationExpressions) {
-        parameterInfo.error(annotation, annotationExpressions).ifPresent(mustBeAbsent -> {
+        parameterInfo.error(parameterAnalysis, annotation, annotationExpressions).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(parameterInfo),
                     mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
             messages.add(error);
@@ -103,7 +103,7 @@ public class ParameterAnalyser {
     }
 
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
-        parameterInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent -> {
+        parameterInfo.error(parameterAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(parameterInfo),
                     mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
             messages.add(error);

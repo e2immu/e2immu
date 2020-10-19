@@ -42,29 +42,33 @@ public interface WithInspectionAndAnalysis {
 
     boolean hasBeenDefined();
 
-    default Boolean annotatedWith(AnnotationExpression annotation) {
+    default Boolean annotatedWith(Analysis analysis, AnnotationExpression annotation) {
         if (hasBeenDefined()) {
-            return getAnalysis().annotations.getOtherwiseNull(annotation);
+            return analysis.annotations.getOtherwiseNull(annotation);
         }
         return getInspection().annotations.stream()
                 .anyMatch(ae -> ae.typeInfo.fullyQualifiedName.equals(annotation.typeInfo.fullyQualifiedName));
     }
 
-    default Optional<Boolean> error(Class<?> annotation, AnnotationExpression expression) {
+    default Boolean annotatedWith(AnnotationExpression annotation) {
+        return annotatedWith(getAnalysis(), annotation);
+    }
+
+    default Optional<Boolean> error(Analysis analysis, Class<?> annotation, AnnotationExpression expression) {
         Optional<Boolean> mustBeAbsent = hasTestAnnotation(annotation).map(AnnotationExpression::isVerifyAbsent);
         if (mustBeAbsent.isEmpty()) return Optional.empty(); // no error, no check!
-        Boolean actual = getAnalysis().annotations.getOtherwiseNull(expression);
+        Boolean actual = analysis.annotations.getOtherwiseNull(expression);
         if (actual == null && !mustBeAbsent.get() || mustBeAbsent.get() == actual) {
             return mustBeAbsent; // error!!!
         }
         return Optional.empty(); // no error
     }
 
-    default Optional<Boolean> error(Class<?> annotation, List<AnnotationExpression> expressions) {
+    default Optional<Boolean> error(Analysis analysis, Class<?> annotation, List<AnnotationExpression> expressions) {
         Optional<Boolean> mustBeAbsent = hasTestAnnotation(annotation).map(AnnotationExpression::isVerifyAbsent);
         if (mustBeAbsent.isEmpty()) return Optional.empty(); // no error, no check!
         for (AnnotationExpression expression : expressions) {
-            Boolean actual = getAnalysis().annotations.getOtherwiseNull(expression);
+            Boolean actual = analysis.annotations.getOtherwiseNull(expression);
             if (actual != null) {
                 return mustBeAbsent.get() == actual ? mustBeAbsent : Optional.empty();
             }

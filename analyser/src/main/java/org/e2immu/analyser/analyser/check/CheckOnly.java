@@ -12,9 +12,8 @@ import org.e2immu.annotation.Only;
 
 public class CheckOnly {
 
-    public static void checkOnly(Messages messages, MethodInfo methodInfo) {
-        MethodAnalysis.MarkAndOnly markAndOnly = methodInfo.methodAnalysis.get().markAndOnly.isSet() ?
-                methodInfo.methodAnalysis.get().markAndOnly.get() : null;
+    public static void checkOnly(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        MethodAnalysis.MarkAndOnly markAndOnly = methodAnalysis.markAndOnly.isSet() ? methodAnalysis.markAndOnly.get() : null;
         AnnotationExpression annotationExpression = methodInfo.hasTestAnnotation(Only.class).orElse(null);
         if (annotationExpression == null) return; // nothing to verify
 
@@ -63,9 +62,8 @@ public class CheckOnly {
         }
     }
 
-    public static void checkMark(Messages messages, MethodInfo methodInfo) {
-        MethodAnalysis.MarkAndOnly markAndOnly = methodInfo.methodAnalysis.get().markAndOnly.isSet() ?
-                methodInfo.methodAnalysis.get().markAndOnly.get() : null;
+    public static void checkMark(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        MethodAnalysis.MarkAndOnly markAndOnly = methodAnalysis.markAndOnly.isSet() ? methodAnalysis.markAndOnly.get() : null;
         AnnotationExpression annotationExpression = methodInfo.hasTestAnnotation(Mark.class).orElse(null);
         if (annotationExpression == null) return; // nothing to verify
 

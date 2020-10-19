@@ -8,21 +8,21 @@ import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.Size;
 
 public class CheckSize {
-    public static void checkSizeForMethods(Messages messages, MethodInfo methodInfo) {
-        int size = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
-        int sizeCopy = methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
+    public static void checkSizeForMethods(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        int size = methodAnalysis.getProperty(VariableProperty.SIZE);
+        int sizeCopy = methodAnalysis.getProperty(VariableProperty.SIZE_COPY);
         AnnotationExpression optionalAnnotationExpression = methodInfo.hasTestAnnotation(Size.class).orElse(null);
         checkSize(messages, size, sizeCopy, optionalAnnotationExpression, new Location(methodInfo));
     }
 
-    public static void checkSizeForFields(Messages messages, FieldInfo fieldInfo) {
-        int size = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.SIZE);
+    public static void checkSizeForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
+        int size = fieldAnalysis.getProperty(VariableProperty.SIZE);
         AnnotationExpression optionalAnnotationExpression = fieldInfo.hasTestAnnotation(Size.class).orElse(null);
         checkSize(messages, size, -1, optionalAnnotationExpression, new Location(fieldInfo));
     }
 
-    public static void checkSizeForParameters(Messages messages, ParameterInfo parameterInfo) {
-        int size = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE);
+    public static void checkSizeForParameters(Messages messages, ParameterInfo parameterInfo, ParameterAnalysis parameterAnalysis) {
+        int size = parameterAnalysis.getProperty(VariableProperty.SIZE);
         AnnotationExpression optionalAnnotationExpression = parameterInfo.hasTestAnnotation(Size.class).orElse(null);
         checkSize(messages, size, -1, optionalAnnotationExpression, new Location(parameterInfo));
     }

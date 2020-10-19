@@ -354,9 +354,21 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         Value reducedState = composite.apply(localConditionManager.state);
         localConditionManager = new ConditionManager(localConditionManager.condition, reducedState);
 
-
         // all modifications get applied
         evaluationResult.getModificationStream().forEach(statementAnalysis::apply);
+
+        if (!statementAnalysis.methodLevelData.internalObjectFlows.isFrozen()) {
+            boolean delays = false;
+            for (ObjectFlow objectFlow : evaluationResult.getObjectFlowStream().collect(Collectors.toSet())) {
+                if (objectFlow.isDelayed()) {
+                    delays = true;
+                } else if (!statementAnalysis.methodLevelData.internalObjectFlows.contains(objectFlow)) {
+                    statementAnalysis.methodLevelData.internalObjectFlows.add(objectFlow);
+                }
+            }
+            if (!delays) statementAnalysis.methodLevelData.internalObjectFlows.freeze();
+            // TODO check that AddOnceSet is the right data structure
+        }
     }
 
 
@@ -784,8 +796,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      *     <li>NYR + local variable created higher up + EXIT (return stmt, anything beyond the level of the CREATED)</li>
      *     <li>NYR + escape</li>
      * </ul>
-     *
-     * @return if an error was generated
      */
     private void checkUselessAssignments() {
         InterruptsFlow bestAlwaysInterrupt = statementAnalysis.flowData.bestAlwaysInterrupt();

@@ -160,7 +160,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     public void check() {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         // before we check, we copy the properties into annotations
-        methodInfo.methodAnalysis.get().transferPropertiesToAnnotations(e2);
+        methodAnalysis.transferPropertiesToAnnotations(e2);
 
         log(ANALYSER, "Checking method {}", methodInfo.fullyQualifiedName());
 
@@ -177,7 +177,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                 check(E2Immutable.class, e2.e2Immutable.get());
                 check(E2Container.class, e2.e2Container.get());
                 check(BeforeMark.class, e2.beforeMark.get());
-                CheckConstant.checkConstantForMethods(messages, methodInfo);
+                CheckConstant.checkConstantForMethods(messages, methodInfo, methodAnalysis);
 
                 // checks for dynamic properties of functional interface types
                 check(NotModified1.class, e2.notModified1.get());
@@ -191,10 +191,10 @@ public class MethodAnalyser extends AbstractAnalyser {
         // opposites
         check(Dependent.class, e2.dependent.get());
 
-        CheckSize.checkSizeForMethods(messages, methodInfo);
+        CheckSize.checkSizeForMethods(messages, methodInfo, methodAnalysis);
         CheckPrecondition.checkPrecondition(messages, methodInfo);
-        CheckOnly.checkOnly(messages, methodInfo);
-        CheckOnly.checkMark(messages, methodInfo);
+        CheckOnly.checkOnly(messages, methodInfo, methodAnalysis);
+        CheckOnly.checkMark(messages, methodInfo, methodAnalysis);
 
         getParameterAnalysers().forEach(ParameterAnalyser::check);
 
@@ -216,7 +216,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
 
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
-        methodInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent -> {
+        methodInfo.error(methodAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(methodInfo),
                     mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
             messages.add(error);
@@ -415,8 +415,9 @@ public class MethodAnalyser extends AbstractAnalyser {
             ParameterizedType parentClass = typeInfo.typeInspection.getPotentiallyRun().parentClass;
             typeInfo = parentClass.bestTypeInfo();
             if (typeInfo == null) {
-                log(DELAYED, "Delaying/Ignoring @Only and @Mark, cannot find a non-final field in {}", methodInfo.distinguishingName());
-                return DELAYS;
+                log(MARK, "No @Mark/@Only annotation in {}: found no non-final fields", methodInfo.distinguishingName());
+                methodAnalysis.preconditionForMarkAndOnly.set(List.of());
+                return DONE;
             }
         }
 
@@ -719,7 +720,8 @@ public class MethodAnalyser extends AbstractAnalyser {
                 }
             }
         }
-        return Level.DELAY;
+        // if DELAY here for a simple method that returns a string, the whole thing remains on DELAY
+        return Level.FALSE;
     }
 
     static int safeMinimumForSize(Messages messages, Location location, IntStream intStream) {

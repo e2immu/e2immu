@@ -55,8 +55,7 @@ public class CheckConstant {
     }
 
 
-    public static void checkConstantForFields(Messages messages, FieldInfo fieldInfo) {
-        FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
+    public static void checkConstantForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
         Value singleReturnValue = fieldAnalysis.effectivelyFinalValue.isSet() ?
                 fieldAnalysis.effectivelyFinalValue.get() : UnknownValue.NO_VALUE;
         checkConstant(messages,
@@ -65,9 +64,9 @@ public class CheckConstant {
                 new Location(fieldInfo));
     }
 
-    public static void checkConstantForMethods(Messages messages, MethodInfo methodInfo) {
-        Value singleReturnValue = methodInfo.methodAnalysis.get().methodLevelData().singleReturnValue.isSet() ?
-                methodInfo.methodAnalysis.get().methodLevelData().singleReturnValue.get() : UnknownValue.NO_VALUE;
+    public static void checkConstantForMethods(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+        Value singleReturnValue = methodAnalysis.methodLevelData().singleReturnValue.isSet() ?
+                methodAnalysis.methodLevelData().singleReturnValue.get() : UnknownValue.NO_VALUE;
         checkConstant(messages,
                 singleReturnValue,
                 methodInfo.methodInspection.get().annotations,

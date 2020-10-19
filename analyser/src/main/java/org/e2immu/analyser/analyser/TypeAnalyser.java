@@ -188,7 +188,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         // before we check, we copy the properties into annotations
         log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
-        typeInfo.typeAnalysis.get().transferPropertiesToAnnotations(e2);
+        typeAnalysis.transferPropertiesToAnnotations(e2);
 
         check(typeInfo, UtilityClass.class, e2.utilityClass.get());
         check(typeInfo, E1Immutable.class, e2.e1Immutable.get());
@@ -204,7 +204,7 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     private void check(TypeInfo typeInfo, Class<?> annotation, AnnotationExpression annotationExpression) {
-        typeInfo.error(annotation, annotationExpression).ifPresent(mustBeAbsent -> {
+        typeInfo.error(typeAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(typeInfo),
                     mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
             messages.add(error);
@@ -324,7 +324,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
          */
     private AnalysisStatus analyseOnlyMarkEventuallyE1Immutable() {
-        if (!typeAnalysis.approvedPreconditions.isFrozen()) {
+        if (typeAnalysis.approvedPreconditions.isFrozen()) {
             return DONE;
         }
         boolean someModifiedNotSet = myMethodAnalysersExcludingSAMs.stream()
