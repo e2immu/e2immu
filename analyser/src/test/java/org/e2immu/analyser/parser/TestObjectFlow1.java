@@ -77,9 +77,10 @@ public class TestObjectFlow1 extends CommonTestRunner {
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
-        if ("key".equals(fieldInfo.name)) {
-            ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        int iteration = d.iteration();
+        if ("key".equals(d.fieldInfo().name)) {
+            ObjectFlow objectFlow = d.fieldAnalysis().getObjectFlow();
             Assert.assertNotNull(objectFlow);
             LOGGER.info("Object flow is {}", objectFlow.detailed());
 
@@ -90,7 +91,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
             } else {
                 Assert.assertTrue(objectFlow.location.info instanceof ParameterInfo);
             }
-            ParameterInfo key = fieldInfo.owner.typeInspection.getPotentiallyRun().constructors.get(0).methodInspection.get().parameters.get(0);
+            ParameterInfo key = d.fieldInfo().owner.typeInspection.getPotentiallyRun().constructors.get(0).methodInspection.get().parameters.get(0);
             ObjectFlow objectFlowPI = key.parameterAnalysis.get().getObjectFlow();
             if (iteration > 0) {
                 Assert.assertSame(objectFlow, objectFlowPI);

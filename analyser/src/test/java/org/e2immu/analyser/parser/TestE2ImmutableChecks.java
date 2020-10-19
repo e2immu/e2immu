@@ -111,12 +111,14 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
-        if ("value1".equals(fieldInfo.name) && iteration > 1) {
-            Assert.assertEquals(MultiLevel.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        int iteration = d.iteration();
+        String name = d.fieldInfo().name;
+        if ("value1".equals(name) && iteration > 1) {
+            Assert.assertEquals(MultiLevel.FALSE, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
         }
-        if ("map7".equals(fieldInfo.name)) {
-            int immutable = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+        if ("map7".equals(name)) {
+            int immutable = d.fieldAnalysis().getProperty(VariableProperty.IMMUTABLE);
             if (iteration == 0) {
                 Assert.assertEquals(Level.DELAY, immutable);
             } else {

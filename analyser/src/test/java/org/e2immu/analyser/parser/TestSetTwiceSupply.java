@@ -40,9 +40,9 @@ public class TestSetTwiceSupply extends CommonTestRunner {
         super(true);
     }
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
-        if ("runnable".equals(fieldInfo.name) && iteration > 0) {
-            Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        if ("runnable".equals(d.fieldInfo().name) && d.iteration() > 0) {
+            Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
         }
     };
 
@@ -60,7 +60,7 @@ public class TestSetTwiceSupply extends CommonTestRunner {
         if ("getPotentiallyRun".equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 1) {
             Assert.assertEquals("not (null == this.t)", methodInfo.methodAnalysis.get().precondition.get().toString());
         }
-        if("setRunnable".equals(methodInfo.name) && iteration>0) {
+        if ("setRunnable".equals(methodInfo.name) && iteration > 0) {
             Assert.assertEquals("null == this.t", methodInfo.methodAnalysis.get().precondition.get().toString());
         }
     };

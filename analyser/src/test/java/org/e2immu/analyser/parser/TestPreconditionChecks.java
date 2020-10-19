@@ -99,9 +99,9 @@ public class TestPreconditionChecks extends CommonTestRunner {
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
-        if (iteration > 0 && "integer".equals(fieldInfo.name)) {
-            Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        if (d.iteration() > 0 && "integer".equals(d.fieldInfo().name)) {
+            Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
         }
     };
 

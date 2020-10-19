@@ -39,10 +39,10 @@ import java.util.Set;
 
 public class TestSetOnce extends CommonTestRunner {
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
-        if ("t".equals(fieldInfo.name) && iteration > 0) {
-            Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
-            Assert.assertEquals(MultiLevel.NULLABLE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        if ("t".equals(d.fieldInfo().name) && d.iteration() > 0) {
+            Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+            Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
 
         }
     };

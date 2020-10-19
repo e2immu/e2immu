@@ -115,18 +115,18 @@ public class TestContainerChecks extends CommonTestRunner {
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
-        if ("strings1".equals(fieldInfo.name)) {
-            if (iteration == 0) {
-                Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        if ("strings1".equals(d.fieldInfo().name)) {
+            if (d.iteration() == 0) {
+                Assert.assertEquals(Level.DELAY, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
             } else {
                 // setter may not have been called yet; there is no initialiser
-                Assert.assertEquals(MultiLevel.NULLABLE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
             }
         }
-        if ("strings2".equals(fieldInfo.name)) {
-            if (iteration >= 1) {
-                Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+        if ("strings2".equals(d.fieldInfo().name)) {
+            if (d.iteration() >= 1) {
+                Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
             }
         }
     };

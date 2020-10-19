@@ -35,10 +35,10 @@ public class TestModificationGraph extends CommonTestRunner {
         super(false);
     }
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
-        if ("c1".equals(fieldInfo.name)) {
-            int modified = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED);
-            int expect = iteration < 2 ? Level.DELAY : Level.TRUE;
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        if ("c1".equals(d.fieldInfo().name)) {
+            int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
+            int expect = d.iteration() < 2 ? Level.DELAY : Level.TRUE;
             Assert.assertEquals(expect, modified);
         }
     };

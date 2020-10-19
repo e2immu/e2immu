@@ -86,9 +86,9 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
-        if ("ts2".equals(fieldInfo.name) && iteration > 1) {
-            Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        if ("ts2".equals(d.fieldInfo().name) && d.iteration() > 1) {
+            Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
         }
     };
 

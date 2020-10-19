@@ -3,6 +3,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
+import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.statement.Block;
@@ -14,7 +15,10 @@ import java.io.IOException;
 
 public class TestFunctionalInterfaceModified1 extends CommonTestRunner {
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        FieldInfo fieldInfo = d.fieldInfo();
+        int iteration = d.iteration();
+
         if ("getAndAdd".equals(fieldInfo.name) || "getAndAdd2".equals(fieldInfo.name) || "getAndAdd3".equals(fieldInfo.name)) {
             MethodInfo sam = fieldInfo.fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod;
             Block block = sam.methodInspection.get().methodBody.get();
@@ -28,7 +32,7 @@ public class TestFunctionalInterfaceModified1 extends CommonTestRunner {
             int modified = sam.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
             Assert.assertEquals(Level.TRUE, modified); // STEP 1 CHECKED
             if (iteration > 0) {
-                int modifiedOnField = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED);
+                int modifiedOnField = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
                 Assert.assertEquals(Level.TRUE, modifiedOnField); // STEP 2
             }
         }
@@ -46,7 +50,7 @@ public class TestFunctionalInterfaceModified1 extends CommonTestRunner {
             if (iteration > 0) {
                 int getMethodModified = get.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
                 Assert.assertEquals(Level.TRUE, getMethodModified); // STEP 1 CHECKED
-                int fieldModified = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED);
+                int fieldModified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
                 Assert.assertEquals(Level.TRUE, fieldModified); // STEP 2
             }
         }

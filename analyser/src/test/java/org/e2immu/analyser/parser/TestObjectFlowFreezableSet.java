@@ -148,28 +148,30 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
-        if ("SET5".equals(fieldInfo.name) && iteration > 0) {
-            int immutable = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        int iteration = d.iteration();
+        String name = d.fieldInfo().name;
+        if ("SET5".equals(name) && iteration > 0) {
+            int immutable = d.fieldAnalysis().getProperty(VariableProperty.IMMUTABLE);
             Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK, immutable);
-            int container = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.CONTAINER);
+            int container = d.fieldAnalysis().getProperty(VariableProperty.CONTAINER);
             Assert.assertEquals(Level.TRUE, container);
         }
-        if ("SET10".equals(fieldInfo.name) && iteration > 0) {
-            ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
+        if ("SET10".equals(name) && iteration > 0) {
+            ObjectFlow objectFlow = d.fieldAnalysis().getObjectFlow();
             LOGGER.info("Object flow of SET10 at iteration {}: {}", iteration, objectFlow.detailed());
             Assert.assertTrue(objectFlow.marks().isEmpty());
-            int immutable = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+            int immutable = d.fieldAnalysis().getProperty(VariableProperty.IMMUTABLE);
             Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK, immutable);
         }
 
-        if ("SET8".equals(fieldInfo.name) && iteration > 0) {
-            ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
+        if ("SET8".equals(name) && iteration > 0) {
+            ObjectFlow objectFlow = d.fieldAnalysis().getObjectFlow();
             LOGGER.info("Object flow of SET8 at iteration {}: {}", iteration, objectFlow.detailed());
             Assert.assertEquals("[mark]", objectFlow.marks().toString());
-            int immutable = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+            int immutable = d.fieldAnalysis().getProperty(VariableProperty.IMMUTABLE);
             Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK, immutable);
-            int container = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.CONTAINER);
+            int container = d.fieldAnalysis().getProperty(VariableProperty.CONTAINER);
             Assert.assertEquals(Level.TRUE, container);
         }
     };

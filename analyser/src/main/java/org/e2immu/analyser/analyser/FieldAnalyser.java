@@ -133,7 +133,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             AnalysisStatus analysisStatus = analyserComponents.run(iteration);
 
             for (FieldAnalyserVisitor fieldAnalyserVisitor : analyserContext.getConfiguration().debugConfiguration.afterFieldAnalyserVisitors) {
-                fieldAnalyserVisitor.visit(iteration, fieldInfo);
+                fieldAnalyserVisitor.visit(new FieldAnalyserVisitor.Data(iteration, fieldInfo, fieldAnalysis));
             }
 
             return analysisStatus;

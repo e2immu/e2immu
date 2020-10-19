@@ -49,15 +49,16 @@ public class TestLazy extends CommonTestRunner {
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
-        if ("t".equals(fieldInfo.name) && iteration > 0) {
-            Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        int iteration = d.iteration();
+        if ("t".equals(d.fieldInfo().name) && iteration > 0) {
+            Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
         }
-        if ("supplier".equals(fieldInfo.name) && iteration > 0) {
-            Assert.assertEquals(Level.TRUE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
-            Assert.assertTrue(fieldInfo.fieldAnalysis.get().effectivelyFinalValue.isSet());
+        if ("supplier".equals(d.fieldInfo().name) && iteration > 0) {
+            Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+            Assert.assertTrue(d.fieldAnalysis().effectivelyFinalValue.isSet());
 
-           // Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
+            // Assert.assertEquals(Level.FALSE, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
     };
 
@@ -82,7 +83,7 @@ public class TestLazy extends CommonTestRunner {
             Assert.assertEquals("supplierParam", supplierParam.name);
             if (iteration > 0) {
                 Assert.assertTrue(supplierParam.parameterAnalysis.get().assignedToField.isSet());
-              //  Assert.assertTrue(supplierParam.parameterAnalysis.get().copiedFromFieldToParameters.isSet());
+                //  Assert.assertTrue(supplierParam.parameterAnalysis.get().copiedFromFieldToParameters.isSet());
             }
         }
         if ("get".equals(methodInfo.name)) {

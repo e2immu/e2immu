@@ -121,23 +121,25 @@ public class TestNotModifiedChecks extends CommonTestRunner {
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        int iteration = d.iteration();
+        FieldInfo fieldInfo = d.fieldInfo();
         if ("c0".equals(fieldInfo.name)) {
             if (iteration >= 2) {
-                Assert.assertEquals(0, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(0, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
             }
         }
         if ("s0".equals(fieldInfo.name)) {
             if (iteration >= 2) {
-                Assert.assertEquals(1, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(1, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
             }
         }
         if ("set".equals(fieldInfo.name)) {
             if (iteration > 0) {
-                Assert.assertEquals("this.set", fieldInfo.fieldAnalysis.get().effectivelyFinalValue.get().toString());
+                Assert.assertEquals("this.set", d.fieldAnalysis().effectivelyFinalValue.get().toString());
             }
             if (iteration > 0) {
-                Assert.assertEquals("[0:set1]", fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().toString());
+                Assert.assertEquals("[0:set1]", d.fieldAnalysis().variablesLinkedToMe.get().toString());
             }
         }
     };

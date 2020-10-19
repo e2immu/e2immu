@@ -76,15 +76,17 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         Assert.assertEquals(Level.FALSE, size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        FieldInfo fieldInfo = d.fieldInfo();
+        int iteration = d.iteration();
         if ("list".equals(fieldInfo.name) && "MyIteratorImpl".equals(fieldInfo.owner.simpleName)) {
-            int modified = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED);
+            int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
             int expect = iteration <= 1 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expect, modified);
 
             if (iteration > 0) {
-                Assert.assertTrue(fieldInfo.fieldAnalysis.get().variablesLinkedToMe.isSet());
-                Assert.assertEquals("", fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get().toString());
+                Assert.assertTrue(d.fieldAnalysis().variablesLinkedToMe.isSet());
+                Assert.assertEquals("", d.fieldAnalysis().variablesLinkedToMe.get().toString());
             }
         }
         if ("list".equals(fieldInfo.name) && "ExampleManualIterator1".equals(fieldInfo.owner.simpleName)) {

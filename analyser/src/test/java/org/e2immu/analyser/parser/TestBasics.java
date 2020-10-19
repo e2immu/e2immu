@@ -43,16 +43,16 @@ public class TestBasics extends CommonTestRunner {
         super(false);
     }
 
-    FieldAnalyserVisitor afterFieldAnalyserVisitor = (iteration, fieldInfo) -> {
-        FieldAnalysis fieldAnalysis = fieldInfo.fieldAnalysis.get();
-        if ("explicitlyFinal".equals(fieldInfo.name)) {
-            if (iteration == 0) {
+    FieldAnalyserVisitor afterFieldAnalyserVisitor = d -> {
+        FieldAnalysis fieldAnalysis = d.fieldAnalysis();
+        if ("explicitlyFinal".equals(d.fieldInfo().name)) {
+            if (d.iteration() == 0) {
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
                 Assert.assertEquals("abc", fieldAnalysis.effectivelyFinalValue.get().toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldAnalysis.effectivelyFinalValue.get()
                         .getPropertyOutsideContext(VariableProperty.NOT_NULL));
             }
-            if (iteration > 0) {
+            if (d.iteration() > 0) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, fieldAnalysis.getProperty(VariableProperty.IMMUTABLE));
             }

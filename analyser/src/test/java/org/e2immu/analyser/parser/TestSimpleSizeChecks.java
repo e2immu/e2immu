@@ -77,9 +77,9 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
-        if (iteration > 0 && fieldInfo.name.equals("intSet")) {
-            Assert.assertEquals(SIZE_EQUALS_2, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.SIZE));
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        if (d.iteration() > 0 && d.fieldInfo().name.equals("intSet")) {
+            Assert.assertEquals(SIZE_EQUALS_2, d.fieldAnalysis().getProperty(VariableProperty.SIZE));
         }
     };
 

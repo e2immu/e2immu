@@ -135,10 +135,10 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         // ERROR: b is never read
-        if ("b".equals(fieldInfo.name) && iteration >= 1) {
-            Assert.assertTrue(fieldInfo.fieldAnalysis.get().fieldError.get());
+        if ("b".equals(d.fieldInfo().name) && d.iteration() >= 1) {
+            Assert.assertTrue(d.fieldAnalysis().fieldError.get());
         }
     };
 

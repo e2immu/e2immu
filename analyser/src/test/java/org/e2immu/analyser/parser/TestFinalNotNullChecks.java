@@ -53,12 +53,13 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = (iteration, fieldInfo) -> {
-        if (iteration == 0 && "input".equals(fieldInfo.name)) {
-            Assert.assertEquals(Level.DELAY, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        String name = d.fieldInfo().name;
+        if (d.iteration() == 0 && "input".equals(name)) {
+            Assert.assertEquals(Level.DELAY, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
         }
-        if (iteration >= 2 && "input".equals(fieldInfo.name)) {
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        if (d.iteration() >= 2 && "input".equals(name)) {
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
         }
     };
 
