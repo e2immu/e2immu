@@ -677,8 +677,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private AnalysisStatus analyseSingleStatement3(EvaluationContext evaluationContext,
                                                    ForwardAnalysisInfo forwardAnalysisInfo,
                                                    StatementAnalyserResult.Builder builder) {
-        boolean changes = false;
-
         Structure structure = statementAnalysis.statement.getStructure();
 
         // STEP 1: Create a local variable x for(X x: Xs) {...}, or in catch(Exception e)
@@ -776,7 +774,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             statementAnalysis.stateData.conditionManager.set(localConditionManager);
         }
 
-        return AnalysisStatus.DONE; // TODO
+        return value == NO_VALUE ? DELAYS : DONE; // TODO need more detail
     }
 
     /**
@@ -987,14 +985,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public Value currentValue(Variable variable) {
-            VariableInfoImpl.Builder v = variableDataBuilder.find(variable);
+            VariableInfoImpl.Builder v = find(variable);
             return v == null ? NO_VALUE : v.getCurrentValue();
         }
 
         @Override
         public Value currentValue(String variableName) {
-            Variable variable = variableDataBuilder.find(variableName).variable;
-            return currentValue(variable);
+            return variableDataBuilder.find(variableName).getCurrentValue();
         }
 
         @Override
@@ -1008,7 +1005,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    private VariableInfoImpl.Builder find(AnalyserContext analyserContext, Variable variable) {
+    private VariableInfoImpl.Builder find(Variable variable) {
         if (variable instanceof FieldReference fieldReference) {
             FieldAnalyser fieldAnalyser = myMethodAnalyser.getFieldAnalyser(fieldReference.fieldInfo);
             FieldAnalysis fieldAnalysis = fieldAnalyser != null ? fieldAnalyser.fieldAnalysis : fieldReference.fieldInfo.fieldAnalysis.get();
@@ -1031,7 +1028,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void run() {
-            VariableInfoImpl.Builder variableInfo = find(analyserContext, variable);
+            VariableInfoImpl.Builder variableInfo = find(variable);
             if (variableInfo == null) {
                 return;
             }

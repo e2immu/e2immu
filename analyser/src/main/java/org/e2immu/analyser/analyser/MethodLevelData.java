@@ -471,8 +471,7 @@ public class MethodLevelData {
                     log(DELAYED, "Marking that delays need resolving on {}", variable.name());
                     tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.FALSE);
                 }
-            } else if (variable instanceof ParameterInfo) {
-                ParameterInfo parameterInfo = (ParameterInfo) variable;
+            } else if (variable instanceof ParameterInfo parameterInfo) {
 
                 if (parameterInfo.parameterizedType.hasSize()) {
                     int size = variableInfo.getProperty(VariableProperty.SIZE);
