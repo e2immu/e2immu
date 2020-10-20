@@ -202,11 +202,6 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return messages;
     }
 
-    @Override
-    public String detailedName() {
-        return fullyQualifiedName();
-    }
-
     public Set<ParameterizedType> explicitTypes() {
         if (!fieldInspection.get().initialiser.isSet()) return Set.of();
         FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.get().initialiser.get();

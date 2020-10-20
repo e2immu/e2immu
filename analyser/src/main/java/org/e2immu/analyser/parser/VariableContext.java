@@ -66,14 +66,14 @@ public class VariableContext {
      * @param variable the variable to be added
      */
     public void add(FieldReference variable) {
-        String name = variable.name();
+        String name = variable.simpleName();
         if (!fields.containsKey(name)) {
             fields.put(name, variable);
         }
     }
 
     public void add(ParameterInfo variable) {
-        parameters.put(variable.name(), variable);
+        parameters.put(variable.simpleName(), variable);
     }
 
     public void add(LocalVariable variable, List<Expression> assignmentExpressions) {

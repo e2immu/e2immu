@@ -59,7 +59,7 @@ public class ParameterAnalyser {
         // before we check, we copy the properties into annotations
         parameterAnalysis.transferPropertiesToAnnotations(e2);
 
-        log(ANALYSER, "Checking parameter {}", parameterInfo.detailedString());
+        log(ANALYSER, "Checking parameter {}", parameterInfo.fullyQualifiedName());
 
         check(NotModified.class, e2.notModified.get());
         check(NotNull.class, List.of(e2.notNull.get(),
@@ -129,7 +129,7 @@ public class ParameterAnalyser {
                     int inParameter = parameterAnalysis.getProperty(variableProperty);
                     if (inField > inParameter && verifySizeNotModified(variableProperty)) {
                         log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
-                                fieldInfo.fullyQualifiedName(), parameterInfo.detailedString(), variableProperty);
+                                fieldInfo.fullyQualifiedName(), parameterInfo.fullyQualifiedName(), variableProperty);
                         parameterAnalysis.setProperty(variableProperty, inField);
                         changed = true;
                     }
@@ -155,7 +155,7 @@ public class ParameterAnalyser {
         if (variableProperty != VariableProperty.SIZE) return true;
         int modified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
         boolean accept = modified != Level.TRUE;
-        log(SIZE, "To copy the SIZE property on {}, we look at MODIFIED. Copy? {}", parameterInfo.detailedString(), accept);
+        log(SIZE, "To copy the SIZE property on {}, we look at MODIFIED. Copy? {}", parameterInfo.fullyQualifiedName(), accept);
         return accept;
     }
 

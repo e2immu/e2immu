@@ -24,7 +24,6 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.MethodAnalysis;
-import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
@@ -46,7 +45,7 @@ public class TestDependencyGraph extends CommonTestRunner {
             Map<Variable, Value> isr = d.condition.filter(Value.FilterMode.ACCEPT, Value::isIndividualSizeRestriction).accepted;
             Assert.assertEquals(1, isr.size());
             Map.Entry<Variable, Value> entry = isr.entrySet().stream().findAny().orElseThrow();
-            Assert.assertEquals("toDo", entry.getKey().name());
+            Assert.assertEquals("toDo", entry.getKey().simpleName());
             Assert.assertEquals("((-1) + toDo.size(),?>=0) >= 0", entry.getValue().toString());
         }
         // we have to make sure that there is no "Empty loop" error raised

@@ -21,10 +21,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
@@ -35,6 +32,8 @@ import org.junit.Test;
 import java.io.IOException;
 
 public class TestBasicsOpposite extends CommonTestRunner {
+
+    public static final String STRING_PARAMETER = "org.e2immu.analyser.testexample.BasicsOpposite.setString(String):0:string";
 
     public TestBasicsOpposite() {
         super(true);
@@ -69,12 +68,25 @@ public class TestBasicsOpposite extends CommonTestRunner {
         }
     };
 
+    EvaluationResultVisitor evaluationResultVisitor = d -> {
+        if (d.methodInfo().name.equals("setString") && "0".equals(d.statementId())) {
+            Assert.assertEquals(d.evaluationResult().toString(), 4L, d.evaluationResult().getModificationStream().count());
+            Assert.assertTrue(d.evaluationResult().toString(),
+                    d.haveModification(STRING_PARAMETER,
+                            VariableProperty.READ, Level.TRUE));
+            Assert.assertTrue(d.evaluationResult().toString(), d.haveModification(
+                    "org.e2immu.analyser.testexample.BasicsOpposite.this", VariableProperty.READ, Level.TRUE));
+            Assert.assertEquals(d.evaluationResult().toString(), STRING_PARAMETER, d.evaluationResult().value.toString());
+        }
+    };
+
     @Test
     public void test() throws IOException {
         testClass("BasicsOpposite", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

@@ -52,13 +52,13 @@ public interface AnalyserContext {
 
     default ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
         ParameterAnalyser parameterAnalyser = getParameterAnalysers().get(parameterInfo);
-        Objects.requireNonNull(parameterAnalyser, "Parameter analyser is null for " + parameterInfo.detailedName());
+        Objects.requireNonNull(parameterAnalyser, "Parameter analyser is null for " + parameterInfo.fullyQualifiedName());
         return parameterAnalyser.parameterAnalysis;
     }
 
     default TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
         TypeAnalyser typeAnalyser = getTypeAnalysers().get(typeInfo);
-        Objects.requireNonNull(typeAnalyser, "Type analyser is null for " + typeInfo.fullyQualifiedName);
+        Objects.requireNonNull(typeAnalyser, "Type analyser is null for " + typeInfo.fullyQualifiedName());
         return typeAnalyser.typeAnalysis;
     }
 }

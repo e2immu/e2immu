@@ -16,7 +16,7 @@ public class CheckLinks {
 
     public static AnnotationExpression createLinkAnnotation(E2ImmuAnnotationExpressions typeContext, Set<Variable> links) {
         Expression computed = typeContext.constant.get().expressions.get().get(0);
-        List<Expression> linkNameList = links.stream().map(variable -> new StringConstant(variable.name())).collect(Collectors.toList());
+        List<Expression> linkNameList = links.stream().map(variable -> new StringConstant(variable.simpleName())).collect(Collectors.toList());
         Expression linksStringArray = new MemberValuePair("to", new ArrayInitializer(linkNameList));
         List<Expression> expressions = List.of(computed, linksStringArray);
         return AnnotationExpression.fromAnalyserExpressions(typeContext.linked.get().typeInfo, expressions);

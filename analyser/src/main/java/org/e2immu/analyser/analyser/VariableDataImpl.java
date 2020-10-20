@@ -24,8 +24,6 @@ import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.ArrayAccess;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.value.ConstantValue;
 import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -76,26 +74,6 @@ public class VariableDataImpl implements VariableData {
         return variables.entrySet();
     }
 
-
-    @NotNull
-    public static String variableName(@NotNull Variable variable) {
-        String name;
-        if (variable instanceof FieldReference fieldReference) {
-            if (fieldReference.scope == null || fieldReference.scope instanceof This) {
-                name = fieldReference.fieldInfo.fullyQualifiedName();
-            } else {
-                // scope can be a variable
-                name = fieldReference.fieldInfo.fullyQualifiedName() + "#" + variableName(fieldReference.scope);
-            }
-        } else if (variable instanceof This thisVariable) {
-            name = thisVariable.toString();
-        } else {
-            // parameter, local variable
-            name = variable.name();
-        }
-        return name;
-    }
-
     @Container(builds = VariableDataImpl.class)
     public static class Builder {
 
@@ -129,7 +107,7 @@ public class VariableDataImpl implements VariableData {
             if (variable instanceof LocalVariableReference || variable instanceof ParameterInfo || variable instanceof DependentVariable) {
                 ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
                 VariableValue variableValue = new VariableValue(variable, objectFlow);
-                internalCreate(analyserContext, variable, variable.name(), variableValue, variableValue, SINGLE_COPY);
+                internalCreate(analyserContext, variable, variable.fullyQualifiedName(), variableValue, variableValue, SINGLE_COPY);
             } else {
                 throw new UnsupportedOperationException("Not allowed to add This or FieldReference using this method");
             }
@@ -210,14 +188,13 @@ public class VariableDataImpl implements VariableData {
             if (isRecordType(variable)) {
                 TypeInfo recordType = variable.parameterizedType().typeInfo;
                 for (FieldInfo recordField : recordType.typeInspection.get().fields) {
-                    String newName = name + "." + recordField.name;
                     FieldReference fieldReference = new FieldReference(recordField, variable);
-                    Variable newVariable = new RecordField(fieldReference, newName);
                     FieldAnalysis recordFieldAnalysis = analyserContext.getFieldAnalysis(recordField);
                     Value newInitialValue = computeInitialValue(recordFieldAnalysis);
                     boolean variableField = false;// TODO this is not correct
-                    Value newResetValue = new VariableValue(newVariable, newName, ObjectFlow.NO_FLOW, variableField);
-                    internalCreate(analyserContext, newVariable, newName, newInitialValue, newResetValue, fieldReferenceState);
+                    String newName = fieldReference.fullyQualifiedName();
+                    Value newResetValue = new VariableValue(fieldReference, newName, ObjectFlow.NO_FLOW, variableField);
+                    internalCreate(analyserContext, fieldReference, newName, newInitialValue, newResetValue, fieldReferenceState);
                 }
             }
             return builder;
@@ -372,16 +349,16 @@ public class VariableDataImpl implements VariableData {
         public VariableInfoImpl.Builder ensureFieldReference(AnalyserContext analyserContext,
                                                              FieldReference fieldReference,
                                                              int effectivelyFinal) {
-            String name = variableName(fieldReference);
-            VariableInfoImpl.Builder vi = find(name);
-            if (find(name) != null) return vi;
+            String fqn = fieldReference.fullyQualifiedName();
+            VariableInfoImpl.Builder vi = find(fqn);
+            if (find(fqn) != null) return vi;
             Value resetValue;
             VariableInfo.FieldReferenceState fieldReferenceState = singleCopy(effectivelyFinal);
             if (fieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
                 resetValue = UnknownValue.NO_VALUE; // delay
             } else if (fieldReferenceState == MULTI_COPY) {
                 // TODO resetValue must become a map of properties
-                resetValue = new VariableValue(fieldReference, name, ObjectFlow.NO_FLOW, true);
+                resetValue = new VariableValue(fieldReference, fqn, ObjectFlow.NO_FLOW, true);
             } else {
                 // TODO different field analysis
                 FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
@@ -393,14 +370,14 @@ public class VariableDataImpl implements VariableData {
                     } else {
                         // undefined, will never get a value, but may have decent properties
                         // the properties will be copied from fieldAnalysis into properties in internalCreate
-                        resetValue = new VariableValue(fieldReference, name, ObjectFlow.NO_FLOW, false);
+                        resetValue = new VariableValue(fieldReference, fqn, ObjectFlow.NO_FLOW, false);
                     }
                 } else {
                     // local variable situation
-                    resetValue = new VariableValue(fieldReference, name, ObjectFlow.NO_FLOW, false);
+                    resetValue = new VariableValue(fieldReference, fqn, ObjectFlow.NO_FLOW, false);
                 }
             }
-            return internalCreate(analyserContext, fieldReference, name, resetValue, resetValue, fieldReferenceState);
+            return internalCreate(analyserContext, fieldReference, fqn, resetValue, resetValue, fieldReferenceState);
         }
 
         private VariableInfo.FieldReferenceState singleCopy(int effectivelyFinal) {
@@ -420,7 +397,7 @@ public class VariableDataImpl implements VariableData {
         }
 
         public boolean isKnown(Variable variable) {
-            String name = variableName(variable);
+            String name = variable.fullyQualifiedName();
             if (name == null) return false;
             return find(name) != null;
         }
@@ -430,7 +407,7 @@ public class VariableDataImpl implements VariableData {
             Set<Variable> dependencies = new HashSet<>(arrayAccess.expression.variables());
             dependencies.addAll(arrayAccess.index.variables());
             ParameterizedType parameterizedType = arrayAccess.expression.returnType();
-            String arrayName = arrayVariable == null ? null : variableName(arrayVariable);
+            String arrayName = arrayVariable == null ? null : arrayVariable.fullyQualifiedName();
             DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name, arrayName);
             if (!isKnown(dependentVariable)) {
                 createLocalVariableOrParameter(analyserContext, dependentVariable);
@@ -439,7 +416,7 @@ public class VariableDataImpl implements VariableData {
         }
 
         public VariableInfoImpl.Builder ensureThisVariable(AnalyserContext analyserContext, This thisVariable) {
-            String name = variableName(thisVariable);
+            String name = thisVariable.fullyQualifiedName();
             VariableInfoImpl.Builder vi = find(name);
             if (vi != null) return vi;
             return internalCreate(analyserContext,
@@ -451,13 +428,13 @@ public class VariableDataImpl implements VariableData {
             if (variableInfo != null) {
                 return variableInfo;
             }
-            throw new UnsupportedOperationException("Cannot find variable " + variable.detailedString());
+            throw new UnsupportedOperationException("Cannot find variable " + variable.fullyQualifiedName());
         }
 
         VariableInfoImpl.Builder find(@NotNull Variable variable) {
-            String name = variableName(variable);
-            if (name == null) return null;
-            return find(name);
+            String fqn = variable.fullyQualifiedName();
+            if (fqn == null) return null;
+            return find(fqn);
         }
 
         VariableInfoImpl.Builder find(String name) {
@@ -484,9 +461,7 @@ public class VariableDataImpl implements VariableData {
                                boolean startOfNewBlock) {
             if (statementAnalysis == null) {
                 for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
-                    LocalVariableReference lvr = new LocalVariableReference(new LocalVariable(List.of(),
-                            parameterAnalyser.parameterInfo.name, parameterAnalyser.parameterInfo.parameterizedType(), List.of()), List.of());
-                    createLocalVariableOrParameter(analyserContext, lvr);
+                    createLocalVariableOrParameter(analyserContext, parameterAnalyser.parameterInfo);
                 }
                 return;
             }

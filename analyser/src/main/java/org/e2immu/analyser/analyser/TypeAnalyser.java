@@ -401,7 +401,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             if (methodLevelData.fieldSummaries.isSet(fieldInfo)) {
                 TransferValue tv = methodLevelData.fieldSummaries.get(fieldInfo);
                 boolean assigned = tv.properties.get(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
-                log(MARK, "Field {} is assigned in {}? {}", variable.name(), methodInfo.distinguishingName(), assigned);
+                log(MARK, "Field {} is assigned in {}? {}", variable.fullyQualifiedName(), methodInfo.distinguishingName(), assigned);
 
                 if (assigned && tv.stateOnAssignment.isSet()) {
                     Value state = tv.stateOnAssignment.get();
@@ -427,7 +427,7 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     public static String labelOfPreconditionForMarkAndOnly(Value value) {
-        return value.variables().stream().map(Variable::name).distinct().sorted().collect(Collectors.joining("+"));
+        return value.variables().stream().map(Variable::simpleName).distinct().sorted().collect(Collectors.joining("+"));
     }
 
     private AnalysisStatus analyseContainer() {
@@ -460,7 +460,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                     if (modified == Level.TRUE) {
                         log(CONTAINER, "{} is not a @Container: the content of {} is modified in {}",
                                 typeInfo.fullyQualifiedName,
-                                parameterAnalyser.parameterInfo.detailedString(),
+                                parameterAnalyser.parameterInfo.fullyQualifiedName(),
                                 methodAnalyser.methodInfo.distinguishingName());
                         typeAnalysis.setProperty(VariableProperty.CONTAINER, Level.FALSE);
                         return DONE;

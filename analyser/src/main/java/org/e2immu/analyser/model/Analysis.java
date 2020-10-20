@@ -409,8 +409,8 @@ public abstract class Analysis {
     }
 
     public class SetProperty implements Modification {
-        private final VariableProperty variableProperty;
-        private int value;
+        public final VariableProperty variableProperty;
+        public int value;
 
         public SetProperty(VariableProperty variableProperty, int value) {
             this.value = value;

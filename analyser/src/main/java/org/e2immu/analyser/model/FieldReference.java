@@ -27,11 +27,6 @@ public class FieldReference extends VariableWithConcreteReturnType {
     // can be null, in which case this is a reference to a static field
     public final Variable scope;
 
-    @Override
-    public int variableOrder() {
-        return 1;
-    }
-
     /**
      * @param o the other one
      * @return true if the same field is being referred to
@@ -50,11 +45,6 @@ public class FieldReference extends VariableWithConcreteReturnType {
         // return Objects.hash(fieldInfo, scope);
     }
 
-    @Override
-    public String toString() {
-        return fieldInfo.toString();
-    }
-
     public FieldReference(FieldInfo fieldInfo, Variable scope) {
         super(scope == null ? fieldInfo.type : fieldInfo.type.fillTypeParameters(scope.concreteReturnType()));
         this.fieldInfo = Objects.requireNonNull(fieldInfo);
@@ -67,19 +57,16 @@ public class FieldReference extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public String name() {
+    public String simpleName() {
         return fieldInfo.name;
     }
 
     @Override
-    public String detailedString() {
-        String scopeString;
-        if (scope == null) {
-            scopeString = "type " + fieldInfo.type.stream() + ", static";
-        } else {
-            scopeString = scope.detailedString();
+    public String fullyQualifiedName() {
+        if (scope == null || scope instanceof This) {
+            return fieldInfo.fullyQualifiedName();
         }
-        return fieldInfo.name + " (of " + scopeString + ")";
+        return fieldInfo.fullyQualifiedName() + "#" + scope.fullyQualifiedName();
     }
 
     @Override

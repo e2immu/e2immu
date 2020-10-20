@@ -21,8 +21,6 @@ package org.e2immu.analyser.model;
 import java.util.List;
 import java.util.Objects;
 
-// NOTE that equality is on the variable ONLY
-
 public class LocalVariableReference extends VariableWithConcreteReturnType {
     public final LocalVariable variable;
     public final List<Expression> assignmentExpressions;
@@ -32,11 +30,6 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
                 localVariable.parameterizedType.fillTypeParameters(assignmentExpressions.get(0).returnType()));
         this.variable = Objects.requireNonNull(localVariable);
         this.assignmentExpressions = Objects.requireNonNull(assignmentExpressions);
-    }
-
-    @Override
-    public int variableOrder() {
-        return 5;
     }
 
     @Override
@@ -58,13 +51,13 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public String name() {
+    public String simpleName() {
         return variable.name;
     }
 
     @Override
-    public String detailedString() {
-        return variable.name + " (local variable)";
+    public String fullyQualifiedName() {
+        return variable.name;
     }
 
     @Override
@@ -75,10 +68,5 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return assignmentExpressions.stream().map(e -> e.sideEffect(evaluationContext)).reduce(SideEffect.LOCAL, SideEffect::combine);
-    }
-
-    @Override
-    public String toString() {
-        return variable.name;
     }
 }

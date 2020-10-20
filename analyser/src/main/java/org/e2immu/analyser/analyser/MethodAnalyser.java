@@ -952,7 +952,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                                     MultiLevel.value(analyserContext.getFieldAnalysers()
                                                     .get(((FieldReference) v).fieldInfo).fieldAnalysis.getProperty(VariableProperty.IMMUTABLE),
                                             MultiLevel.E2IMMUTABLE) == MultiLevel.DELAY)
-                            .map(Variable::detailedString)
+                            .map(Variable::fullyQualifiedName)
                             .collect(Collectors.joining(", ")));
             return null;
         }

@@ -94,6 +94,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     @Override
+    public String fullyQualifiedName() {
+        return fullyQualifiedName;
+    }
+
+    @Override
     @NotNull
     public Analysis getAnalysis() {
         return typeAnalysis.get();
@@ -1164,11 +1169,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             result.addAll(subType.objectFlows());
         }
         return result;
-    }
-
-    @Override
-    public String detailedName() {
-        return fullyQualifiedName;
     }
 
     public boolean isEventual() {

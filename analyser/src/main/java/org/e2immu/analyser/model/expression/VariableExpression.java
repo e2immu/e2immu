@@ -71,12 +71,15 @@ public class VariableExpression implements Expression {
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
             builder.markRead(variable);
         }
+
         int notNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
         if (notNull > MultiLevel.NULLABLE) {
             builder.variableOccursInNotNullContext(variable, currentValue, notNull);
         }
         int modified = forwardEvaluationInfo.getProperty(VariableProperty.MODIFIED);
-        builder.markContentModified(variable, modified);
+        if (modified != Level.DELAY) {
+            builder.markContentModified(variable, modified);
+        }
 
         int notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.NOT_MODIFIED_1);
         if (notModified1 == Level.TRUE) {
@@ -84,13 +87,19 @@ public class VariableExpression implements Expression {
         }
 
         int size = forwardEvaluationInfo.getProperty(VariableProperty.SIZE);
-        builder.markSizeRestriction(variable, size);
+        if (size >= Level.NOT_A_SIZE) {
+            builder.markSizeRestriction(variable, size);
+        }
 
         int methodCalled = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_CALLED);
-        builder.markMethodCalled(variable, methodCalled);
+        if (methodCalled == Level.TRUE) {
+            builder.markMethodCalled(variable, methodCalled);
+        }
 
         int methodDelay = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_DELAY);
-        builder.markMethodDelay(variable, methodDelay);
+        if(methodDelay != Level.DELAY) {
+            builder.markMethodDelay(variable, methodDelay);
+        }
 
         builder.setValue(currentValue);
         return builder.build();
@@ -103,7 +112,7 @@ public class VariableExpression implements Expression {
 
     @Override
     public String expressionString(int indent) {
-        return variable.name();
+        return variable.simpleName();
     }
 
     @Override

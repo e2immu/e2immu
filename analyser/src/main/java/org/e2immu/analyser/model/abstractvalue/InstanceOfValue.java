@@ -59,7 +59,7 @@ public class InstanceOfValue extends PrimitiveValue {
 
     @Override
     public int internalCompareTo(Value v) {
-        int c = variable.name().compareTo(((InstanceOfValue) v).variable.name());
+        int c = variable.fullyQualifiedName().compareTo(((InstanceOfValue) v).variable.fullyQualifiedName());
         if (c == 0) c = parameterizedType.detailedString()
                 .compareTo(((InstanceOfValue) v).parameterizedType.detailedString());
         return c;
@@ -67,7 +67,7 @@ public class InstanceOfValue extends PrimitiveValue {
 
     @Override
     public String toString() {
-        return variable.name() + " instanceof " + parameterizedType.detailedString();
+        return variable.simpleName() + " instanceof " + parameterizedType.detailedString();
     }
 
     @Override

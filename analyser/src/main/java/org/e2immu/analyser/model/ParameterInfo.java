@@ -61,13 +61,8 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     }
 
     @Override
-    public int variableOrder() {
-        return 4;
-    }
-
-    @Override
     public String toString() {
-        return index + ":" + name;
+        return fullyQualifiedName();
     }
 
     @Override
@@ -78,7 +73,6 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     @Override
     public ParameterizedType concreteReturnType() {
         return parameterizedType; // there's nothing more we can know; we're NOT treating it as a local variable!!!
-        // TODO or should we surf on the concrete information in the method?
     }
 
     @Override
@@ -87,8 +81,13 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     }
 
     @Override
-    public String detailedString() {
-        return name + " (parameter " + index + ")";
+    public String simpleName() {
+        return name;
+    }
+
+    @Override
+    public String fullyQualifiedName() {
+        return owner.fullyQualifiedName() + ":" + index + ":" + name;
     }
 
     public boolean hasBeenInspected() {
@@ -187,11 +186,6 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return SideEffect.NONE_PURE;
-    }
-
-    @Override
-    public String detailedName() {
-        return (owner == null ? "-" : owner.fullyQualifiedName()) + "#" + index;
     }
 
     @Override

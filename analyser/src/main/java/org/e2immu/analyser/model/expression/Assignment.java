@@ -19,10 +19,8 @@
 package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.AssignExpr;
-import org.e2immu.analyser.analyser.ErrorFlags;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
@@ -152,11 +150,11 @@ public class Assignment implements Expression {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         EvaluationResult valueResult = value.evaluate(evaluationContext, forwardEvaluationInfo);
-        EvaluationResult targetResult = target.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL_MODIFIED);
+        EvaluationResult targetResult = target.evaluate(evaluationContext, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
         builder.compose(targetResult, valueResult);
 
         Variable at = target.assignmentTarget().orElseThrow();
-        log(VARIABLE_PROPERTIES, "Assignment: {} = {}", at.detailedString(), value);
+        log(VARIABLE_PROPERTIES, "Assignment: {} = {}", at.fullyQualifiedName(), value);
 
         Value resultOfExpression;
         Value assignedToTarget;
@@ -180,12 +178,7 @@ public class Assignment implements Expression {
         }
         doAssignmentWork(builder, evaluationContext, at, assignedToTarget);
 
-        // we let the assignment code decide what to do; we'll read the value of the variable afterwards
-        // TODO this does not work well with i++
-        Variable assignmentTarget = target.assignmentTarget().orElseThrow();
-        Value currentValue = builder.currentValue(assignmentTarget);
-
-        return builder.setValueAndResultOfExpression(currentValue, resultOfExpression).build();
+        return builder.setValue(resultOfExpression).build();
     }
 
     private void doAssignmentWork(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Variable at, Value resultOfExpression) {
@@ -212,8 +205,8 @@ public class Assignment implements Expression {
         // connect the value to the assignment target
         if (resultOfExpression != NO_VALUE) {
             Set<Variable> linked = evaluationContext.linkedVariables(resultOfExpression);
-            log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.detailedString(),
-                    Variable.detailedString(linked), Variable.detailedString(linked));
+            log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.fullyQualifiedName(),
+                    Variable.fullyQualifiedName(linked), Variable.fullyQualifiedName(linked));
             builder.linkVariables(at, linked);
         }
     }

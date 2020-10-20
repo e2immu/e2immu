@@ -162,7 +162,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             }
             if (iteration >= 2) {
                 Assert.assertEquals(1, d.fieldAnalysis().variablesLinkedToMe.get().size());
-                Assert.assertEquals("in4", d.fieldAnalysis().variablesLinkedToMe.get().stream().findFirst().orElseThrow().name());
+                Assert.assertEquals("in4", d.fieldAnalysis().variablesLinkedToMe.get().stream().findFirst().orElseThrow().simpleName());
                 Assert.assertEquals(Level.TRUE, modified);
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
             }
@@ -176,7 +176,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 Assert.assertFalse(d.fieldAnalysis().variablesLinkedToMe.isSet());
             }
             if (iteration >= 2) {
-                Assert.assertEquals("in6", d.fieldAnalysis().variablesLinkedToMe.get().stream().findFirst().orElseThrow().name());
+                Assert.assertEquals("in6", d.fieldAnalysis().variablesLinkedToMe.get().stream().findFirst().orElseThrow().simpleName());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.TRUE, modified);
             }

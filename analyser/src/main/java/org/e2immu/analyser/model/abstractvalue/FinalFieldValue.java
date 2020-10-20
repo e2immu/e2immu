@@ -95,7 +95,7 @@ public class FinalFieldValue implements Value {
     @Override
     public int internalCompareTo(Value v) {
         FinalFieldValue finalFieldValue = (FinalFieldValue) v;
-        return variable.name().compareTo(finalFieldValue.variable.name());
+        return variable.fullyQualifiedName().compareTo(finalFieldValue.variable.fullyQualifiedName());
     }
 
     @Override
@@ -107,8 +107,7 @@ public class FinalFieldValue implements Value {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof FinalFieldValue)) return false;
-        FinalFieldValue that = (FinalFieldValue) o;
+        if (!(o instanceof FinalFieldValue that)) return false;
         return variable.equals(that.variable);
     }
 
@@ -119,6 +118,6 @@ public class FinalFieldValue implements Value {
 
     @Override
     public String toString() {
-        return variable.detailedString();
+        return variable.fullyQualifiedName();
     }
 }

@@ -70,7 +70,7 @@ public class FieldAccess implements Expression {
     @Override
     @NotNull
     public String expressionString(int indent) {
-        return bracketedExpressionString(indent, expression) + "." + variable.name();
+        return bracketedExpressionString(indent, expression) + "." + variable.simpleName();
     }
 
     @Override

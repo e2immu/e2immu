@@ -186,8 +186,8 @@ public class MethodLevelData {
             }
             fieldAndParameterDependencies.remove(variable); // removing myself
             variablesLinkedToFieldsAndParameters.put(variable, fieldAndParameterDependencies);
-            log(DEBUG_LINKED_VARIABLES, "Set terminals of {} in {} to [{}]", variable.detailedString(),
-                    logLocation, Variable.detailedString(fieldAndParameterDependencies));
+            log(DEBUG_LINKED_VARIABLES, "Set terminals of {} in {} to [{}]", variable.fullyQualifiedName(),
+                    logLocation, Variable.fullyQualifiedName(fieldAndParameterDependencies));
 
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
@@ -195,8 +195,8 @@ public class MethodLevelData {
                     fieldSummaries.put(fieldInfo, new TransferValue());
                 }
                 fieldSummaries.get(fieldInfo).linkedVariables.set(fieldAndParameterDependencies);
-                log(LINKED_VARIABLES, "Decided on links of {} in {} to [{}]", variable.detailedString(),
-                        logLocation, Variable.detailedString(fieldAndParameterDependencies));
+                log(LINKED_VARIABLES, "Decided on links of {} in {} to [{}]", variable.fullyQualifiedName(),
+                        logLocation, Variable.fullyQualifiedName(fieldAndParameterDependencies));
             }
         });
         // set all the linkedVariables for fields not in the dependency graph
@@ -231,7 +231,7 @@ public class MethodLevelData {
             if (variable instanceof FieldReference) {
                 FieldAnalysis fieldAnalysis = ((FieldReference) variable).fieldInfo.fieldAnalysis.get();
                 if (!fieldAnalysis.variablesLinkedToMe.isSet()) {
-                    log(DELAYED, "Dependencies of {} have not yet been established", variable.detailedString());
+                    log(DELAYED, "Dependencies of {} have not yet been established", variable.fullyQualifiedName());
                     return DELAYS;
                 }
                 dependencies = SetUtil.immutableUnion(((FieldReference) variable).fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get(),
@@ -247,14 +247,14 @@ public class MethodLevelData {
             } else {
                 dependencies = Set.of();
             }
-            log(LINKED_VARIABLES, "Dependencies of {} are [{}]", variable.detailedString(), Variable.detailedString(dependencies));
+            log(LINKED_VARIABLES, "Dependencies of {} are [{}]", variable.fullyQualifiedName(), Variable.fullyQualifiedName(dependencies));
             variables.addAll(dependencies);
         }
 
         variablesLinkedToMethodResult.set(variables);
         MethodAnalysis methodAnalysis = evaluationContext.getCurrentMethodAnalysis();
         builder.add(methodAnalysis.new SetProperty(VariableProperty.LINKED, variables.isEmpty() ? Level.FALSE : Level.TRUE));
-        log(LINKED_VARIABLES, "Set variables linked to result of {} to [{}]", logLocation, Variable.detailedString(variables));
+        log(LINKED_VARIABLES, "Set variables linked to result of {} to [{}]", logLocation, Variable.fullyQualifiedName(variables));
         return DONE;
     }
 
@@ -312,11 +312,11 @@ public class MethodLevelData {
                             fieldModified = Level.FALSE;
                         } else fieldModified = summary;
                         if (fieldModified == Level.DELAY) {
-                            log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.detailedString(), logLocation);
+                            log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), logLocation);
                             analysisStatus = DELAYS;
                         } else {
                             log(NOT_MODIFIED, "Mark {} " + (fieldModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
-                                    linkedVariable.detailedString(), logLocation);
+                                    linkedVariable.fullyQualifiedName(), logLocation);
                             tv.properties.put(VariableProperty.MODIFIED, fieldModified);
                             changes = true;
                         }
@@ -325,13 +325,13 @@ public class MethodLevelData {
                     ParameterAnalysis parameterAnalysis = evaluationContext.getParameterAnalysis((ParameterInfo) linkedVariable);
                     if (parameterAnalysis.assignedToField.isSet()) {
                         log(NOT_MODIFIED, "Parameter {} is assigned to field {}, not setting @NotModified {} directly",
-                                linkedVariable.name(), parameterAnalysis.assignedToField.get().fullyQualifiedName(), summary);
+                                linkedVariable.fullyQualifiedName(), parameterAnalysis.assignedToField.get().fullyQualifiedName(), summary);
                     } else {
                         if (summary == Level.DELAY) {
-                            log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.detailedString(), logLocation);
+                            log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), logLocation);
                             analysisStatus = DELAYS;
                         } else {
-                            log(NOT_MODIFIED, "Mark {} as {} in {}", linkedVariable.detailedString(),
+                            log(NOT_MODIFIED, "Mark {} as {} in {}", linkedVariable.fullyQualifiedName(),
                                     summary == Level.TRUE ? "@Modified" : "@NotModified", logLocation);
                             int currentModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
                             if (currentModified == Level.DELAY) {
@@ -464,11 +464,11 @@ public class MethodLevelData {
 
                 int currentDelayResolved = tv.getProperty(VariableProperty.METHOD_DELAY_RESOLVED);
                 if (currentDelayResolved == Level.FALSE && !haveDelay) {
-                    log(DELAYED, "Delays on {} have now been resolved", variable.name());
+                    log(DELAYED, "Delays on {} have now been resolved", variable.fullyQualifiedName());
                     tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.TRUE);
                 }
                 if (currentDelayResolved == Level.DELAY && haveDelay) {
-                    log(DELAYED, "Marking that delays need resolving on {}", variable.name());
+                    log(DELAYED, "Marking that delays need resolving on {}", variable.fullyQualifiedName());
                     tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.FALSE);
                 }
             } else if (variable instanceof ParameterInfo parameterInfo) {
@@ -477,9 +477,9 @@ public class MethodLevelData {
                     int size = variableInfo.getProperty(VariableProperty.SIZE);
                     if (size == Level.DELAY && !haveDelay) {
                         // we could not find anything related to size, let's advertise that
-                        int sizeInParam = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE);
+                        ParameterAnalysis parameterAnalysis = evaluationContext.getParameterAnalysis(parameterInfo);
+                        int sizeInParam = parameterAnalysis.getProperty(VariableProperty.SIZE);
                         if (sizeInParam == Level.DELAY) {
-                            ParameterAnalysis parameterAnalysis = evaluationContext.getParameterAnalysis(parameterInfo);
                             builder.add(parameterAnalysis.new SetProperty(VariableProperty.SIZE, Level.IS_A_SIZE));
                             changes = true;
                         }

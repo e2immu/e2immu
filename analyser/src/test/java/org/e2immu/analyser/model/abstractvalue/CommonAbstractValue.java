@@ -51,12 +51,12 @@ public abstract class CommonAbstractValue {
             }
 
             @Override
-            public String name() {
+            public String simpleName() {
                 return name;
             }
 
             @Override
-            public String detailedString() {
+            public String fullyQualifiedName() {
                 return name;
             }
 
@@ -73,11 +73,6 @@ public abstract class CommonAbstractValue {
             @Override
             public String toString() {
                 return name;
-            }
-
-            @Override
-            public int variableOrder() {
-                return 5;
             }
         };
     }

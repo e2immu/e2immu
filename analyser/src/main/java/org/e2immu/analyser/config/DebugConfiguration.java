@@ -17,19 +17,22 @@ public class DebugConfiguration {
     public final List<TypeAnalyserVisitor> afterTypePropertyComputations;
     public final List<StatementAnalyserVisitor> statementAnalyserVisitors;
     public final List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors;
+    public final List<EvaluationResultVisitor> evaluationResultVisitors;
 
     private DebugConfiguration(List<TypeContextVisitor> typeContextVisitors,
                                List<TypeAnalyserVisitor> afterTypePropertyComputations,
                                List<FieldAnalyserVisitor> afterFieldAnalyserVisitors,
                                List<MethodAnalyserVisitor> afterMethodAnalyserVisitors,
                                List<StatementAnalyserVisitor> statementAnalyserVisitors,
-                               List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors) {
+                               List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors,
+                               List<EvaluationResultVisitor> evaluationResultVisitors) {
         this.afterFieldAnalyserVisitors = afterFieldAnalyserVisitors;
         this.afterMethodAnalyserVisitors = afterMethodAnalyserVisitors;
         this.statementAnalyserVisitors = statementAnalyserVisitors;
         this.statementAnalyserVariableVisitors = statementAnalyserVariableVisitors;
         this.afterTypePropertyComputations = afterTypePropertyComputations;
         this.typeContextVisitors = typeContextVisitors;
+        this.evaluationResultVisitors = evaluationResultVisitors;
     }
 
     @Container(builds = DebugConfiguration.class)
@@ -40,6 +43,7 @@ public class DebugConfiguration {
         private final List<StatementAnalyserVisitor> statementAnalyserVisitors = new ArrayList<>();
         private final List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors = new ArrayList<>();
         private final List<TypeAnalyserVisitor> afterTypePropertyComputations = new ArrayList<>();
+        private final List<EvaluationResultVisitor> evaluationResultVisitors = new ArrayList<>();
 
         @Fluent
         public Builder addAfterFieldAnalyserVisitor(FieldAnalyserVisitor fieldAnalyserVisitor) {
@@ -77,6 +81,12 @@ public class DebugConfiguration {
             return this;
         }
 
+        @Fluent
+        public Builder addEvaluationResultVisitor(EvaluationResultVisitor evaluationResultVisitor) {
+            this.evaluationResultVisitors.add(evaluationResultVisitor);
+            return this;
+        }
+
         public DebugConfiguration build() {
             return new DebugConfiguration(
                     ImmutableList.copyOf(typeContextVisitors),
@@ -84,7 +94,8 @@ public class DebugConfiguration {
                     ImmutableList.copyOf(afterFieldAnalyserVisitors),
                     ImmutableList.copyOf(afterMethodAnalyserVisitors),
                     ImmutableList.copyOf(statementAnalyserVisitors),
-                    ImmutableList.copyOf(statementAnalyserVariableVisitors));
+                    ImmutableList.copyOf(statementAnalyserVariableVisitors),
+                    ImmutableList.copyOf(evaluationResultVisitors));
         }
     }
 }

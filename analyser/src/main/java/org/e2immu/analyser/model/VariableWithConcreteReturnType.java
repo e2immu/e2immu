@@ -36,4 +36,9 @@ public abstract class VariableWithConcreteReturnType implements Variable {
     public ParameterizedType concreteReturnType() {
         return concreteReturnType;
     }
+
+    @Override
+    public String toString() {
+        return fullyQualifiedName();
+    }
 }

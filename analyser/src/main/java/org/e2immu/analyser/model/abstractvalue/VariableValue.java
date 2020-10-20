@@ -46,7 +46,7 @@ public class VariableValue implements Value {
     }
 
     public VariableValue(Variable variable, ObjectFlow objectFlow, boolean variableField) {
-        this(variable, VariableDataImpl.variableName(variable), objectFlow, variableField);
+        this(variable, variable.fullyQualifiedName(), objectFlow, variableField);
     }
 
     // dependent variables have a different name

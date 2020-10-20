@@ -541,7 +541,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     ParameterAnalyser parameterAnalyser = analyserContext.getParameterAnalysers().get(parameterInfo);
                     if (!parameterAnalyser.parameterAnalysis.assignedToField.isSet()) {
                         parameterAnalyser.parameterAnalysis.assignedToField.set(fieldInfo);
-                        log(CONSTANT, "Field {} has been assigned to parameter {}", fieldInfo.name, parameterInfo.detailedString());
+                        log(CONSTANT, "Field {} has been assigned to parameter {}", fieldInfo.name, parameterInfo.fullyQualifiedName());
                     }
                 } else {
                     log(CONSTANT, "Field {} is assignment linked to another field? what would be the purpose?", fieldInfo.fullyQualifiedName());
@@ -645,7 +645,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .filter(m -> m.methodLevelData().fieldSummaries.get(fieldInfo).linkedVariables.isSet())
                 .forEach(m -> links.addAll(m.methodLevelData().fieldSummaries.get(fieldInfo).linkedVariables.get()));
         fieldAnalysis.variablesLinkedToMe.set(ImmutableSet.copyOf(links));
-        log(LINKED_VARIABLES, "FA: Set links of {} to [{}]", fieldInfo.fullyQualifiedName(), Variable.detailedString(links));
+        log(LINKED_VARIABLES, "FA: Set links of {} to [{}]", fieldInfo.fullyQualifiedName(), Variable.fullyQualifiedName(links));
 
         // explicitly adding the annotation here; it will not be inspected.
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
@@ -885,6 +885,9 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }
                 if (variableValue.variable instanceof This thisVariable) {
                     return getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
+                }
+                if (variableValue.variable instanceof ParameterInfo parameterInfo) {
+                    return getParameterAnalysis(parameterInfo).getProperty(variableProperty);
                 }
                 throw new UnsupportedOperationException("?? variable of " + variableValue.variable.getClass());
             }

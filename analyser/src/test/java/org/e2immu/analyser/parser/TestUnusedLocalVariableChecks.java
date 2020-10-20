@@ -63,7 +63,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
             Assert.assertEquals(1L,
                     d.statementAnalysis.errorFlags.uselessAssignments.stream().filter(Map.Entry::getValue).count());
             Assert.assertEquals("a", d.statementAnalysis.errorFlags.uselessAssignments.stream()
-                    .findFirst().orElseThrow().getKey().name());
+                    .findFirst().orElseThrow().getKey().simpleName());
         }
 
         if ("method1".equals(d.methodInfo.name) && "2".equals(d.statementId)) {

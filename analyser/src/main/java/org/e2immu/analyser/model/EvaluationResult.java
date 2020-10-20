@@ -39,6 +39,7 @@ public class EvaluationResult {
     private final List<StatementAnalysis.StateChange> stateChanges;
     private final List<ObjectFlow> objectFlows;
     public final Value value;
+    public final int iteration;
 
     public Stream<StatementAnalysis.StatementAnalysisModification> getModificationStream() {
         return modifications.stream();
@@ -65,7 +66,8 @@ public class EvaluationResult {
 
     // mark a variable read
 
-    private EvaluationResult(Value value,
+    private EvaluationResult(int iteration,
+                             Value value,
                              List<StatementAnalysis.StatementAnalysisModification> modifications,
                              List<StatementAnalysis.StateChange> stateChanges,
                              List<ObjectFlow> objectFlows) {
@@ -73,6 +75,18 @@ public class EvaluationResult {
         this.stateChanges = stateChanges;
         this.objectFlows = objectFlows;
         this.value = value;
+        this.iteration = iteration;
+    }
+
+    @Override
+    public String toString() {
+        return "EvaluationResult{" +
+                "modifications=" + modifications +
+                ", stateChanges=" + stateChanges +
+                ", objectFlows=" + objectFlows +
+                ", value=" + value +
+                ", iteration=" + iteration +
+                '}';
     }
 
     public boolean isNotNull0(EvaluationContext evaluationContext) {
@@ -135,12 +149,6 @@ public class EvaluationResult {
             }
         }
 
-        // for those rare occasions where the result of the expression is different from
-        // the value returned
-        public Builder setValueAndResultOfExpression(Value value, Value resultOfExpression) {
-            return this;
-        }
-
         // also sets result of expression
         public Builder setValue(Value value) {
             Objects.requireNonNull(value);
@@ -152,8 +160,12 @@ public class EvaluationResult {
             return value;
         }
 
+        public int getIteration() {
+            return evaluationContext == null ? -1 : evaluationContext.getIteration();
+        }
+
         public EvaluationResult build() {
-            return new EvaluationResult(value, modifications == null ? List.of() : modifications,
+            return new EvaluationResult(getIteration(), value, modifications == null ? List.of() : modifications,
                     stateChanges == null ? List.of() : stateChanges, objectFlows == null ? List.of() : objectFlows);
         }
 
@@ -164,7 +176,7 @@ public class EvaluationResult {
             // if we already know that the variable is NOT @NotNull, then we'll raise an error
             int notNull = MultiLevel.value(evaluationContext.getProperty(value, VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
             if (notNull == MultiLevel.FALSE) {
-                Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION, variable.name());
+                Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION, variable.simpleName());
                 add(statementAnalyser.new RaiseErrorMessage(message));
             } else if (notNull == MultiLevel.DELAY) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
@@ -181,12 +193,12 @@ public class EvaluationResult {
             String name = DependentVariable.dependentVariableName(array.value, indexValue.value);
             Value current = evaluationContext.currentValue(name);
             if (current != null) return current;
-            String arrayName = arrayVariable == null ? null : VariableDataImpl.variableName(arrayVariable);
+            String arrayName = arrayVariable == null ? null : arrayVariable.fullyQualifiedName();
             DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name, arrayName);
             modifications.add(statementAnalyser.new AddVariable(dependentVariable));
 
             ObjectFlow objectFlow = createInternalObjectFlow(location, parameterizedType, Origin.FIELD_ACCESS);
-            return new VariableValue(dependentVariable, dependentVariable.name(), objectFlow, false);
+            return new VariableValue(dependentVariable, dependentVariable.simpleName(), objectFlow, false);
         }
 
         public Builder markRead(Variable variable) {
@@ -246,32 +258,28 @@ public class EvaluationResult {
         }
 
         public void markMethodCalled(Variable variable, int methodCalled) {
-            if (methodCalled == Level.TRUE) {
-                Variable v;
-                if (variable instanceof This) {
-                    v = variable;
-                } else if (variable.concreteReturnType().typeInfo == evaluationContext.getCurrentType().typeInfo) {
-                    v = new This(evaluationContext.getCurrentType().typeInfo);
-                } else v = null;
-                if (v != null) {
-                    add(statementAnalyser.new SetProperty(v, VariableProperty.METHOD_CALLED, methodCalled));
-                }
+            Variable v;
+            if (variable instanceof This) {
+                v = variable;
+            } else if (variable.concreteReturnType().typeInfo == evaluationContext.getCurrentType().typeInfo) {
+                v = new This(evaluationContext.getCurrentType().typeInfo);
+            } else v = null;
+            if (v != null) {
+                add(statementAnalyser.new SetProperty(v, VariableProperty.METHOD_CALLED, methodCalled));
             }
         }
 
         public void markSizeRestriction(Variable variable, int size) {
-            if (size != Level.DELAY) {
-                add(statementAnalyser.new SetProperty(variable, VariableProperty.SIZE, size));
-            }
+            add(statementAnalyser.new SetProperty(variable, VariableProperty.SIZE, size));
         }
 
         public void markContentModified(Variable variable, int modified) {
             int ignoreContentModifications = evaluationContext.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
             if (ignoreContentModifications != Level.TRUE) {
-                log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.detailedString());
+                log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.fullyQualifiedName());
                 add(statementAnalyser.new SetProperty(variable, VariableProperty.MODIFIED, modified));
             } else {
-                log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.detailedString());
+                log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.fullyQualifiedName());
             }
         }
 
@@ -281,7 +289,7 @@ public class EvaluationResult {
             // if we already know that the variable is NOT @NotNull, then we'll raise an error
             int notModified1 = evaluationContext.getProperty(currentValue, VariableProperty.NOT_MODIFIED_1);
             if (notModified1 == Level.FALSE) {
-                Message message = Message.newMessage(evaluationContext.getLocation(), Message.MODIFICATION_NOT_ALLOWED, variable.name());
+                Message message = Message.newMessage(evaluationContext.getLocation(), Message.MODIFICATION_NOT_ALLOWED, variable.simpleName());
                 add(statementAnalyser.new RaiseErrorMessage(message));
             } else if (notModified1 == Level.DELAY) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)

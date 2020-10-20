@@ -30,11 +30,6 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public int variableOrder() {
-        return 2;
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -53,12 +48,12 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     }
 
     @Override
-    public String name() {
+    public String simpleName() {
         return name;
     }
 
     @Override
-    public String detailedString() {
+    public String fullyQualifiedName() {
         return name;
     }
 

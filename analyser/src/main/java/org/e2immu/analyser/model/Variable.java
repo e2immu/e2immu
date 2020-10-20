@@ -30,24 +30,22 @@ import java.util.stream.Collectors;
 // at some point: @E2Container
 public interface Variable {
 
-    static String detailedString(Set<Variable> dependencies) {
+    static String fullyQualifiedName(Set<Variable> dependencies) {
         if (dependencies == null) return "";
-        return dependencies.stream().map(Variable::detailedString).collect(Collectors.joining("; "));
+        return dependencies.stream().map(Variable::fullyQualifiedName).collect(Collectors.joining("; "));
     }
 
     ParameterizedType concreteReturnType();
 
     ParameterizedType parameterizedType();
 
-    String name();
+    String simpleName();
 
-    String detailedString();
+    String fullyQualifiedName();
 
     boolean isStatic();
 
     SideEffect sideEffect(EvaluationContext evaluationContext);
-
-    int variableOrder();
 
     default UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
         return parameterizedType().typesReferenced(explicit);

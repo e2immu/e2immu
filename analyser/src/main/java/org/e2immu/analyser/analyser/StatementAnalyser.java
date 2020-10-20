@@ -18,11 +18,11 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.config.EvaluationResultVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
-import org.e2immu.analyser.model.expression.Assignment;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.MethodCall;
@@ -345,6 +345,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     The main loop calls the apply method with the results of an evaluation.
      */
     private void apply(EvaluationResult evaluationResult) {
+        // debugging...
+        for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration().debugConfiguration.evaluationResultVisitors) {
+            evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.iteration,
+                    myMethodAnalyser.methodInfo, statementAnalysis.index, evaluationResult));
+        }
+
         if (evaluationResult.value == NO_VALUE) analysisStatus = DELAYS;
 
         // state changes get composed into one big operation, applied, and the result is set
@@ -396,7 +402,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private void notNullEscapes(StatementAnalyserResult.Builder builder) {
         Set<Variable> nullVariables = statementAnalysis.stateData.conditionManager.get().findIndividualNullConditions();
         for (Variable nullVariable : nullVariables) {
-            log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.detailedString());
+            log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
             ParameterAnalysis parameterAnalysis = myMethodAnalyser.getParameterAnalyser((ParameterInfo) nullVariable).parameterAnalysis;
             builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
 
@@ -414,7 +420,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
             ParameterInfo parameterInfo = (ParameterInfo) entry.getKey();
             Value negated = NegatedValue.negate(entry.getValue());
-            log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", parameterInfo.detailedString(), negated);
+            log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", parameterInfo.fullyQualifiedName(), negated);
             int sizeRestriction = negated.encodedSizeRestriction();
             if (sizeRestriction > 0) { // if the complement is a meaningful restriction
                 ParameterAnalysis parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
@@ -1056,9 +1062,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     public class SetProperty implements StatementAnalysis.StatementAnalysisModification {
-        private final Variable variable;
-        private final VariableProperty property;
-        private final int value;
+        public final Variable variable;
+        public final VariableProperty property;
+        public final int value;
 
         public SetProperty(Variable variable, VariableProperty property, int value) {
             this.value = value;
@@ -1085,6 +1091,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 variableDataBuilder.addProperty(other, property, value);
             }
         }
+
+        @Override
+        public String toString() {
+            return "SetProperty{" +
+                    "variable=" + variable +
+                    ", property=" + property +
+                    ", value=" + value +
+                    '}';
+        }
     }
 
 
@@ -1098,6 +1113,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         @Override
         public void run() {
             messages.add(message);
+        }
+
+        @Override
+        public String toString() {
+            return "RaiseErrorMessage{" +
+                    "message=" + message +
+                    '}';
         }
     }
 
@@ -1118,6 +1140,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 messages.add(Message.newMessage(location, Message.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
             }
         }
+
+        @Override
+        public String toString() {
+            return "ErrorAssigningToFieldOutsideType{" +
+                    "fieldInfo=" + fieldInfo +
+                    ", location=" + location +
+                    '}';
+        }
     }
 
     public class ParameterShouldNotBeAssignedTo implements StatementAnalysis.StatementAnalysisModification {
@@ -1136,6 +1166,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 messages.add(Message.newMessage(location, Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));
             }
         }
+
+        @Override
+        public String toString() {
+            return "ParameterShouldNotBeAssignedTo{" +
+                    "parameterInfo=" + parameterInfo +
+                    ", location=" + location +
+                    '}';
+        }
     }
 
 
@@ -1149,6 +1187,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         @Override
         public void run() {
 
+        }
+
+        @Override
+        public String toString() {
+            return "AddVariable{" +
+                    "variable=" + variable +
+                    '}';
         }
     }
 
@@ -1164,6 +1209,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         @Override
         public void run() {
 
+        }
+
+        @Override
+        public String toString() {
+            return "LinkVariable{" +
+                    "variable=" + variable +
+                    ", to=" + to +
+                    '}';
         }
     }
 
@@ -1183,6 +1236,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         @Override
         public void run() {
             variableDataBuilder.assignmentBasics(assignmentTarget, value, assignedNonEmptyValue, evaluationContext);
+        }
+
+        @Override
+        public String toString() {
+            return "Assignment{" +
+                    "assignmentTarget=" + assignmentTarget +
+                    ", value=" + value +
+                    ", assignedNonEmptyValue=" + assignedNonEmptyValue +
+                    ", evaluationContext=" + evaluationContext +
+                    '}';
         }
     }
 }

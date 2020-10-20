@@ -203,7 +203,7 @@ public class AnnotationExpression {
             FieldAccess fieldAccess = (FieldAccess) expression;
             if (fieldAccess.expression instanceof TypeExpression) {
                 TypeExpression typeExpression = (TypeExpression) fieldAccess.expression;
-                return enumInstance(returnType, typeExpression.parameterizedType.typeInfo, fieldAccess.variable.name());
+                return enumInstance(returnType, typeExpression.parameterizedType.typeInfo, fieldAccess.variable.simpleName());
             } else throw new UnsupportedOperationException("? did not expect " + fieldAccess.expression.getClass());
         }
         if (expression instanceof UnaryOperator) {

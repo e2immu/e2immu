@@ -42,11 +42,6 @@ public class This implements Variable {
     }
 
     @Override
-    public int variableOrder() {
-        return 0;
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -70,19 +65,19 @@ public class This implements Variable {
     }
 
     @Override
-    public String name() {
+    public String simpleName() {
         if (explicitlyWriteType) return typeInfo.simpleName + (writeSuper ? ".super" : ".this");
         return writeSuper ? "super" : "this";
     }
 
     @Override
     public String toString() {
-        return typeInfo.simpleName + (writeSuper ? ".super" : ".this");
+        return fullyQualifiedName();
     }
 
     @Override
-    public String detailedString() {
-        return (writeSuper ? "super" : "this") + " keyword (of " + typeInfo.fullyQualifiedName + ")";
+    public String fullyQualifiedName() {
+        return typeInfo.fullyQualifiedName + "." + (writeSuper ? "super" : "this");
     }
 
     @Override
