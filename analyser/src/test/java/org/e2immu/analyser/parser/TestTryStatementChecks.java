@@ -25,10 +25,9 @@ public class TestTryStatementChecks extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
-        if (iteration == 0 && "method1".equals(methodInfo.name)) {
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
+        if (d.iteration() == 0 && "method1".equals(d.methodInfo().name)) {
             Assert.assertEquals(3, methodLevelData.returnStatementSummaries.size());
             Value value0 = methodLevelData.returnStatementSummaries.get("0.0.0").value.get();
             Assert.assertTrue("Got " + value0.getClass(), value0 instanceof StringConcat);

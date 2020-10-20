@@ -84,18 +84,19 @@ public class TestPreconditionChecks extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("setInteger".equals(methodInfo.name)) {
-            if (iteration > 0) {
-                Assert.assertEquals("(null == this.integer and ii >= 0)", methodInfo.methodAnalysis.get().precondition.get().toString());
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        String name = d.methodInfo().name;
+        if ("setInteger".equals(name)) {
+            if (d.iteration() > 0) {
+                Assert.assertEquals("(null == this.integer and ii >= 0)", d.methodAnalysis().precondition.get().toString());
             }
         }
-        if ("either".equals(methodInfo.name)) {
-            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+        if ("either".equals(name)) {
+            MethodAnalysis methodAnalysis = d.methodAnalysis();
             Assert.assertEquals("(not (null == e1) or not (null == e2))", methodAnalysis.precondition.get().toString());
         }
-        if ("setPositive1".equals(methodInfo.name) && iteration > 0) {
-            Assert.assertEquals("this.i >= 0", methodInfo.methodAnalysis.get().precondition.get().toString());
+        if ("setPositive1".equals(name) && d.iteration() > 0) {
+            Assert.assertEquals("this.i >= 0", d.methodAnalysis().precondition.get().toString());
         }
     };
 

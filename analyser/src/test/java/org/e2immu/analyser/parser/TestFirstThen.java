@@ -67,32 +67,33 @@ public class TestFirstThen extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
-        if ("set".equals(methodInfo.name)) {
-            if (iteration == 0) {
-                Assert.assertFalse(methodAnalysis.precondition.isSet());
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
+        String name = d.methodInfo().name;
+
+        if ("set".equals(name)) {
+            if (d.iteration() == 0) {
+                Assert.assertFalse(d.methodAnalysis().precondition.isSet());
             } else {
-                Assert.assertEquals("not (null == this.first)", methodAnalysis.precondition.get().toString());
+                Assert.assertEquals("not (null == this.first)", d.methodAnalysis().precondition.get().toString());
             }
         }
-        if ("getFirst".equals(methodInfo.name)) {
+        if ("getFirst".equals(name)) {
             TransferValue tv = methodLevelData.fieldSummaries.stream().findAny().orElseThrow().getValue();
             Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, tv.properties.get(VariableProperty.READ));
         }
-        if ("hashCode".equals(methodInfo.name)) {
+        if ("hashCode".equals(name)) {
             Assert.assertEquals(2, methodLevelData.fieldSummaries.size());
             TransferValue tv = methodLevelData.fieldSummaries.stream().findAny().orElseThrow().getValue();
             Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.READ));
             Assert.assertEquals(Level.DELAY, tv.properties.get(VariableProperty.METHOD_CALLED));
 
-            if (iteration > 0) {
-                Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED));
+            if (d.iteration() > 0) {
+                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
             }
         }
-        if ("equals".equals(methodInfo.name)) {
-            ParameterInfo o = methodInfo.methodInspection.get().parameters.get(0);
+        if ("equals".equals(name)) {
+            ParameterInfo o = d.methodInfo().methodInspection.get().parameters.get(0);
             Assert.assertEquals(Level.FALSE, o.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
     };

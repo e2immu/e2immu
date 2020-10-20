@@ -11,14 +11,14 @@ import java.io.IOException;
 
 public class TestFunctionalInterfaceModified3 extends CommonTestRunner {
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        MethodInfo staticallyExposing = methodInfo.typeInfo.findUniqueMethod("staticallyExposing", 2);
-        MethodInfo expose3 = methodInfo.typeInfo.findUniqueMethod("expose3", 1);
-        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
-        if ("expose3".equals(methodInfo.name)) {
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        MethodInfo staticallyExposing = d.methodInfo().typeInfo.findUniqueMethod("staticallyExposing", 2);
+        MethodInfo expose3 = d.methodInfo().typeInfo.findUniqueMethod("expose3", 1);
+        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
+        if ("expose3".equals(d.methodInfo().name)) {
             Assert.assertTrue(methodLevelData.copyModificationStatusFrom.isSet(staticallyExposing));
         }
-        if ("expose4".equals(methodInfo.name)) {
+        if ("expose4".equals(d.methodInfo().name)) {
             Assert.assertTrue(methodLevelData.copyModificationStatusFrom.isSet(expose3));
         }
     };

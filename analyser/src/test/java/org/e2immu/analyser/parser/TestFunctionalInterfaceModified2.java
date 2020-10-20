@@ -30,9 +30,9 @@ public class TestFunctionalInterfaceModified2 extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if (Set.of("acceptMyCounter1", "acceptMyCounter2", "acceptInt1").contains(methodInfo.name)) {
-            Assert.assertTrue(methodInfo.methodAnalysis.get().methodLevelData()
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        if (Set.of("acceptMyCounter1", "acceptMyCounter2", "acceptInt1").contains(d.methodInfo().name)) {
+            Assert.assertTrue(d.methodAnalysis().methodLevelData()
                     .callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
         }
     };

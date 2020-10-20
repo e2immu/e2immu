@@ -43,27 +43,28 @@ public class TestFreezableSet1 extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        int modified = methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        if (iteration > 0) {
-            if ("stream".equals(methodInfo.name)) {
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        int modified = d.methodAnalysis().getProperty(VariableProperty.MODIFIED);
+        MethodAnalysis methodAnalysis = d.methodAnalysis();
+        String name = d.methodInfo().name;
+        if (d.iteration() > 0) {
+            if ("stream".equals(name)) {
                 Assert.assertEquals(Level.FALSE, modified);
                 Assert.assertEquals("[this.frozen]", methodAnalysis.preconditionForMarkAndOnly.get().toString());
             }
-            if ("streamEarly".equals(methodInfo.name)) {
+            if ("streamEarly".equals(name)) {
                 Assert.assertEquals(Level.FALSE, modified);
                 Assert.assertEquals("[not (this.frozen)]", methodAnalysis.preconditionForMarkAndOnly.get().toString());
             }
-            if ("add".equals(methodInfo.name)) {
+            if ("add".equals(name)) {
                 Assert.assertEquals(Level.TRUE, modified);
                 Assert.assertEquals("[not (this.frozen)]", methodAnalysis.preconditionForMarkAndOnly.get().toString());
             }
-            if ("freeze".equals(methodInfo.name)) {
+            if ("freeze".equals(name)) {
                 Assert.assertEquals(Level.TRUE, modified);
                 Assert.assertEquals("[not (this.frozen)]", methodAnalysis.preconditionForMarkAndOnly.get().toString());
             }
-            if ("isFrozen".equals(methodInfo.name)) {
+            if ("isFrozen".equals(name)) {
                 Assert.assertEquals(Level.FALSE, modified);
                 Assert.assertTrue(methodAnalysis.preconditionForMarkAndOnly.get().isEmpty());
             }

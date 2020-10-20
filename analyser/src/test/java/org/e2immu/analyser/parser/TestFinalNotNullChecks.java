@@ -63,10 +63,9 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if (methodInfo.name.equals("FinalNotNullChecks")) {
-            ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(0);
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        if (d.methodInfo().name.equals("FinalNotNullChecks")) {
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
         }
     };
 

@@ -47,12 +47,11 @@ public class TestSetOnce extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
 
-        if ("get".equals(methodInfo.name)) {
-            if (iteration == 0) {
+        if ("get".equals(d.methodInfo().name)) {
+            if (d.iteration() == 0) {
                 Assert.assertFalse(methodLevelData.variablesLinkedToFieldsAndParameters.isSet());
                 Assert.assertFalse(methodLevelData.variablesLinkedToMethodResult.isSet());
             } else {
@@ -61,7 +60,7 @@ public class TestSetOnce extends CommonTestRunner {
                 TransferValue tv = methodLevelData.returnStatementSummaries.get("1");
                 Assert.assertTrue(tv.linkedVariables.isSet());
                 Assert.assertEquals(1, tv.linkedVariables.get().size());
-                if (iteration > 1) {
+                if (d.iteration() > 1) {
                     Set<Variable> set = methodLevelData.variablesLinkedToMethodResult.get();
                     Assert.assertEquals(2, set.size());
                 }

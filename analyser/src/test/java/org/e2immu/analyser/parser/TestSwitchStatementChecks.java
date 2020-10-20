@@ -43,14 +43,14 @@ public class TestSwitchStatementChecks extends CommonTestRunner {
     };
 
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("method3".equals(methodInfo.name)) {
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        if ("method3".equals(d.methodInfo().name)) {
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
         }
-        if ("method7".equals(methodInfo.name) && iteration > 0) {
+        if ("method7".equals(d.methodInfo().name) && d.iteration() > 0) {
             // @Constant annotation missing, but is marked as constant
-            Assert.assertEquals(Level.FALSE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.CONSTANT));
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.CONSTANT));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
         }
     };
 

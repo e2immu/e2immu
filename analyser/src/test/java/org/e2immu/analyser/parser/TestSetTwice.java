@@ -32,16 +32,19 @@ public class TestSetTwice extends CommonTestRunner {
 
     private static final String PRECONDITION = "(not (this.overwritten) and not (null == this.t))";
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if (Set.of("overwrite", "freeze").contains(methodInfo.name) && iteration > 1) {
-            Assert.assertEquals(PRECONDITION, methodInfo.methodAnalysis.get().precondition.get().toString());
-            Assert.assertEquals("[not (this.overwritten), not (null == this.t)]", methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().toString());
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        String name = d.methodInfo().name;
+        int iteration = d.iteration();
+
+        if (Set.of("overwrite", "freeze").contains(name) && iteration > 1) {
+            Assert.assertEquals(PRECONDITION, d.methodAnalysis().precondition.get().toString());
+            Assert.assertEquals("[not (this.overwritten), not (null == this.t)]", d.methodAnalysis().preconditionForMarkAndOnly.get().toString());
         }
-        if ("set".equals(methodInfo.name) && iteration > 1) {
-            Assert.assertEquals("[null == this.t]", methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().toString());
+        if ("set".equals(name) && iteration > 1) {
+            Assert.assertEquals("[null == this.t]", d.methodAnalysis().preconditionForMarkAndOnly.get().toString());
         }
-        if ("get".equals(methodInfo.name) && iteration > 1) {
-            Assert.assertEquals("[not (null == this.t)]", methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().toString());
+        if ("get".equals(name) && iteration > 1) {
+            Assert.assertEquals("[not (null == this.t)]", d.methodAnalysis().preconditionForMarkAndOnly.get().toString());
         }
     };
 

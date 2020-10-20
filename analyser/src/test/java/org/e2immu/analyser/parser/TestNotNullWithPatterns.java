@@ -33,16 +33,16 @@ public class TestNotNullWithPatterns extends CommonTestRunner {
         super(true);
     }
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("conditionalValue".equals(methodInfo.name) && iteration > 2) {
-            Value srv = methodInfo.methodAnalysis.get().methodLevelData().singleReturnValue.get();
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        if ("conditionalValue".equals(d.methodInfo().name) && d.iteration() > 2) {
+            Value srv = d.methodAnalysis().methodLevelData().singleReturnValue.get();
             Assert.assertEquals("inline conditionalValue on condition.test(initial)?alternative:initial", srv.toString());
             Assert.assertTrue(srv instanceof InlineValue);
 
         }
 
-        if ("method4bis".equals(methodInfo.name) && iteration > 0) {
-            StatementAnalysis start = methodInfo.methodAnalysis.get().firstStatement.followReplacements();
+        if ("method4bis".equals(d.methodInfo().name) && d.iteration() > 0) {
+            StatementAnalysis start = d.methodAnalysis().firstStatement.followReplacements();
             Assert.assertEquals("return a1 == null ? a2 == null ? \"abc\" : a2 : a3 == null ? \"xyz\" : a1;\n",
                     start.statement.statementString(0, null));
             Assert.assertNull(start.navigationData.next.get().orElse(null));

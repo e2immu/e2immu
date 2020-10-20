@@ -57,9 +57,9 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
 
     private static final int SIZE_EQUALS_1 = Level.encodeSizeEquals(1);
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        if ("method1".equals(methodInfo.name)) {
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        MethodAnalysis methodAnalysis = d.methodAnalysis();
+        if ("method1".equals(d.methodInfo().name)) {
             TransferValue tv = methodAnalysis.methodLevelData().returnStatementSummaries.get("2");
             Assert.assertNotNull(tv);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, tv.getProperty(VariableProperty.NOT_NULL));

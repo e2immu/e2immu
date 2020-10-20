@@ -67,14 +67,16 @@ public class TestNotModifiedChecks extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
+        int iteration = d.iteration();
+        String name  = d.methodInfo().name;
 
-        if ("NotModifiedChecks".equals(methodInfo.name)) {
-            ParameterAnalysis list = methodInfo.methodInspection.get().parameters.get(0).parameterAnalysis.get();
-            ParameterAnalysis set2 = methodInfo.methodInspection.get().parameters.get(1).parameterAnalysis.get();
-            ParameterAnalysis set3 = methodInfo.methodInspection.get().parameters.get(2).parameterAnalysis.get();
-            ParameterAnalysis set4 = methodInfo.methodInspection.get().parameters.get(3).parameterAnalysis.get();
+        if ("NotModifiedChecks".equals(d.methodInfo().name)) {
+            ParameterAnalysis list = d.parameterAnalyses().get(0);
+            ParameterAnalysis set2 = d.parameterAnalyses().get(1);
+            ParameterAnalysis set3 = d.parameterAnalyses().get(2);
+            ParameterAnalysis set4 = d.parameterAnalyses().get(3);
 
             if (iteration == 0) {
                 Assert.assertFalse(list.assignedToField.isSet());
@@ -88,25 +90,25 @@ public class TestNotModifiedChecks extends CommonTestRunner {
                 Assert.assertEquals(1, set2.getProperty(VariableProperty.MODIFIED));
                 Assert.assertEquals(1, set4.getProperty(VariableProperty.MODIFIED));
             }
-            FieldInfo s2 = methodInfo.typeInfo.getFieldByName("s2", true);
+            FieldInfo s2 = d.methodInfo().typeInfo.getFieldByName("s2", true);
             if (iteration > 1) {
                 Set<Variable> s2links = methodLevelData.variablesLinkedToFieldsAndParameters.get()
                         .get(new FieldReference(s2, new This(s2.owner)));
                 Assert.assertEquals("[1:set2]", s2links.toString());
             }
-            FieldInfo set = methodInfo.typeInfo.typeInspection.get().subTypes.get(0).getFieldByName("set", true);
+            FieldInfo set = d.methodInfo().typeInfo.typeInspection.get().subTypes.get(0).getFieldByName("set", true);
             Assert.assertFalse(methodLevelData.fieldSummaries.isSet(set));
         }
-        if ("addAllOnC".equals(methodInfo.name)) {
-            ParameterInfo c1 = methodInfo.methodInspection.get().parameters.get(0);
+        if ("addAllOnC".equals(name)) {
+            ParameterInfo c1 = d.methodInfo().methodInspection.get().parameters.get(0);
             Assert.assertEquals("c1", c1.name);
             Assert.assertEquals(Level.TRUE, c1.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
-        if ("getSet".equals(methodInfo.name)) {
+        if ("getSet".equals(name)) {
             if (iteration > 0) {
                 int identity = methodLevelData.returnStatementSummaries.get("0").getProperty(VariableProperty.IDENTITY);
                 Assert.assertEquals(Level.FALSE, identity);
-                Assert.assertEquals(Level.FALSE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
+                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.IDENTITY));
 
             }
             if (iteration > 1) {
@@ -114,8 +116,8 @@ public class TestNotModifiedChecks extends CommonTestRunner {
                 Assert.assertEquals("inline getSet on this.set", value.toString());
             }
         }
-        if ("C1".equals(methodInfo.name)) {
-            FieldInfo fieldInfo = methodInfo.typeInfo.getFieldByName("set", true);
+        if ("C1".equals(name)) {
+            FieldInfo fieldInfo = d.methodInfo().typeInfo.getFieldByName("set", true);
             TransferValue tv = methodLevelData.fieldSummaries.get(fieldInfo);
             Assert.assertEquals("[0:set1]", tv.linkedVariables.get().toString());
         }

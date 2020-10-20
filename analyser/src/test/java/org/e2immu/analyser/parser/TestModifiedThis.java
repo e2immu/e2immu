@@ -45,16 +45,17 @@ public class TestModifiedThis extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("clear".equals(methodInfo.name) && "ParentClass".equals(methodInfo.typeInfo.simpleName) && iteration > 0) {
-            Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        String name = d.methodInfo().name;
+        if ("clear".equals(name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName) && d.iteration() > 0) {
+            Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
         }
-        if ("clearAndAdd".equals(methodInfo.name) && "ChildClass".equals(methodInfo.typeInfo.simpleName) && iteration > 0) {
-            Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        if ("clearAndAdd".equals(name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName) && d.iteration() > 0) {
+            Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
         }
-        if ("clear".equals(methodInfo.name) && "InnerOfChild".equals(methodInfo.typeInfo.simpleName)) {
-            if (iteration > 0) {
-                Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().methodLevelData().
+        if ("clear".equals(name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
+            if (d.iteration() > 0) {
+                Assert.assertEquals(Level.TRUE, d.methodAnalysis().methodLevelData().
                         thisSummary.get().properties.get(VariableProperty.MODIFIED));
            //     Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
             }

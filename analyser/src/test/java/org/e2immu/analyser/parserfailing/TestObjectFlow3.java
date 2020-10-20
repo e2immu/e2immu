@@ -66,12 +66,12 @@ public class TestObjectFlow3 extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("go".equals(methodInfo.name) && "Main".equals(methodInfo.typeInfo.simpleName)) {
-            if (iteration < 100) {
-                Assert.assertFalse(methodInfo.methodAnalysis.get().internalObjectFlows.isSet());
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        if ("go".equals(d.methodInfo().name) && "Main".equals(d.methodInfo().typeInfo.simpleName)) {
+            if (d.iteration() < 100) {
+                Assert.assertFalse(d.methodAnalysis().internalObjectFlows.isSet());
             } else {
-                Set<ObjectFlow> objectFlows = methodInfo.methodAnalysis.get().internalObjectFlows.get();
+                Set<ObjectFlow> objectFlows = d.methodAnalysis().internalObjectFlows.get();
                 LOGGER.info("Have flows in Main.go(): {}", objectFlows);
                 Assert.assertEquals(2, objectFlows.size());
                 ObjectFlow newInBetween = objectFlows.stream().filter(of -> of.origin == Origin.NEW_OBJECT_CREATION).findFirst().orElseThrow();

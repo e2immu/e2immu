@@ -60,17 +60,17 @@ public class TestEither extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("getLeftOrElse".equals(methodInfo.name) && iteration > 0) {
-            TransferValue tv = methodInfo.methodAnalysis.get().methodLevelData().returnStatementSummaries.get("1");
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        if ("getLeftOrElse".equals(d.methodInfo().name) && d.iteration() > 0) {
+            TransferValue tv = d.methodAnalysis().methodLevelData().returnStatementSummaries.get("1");
             Assert.assertTrue(tv.value.get() instanceof ConditionalValue);
             ConditionalValue conditionalValue = (ConditionalValue) tv.value.get();
             Assert.assertEquals("null == this.left?orElse,@NotNull:this.left", conditionalValue.toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.value.get().getPropertyOutsideContext(VariableProperty.NOT_NULL));
         }
-        if ("Either".equals(methodInfo.name) && iteration > 0) {
+        if ("Either".equals(d.methodInfo().name) && d.iteration() > 0) {
             Assert.assertEquals("((null == a or null == b) and (not (null == a) or not (null == b)))",
-                    methodInfo.methodAnalysis.get().precondition.get().toString());
+                    d.methodAnalysis().precondition.get().toString());
         }
     };
 

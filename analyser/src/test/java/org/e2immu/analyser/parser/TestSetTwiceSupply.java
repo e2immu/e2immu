@@ -46,22 +46,25 @@ public class TestSetTwiceSupply extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("isSetPotentiallyRun".equals(methodInfo.name) && iteration > 0) {
-            Assert.assertTrue(methodInfo.methodAnalysis.get().methodLevelData().
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        String name = d.methodInfo().name;
+        int iteration = d.iteration();
+
+        if ("isSetPotentiallyRun".equals(name) && iteration > 0) {
+            Assert.assertTrue(d.methodAnalysis().methodLevelData().
                     callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
         }
-        if ("set".equals(methodInfo.name) && "SetTwiceSupply".equals(methodInfo.typeInfo.simpleName) && iteration > 0) {
-            Assert.assertEquals("null == this.t", methodInfo.methodAnalysis.get().precondition.get().toString());
+        if ("set".equals(name) && "SetTwiceSupply".equals(d.methodInfo().typeInfo.simpleName) && iteration > 0) {
+            Assert.assertEquals("null == this.t", d.methodAnalysis().precondition.get().toString());
         }
-        if ("getPotentiallyRun".equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 0 && iteration > 0) {
-            Assert.assertEquals("not (null == this.t)", methodInfo.methodAnalysis.get().precondition.get().toString());
+        if ("getPotentiallyRun".equals(name) && d.methodInfo().methodInspection.get().parameters.size() == 0 && iteration > 0) {
+            Assert.assertEquals("not (null == this.t)", d.methodAnalysis().precondition.get().toString());
         }
-        if ("getPotentiallyRun".equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 1) {
-            Assert.assertEquals("not (null == this.t)", methodInfo.methodAnalysis.get().precondition.get().toString());
+        if ("getPotentiallyRun".equals(name) && d.methodInfo().methodInspection.get().parameters.size() == 1) {
+            Assert.assertEquals("not (null == this.t)", d.methodAnalysis().precondition.get().toString());
         }
-        if ("setRunnable".equals(methodInfo.name) && iteration > 0) {
-            Assert.assertEquals("null == this.t", methodInfo.methodAnalysis.get().precondition.get().toString());
+        if ("setRunnable".equals(name) && iteration > 0) {
+            Assert.assertEquals("null == this.t", d.methodAnalysis().precondition.get().toString());
         }
     };
 

@@ -35,14 +35,14 @@ public class TestEvaluateConstants extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
-        if ("print".equals(methodInfo.name)) {
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
+        if ("print".equals(d.methodInfo().name)) {
             Assert.assertTrue(methodLevelData.singleReturnValue.isSet());
             Value singleReturnValue = methodLevelData.singleReturnValue.get();
             Assert.assertSame(UnknownValue.RETURN_VALUE, singleReturnValue); // not constant, the ee() error is ignored
         }
-        if ("print2".equals(methodInfo.name) && iteration > 0) {
+        if ("print2".equals(d.methodInfo().name) && d.iteration() > 0) {
             Assert.assertTrue(methodLevelData.singleReturnValue.isSet());
             Value singleReturnValue = methodLevelData.singleReturnValue.get();
             Assert.assertTrue(singleReturnValue instanceof StringValue); // inline conditional works as advertised

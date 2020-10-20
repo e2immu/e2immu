@@ -76,11 +76,11 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("setFirst".equals(methodInfo.name)) {
-            FieldInfo ts2 = methodInfo.typeInfo.getFieldByName("ts2", true);
-            TransferValue tv = methodInfo.methodAnalysis.get().methodLevelData().fieldSummaries.get(ts2);
-            if (iteration > 0) {
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        if ("setFirst".equals(d.methodInfo().name)) {
+            FieldInfo ts2 = d.methodInfo().typeInfo.getFieldByName("ts2", true);
+            TransferValue tv = d.methodAnalysis().methodLevelData().fieldSummaries.get(ts2);
+            if (d.iteration() > 0) {
                 Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.MODIFIED));
             }
         }

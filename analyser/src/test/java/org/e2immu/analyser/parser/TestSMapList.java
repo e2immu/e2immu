@@ -55,28 +55,30 @@ public class TestSMapList extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
-        if ("list".equals(methodInfo.name)) {
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
+        String name = d.methodInfo().name;
+
+        if ("list".equals(name)) {
             TransferValue returnValue1 = methodLevelData.returnStatementSummaries.get("2");
-            if (iteration == 0) {
+            if (d.iteration() == 0) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, returnValue1.properties.get(VariableProperty.NOT_NULL));
 
                 // the end result
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
             } else {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, returnValue1.properties.get(VariableProperty.NOT_NULL));
 
                 // the end result
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
             }
         }
-        if ("copy".equals(methodInfo.name)) {
+        if ("copy".equals(name)) {
             TransferValue returnValue = methodLevelData.returnStatementSummaries.get("2");
             Assert.assertEquals(MultiLevel.MUTABLE, returnValue.properties.get(VariableProperty.IMMUTABLE));
         }
-        if ("add".equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 3) {
-            ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(2);
+        if ("add".equals(name) && d.methodInfo().methodInspection.get().parameters.size() == 3) {
+            ParameterInfo parameterInfo = d.methodInfo().methodInspection.get().parameters.get(2);
             if ("bs".equals(parameterInfo.name)) {
                 int modified = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED);
                 Assert.assertEquals(Level.FALSE, modified);

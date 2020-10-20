@@ -45,9 +45,11 @@ public class TestFinalChecks extends CommonTestRunner {
 
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         TypeInfo stringType = Primitives.PRIMITIVES.stringTypeInfo;
         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+        int iteration = d.iteration();
+        MethodInfo methodInfo = d.methodInfo();
 
         if ("setS4".equals(methodInfo.name) && iteration >= 1) {
             // @NotModified decided straight away, @Identity as well
@@ -57,7 +59,7 @@ public class TestFinalChecks extends CommonTestRunner {
 
         // there is no size restriction
         if (iteration > 0) {
-            MethodLevelData methodLevelData  = methodInfo.methodAnalysis.get().methodLevelData();
+            MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
             FieldInfo s1 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> "s1".equals(f.name)).findFirst().orElseThrow();
             if ("toString".equals(methodInfo.name)) {
                 Assert.assertFalse(methodLevelData.fieldSummaries.get(s1).properties.isSet(VariableProperty.NOT_NULL));

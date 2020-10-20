@@ -45,9 +45,9 @@ public class TestObjectFlow1 extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("useKv".equals(methodInfo.name)) {
-            ParameterAnalysis p0 = methodInfo.methodInspection.get().parameters.get(0).parameterAnalysis.get();
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        if ("useKv".equals(d.methodInfo().name)) {
+            ParameterAnalysis p0 = d.methodInfo().methodInspection.get().parameters.get(0).parameterAnalysis.get();
             Assert.assertTrue(p0.objectFlow.isSet());
             ObjectFlow objectFlowP0 = p0.objectFlow.get();
             Assert.assertSame(Origin.PARAMETER, objectFlowP0.origin);
@@ -57,8 +57,8 @@ public class TestObjectFlow1 extends CommonTestRunner {
             Assert.assertEquals("value", callOutP0.location.info.name());
             Assert.assertTrue(callOutP0.containsPrevious(objectFlowP0));
 
-            Assert.assertTrue(methodInfo.methodAnalysis.get().internalObjectFlows.isSet());
-            Set<ObjectFlow> internalFlows = methodInfo.methodAnalysis.get().internalObjectFlows.get();
+            Assert.assertTrue(d.methodAnalysis().internalObjectFlows.isSet());
+            Set<ObjectFlow> internalFlows = d.methodAnalysis().internalObjectFlows.get();
             LOGGER.info("Have internal flows of useKv: {}", internalFlows);
             Assert.assertEquals(2, internalFlows.size());
             ObjectFlow newKeyValue = internalFlows.stream()
@@ -70,8 +70,8 @@ public class TestObjectFlow1 extends CommonTestRunner {
                     .findAny().orElseThrow();
             Assert.assertEquals("value", valueFieldOfNewKeyValue.location.info.name());
 
-            Assert.assertTrue(methodInfo.methodAnalysis.get().objectFlow.isSet());
-            ObjectFlow returnFlow = methodInfo.methodAnalysis.get().objectFlow.get();
+            Assert.assertTrue(d.methodAnalysis().objectFlow.isSet());
+            ObjectFlow returnFlow = d.methodAnalysis().objectFlow.get();
             Assert.assertSame(Primitives.PRIMITIVES.integerTypeInfo, returnFlow.type.typeInfo);
             Assert.assertSame(valueFieldOfNewKeyValue, returnFlow);
         }

@@ -65,6 +65,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     public final TypeAnalyser myTypeAnalyser;
     public final List<ParameterAnalyser> parameterAnalysers;
+    public final List<ParameterAnalysis> parameterAnalyses;
     public final StatementAnalyser firstStatementAnalyser;
     private final AnalyserComponents<String> analyserComponents;
 
@@ -84,8 +85,8 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
         parameterAnalysers = parameterAnalysersBuilder.build();
         this.myTypeAnalyser = myTypeAnalyser;
-        List<ParameterAnalysis> parameterAnalyses = parameterAnalysers.stream()
-                .map(pa -> pa.parameterAnalysis).collect(Collectors.toUnmodifiableList());
+        parameterAnalyses = parameterAnalysers.stream().map(pa -> pa.parameterAnalysis).collect(Collectors.toUnmodifiableList());
+
         Block block = methodInspection.methodBody.get();
         if (block == Block.EMPTY_BLOCK) {
             firstStatementAnalyser = null;
@@ -233,7 +234,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
             for (MethodAnalyserVisitor methodAnalyserVisitor : analyserContext.getConfiguration().
                     debugConfiguration.afterMethodAnalyserVisitors) {
-                methodAnalyserVisitor.visit(iteration, methodInfo);
+                methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration, methodInfo, methodAnalysis, parameterAnalyses));
             }
 
             return analysisStatus;

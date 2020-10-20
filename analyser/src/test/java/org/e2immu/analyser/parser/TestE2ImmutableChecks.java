@@ -52,21 +52,24 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
-        if ("isAbc".equals(methodInfo.name) && iteration > 0) {
-            FieldInfo value1 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> "value1".equals(f.name)).findFirst().orElseThrow();
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        String name = d.methodInfo().name;
+        int iteration = d.iteration();
+
+        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
+        if ("isAbc".equals(name) && iteration > 0) {
+            FieldInfo value1 = d.methodInfo().typeInfo.getFieldByName("value1", true);
             TransferValue transferValue = methodLevelData.fieldSummaries.get(value1);
             Assert.assertTrue("Got: " + transferValue.linkedVariables.get(), transferValue.linkedVariables.get().isEmpty());
         }
-        if ("E2Container1".equals(methodInfo.name) && iteration > 1) {
-            ParameterInfo value = methodInfo.methodInspection.get().parameters.get(0);
+        if ("E2Container1".equals(name) && iteration > 1) {
+            ParameterInfo value = d.methodInfo().methodInspection.get().parameters.get(0);
             Assert.assertEquals("value", value.name);
             Assert.assertTrue(value.parameterAnalysis.get().assignedToField.isSet());
         }
-        if ("E2Container2".equals(methodInfo.name) && 2 == methodInfo.methodInspection.get().parameters.size()) {
+        if ("E2Container2".equals(name) && 2 == d.methodInfo().methodInspection.get().parameters.size()) {
             if (iteration > 2) {
-                FieldInfo parent2 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> "parent2".equals(f.name)).findFirst().orElseThrow();
+                FieldInfo parent2 = d.methodInfo().typeInfo.getFieldByName("parent2", true);
                 TransferValue transferValue = methodLevelData.fieldSummaries.get(parent2);
                 Assert.assertEquals("[0:parent2Param]", transferValue.linkedVariables.get().toString());
                 // NOTE: we allow the linking to take place, but ignore its presence in independent computation
@@ -74,15 +77,15 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         }
 
         // no decision about immutable of "mingle" is ever made
-        if ("mingle".equals(methodInfo.name)) {
+        if ("mingle".equals(name)) {
             TransferValue transferValue = methodLevelData.returnStatementSummaries.get("1");
             Assert.assertEquals(MultiLevel.MUTABLE, transferValue.properties.get(VariableProperty.IMMUTABLE));
             Assert.assertEquals("input4", transferValue.value.get().toString());
             Assert.assertTrue(transferValue.value.get() instanceof VariableValue);
-            Assert.assertEquals(MultiLevel.MUTABLE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+            Assert.assertEquals(MultiLevel.MUTABLE, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
         }
 
-        if ("getSet3".equals(methodInfo.name)) {
+        if ("getSet3".equals(name)) {
             TransferValue tv = methodLevelData.returnStatementSummaries.get("0");
             if (iteration > 0) {
                 int immutable = tv.getProperty(VariableProperty.IMMUTABLE);
@@ -92,9 +95,9 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
             }
         }
 
-        if ("get4".equals(methodInfo.name)) {
+        if ("get4".equals(name)) {
             if (iteration > 1) {
-                int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
+                int independent = d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT);
                 Assert.assertEquals(MultiLevel.EFFECTIVE, independent);
             }
             TransferValue tv = methodLevelData.returnStatementSummaries.get("0");
@@ -106,8 +109,8 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
             }
         }
 
-        if ("get7".equals(methodInfo.name) && iteration > 1) {
-            Assert.assertEquals(MultiLevel.FALSE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
+        if ("get7".equals(name) && iteration > 1) {
+            Assert.assertEquals(MultiLevel.FALSE, d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT));
         }
     };
 

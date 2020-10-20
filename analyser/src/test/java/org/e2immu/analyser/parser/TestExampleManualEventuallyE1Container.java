@@ -16,22 +16,25 @@ import java.util.stream.Collectors;
 
 public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
-        if ("addIfGreater".equals(methodInfo.name)) {
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
+        String name = d.methodInfo().name;
+        int iteration = d.iteration();
+
+        if ("addIfGreater".equals(name)) {
             if (iteration > 0) {
-                List<Value> preconditions = methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get();
+                List<Value> preconditions = d.methodAnalysis().preconditionForMarkAndOnly.get();
                 Assert.assertEquals(1, preconditions.size());
                 Assert.assertEquals("this.j > 0", preconditions.get(0).toString());
                 Assert.assertEquals("(-this.j) >= 0", NegatedValue.negate(preconditions.get(0)).toString());
             }
         }
-        if ("setNegativeJ".equals(methodInfo.name)) {
+        if ("setNegativeJ".equals(name)) {
             if (iteration > 0) {
-                Assert.assertEquals("((-this.j) >= 0 and (-j) >= 0)", methodInfo.methodAnalysis.get().precondition.get().toString());
-                Assert.assertEquals("[(-this.j) >= 0]", methodInfo.methodAnalysis.get().preconditionForMarkAndOnly.get().toString());
+                Assert.assertEquals("((-this.j) >= 0 and (-j) >= 0)", d.methodAnalysis().precondition.get().toString());
+                Assert.assertEquals("[(-this.j) >= 0]", d.methodAnalysis().preconditionForMarkAndOnly.get().toString());
 
-                FieldInfo fieldJ = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> "j".equals(f.name)).findAny().orElseThrow();
+                FieldInfo fieldJ = d.methodInfo().typeInfo.getFieldByName("j", true);
                 TransferValue tv = methodLevelData.fieldSummaries.get(fieldJ);
                 Assert.assertNotNull(tv);
                 Value value = tv.value.get();
@@ -40,7 +43,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                 Assert.assertEquals("(-this.j) >= 0", state.toString());
             }
         }
-        if ("getIntegers".equals(methodInfo.name)) {
+        if ("getIntegers".equals(name)) {
             if (iteration > 0) {
                 TransferValue tv = methodLevelData.returnStatementSummaries.get("0");
                 Assert.assertEquals(1, tv.linkedVariables.get().size());
@@ -48,7 +51,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
             if (iteration > 1) {
                 Set<Variable> variables = methodLevelData.variablesLinkedToMethodResult.get();
                 Assert.assertEquals(1, variables.size());
-                int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
+                int independent = d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT);
                 Assert.assertEquals(MultiLevel.FALSE, independent);
             }
         }

@@ -43,20 +43,21 @@ public class TestModificationGraph extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("incrementAndGetWithI".equals(methodInfo.name)) {
-            Assert.assertTrue(methodInfo.methodAnalysis.get().methodLevelData()
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        String name = d.methodInfo().name;
+        if ("incrementAndGetWithI".equals(name)) {
+            Assert.assertTrue(d.methodAnalysis().methodLevelData()
                     .callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
         }
-        if ("useC2".equals(methodInfo.name) && iteration > 1) {
-            Assert.assertTrue(methodInfo.methodAnalysis.get().methodLevelData()
+        if ("useC2".equals(name) && d.iteration() > 1) {
+            Assert.assertTrue(d.methodAnalysis().methodLevelData()
                     .callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
         }
-        if ("C2".equals(methodInfo.name)) {
-            ParameterInfo c1 = methodInfo.methodInspection.get().parameters.get(1);
-            if (iteration > 0) {
+        if ("C2".equals(name)) {
+            ParameterInfo c1 = d.methodInfo().methodInspection.get().parameters.get(1);
+            if (d.iteration() > 0) {
                 Assert.assertEquals("c1", c1.parameterAnalysis.get().assignedToField.get().name);
-                if (iteration > 1) {
+                if (d.iteration() > 1) {
                     Assert.assertTrue(c1.parameterAnalysis.get().copiedFromFieldToParameters.get());
                 }
             }

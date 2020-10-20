@@ -41,9 +41,9 @@ public class TestBasicsOpposite extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("setString".equals(methodInfo.name)) {
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        if ("setString".equals(d.methodInfo().name)) {
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
         }
     };
 

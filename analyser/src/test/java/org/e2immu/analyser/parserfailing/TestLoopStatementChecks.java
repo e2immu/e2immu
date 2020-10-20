@@ -31,16 +31,15 @@ public class TestLoopStatementChecks extends CommonTestRunner {
         super(false);
     }
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        if ("method3".equals(methodInfo.name)) {
-            TransferValue tv = methodAnalysis.methodLevelData().returnStatementSummaries.get("2");
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        if ("method3".equals(d.methodInfo().name)) {
+            TransferValue tv = d.methodAnalysis().methodLevelData().returnStatementSummaries.get("2");
             Assert.assertNotNull(tv);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.properties.get(VariableProperty.NOT_NULL)); // (2)
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(VariableProperty.NOT_NULL)); // (3)
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL)); // (3)
         }
-        if ("method3bis".equals(methodInfo.name)) {
-            TransferValue tv = methodAnalysis.methodLevelData().returnStatementSummaries.get("2");
+        if ("method3bis".equals(d.methodInfo().name)) {
+            TransferValue tv = d.methodAnalysis().methodLevelData().returnStatementSummaries.get("2");
             Assert.assertNotNull(tv);
             Assert.assertEquals(MultiLevel.NULLABLE, tv.properties.get(VariableProperty.NOT_NULL));
         }

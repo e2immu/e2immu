@@ -20,15 +20,15 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         super(true);
     }
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
-        if ("iterator".equals(methodInfo.name)) {
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
+        if ("iterator".equals(d.methodInfo().name)) {
             //  Assert.assertEquals(MultiLevel.EFFECTIVE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
             Assert.assertTrue(methodLevelData.returnStatementSummaries.isSet("0"));
         }
 
-        if (Set.of("hasNext", "next").contains(methodInfo.name) && "MyIteratorImpl".equals(methodInfo.typeInfo.simpleName)) {
-            if (iteration > 0) {
+        if (Set.of("hasNext", "next").contains(d.methodInfo().name) && "MyIteratorImpl".equals(d.methodInfo().typeInfo.simpleName)) {
+            if (d.iteration() > 0) {
                 Assert.assertTrue(methodLevelData.variablesLinkedToFieldsAndParameters.isSet());
             }
         }

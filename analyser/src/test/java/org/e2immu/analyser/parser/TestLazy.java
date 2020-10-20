@@ -70,29 +70,29 @@ public class TestLazy extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        FieldInfo supplier = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> f.name.equals("supplier")).findFirst().orElseThrow();
-        FieldInfo t = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> f.name.equals("t")).findFirst().orElseThrow();
-        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        FieldInfo supplier = d.methodInfo().typeInfo.getFieldByName("supplier", true);
+        FieldInfo t = d.methodInfo().typeInfo.getFieldByName("t", true);
+        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
 
-        if ("Lazy".equals(methodInfo.name)) {
+        if ("Lazy".equals(d.methodInfo().name)) {
             TransferValue tv = methodLevelData.fieldSummaries.get(supplier);
             Assert.assertTrue(tv.value.isSet());
 
-            ParameterInfo supplierParam = methodInfo.methodInspection.get().parameters.get(0);
+            ParameterInfo supplierParam = d.methodInfo().methodInspection.get().parameters.get(0);
             Assert.assertEquals("supplierParam", supplierParam.name);
-            if (iteration > 0) {
+            if (d.iteration() > 0) {
                 Assert.assertTrue(supplierParam.parameterAnalysis.get().assignedToField.isSet());
                 //  Assert.assertTrue(supplierParam.parameterAnalysis.get().copiedFromFieldToParameters.isSet());
             }
         }
-        if ("get".equals(methodInfo.name)) {
+        if ("get".equals(d.methodInfo().name)) {
             TransferValue tv = methodLevelData.fieldSummaries.get(supplier);
             Assert.assertEquals(Level.DELAY, tv.properties.get(VariableProperty.ASSIGNED));
 
             TransferValue ret1 = methodLevelData.returnStatementSummaries.get("1.0.0");
             TransferValue ret2 = methodLevelData.returnStatementSummaries.get("2.0.1");
-            if (iteration >= 1) {
+            if (d.iteration() >= 1) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret1.properties.get(VariableProperty.NOT_NULL));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret2.properties.get(VariableProperty.NOT_NULL));
 

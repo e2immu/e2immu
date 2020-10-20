@@ -84,17 +84,17 @@ public class TestConditionalChecks extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if (iteration == 0 && "method3".equals(methodInfo.name)) {
-            ParameterInfo a = methodInfo.methodInspection.get().parameters.get(0);
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        if (d.iteration() == 0 && "method3".equals(d.methodInfo().name)) {
+            ParameterInfo a = d.methodInfo().methodInspection.get().parameters.get(0);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, a.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-            ParameterInfo b = methodInfo.methodInspection.get().parameters.get(1);
+            ParameterInfo b = d.methodInfo().methodInspection.get().parameters.get(1);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, b.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
         }
 
-        if ("method1".equals(methodInfo.name)) {
-            Assert.assertTrue(methodInfo.methodAnalysis.get().precondition.isSet());
-            Assert.assertSame(UnknownValue.EMPTY, methodInfo.methodAnalysis.get().precondition.get());
+        if ("method1".equals(d.methodInfo().name)) {
+            Assert.assertTrue(d.methodAnalysis().precondition.isSet());
+            Assert.assertSame(UnknownValue.EMPTY, d.methodAnalysis().precondition.get());
         }
     };
 

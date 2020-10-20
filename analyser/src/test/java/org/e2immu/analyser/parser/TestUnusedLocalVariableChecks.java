@@ -126,10 +126,10 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        MethodAnalysis methodAnalysis = d.methodAnalysis();
 
-        if ("method1".equals(methodInfo.name)) {
+        if ("method1".equals(d.methodInfo().name)) {
             // ERROR: method should be static
             Assert.assertTrue(methodAnalysis.complainedAboutMissingStaticModifier.get());
         }

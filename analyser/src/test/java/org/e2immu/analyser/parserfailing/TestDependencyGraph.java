@@ -55,14 +55,11 @@ public class TestDependencyGraph extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = new MethodAnalyserVisitor() {
-        @Override
-        public void visit(int iteration, MethodInfo methodInfo) {
-            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-            if ("sorted".equals(methodInfo.name)) {
-                int size = methodAnalysis.getProperty(VariableProperty.SIZE);
-                //Assert.assertEquals(0, size);
-            }
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        MethodAnalysis methodAnalysis = d.methodAnalysis();
+        if ("sorted".equals(d.methodInfo().name)) {
+            int size = methodAnalysis.getProperty(VariableProperty.SIZE);
+            //Assert.assertEquals(0, size);
         }
     };
 

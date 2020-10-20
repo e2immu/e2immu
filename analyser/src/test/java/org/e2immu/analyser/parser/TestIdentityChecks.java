@@ -54,10 +54,10 @@ public class TestIdentityChecks extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        MethodAnalysis methodAnalysis = d.methodAnalysis();
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
-        if ("idem".equals(methodInfo.name)) {
+        if ("idem".equals(d.methodInfo().name)) {
 
             TransferValue tv = methodLevelData.returnStatementSummaries.get("1");
             Assert.assertFalse(tv.properties.isSet(VariableProperty.MODIFIED));
@@ -67,7 +67,7 @@ public class TestIdentityChecks extends CommonTestRunner {
             Assert.assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
         }
 
-        if ("idem3".equals(methodInfo.name)) {
+        if ("idem3".equals(d.methodInfo().name)) {
             TransferValue tv1 = methodLevelData.returnStatementSummaries.get("1.0.0");
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv1.getProperty(VariableProperty.NOT_NULL));
             TransferValue tv2 = methodLevelData.returnStatementSummaries.get("1.1.0");

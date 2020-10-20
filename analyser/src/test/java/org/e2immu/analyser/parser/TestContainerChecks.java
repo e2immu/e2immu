@@ -70,46 +70,48 @@ public class TestContainerChecks extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        MethodLevelData methodLevelData = methodInfo.methodAnalysis.get().methodLevelData();
-        if ("setStrings1".equals(methodInfo.name)) {
-            FieldInfo strings = methodInfo.typeInfo.getFieldByName("strings1", true);
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        String name = d.methodInfo().name;
+        TypeInfo typeInfo = d.methodInfo().typeInfo;
+        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
+        if ("setStrings1".equals(name)) {
+            FieldInfo strings = typeInfo.getFieldByName("strings1", true);
             TransferValue transferValue = methodLevelData.fieldSummaries.get(strings);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, transferValue.properties.get(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.ASSIGNED));
         }
-        if ("getStrings1".equals(methodInfo.name)) {
-            FieldInfo strings = methodInfo.typeInfo.getFieldByName("strings1", true);
+        if ("getStrings1".equals(name)) {
+            FieldInfo strings = typeInfo.getFieldByName("strings1", true);
             TransferValue transferValue = methodLevelData.fieldSummaries.get(strings);
             Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.READ));
             Assert.assertEquals(Level.DELAY, transferValue.getProperty(VariableProperty.ASSIGNED));
         }
 
-        if ("setStrings2".equals(methodInfo.name)) {
-            ParameterInfo strings2 = methodInfo.methodInspection.get().parameters.get(0);
+        if ("setStrings2".equals(name)) {
+            ParameterInfo strings2 = d.methodInfo().methodInspection.get().parameters.get(0);
             Assert.assertEquals("strings2param", strings2.name);
         }
-        if ("add2".equals(methodInfo.name) && iteration >= 1) {
-            FieldInfo strings = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
+        if ("add2".equals(name) && d.iteration() >= 1) {
+            FieldInfo strings = typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
             Assert.assertEquals("strings2", strings.name);
             TransferValue transferValue = methodLevelData.fieldSummaries.get(strings);
             Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.SIZE_NOT_EMPTY, transferValue.getProperty(VariableProperty.SIZE));
         }
-        if ("add2b".equals(methodInfo.name)) {
-            FieldInfo strings = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
+        if ("add2b".equals(name)) {
+            FieldInfo strings = typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
             Assert.assertEquals("strings2b", strings.name);
             TransferValue transferValue = methodLevelData.fieldSummaries.get(strings);
             Assert.assertEquals(Level.DELAY, transferValue.properties.get(VariableProperty.ASSIGNED));
             Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, transferValue.properties.get(VariableProperty.READ));
             Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
         }
-        if ("addAll5".equals(methodInfo.name)) {
-            FieldInfo list = methodInfo.typeInfo.getFieldByName("list", true);
+        if ("addAll5".equals(name)) {
+            FieldInfo list = typeInfo.getFieldByName("list", true);
             TransferValue transferValue = methodLevelData.fieldSummaries.get(list);
             Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.READ));
-            if (iteration > 0) {
+            if (d.iteration() > 0) {
                 Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.MODIFIED));
             }
         }

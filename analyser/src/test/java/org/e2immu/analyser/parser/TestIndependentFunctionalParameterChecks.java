@@ -42,10 +42,10 @@ public class TestIndependentFunctionalParameterChecks extends CommonTestRunner {
         }
     };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = (iteration, methodInfo) -> {
-        if ("stream".equals(methodInfo.name)) {
-            int notNull = methodInfo.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL);
-            if (iteration == 0) {
+    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        if ("stream".equals(d.methodInfo().name)) {
+            int notNull = d.methodAnalysis().getProperty(VariableProperty.NOT_NULL);
+            if (d.iteration() == 0) {
                 Assert.assertEquals(Level.DELAY, notNull);
             } else {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, notNull);
