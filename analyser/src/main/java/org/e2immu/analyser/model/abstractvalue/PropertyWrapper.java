@@ -124,7 +124,7 @@ public class PropertyWrapper implements Value, ValueWrapper {
 
     @Override
     public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
-        return value.linkedVariables(evaluationContext);
+        return evaluationContext.linkedVariables(value);
     }
 
     @Override

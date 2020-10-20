@@ -1,6 +1,7 @@
 package org.e2immu.analyser.config;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
@@ -33,6 +34,10 @@ public interface StatementAnalyserVariableVisitor {
             this.objectFlow = objectFlow;
             this.properties = properties;
             this.statementId = statementId;
+        }
+
+        public int getProperty(VariableProperty variableProperty) {
+            return properties.getOrDefault(variableProperty, Level.DELAY);
         }
     }
 

@@ -218,7 +218,7 @@ public class MethodValue implements Value {
         Set<Variable> result = new HashSet<>();
         for (Value p : parameters) {
             // the parameter value is not E2IMMU
-            Set<Variable> cd = p.linkedVariables(evaluationContext);
+            Set<Variable> cd = evaluationContext.linkedVariables(p);
             if (cd == null) return null;
             result.addAll(cd);
         }
@@ -231,7 +231,7 @@ public class MethodValue implements Value {
         if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY) return null;
         boolean objectOfSameType = methodInfo.typeInfo == evaluationContext.getCurrentType().typeInfo;
         if (objectOfSameType || (objectE2Immutable < MultiLevel.EVENTUAL_AFTER && independent == MultiLevel.FALSE)) {
-            Set<Variable> b = object.linkedVariables(evaluationContext);
+            Set<Variable> b = evaluationContext.linkedVariables(object);
             if (b == null) return null;
             result.addAll(b);
         }

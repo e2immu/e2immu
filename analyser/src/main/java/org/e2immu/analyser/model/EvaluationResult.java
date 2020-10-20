@@ -35,21 +35,21 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class EvaluationResult {
 
-    private final Stream<StatementAnalysis.StatementAnalysisModification> modificationStream;
-    private final Stream<StatementAnalysis.StateChange> stateChangeStream;
-    private final Stream<ObjectFlow> objectFlowStream;
+    private final List<StatementAnalysis.StatementAnalysisModification> modifications;
+    private final List<StatementAnalysis.StateChange> stateChanges;
+    private final List<ObjectFlow> objectFlows;
     public final Value value;
 
     public Stream<StatementAnalysis.StatementAnalysisModification> getModificationStream() {
-        return modificationStream;
+        return modifications.stream();
     }
 
     public Stream<ObjectFlow> getObjectFlowStream() {
-        return objectFlowStream;
+        return objectFlows.stream();
     }
 
     public Stream<StatementAnalysis.StateChange> getStateChangeStream() {
-        return stateChangeStream;
+        return stateChanges.stream();
     }
 
     public Value getValue() {
@@ -66,12 +66,12 @@ public class EvaluationResult {
     // mark a variable read
 
     private EvaluationResult(Value value,
-                             Stream<StatementAnalysis.StatementAnalysisModification> modificationStream,
-                             Stream<StatementAnalysis.StateChange> stateChangeStream,
-                             Stream<ObjectFlow> objectFlowStream) {
-        this.modificationStream = modificationStream;
-        this.stateChangeStream = stateChangeStream;
-        this.objectFlowStream = objectFlowStream;
+                             List<StatementAnalysis.StatementAnalysisModification> modifications,
+                             List<StatementAnalysis.StateChange> stateChanges,
+                             List<ObjectFlow> objectFlows) {
+        this.modifications = modifications;
+        this.stateChanges = stateChanges;
+        this.objectFlows = objectFlows;
         this.value = value;
     }
 
@@ -86,7 +86,6 @@ public class EvaluationResult {
         private final StatementAnalyser statementAnalyser;
         private List<StatementAnalysis.StatementAnalysisModification> modifications;
         private List<StatementAnalysis.StateChange> stateChanges;
-        private List<EvaluationResult> previousResults;
         private List<ObjectFlow> objectFlows;
         private Value value;
 
@@ -103,24 +102,38 @@ public class EvaluationResult {
 
         public Builder compose(EvaluationResult... previousResults) {
             if (previousResults != null) {
-                if (this.previousResults == null) {
-                    this.previousResults = new ArrayList<>();
+                for (EvaluationResult evaluationResult : previousResults) {
+                    append(evaluationResult);
                 }
-                Collections.addAll(this.previousResults, previousResults);
             }
             return this;
         }
 
         public Builder compose(Iterable<EvaluationResult> previousResults) {
-            if (this.previousResults == null) {
-                this.previousResults = new ArrayList<>();
-            }
             for (EvaluationResult evaluationResult : previousResults) {
-                this.previousResults.add(evaluationResult);
+                append(evaluationResult);
             }
             return this;
         }
 
+        private void append(EvaluationResult evaluationResult) {
+            if (!evaluationResult.modifications.isEmpty()) {
+                if (modifications == null) {
+                    modifications = new LinkedList<>(evaluationResult.modifications);
+                } else modifications.addAll(evaluationResult.modifications);
+            }
+            if (!evaluationResult.objectFlows.isEmpty()) {
+                if (objectFlows == null) objectFlows = new LinkedList<>(evaluationResult.objectFlows);
+                else objectFlows.addAll(evaluationResult.objectFlows);
+            }
+            if (!evaluationResult.stateChanges.isEmpty()) {
+                if (stateChanges == null) stateChanges = new LinkedList<>(evaluationResult.stateChanges);
+                else stateChanges.addAll(evaluationResult.stateChanges);
+            }
+            if (value == null && evaluationResult.value != null) {
+                value = evaluationResult.value;
+            }
+        }
 
         // for those rare occasions where the result of the expression is different from
         // the value returned
@@ -130,6 +143,7 @@ public class EvaluationResult {
 
         // also sets result of expression
         public Builder setValue(Value value) {
+            Objects.requireNonNull(value);
             this.value = value;
             return this;
         }
@@ -139,22 +153,8 @@ public class EvaluationResult {
         }
 
         public EvaluationResult build() {
-            Value firstNonNull = value != null || previousResults == null ? value : previousResults.stream()
-                    .map(er -> er.value)
-                    .filter(Objects::nonNull)
-                    .findFirst().orElse(null);
-            Stream<StatementAnalysis.StatementAnalysisModification> modificationStream = modifications == null ? Stream.empty() : modifications.stream();
-            Stream<StatementAnalysis.StateChange> stateChangeStream = stateChanges == null ? Stream.empty() : stateChanges.stream();
-            Stream<ObjectFlow> objectFlowStream = objectFlows == null ? Stream.empty() : objectFlows.stream();
-            if (previousResults != null) {
-                for (EvaluationResult evaluationResult : previousResults) {
-                    modificationStream = Stream.concat(evaluationResult.getModificationStream(), modificationStream);
-                    stateChangeStream = Stream.concat(evaluationResult.getStateChangeStream(), stateChangeStream);
-                    objectFlowStream = Stream.concat(evaluationResult.getObjectFlowStream(), objectFlowStream);
-                }
-            }
-
-            return new EvaluationResult(firstNonNull, modificationStream, stateChangeStream, objectFlowStream);
+            return new EvaluationResult(value, modifications == null ? List.of() : modifications,
+                    stateChanges == null ? List.of() : stateChanges, objectFlows == null ? List.of() : objectFlows);
         }
 
         public void variableOccursInNotNullContext(Variable variable, Value value, int notNullRequired) {
@@ -260,7 +260,9 @@ public class EvaluationResult {
         }
 
         public void markSizeRestriction(Variable variable, int size) {
-            add(statementAnalyser.new SetProperty(variable, VariableProperty.SIZE, size));
+            if (size != Level.DELAY) {
+                add(statementAnalyser.new SetProperty(variable, VariableProperty.SIZE, size));
+            }
         }
 
         public void markContentModified(Variable variable, int modified) {

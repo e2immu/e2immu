@@ -211,7 +211,7 @@ public class Assignment implements Expression {
 
         // connect the value to the assignment target
         if (resultOfExpression != NO_VALUE) {
-            Set<Variable> linked = resultOfExpression.linkedVariables(evaluationContext);
+            Set<Variable> linked = evaluationContext.linkedVariables(resultOfExpression);
             log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.detailedString(),
                     Variable.detailedString(linked), Variable.detailedString(linked));
             builder.linkVariables(at, linked);

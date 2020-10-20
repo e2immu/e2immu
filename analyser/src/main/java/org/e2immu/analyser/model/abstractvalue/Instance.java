@@ -114,7 +114,7 @@ public class Instance implements Value {
         // default case
         Set<Variable> result = new HashSet<>();
         for (Value value : constructorParameterValues) {
-            Set<Variable> sub = value.linkedVariables(evaluationContext);
+            Set<Variable> sub = evaluationContext.linkedVariables(value);
             if (sub == null) return null; // DELAY
             result.addAll(sub);
         }

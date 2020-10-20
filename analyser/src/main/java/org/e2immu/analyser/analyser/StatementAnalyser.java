@@ -555,7 +555,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return;
         }
 
-        Set<Variable> vars = value.linkedVariables(evaluationContext);
+        Set<Variable> vars = evaluationContext.linkedVariables(value);
         if (vars == null) {
             log(DELAYED, "Linked variables is delayed on transfer");
             analysisStatus = DELAYS;
@@ -928,6 +928,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
+        public Location getLocation(Expression expression) {
+            return new Location(myMethodAnalyser.methodInfo, statementAnalysis.index, expression);
+        }
+
+        @Override
         public EvaluationContext child(Value condition) {
             return new EvaluationContextImpl(iteration, conditionManager.addCondition(condition));
         }
@@ -1005,6 +1010,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
+        public int getProperty(Variable variable, VariableProperty variableProperty) {
+            Value currentValue = currentValue(variable);
+            if (currentValue instanceof VariableValue) {
+                return variableDataBuilder.find(variable).getProperty(variableProperty);
+            }
+            return currentValue.getPropertyOutsideContext(variableProperty);
+        }
+
+        @Override
         public AnalyserContext getAnalyserContext() {
             return analyserContext;
         }
@@ -1012,6 +1026,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         @Override
         public Stream<ObjectFlow> getInternalObjectFlows() {
             return null;
+        }
+
+        @Override
+        public Set<Variable> linkedVariables(Value value) {
+            if (value instanceof VariableValue variableValue) {
+                return variableDataBuilder.find(variableValue.variable).;
+            }
+            return value.linkedVariables(this);
         }
     }
 

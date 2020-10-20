@@ -127,10 +127,38 @@ public class VariableDataImpl implements VariableData {
 
         public void createLocalVariableOrParameter(AnalyserContext analyserContext, Variable variable) {
             if (variable instanceof LocalVariableReference || variable instanceof ParameterInfo || variable instanceof DependentVariable) {
-                internalCreate(analyserContext, variable, variable.name(), UnknownValue.NO_VALUE, UnknownValue.NO_VALUE, SINGLE_COPY);
+                ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
+                VariableValue variableValue = new VariableValue(variable, objectFlow);
+                internalCreate(analyserContext, variable, variable.name(), variableValue, variableValue, SINGLE_COPY);
             } else {
                 throw new UnsupportedOperationException("Not allowed to add This or FieldReference using this method");
             }
+        }
+
+        private ObjectFlow createObjectFlowForNewVariable(AnalyserContext analyserContext, Variable variable) {
+            if (variable instanceof ParameterInfo parameterInfo) {
+                ObjectFlow objectFlow = new ObjectFlow(new Location(parameterInfo),
+                        parameterInfo.parameterizedType, Origin.PARAMETER);
+                if (!internalObjectFlows.add(objectFlow))
+                    throw new UnsupportedOperationException("? should not yet be there: " + objectFlow + " vs " + internalObjectFlows);
+                return objectFlow;
+
+            }
+            if (variable instanceof FieldReference fieldReference) {
+                ObjectFlow fieldObjectFlow = new ObjectFlow(new Location(fieldReference.fieldInfo),
+                        fieldReference.parameterizedType(), Origin.FIELD_ACCESS);
+                ObjectFlow objectFlow;
+                if (internalObjectFlows.contains(fieldObjectFlow)) {
+                    objectFlow = internalObjectFlows.stream().filter(of -> of.equals(fieldObjectFlow)).findFirst().orElseThrow();
+                } else {
+                    objectFlow = fieldObjectFlow;
+                    internalObjectFlows.add(objectFlow);
+                }
+                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+                objectFlow.addPrevious(fieldAnalysis.getObjectFlow());
+                return objectFlow;
+            }
+            return ObjectFlow.NO_FLOW; // will be assigned to soon enough
         }
 
         private VariableInfoImpl.Builder internalCreate(
@@ -141,33 +169,10 @@ public class VariableDataImpl implements VariableData {
                 Value resetValue,
                 VariableInfo.FieldReferenceState fieldReferenceState) {
 
-            ObjectFlow objectFlow;
-            if (variable instanceof ParameterInfo parameterInfo) {
-                objectFlow = new ObjectFlow(new Location(parameterInfo),
-                        parameterInfo.parameterizedType, Origin.PARAMETER);
-                if (!internalObjectFlows.add(objectFlow))
-                    throw new UnsupportedOperationException("? should not yet be there: " + objectFlow + " vs " + internalObjectFlows);
-            } else if (variable instanceof FieldReference fieldReference) {
-                ObjectFlow fieldObjectFlow = new ObjectFlow(new Location(fieldReference.fieldInfo),
-                        fieldReference.parameterizedType(), Origin.FIELD_ACCESS);
-                if (internalObjectFlows.contains(fieldObjectFlow)) {
-                    objectFlow = internalObjectFlows.stream().filter(of -> of.equals(fieldObjectFlow)).findFirst().orElseThrow();
-                } else {
-                    objectFlow = fieldObjectFlow;
-                    internalObjectFlows.add(objectFlow);
-                }
-                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-                objectFlow.addPrevious(fieldAnalysis.getObjectFlow());
-            } else {
-                // local variable, field reference, this
-                // TODO we should have something for fields?
-                objectFlow = ObjectFlow.NO_FLOW; // will be assigned to soon enough
-            }
-
             VariableInfoImpl.Builder builder = new VariableInfoImpl.Builder(variable, Objects.requireNonNull(name), null,
                     Objects.requireNonNull(initialValue),
                     Objects.requireNonNull(resetValue),
-                    objectFlow,
+                    initialValue.getObjectFlow(),
                     Objects.requireNonNull(fieldReferenceState));
 
             // copy properties from the field into the variable properties

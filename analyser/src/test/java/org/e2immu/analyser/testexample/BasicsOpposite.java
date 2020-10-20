@@ -22,7 +22,7 @@ public class BasicsOpposite {
     }
 
     @Nullable(type = AnnotationType.VERIFY_ABSENT)
-    public void add(@Modified Collection<String> collection) {
+    public void add(@Modified @NotNull Collection<String> collection) {
         collection.add(string);
     }
 }

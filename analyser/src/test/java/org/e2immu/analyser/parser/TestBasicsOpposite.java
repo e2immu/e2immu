@@ -21,9 +21,12 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -32,18 +35,27 @@ import java.io.IOException;
 public class TestBasicsOpposite extends CommonTestRunner {
 
     public TestBasicsOpposite() {
-        super(false);
+        super(true);
     }
+
+    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        if ("string".equals(d.fieldInfo().name)) {
+            int expect = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+            Assert.assertEquals(expect, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+        }
+    };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("collection".equals(d.variableName) && "add".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties.get(VariableProperty.NOT_NULL));
+            Assert.assertTrue("Class is " + d.currentValue.getClass(), d.currentValue instanceof VariableValue);
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        if ("setString".equals(d.methodInfo().name)) {
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+        if ("getString".equals(d.methodInfo().name) && d.iteration() > 0) {
+            Assert.assertEquals(MultiLevel.NULLABLE, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
         }
     };
 
@@ -52,6 +64,7 @@ public class TestBasicsOpposite extends CommonTestRunner {
         testClass("BasicsOpposite", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

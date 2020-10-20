@@ -857,6 +857,11 @@ public class FieldAnalyser extends AbstractAnalyser {
             return new Location(fieldInfo);
         }
 
+        @Override
+        public Location getLocation(Expression expression) {
+            return new Location(fieldInfo, expression);
+        }
+
         // rest will be more or less the same as for Methods
 
         // used in short-circuiting, inline conditional, and lambda
@@ -874,11 +879,6 @@ public class FieldAnalyser extends AbstractAnalyser {
         @Override
         public int getProperty(Value value, VariableProperty variableProperty) {
             return value.getPropertyOutsideContext(variableProperty);
-        }
-
-        @Override
-        public int getProperty(Variable variable, VariableProperty variableProperty) {
-            return currentValue(variable).getPropertyOutsideContext(variableProperty);
         }
 
         @Override

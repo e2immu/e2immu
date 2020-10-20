@@ -116,8 +116,7 @@ public class VariableValue implements Value {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof VariableValue)) return false;
-        VariableValue that = (VariableValue) o;
+        if (!(o instanceof VariableValue that)) return false;
         if (!variable.equals(that.variable)) return false;
         return !variableField;
     }

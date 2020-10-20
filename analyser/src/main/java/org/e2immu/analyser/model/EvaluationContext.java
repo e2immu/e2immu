@@ -149,4 +149,8 @@ public interface EvaluationContext {
     default boolean isNotNull0(Value value) {
         return true;
     }
+
+    default Set<Variable> linkedVariables(Value value) {
+        return value.linkedVariables(this);
+    }
 }

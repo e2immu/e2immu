@@ -74,7 +74,7 @@ public class CombinedValue implements Value {
     public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
         Set<Variable> result = new HashSet<>();
         for (Value value : values) {
-            Set<Variable> sub = value.linkedVariables(evaluationContext);
+            Set<Variable> sub = evaluationContext.linkedVariables(value);
             if (sub == null) return null; // DELAY
             result.addAll(sub);
         }
