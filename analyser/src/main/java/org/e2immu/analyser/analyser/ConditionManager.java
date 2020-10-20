@@ -18,6 +18,10 @@ public class ConditionManager {
     public final Value condition;
     public final Value state;
 
+    public ConditionManager() {
+        this(UnknownValue.EMPTY, UnknownValue.EMPTY);
+    }
+
     public ConditionManager(Value condition, Value state) {
         this.condition = Objects.requireNonNull(condition);
         this.state = Objects.requireNonNull(state);

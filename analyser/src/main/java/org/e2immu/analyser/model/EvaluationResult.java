@@ -294,7 +294,8 @@ public class EvaluationResult {
             add(statementAnalyser.new LinkVariable(at, linked));
         }
 
-        public void assignmentBasics(Variable at, Value resultOfExpression, boolean b) {
+        public void assignmentBasics(Variable at, Value resultOfExpression, boolean assignmentToNonEmptyExpression) {
+            add(statementAnalyser.new Assignment(at, resultOfExpression, assignmentToNonEmptyExpression, evaluationContext));
         }
 
         public void merge(EvaluationContext copyForThen) {

@@ -85,11 +85,11 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .add("evaluateInitialiser", this::evaluateInitialiser)
                 .add("analyseFinal", (iteration) -> analyseFinal())
                 .add("analyseFinalValue", (iteration) -> analyseFinalValue())
-                .add("analyseDynamicTypeAnnotation:IMMUTABLE", (iteration) -> analyseDynamicTypeAnnotation(VariableProperty.IMMUTABLE))
-                .add("analyseNotNull", (iteration) -> analyseNotNull())
+                .add("analyseDynamicTypeAnnotation:IMMUTABLE", (iteration) -> analyseDynamicTypeAnnotation(iteration, VariableProperty.IMMUTABLE))
+                .add("analyseNotNull", this::analyseNotNull)
                 .add("analyseModified", (iteration) -> analyseModified())
-                .add("analyseSize", (iteration) -> analyseSize())
-                .add("analyseSizeAsDynamicTypeAnnotation", (iteration) -> analyseSizeAsDynamicTypeAnnotation())
+                .add("analyseSize", this::analyseSize)
+                .add("analyseSizeAsDynamicTypeAnnotation", this::analyseSizeAsDynamicTypeAnnotation)
                 .add("analyseNotModified1", (iteration) -> analyseNotModified1())
                 .add("analyseLinked", (iteration) -> analyseLinked())
                 .add("fieldErrors", (iteration) -> fieldErrors())
@@ -188,11 +188,11 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
 
-    private AnalysisStatus analyseSizeAsDynamicTypeAnnotation() {
+    private AnalysisStatus analyseSizeAsDynamicTypeAnnotation(int iteration) {
         int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
         if (modified == Level.DELAY) return DELAYS;
         if (modified == Level.FALSE)
-            return analyseDynamicTypeAnnotation(VariableProperty.SIZE);
+            return analyseDynamicTypeAnnotation(iteration, VariableProperty.SIZE);
         return DONE; // not for me
     }
 
@@ -224,7 +224,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     // TODO SIZE = min over assignments IF the field is not modified + not exposed or e2immu + max over restrictions + max of these two
 
-    private AnalysisStatus analyseSize() {
+    private AnalysisStatus analyseSize(int iteration) {
         assert fieldAnalysis.getProperty(VariableProperty.SIZE) == Level.DELAY;
 
         if (!fieldInfo.type.hasSize()) {
@@ -266,7 +266,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         boolean allDelaysResolved = delaysOnFieldSummariesResolved();
 
-        int valueFromAssignment = computeValueFromAssignment(VariableProperty.SIZE, allDelaysResolved);
+        int valueFromAssignment = computeValueFromAssignment(iteration, VariableProperty.SIZE, allDelaysResolved);
         if (valueFromAssignment == Level.DELAY) {
             log(DELAYED, "Delaying property @NotNull on field {}, initialiser delayed", fieldInfo.fullyQualifiedName());
             return DELAYS;
@@ -288,7 +288,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private AnalysisStatus analyseNotNull() {
+    private AnalysisStatus analyseNotNull(int iteration) {
         assert fieldAnalysis.getProperty(VariableProperty.NOT_NULL) <= MultiLevel.DELAY;
 
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
@@ -308,7 +308,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         boolean allDelaysResolved = delaysOnFieldSummariesResolved();
 
-        int valueFromAssignment = computeValueFromAssignment(VariableProperty.NOT_NULL, allDelaysResolved);
+        int valueFromAssignment = computeValueFromAssignment(iteration, VariableProperty.NOT_NULL, allDelaysResolved);
         if (valueFromAssignment == Level.DELAY) {
             log(DELAYED, "Delaying property @NotNull on field {}, initialiser delayed", fieldInfo.fullyQualifiedName());
             return DELAYS;
@@ -416,7 +416,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private AnalysisStatus analyseDynamicTypeAnnotation(VariableProperty property) {
+    private AnalysisStatus analyseDynamicTypeAnnotation(int iteration, VariableProperty property) {
         if (fieldInfo.type.isFunctionalInterface()) return DONE; // not for me
         // not an assert, because the value is not directly determined by the actual property
         if (fieldAnalysis.getProperty(property) != Level.DELAY) return DONE;
@@ -438,7 +438,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         boolean allDelaysResolved = delaysOnFieldSummariesResolved();
 
         // compute the value of the assignments
-        int valueFromAssignment = computeValueFromAssignment(property, allDelaysResolved);
+        int valueFromAssignment = computeValueFromAssignment(iteration, property, allDelaysResolved);
         if (valueFromAssignment == Level.DELAY) {
             log(DELAYED, "Delaying property {} on field {}, initialiser delayed", property, fieldInfo.fullyQualifiedName());
             return DELAYS; // delay
@@ -482,20 +482,21 @@ public class FieldAnalyser extends AbstractAnalyser {
         return result;
     }
 
-    private int computeValueFromAssignment(VariableProperty property, boolean allDelaysResolved) {
+    private int computeValueFromAssignment(int iteration, VariableProperty property, boolean allDelaysResolved) {
         // we can make this very efficient with streams, but it becomes pretty hard to debug
         List<Integer> values = new ArrayList<>();
+        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, new ConditionManager());
         allMethodsAndConstructors.forEach(m -> {
             if (m.methodLevelData().fieldSummaries.isSet(fieldInfo)) {
                 TransferValue tv = m.methodLevelData().fieldSummaries.get(fieldInfo);
                 if (tv.value.isSet()) {
-                    int v = tv.value.get().getPropertyOutsideContext(property);
+                    int v = evaluationContext.getProperty(tv.value.get(), property);
                     values.add(v);
                 }
             }
         });
         if (haveInitialiser) {
-            int v = initialiserValue.getPropertyOutsideContext(property);
+            int v = evaluationContext.getProperty(initialiserValue, property);
             values.add(v);
         }
         int result = property == VariableProperty.SIZE ? MethodAnalyser.safeMinimumForSize(messages,
@@ -663,16 +664,16 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         if (fieldSummariesNotYetSet) return DELAYS;
 
-        int isAssignedOutsideConstructors = allMethodsAndConstructors.stream()
-                .filter(m -> !m.methodInfo.isPrivate() || m.methodInfo.isCalledFromNonPrivateMethod())
-                .filter(m -> m.methodLevelData().fieldSummaries.isSet(fieldInfo))
-                .mapToInt(m -> m.methodLevelData().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.ASSIGNED))
-                .max().orElse(Level.DELAY);
         boolean isFinal;
         if (fieldCanBeWrittenFromOutsideThisType) {
             // this means other types can write to the field... not final by definition
             isFinal = false;
         } else {
+            int isAssignedOutsideConstructors = allMethodsAndConstructors.stream()
+                    .filter(m -> !m.methodInfo.isPrivate() || m.methodInfo.isCalledFromNonPrivateMethod())
+                    .filter(m -> m.methodLevelData().fieldSummaries.isSet(fieldInfo))
+                    .mapToInt(m -> m.methodLevelData().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.ASSIGNED))
+                    .max().orElse(Level.DELAY);
             isFinal = isAssignedOutsideConstructors < Level.TRUE;
         }
         fieldAnalysis.setProperty(VariableProperty.FINAL, isFinal);
@@ -878,6 +879,15 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         @Override
         public int getProperty(Value value, VariableProperty variableProperty) {
+            if (value instanceof VariableValue variableValue) {
+                if (variableValue.variable instanceof FieldReference fieldReference) {
+                    return getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
+                }
+                if (variableValue.variable instanceof This thisVariable) {
+                    return getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
+                }
+                throw new UnsupportedOperationException("?? variable of " + variableValue.variable.getClass());
+            }
             return value.getPropertyOutsideContext(variableProperty);
         }
 

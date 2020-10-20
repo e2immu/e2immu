@@ -98,9 +98,11 @@ public class Instance implements Value {
         // RULE 2, 3
         boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType().typeInfo;
         if (notSelf) {
-            int immutable = constructor.typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
-            int independent = constructor.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
-            int typeIndependent = constructor.typeInfo.typeAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
+            TypeAnalysis typeAnalysisOfConstructor = evaluationContext.getTypeAnalysis(constructor.typeInfo);
+            int immutable = typeAnalysisOfConstructor.getProperty(VariableProperty.IMMUTABLE);
+            int typeIndependent = typeAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
+            MethodAnalysis methodAnalysisOfConstructor = evaluationContext.getMethodAnalysis(constructor);
+            int independent = methodAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
 
             if (MultiLevel.isE2Immutable(immutable) || independent == MultiLevel.EFFECTIVE
                     || typeIndependent == MultiLevel.EFFECTIVE) { // RULE 3

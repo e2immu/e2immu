@@ -557,6 +557,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         if (!methodAnalysis.isSet()) {
             List<ParameterAnalysis> parameterAnalyses = methodInspection.get().parameters.stream()
                     .map(parameterInfo -> parameterInfo.parameterAnalysis.get()).collect(Collectors.toList());
+            assert !typeInfo.hasBeenDefined();
             MethodAnalysis methodAnalysis = new MethodAnalysis(this, typeInfo.typeAnalysis.get(), parameterAnalyses, null);
             this.methodAnalysis.set(methodAnalysis);
         }

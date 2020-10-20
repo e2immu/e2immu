@@ -77,7 +77,10 @@ public class MethodAnalysis extends Analysis {
     public final SetOnce<Value> precondition = new SetOnce<>();
 
 
-    public MethodAnalysis(MethodInfo methodInfo, TypeAnalysis typeAnalysis, List<ParameterAnalysis> parameterAnalyses, StatementAnalyser firstStatementAnalyser) {
+    public MethodAnalysis(MethodInfo methodInfo,
+                          TypeAnalysis typeAnalysis,
+                          List<ParameterAnalysis> parameterAnalyses,
+                          StatementAnalyser firstStatementAnalyser) {
         super(methodInfo.hasBeenDefined(), methodInfo.name);
         this.parameterAnalyses = parameterAnalyses;
         this.methodInfo = methodInfo;

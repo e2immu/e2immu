@@ -1031,7 +1031,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         @Override
         public Set<Variable> linkedVariables(Value value) {
             if (value instanceof VariableValue variableValue) {
-                return variableDataBuilder.find(variableValue.variable).;
+                TypeInfo typeInfo = variableValue.variable.parameterizedType().bestTypeInfo();
+                boolean notSelf = typeInfo != getCurrentType().typeInfo;
+                if (notSelf) {
+                    VariableInfo variableInfo = variableDataBuilder.find(variableValue.variable);
+                    int immutable = variableInfo.getProperty(VariableProperty.IMMUTABLE);
+                    if (immutable == MultiLevel.DELAY) return null;
+                    if (MultiLevel.isE2Immutable(immutable)) return Set.of();
+                }
+                return Set.of(variableValue.variable);
             }
             return value.linkedVariables(this);
         }
@@ -1156,6 +1164,25 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         @Override
         public void run() {
 
+        }
+    }
+
+    public class Assignment implements StatementAnalysis.StatementAnalysisModification {
+        private final Variable assignmentTarget;
+        private final Value value;
+        private final boolean assignedNonEmptyValue;
+        private final EvaluationContext evaluationContext;
+
+        public Assignment(Variable assignmentTarget, Value value, boolean assignedNonEmptyValue, EvaluationContext evaluationContext) {
+            this.assignedNonEmptyValue = assignedNonEmptyValue;
+            this.value = value;
+            this.assignmentTarget = assignmentTarget;
+            this.evaluationContext = evaluationContext;
+        }
+
+        @Override
+        public void run() {
+            variableDataBuilder.assignmentBasics(assignmentTarget, value, assignedNonEmptyValue, evaluationContext);
         }
     }
 }

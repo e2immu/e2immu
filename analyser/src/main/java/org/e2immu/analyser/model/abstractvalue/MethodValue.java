@@ -203,10 +203,12 @@ public class MethodValue implements Value {
         ParameterizedType returnType = methodInfo.returnType();
         if (returnType.isVoid()) return NOT_LINKED; // no assignment
 
+        MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+
         // RULE 1: if the return type is E2IMMU, then no links at all
         boolean notSelf = returnType.typeInfo != evaluationContext.getCurrentType().typeInfo;
         if (notSelf) {
-            int immutable = MultiLevel.value(methodInfo.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
+            int immutable = MultiLevel.value(methodAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
             if (immutable == MultiLevel.DELAY) return null;
             if (immutable >= MultiLevel.EVENTUAL) {
                 return NOT_LINKED;
@@ -226,7 +228,7 @@ public class MethodValue implements Value {
         // RULE 3: E2IMMU object cannot link
         // RULE 4: independent method: no link to object
 
-        int independent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
+        int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
         int objectE2Immutable = MultiLevel.value(object.getProperty(evaluationContext, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
         if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY) return null;
         boolean objectOfSameType = methodInfo.typeInfo == evaluationContext.getCurrentType().typeInfo;

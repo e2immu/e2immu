@@ -152,7 +152,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // process parameters
-        int notModified1Scope = objectValue.getProperty(evaluationContext, VariableProperty.NOT_MODIFIED_1);
+        int notModified1Scope = evaluationContext.getProperty(objectValue, VariableProperty.NOT_MODIFIED_1);
         Pair<EvaluationResult.Builder, List<Value>> res = EvaluateParameters.transform(parameterExpressions, evaluationContext, methodInfo, notModified1Scope, objectValue);
         List<Value> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
@@ -257,7 +257,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(method);
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
-        int immutable = objectValue.getProperty(evaluationContext, VariableProperty.IMMUTABLE);
+        int immutable = evaluationContext.getProperty(objectValue, VariableProperty.IMMUTABLE);
         if (modified == Level.TRUE && immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
             builder.raiseError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU,
                     "Method: " + methodInfo.distinguishingName() + ", Type: " + objectValue.type());
@@ -314,7 +314,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return builder.compose(reInline).setValue(reInline.value).build();
         }
 
-        if (methodAnalysis.methodLevelData().singleReturnValue.isSet()) {
+        if (methodAnalysis.hasBeenDefined && methodAnalysis.methodLevelData().singleReturnValue.isSet()) {
             // if this method was identity?
             Value srv = methodAnalysis.methodLevelData().singleReturnValue.get();
             if (srv.isInstanceOf(InlineValue.class)) {

@@ -533,7 +533,6 @@ public class VariableDataImpl implements VariableData {
             return master;
         }
 
-        // TODO conditionManager
         public ConditionManager assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression, EvaluationContext evaluationContext) {
             // assignment to local variable: could be that we're in the block where it was created, then nothing happens
             // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)

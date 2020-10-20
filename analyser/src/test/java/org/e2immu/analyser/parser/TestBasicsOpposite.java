@@ -19,11 +19,13 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
@@ -51,11 +53,19 @@ public class TestBasicsOpposite extends CommonTestRunner {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
         }
+        if ("org.e2immu.analyser.testexample.BasicsOpposite.string".equals(d.variableName) && "setString".equals(d.methodInfo.name)) {
+            Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+        }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("getString".equals(d.methodInfo().name) && d.iteration() > 0) {
             Assert.assertEquals(MultiLevel.NULLABLE, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+        }
+        if ("setString".equals(d.methodInfo().name)) {
+            MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
+            FieldInfo string = d.methodInfo().typeInfo.getFieldByName("string", true);
+            Assert.assertEquals(Level.TRUE, methodLevelData.fieldSummaries.get(string).getProperty(VariableProperty.ASSIGNED));
         }
     };
 
