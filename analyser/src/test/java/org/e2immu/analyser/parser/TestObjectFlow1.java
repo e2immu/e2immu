@@ -102,10 +102,10 @@ public class TestObjectFlow1 extends CommonTestRunner {
         }
     };
 
-    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
-        if ("ObjectFlow1".equals(typeInfo.simpleName)) {
-            Assert.assertEquals(1, typeInfo.typeAnalysis.get().constantObjectFlows.size());
-            ObjectFlow literal = typeInfo.typeAnalysis.get().constantObjectFlows.stream().findAny().orElseThrow();
+    TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+        if ("ObjectFlow1".equals(d.typeInfo().simpleName)) {
+            Assert.assertEquals(1, d.typeAnalysis().constantObjectFlows.size());
+            ObjectFlow literal = d.typeAnalysis().constantObjectFlows.stream().findAny().orElseThrow();
             Assert.assertSame(Primitives.PRIMITIVES.stringTypeInfo, literal.type.typeInfo);
             Assert.assertSame(Origin.LITERAL, literal.origin);
             Assert.assertEquals(1L, literal.getNonModifyingCallouts().count());

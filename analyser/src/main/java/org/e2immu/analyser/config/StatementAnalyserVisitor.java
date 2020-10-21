@@ -1,8 +1,11 @@
 package org.e2immu.analyser.config;
 
+import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.StatementAnalysis;
 import org.e2immu.analyser.model.Value;
+
+import java.util.Map;
 
 public interface StatementAnalyserVisitor {
 
@@ -13,14 +16,17 @@ public interface StatementAnalyserVisitor {
         public final String statementId;
         public final Value condition;
         public final Value state;
+        public final Map<String, AnalysisStatus> statusesAsMap;
 
-        public Data(int iteration, MethodInfo methodInfo, StatementAnalysis statementAnalysis, String statementId, Value condition, Value state) {
+        public Data(int iteration, MethodInfo methodInfo, StatementAnalysis statementAnalysis,
+                    String statementId, Value condition, Value state, Map<String, AnalysisStatus> statusesAsMap) {
             this.iteration = iteration;
             this.methodInfo = methodInfo;
             this.statementAnalysis = statementAnalysis;
             this.statementId = statementId;
             this.condition = condition;
             this.state = state;
+            this.statusesAsMap = statusesAsMap;
         }
     }
 

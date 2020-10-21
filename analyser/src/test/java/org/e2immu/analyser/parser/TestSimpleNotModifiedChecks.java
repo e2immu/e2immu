@@ -258,9 +258,9 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         Assert.assertEquals(Level.TRUE, hashSet.typeAnalysis.get().getProperty(VariableProperty.CONTAINER));
     };
 
-    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
-        if (iteration == 1 && "Example4".equals(typeInfo.simpleName)) {
-            int immutable = typeInfo.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+    TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+        if (d.iteration() == 1 && "Example4".equals(d.typeInfo().simpleName)) {
+            int immutable = d.typeAnalysis().getProperty(VariableProperty.IMMUTABLE);
             Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(immutable, MultiLevel.E1IMMUTABLE));
             Assert.assertEquals(MultiLevel.DELAY, MultiLevel.value(immutable, MultiLevel.E2IMMUTABLE));
         }

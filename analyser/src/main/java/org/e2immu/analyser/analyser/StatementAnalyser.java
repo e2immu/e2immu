@@ -371,7 +371,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                             statementAnalysis,
                             statementAnalysis.index,
                             statementAnalysis.stateData.conditionManager.get().condition,
-                            statementAnalysis.stateData.conditionManager.get().state));
+                            statementAnalysis.stateData.conditionManager.get().state,
+                            analyserComponents.getStatusesAsMap()));
         }
     }
 

@@ -217,7 +217,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(iteration);
             for (TypeAnalyserVisitor typeAnalyserVisitor : analyserContext.getConfiguration().debugConfiguration.afterTypePropertyComputations) {
-                typeAnalyserVisitor.visit(iteration, typeInfo);
+                typeAnalyserVisitor.visit(new TypeAnalyserVisitor.Data(iteration, typeInfo, typeAnalysis, analyserComponents.getStatusesAsMap()));
             }
 
             return analysisStatus;

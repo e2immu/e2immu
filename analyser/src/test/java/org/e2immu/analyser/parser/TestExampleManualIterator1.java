@@ -43,7 +43,8 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         }
     };
 
-    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
+    TypeAnalyserVisitor typeAnalyserVisitor =d  -> {
+        TypeInfo typeInfo = d.typeInfo();
         if ("MyConsumer".equals(typeInfo.simpleName)) {
             MethodInfo accept = typeInfo.findUniqueMethod("accept", 1);
             ParameterInfo param0 = accept.methodInspection.get().parameters.get(0);
@@ -55,16 +56,16 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
             // Assert.assertEquals(Level.TRUE, hasNext.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
         if ("ExampleManualIterator1".equals(typeInfo.simpleName)) {
-            Assert.assertEquals("E", typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get()
+            Assert.assertEquals("E", d.typeAnalysis().implicitlyImmutableDataTypes.get()
                     .stream().map(ParameterizedType::detailedString).sorted().collect(Collectors.joining(";")));
         }
         if ("MyIteratorImpl".equals(typeInfo.simpleName)) {
-            int container = typeInfo.typeAnalysis.get().getProperty(VariableProperty.CONTAINER);
-            int expectContainer = iteration < 2 ? Level.DELAY : Level.TRUE;
+            int container = d.typeAnalysis().getProperty(VariableProperty.CONTAINER);
+            int expectContainer = d.iteration() < 2 ? Level.DELAY : Level.TRUE;
             Assert.assertEquals(expectContainer, container);
 
-            int independent = typeInfo.typeAnalysis.get().getProperty(VariableProperty.INDEPENDENT);
-            int expectIndependent = iteration < 2 ? Level.DELAY : Level.TRUE;
+            int independent = d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT);
+            int expectIndependent = d.iteration() < 2 ? Level.DELAY : Level.TRUE;
             Assert.assertEquals(expectIndependent, independent);
         }
     };

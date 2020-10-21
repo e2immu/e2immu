@@ -235,7 +235,8 @@ public class MethodAnalyser extends AbstractAnalyser {
 
             for (MethodAnalyserVisitor methodAnalyserVisitor : analyserContext.getConfiguration().
                     debugConfiguration.afterMethodAnalyserVisitors) {
-                methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration, methodInfo, methodAnalysis, parameterAnalyses));
+                methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration, methodInfo, methodAnalysis,
+                        parameterAnalyses, analyserComponents.getStatusesAsMap()));
             }
 
             return analysisStatus;
@@ -611,7 +612,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         // we can write size copy (if there is a modification that copies a map) or size equals, min if the modification is of that nature
         // the size copy will need to be written on the PARAMETER from which the copying has taken place
         //if (methodInfo.typeInfo.hasSize()) {
-         //   return sizeModifying(methodInfo, methodAnalysis); TODO
+        //   return sizeModifying(methodInfo, methodAnalysis); TODO
 
         //}
         return DONE;

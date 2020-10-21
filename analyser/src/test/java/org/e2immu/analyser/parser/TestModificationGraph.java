@@ -64,13 +64,13 @@ public class TestModificationGraph extends CommonTestRunner {
         }
     };
 
-    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
-        if ("C1".equals(typeInfo.simpleName)) {
-            Assert.assertEquals(2, typeInfo.typeResolution.get().circularDependencies.get().size());
+    TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+        if ("C1".equals(d.typeInfo().simpleName)) {
+            Assert.assertEquals(2, d.typeInfo().typeResolution.get().circularDependencies.get().size());
         }
-        if ("C2".equals(typeInfo.simpleName)) {
-            Assert.assertEquals(2, typeInfo.typeResolution.get().circularDependencies.get().size());
-            Assert.assertEquals("[]", typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().toString());
+        if ("C2".equals(d.typeInfo().simpleName)) {
+            Assert.assertEquals(2, d.typeInfo().typeResolution.get().circularDependencies.get().size());
+            Assert.assertEquals("[]", d.typeAnalysis().implicitlyImmutableDataTypes.get().toString());
         }
     };
 

@@ -51,6 +51,20 @@ import static org.e2immu.analyser.util.Logger.log;
 public class FieldAnalyser extends AbstractAnalyser {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(FieldAnalyser.class);
 
+    // analyser components, constants are used in tests
+    public static final String COMPUTE_IMPLICITLY_IMMUTABLE_DATA_TYPE = "computeImplicitlyImmutableDataType";
+    public static final String EVALUATE_INITIALISER = "evaluateInitialiser";
+    public static final String ANALYSE_FINAL = "analyseFinal";
+    public static final String ANALYSE_FINAL_VALUE = "analyseFinalValue";
+    public static final String ANALYSE_DYNAMIC_TYPE_ANNOTATION_IMMUTABLE = "analyseDynamicTypeAnnotation:IMMUTABLE";
+    public static final String ANALYSE_NOT_NULL = "analyseNotNull";
+    public static final String ANALYSE_MODIFIED = "analyseModified";
+    public static final String ANALYSE_SIZE = "analyseSize";
+    public static final String ANALYSE_SIZE_AS_DYNAMIC_TYPE_ANNOTATION = "analyseSizeAsDynamicTypeAnnotation";
+    public static final String ANALYSE_NOT_MODIFIED_1 = "analyseNotModified1";
+    public static final String ANALYSE_LINKED = "analyseLinked";
+    public static final String FIELD_ERRORS = "fieldErrors";
+
     public final TypeInfo primaryType;
     public final FieldInfo fieldInfo;
     public final FieldInspection fieldInspection;
@@ -81,18 +95,18 @@ public class FieldAnalyser extends AbstractAnalyser {
         haveInitialiser = fieldInspection.initialiser.isSet() && fieldInspection.initialiser.get().initialiser != EmptyExpression.EMPTY_EXPRESSION;
 
         analyserComponents = new AnalyserComponents.Builder<String, Integer>()
-                .add("computeImplicitlyImmutableDataType", (iteration) -> computeImplicitlyImmutableDataType())
-                .add("evaluateInitialiser", this::evaluateInitialiser)
-                .add("analyseFinal", (iteration) -> analyseFinal())
-                .add("analyseFinalValue", (iteration) -> analyseFinalValue())
-                .add("analyseDynamicTypeAnnotation:IMMUTABLE", (iteration) -> analyseDynamicTypeAnnotation(iteration, VariableProperty.IMMUTABLE))
-                .add("analyseNotNull", this::analyseNotNull)
-                .add("analyseModified", (iteration) -> analyseModified())
-                .add("analyseSize", this::analyseSize)
-                .add("analyseSizeAsDynamicTypeAnnotation", this::analyseSizeAsDynamicTypeAnnotation)
-                .add("analyseNotModified1", (iteration) -> analyseNotModified1())
-                .add("analyseLinked", (iteration) -> analyseLinked())
-                .add("fieldErrors", (iteration) -> fieldErrors())
+                .add(COMPUTE_IMPLICITLY_IMMUTABLE_DATA_TYPE, (iteration) -> computeImplicitlyImmutableDataType())
+                .add(EVALUATE_INITIALISER, this::evaluateInitialiser)
+                .add(ANALYSE_FINAL, (iteration) -> analyseFinal())
+                .add(ANALYSE_FINAL_VALUE, (iteration) -> analyseFinalValue())
+                .add(ANALYSE_DYNAMIC_TYPE_ANNOTATION_IMMUTABLE, (iteration) -> analyseDynamicTypeAnnotation(iteration, VariableProperty.IMMUTABLE))
+                .add(ANALYSE_NOT_NULL, this::analyseNotNull)
+                .add(ANALYSE_MODIFIED, (iteration) -> analyseModified())
+                .add(ANALYSE_SIZE, this::analyseSize)
+                .add(ANALYSE_SIZE_AS_DYNAMIC_TYPE_ANNOTATION, this::analyseSizeAsDynamicTypeAnnotation)
+                .add(ANALYSE_NOT_MODIFIED_1, (iteration) -> analyseNotModified1())
+                .add(ANALYSE_LINKED, (iteration) -> analyseLinked())
+                .add(FIELD_ERRORS, (iteration) -> fieldErrors())
                 .build();
     }
 
@@ -137,7 +151,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             AnalysisStatus analysisStatus = analyserComponents.run(iteration);
 
             for (FieldAnalyserVisitor fieldAnalyserVisitor : analyserContext.getConfiguration().debugConfiguration.afterFieldAnalyserVisitors) {
-                fieldAnalyserVisitor.visit(new FieldAnalyserVisitor.Data(iteration, fieldInfo, fieldAnalysis));
+                fieldAnalyserVisitor.visit(new FieldAnalyserVisitor.Data(iteration, fieldInfo, fieldAnalysis, analyserComponents.getStatusesAsMap()));
             }
 
             return analysisStatus;

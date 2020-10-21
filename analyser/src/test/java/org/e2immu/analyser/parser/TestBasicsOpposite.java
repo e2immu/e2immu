@@ -19,6 +19,8 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.FieldAnalyser;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -30,6 +32,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
 
 public class TestBasicsOpposite extends CommonTestRunner {
 
@@ -41,11 +45,20 @@ public class TestBasicsOpposite extends CommonTestRunner {
     }
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+        if (d.iteration() == 0) {
+            Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(FieldAnalyser.ANALYSE_SIZE,
+                    FieldAnalyser.ANALYSE_SIZE_AS_DYNAMIC_TYPE_ANNOTATION, FieldAnalyser.ANALYSE_NOT_MODIFIED_1));
+            assertSubMap(expect, d.statuses());
+        }
         if ("string".equals(d.fieldInfo().name)) {
             int expect = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expect, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
         }
     };
+
+    protected void assertSubMap(Map<AnalysisStatus, Set<String>> expect, Map<String, AnalysisStatus> statuses) {
+        expect.forEach((as, set) -> set.forEach(label -> Assert.assertEquals(as, statuses.get(label))));
+    }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("collection".equals(d.variableName) && "add".equals(d.methodInfo.name) && "0".equals(d.statementId)) {

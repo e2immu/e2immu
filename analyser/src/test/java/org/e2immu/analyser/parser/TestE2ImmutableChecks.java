@@ -153,24 +153,24 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, addAllP0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
     };
 
-    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
-        if ("E2Container5".equals(typeInfo.simpleName)) {
-            Assert.assertEquals("T", typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get()
+    TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+        if ("E2Container5".equals(d.typeInfo().simpleName)) {
+            Assert.assertEquals("T", d.typeAnalysis().implicitlyImmutableDataTypes.get()
                     .stream().findFirst().orElseThrow().detailedString());
-        } else if ("E2Container6".equals(typeInfo.simpleName)) {
+        } else if ("E2Container6".equals(d.typeInfo().simpleName)) {
             Assert.assertEquals("org.e2immu.analyser.testexample.E2ImmutableChecks.SimpleContainer",
-                    typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get()
+                    d.typeAnalysis().implicitlyImmutableDataTypes.get()
                             .stream().findFirst().orElseThrow().detailedString());
 
-        } else if ("E1Container7".equals(typeInfo.simpleName)) {
-            Assert.assertEquals(0, typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().size());
+        } else if ("E1Container7".equals(d.typeInfo().simpleName)) {
+            Assert.assertEquals(0, d.typeAnalysis().implicitlyImmutableDataTypes.get().size());
 
-            if (iteration > 2) {
-                Assert.assertEquals(MultiLevel.EFFECTIVE, typeInfo.typeAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
+            if (d.iteration() > 2) {
+                Assert.assertEquals(MultiLevel.EFFECTIVE, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
             }
 
             // a bit of inspection check... was a temporary bug during a refactoring.
-            MethodInfo getMap7 = typeInfo.findUniqueMethod("getMap7", 0);
+            MethodInfo getMap7 = d.typeInfo().findUniqueMethod("getMap7", 0);
             Block block = getMap7.methodInspection.get().methodBody.get();
             Assert.assertEquals(3, block.structure.statements.size());
             Statement statement1 = block.structure.statements.get(0);
@@ -179,7 +179,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
             Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, statement1.getStructure().expression);
             Assert.assertEquals("Map<String, SimpleContainer> incremented = new HashMap(map7);\n", statement1.statementString(0, null));
         } else {
-            Assert.assertEquals(0, typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().size());
+            Assert.assertEquals(0, d.typeAnalysis().implicitlyImmutableDataTypes.get().size());
         }
     };
 

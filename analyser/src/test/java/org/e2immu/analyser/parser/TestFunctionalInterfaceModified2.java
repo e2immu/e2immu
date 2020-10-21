@@ -37,9 +37,9 @@ public class TestFunctionalInterfaceModified2 extends CommonTestRunner {
         }
     };
 
-    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
-        if ("FunctionalInterfaceModified2".equals(typeInfo.name())) {
-            Assert.assertEquals("[]", typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().toString());
+    TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+        if ("FunctionalInterfaceModified2".equals(d.typeInfo().name())) {
+            Assert.assertEquals("[]", d.typeAnalysis().implicitlyImmutableDataTypes.get().toString());
         }
     };
 

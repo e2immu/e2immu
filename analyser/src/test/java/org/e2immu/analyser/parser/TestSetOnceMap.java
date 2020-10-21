@@ -105,14 +105,14 @@ public class TestSetOnceMap extends CommonTestRunner {
         }
     };
 
-    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
-        if ("SetOnceMap".equals(typeInfo.simpleName)) {
+    TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+        if ("SetOnceMap".equals(d.typeInfo().simpleName)) {
             Assert.assertEquals("K;V;java.util.Map.Entry<K, V>",
-                    typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get().stream().map(ParameterizedType::detailedString).sorted().collect(Collectors.joining(";")));
+                    d.typeAnalysis().implicitlyImmutableDataTypes.get().stream().map(ParameterizedType::detailedString).sorted().collect(Collectors.joining(";")));
 
-            if (iteration > 1) {
-                Assert.assertEquals(2, typeInfo.typeAnalysis.get().approvedPreconditions.size());
-                Assert.assertEquals("frozen,map", typeInfo.typeAnalysis.get().approvedPreconditions.stream().map(Map.Entry::getKey)
+            if (d.iteration() > 1) {
+                Assert.assertEquals(2, d.typeAnalysis().approvedPreconditions.size());
+                Assert.assertEquals("frozen,map", d.typeAnalysis().approvedPreconditions.stream().map(Map.Entry::getKey)
                         .sorted()
                         .collect(Collectors.joining(",")));
             }

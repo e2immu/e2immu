@@ -63,7 +63,8 @@ public class TestModifiedThis extends CommonTestRunner {
     };
 
 
-    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
+    TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+        TypeInfo typeInfo = d.typeInfo();
         if ("ParentClass".equals(typeInfo.simpleName)) {
             Assert.assertEquals("ModifiedThis", typeInfo.typeInspection.get().packageNameOrEnclosingType.getRight().simpleName);
         }

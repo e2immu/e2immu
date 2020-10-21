@@ -81,14 +81,14 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
         }
     };
 
-    TypeAnalyserVisitor typeAnalyserVisitor = (iteration, typeInfo) -> {
-        if (iteration > 0) {
-            Assert.assertEquals(1, typeInfo.typeAnalysis.get().approvedPreconditions.size());
-            Assert.assertEquals("j=(-this.j) >= 0", typeInfo.typeAnalysis.get().approvedPreconditions.stream()
+    TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+        if (d.iteration() > 0) {
+            Assert.assertEquals(1, d.typeAnalysis().approvedPreconditions.size());
+            Assert.assertEquals("j=(-this.j) >= 0", d.typeAnalysis().approvedPreconditions.stream()
                     .map(Object::toString)
                     .collect(Collectors.joining(";")));
         }
-        Set<ParameterizedType> implicitlyImmutable = typeInfo.typeAnalysis.get().implicitlyImmutableDataTypes.get();
+        Set<ParameterizedType> implicitlyImmutable = d.typeAnalysis().implicitlyImmutableDataTypes.get();
         Assert.assertTrue(implicitlyImmutable.isEmpty());
     };
 
