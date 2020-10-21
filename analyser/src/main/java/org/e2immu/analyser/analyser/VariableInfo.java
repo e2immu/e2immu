@@ -26,22 +26,20 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnce;
 
-import java.util.Map;
 import java.util.Objects;
 
 public class VariableInfo {
-    public final Value initialValue;
-    public final Value resetValue;
     public final VariableInfo localCopyOf; // can be null, when the variable is created/first used in this block
     public final Variable variable;
     public final String name;
 
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
 
-
-    private final SetOnce<Value> currentValue = new SetOnce<>();
-    private final SetOnce<Value> stateOnAssignment = new SetOnce<>(); // EMPTY when no info
-    private final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
+    public final SetOnce<Value> currentValue = new SetOnce<>();
+    public final SetOnce<Value> stateOnAssignment = new SetOnce<>(); // EMPTY when no info
+    public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
+    public final SetOnce<Value> initialValue = new SetOnce<>();
+    public final SetOnce<Value> resetValue = new SetOnce<>();
 
     public boolean isLocalCopy() {
         return localCopyOf != null;
@@ -59,16 +57,9 @@ public class VariableInfo {
         return objectFlow.getOrElse(ObjectFlow.NO_FLOW);
     }
 
-    public enum FieldReferenceState {
-        SINGLE_COPY,
-
-    }
-
-    public VariableInfo(Variable variable, VariableInfo localCopyOf, String name, Value initialValue, Value resetValue) {
-        this.initialValue = Objects.requireNonNull(initialValue);
+    public VariableInfo(Variable variable, VariableInfo localCopyOf, String name) {
         this.localCopyOf = localCopyOf;
         this.name = Objects.requireNonNull(name);
-        this.resetValue = Objects.requireNonNull(resetValue);
         this.variable = Objects.requireNonNull(variable);
     }
 
@@ -84,9 +75,12 @@ public class VariableInfo {
         return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 
-    public VariableInfo localCopy() {
-        VariableInfo variableInfo = new VariableInfo(variable, this, name, initialValue, resetValue);
+    // simply copy from the same level
+    public VariableInfo copy(boolean isLocalCopy) {
+        VariableInfo variableInfo = new VariableInfo(variable, isLocalCopy ? this: null, name);
         variableInfo.properties.putAll(properties);
+        variableInfo.initialValue.copy(initialValue);
+        variableInfo.resetValue.copy(resetValue);
         return variableInfo;
     }
 
@@ -123,7 +117,11 @@ public class VariableInfo {
         setProperty(VariableProperty.READ, val);
     }
 
-    public void removeAfterAssignment() {
+    public void remove() {
         properties.put(VariableProperty.REMOVED, Level.TRUE);
+    }
+
+    public void setObjectFlow(ObjectFlow objectFlow) {
+        this.objectFlow.set(objectFlow);
     }
 }

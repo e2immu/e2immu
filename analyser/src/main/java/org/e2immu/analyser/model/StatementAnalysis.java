@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.Structure;
+import org.e2immu.analyser.model.statement.SynchronizedStatement;
 import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -42,9 +43,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.VariableInfo.FieldReferenceState.*;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.analyser.VariableProperty.IDENTITY;
+import static org.e2immu.analyser.model.StatementAnalysis.FieldReferenceState.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
 import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
 import static org.e2immu.analyser.util.Logger.log;
@@ -55,6 +56,8 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
     public final Statement statement;
     public final String index;
     public final StatementAnalysis parent;
+    public final boolean inSyncBlock;
+    public final boolean inPartOfConstruction;
 
     public final ErrorFlags errorFlags = new ErrorFlags();
     public final NavigationData<StatementAnalysis> navigationData = new NavigationData<>();
@@ -68,11 +71,13 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
 
     public final SetOnce<Boolean> done = new SetOnce<>(); // if not done, there have been delays
 
-    public StatementAnalysis(Statement statement, StatementAnalysis parent, String index) {
+    public StatementAnalysis(Statement statement, StatementAnalysis parent, String index, boolean inSyncBlock, boolean inPartOfConstruction) {
         super(true, index);
         this.index = super.simpleName;
         this.statement = statement;
         this.parent = parent;
+        this.inSyncBlock = inSyncBlock;
+        this.inPartOfConstruction = inPartOfConstruction;
     }
 
     public String toString() {
@@ -140,14 +145,17 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
 
     @Override
     public BiFunction<List<Statement>, String, StatementAnalysis> generator(EvaluationContext evaluationContext) {
-        return (statements, startIndex) -> recursivelyCreateAnalysisObjects(parent(), statements, startIndex, false);
+        return (statements, startIndex) -> recursivelyCreateAnalysisObjects(parent(), statements, startIndex, false,
+                inSyncBlock, inPartOfConstruction);
     }
 
     public static StatementAnalysis recursivelyCreateAnalysisObjects(
             StatementAnalysis parent,
             List<Statement> statements,
             String indices,
-            boolean setNextAtEnd) {
+            boolean setNextAtEnd,
+            boolean inSyncBlock,
+            boolean inPartOfConstruction) {
         int statementIndex;
         if (setNextAtEnd) {
             statementIndex = 0;
@@ -160,7 +168,7 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
         StatementAnalysis previous = null;
         for (Statement statement : statements) {
             String iPlusSt = indices + "." + statementIndex;
-            StatementAnalysis statementAnalysis = new StatementAnalysis(statement, parent, iPlusSt);
+            StatementAnalysis statementAnalysis = new StatementAnalysis(statement, parent, iPlusSt, inSyncBlock, inPartOfConstruction);
             if (previous != null) {
                 previous.navigationData.next.set(Optional.of(statementAnalysis));
             }
@@ -170,15 +178,18 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
             int blockIndex = 0;
             List<StatementAnalysis> analysisBlocks = new ArrayList<>();
 
+            boolean newInSyncBlock = inSyncBlock || statement instanceof SynchronizedStatement;
             Structure structure = statement.getStructure();
             if (structure.haveStatements()) {
-                StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(parent, statements, iPlusSt + "." + blockIndex, true);
+                StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(parent, statements,
+                        iPlusSt + "." + blockIndex, true, newInSyncBlock, inPartOfConstruction);
                 analysisBlocks.add(subStatementAnalysis);
                 blockIndex++;
             }
             for (Structure subStatements : structure.subStatements) {
                 if (subStatements.haveStatements()) {
-                    StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(parent, statements, iPlusSt + "." + blockIndex, true);
+                    StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(parent, statements,
+                            iPlusSt + "." + blockIndex, true, newInSyncBlock, inPartOfConstruction);
                     analysisBlocks.add(subStatementAnalysis);
                     blockIndex++;
                 }
@@ -236,6 +247,55 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
 
     // ****************************************************************************************
 
+    public void initialise(AnalyserContext analyserContext,
+                           Collection<ParameterAnalyser> parameterAnalysers,
+                           StatementAnalysis previous) {
+        if (previous == null) {
+            if (parent == null) {
+                for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
+                    ensureLocalVariableOrParameter(analyserContext, parameterAnalyser.parameterInfo);
+                }
+            } else {
+                parent().variableStream().forEach(variableInfo -> {
+                    variables.put(variableInfo.name, variableInfo.copy(true));
+                });
+            }
+        } else {
+            previous.variableStream().forEach(variableInfo -> {
+                variables.put(variableInfo.name, variableInfo.copy(false));
+            });
+        }
+    }
+
+    // copy current value from previous one if there was no assignment
+    public void finalise(StatementAnalysis previous) {
+        StatementAnalysis copyValuesFrom;
+        if (previous == null) {
+            if (parent == null) {
+                return;
+            }
+            copyValuesFrom = parent;
+        } else {
+            copyValuesFrom = previous;
+        }
+        variableStream().forEach(variableInfo -> {
+            VariableInfo viPrevious = copyValuesFrom.find(variableInfo.name);
+            if (viPrevious != null) {
+                variableInfo.currentValue.copyIfNotSet(viPrevious.currentValue);
+                variableInfo.objectFlow.copyIfNotSet(viPrevious.objectFlow);
+                variableInfo.stateOnAssignment.copyIfNotSet(viPrevious.stateOnAssignment);
+                variableInfo.resetValue.copyIfNotSet(viPrevious.resetValue);
+                variableInfo.initialValue.copyIfNotSet(viPrevious.initialValue);
+            }
+        });
+    }
+
+    public enum FieldReferenceState {
+        SINGLE_COPY,
+        EFFECTIVELY_FINAL_DELAYED,
+        MULTI_COPY
+    }
+
     public void ensureLocalVariableOrParameter(AnalyserContext analyserContext, Variable variable) {
         if (find(variable) != null) return;
 
@@ -251,16 +311,15 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
     public VariableInfo ensureFieldReference(AnalyserContext analyserContext, FieldReference fieldReference, int effectivelyFinal) {
         String fqn = fieldReference.fullyQualifiedName();
         VariableInfo vi = find(fqn);
-        if (find(fqn) != null) return vi;
+        if (vi != null) return vi;
         Value resetValue;
-        VariableInfo.FieldReferenceState fieldReferenceState = singleCopy(effectivelyFinal);
+        FieldReferenceState fieldReferenceState = singleCopy(effectivelyFinal, inSyncBlock, inPartOfConstruction);
         if (fieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
             resetValue = UnknownValue.NO_VALUE; // delay
         } else if (fieldReferenceState == MULTI_COPY) {
             // TODO resetValue must become a map of properties
             resetValue = new VariableValue(fieldReference, fqn, ObjectFlow.NO_FLOW, true);
         } else {
-            // TODO different field analysis
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
             if (effectivelyFinal == Level.TRUE) {
                 if (fieldAnalysis.effectivelyFinalValue.isSet()) {
@@ -312,13 +371,16 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
             Value initialValue,
             Value resetValue) {
 
-        VariableInfo variableInfo = new VariableInfo(variable, null, name, initialValue, resetValue);
+        VariableInfo variableInfo = new VariableInfo(variable, null, name);
         variables.put(name, variableInfo);
+        if (initialValue != UnknownValue.NO_VALUE) variableInfo.initialValue.set(initialValue);
+        if (resetValue != UnknownValue.NO_VALUE) variableInfo.resetValue.set(resetValue);
 
         // copy properties from the field into the variable properties
         if (variable instanceof FieldReference) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-            if (!fieldInfo.hasBeenDefined() || variableInfo.resetValue.isInstanceOf(VariableValue.class)) {
+            if (!fieldInfo.hasBeenDefined() || variableInfo.resetValue.isSet() &&
+                    variableInfo.resetValue.get().isInstanceOf(VariableValue.class)) {
                 FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
                 for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
                     int value = fieldAnalysis.getProperty(variableProperty);
@@ -429,9 +491,9 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
     // the difference with resetToUnknownValue is 2-fold: we check properties, and we initialise record fields
     private void resetToNewInstance(VariableInfo aboutVariable, Instance instance, EvaluationContext evaluationContext) {
         // this breaks an infinite NO_VALUE cycle
-        if (aboutVariable.resetValue != UnknownValue.NO_VALUE) {
-            aboutVariable.setCurrentValue(aboutVariable.resetValue,
-                    stateOfValue(aboutVariable.variable, aboutVariable.resetValue, evaluationContext),
+        if (aboutVariable.resetValue.isSet()) {
+            aboutVariable.setCurrentValue(aboutVariable.resetValue.get(),
+                    stateOfValue(aboutVariable.variable, aboutVariable.resetValue.get(), evaluationContext),
                     instance.getObjectFlow());
         } else {
             aboutVariable.setCurrentValue(instance, UnknownValue.EMPTY, instance.getObjectFlow());
@@ -454,12 +516,12 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
 
     private void resetToInitialValues(VariableInfo aboutVariable, EvaluationContext evaluationContext) {
         Instance instance;
-        if ((instance = aboutVariable.initialValue.asInstanceOf(Instance.class)) != null) {
+        if (aboutVariable.initialValue.isSet() && (instance = aboutVariable.initialValue.get().asInstanceOf(Instance.class)) != null) {
             resetToNewInstance(aboutVariable, instance, evaluationContext);
         } else {
-            aboutVariable.setCurrentValue(aboutVariable.initialValue,
-                    stateOfValue(aboutVariable.variable, aboutVariable.initialValue, evaluationContext),
-                    aboutVariable.initialValue.getObjectFlow());
+            aboutVariable.setCurrentValue(aboutVariable.initialValue.get(),
+                    stateOfValue(aboutVariable.variable, aboutVariable.initialValue.get(), evaluationContext),
+                    aboutVariable.initialValue.get().getObjectFlow());
             if (isRecordType(aboutVariable.variable)) {
                 List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
                 for (String name : recordNames) {
@@ -471,8 +533,8 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
     }
 
     private void resetToUnknownValue(VariableInfo aboutVariable, EvaluationContext evaluationContext) {
-        aboutVariable.setCurrentValue(aboutVariable.resetValue,
-                stateOfValue(aboutVariable.variable, aboutVariable.resetValue, evaluationContext),
+        aboutVariable.setCurrentValue(aboutVariable.resetValue.get(),
+                stateOfValue(aboutVariable.variable, aboutVariable.resetValue.get(), evaluationContext),
                 ObjectFlow.NO_FLOW);
         if (isRecordType(aboutVariable.variable)) {
             List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
@@ -505,7 +567,7 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
     }
 
 
-    private VariableInfo.FieldReferenceState singleCopy(int effectivelyFinal) {
+    private FieldReferenceState singleCopy(int effectivelyFinal, boolean inSyncBlock, boolean inPartOfConstruction) {
         if (effectivelyFinal == Level.DELAY) return EFFECTIVELY_FINAL_DELAYED;
         boolean isEffectivelyFinal = effectivelyFinal == Level.TRUE;
         return isEffectivelyFinal || inSyncBlock || inPartOfConstruction ? SINGLE_COPY : MULTI_COPY;
@@ -544,8 +606,7 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
         String name = thisVariable.fullyQualifiedName();
         VariableInfo vi = find(name);
         if (vi != null) return vi;
-        return internalCreate(analyserContext,
-                thisVariable, name, UnknownValue.NO_VALUE, UnknownValue.NO_VALUE, VariableInfo.FieldReferenceState.SINGLE_COPY);
+        return internalCreate(analyserContext, thisVariable, name, UnknownValue.NO_VALUE, UnknownValue.NO_VALUE);
     }
 
     private VariableInfo findComplain(@NotNull Variable variable) {
@@ -563,7 +624,7 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
     }
 
     public VariableInfo find(String name) {
-        return variables.get(name);
+        return variables.getOrDefault(name, null);
     }
 
     public boolean isDelaysInDependencyGraph() {
@@ -571,27 +632,7 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
     }
 
     public void removeAllVariables(List<String> toRemove) {
-        variables.keySet().removeAll(toRemove);
-    }
-
-    public void initialise(AnalyserContext analyserContext,
-                           Collection<ParameterAnalyser> parameterAnalysers,
-                           StatementAnalysis previous,
-                           boolean startOfNewBlock) {
-        if (variableDataOfPrevious == null) {
-            for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
-                ensureLocalVariableOrParameter(analyserContext, parameterAnalyser.parameterInfo);
-            }
-            return;
-        }
-        for (VariableInfo variableInfo : previous.variableInfoObjects()) {
-            if (startOfNewBlock) {
-                VariableInfo localCopy = variableInfo.localCopy();
-                variables.put(localCopy.name, localCopy);
-            } else {
-                variables.put(variableInfo.name, new VariableInfo(variableInfo));
-            }
-        }
+        toRemove.forEach(name -> find(name).remove());
     }
 
     public int levelVariable(Variable assignmentTarget) {
@@ -620,30 +661,36 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
         VariableInfo master = findComplain(variable);
         if (!variables.isSet(master.name)) {
             // we'll make a local copy
-            VariableInfo copy = master.localCopy();
+            VariableInfo copy = master.copy(true);
             variables.put(copy.name, copy);
             return copy;
         }
         return master;
     }
 
-    public ConditionManager assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression, EvaluationContext evaluationContext) {
+    public ConditionManager assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression,
+                                             EvaluationContext evaluationContext) {
         // assignment to local variable: could be that we're in the block where it was created, then nothing happens
         // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)
         VariableInfo aboutVariable = ensureLocalCopy(at);
 
         if (assignmentToNonEmptyExpression) {
-            aboutVariable.removeAfterAssignment();
-
             Instance instance;
             VariableValue variableValue;
             if ((instance = value.asInstanceOf(Instance.class)) != null) {
                 resetToNewInstance(aboutVariable, instance, evaluationContext);
             } else if ((variableValue = value.asInstanceOf(VariableValue.class)) != null) {
                 VariableInfo other = findComplain(variableValue.variable);
-                if (other.fieldReferenceState == SINGLE_COPY) {
+                FieldReferenceState otherFieldReferenceState;
+                if (other.variable instanceof FieldReference) {
+                    int effectivelyFinal = evaluationContext.getProperty(other.variable, FINAL);
+                    otherFieldReferenceState = singleCopy(effectivelyFinal, inSyncBlock, inPartOfConstruction);
+                } else {
+                    otherFieldReferenceState = SINGLE_COPY;
+                }
+                if (otherFieldReferenceState == SINGLE_COPY) {
                     aboutVariable.setCurrentValue(value, stateOfValue(at, value, evaluationContext), value.getObjectFlow());
-                } else if (other.fieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
+                } else if (otherFieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
                     aboutVariable.setCurrentValue(UnknownValue.NO_VALUE, UnknownValue.EMPTY, ObjectFlow.NO_FLOW);
                 } else {
                     resetToUnknownValue(aboutVariable, evaluationContext);
@@ -728,9 +775,10 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
         throw new UnsupportedOperationException("Object flow already exists"); // TODO
     }
 
-    public void updateObjectFlow(Variable variable, ObjectFlow objectFlow) {
+    private void updateObjectFlow(Variable variable, ObjectFlow objectFlow) {
         VariableInfo variableInfo = findComplain(variable);
         variableInfo.setObjectFlow(objectFlow);
+
     }
 
     public Stream<VariableInfo> variableStream() {

@@ -62,4 +62,14 @@ public class SetOnce<T> {
         if (isSet()) return get();
         return alternative;
     }
+
+    @Modified
+    @Only(before = "t")
+    public void copy(SetOnce<T> other) {
+        if (other.isSet()) set(other.get());
+    }
+
+    public void copyIfNotSet(SetOnce<T> other) {
+        if (!isSet() && other.isSet()) set(other.get());
+    }
 }

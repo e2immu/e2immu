@@ -17,21 +17,16 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-
 public class ForwardAnalysisInfo {
     public static final ForwardAnalysisInfo START_OF_METHOD =
-            new ForwardAnalysisInfo(FlowData.Execution.ALWAYS, ConditionManager.INITIAL, false, false);
+            new ForwardAnalysisInfo(FlowData.Execution.ALWAYS, ConditionManager.INITIAL, false);
 
     public final FlowData.Execution execution;
     public final ConditionManager conditionManager;
-    public final boolean inSyncBlock;
     public final boolean inCatch;
 
-    public ForwardAnalysisInfo(FlowData.Execution execution, ConditionManager conditionManager, boolean inSyncBlock, boolean inCatch) {
+    public ForwardAnalysisInfo(FlowData.Execution execution, ConditionManager conditionManager, boolean inCatch) {
         this.execution = execution;
-        this.inSyncBlock = inSyncBlock;
         this.inCatch = inCatch;
         this.conditionManager = conditionManager;
     }

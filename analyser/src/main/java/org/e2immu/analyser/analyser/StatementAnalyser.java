@@ -73,10 +73,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                               MethodAnalyser methodAnalyser,
                               Statement statement,
                               StatementAnalysis parent,
-                              String index) {
+                              String index,
+                              boolean inSyncBlock,
+                              boolean inPartOfConstruction) {
         this.analyserContext = analyserContext;
         this.myMethodAnalyser = methodAnalyser;
-        this.statementAnalysis = new StatementAnalysis(statement, parent, index);
+        this.statementAnalysis = new StatementAnalysis(statement, parent, index, inSyncBlock, inPartOfConstruction);
     }
 
     public static StatementAnalyser recursivelyCreateAnalysisObjects(
@@ -85,7 +87,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             StatementAnalysis parent,
             List<Statement> statements,
             String indices,
-            boolean setNextAtEnd) {
+            boolean setNextAtEnd,
+            boolean inSyncBlock,
+            boolean inPartOfConstruction) {
         int statementIndex;
         if (setNextAtEnd) {
             statementIndex = 0;
@@ -98,7 +102,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         StatementAnalyser previous = null;
         for (Statement statement : statements) {
             String iPlusSt = indices.isEmpty() ? "" + statementIndex : indices + "." + statementIndex;
-            StatementAnalyser statementAnalyser = new StatementAnalyser(analyserContext, myMethodAnalyser, statement, parent, iPlusSt);
+            StatementAnalyser statementAnalyser = new StatementAnalyser(analyserContext, myMethodAnalyser, statement, parent, iPlusSt, inSyncBlock, inPartOfConstruction);
             if (previous != null) {
                 previous.statementAnalysis.navigationData.next.set(Optional.of(statementAnalyser.statementAnalysis));
                 previous.navigationData.next.set(Optional.of(statementAnalyser));
@@ -111,15 +115,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             List<StatementAnalysis> analysisBlocks = new ArrayList<>();
 
             Structure structure = statement.getStructure();
+            boolean newInSyncBlock = inSyncBlock || statement instanceof SynchronizedStatement;
+
             if (structure.haveStatements()) {
-                StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser, parent, statements, iPlusSt + "." + blockIndex, true);
+                StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser, parent, statements,
+                        iPlusSt + "." + blockIndex, true, newInSyncBlock, inPartOfConstruction);
                 blocks.add(subStatementAnalyser);
                 analysisBlocks.add(subStatementAnalyser.statementAnalysis);
                 blockIndex++;
             }
             for (Structure subStatements : structure.subStatements) {
                 if (subStatements.haveStatements()) {
-                    StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser, parent, statements, iPlusSt + "." + blockIndex, true);
+                    StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser, parent, statements,
+                            iPlusSt + "." + blockIndex, true, newInSyncBlock, inPartOfConstruction);
                     blocks.add(subStatementAnalyser);
                     analysisBlocks.add(subStatementAnalyser.statementAnalysis);
                     blockIndex++;
@@ -224,7 +232,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     @Override
     public BiFunction<List<Statement>, String, StatementAnalyser> generator(EvaluationContext evaluationContext) {
         return (statements, startIndex) -> recursivelyCreateAnalysisObjects(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentMethod(),
-                parent(), statements, startIndex, false);
+                parent(), statements, startIndex, false, statementAnalysis.inSyncBlock, statementAnalysis.inPartOfConstruction);
     }
 
     private StatementAnalyser goToFirstStatementToAnalyse() {
@@ -285,14 +293,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (analysisStatus == null) {
             assert localConditionManager == null : "expected null localConditionManager";
 
-            boolean inPartOfConstruction = myMethodAnalyser.methodInfo.methodResolution.get().partOfConstruction.get();
+            statementAnalysis.initialise(analyserContext, myMethodAnalyser.getParameterAnalysers(), previousStatementAnalysis);
 
             boolean startOfNewBlock = previousStatementAnalysis == null;
-            statementAnalysis.initialise(analyserContext,
-                    myMethodAnalyser.getParameterAnalysers(),
-                    previousStatementAnalysis,
-                    startOfNewBlock);
-
             localConditionManager = startOfNewBlock ? (statementAnalysis.parent == null ?
                     ConditionManager.INITIAL :
                     statementAnalysis.parent.stateData.conditionManager.get().addCondition(forwardAnalysisInfo.conditionManager.condition)) :
@@ -676,7 +679,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private boolean step8_primaryBlock(EvaluationContext evaluationContext,
-                                       ForwardAnalysisInfo forwardAnalysisInfo,
                                        Value value,
                                        Structure structure,
                                        StatementAnalyser startOfFirstBlock,
@@ -684,13 +686,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         boolean statementsExecutedAtLeastOnce = structure.statementsExecutedAtLeastOnce.test(value);
 
         // in a synchronized block, some fields can behave like variables
-        boolean inSyncBlock = forwardAnalysisInfo.inSyncBlock || statementAnalysis.statement instanceof SynchronizedStatement;
+        boolean inSyncBlock = statementAnalysis.inSyncBlock || statementAnalysis.statement instanceof SynchronizedStatement;
 
         FlowData.Execution executionBlock = statementsExecutedAtLeastOnce ? FlowData.Execution.ALWAYS : FlowData.Execution.CONDITIONALLY;
         FlowData.Execution execution = statementAnalysis.flowData.guaranteedToBeReachedInMethod.get();
 
         StatementAnalyserResult recursiveResult = startOfFirstBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
-                new ForwardAnalysisInfo(execution.worst(executionBlock), localConditionManager.addCondition(value), inSyncBlock, false));
+                new ForwardAnalysisInfo(execution.worst(executionBlock), localConditionManager.addCondition(value), false));
         builder.add(recursiveResult);
         return inSyncBlock;
     }
@@ -726,7 +728,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private void step10_evaluateSubBlock(EvaluationContext evaluationContext,
-                                         ForwardAnalysisInfo forwardAnalysisInfo,
                                          StatementAnalyserResult.Builder builder,
                                          Structure structure,
                                          int count,
@@ -739,8 +740,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         StatementAnalyser subStatementStart = navigationData.blocks.get().get(count);
         boolean inCatch = structure.localVariableCreation != null;
         StatementAnalyserResult result = subStatementStart.analyseAllStatementsInBlock(evaluationContext.getIteration(),
-                new ForwardAnalysisInfo(execution, localConditionManager.addCondition(valueForSubStatement),
-                        forwardAnalysisInfo.inSyncBlock, inCatch));
+                new ForwardAnalysisInfo(execution, localConditionManager.addCondition(valueForSubStatement), inCatch));
         builder.add(result);
     }
 
@@ -787,7 +787,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         if (structure.haveNonEmptyBlock()) {
             StatementAnalyser startOfFirstBlock = startOfBlocks.get(0);
-            boolean inSyncBlock = step8_primaryBlock(evaluationContext, forwardAnalysisInfo, value, structure, startOfFirstBlock, builder);
+            boolean inSyncBlock = step8_primaryBlock(evaluationContext, value, structure, startOfFirstBlock, builder);
 
             if (!inSyncBlock && value != NO_VALUE && value != null) {
                 defaultCondition = NegatedValue.negate(value);
@@ -814,7 +814,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             // PART 10: create subContext, add parameters of sub statements, execute
 
-            step10_evaluateSubBlock(evaluationContext, forwardAnalysisInfo, builder, subStatements, count, value, valueForSubStatement);
+            step10_evaluateSubBlock(evaluationContext, builder, subStatements, count, value, valueForSubStatement);
         }
 
         if (structure.haveNonEmptyBlock()) {
@@ -1240,7 +1240,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void run() {
-
+            // TODO    statementAnalysis.ensureArrayVariable(analyserContext, );
         }
 
         @Override
@@ -1253,16 +1253,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     public class LinkVariable implements StatementAnalysis.StatementAnalysisModification {
         private final Variable variable;
-        private final Set<Variable> to;
+        private final List<Variable> to;
 
         public LinkVariable(Variable variable, Set<Variable> to) {
             this.variable = variable;
-            this.to = to;
+            this.to = ImmutableList.copyOf(to);
         }
 
         @Override
         public void run() {
-
+            statementAnalysis.dependencyGraph.addNode(variable, to);
         }
 
         @Override
@@ -1289,7 +1289,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void run() {
-            statementAnalysis.assignmentBasics(assignmentTarget, value, assignedNonEmptyValue, evaluationContext);
+            localConditionManager = statementAnalysis.assignmentBasics(assignmentTarget, value,
+                    assignedNonEmptyValue, evaluationContext);
         }
 
         @Override

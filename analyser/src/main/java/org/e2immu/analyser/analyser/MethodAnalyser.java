@@ -92,7 +92,8 @@ public class MethodAnalyser extends AbstractAnalyser {
             firstStatementAnalyser = null;
         } else {
             firstStatementAnalyser = StatementAnalyser.recursivelyCreateAnalysisObjects(analyserContext,
-                    this, null, block.structure.statements, "", true);
+                    this, null, block.structure.statements, "", true, false,
+                    methodInfo.methodResolution.get().partOfConstruction.get());
         }
         methodAnalysis = new MethodAnalysis(methodInfo, myTypeAnalyser.typeAnalysis, parameterAnalyses, firstStatementAnalyser);
         this.isSAM = isSAM;
@@ -587,7 +588,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
         if (modified == Level.FALSE) {
-            if (methodInfo.isConstructor) return DONE; // non-modifying constructor would be weird anywayq; not for me
+            if (methodInfo.isConstructor) return DONE; // non-modifying constructor would be weird anyway; not for me
             if (methodInfo.returnType().hasSize()) {
                 // non-modifying method that returns a type with @Size (like Collection, Map, ...)
 
@@ -609,10 +610,10 @@ public class MethodAnalyser extends AbstractAnalyser {
         // modifying method
         // we can write size copy (if there is a modification that copies a map) or size equals, min if the modification is of that nature
         // the size copy will need to be written on the PARAMETER from which the copying has taken place
-        if (methodInfo.typeInfo.hasSize()) {
-            return sizeModifying(methodInfo, methodAnalysis);
+        //if (methodInfo.typeInfo.hasSize()) {
+         //   return sizeModifying(methodInfo, methodAnalysis); TODO
 
-        }
+        //}
         return DONE;
     }
 
@@ -645,15 +646,10 @@ public class MethodAnalyser extends AbstractAnalyser {
         // modifying method
         // we can write size copy (if there is a modification that copies a map) or size equals, min if the modification is of that nature
         // the size copy will need to be written on the PARAMETER from which the copying has taken place
-        if (methodInfo.typeInfo.hasSize()) {
-            // TODO not implemented yet
-        }
+        //if (methodInfo.typeInfo.hasSize()) {
+        //   // TODO not implemented yet
+        //}
         return DONE;
-    }
-
-    // there is a modification that alters the @Size of this type (e.g. put() will cause a @Size(min = 1))
-    private AnalysisStatus sizeModifying(MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        return DONE; // TODO NYI
     }
 
     private AnalysisStatus writeSize(VariableProperty variableProperty, int value) {

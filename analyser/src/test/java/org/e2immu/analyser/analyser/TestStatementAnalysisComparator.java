@@ -31,10 +31,10 @@ public class TestStatementAnalysisComparator {
         Statement emptyStatement = new ExpressionAsStatement(EmptyExpression.EMPTY_EXPRESSION);
         StatementAnalysis parent = null;
 
-        StatementAnalysis ns0 = new StatementAnalysis(emptyStatement, parent, "");
-        StatementAnalysis ns1 = new StatementAnalysis(emptyStatement, parent, "1");
-        StatementAnalysis ns01 = new StatementAnalysis(emptyStatement, parent, "0.1");
-        StatementAnalysis ns10 = new StatementAnalysis(emptyStatement, parent, "1.0");
+        StatementAnalysis ns0 = new StatementAnalysis(emptyStatement, parent, "", false, false);
+        StatementAnalysis ns1 = new StatementAnalysis(emptyStatement, parent, "1", false, false);
+        StatementAnalysis ns01 = new StatementAnalysis(emptyStatement, parent, "0.1", false, false);
+        StatementAnalysis ns10 = new StatementAnalysis(emptyStatement, parent, "1.0", false, false);
 
         Assert.assertTrue(ns0.compareTo(ns0) == 0);
         Assert.assertTrue(ns0.compareTo(ns1) < 0);
