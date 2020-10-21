@@ -65,41 +65,40 @@ public class MethodLevelData {
 
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
 
-    public StatementAnalyserResult analyse(EvaluationContext evaluationContext,
-                                           StatementAnalysis statementAnalysis,
-                                           MethodLevelData previous,
-                                           StateData stateData) {
+    private record SharedState(StatementAnalyserResult.Builder builder,
+                               EvaluationContext evaluationContext,
+                               StatementAnalysis statementAnalysis,
+                               String logLocation,
+                               MethodLevelData previous,
+                               StateData stateData) {
+    }
+
+    public final AnalyserComponents<String, SharedState> analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
+            .add("copyFieldAndThisProperties", sharedState -> copyFieldAndThisProperties(sharedState.evaluationContext, sharedState.statementAnalysis))
+            .add("copyFieldAssignmentValue", sharedState -> copyFieldAssignmentValue(sharedState.statementAnalysis))
+            .add("copyContextProperties", this::copyContextProperties)
+            .add("establishLinks", this::establishLinks)
+            .add("updateVariablesLinkedToMethodResult", this::updateVariablesLinkedToMethodResult)
+            .add("computeContentModifications", this::computeContentModifications)
+            .add("combinePrecondition", sharedState -> combinePrecondition(sharedState.previous, sharedState.stateData))
+            .build();
+
+    public AnalysisStatus analyse(StatementAnalyser.SharedState sharedState,
+                                  StatementAnalysis statementAnalysis,
+                                  MethodLevelData previous,
+                                  StateData stateData) {
+        EvaluationContext evaluationContext = sharedState.evaluationContext();
         MethodInfo methodInfo = evaluationContext.getCurrentMethod().methodInfo;
         String logLocation = methodInfo.distinguishingName();
         try {
-            StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
-
-            // start with a one-off copying
-            AnalysisStatus analysisStatus = copyFieldAndThisProperties(evaluationContext, statementAnalysis)
-
-                    // this one can be delayed, it copies the field assignment values
-                    .combine(copyFieldAssignmentValue(statementAnalysis))
-
-                    // SIZE, NOT_NULL into fieldSummaries
-                    // builder contains changes to parameter analysis properties
-                    .combine(copyContextProperties(evaluationContext, statementAnalysis, builder))
-
-                    // this method computes, unless delayed, the values for
-                    // - linksComputed
-                    // - variablesLinkedToFieldsAndParameters
-                    // - fieldsLinkedToFieldsAndVariables
-                    .combine(establishLinks(statementAnalysis, evaluationContext, logLocation))
-                    .combine(methodInfo.isConstructor ? DONE : updateVariablesLinkedToMethodResult(evaluationContext, builder, logLocation))
-                    .combine(computeContentModifications(evaluationContext, statementAnalysis, builder, logLocation)
-                            .combine(combinePrecondition(previous, stateData)));
-            builder.setAnalysisStatus(analysisStatus);
-            return builder.build();
+            StatementAnalyserResult.Builder builder = sharedState.builder();
+            SharedState localSharedState = new SharedState(builder, evaluationContext, statementAnalysis, logLocation, previous, stateData);
+            return analyserComponents.run(localSharedState);
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in linking computation, method {}", logLocation);
             throw rte;
         }
     }
-
 
     // preconditions come from the precondition object in stateData, and preconditions from method calls; they're accumulated
     // in the state.precondition field
@@ -160,8 +159,9 @@ public class MethodLevelData {
 
     */
 
-    private AnalysisStatus establishLinks(StatementAnalysis statementAnalysis, EvaluationContext evaluationContext, String logLocation) {
+    private AnalysisStatus establishLinks(SharedState sharedState) {
         if (variablesLinkedToFieldsAndParameters.isSet()) return DONE;
+        StatementAnalysis statementAnalysis = sharedState.statementAnalysis;
 
         // final fields need to have a value set; all the others act as local variables
         boolean someVariablesHaveNotBeenEvaluated = statementAnalysis.variableStream().anyMatch(vi -> vi.getCurrentValue() == UnknownValue.NO_VALUE);
@@ -173,6 +173,7 @@ public class MethodLevelData {
             log(DELAYED, "Dependency graph suffers delays -- delaying establishing links");
             return DELAYS;
         }
+        EvaluationContext evaluationContext = sharedState.evaluationContext;
         boolean allFieldsFinalDetermined = evaluationContext.getCurrentMethod().methodInfo.typeInfo.typeInspection.getPotentiallyRun()
                 .fields.stream().allMatch(fieldInfo -> evaluationContext.getFieldAnalysis(fieldInfo).getProperty(VariableProperty.FINAL) != Level.DELAY);
         if (!allFieldsFinalDetermined) {
@@ -180,6 +181,7 @@ public class MethodLevelData {
             return DELAYS;
         }
 
+        String logLocation = sharedState.logLocation;
         Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters = new HashMap<>();
         statementAnalysis.dependencyGraph.visit((variable, dependencies) -> {
             Set<Variable> fieldAndParameterDependencies = new HashSet<>(statementAnalysis.dependencyGraph.dependencies(variable));
@@ -214,16 +216,14 @@ public class MethodLevelData {
     }
 
     // only needs to be run on the last statement; not that relevant on others
-    private AnalysisStatus updateVariablesLinkedToMethodResult(EvaluationContext evaluationContext,
-                                                               StatementAnalyserResult.Builder builder,
-                                                               String logLocation) {
-
+    private AnalysisStatus updateVariablesLinkedToMethodResult(SharedState sharedState) {
+        if (sharedState.evaluationContext.getCurrentMethod().methodInfo.isConstructor) return DONE;
         if (variablesLinkedToMethodResult.isSet()) return DONE;
 
         Set<Variable> variables = new HashSet<>();
         boolean waitForLinkedVariables = returnStatementSummaries.stream().anyMatch(e -> !e.getValue().linkedVariables.isSet());
         if (waitForLinkedVariables) {
-            log(DELAYED, "Not yet ready to compute linked variables of result of method {}", logLocation);
+            log(DELAYED, "Not yet ready to compute linked variables of result of method {}", sharedState.logLocation);
             return DELAYS;
         }
         Set<Variable> variablesInvolved = returnStatementSummaries.stream()
@@ -255,9 +255,9 @@ public class MethodLevelData {
         }
 
         variablesLinkedToMethodResult.set(variables);
-        MethodAnalysis methodAnalysis = evaluationContext.getCurrentMethodAnalysis();
-        builder.add(methodAnalysis.new SetProperty(VariableProperty.LINKED, variables.isEmpty() ? Level.FALSE : Level.TRUE));
-        log(LINKED_VARIABLES, "Set variables linked to result of {} to [{}]", logLocation, Variable.fullyQualifiedName(variables));
+        MethodAnalysis methodAnalysis = sharedState.evaluationContext.getCurrentMethodAnalysis();
+        sharedState.builder.add(methodAnalysis.new SetProperty(VariableProperty.LINKED, variables.isEmpty() ? Level.FALSE : Level.TRUE));
+        log(LINKED_VARIABLES, "Set variables linked to result of {} to [{}]", sharedState.logLocation, Variable.fullyQualifiedName(variables));
         return DONE;
     }
 
@@ -283,20 +283,18 @@ public class MethodLevelData {
         reverse.forEach(v -> recursivelyAddLinkedVariables(variablesLinkedToFieldsAndParameters, v, result));
     }
 
-    private AnalysisStatus computeContentModifications(EvaluationContext evaluationContext,
-                                                       StatementAnalysis statementAnalysis,
-                                                       StatementAnalyserResult.Builder builder,
-                                                       String logLocation) {
+    private AnalysisStatus computeContentModifications(SharedState sharedState) {
         if (!variablesLinkedToFieldsAndParameters.isSet()) return DELAYS;
 
         final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
         final AtomicBoolean changes = new AtomicBoolean();
 
         // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
-        statementAnalysis.variableStream().forEach(variableInfo -> {
+        sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
             Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(variablesLinkedToFieldsAndParameters.get(),
                     variableInfo.variable);
-            int summary = evaluationContext.summarizeModification(linkedVariables);
+            int summary = sharedState.evaluationContext.summarizeModification(linkedVariables);
+            String logLocation = sharedState.logLocation;
             for (Variable linkedVariable : linkedVariables) {
                 if (linkedVariable instanceof FieldReference) {
                     FieldInfo fieldInfo = ((FieldReference) linkedVariable).fieldInfo;
@@ -325,7 +323,7 @@ public class MethodLevelData {
                         }
                     }
                 } else if (linkedVariable instanceof ParameterInfo) {
-                    ParameterAnalysis parameterAnalysis = evaluationContext.getParameterAnalysis((ParameterInfo) linkedVariable);
+                    ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getParameterAnalysis((ParameterInfo) linkedVariable);
                     if (parameterAnalysis.assignedToField.isSet()) {
                         log(NOT_MODIFIED, "Parameter {} is assigned to field {}, not setting @NotModified {} directly",
                                 linkedVariable.fullyQualifiedName(), parameterAnalysis.assignedToField.get().fullyQualifiedName(), summary);
@@ -338,7 +336,7 @@ public class MethodLevelData {
                                     summary == Level.TRUE ? "@Modified" : "@NotModified", logLocation);
                             int currentModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
                             if (currentModified == Level.DELAY) {
-                                builder.add(parameterAnalysis.new SetProperty(VariableProperty.MODIFIED, summary));
+                                sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.MODIFIED, summary));
                                 changes.set(true);
                             }
                         }
@@ -434,13 +432,11 @@ public class MethodLevelData {
     // a DELAY should only be possible for good reasons
     // context can generally only be delayed when there is a method delay
 
-    private AnalysisStatus copyContextProperties(EvaluationContext evaluationContext,
-                                                 StatementAnalysis statementAnalysis,
-                                                 StatementAnalyserResult.Builder builder) {
+    private AnalysisStatus copyContextProperties(SharedState sharedState) {
         final AtomicBoolean changes = new AtomicBoolean();
         final AtomicBoolean anyDelay = new AtomicBoolean();
 
-        statementAnalysis.variableStream().forEach(variableInfo -> {
+        sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
             int methodDelay = variableInfo.getProperty(VariableProperty.METHOD_DELAY);
             boolean haveDelay = methodDelay == Level.TRUE || variableInfo.getCurrentValue() == UnknownValue.NO_VALUE;
             if (haveDelay) anyDelay.set(true);
@@ -479,10 +475,10 @@ public class MethodLevelData {
                     int size = variableInfo.getProperty(VariableProperty.SIZE);
                     if (size == Level.DELAY && !haveDelay) {
                         // we could not find anything related to size, let's advertise that
-                        ParameterAnalysis parameterAnalysis = evaluationContext.getParameterAnalysis(parameterInfo);
+                        ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getParameterAnalysis(parameterInfo);
                         int sizeInParam = parameterAnalysis.getProperty(VariableProperty.SIZE);
                         if (sizeInParam == Level.DELAY) {
-                            builder.add(parameterAnalysis.new SetProperty(VariableProperty.SIZE, Level.IS_A_SIZE));
+                            sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.SIZE, Level.IS_A_SIZE));
                             changes.set(true);
                         }
                     }

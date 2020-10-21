@@ -307,6 +307,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .add("singleStatementAnalysisSteps", sharedState -> singleStatementAnalysisSteps(sharedState, forwardAnalysisInfo))
                     .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previousStatementAnalysis))
 
+                    .add("analyseMethodLevelData", sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
+                            previousStatementAnalysis == null ? null : previousStatementAnalysis.methodLevelData,
+                            statementAnalysis.stateData))
+                    .add("copyErrorFlags", sharedState -> statementAnalysis.errorFlags.copy(statementAnalysis, previousStatementAnalysis))
+                    .add("copyPrecondition", sharedState -> statementAnalysis.stateData.copyPrecondition(this, previousStatementAnalysis))
+
                     .add("checkNotNullEscapes", this::checkNotNullEscapes)
                     .add("checkSizeEscapes", this::checkSizeEscapes)
                     .add("checkPrecondition", this::checkPrecondition)
@@ -320,17 +326,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager);
         SharedState sharedState = new SharedState(evaluationContext, builder);
         AnalysisStatus overallStatus = analyserComponents.run(sharedState);
-
-        // method level data
-        statementAnalysis.methodLevelData.analyse(evaluationContext, statementAnalysis,
-                previousStatementAnalysis == null ? null : previousStatementAnalysis.methodLevelData,
-                statementAnalysis.stateData);
-
-        // error flags
-        statementAnalysis.errorFlags.analyse(statementAnalysis, previousStatementAnalysis);
-
-        // state data
-        statementAnalysis.stateData.finalise(this, previousStatementAnalysis);
 
         StatementAnalyserResult result = sharedState.builder()
                 .setAnalysisStatus(overallStatus)
@@ -1275,10 +1270,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     public class Assignment implements StatementAnalysis.StatementAnalysisModification {
-        private final Variable assignmentTarget;
-        private final Value value;
-        private final boolean assignedNonEmptyValue;
-        private final EvaluationContext evaluationContext;
+        public final Variable assignmentTarget;
+        public final Value value;
+        public final boolean assignedNonEmptyValue;
+        public final EvaluationContext evaluationContext;
 
         public Assignment(Variable assignmentTarget, Value value, boolean assignedNonEmptyValue, EvaluationContext evaluationContext) {
             this.assignedNonEmptyValue = assignedNonEmptyValue;

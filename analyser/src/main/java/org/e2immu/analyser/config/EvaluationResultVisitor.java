@@ -27,10 +27,17 @@ public interface EvaluationResultVisitor {
 
     record Data(int iteration, MethodInfo methodInfo, String statementId, EvaluationResult evaluationResult) {
 
-        public boolean haveModification(String variableName, VariableProperty variableProperty, int value) {
+        public boolean haveSetProperty(String variableName, VariableProperty variableProperty, int value) {
             return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.SetProperty)
                     .map(sam -> (StatementAnalyser.SetProperty) sam)
                     .anyMatch(sp -> variableName.equals(sp.variable.fullyQualifiedName()) && variableProperty == sp.property && value == sp.value);
+        }
+
+        public boolean haveAssignment(String assignmentTargetName, String valueString) {
+            return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.Assignment)
+                    .map(sam -> (StatementAnalyser.Assignment) sam)
+                    .anyMatch(ass -> assignmentTargetName.equals(ass.assignmentTarget.fullyQualifiedName()) &&
+                            valueString.equals(ass.value.toString()));
         }
     }
 }

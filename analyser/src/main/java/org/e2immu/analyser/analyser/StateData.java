@@ -40,7 +40,7 @@ public class StateData {
 
     public final SetOnce<Value> valueOfExpression = new SetOnce<>();
 
-    public void finalise(StatementAnalyser statementAnalyser, StatementAnalysis previous) {
+    public AnalysisStatus copyPrecondition(StatementAnalyser statementAnalyser, StatementAnalysis previous) {
         if (!precondition.isSet()) {
             Stream<Value> fromPrevious = Stream.of(previous == null ? UnknownValue.EMPTY : previous.stateData.precondition.get());
             Stream<Value> fromBlocks = statementAnalyser.lastStatementsOfSubBlocks().stream()
@@ -50,6 +50,7 @@ public class StateData {
                     .reduce(UnknownValue.EMPTY, (v1, v2) -> new AndValue().append(v1, v2));
             precondition.set(reduced);
         }
+        return AnalysisStatus.DONE;
     }
 
     public static class RemoveVariableFromState implements StatementAnalysis.StateChange {

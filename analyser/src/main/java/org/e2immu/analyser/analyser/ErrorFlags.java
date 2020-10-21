@@ -34,9 +34,10 @@ public class ErrorFlags {
     public final SetOnceMap<FieldInfo, Boolean> errorAssigningToFieldOutsideType = new SetOnceMap<>();
     public final SetOnceMap<MethodInfo, Boolean> errorCallingModifyingMethodOutsideType = new SetOnceMap<>();
 
-    public void analyse(StatementAnalysis statementAnalysis, StatementAnalysis previousStatementAnalysis) {
+    public AnalysisStatus copy(StatementAnalysis statementAnalysis, StatementAnalysis previousStatementAnalysis) {
         if (previousStatementAnalysis != null) copy(previousStatementAnalysis.errorFlags, true);
         statementAnalysis.navigationData.blocks.get().forEach(sub -> copy(sub.errorFlags, false));
+        return AnalysisStatus.DONE;
     }
 
     private void copy(ErrorFlags other, boolean complainWhenAlreadySet) {
