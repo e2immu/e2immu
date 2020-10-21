@@ -83,7 +83,7 @@ public class TypeAnalyser extends AbstractAnalyser {
     private List<TypeAnalysis> parentAndOrEnclosingTypeAnalysis;
     private List<FieldAnalyser> myFieldAnalysers;
 
-    private final AnalyserComponents<String> analyserComponents;
+    private final AnalyserComponents<String, Integer> analyserComponents;
 
     public TypeAnalyser(@NotModified TypeInfo typeInfo,
                         TypeInfo primaryType,
@@ -94,7 +94,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         typeInspection = typeInfo.typeInspection.get();
 
         typeAnalysis = new TypeAnalysis(typeInfo);
-        AnalyserComponents.Builder<String> builder = new AnalyserComponents.Builder<String>()
+        AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
                 .add("analyseImplicitlyImmutableTypes", (iteration) -> analyseImplicitlyImmutableTypes());
 
         if (typeInfo.hasBeenDefined() && !typeInfo.isInterface()) {
@@ -114,7 +114,7 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public AnalyserComponents<String> getAnalyserComponents() {
+    public AnalyserComponents<String, Integer> getAnalyserComponents() {
         return analyserComponents;
     }
 

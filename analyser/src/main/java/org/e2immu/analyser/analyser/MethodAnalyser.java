@@ -67,7 +67,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     public final List<ParameterAnalyser> parameterAnalysers;
     public final List<ParameterAnalysis> parameterAnalyses;
     public final StatementAnalyser firstStatementAnalyser;
-    private final AnalyserComponents<String> analyserComponents;
+    private final AnalyserComponents<String, Integer> analyserComponents;
 
     private Map<FieldInfo, FieldAnalyser> myFieldAnalysers;
     private MethodLevelData methodLevelData;
@@ -97,10 +97,10 @@ public class MethodAnalyser extends AbstractAnalyser {
         methodAnalysis = new MethodAnalysis(methodInfo, myTypeAnalyser.typeAnalysis, parameterAnalyses, firstStatementAnalyser);
         this.isSAM = isSAM;
 
-        AnalyserComponents.Builder<String> builder = new AnalyserComponents.Builder<>();
+        AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<>();
         if (firstStatementAnalyser != null) {
 
-            AnalysisStatus.AnalysisResultSupplier statementAnalyser = (iteration) -> {
+            AnalysisStatus.AnalysisResultSupplier<Integer> statementAnalyser = (iteration) -> {
                 StatementAnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(iteration, ForwardAnalysisInfo.START_OF_METHOD);
                 // apply all modifications
                 result.getModifications().forEach(Runnable::run);
@@ -128,7 +128,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public AnalyserComponents<String> getAnalyserComponents() {
+    public AnalyserComponents<String, Integer> getAnalyserComponents() {
         return analyserComponents;
     }
 

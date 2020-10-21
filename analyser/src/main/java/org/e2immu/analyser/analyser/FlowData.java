@@ -25,8 +25,15 @@ import org.e2immu.analyser.util.SetOnce;
 
 import java.util.*;
 
+import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.InterruptsFlow.*;
 
+/**
+ * Flow is that part of the analysis that is concerned with reachability of statements,
+ * and escaping from the normal sequential flow.
+ * <p>
+ * Flow analysis is never delayed.
+ */
 public class FlowData {
 
     public final SetOnce<Execution> guaranteedToBeReachedInCurrentBlock = new SetOnce<>();
@@ -96,19 +103,13 @@ public class FlowData {
         return executionInCurrentBlock == Execution.NEVER; // raise error when NEVER by returning true
     }
 
-    public void analyse(StatementAnalyser statementAnalyser,
-                        StatementAnalysis previousStatementAnalysis) {
-        computeInterruptsFlow(statementAnalyser, previousStatementAnalysis);
-
-    }
-
-    private void computeInterruptsFlow(StatementAnalyser statementAnalyser, StatementAnalysis previousStatement) {
+    public AnalysisStatus analyse(StatementAnalyser statementAnalyser, StatementAnalysis previousStatement) {
 
         Statement statement = statementAnalyser.statement();
         // without a block
         if (statement instanceof ReturnStatement) {
             interruptsFlow.set(Map.of(RETURN, Execution.ALWAYS));
-            return;
+            return DONE;
         }
         if (statement instanceof ThrowStatement) {
             interruptsFlow.set(Map.of(ESCAPE, Execution.ALWAYS));
@@ -125,7 +126,7 @@ public class FlowData {
                 statementAnalyser.navigationData.next.get().isEmpty();
         if (endOfBlockTopLevel) {
             interruptsFlow.set(Map.of(RETURN, Execution.ALWAYS));
-            return;
+            return DONE;
         }
 
         // situation from the previous statement
@@ -145,6 +146,7 @@ public class FlowData {
             }
         }
         this.interruptsFlow.set(ImmutableMap.copyOf(builder));
+        return DONE;
     }
 
     private static boolean rejectInterrupt(Statement statement, InterruptsFlow interruptsFlow) {

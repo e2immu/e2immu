@@ -45,7 +45,7 @@ public class StatementAnalyserResult {
                 modifications = new LinkedList<>();
             }
             other.modifications.forEach(modifications::add);
-            analysisStatus = analysisStatus == null ? other.analysisStatus: analysisStatus.combine(other.analysisStatus);
+            analysisStatus = analysisStatus == null ? other.analysisStatus : analysisStatus.combine(other.analysisStatus);
             return this;
         }
 
@@ -59,6 +59,12 @@ public class StatementAnalyserResult {
 
         public Builder setAnalysisStatus(AnalysisStatus analysisStatus) {
             this.analysisStatus = analysisStatus;
+            return this;
+        }
+
+        public Builder combineAnalysisStatus(AnalysisStatus other) {
+            assert other != null;
+            analysisStatus = other.combine(analysisStatus);
             return this;
         }
 

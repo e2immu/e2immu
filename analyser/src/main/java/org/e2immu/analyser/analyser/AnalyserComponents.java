@@ -20,30 +20,33 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.util.Pair;
 
 import java.util.*;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 
-public class AnalyserComponents<T> {
+/**
+ * @param <T> typically String, as the label of the component. In case of the primary type analyser, T is Analyser.
+ * @param <S> shared state
+ */
+public class AnalyserComponents<T, S> {
 
-    private final LinkedHashMap<T, AnalysisStatus.AnalysisResultSupplier> suppliers;
+    private final LinkedHashMap<T, AnalysisStatus.AnalysisResultSupplier<S>> suppliers;
     private final AnalysisStatus[] state;
 
-    private AnalyserComponents(LinkedHashMap<T, AnalysisResultSupplier> suppliers) {
+    private AnalyserComponents(LinkedHashMap<T, AnalysisResultSupplier<S>> suppliers) {
         this.suppliers = suppliers;
         state = new AnalysisStatus[suppliers.size()];
         Arrays.fill(state, DELAYS);
     }
 
-    static class Builder<T> {
-        private final LinkedHashMap<T, AnalysisStatus.AnalysisResultSupplier> suppliers = new LinkedHashMap<>();
+    static class Builder<T, S> {
+        private final LinkedHashMap<T, AnalysisStatus.AnalysisResultSupplier<S>> suppliers = new LinkedHashMap<>();
 
-        public Builder<T> add(T t, AnalysisResultSupplier supplier) {
+        public Builder<T, S> add(T t, AnalysisResultSupplier<S> supplier) {
             if (suppliers.put(t, supplier) != null) throw new UnsupportedOperationException();
             return this;
         }
 
-        public AnalyserComponents<T> build() {
+        public AnalyserComponents<T, S> build() {
             return new AnalyserComponents<>(suppliers);
         }
     }
@@ -57,14 +60,14 @@ public class AnalyserComponents<T> {
     // done  -> done
 
 
-    public AnalysisStatus run(int iteration) {
+    public AnalysisStatus run(S s) {
         int i = 0;
         boolean allDone = true;
         boolean changes = false;
-        for (AnalysisStatus.AnalysisResultSupplier supplier : suppliers.values()) {
+        for (AnalysisStatus.AnalysisResultSupplier<S> supplier : suppliers.values()) {
             AnalysisStatus initialState = state[i];
             if (initialState != DONE) {
-                AnalysisStatus afterExec = supplier.apply(iteration);
+                AnalysisStatus afterExec = supplier.apply(s);
                 state[i] = afterExec;
                 if (afterExec == PROGRESS) changes = true;
                 if (afterExec != DONE) allDone = false;

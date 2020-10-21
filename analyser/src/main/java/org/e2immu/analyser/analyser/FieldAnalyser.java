@@ -57,7 +57,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     public final FieldAnalysis fieldAnalysis;
     public final MethodAnalyser sam;
     private final boolean fieldCanBeWrittenFromOutsideThisType;
-    private final AnalyserComponents<String> analyserComponents;
+    private final AnalyserComponents<String, Integer> analyserComponents;
 
     private List<MethodAnalyser> allMethodsAndConstructors;
     private List<MethodAnalyser> myMethodsAndConstructors;
@@ -80,7 +80,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord() || !fieldInfo.isPrivate() && !fieldInfo.isExplicitlyFinal();
         haveInitialiser = fieldInspection.initialiser.isSet() && fieldInspection.initialiser.get().initialiser != EmptyExpression.EMPTY_EXPRESSION;
 
-        analyserComponents = new AnalyserComponents.Builder<String>()
+        analyserComponents = new AnalyserComponents.Builder<String, Integer>()
                 .add("computeImplicitlyImmutableDataType", (iteration) -> computeImplicitlyImmutableDataType())
                 .add("evaluateInitialiser", this::evaluateInitialiser)
                 .add("analyseFinal", (iteration) -> analyseFinal())
@@ -97,7 +97,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public AnalyserComponents<String> getAnalyserComponents() {
+    public AnalyserComponents<String, Integer> getAnalyserComponents() {
         return analyserComponents;
     }
 

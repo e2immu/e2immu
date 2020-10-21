@@ -38,6 +38,6 @@ public interface Analyser {
 
     String getName();
 
-    AnalyserComponents<String> getAnalyserComponents();
+    AnalyserComponents<String, Integer> getAnalyserComponents();
 
 }

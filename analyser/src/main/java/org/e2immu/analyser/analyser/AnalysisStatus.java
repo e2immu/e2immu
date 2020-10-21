@@ -32,13 +32,14 @@ public enum AnalysisStatus {
     }
 
     public AnalysisStatus combine(AnalysisStatus other) {
+        if (other == null) return this;
         if (other.pos < pos) return other;
         return this;
     }
 
 
     @FunctionalInterface
-    interface AnalysisResultSupplier extends Function<Integer, AnalysisStatus> {
+    interface AnalysisResultSupplier<S> extends Function<S, AnalysisStatus> {
 
     }
 }
