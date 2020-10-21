@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.Container;
@@ -39,7 +40,8 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
 
     public final ErrorFlags errorFlags = new ErrorFlags();
     public final NavigationData<StatementAnalysis> navigationData = new NavigationData<>();
-    public final SetOnce<VariableDataImpl> variableData = new SetOnce<>();
+    public final SetOnce<VariableData> variableData = new SetOnce<>();
+
     public final MethodLevelData methodLevelData = new MethodLevelData();
     public final StateData stateData = new StateData();
     public final FlowData flowData = new FlowData();

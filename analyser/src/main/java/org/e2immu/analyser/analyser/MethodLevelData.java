@@ -290,7 +290,7 @@ public class MethodLevelData {
         boolean changes = false;
 
         // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
-        for (VariableInfo variableInfo : variableData.variableInfos()) {
+        for (VariableInfo variableInfo : variableData.variableInfoObjects()) {
             Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(variablesLinkedToFieldsAndParameters.get(),
                     variableInfo.getVariable());
             int summary = evaluationContext.summarizeModification(linkedVariables);
@@ -358,7 +358,7 @@ public class MethodLevelData {
     private AnalysisStatus copyFieldAndThisProperties(EvaluationContext evaluationContext, VariableData variableData) {
         if (evaluationContext.getIteration() > 0) return DONE;
 
-        for (VariableInfo variableInfo : variableData.variableInfos()) {
+        for (VariableInfo variableInfo : variableData.variableInfoObjects()) {
             Variable variable = variableInfo.getVariable();
             if (variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
@@ -404,7 +404,7 @@ public class MethodLevelData {
     private AnalysisStatus copyFieldAssignmentValue(VariableData variableData) {
         boolean changes = false;
         AnalysisStatus analysisStatus = DONE;
-        for (VariableInfo variableInfo : variableData.variableInfos()) {
+        for (VariableInfo variableInfo : variableData.variableInfoObjects()) {
             Variable variable = variableInfo.getVariable();
             if (variable instanceof FieldReference && variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE) {
                 FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
@@ -437,7 +437,7 @@ public class MethodLevelData {
                                                  StatementAnalyserResult.Builder builder) {
         boolean changes = false;
         boolean anyDelay = false;
-        for (VariableInfo variableInfo : variableData.variableInfos()) {
+        for (VariableInfo variableInfo : variableData.variableInfoObjects()) {
             Variable variable = variableInfo.getVariable();
             int methodDelay = variableInfo.getProperty(VariableProperty.METHOD_DELAY);
             boolean haveDelay = methodDelay == Level.TRUE || variableInfo.getCurrentValue() == UnknownValue.NO_VALUE;

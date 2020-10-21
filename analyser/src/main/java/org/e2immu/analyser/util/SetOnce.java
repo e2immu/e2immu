@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.util;
 
+import org.e2immu.analyser.analyser.VariableDataImpl;
 import org.e2immu.annotation.*;
 
 @E2Container(after = "t")
@@ -25,7 +26,7 @@ public class SetOnce<T> {
 
     @Final(after = "t")
     @Nullable // eventually not-null, not implemented yet
-    @Linked(to={"t"})
+    @Linked(to = {"t"})
     // volatile guarantees that once the value is set, other threads see the effect immediately
     private volatile T t;
 
@@ -52,9 +53,14 @@ public class SetOnce<T> {
         }
         return t;
     }
-    
+
     @NotModified
     public boolean isSet() {
         return t != null;
+    }
+
+    public T getOrElse(T alternative) {
+        if (isSet()) return get();
+        return alternative;
     }
 }

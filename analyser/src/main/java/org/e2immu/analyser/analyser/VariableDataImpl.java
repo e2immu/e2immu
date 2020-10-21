@@ -55,7 +55,7 @@ public class VariableDataImpl implements VariableData {
         dependencyGraph.freeze();
     }
 
-    public Iterable<VariableInfo> variableInfos() {
+    public Iterable<VariableInfo> variableInfoObjects() {
         return variables.values();
     }
 
@@ -92,7 +92,6 @@ public class VariableDataImpl implements VariableData {
         public Set<Map.Entry<String, VariableInfoImpl.Builder>> variables() {
             return variables.entrySet();
         }
-
 
         public DependencyGraph<Variable> getDependencyGraph() {
             return dependencyGraph;
@@ -457,15 +456,15 @@ public class VariableDataImpl implements VariableData {
 
         public void initialise(AnalyserContext analyserContext,
                                Collection<ParameterAnalyser> parameterAnalysers,
-                               StatementAnalysis statementAnalysis,
+                               VariableData variableDataOfPrevious,
                                boolean startOfNewBlock) {
-            if (statementAnalysis == null) {
+            if (variableDataOfPrevious == null) {
                 for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
                     createLocalVariableOrParameter(analyserContext, parameterAnalyser.parameterInfo);
                 }
                 return;
             }
-            for (VariableInfo variableInfo : statementAnalysis.variableData.get().variableInfos()) {
+            for (VariableInfo variableInfo : variableDataOfPrevious.variableInfoObjects()) {
                 if (startOfNewBlock) {
                     VariableInfoImpl.Builder localCopy = variableInfo.localCopy();
                     variables.put(localCopy.getName(), localCopy);

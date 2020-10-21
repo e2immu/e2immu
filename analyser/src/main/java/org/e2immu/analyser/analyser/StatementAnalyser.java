@@ -59,7 +59,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private final Messages messages = new Messages();
     public final NavigationData<StatementAnalyser> navigationData = new NavigationData<>();
 
-
     // shared state over the different analysers
     private VariableDataImpl.Builder variableDataBuilder;
     private ConditionManager localConditionManager;
@@ -79,8 +78,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         this.analyserContext = analyserContext;
         this.myMethodAnalyser = methodAnalyser;
         this.statementAnalysis = new StatementAnalysis(statement, parent, index);
-
-
     }
 
     public static StatementAnalyser recursivelyCreateAnalysisObjects(
@@ -296,7 +293,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             boolean startOfNewBlock = previousStatementAnalysis == null;
             variableDataBuilder.initialise(analyserContext,
                     myMethodAnalyser.getParameterAnalysers(),
-                    startOfNewBlock ? statementAnalysis.parent : previousStatementAnalysis,
+                    variableDataOfPrevious(),
                     startOfNewBlock);
 
             localConditionManager = startOfNewBlock ? (statementAnalysis.parent == null ?

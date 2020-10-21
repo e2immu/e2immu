@@ -28,7 +28,7 @@ public interface VariableData {
 
     boolean isDelaysInDependencyGraph();
 
-    Iterable<VariableInfo> variableInfos();
+    Iterable<VariableInfo> variableInfoObjects();
 
     Set<Map.Entry<String, VariableInfo>> variables();
 
