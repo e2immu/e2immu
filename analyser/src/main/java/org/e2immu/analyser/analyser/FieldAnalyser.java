@@ -727,7 +727,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     m.methodLevelData().fieldSummaries.isSet(fieldInfo) &&
                             m.methodLevelData().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.READ) == Level.TRUE &&
                             m.methodLevelData().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.MODIFIED) == Level.DELAY)
-                    .forEach(m -> log(DELAYED, "Method {} reads the field, but we're still waiting"));
+                    .forEach(m -> log(DELAYED, "... method {} reads the field, but we're still waiting", m.methodInfo.name));
         }
         return DELAYS;
     }

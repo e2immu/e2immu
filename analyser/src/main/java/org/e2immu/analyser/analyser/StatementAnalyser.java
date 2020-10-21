@@ -54,21 +54,20 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalyser.class);
 
     public final StatementAnalysis statementAnalysis;
-    private VariableDataImpl.Builder variableDataBuilder;
-    private ConditionManager localConditionManager;
-
     private final MethodAnalyser myMethodAnalyser;
-
-    public NavigationData<StatementAnalyser> navigationData = new NavigationData<>();
+    private final AnalyserContext analyserContext;
+    private final Messages messages = new Messages();
+    public final NavigationData<StatementAnalyser> navigationData = new NavigationData<>();
 
     // if true, we should ignore errors on the condition in the next iterations
     // if(x == null) throw ... causes x to become @NotNull; in the next iteration, x==null cannot happen,
     // which would cause an error; it is this error that is eliminated
     private boolean ignoreErrorsOnCondition;
 
+    // the following three go null, not null together
+    private VariableDataImpl.Builder variableDataBuilder;
+    private ConditionManager localConditionManager;
     private AnalysisStatus analysisStatus;
-    private final AnalyserContext analyserContext;
-    private final Messages messages = new Messages();
 
     private StatementAnalyser(AnalyserContext analyserContext,
                               MethodAnalyser methodAnalyser,
@@ -78,8 +77,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         this.analyserContext = analyserContext;
         this.myMethodAnalyser = methodAnalyser;
         this.statementAnalysis = new StatementAnalysis(statement, parent, index);
-        boolean inPartOfConstruction = methodAnalyser.methodInfo.methodResolution.get().partOfConstruction.get();
-        variableDataBuilder = new VariableDataImpl.Builder(inPartOfConstruction);
     }
 
     public static StatementAnalyser recursivelyCreateAnalysisObjects(
@@ -141,26 +138,38 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     /**
-     * Main method, which follows the navigation chain
+     * Main recursive method, which follows the navigation chain for all statements in a block. When called from the method analyser,
+     * it loops over the statements of the method.
      *
      * @param iteration           the current iteration
      * @param forwardAnalysisInfo information from the level above
-     * @return all modifications to be done to parameters, methods
+     * @return the combination of a list of all modifications to be done to parameters, methods, and an AnalysisStatus object.
+     * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
      */
-    public StatementAnalyserResult analyse(int iteration, ForwardAnalysisInfo forwardAnalysisInfo) {
+    public StatementAnalyserResult analyseAllStatementsInBlock(int iteration, ForwardAnalysisInfo forwardAnalysisInfo) {
         try {
             // skip all the statements that are already in the DONE state...
             StatementAnalyser statementAnalyser = goToFirstStatementToAnalyse();
             StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
-            if (statementAnalyser == null) return builder.setAnalysisStatus(DONE).build();
+
+            if (statementAnalyser == null) {
+                // nothing left to analyse
+                return builder.setAnalysisStatus(DONE).build();
+            }
+
             StatementAnalyser previousStatement = null;
             do {
-                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager);
-                // first attempt at detecting a transformation
-                boolean wasReplacement = checkForPatterns(evaluationContext);
-                statementAnalyser = statementAnalyser.followReplacements();
+                boolean wasReplacement;
+                if (analyserContext.getConfiguration().analyserConfiguration.skipTransformations) {
+                    wasReplacement = false;
+                } else {
+                    EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager);
+                    // first attempt at detecting a transformation
+                    wasReplacement = checkForPatterns(evaluationContext);
+                    statementAnalyser = statementAnalyser.followReplacements();
+                }
                 StatementAnalysis previousStatementAnalysis = previousStatement == null ? null : previousStatement.statementAnalysis;
-                StatementAnalyserResult result = statementAnalyser.analyseReplacedStatement(iteration,
+                StatementAnalyserResult result = statementAnalyser.analyseSingleStatement(iteration,
                         wasReplacement, previousStatementAnalysis, forwardAnalysisInfo);
                 builder.add(result);
                 previousStatement = statementAnalyser;
@@ -244,36 +253,103 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      * @param iteration                 the iteration
      * @param wasReplacement            boolean, to ensure that the effect of a replacement warrants continued analysis
      * @param previousStatementAnalysis null if there was no previous statement in this block
-     * @return the effects that the analysis of this statement has on parameters, methods
+     * @return the combination of a list of all modifications to be done to parameters, methods, and an AnalysisStatus object.
+     * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
      */
-    private StatementAnalyserResult analyseReplacedStatement(int iteration,
-                                                             boolean wasReplacement,
-                                                             StatementAnalysis previousStatementAnalysis,
-                                                             ForwardAnalysisInfo forwardAnalysisInfo) {
+    private StatementAnalyserResult analyseSingleStatement(int iteration,
+                                                           boolean wasReplacement,
+                                                           StatementAnalysis previousStatementAnalysis,
+                                                           ForwardAnalysisInfo forwardAnalysisInfo) {
         String statementId = statementAnalysis.index;
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager);
-        boolean startOfNewBlock = previousStatementAnalysis == null;
-        variableDataBuilder.initialise(analyserContext,
-                myMethodAnalyser.getParameterAnalysers(),
-                startOfNewBlock ? statementAnalysis.parent : previousStatementAnalysis,
-                startOfNewBlock);
+        if (variableDataBuilder == null) {
+            assert analysisStatus == null : "analysisStatus is " + analysisStatus + ", expected it to be null";
+            assert localConditionManager == null : "expected null localConditionManager";
 
-        localConditionManager = startOfNewBlock ? (statementAnalysis.parent == null ?
-                ConditionManager.INITIAL :
-                statementAnalysis.parent.stateData.conditionManager.get().addCondition(forwardAnalysisInfo.conditionManager.condition)) :
-                previousStatementAnalysis.stateData.conditionManager.get();
+            boolean inPartOfConstruction = myMethodAnalyser.methodInfo.methodResolution.get().partOfConstruction.get();
+            variableDataBuilder = new VariableDataImpl.Builder(inPartOfConstruction);
 
-        if (statementAnalysis.flowData.computeGuaranteedToBeReached(previousStatementAnalysis, forwardAnalysisInfo.execution) &&
-                !statementAnalysis.inErrorState()) {
-            messages.add(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
-            statementAnalysis.errorFlags.errorValue.set(true);
+            boolean startOfNewBlock = previousStatementAnalysis == null;
+            variableDataBuilder.initialise(analyserContext,
+                    myMethodAnalyser.getParameterAnalysers(),
+                    startOfNewBlock ? statementAnalysis.parent : previousStatementAnalysis,
+                    startOfNewBlock);
+
+            localConditionManager = startOfNewBlock ? (statementAnalysis.parent == null ?
+                    ConditionManager.INITIAL :
+                    statementAnalysis.parent.stateData.conditionManager.get().addCondition(forwardAnalysisInfo.conditionManager.condition)) :
+                    previousStatementAnalysis.stateData.conditionManager.get();
+
+            if (statementAnalysis.flowData.computeGuaranteedToBeReached(previousStatementAnalysis, forwardAnalysisInfo.execution) &&
+                    !statementAnalysis.inErrorState()) {
+                messages.add(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
+                statementAnalysis.errorFlags.errorValue.set(true);
+            }
         }
 
+        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager);
         StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
 
-        analysisStatus = analyseSingleStatement3(evaluationContext, forwardAnalysisInfo, builder)
+        analysisStatus = singleStatementAnalysisSteps(evaluationContext, forwardAnalysisInfo, builder)
+                // we combine with PROGRESS in case of wasReplacement: even if there was still a delay,
+                // the replacement will ensure that we try once more
                 .combine(wasReplacement ? PROGRESS : DONE);
+        builder.setAnalysisStatus(analysisStatus);
 
+        visitStatementVisitors(statementId, evaluationContext);
+        StatementAnalyserResult result;
+
+        if (analysisStatus != DELAYS) {
+            // analyse data components
+
+            // state changes have been applied, StateData: condition, valueOfExpression
+
+            // flow
+            statementAnalysis.flowData.analyse(this, previousStatementAnalysis);
+
+            InterruptsFlow bestAlways = statementAnalysis.flowData.bestAlwaysInterrupt();
+            boolean escapes = bestAlways == InterruptsFlow.ESCAPE;
+            if (escapes) {
+                boolean alwaysExecuted = statementAnalysis.flowData.guaranteedToBeReachedInMethod.get() == FlowData.Execution.ALWAYS;
+                if (alwaysExecuted) {
+                    notNullEscapes(builder);
+                    sizeEscapes(builder);
+                    precondition(evaluationContext, statementAnalysis.stateData, previousStatementAnalysis);
+                }
+            }
+
+            // variable data
+            VariableDataImpl variableData = variableDataBuilder.build();
+            statementAnalysis.variableData.set(variableData);
+
+            // check for some errors
+            detectErrors();
+
+            // method level data
+            StatementAnalyserResult subResult = statementAnalysis.methodLevelData.analyse(evaluationContext, variableData,
+                    previousStatementAnalysis == null ? null : previousStatementAnalysis.methodLevelData,
+                    statementAnalysis.stateData);
+            builder.add(subResult);
+
+            // error flags
+            statementAnalysis.errorFlags.analyse(statementAnalysis, previousStatementAnalysis);
+
+            // state data
+            statementAnalysis.stateData.finalise(this, previousStatementAnalysis);
+
+            if (analysisStatus == DONE) {
+                variableDataBuilder = null;
+                localConditionManager = null;
+                // note that we must keep analysisStatus to DONE
+            }
+        }
+        result = builder.build();
+
+        log(ANALYSER, "Returning from statement {} of {} with analysis status {}", statementId,
+                myMethodAnalyser.methodInfo.name, result.analysisStatus);
+        return result;
+    }
+
+    private void visitStatementVisitors(String statementId, EvaluationContext evaluationContext) {
         for (StatementAnalyserVariableVisitor statementAnalyserVariableVisitor :
                 analyserContext.getConfiguration().debugConfiguration.statementAnalyserVariableVisitors) {
             variableDataBuilder.variableInfos().forEach(variableInfo -> statementAnalyserVariableVisitor.visit(
@@ -298,47 +374,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                             statementAnalysis.stateData.conditionManager.get().condition,
                             statementAnalysis.stateData.conditionManager.get().state));
         }
-
-        // analyse data components
-
-        // state changes have been applied, StateData: condition, valueOfExpression
-
-        // flow
-        statementAnalysis.flowData.analyse(this, previousStatementAnalysis);
-
-        InterruptsFlow bestAlways = statementAnalysis.flowData.bestAlwaysInterrupt();
-        boolean escapes = bestAlways == InterruptsFlow.ESCAPE;
-        if (escapes) {
-            boolean alwaysExecuted = statementAnalysis.flowData.guaranteedToBeReachedInMethod.get() == FlowData.Execution.ALWAYS;
-            if (alwaysExecuted) {
-                notNullEscapes(builder);
-                sizeEscapes(builder);
-                precondition(evaluationContext, statementAnalysis.stateData, previousStatementAnalysis);
-            }
-        }
-
-        // variable data
-        VariableDataImpl variableData = variableDataBuilder.build();
-        statementAnalysis.variableData.set(variableData);
-
-        // check for some errors
-        detectErrors();
-
-
-        // method level data
-        StatementAnalyserResult result = statementAnalysis.methodLevelData.analyse(evaluationContext, variableData,
-                previousStatementAnalysis == null ? null : previousStatementAnalysis.methodLevelData,
-                statementAnalysis.stateData);
-
-        // error flags
-        statementAnalysis.errorFlags.analyse(statementAnalysis, previousStatementAnalysis);
-
-        // state data
-        statementAnalysis.stateData.finalise(this, previousStatementAnalysis);
-
-        variableDataBuilder = null; // drop some data
-
-        return result;
     }
 
     /*
@@ -637,7 +672,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         FlowData.Execution executionBlock = statementsExecutedAtLeastOnce ? FlowData.Execution.ALWAYS : FlowData.Execution.CONDITIONALLY;
         FlowData.Execution execution = statementAnalysis.flowData.guaranteedToBeReachedInMethod.get();
 
-        StatementAnalyserResult recursiveResult = startOfFirstBlock.analyse(evaluationContext.getIteration(),
+        StatementAnalyserResult recursiveResult = startOfFirstBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
                 new ForwardAnalysisInfo(execution.worst(executionBlock), localConditionManager.addCondition(value), inSyncBlock, false));
         builder.add(recursiveResult);
         return inSyncBlock;
@@ -686,15 +721,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         StatementAnalyser subStatementStart = navigationData.blocks.get().get(count);
         boolean inCatch = structure.localVariableCreation != null;
-        StatementAnalyserResult result = subStatementStart.analyse(evaluationContext.getIteration(),
+        StatementAnalyserResult result = subStatementStart.analyseAllStatementsInBlock(evaluationContext.getIteration(),
                 new ForwardAnalysisInfo(execution, localConditionManager.addCondition(valueForSubStatement),
                         forwardAnalysisInfo.inSyncBlock, inCatch));
         builder.add(result);
     }
 
-    private AnalysisStatus analyseSingleStatement3(EvaluationContext evaluationContext,
-                                                   ForwardAnalysisInfo forwardAnalysisInfo,
-                                                   StatementAnalyserResult.Builder builder) {
+    private AnalysisStatus singleStatementAnalysisSteps(EvaluationContext evaluationContext,
+                                                        ForwardAnalysisInfo forwardAnalysisInfo,
+                                                        StatementAnalyserResult.Builder builder) {
         Structure structure = statementAnalysis.statement.getStructure();
 
         // STEP 1: Create a local variable x for(X x: Xs) {...}, or in catch(Exception e)
@@ -763,8 +798,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // PART 10: create subContext, add parameters of sub statements, execute
 
             step10_evaluateSubBlock(evaluationContext, forwardAnalysisInfo, builder, subStatements, count, value, valueForSubStatement);
-
-
         }
 
         if (structure.haveNonEmptyBlock()) {

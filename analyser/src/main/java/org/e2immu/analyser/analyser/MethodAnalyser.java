@@ -101,7 +101,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         if (firstStatementAnalyser != null) {
 
             AnalysisStatus.AnalysisResultSupplier statementAnalyser = (iteration) -> {
-                StatementAnalyserResult result = firstStatementAnalyser.analyse(iteration, ForwardAnalysisInfo.START_OF_METHOD);
+                StatementAnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(iteration, ForwardAnalysisInfo.START_OF_METHOD);
                 // apply all modifications
                 result.getModifications().forEach(Runnable::run);
                 return result.analysisStatus;
