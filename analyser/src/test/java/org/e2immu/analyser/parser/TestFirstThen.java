@@ -54,15 +54,15 @@ public class TestFirstThen extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("getFirst".equals(d.methodInfo.name) && "FirstThen.this.first".equals(d.variableName)) {
             if ("0".equals(d.statementId)) {
-                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.READ));
+                Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.READ));
             }
             if ("1".equals(d.statementId)) {
-                Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, (int) d.properties.get(VariableProperty.READ));
+                Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, d.properties.get(VariableProperty.READ));
             }
         }
         if ("equals".equals(d.methodInfo.name) && "o".equals(d.variableName)) {
             if ("2".equals(d.statementId)) {
-                Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
             }
         }
     };

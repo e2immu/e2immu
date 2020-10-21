@@ -48,7 +48,7 @@ public class IncrementalMap<K> extends Freezable {
         Integer current = map.get(k);
         // can go from -1 to 1, not from 1 to -1; can go from 1 to 2, from -1 to -2
         if (current != null && !accept.test(current, v))
-            throw new UnsupportedOperationException("Not incremental? had " + current + ", now " + v+"; key "+k);
+            throw new UnsupportedOperationException("Not incremental? had " + current + ", now " + v + "; key " + k);
         map.put(k, v);
     }
 
@@ -94,5 +94,13 @@ public class IncrementalMap<K> extends Freezable {
 
     public Stream<Map.Entry<K, Integer>> stream() {
         return map.entrySet().stream();
+    }
+
+    public int getOrDefault(K k, int i) {
+        return map.getOrDefault(k, i);
+    }
+
+    public void putAll(IncrementalMap<K> other) {
+        map.putAll(other.map);
     }
 }

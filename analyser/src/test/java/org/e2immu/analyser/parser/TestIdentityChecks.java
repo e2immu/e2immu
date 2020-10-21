@@ -24,13 +24,13 @@ public class TestIdentityChecks extends CommonTestRunner {
         if (d.methodInfo.name.equals("idem") && "s".equals(d.variableName)) {
             if ("0".equals(d.statementId)) {
                 // strings are @NM by definition
-                Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.READ_ASSIGN_ONCE, (int) d.properties.get(VariableProperty.READ)); // read 1x
+                Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.READ_ASSIGN_ONCE, d.properties.get(VariableProperty.READ)); // read 1x
                 // there is an explicit @NotNull on the first parameter of debug
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             } else if ("1".equals(d.statementId)) {
-                Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, (int) d.properties.get(VariableProperty.READ)); // read 2x
+                Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, d.properties.get(VariableProperty.READ)); // read 2x
                 // there is an explicit @NotNull on the first parameter of debug
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             } else Assert.fail();

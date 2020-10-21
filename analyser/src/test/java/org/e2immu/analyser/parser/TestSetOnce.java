@@ -27,7 +27,6 @@ import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.Variable;
 import org.junit.Assert;

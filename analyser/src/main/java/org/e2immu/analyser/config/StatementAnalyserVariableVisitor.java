@@ -6,6 +6,7 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.util.IncrementalMap;
 
 import java.util.Map;
 
@@ -20,11 +21,11 @@ public interface StatementAnalyserVariableVisitor {
         public final Value currentValue;
         public final Value stateOnAssignment;
         public final ObjectFlow objectFlow;
-        public final Map<VariableProperty, Integer> properties;
+        public final IncrementalMap<VariableProperty> properties;
 
         public Data(int iteration, MethodInfo methodInfo, String statementId,
                     String variableName, Variable variable, Value currentValue, Value stateOnAssignment,
-                    ObjectFlow objectFlow, Map<VariableProperty, Integer> properties) {
+                    ObjectFlow objectFlow, IncrementalMap<VariableProperty> properties) {
             this.iteration = iteration;
             this.methodInfo = methodInfo;
             this.variable = variable;

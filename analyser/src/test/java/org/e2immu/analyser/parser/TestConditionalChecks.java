@@ -20,7 +20,7 @@ public class TestConditionalChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("method5".equals(d.methodInfo.name) && "o".equals(d.variableName)) {
             if ("0".equals(d.statementId)) {
-                Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertFalse(d.properties.isSet(VariableProperty.NOT_NULL));
             }
         }
         if ("method5".equals(d.methodInfo.name) && "conditionalChecks".equals(d.variableName)) {

@@ -60,7 +60,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     public final NavigationData<StatementAnalyser> navigationData = new NavigationData<>();
 
     // shared state over the different analysers
-    private VariableDataImpl.Builder variableDataBuilder;
     private ConditionManager localConditionManager;
     private AnalysisStatus analysisStatus;
     private AnalyserComponents<String, SharedState> analyserComponents;
@@ -283,17 +282,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                                            boolean wasReplacement,
                                                            StatementAnalysis previousStatementAnalysis,
                                                            ForwardAnalysisInfo forwardAnalysisInfo) {
-        if (variableDataBuilder == null) {
-            assert analysisStatus == null : "analysisStatus is " + analysisStatus + ", expected it to be null";
+        if (analysisStatus == null) {
             assert localConditionManager == null : "expected null localConditionManager";
 
             boolean inPartOfConstruction = myMethodAnalyser.methodInfo.methodResolution.get().partOfConstruction.get();
-            variableDataBuilder = new VariableDataImpl.Builder(inPartOfConstruction);
 
             boolean startOfNewBlock = previousStatementAnalysis == null;
-            variableDataBuilder.initialise(analyserContext,
+            statementAnalysis.initialise(analyserContext,
                     myMethodAnalyser.getParameterAnalysers(),
-                    variableDataOfPrevious(),
+                    previousStatementAnalysis,
                     startOfNewBlock);
 
             localConditionManager = startOfNewBlock ? (statementAnalysis.parent == null ?
@@ -321,13 +318,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         SharedState sharedState = new SharedState(evaluationContext, builder);
         AnalysisStatus overallStatus = analyserComponents.run(sharedState);
 
-        // variable data
-        VariableDataImpl variableData = variableDataBuilder.build();
-        statementAnalysis.variableData.set(variableData);
-
-
         // method level data
-        statementAnalysis.methodLevelData.analyse(evaluationContext, variableData,
+        statementAnalysis.methodLevelData.analyse(evaluationContext, statementAnalysis,
                 previousStatementAnalysis == null ? null : previousStatementAnalysis.methodLevelData,
                 statementAnalysis.stateData);
 
@@ -345,7 +337,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         visitStatementVisitors(statementAnalysis.index, sharedState);
 
         if (analysisStatus == DONE) {
-            variableDataBuilder = null;
             localConditionManager = null;
             analyserComponents = null;
             // note that we must keep analysisStatus to DONE
@@ -359,16 +350,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private void visitStatementVisitors(String statementId, SharedState sharedState) {
         for (StatementAnalyserVariableVisitor statementAnalyserVariableVisitor :
                 analyserContext.getConfiguration().debugConfiguration.statementAnalyserVariableVisitors) {
-            variableDataBuilder.variableInfos().forEach(variableInfo -> statementAnalyserVariableVisitor.visit(
-                    new StatementAnalyserVariableVisitor.Data(
-                            sharedState.evaluationContext.getIteration(),
-                            myMethodAnalyser.methodInfo,
-                            statementId,
-                            variableInfo.getName(),
-                            variableInfo.getVariable(),
-                            variableInfo.getCurrentValue(),
-                            variableInfo.getStateOnAssignment(),
-                            variableInfo.getObjectFlow(), variableInfo.properties())));
+            statementAnalysis.variables.stream()
+                    .map(Map.Entry::getValue)
+                    .forEach(variableInfo -> statementAnalyserVariableVisitor.visit(
+                            new StatementAnalyserVariableVisitor.Data(
+                                    sharedState.evaluationContext.getIteration(),
+                                    myMethodAnalyser.methodInfo,
+                                    statementId,
+                                    variableInfo.name,
+                                    variableInfo.variable,
+                                    variableInfo.getCurrentValue(),
+                                    variableInfo.getStateOnAssignment(),
+                                    variableInfo.getObjectFlow(),
+                                    variableInfo.properties)));
         }
         for (StatementAnalyserVisitor statementAnalyserVisitor :
                 analyserContext.getConfiguration().debugConfiguration.statementAnalyserVisitors) {
@@ -460,7 +454,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
 
                 // as a context property
-                variableDataBuilder.addProperty(nullVariable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                statementAnalysis.addProperty(nullVariable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                 if (!ignoreErrorsOnCondition) {
                     log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
                     ignoreErrorsOnCondition = true;
@@ -482,7 +476,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     ParameterAnalysis parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
                     sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.SIZE, sizeRestriction));
 
-                    variableDataBuilder.addProperty(parameterInfo, VariableProperty.SIZE, sizeRestriction);
+                    statementAnalysis.addProperty(parameterInfo, VariableProperty.SIZE, sizeRestriction);
                     if (!ignoreErrorsOnCondition) {
                         log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
                         ignoreErrorsOnCondition = true;
@@ -500,13 +494,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (structure.localVariableCreation != null) {
             lvr = new LocalVariableReference(structure.localVariableCreation,
                     List.of());
-            variableDataBuilder.createLocalVariableOrParameter(analyserContext, lvr);
+            statementAnalysis.ensureLocalVariableOrParameter(analyserContext, lvr);
 
             if (inCatch) {
-                variableDataBuilder.addProperty(lvr, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-                variableDataBuilder.addProperty(lvr, VariableProperty.READ, Level.READ_ASSIGN_ONCE);
+                statementAnalysis.addProperty(lvr, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                statementAnalysis.addProperty(lvr, VariableProperty.READ, Level.READ_ASSIGN_ONCE);
             } else if (assignedInLoop) {
-                variableDataBuilder.addProperty(lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+                statementAnalysis.addProperty(lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
             }
         } else {
             lvr = null;
@@ -521,9 +515,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 LocalVariableReference lvr = new LocalVariableReference((lvc).localVariable, List.of());
                 // the NO_VALUE here becomes the initial (and reset) value, which should not be a problem because variables
                 // introduced here should not become "reset" to an initial value; they'll always be assigned one
-                variableDataBuilder.createLocalVariableOrParameter(analyserContext, lvr);
+                statementAnalysis.ensureLocalVariableOrParameter(analyserContext, lvr);
                 if (assignedInLoop) {
-                    variableDataBuilder.addProperty(lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+                    statementAnalysis.addProperty(lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
                 }
             }
             try {
@@ -543,9 +537,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     int levelLoop = statementAnalysis.stepsUpToLoop();
                     if (levelLoop >= 0) {
                         Variable assignmentTarget = initialiser.assignmentTarget().get();
-                        int levelAssignmentTarget = variableDataBuilder.levelVariable(assignmentTarget);
+                        int levelAssignmentTarget = statementAnalysis.levelVariable(assignmentTarget);
                         if (levelAssignmentTarget >= levelLoop) {
-                            variableDataBuilder.addProperty(assignmentTarget, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+                            statementAnalysis.addProperty(assignmentTarget, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
                         }
                     }
                 }
@@ -590,7 +584,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             ArrayValue arrayValue;
             if (((arrayValue = value.asInstanceOf(ArrayValue.class)) != null) &&
                     arrayValue.values.stream().allMatch(evaluationContext::isNotNull0)) {
-                variableDataBuilder.addProperty(localVariableReference, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                statementAnalysis.addProperty(localVariableReference, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
             }
         }
     }
@@ -826,7 +820,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (structure.haveNonEmptyBlock()) {
 
             List<StatementAnalyser> lastStatements = startOfBlocks.stream().map(StatementAnalyser::lastStatement).collect(Collectors.toList());
-            variableDataBuilder.copyBackLocalCopies(lastStatements, structure.noBlockMayBeExecuted);
+            statementAnalysis.copyBackLocalCopies(lastStatements, structure.noBlockMayBeExecuted);
 
             if (isSwitchOrIfElse && !defaultCondition.isConstant()) {
                 // compute the escape situation of the sub-blocks
@@ -866,25 +860,27 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (atEndOfBlock || alwaysInterrupts) {
             // we run at the local level
             List<String> toRemove = new ArrayList<>();
-            for (VariableInfo variableInfo : variableDataBuilder.variableInfos()) {
-                if (variableInfo.getProperty(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT) == Level.TRUE) {
+            statementAnalysis.variableStream().forEach(variableInfo -> {
+                int assigned = variableInfo.getProperty(VariableProperty.ASSIGNED);
+                int read = variableInfo.getProperty(VariableProperty.READ);
+                if (assigned >= Level.TRUE && read <= assigned) {
                     boolean notAssignedInLoop = variableInfo.getProperty(VariableProperty.ASSIGNED_IN_LOOP) != Level.TRUE;
                     // TODO at some point we will do better than "notAssignedInLoop"
                     boolean useless = bestAlwaysInterrupt == InterruptsFlow.ESCAPE || notAssignedInLoop && (
-                            alwaysInterrupts && variableDataBuilder.isLocalVariable(variableInfo) ||
+                            alwaysInterrupts && statementAnalysis.isLocalVariable(variableInfo) ||
                                     variableInfo.isNotLocalCopy() && variableInfo.isLocalVariableReference());
                     if (useless) {
-                        if (!statementAnalysis.errorFlags.uselessAssignments.isSet(variableInfo.getVariable())) {
-                            statementAnalysis.errorFlags.uselessAssignments.put(variableInfo.getVariable(), true);
-                            messages.add(Message.newMessage(getLocation(), Message.USELESS_ASSIGNMENT, variableInfo.getName()));
+                        if (!statementAnalysis.errorFlags.uselessAssignments.isSet(variableInfo.variable)) {
+                            statementAnalysis.errorFlags.uselessAssignments.put(variableInfo.variable, true);
+                            messages.add(Message.newMessage(getLocation(), Message.USELESS_ASSIGNMENT, variableInfo.name));
                         }
-                        if (variableInfo.isLocalCopy()) toRemove.add(variableInfo.getName());
+                        if (variableInfo.isLocalCopy()) toRemove.add(variableInfo.name);
                     }
                 }
-            }
+            });
             if (!toRemove.isEmpty()) {
                 log(VARIABLE_PROPERTIES, "Removing local info for variables {}", toRemove);
-                variableDataBuilder.removeAllVariables(toRemove);
+                statementAnalysis.removeAllVariables(toRemove);
             }
         }
         return DONE;
@@ -894,16 +890,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (navigationData.next.get().isEmpty()) {
             // at the end of the block, check for variables created in this block
             // READ is set in the first iteration, so there is no reason to expect delays
-            for (VariableInfo variableInfo : variableDataBuilder.variableInfos()) {
+            statementAnalysis.variableStream().forEach(variableInfo -> {
                 if (variableInfo.isNotLocalCopy() && variableInfo.isLocalVariableReference()
                         && variableInfo.getProperty(VariableProperty.READ) < Level.READ_ASSIGN_ONCE) {
-                    LocalVariable localVariable = ((LocalVariableReference) variableInfo.getVariable()).variable;
+                    LocalVariable localVariable = ((LocalVariableReference) variableInfo.variable).variable;
                     if (!statementAnalysis.errorFlags.unusedLocalVariables.isSet(localVariable)) {
                         statementAnalysis.errorFlags.unusedLocalVariables.put(localVariable, true);
                         messages.add(Message.newMessage(getLocation(), Message.UNUSED_LOCAL_VARIABLE, localVariable.name));
                     }
                 }
-            }
+            });
         }
         return DONE;
     }
@@ -948,7 +944,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public Set<String> allUnqualifiedVariableNames() {
-            return variableDataBuilder.allUnqualifiedVariableNames(getCurrentType().typeInfo);
+            return statementAnalysis.allUnqualifiedVariableNames(getCurrentType().typeInfo);
         }
 
         @Override
@@ -1008,7 +1004,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (value instanceof VariableValue) {
                 Variable variable = ((VariableValue) value).variable;
                 if (VariableProperty.NOT_NULL == variableProperty && MultiLevel.isEffectivelyNotNull(notNullAccordingToConditionManager(value))) {
-                    return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL, variableDataBuilder.getProperty(variable, variableProperty));
+                    return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL, statementAnalysis.getProperty(variable, variableProperty));
                 }
                 if (VariableProperty.SIZE == variableProperty) {
                     Value sizeRestriction = conditionManager.individualSizeRestrictions().get(variable);
@@ -1016,7 +1012,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         return sizeRestriction.encodedSizeRestriction();
                     }
                 }
-                return variableDataBuilder.getProperty(variable, variableProperty);
+                return statementAnalysis.getProperty(variable, variableProperty);
             }
             // the following situation occurs when the state contains, e.g., not (null == map.get(a)),
             // and we need to evaluate the NOT_NULL property in the return transfer value in StatementAnalyser
@@ -1064,20 +1060,20 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public Value currentValue(Variable variable) {
-            VariableInfoImpl.Builder v = find(variable);
-            return v == null ? NO_VALUE : v.getCurrentValue();
+            VariableInfo vi = find(variable);
+            return vi == null ? NO_VALUE : vi.getCurrentValue();
         }
 
         @Override
         public Value currentValue(String variableName) {
-            return variableDataBuilder.find(variableName).getCurrentValue();
+            return statementAnalysis.find(variableName).getCurrentValue();
         }
 
         @Override
         public int getProperty(Variable variable, VariableProperty variableProperty) {
             Value currentValue = currentValue(variable);
             if (currentValue instanceof VariableValue) {
-                return variableDataBuilder.find(variable).getProperty(variableProperty);
+                return statementAnalysis.find(variable).getProperty(variableProperty);
             }
             return currentValue.getPropertyOutsideContext(variableProperty);
         }
@@ -1098,7 +1094,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 TypeInfo typeInfo = variableValue.variable.parameterizedType().bestTypeInfo();
                 boolean notSelf = typeInfo != getCurrentType().typeInfo;
                 if (notSelf) {
-                    VariableInfo variableInfo = variableDataBuilder.find(variableValue.variable);
+                    VariableInfo variableInfo = statementAnalysis.find(variableValue.variable);
                     int immutable = variableInfo.getProperty(VariableProperty.IMMUTABLE);
                     if (immutable == MultiLevel.DELAY) return null;
                     if (MultiLevel.isE2Immutable(immutable)) return Set.of();
@@ -1109,14 +1105,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    private VariableInfoImpl.Builder find(Variable variable) {
+    private VariableInfo find(Variable variable) {
         if (variable instanceof FieldReference fieldReference) {
             FieldAnalyser fieldAnalyser = myMethodAnalyser.getFieldAnalyser(fieldReference.fieldInfo);
             FieldAnalysis fieldAnalysis = fieldAnalyser != null ? fieldAnalyser.fieldAnalysis : fieldReference.fieldInfo.fieldAnalysis.get();
             int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-            return variableDataBuilder.ensureFieldReference(analyserContext, fieldReference, effectivelyFinal);
+            return statementAnalysis.ensureFieldReference(analyserContext, fieldReference, effectivelyFinal);
         }
-        return variableDataBuilder.find(variable);
+        return statementAnalysis.find(variable);
     }
 
     public class SetProperty implements StatementAnalysis.StatementAnalysisModification {
@@ -1132,7 +1128,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void run() {
-            VariableInfoImpl.Builder variableInfo = find(variable);
+            VariableInfo variableInfo = find(variable);
             if (variableInfo == null) {
                 return;
             }
@@ -1146,7 +1142,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if ((valueWithVariable = currentValue.asInstanceOf(VariableValue.class)) == null) return;
             Variable other = valueWithVariable.variable;
             if (!variable.equals(other)) {
-                variableDataBuilder.addProperty(other, property, value);
+                statementAnalysis.addProperty(other, property, value);
             }
         }
 
@@ -1293,7 +1289,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void run() {
-            variableDataBuilder.assignmentBasics(assignmentTarget, value, assignedNonEmptyValue, evaluationContext);
+            statementAnalysis.assignmentBasics(assignmentTarget, value, assignedNonEmptyValue, evaluationContext);
         }
 
         @Override

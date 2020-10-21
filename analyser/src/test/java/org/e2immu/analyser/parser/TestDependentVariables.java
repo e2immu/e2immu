@@ -16,15 +16,18 @@ public class TestDependentVariables extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("method1".equals(d.methodInfo.name)) {
+
+            int read = d.properties.getOrDefault(VariableProperty.READ, Level.DELAY);
+            int assigned = d.properties.getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
+
             if ("2".equals(d.statementId) && "array[0]".equals(d.variableName)) {
-                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
+                Assert.assertTrue(assigned > read);
             }
             if ("4".equals(d.statementId) && "array[0]".equals(d.variableName)) {
-                Assert.assertNull(d.properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
-                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.READ));
+                Assert.assertTrue(assigned < read);
             }
             if ("4".equals(d.statementId) && "array".equals(d.variableName)) {
-                Assert.assertEquals(VariableProperty.READ.best, (int) d.properties.get(VariableProperty.READ));
+                Assert.assertTrue(read > 1);
             }
         }
     };

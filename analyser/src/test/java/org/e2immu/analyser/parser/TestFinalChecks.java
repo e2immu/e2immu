@@ -21,10 +21,10 @@ public class TestFinalChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVisitor = d -> {
         if (d.methodInfo.name.equals("setS4") && "s4".equals(d.variableName)) {
             if ("0".equals(d.statementId)) {
-                Assert.assertNull(d.properties.get(VariableProperty.MODIFIED)); // no method was called on parameter s4
-                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.READ)); // read 1x
+                Assert.assertFalse(d.properties.isSet(VariableProperty.MODIFIED)); // no method was called on parameter s4
+                Assert.assertEquals(1, d.properties.get(VariableProperty.READ)); // read 1x
                 // there is an explicit @NotNull on the first parameter of debug
-                Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL)); // nothing that points to not null
+                Assert.assertFalse(d.properties.isSet(VariableProperty.NOT_NULL)); // nothing that points to not null
             } else Assert.fail();
         }
 
@@ -35,7 +35,7 @@ public class TestFinalChecks extends CommonTestRunner {
             } else if (d.iteration == 1) {
                 Assert.assertEquals("s1 + abc", d.currentValue.toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
-                Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertFalse(d.properties.isSet(VariableProperty.NOT_NULL));
             } else if (d.iteration > 1) {
                 Assert.assertEquals("s1 + abc", d.currentValue.toString());
                 Assert.assertTrue(d.currentValue instanceof StringConcat);

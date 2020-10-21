@@ -28,8 +28,6 @@ public enum VariableProperty {
     // can be read multiple times
     READ("read", true, Level.FALSE, Level.READ_ASSIGN_MULTIPLE_TIMES, Level.FALSE, Level.FALSE),
 
-    NOT_YET_READ_AFTER_ASSIGNMENT("not yet read"),
-
     // assigned multiple times
     ASSIGNED("assigned", true, Level.FALSE, Level.READ_ASSIGN_MULTIPLE_TIMES, Level.FALSE, Level.FALSE),
 
@@ -47,6 +45,9 @@ public enum VariableProperty {
     METHOD_DELAY("method delay"),
     // continuation of METHOD_DELAY from variable properties into field summaries
     METHOD_DELAY_RESOLVED("method delay"),
+
+    // removed after detection of "not used"
+    REMOVED("removed"),
 
     // the ones corresponding to annotations
 

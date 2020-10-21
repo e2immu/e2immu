@@ -34,12 +34,12 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
             if (d.iteration == 0) {
                 // only during the 1st iteration there is no @NotNull on the parameter, so there is a restriction
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.properties.get(VariableProperty.NOT_NULL));
             }
         }
         // the variable has the value of param, which has received a @NotNull
         if ("FinalNotNullChecks".equals(d.methodInfo.name) && "FinalNotNullChecks.this.input".equals(d.variableName)) {
-            Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
+            Assert.assertFalse(d.properties.isSet(VariableProperty.NOT_NULL));
         }
     };
 

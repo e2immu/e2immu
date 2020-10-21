@@ -22,7 +22,7 @@ public class TestFunctionalInterfaceModified4 extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("visit3".equals(d.methodInfo.name) && "FunctionalInterfaceModified4.this.ts".equals(d.variableName)) {
-            Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
             // if(d.iteration>0) Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.METHOD_DELAY));
         }
     };

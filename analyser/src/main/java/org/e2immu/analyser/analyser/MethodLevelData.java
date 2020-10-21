@@ -29,6 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
@@ -63,30 +65,32 @@ public class MethodLevelData {
 
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
 
-    public StatementAnalyserResult analyse(EvaluationContext evaluationContext, VariableData variableData,
-                                           MethodLevelData previous, StateData stateData) {
+    public StatementAnalyserResult analyse(EvaluationContext evaluationContext,
+                                           StatementAnalysis statementAnalysis,
+                                           MethodLevelData previous,
+                                           StateData stateData) {
         MethodInfo methodInfo = evaluationContext.getCurrentMethod().methodInfo;
         String logLocation = methodInfo.distinguishingName();
         try {
             StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
 
             // start with a one-off copying
-            AnalysisStatus analysisStatus = copyFieldAndThisProperties(evaluationContext, variableData)
+            AnalysisStatus analysisStatus = copyFieldAndThisProperties(evaluationContext, statementAnalysis)
 
                     // this one can be delayed, it copies the field assignment values
-                    .combine(copyFieldAssignmentValue(variableData))
+                    .combine(copyFieldAssignmentValue(statementAnalysis))
 
                     // SIZE, NOT_NULL into fieldSummaries
                     // builder contains changes to parameter analysis properties
-                    .combine(copyContextProperties(evaluationContext, variableData, builder))
+                    .combine(copyContextProperties(evaluationContext, statementAnalysis, builder))
 
                     // this method computes, unless delayed, the values for
                     // - linksComputed
                     // - variablesLinkedToFieldsAndParameters
                     // - fieldsLinkedToFieldsAndVariables
-                    .combine(establishLinks(variableData, evaluationContext, logLocation))
+                    .combine(establishLinks(statementAnalysis, evaluationContext, logLocation))
                     .combine(methodInfo.isConstructor ? DONE : updateVariablesLinkedToMethodResult(evaluationContext, builder, logLocation))
-                    .combine(computeContentModifications(evaluationContext, variableData, builder, logLocation)
+                    .combine(computeContentModifications(evaluationContext, statementAnalysis, builder, logLocation)
                             .combine(combinePrecondition(previous, stateData)));
             builder.setAnalysisStatus(analysisStatus);
             return builder.build();
@@ -156,17 +160,16 @@ public class MethodLevelData {
 
     */
 
-    private AnalysisStatus establishLinks(VariableData variableData, EvaluationContext evaluationContext, String logLocation) {
+    private AnalysisStatus establishLinks(StatementAnalysis statementAnalysis, EvaluationContext evaluationContext, String logLocation) {
         if (variablesLinkedToFieldsAndParameters.isSet()) return DONE;
 
         // final fields need to have a value set; all the others act as local variables
-        boolean someVariablesHaveNotBeenEvaluated = variableData.variables().stream()
-                .anyMatch(av -> av.getValue().getCurrentValue() == UnknownValue.NO_VALUE);
+        boolean someVariablesHaveNotBeenEvaluated = statementAnalysis.variableStream().anyMatch(vi -> vi.getCurrentValue() == UnknownValue.NO_VALUE);
         if (someVariablesHaveNotBeenEvaluated) {
             log(DELAYED, "Some variables have not yet been evaluated -- delaying establishing links");
             return DELAYS;
         }
-        if (variableData.isDelaysInDependencyGraph()) {
+        if (statementAnalysis.isDelaysInDependencyGraph()) {
             log(DELAYED, "Dependency graph suffers delays -- delaying establishing links");
             return DELAYS;
         }
@@ -178,8 +181,8 @@ public class MethodLevelData {
         }
 
         Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters = new HashMap<>();
-        variableData.getDependencyGraph().visit((variable, dependencies) -> {
-            Set<Variable> fieldAndParameterDependencies = new HashSet<>(variableData.getDependencyGraph().dependencies(variable));
+        statementAnalysis.dependencyGraph.visit((variable, dependencies) -> {
+            Set<Variable> fieldAndParameterDependencies = new HashSet<>(statementAnalysis.dependencyGraph.dependencies(variable));
             fieldAndParameterDependencies.removeIf(v -> !(v instanceof FieldReference) && !(v instanceof ParameterInfo));
             if (dependencies != null) {
                 dependencies.stream().filter(d -> d instanceof ParameterInfo).forEach(fieldAndParameterDependencies::add);
@@ -281,18 +284,18 @@ public class MethodLevelData {
     }
 
     private AnalysisStatus computeContentModifications(EvaluationContext evaluationContext,
-                                                       VariableData variableData,
+                                                       StatementAnalysis statementAnalysis,
                                                        StatementAnalyserResult.Builder builder,
                                                        String logLocation) {
         if (!variablesLinkedToFieldsAndParameters.isSet()) return DELAYS;
 
-        AnalysisStatus analysisStatus = DONE;
-        boolean changes = false;
+        final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
+        final AtomicBoolean changes = new AtomicBoolean();
 
         // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
-        for (VariableInfo variableInfo : variableData.variableInfoObjects()) {
+        statementAnalysis.variableStream().forEach(variableInfo -> {
             Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(variablesLinkedToFieldsAndParameters.get(),
-                    variableInfo.getVariable());
+                    variableInfo.variable);
             int summary = evaluationContext.summarizeModification(linkedVariables);
             for (Variable linkedVariable : linkedVariables) {
                 if (linkedVariable instanceof FieldReference) {
@@ -313,12 +316,12 @@ public class MethodLevelData {
                         } else fieldModified = summary;
                         if (fieldModified == Level.DELAY) {
                             log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), logLocation);
-                            analysisStatus = DELAYS;
+                            analysisStatus.set(DELAYS);
                         } else {
                             log(NOT_MODIFIED, "Mark {} " + (fieldModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
                                     linkedVariable.fullyQualifiedName(), logLocation);
                             tv.properties.put(VariableProperty.MODIFIED, fieldModified);
-                            changes = true;
+                            changes.set(true);
                         }
                     }
                 } else if (linkedVariable instanceof ParameterInfo) {
@@ -329,21 +332,21 @@ public class MethodLevelData {
                     } else {
                         if (summary == Level.DELAY) {
                             log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), logLocation);
-                            analysisStatus = DELAYS;
+                            analysisStatus.set(DELAYS);
                         } else {
                             log(NOT_MODIFIED, "Mark {} as {} in {}", linkedVariable.fullyQualifiedName(),
                                     summary == Level.TRUE ? "@Modified" : "@NotModified", logLocation);
                             int currentModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
                             if (currentModified == Level.DELAY) {
                                 builder.add(parameterAnalysis.new SetProperty(VariableProperty.MODIFIED, summary));
-                                changes = true;
+                                changes.set(true);
                             }
                         }
                     }
                 }
             }
-        }
-        return analysisStatus == DELAYS ? (changes ? PROGRESS : DELAYS) : DONE;
+        });
+        return analysisStatus.get() == DELAYS ? (changes.get() ? PROGRESS : DELAYS) : DONE;
     }
 
 
@@ -355,19 +358,18 @@ public class MethodLevelData {
      * @param evaluationContext context
      * @return if any change happened to methodAnalysis
      */
-    private AnalysisStatus copyFieldAndThisProperties(EvaluationContext evaluationContext, VariableData variableData) {
+    private AnalysisStatus copyFieldAndThisProperties(EvaluationContext evaluationContext, StatementAnalysis statementAnalysis) {
         if (evaluationContext.getIteration() > 0) return DONE;
 
-        for (VariableInfo variableInfo : variableData.variableInfoObjects()) {
-            Variable variable = variableInfo.getVariable();
-            if (variable instanceof FieldReference) {
-                FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+        statementAnalysis.variableStream().forEach(variableInfo -> {
+            if (variableInfo.variable instanceof FieldReference) {
+                FieldInfo fieldInfo = ((FieldReference) variableInfo.variable).fieldInfo;
                 if (!fieldSummaries.isSet(fieldInfo)) {
                     TransferValue tv = new TransferValue();
                     fieldSummaries.put(fieldInfo, tv);
                     copy(variableInfo, tv);
                 }
-            } else if (variable instanceof This) {
+            } else if (variableInfo.variable instanceof This) {
                 if (!thisSummary.isSet()) {
                     TransferValue tv = new TransferValue();
                     thisSummary.set(tv);
@@ -382,7 +384,7 @@ public class MethodLevelData {
                     tv.properties.put(VariableProperty.MODIFIED, modified);
                 }
             }
-        }
+        });
         // fields that are not present, do not get a mention. But thisSummary needs to be present.
         if (!thisSummary.isSet()) {
             TransferValue tv = new TransferValue();
@@ -401,49 +403,49 @@ public class MethodLevelData {
         }
     }
 
-    private AnalysisStatus copyFieldAssignmentValue(VariableData variableData) {
-        boolean changes = false;
-        AnalysisStatus analysisStatus = DONE;
-        for (VariableInfo variableInfo : variableData.variableInfoObjects()) {
-            Variable variable = variableInfo.getVariable();
-            if (variable instanceof FieldReference && variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE) {
-                FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+    private AnalysisStatus copyFieldAssignmentValue(StatementAnalysis statementAnalysis) {
+        final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
+        final AtomicBoolean changes = new AtomicBoolean();
+
+        statementAnalysis.variableStream().forEach(variableInfo -> {
+            if (variableInfo.variable instanceof FieldReference && variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE) {
+                FieldInfo fieldInfo = ((FieldReference) variableInfo.variable).fieldInfo;
                 TransferValue tv = fieldSummaries.get(fieldInfo);
                 Value value = variableInfo.getCurrentValue();
                 if (value == UnknownValue.NO_VALUE) {
-                    analysisStatus = DELAYS;
+                    analysisStatus.set(DELAYS);
                 } else if (!tv.value.isSet()) {
-                    changes = true;
+                    changes.set(true);
                     tv.value.set(value);
                 }
                 // the values of IMMUTABLE, CONTAINER, NOT_NULL, SIZE will be obtained from the value, they need not copying.
                 Value stateOnAssignment = variableInfo.getStateOnAssignment();
                 if (stateOnAssignment == UnknownValue.NO_VALUE) {
-                    analysisStatus = DELAYS;
+                    analysisStatus.set(DELAYS);
                 } else if (stateOnAssignment != UnknownValue.EMPTY && !tv.stateOnAssignment.isSet()) {
                     tv.stateOnAssignment.set(stateOnAssignment);
-                    changes = true;
+                    changes.set(true);
                 }
             }
-        }
-        return analysisStatus == DELAYS ? (changes ? PROGRESS : DELAYS) : DONE;
+        });
+        return analysisStatus.get() == DELAYS ? (changes.get() ? PROGRESS : DELAYS) : DONE;
     }
 
     // a DELAY should only be possible for good reasons
     // context can generally only be delayed when there is a method delay
 
     private AnalysisStatus copyContextProperties(EvaluationContext evaluationContext,
-                                                 VariableData variableData,
+                                                 StatementAnalysis statementAnalysis,
                                                  StatementAnalyserResult.Builder builder) {
-        boolean changes = false;
-        boolean anyDelay = false;
-        for (VariableInfo variableInfo : variableData.variableInfoObjects()) {
-            Variable variable = variableInfo.getVariable();
+        final AtomicBoolean changes = new AtomicBoolean();
+        final AtomicBoolean anyDelay = new AtomicBoolean();
+
+        statementAnalysis.variableStream().forEach(variableInfo -> {
             int methodDelay = variableInfo.getProperty(VariableProperty.METHOD_DELAY);
             boolean haveDelay = methodDelay == Level.TRUE || variableInfo.getCurrentValue() == UnknownValue.NO_VALUE;
-            if (haveDelay) anyDelay = true;
-            if (variable instanceof FieldReference) {
-                FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+            if (haveDelay) anyDelay.set(true);
+            if (variableInfo.variable instanceof FieldReference) {
+                FieldInfo fieldInfo = ((FieldReference) variableInfo.variable).fieldInfo;
                 TransferValue tv = fieldSummaries.get(fieldInfo);
 
                 // SIZE
@@ -451,7 +453,7 @@ public class MethodLevelData {
                 int currentSize = tv.properties.getOtherwise(VariableProperty.SIZE, haveDelay ? Level.DELAY : Level.NOT_A_SIZE);
                 if (size > currentSize) {
                     tv.properties.put(VariableProperty.SIZE, size);
-                    changes = true;
+                    changes.set(true);
                 }
 
                 // NOT_NULL (slightly different from SIZE, different type of level)
@@ -459,19 +461,19 @@ public class MethodLevelData {
                 int currentNotNull = tv.properties.getOtherwise(VariableProperty.NOT_NULL, haveDelay ? Level.DELAY : MultiLevel.MUTABLE);
                 if (notNull > currentNotNull) {
                     tv.properties.put(VariableProperty.NOT_NULL, notNull);
-                    changes = true;
+                    changes.set(true);
                 }
 
                 int currentDelayResolved = tv.getProperty(VariableProperty.METHOD_DELAY_RESOLVED);
                 if (currentDelayResolved == Level.FALSE && !haveDelay) {
-                    log(DELAYED, "Delays on {} have now been resolved", variable.fullyQualifiedName());
+                    log(DELAYED, "Delays on {} have now been resolved", variableInfo.variable.fullyQualifiedName());
                     tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.TRUE);
                 }
                 if (currentDelayResolved == Level.DELAY && haveDelay) {
-                    log(DELAYED, "Marking that delays need resolving on {}", variable.fullyQualifiedName());
+                    log(DELAYED, "Marking that delays need resolving on {}", variableInfo.variable.fullyQualifiedName());
                     tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.FALSE);
                 }
-            } else if (variable instanceof ParameterInfo parameterInfo) {
+            } else if (variableInfo.variable instanceof ParameterInfo parameterInfo) {
 
                 if (parameterInfo.parameterizedType.hasSize()) {
                     int size = variableInfo.getProperty(VariableProperty.SIZE);
@@ -481,16 +483,16 @@ public class MethodLevelData {
                         int sizeInParam = parameterAnalysis.getProperty(VariableProperty.SIZE);
                         if (sizeInParam == Level.DELAY) {
                             builder.add(parameterAnalysis.new SetProperty(VariableProperty.SIZE, Level.IS_A_SIZE));
-                            changes = true;
+                            changes.set(true);
                         }
                     }
                 }
             }
-        }
-        if (!anyDelay && !callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
+        });
+        if (!anyDelay.get() && !callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(false);
         }
-        return anyDelay ? DELAYS : changes ? PROGRESS : DONE;
+        return anyDelay.get() ? DELAYS : changes.get() ? PROGRESS : DONE;
     }
 
     public class SetCircularCallOrUndeclaredFunctionalInterface implements StatementAnalysis.StatementAnalysisModification {

@@ -101,27 +101,28 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
      */
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        int read = d.properties.getOrDefault(VariableProperty.READ, Level.DELAY);
+        int assigned = d.properties.getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
+
         if ("checkArray2".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
             if ("integers".equals(d.variableName)) {
-                Assert.assertEquals(Level.READ_ASSIGN_ONCE, (int) d.properties.get(VariableProperty.ASSIGNED)); // integers=, and integers[i]=
-                Assert.assertNull(d.properties.get(VariableProperty.READ));
-                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
+                Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned); // integers=, and integers[i]=
+                Assert.assertEquals(Level.DELAY, read);
             }
         }
         if ("checkArray2".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
             if ("integers".equals(d.variableName)) {
-                Assert.assertEquals(Level.READ_ASSIGN_ONCE, (int) d.properties.get(VariableProperty.ASSIGNED)); // integers=, NOT integers[i]=
-                Assert.assertEquals(Level.READ_ASSIGN_ONCE, (int) d.properties.get(VariableProperty.READ));
-                Assert.assertNull(d.properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
+                Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned); // integers=, NOT integers[i]=
+                Assert.assertEquals(assigned + 1, read);
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL)); // because in scope side
             } else if ("i".equals(d.variableName)) {
-                Assert.assertEquals(Level.READ_ASSIGN_ONCE, (int) d.properties.get(VariableProperty.READ));
-                Assert.assertEquals(Level.READ_ASSIGN_ONCE, (int) d.properties.get(VariableProperty.ASSIGNED));
+                Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned);
+                Assert.assertEquals(assigned + 1, read);
 
                 // the standardized name is the evaluation value of expression and index, in this particular case, both constants
             } else if ("{1,2,3}[0]".equals(d.variableName)) {
-                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.NOT_YET_READ_AFTER_ASSIGNMENT));
-                Assert.assertEquals(Level.READ_ASSIGN_ONCE, (int) d.properties.get(VariableProperty.ASSIGNED));
+                Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned);
+                Assert.assertTrue(read <= assigned);
             } else Assert.fail();
         }
     };

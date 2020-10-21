@@ -28,8 +28,8 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
 
             // properties are on the value; in the map is the value of the type before the assignment
             // at the moment, the Set interface is not E1Immutable
-            Assert.assertEquals(MultiLevel.MUTABLE, (int) d.properties.get(VariableProperty.IMMUTABLE));
-            Assert.assertNull(d.properties.get(VariableProperty.CONTAINER));
+            Assert.assertEquals(MultiLevel.MUTABLE, d.properties.get(VariableProperty.IMMUTABLE));
+            Assert.assertFalse(d.properties.isSet(VariableProperty.CONTAINER));
         }
         if ("method2".equals(d.methodInfo.name) && "0".equals(d.statementId) && "SimpleSizeChecks.this.intSet".equals(d.variableName)) {
             if (d.iteration > 0) {

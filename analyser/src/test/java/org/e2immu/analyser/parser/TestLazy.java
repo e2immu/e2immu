@@ -38,7 +38,7 @@ public class TestLazy extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("get".equals(d.methodInfo.name) && "Lazy.this.supplier".equals(d.variableName)) {
-            Assert.assertNull("Statement: " + d.statementId, d.properties.get(VariableProperty.ASSIGNED));
+            Assert.assertFalse("Statement: " + d.statementId, d.properties.isSet(VariableProperty.ASSIGNED));
         }
         if ("get".equals(d.methodInfo.name) && "Lazy.this.t".equals(d.variableName) && d.iteration > 0) {
             if ("2.0.0".equals(d.statementId)) {

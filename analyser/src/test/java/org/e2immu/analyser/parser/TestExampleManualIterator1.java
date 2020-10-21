@@ -36,10 +36,10 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("hasNext".equals(d.methodInfo.name) && "MyIteratorImpl.this.list".equals(d.variableName)) {
-            Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
         }
         if ("iterator".equals(d.methodInfo.name) && "ExampleManualIterator1.this.list".equals(d.variableName) && d.iteration > 1) {
-            Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
         }
     };
 

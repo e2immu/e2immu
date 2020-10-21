@@ -5,7 +5,6 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Constant;
-import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.StringConcat;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;

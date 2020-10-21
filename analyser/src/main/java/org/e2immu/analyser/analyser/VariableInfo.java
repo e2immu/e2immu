@@ -21,57 +21,109 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.LocalVariableReference;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.util.IncrementalMap;
+import org.e2immu.analyser.util.SetOnce;
 
 import java.util.Map;
+import java.util.Objects;
 
-public interface VariableInfo {
+public class VariableInfo {
+    public final Value initialValue;
+    public final Value resetValue;
+    public final VariableInfo localCopyOf; // can be null, when the variable is created/first used in this block
+    public final Variable variable;
+    public final String name;
 
-    VariableInfoImpl.Builder localCopy();
+    public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
 
-    enum FieldReferenceState {
-        EFFECTIVELY_FINAL_DELAYED,
+
+    private final SetOnce<Value> currentValue = new SetOnce<>();
+    private final SetOnce<Value> stateOnAssignment = new SetOnce<>(); // EMPTY when no info
+    private final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
+
+    public boolean isLocalCopy() {
+        return localCopyOf != null;
+    }
+
+    public boolean isNotLocalCopy() {
+        return localCopyOf == null;
+    }
+
+    public boolean isLocalVariableReference() {
+        return variable instanceof LocalVariableReference;
+    }
+
+    public ObjectFlow getObjectFlow() {
+        return objectFlow.getOrElse(ObjectFlow.NO_FLOW);
+    }
+
+    public enum FieldReferenceState {
         SINGLE_COPY,
-        MULTI_COPY,
+
     }
 
-    Value getCurrentValue();
-
-    Value getStateOnAssignment();
-
-    ObjectFlow getObjectFlow();
-
-    Value getInitialValue();
-
-    Value getResetValue();
-
-    VariableInfo getLocalCopyOf();
-
-    default boolean isLocalCopy() {
-        return getLocalCopyOf() != null;
+    public VariableInfo(Variable variable, VariableInfo localCopyOf, String name, Value initialValue, Value resetValue) {
+        this.initialValue = Objects.requireNonNull(initialValue);
+        this.localCopyOf = localCopyOf;
+        this.name = Objects.requireNonNull(name);
+        this.resetValue = Objects.requireNonNull(resetValue);
+        this.variable = Objects.requireNonNull(variable);
     }
 
-    default boolean isNotLocalCopy() {
-        return getLocalCopyOf() == null;
+    public Value getCurrentValue() {
+        return currentValue.getOrElse(UnknownValue.NO_VALUE);
     }
 
-    Map<VariableProperty, Integer> properties();
-
-    Variable getVariable();
-
-    // does not always agree with variable.name
-    String getName();
-
-    FieldReferenceState getFieldReferenceState();
-
-    int getProperty(VariableProperty variableProperty);
-
-    default boolean haveProperty(VariableProperty variableProperty) {
-        int i = getProperty(variableProperty);
-        return i != Level.DELAY;
+    public Value getStateOnAssignment() {
+        return stateOnAssignment.getOrElse(UnknownValue.NO_VALUE);
     }
 
-    default boolean isLocalVariableReference() {
-        return getVariable() instanceof LocalVariableReference;
+    public int getProperty(VariableProperty variableProperty) {
+        return properties.getOrDefault(variableProperty, Level.DELAY);
+    }
+
+    public VariableInfo localCopy() {
+        VariableInfo variableInfo = new VariableInfo(variable, this, name, initialValue, resetValue);
+        variableInfo.properties.putAll(properties);
+        return variableInfo;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder();
+        sb.append("props=").append(properties);
+        if (currentValue.isSet()) {
+            sb.append(", currentValue=").append(currentValue.get());
+        }
+        return sb.toString();
+    }
+
+    public void setCurrentValue(Value value, Value stateOnAssignment, ObjectFlow objectFlow) {
+        assert value != UnknownValue.NO_VALUE;
+        this.currentValue.set(value);
+        this.stateOnAssignment.set(stateOnAssignment);
+        this.objectFlow.set(objectFlow);
+    }
+
+    public void setProperty(VariableProperty variableProperty, int value) {
+        properties.put(variableProperty, value);
+    }
+
+    public void markAssigned() {
+        int assigned = getProperty(VariableProperty.ASSIGNED);
+        setProperty(VariableProperty.ASSIGNED, Math.max(1, assigned + 1));
+    }
+
+    public void markRead() {
+        int assigned = Math.max(getProperty(VariableProperty.ASSIGNED), 0);
+        int read = getProperty(VariableProperty.READ);
+        int val = Math.min(1, Math.max(read + 1, assigned + 1));
+        setProperty(VariableProperty.READ, val);
+    }
+
+    public void removeAfterAssignment() {
+        properties.put(VariableProperty.REMOVED, Level.TRUE);
     }
 }

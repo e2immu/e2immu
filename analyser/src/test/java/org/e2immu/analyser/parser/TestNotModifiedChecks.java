@@ -36,23 +36,23 @@ public class TestNotModifiedChecks extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("addAll".equals(d.methodInfo.name) && "d".equals(d.variableName)) {
-            Assert.assertEquals(0, (int) d.properties.get(VariableProperty.MODIFIED));
+            Assert.assertEquals(0, d.properties.get(VariableProperty.MODIFIED));
         }
         if ("addAll".equals(d.methodInfo.name) && "c".equals(d.variableName)) {
-            Assert.assertEquals(1, (int) d.properties.get(VariableProperty.MODIFIED));
+            Assert.assertEquals(1, d.properties.get(VariableProperty.MODIFIED));
         }
         if ("addAllOnC".equals(d.methodInfo.name)) {
             if ("d".equals(d.variableName)) {
-                Assert.assertEquals(0, (int) d.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(0, d.properties.get(VariableProperty.MODIFIED));
             }
             if ("d.set".equals(d.variableName)) {
-                Assert.assertEquals(0, (int) d.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(0, d.properties.get(VariableProperty.MODIFIED));
             }
             if ("c.set".equals(d.variableName)) {
-                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(1, d.properties.get(VariableProperty.MODIFIED));
             }
             if ("c".equals(d.variableName)) {
-                Assert.assertEquals(1, (int) d.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(1, d.properties.get(VariableProperty.MODIFIED));
             }
         }
         if ("NotModifiedChecks".equals(d.methodInfo.name) && "NotModifiedChecks.this.s2".equals(d.variableName)) {

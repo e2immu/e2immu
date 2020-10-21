@@ -42,7 +42,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("isAbc".equals(d.methodInfo.name) && "0".equals(d.statementId) && "E2Container1.this.value1".equals(d.variableName)) {
-            Assert.assertNull("At iteration " + d.iteration, d.properties.get(VariableProperty.NOT_NULL));
+            Assert.assertFalse("At iteration " + d.iteration, d.properties.isSet(VariableProperty.NOT_NULL));
         }
         if ("input4".equals(d.variableName) && "1".equals(d.statementId) && "mingle".equals(d.methodInfo.name)) {
             Assert.assertEquals(MultiLevel.MUTABLE, (int) d.properties.get(VariableProperty.IMMUTABLE));

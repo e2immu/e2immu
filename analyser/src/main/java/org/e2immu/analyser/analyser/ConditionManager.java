@@ -237,7 +237,7 @@ public class ConditionManager {
     }
 
     // note: very similar to remove, except that here we're interested in the actual value
-    Value individualStateInfo(Variable variable) {
+    public Value individualStateInfo(Variable variable) {
         Value.FilterResult filterResult = state.filter(Value.FilterMode.ACCEPT,
                 value -> obtainVariableFilter(variable, value));
         return filterResult.accepted.getOrDefault(variable, UnknownValue.EMPTY);

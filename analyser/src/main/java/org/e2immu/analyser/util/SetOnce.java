@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.util;
 
-import org.e2immu.analyser.analyser.VariableDataImpl;
 import org.e2immu.annotation.*;
 
 @E2Container(after = "t")

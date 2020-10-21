@@ -104,7 +104,7 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
             // now after set7.freeze():
             if ("1".equals(d.statementId)) {
                 Assert.assertEquals("[mark]", d.objectFlow.marks().toString());
-                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.MODIFIED));
             }
         }
     };

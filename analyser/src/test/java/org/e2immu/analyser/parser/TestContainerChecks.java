@@ -22,7 +22,7 @@ public class TestContainerChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("setStrings1".equals(d.methodInfo.name)) {
             if ("strings1param".equals(d.variableName) && "0".equals(d.statementId)) {
-                Assert.assertNull(d.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertFalse(d.properties.isSet(VariableProperty.NOT_NULL));
             }
             if ("strings1param".equals(d.variableName) && "1".equals(d.statementId)) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
@@ -33,12 +33,12 @@ public class TestContainerChecks extends CommonTestRunner {
         }
         if ("setStrings3".equals(d.methodInfo.name)) {
             if ("strings3param".equals(d.variableName) && "0".equals(d.statementId)) {
-                Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
             }
         }
         if ("Container4".equals(d.methodInfo.name)) {
             if ("strings4Param".equals(d.variableName)) {
-                Assert.assertEquals(Level.IS_A_SIZE, (int) d.properties.get(VariableProperty.SIZE));
+                Assert.assertEquals(Level.IS_A_SIZE, d.properties.get(VariableProperty.SIZE));
             }
             if ("Container4.this.strings4".equals(d.variableName)) {
                 Assert.assertTrue(d.currentValue instanceof PropertyWrapper);
@@ -49,9 +49,9 @@ public class TestContainerChecks extends CommonTestRunner {
         }
         if ("addAll5".equals(d.methodInfo.name)) {
             if ("Container5.this.list".equals(d.variableName)) {
-                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.READ));
-                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.METHOD_DELAY));
+                Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.READ));
+                Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.METHOD_DELAY));
             }
         }
     };

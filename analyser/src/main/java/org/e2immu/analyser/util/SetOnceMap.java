@@ -94,4 +94,8 @@ public class SetOnceMap<K, V> extends Freezable {
             if (complainWhenAlreadySet || !isSet(e.getKey())) put(e.getKey(), e.getValue());
         });
     }
+
+    public V getOrDefault(K k, V v) {
+        return map.getOrDefault(k, v);
+    }
 }

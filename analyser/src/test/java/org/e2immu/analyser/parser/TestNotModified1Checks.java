@@ -27,7 +27,7 @@ public class TestNotModified1Checks extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if("apply".equals(d.methodInfo.name) && "consumer".equals(d.variableName)) {
-            Assert.assertEquals(Level.TRUE, (int)d.properties.get(VariableProperty.NOT_MODIFIED_1));
+            Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.NOT_MODIFIED_1));
         }
     };
 

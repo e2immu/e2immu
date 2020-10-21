@@ -41,7 +41,7 @@ public class TestSMapList extends CommonTestRunner {
             Assert.assertEquals(MultiLevel.NULLABLE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
         }
         if ("add".equals(d.methodInfo.name) && "bs".equals(d.variableName) && "3".equals(d.statementId)) {
-            Assert.assertEquals(Level.FALSE, (int) d.properties.get(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
         }
     };
 
