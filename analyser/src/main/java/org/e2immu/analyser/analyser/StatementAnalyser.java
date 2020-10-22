@@ -320,6 +320,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .add("checkUselessAssignments", sharedState -> checkUselessAssignments())
                     .add("checkUnusedLocalVariables", sharedState -> checkUnusedLocalVariables())
                     .build();
+        } else {
+            if (previousStatementAnalysis == null && statementAnalysis.parent == null) {
+                List<FieldInfo> fields = lastStatement().statementAnalysis.variableStream().filter(variableInfo ->
+                        (variableInfo.variable instanceof FieldReference fieldReference) && fieldReference.scope instanceof This &&
+                                (variableInfo.getProperty(VariableProperty.READ) != Level.DELAY ||
+                                        variableInfo.getProperty(VariableProperty.ASSIGNED) != Level.DELAY))
+                        .map(variableInfo -> (((FieldReference) variableInfo.variable).fieldInfo))
+                        .collect(Collectors.toList());
+                statementAnalysis.updateFirstStatement(analyserContext, fields,
+                        myMethodAnalyser.methodInfo.methodInspection.get().parameters);
+            } else {
+                statementAnalysis.updateSubsequentStatements(previousStatementAnalysis);
+            }
         }
 
         StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
@@ -1248,8 +1261,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     public class LinkVariable implements StatementAnalysis.StatementAnalysisModification {
-        private final Variable variable;
-        private final List<Variable> to;
+        public final Variable variable;
+        public final List<Variable> to;
 
         public LinkVariable(Variable variable, Set<Variable> to) {
             this.variable = variable;

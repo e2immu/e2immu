@@ -247,6 +247,13 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
 
     // ****************************************************************************************
 
+    /**
+     * Before iteration 0, all statements
+     *
+     * @param analyserContext    overview object for the analysis of this primary type
+     * @param parameterAnalysers the collection of parameter analysers to create local parameter variables for
+     * @param previous           the previous statement, or null if there is none (start of block)
+     */
     public void initialise(AnalyserContext analyserContext,
                            Collection<ParameterAnalyser> parameterAnalysers,
                            StatementAnalysis previous) {
@@ -267,7 +274,39 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
         }
     }
 
-    // copy current value from previous one if there was no assignment
+    /**
+     * @param analyserContext overview object for the analysis of this primary type
+     * @param fields          those fields that were read or assigned to in this method
+     * @param parameters      the parameters of the method
+     */
+    public void updateFirstStatement(AnalyserContext analyserContext,
+                                     Collection<FieldInfo> fields,
+                                     Collection<ParameterInfo> parameters) {
+        for (FieldInfo fieldInfo : fields)
+            copyFieldPropertiesFromAnalysis(analyserContext, find(fieldInfo.fullyQualifiedName()), fieldInfo);
+        for (ParameterInfo parameterInfo : parameters)
+            copyParameterPropertiesFromAnalysis(analyserContext, find(parameterInfo.fullyQualifiedName()), parameterInfo);
+    }
+
+    /**
+     * Before iterations 1+, with fieldAnalyses non-empty only potentially for the the first statement
+     * of the method.
+     *
+     * @param previous the previous statement, or null if there is none (start of block)
+     */
+    public void updateSubsequentStatements(StatementAnalysis previous) {
+        StatementAnalysis copyFrom = previous == null ? parent : previous;
+        copyFrom.variableStream().forEach(from -> {
+            VariableInfo to = variables.get(from.name);
+            to.properties.copyFrom(from.properties);
+        });
+    }
+
+    /**
+     * At the end of every iteration, every statement
+     * <p>
+     * copy current value from previous one if there was no assignment
+     */
     public void finalise(StatementAnalysis previous) {
         StatementAnalysis copyValuesFrom;
         if (previous == null) {
@@ -302,16 +341,28 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
         if (variable instanceof LocalVariableReference || variable instanceof ParameterInfo || variable instanceof DependentVariable) {
             ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
             VariableValue variableValue = new VariableValue(variable, objectFlow);
-            internalCreate(analyserContext, variable, variable.fullyQualifiedName(), variableValue, variableValue);
+            VariableInfo vi = internalCreate(analyserContext, variable, variable.fullyQualifiedName(), variableValue, variableValue);
+            if (variable instanceof ParameterInfo) {
+                vi.currentValue.set(variableValue);
+            }
         } else {
             throw new UnsupportedOperationException("Not allowed to add This or FieldReference using this method");
         }
     }
 
+    /**
+     * Called every iteration, every occurrence, but only effective in iteration 0, first time
+     *
+     * @param analyserContext  overview object for the analysis of this primary type; needed to grab the field analysers
+     * @param fieldReference   reference to the field to be created
+     * @param effectivelyFinal the value of VariableProperty.FINAL
+     * @return the new or existing VariableInfo object
+     */
     public VariableInfo ensureFieldReference(AnalyserContext analyserContext, FieldReference fieldReference, int effectivelyFinal) {
         String fqn = fieldReference.fullyQualifiedName();
         VariableInfo vi = find(fqn);
         if (vi != null) return vi;
+
         Value resetValue;
         FieldReferenceState fieldReferenceState = singleCopy(effectivelyFinal, inSyncBlock, inPartOfConstruction);
         if (fieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
@@ -376,31 +427,7 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
         if (initialValue != UnknownValue.NO_VALUE) variableInfo.initialValue.set(initialValue);
         if (resetValue != UnknownValue.NO_VALUE) variableInfo.resetValue.set(resetValue);
 
-        // copy properties from the field into the variable properties
-        if (variable instanceof FieldReference) {
-            FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-            if (!fieldInfo.hasBeenDefined() || variableInfo.resetValue.isSet() &&
-                    variableInfo.resetValue.get().isInstanceOf(VariableValue.class)) {
-                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
-                for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
-                    int value = fieldAnalysis.getProperty(variableProperty);
-                    if (value == Level.DELAY) value = variableProperty.falseValue;
-                    variableInfo.setProperty(variableProperty, value);
-                }
-            }
-        } else if (variable instanceof ParameterInfo parameterInfo) {
-            ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
-            int immutable = parameterAnalysis.getProperty(IMMUTABLE);
-            variableInfo.setProperty(IMMUTABLE, immutable == MultiLevel.DELAY ? IMMUTABLE.falseValue : immutable);
-
-            int notModified1 = parameterAnalysis.getProperty(NOT_MODIFIED_1);
-            variableInfo.setProperty(NOT_MODIFIED_1, notModified1 == Level.DELAY ? NOT_MODIFIED_1.falseValue : notModified1);
-
-        } else if (variable instanceof This) {
-            variableInfo.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-        } else if (variable instanceof LocalVariableReference localVariableReference) {
-            variableInfo.setProperty(IMMUTABLE, localVariableReference.concreteReturnType.getProperty(IMMUTABLE));
-        } // else: dependentVariable
+        copyPropertiesFromAnalysis(analyserContext, variable, variableInfo);
 
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", name);
 
@@ -418,6 +445,44 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
             }
         }
         return variableInfo;
+    }
+
+    private void copyPropertiesFromAnalysis(AnalyserContext analyserContext, Variable variable, VariableInfo variableInfo) {
+
+        // copy properties from the field into the variable properties
+        if (variable instanceof FieldReference) {
+            FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
+            copyFieldPropertiesFromAnalysis(analyserContext, variableInfo, fieldInfo);
+        } else if (variable instanceof ParameterInfo parameterInfo) {
+            copyParameterPropertiesFromAnalysis(analyserContext, variableInfo, parameterInfo);
+
+            // the following two are merely initialisation
+        } else if (variable instanceof This) {
+            variableInfo.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        } else if (variable instanceof LocalVariableReference localVariableReference) {
+            variableInfo.setProperty(IMMUTABLE, localVariableReference.concreteReturnType.getProperty(IMMUTABLE));
+        } // else: dependentVariable
+    }
+
+    private void copyParameterPropertiesFromAnalysis(AnalyserContext analyserContext, VariableInfo variableInfo, ParameterInfo parameterInfo) {
+        ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
+        int immutable = parameterAnalysis.getProperty(IMMUTABLE);
+        variableInfo.setProperty(IMMUTABLE, immutable == MultiLevel.DELAY ? IMMUTABLE.falseValue : immutable);
+
+        int notModified1 = parameterAnalysis.getProperty(NOT_MODIFIED_1);
+        variableInfo.setProperty(NOT_MODIFIED_1, notModified1 == Level.DELAY ? NOT_MODIFIED_1.falseValue : notModified1);
+    }
+
+    private void copyFieldPropertiesFromAnalysis(AnalyserContext analyserContext, VariableInfo variableInfo, FieldInfo fieldInfo) {
+        if (!fieldInfo.hasBeenDefined() || variableInfo.resetValue.isSet() &&
+                variableInfo.resetValue.get().isInstanceOf(VariableValue.class)) {
+            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
+            for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
+                int value = fieldAnalysis.getProperty(variableProperty);
+                if (value == Level.DELAY) value = variableProperty.falseValue;
+                variableInfo.setProperty(variableProperty, value);
+            }
+        }
     }
 
     private static boolean isRecordType(Variable variable) {
@@ -606,7 +671,9 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
         String name = thisVariable.fullyQualifiedName();
         VariableInfo vi = find(name);
         if (vi != null) return vi;
-        return internalCreate(analyserContext, thisVariable, name, UnknownValue.NO_VALUE, UnknownValue.NO_VALUE);
+        VariableInfo newVi = internalCreate(analyserContext, thisVariable, name, UnknownValue.NO_VALUE, UnknownValue.NO_VALUE);
+        newVi.currentValue.set(new VariableValue(thisVariable));
+        return newVi;
     }
 
     private VariableInfo findComplain(@NotNull Variable variable) {

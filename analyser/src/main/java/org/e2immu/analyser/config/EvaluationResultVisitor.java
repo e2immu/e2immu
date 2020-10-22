@@ -22,6 +22,9 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.EvaluationResult;
 import org.e2immu.analyser.model.MethodInfo;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 public interface EvaluationResultVisitor {
     void visit(Data d);
 
@@ -38,6 +41,13 @@ public interface EvaluationResultVisitor {
                     .map(sam -> (StatementAnalyser.Assignment) sam)
                     .anyMatch(ass -> assignmentTargetName.equals(ass.assignmentTarget.fullyQualifiedName()) &&
                             valueString.equals(ass.value.toString()));
+        }
+
+        public boolean haveLinkVariable(String fromName, Set<String> toNames) {
+            return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.LinkVariable)
+                    .map(sam -> (StatementAnalyser.LinkVariable) sam)
+                    .anyMatch(lv -> fromName.equals(lv.variable.fullyQualifiedName()) &&
+                            toNames.equals(lv.to.stream().map(v -> v.fullyQualifiedName()).collect(Collectors.toSet())));
         }
     }
 }

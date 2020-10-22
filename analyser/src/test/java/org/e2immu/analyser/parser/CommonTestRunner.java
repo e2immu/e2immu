@@ -20,6 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import ch.qos.logback.classic.Level;
+import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -31,6 +32,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
@@ -149,6 +152,12 @@ public abstract class CommonTestRunner {
         Assert.assertEquals("WARNINGS: ", warningsToExpect, (int) parser.getMessages()
                 .filter(m -> m.severity == Message.Severity.WARN).count());
         return parser.getTypeContext();
+    }
+
+    protected void assertSubMap(Map<AnalysisStatus, Set<String>> expect, Map<String, AnalysisStatus> statuses) {
+        expect.forEach((as, set) -> set.forEach(label -> Assert.assertEquals(
+                "Expected " + as + " for " + label + "; map is\n" + statuses,
+                as, statuses.get(label))));
     }
 
 }

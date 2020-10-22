@@ -46,19 +46,29 @@ public class TestBasicsOpposite extends CommonTestRunner {
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if (d.iteration() == 0) {
-            Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(FieldAnalyser.ANALYSE_SIZE,
-                    FieldAnalyser.ANALYSE_SIZE_AS_DYNAMIC_TYPE_ANNOTATION, FieldAnalyser.ANALYSE_NOT_MODIFIED_1));
+            Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(
+                    FieldAnalyser.EVALUATE_INITIALISER,
+                    FieldAnalyser.ANALYSE_SIZE,
+                    FieldAnalyser.ANALYSE_NOT_MODIFIED_1));
+            assertSubMap(expect, d.statuses());
+        }
+        if (d.iteration() == 1) {
+            Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(
+                    FieldAnalyser.EVALUATE_INITIALISER,
+                    FieldAnalyser.ANALYSE_SIZE,
+                    FieldAnalyser.ANALYSE_NOT_MODIFIED_1,
+                    FieldAnalyser.ANALYSE_FINAL,
+                    FieldAnalyser.ANALYSE_FINAL_VALUE,
+                    FieldAnalyser.ANALYSE_NOT_NULL));
             assertSubMap(expect, d.statuses());
         }
         if ("string".equals(d.fieldInfo().name)) {
-            int expect = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-            Assert.assertEquals(expect, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+            int expectFinal = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+            Assert.assertEquals(expectFinal, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+            Assert.assertEquals(expectNotNull, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
         }
     };
-
-    protected void assertSubMap(Map<AnalysisStatus, Set<String>> expect, Map<String, AnalysisStatus> statuses) {
-        expect.forEach((as, set) -> set.forEach(label -> Assert.assertEquals(as, statuses.get(label))));
-    }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("collection".equals(d.variableName) && "add".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
@@ -69,11 +79,17 @@ public class TestBasicsOpposite extends CommonTestRunner {
         if (STRING_FIELD.equals(d.variableName) && "setString".equals(d.methodInfo.name)) {
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
         }
+        if(STRING_FIELD.equals(d.variableName) && "getString".equals(d.methodInfo.name)) {
+            Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+            int expectNotNull = d.iteration == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+            Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
+        }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        if ("getString".equals(d.methodInfo().name) && d.iteration() > 0) {
-            Assert.assertEquals(MultiLevel.NULLABLE, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+        if ("getString".equals(d.methodInfo().name)) {
+            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+            Assert.assertEquals(expectNotNull, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
         }
         if ("setString".equals(d.methodInfo().name)) {
             MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
@@ -84,12 +100,16 @@ public class TestBasicsOpposite extends CommonTestRunner {
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if (d.methodInfo().name.equals("setString") && "0".equals(d.statementId())) {
-            Assert.assertEquals(d.evaluationResult().toString(), 3L, d.evaluationResult().getModificationStream().count());
+            Assert.assertEquals(d.evaluationResult().toString(), 4L, d.evaluationResult().getModificationStream().count());
             Assert.assertTrue(d.evaluationResult().toString(), d.haveSetProperty(STRING_PARAMETER, VariableProperty.READ, Level.TRUE));
             Assert.assertTrue(d.evaluationResult().toString(), d.haveSetProperty(
                     "org.e2immu.analyser.testexample.BasicsOpposite.this", VariableProperty.READ, Level.TRUE));
             Assert.assertTrue(d.evaluationResult().toString(), d.haveAssignment(STRING_FIELD, STRING_PARAMETER));
+            Assert.assertTrue(d.evaluationResult().toString(), d.haveLinkVariable(STRING_FIELD, Set.of(STRING_PARAMETER)));
             Assert.assertEquals(d.evaluationResult().toString(), STRING_PARAMETER, d.evaluationResult().value.toString());
+        }
+        if (d.methodInfo().name.equals("getString") && "0".equals(d.statementId())) {
+            Assert.assertEquals(d.evaluationResult().toString(), 1L, d.evaluationResult().getModificationStream().count());
         }
     };
 

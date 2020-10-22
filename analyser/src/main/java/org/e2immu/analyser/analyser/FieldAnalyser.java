@@ -176,15 +176,11 @@ public class FieldAnalyser extends AbstractAnalyser {
                 resultOfObjectFlow = makeInternalObjectFlowsPermanent(evaluationResult);
                 value = evaluationResult.value;
                 log(FINAL, "Set initialiser of field {} to {}", fieldInfo.fullyQualifiedName(), value);
-            } else {
-                initialiserValue = NO_VALUE; // initialiser set, but to empty expression
-                resultOfObjectFlow = DONE;
+                return resultOfObjectFlow.combine(initialiserValue == NO_VALUE ? DELAYS : DONE);
             }
-        } else {
-            initialiserValue = NO_VALUE;
-            resultOfObjectFlow = DONE;
         }
-        return resultOfObjectFlow.combine(initialiserValue == NO_VALUE ? DELAYS : DONE);
+        initialiserValue = NO_VALUE; // initialiser set, but to empty expression
+        return DONE;
     }
 
     private AnalysisStatus makeInternalObjectFlowsPermanent(EvaluationResult evaluationResult) {
@@ -566,7 +562,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         // we could have checked this at the start, but then we'd miss the potential assignment between parameter and field
 
         if (fieldAnalysis.getProperty(VariableProperty.FINAL) != Level.TRUE || fieldAnalysis.effectivelyFinalValue.isSet())
-            return DELAYS;
+            return DONE;
 
         // compute and set the combined value
 

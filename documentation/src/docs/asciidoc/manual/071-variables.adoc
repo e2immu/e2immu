@@ -1,0 +1,28 @@
+=== Statement analysis
+
+There is one `StatementAnalysis` object per statement, so a method consists of a chain of statements.
+
+=== Variables
+
+Types of variables:
+
+* fields, in 4 flavours: effectively final, variable, undecided in the first iteration(s), and acting as local variables in synchronized blocks
+* parameters, non-assignable
+* local variables
+* `this`, `super`
+* dependent variables, like the cells in an array
+
+For each variable, we store its value, a map of properties, and an object flow.
+
+Eventual destinations of properties, values, object flows:
+
+|===
+| fields | `FieldAnalysis`
+| parameters | `ParameterAnalysis`
+| `this`, `super` | `TypeAnalysis`
+| return value of method | `MethodAnalysis`, `singleValue`
+|===
+
+During statement analysis, the maps in `StatementAnalysis` hold values and properties for all types of variables.
+These maps are incremental: once the analyser writes a value, it cannot remove the key anymore; it can only increase this value.
+

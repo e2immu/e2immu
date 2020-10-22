@@ -103,4 +103,8 @@ public class IncrementalMap<K> extends Freezable {
     public void putAll(IncrementalMap<K> other) {
         map.putAll(other.map);
     }
+
+    public void copyFrom(IncrementalMap<K> other) {
+        other.map.forEach(this::improve);
+    }
 }
