@@ -39,7 +39,13 @@ public class FinalChecks {
     @Final(type = AnnotationType.VERIFY_ABSENT)
     private String s4;
 
+    @Final
+    private String s5;
+
     FinalChecks(String s1, String s2) {
+        if(s5 == null) {
+            s5 = "abc";
+        }
         this.s2 = s2;
         this.s1 = s1 + s3;
     }

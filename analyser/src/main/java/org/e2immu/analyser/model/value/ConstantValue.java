@@ -3,6 +3,7 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 import java.util.Objects;
@@ -62,4 +63,21 @@ public abstract class ConstantValue implements Value {
     public ObjectFlow getObjectFlow() {
         return objectFlow;
     }
+
+    public static Value nullValue(ParameterizedType type) {
+        if (type.isPrimitive()) {
+            if (Primitives.PRIMITIVES.integerTypeInfo == type.typeInfo) return new IntValue(0);
+            if (Primitives.PRIMITIVES.booleanTypeInfo == type.typeInfo) return new BoolValue(false);
+            if (Primitives.PRIMITIVES.charTypeInfo == type.typeInfo) return new CharValue('\0');
+            if (Primitives.PRIMITIVES.shortTypeInfo == type.typeInfo) return new ShortValue((short) 0);
+            if (Primitives.PRIMITIVES.longTypeInfo == type.typeInfo) return new LongValue(0L);
+            if (Primitives.PRIMITIVES.byteTypeInfo == type.typeInfo) return new ByteValue((byte) 0);
+            if (Primitives.PRIMITIVES.doubleTypeInfo == type.typeInfo) return new DoubleValue(0.0d);
+            if (Primitives.PRIMITIVES.floatTypeInfo == type.typeInfo) return new FloatValue(0.0f);
+
+            throw new UnsupportedOperationException("Need to implement null value for " + type);
+        }
+        return NullValue.NULL_VALUE;
+    }
+
 }

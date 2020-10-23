@@ -321,18 +321,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .add("checkUnusedLocalVariables", sharedState -> checkUnusedLocalVariables())
                     .build();
         } else {
-            if (previousStatementAnalysis == null && statementAnalysis.parent == null) {
-                List<FieldInfo> fields = lastStatement().statementAnalysis.variableStream().filter(variableInfo ->
-                        (variableInfo.variable instanceof FieldReference fieldReference) && fieldReference.scope instanceof This &&
-                                (variableInfo.getProperty(VariableProperty.READ) != Level.DELAY ||
-                                        variableInfo.getProperty(VariableProperty.ASSIGNED) != Level.DELAY))
-                        .map(variableInfo -> (((FieldReference) variableInfo.variable).fieldInfo))
-                        .collect(Collectors.toList());
-                statementAnalysis.updateFirstStatement(analyserContext, fields,
-                        myMethodAnalyser.methodInfo.methodInspection.get().parameters);
-            } else {
-                statementAnalysis.updateSubsequentStatements(previousStatementAnalysis);
-            }
+            statementAnalysis.updateStatements(analyserContext, myMethodAnalyser.methodInfo, previousStatementAnalysis);
         }
 
         StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
@@ -399,8 +388,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     myMethodAnalyser.methodInfo, statementAnalysis.index, evaluationResult));
         }
 
-        if (evaluationResult.value == NO_VALUE) return DELAYS;
-
         // state changes get composed into one big operation, applied, and the result is set
         // the condition is copied from the evaluation context
         Function<Value, Value> composite = evaluationResult.getStateChangeStream()
@@ -412,6 +399,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         // all modifications get applied
         evaluationResult.getModificationStream().forEach(statementAnalysis::apply);
+
+        if (evaluationResult.value == NO_VALUE) return DELAYS;
 
         if (statementAnalysis.methodLevelData.internalObjectFlows.isFrozen()) {
             return DONE;
@@ -1116,10 +1105,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     private VariableInfo find(Variable variable) {
         if (variable instanceof FieldReference fieldReference) {
-            FieldAnalyser fieldAnalyser = myMethodAnalyser.getFieldAnalyser(fieldReference.fieldInfo);
-            FieldAnalysis fieldAnalysis = fieldAnalyser != null ? fieldAnalyser.fieldAnalysis : fieldReference.fieldInfo.fieldAnalysis.get();
-            int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-            return statementAnalysis.ensureFieldReference(analyserContext, fieldReference, effectivelyFinal);
+            return statementAnalysis.ensureFieldReference(analyserContext, fieldReference);
         }
         return statementAnalysis.find(variable);
     }

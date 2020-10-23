@@ -46,7 +46,7 @@ public interface AnalyserContext {
 
     default FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
         FieldAnalyser fieldAnalyser = getFieldAnalysers().get(fieldInfo);
-        Objects.requireNonNull(fieldAnalyser, "Field analyser is null for " + fieldInfo.fullyQualifiedName());
+        if (fieldAnalyser == null) return fieldInfo.fieldAnalysis.get();
         return fieldAnalyser.fieldAnalysis;
     }
 
@@ -58,7 +58,7 @@ public interface AnalyserContext {
 
     default TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
         TypeAnalyser typeAnalyser = getTypeAnalysers().get(typeInfo);
-        Objects.requireNonNull(typeAnalyser, "Type analyser is null for " + typeInfo.fullyQualifiedName());
+        if (typeAnalyser == null) return typeInfo.typeAnalysis.get();
         return typeAnalyser.typeAnalysis;
     }
 }

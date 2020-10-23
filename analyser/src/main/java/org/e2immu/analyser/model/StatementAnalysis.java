@@ -27,11 +27,13 @@ import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.model.statement.SynchronizedStatement;
+import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.Container;
@@ -275,31 +277,46 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
     }
 
     /**
-     * @param analyserContext overview object for the analysis of this primary type
-     * @param fields          those fields that were read or assigned to in this method
-     * @param parameters      the parameters of the method
-     */
-    public void updateFirstStatement(AnalyserContext analyserContext,
-                                     Collection<FieldInfo> fields,
-                                     Collection<ParameterInfo> parameters) {
-        for (FieldInfo fieldInfo : fields)
-            copyFieldPropertiesFromAnalysis(analyserContext, find(fieldInfo.fullyQualifiedName()), fieldInfo);
-        for (ParameterInfo parameterInfo : parameters)
-            copyParameterPropertiesFromAnalysis(analyserContext, find(parameterInfo.fullyQualifiedName()), parameterInfo);
-    }
-
-    /**
      * Before iterations 1+, with fieldAnalyses non-empty only potentially for the the first statement
      * of the method.
      *
-     * @param previous the previous statement, or null if there is none (start of block)
+     * @param analyserContext overview object for the analysis of this primary type
+     * @param previous        the previous statement, or null if there is none (start of block)
      */
-    public void updateSubsequentStatements(StatementAnalysis previous) {
+    public void updateStatements(AnalyserContext analyserContext, MethodInfo currentMethod, StatementAnalysis previous) {
+        if (previous == null && parent == null) {
+            for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().parameters) {
+                copyParameterPropertiesFromAnalysis(analyserContext, find(parameterInfo.fullyQualifiedName()), parameterInfo);
+            }
+        }
         StatementAnalysis copyFrom = previous == null ? parent : previous;
-        copyFrom.variableStream().forEach(from -> {
-            VariableInfo to = variables.get(from.name);
-            to.properties.copyFrom(from.properties);
+        variableStream().forEach(variableInfo -> {
+            if (variableInfo.variable instanceof FieldReference fieldReference) {
+                int read = variableInfo.getProperty(READ);
+                if (read >= Level.TRUE && noEarlierAccess(fieldReference, copyFrom)) {
+                    if (!variableInfo.currentValue.isSet()) {
+                        Value initialValue = initialValueOfField(analyserContext, fieldReference);
+                        variableInfo.currentValue.set(initialValue); // TODO, what if we're assigning a new value in this statement?, and initialValue is not NO_VALUE?
+                        variableInfo.resetValue.set(initialValue);
+                        variableInfo.initialValue.set(initialValue);
+                    }
+                    copyFieldPropertiesFromAnalysis(analyserContext, variableInfo, fieldReference.fieldInfo);
+                }
+            }
+            if (copyFrom != null) {
+                VariableInfo previousVariableInfo = copyFrom.variables.get(variableInfo.name);
+                if (previousVariableInfo != null) {
+                    variableInfo.properties.copyFrom(previousVariableInfo.properties);
+                }
+            }
         });
+    }
+
+    private static boolean noEarlierAccess(FieldReference fieldReference, StatementAnalysis previous) {
+        if (previous == null) return true;
+        VariableInfo variableInfo = previous.find(fieldReference.fieldInfo.fullyQualifiedName());
+        if (variableInfo == null) return true;
+        return variableInfo.getProperty(ASSIGNED) != Level.TRUE;
     }
 
     /**
@@ -353,41 +370,112 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
     /**
      * Called every iteration, every occurrence, but only effective in iteration 0, first time
      *
-     * @param analyserContext  overview object for the analysis of this primary type; needed to grab the field analysers
-     * @param fieldReference   reference to the field to be created
-     * @param effectivelyFinal the value of VariableProperty.FINAL
+     * @param analyserContext overview object for the analysis of this primary type; needed to grab the field analysers
+     * @param fieldReference  reference to the field to be created
      * @return the new or existing VariableInfo object
      */
-    public VariableInfo ensureFieldReference(AnalyserContext analyserContext, FieldReference fieldReference, int effectivelyFinal) {
+    public VariableInfo ensureFieldReference(AnalyserContext analyserContext, FieldReference fieldReference) {
         String fqn = fieldReference.fullyQualifiedName();
         VariableInfo vi = find(fqn);
         if (vi != null) return vi;
 
-        Value resetValue;
-        FieldReferenceState fieldReferenceState = singleCopy(effectivelyFinal, inSyncBlock, inPartOfConstruction);
-        if (fieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
-            resetValue = UnknownValue.NO_VALUE; // delay
-        } else if (fieldReferenceState == MULTI_COPY) {
-            // TODO resetValue must become a map of properties
-            resetValue = new VariableValue(fieldReference, fqn, ObjectFlow.NO_FLOW, true);
-        } else {
-            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-            if (effectivelyFinal == Level.TRUE) {
-                if (fieldAnalysis.effectivelyFinalValue.isSet()) {
-                    resetValue = fieldAnalysis.effectivelyFinalValue.get();
-                } else if (fieldReference.fieldInfo.owner.hasBeenDefined()) {
-                    resetValue = UnknownValue.NO_VALUE; // delay
-                } else {
-                    // undefined, will never get a value, but may have decent properties
-                    // the properties will be copied from fieldAnalysis into properties in internalCreate
-                    resetValue = new VariableValue(fieldReference, fqn, ObjectFlow.NO_FLOW, false);
-                }
-            } else {
-                // local variable situation
-                resetValue = new VariableValue(fieldReference, fqn, ObjectFlow.NO_FLOW, false);
-            }
+        Value initialValue = initialValueOfField(analyserContext, fieldReference);
+        return internalCreate(analyserContext, fieldReference, fqn, initialValue, initialValue);
+    }
+
+    /**
+     * Properties of fields travel via {@link MethodLevelData}'s <code>fieldSummaries</code> to methods, then to fields.
+     * Methods in the construction process are private methods that are ONLY called (transitively) from
+     * any of the constructors.
+     *
+     * <p>
+     * Different situations arise for the value of the field set before the first statement:
+     *
+     * <ol>
+     *     <li>
+     *         Inside the constructor, or methods part of the construction process:
+     *          <ol>
+     *              <li>
+     *                  Inside a constructor: an initial value is assumed (null for references, zero or false for primitives).
+     * <p>
+     *                  Value: the relevant null-constant.
+     *              </li>
+     *              <li>
+     *                  After the first assignment (in a constructor, or part of construction process),
+     *                  the field acts as a local variable (as if in a sync block for a variable field outside construction).
+     *              </li>
+     *              <li>
+     *                  The initial null value is not appropriate (?) in constructors once modifying methods have been called,
+     *                  or in any of the methods in the construction process, before assignment.
+     *                  This situation should be forbidden or strongly discouraged.
+     * <p>
+     *                  TODO: implement a check
+     *               </li>
+     *          </ol>
+     *     </li>
+     *     <li>
+     *         Outside the construction process:
+     *         <ol>
+     *             <li>
+     *                 In the first iteration, we wait, because we need to determine if the field is effectively final.
+     *                 Constant: <code>EFFECTIVELY_FINAL_DELAYED</code>.
+     *                 No value set.
+     *             </li>
+     *             <li>
+     *                  Field is effectively final, but <code>effectivelyFinalValue</code> has not yet been set.
+     *                  Constant: <code>EFFECTIVELY_FINAL_DELAYED</code>.
+     *                  No value set.
+     *             </li>
+     *             <li>
+     *                 Field is effectively final, and an <code>effectivelyFinalValue</code> has been set.
+     *                 Constant: <code>EFFECTIVELY_FINAL</code>
+     * <p>
+     *                 Value: the <code>effectivelyFinalValue</code>.
+     *             </li>
+     *             <li>
+     *                 Field is variable (not effectively final).
+     *                 Constant: <code>VARIABLE</code>. Note that the field's value can change during the evaluation of a single
+     *                 expression from one evaluation to the next!
+     *                 E.g., <code>if(field != null) return field;</code> does NOT guarantee non-null.
+     * <p>
+     *                 Value: a simple {@link VariableValue} at the start of the first statement of the method.
+     *                 Subsequent assignments to the field will potentially yield different values (e.g., a constant, parameter, etc.)
+     * <p>
+     *                 The field initialiser is taken into account; when absent, the implicit initial null value influences the
+     *                 properties such as NOT_NULL.
+     *             </li>
+     *             <li>
+     *                 Inside a synchronized block, a field acts as a local variable.
+     *                 Once the first assignment has been made, all properties are computed locally.
+     *             </li>
+     *         </ol>
+     *     </li>
+     * </ol>
+     *
+     * @param analyserContext the context
+     * @param fieldReference  the field
+     * @return the initial value computed
+     */
+    private Value initialValueOfField(AnalyserContext analyserContext, FieldReference fieldReference) {
+        if (inPartOfConstruction) {
+            return ConstantValue.nullValue(fieldReference.fieldInfo.type);
         }
-        return internalCreate(analyserContext, fieldReference, fqn, resetValue, resetValue);
+        FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+        int effectivelyFinal = fieldAnalysis.getProperty(FINAL);
+        if (effectivelyFinal == Level.DELAY) {
+            return UnknownValue.NO_VALUE;
+        }
+        if (effectivelyFinal == Level.TRUE) {
+            if (fieldAnalysis.effectivelyFinalValue.isSet()) {
+                return fieldAnalysis.effectivelyFinalValue.get();
+            }
+            if (fieldReference.fieldInfo.owner.hasBeenDefined()) {
+                return UnknownValue.NO_VALUE; // delay
+            }
+            // foreign field, but we will never know
+            return new VariableValue(fieldReference, fieldReference.fieldInfo.fullyQualifiedName(), fieldAnalysis.getObjectFlow(), false);
+        }
+        return new VariableValue(fieldReference, fieldReference.fieldInfo.fullyQualifiedName(), fieldAnalysis.getObjectFlow(), true);
     }
 
     private ObjectFlow createObjectFlowForNewVariable(AnalyserContext analyserContext, Variable variable) {

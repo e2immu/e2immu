@@ -232,13 +232,12 @@ public class MethodLevelData {
         for (Variable variable : variablesInvolved) {
             Set<Variable> dependencies;
             if (variable instanceof FieldReference) {
-                FieldAnalysis fieldAnalysis = ((FieldReference) variable).fieldInfo.fieldAnalysis.get();
+                FieldAnalysis fieldAnalysis = sharedState.evaluationContext.getFieldAnalysis(((FieldReference) variable).fieldInfo);
                 if (!fieldAnalysis.variablesLinkedToMe.isSet()) {
                     log(DELAYED, "Dependencies of {} have not yet been established", variable.fullyQualifiedName());
                     return DELAYS;
                 }
-                dependencies = SetUtil.immutableUnion(((FieldReference) variable).fieldInfo.fieldAnalysis.get().variablesLinkedToMe.get(),
-                        Set.of(variable));
+                dependencies = SetUtil.immutableUnion(fieldAnalysis.variablesLinkedToMe.get(), Set.of(variable));
             } else if (variable instanceof ParameterInfo) {
                 dependencies = Set.of(variable);
             } else if (variable instanceof LocalVariableReference) {

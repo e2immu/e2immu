@@ -79,7 +79,7 @@ public class TestBasicsOpposite extends CommonTestRunner {
         if (STRING_FIELD.equals(d.variableName) && "setString".equals(d.methodInfo.name)) {
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
         }
-        if(STRING_FIELD.equals(d.variableName) && "getString".equals(d.methodInfo.name)) {
+        if (STRING_FIELD.equals(d.variableName) && "getString".equals(d.methodInfo.name)) {
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
             int expectNotNull = d.iteration == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
@@ -110,6 +110,7 @@ public class TestBasicsOpposite extends CommonTestRunner {
         }
         if (d.methodInfo().name.equals("getString") && "0".equals(d.statementId())) {
             Assert.assertEquals(d.evaluationResult().toString(), 1L, d.evaluationResult().getModificationStream().count());
+            Assert.assertTrue(d.evaluationResult().toString(), d.haveSetProperty(STRING_FIELD, VariableProperty.READ, Level.TRUE));
         }
     };
 
