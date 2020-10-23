@@ -547,7 +547,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
         methodInspection.get().parameters.forEach(parameterInfo -> {
             if (!parameterInfo.parameterAnalysis.isSet()) {
-                ParameterAnalysis parameterAnalysis = new ParameterAnalysis(parameterInfo);
+                ParameterAnalysis parameterAnalysis = new ParameterAnalysis(parameterInfo, parameterInfo.owner.typeInfo.typeAnalysis.get(), null);
                 parameterInfo.parameterAnalysis.set(parameterAnalysis);
             }
             messages.addAll(parameterInfo.parameterAnalysis.get().fromAnnotationsIntoProperties(acceptVerify,

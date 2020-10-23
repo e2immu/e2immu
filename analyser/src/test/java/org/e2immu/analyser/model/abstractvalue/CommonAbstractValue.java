@@ -88,7 +88,7 @@ public abstract class CommonAbstractValue {
         MethodInfo methodInfo = new MethodInfo(someType, List.of());
         ParameterInfo pi = new ParameterInfo(methodInfo, Primitives.PRIMITIVES.stringParameterizedType, name, 0);
         pi.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
-        pi.parameterAnalysis.set(new ParameterAnalysis(pi));
+        pi.parameterAnalysis.set(new ParameterAnalysis(pi, someType.typeAnalysis.get(), pi.parameterizedType.typeInfo.typeAnalysis.get()));
         methodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .addParameter(pi)
                 .build(methodInfo));

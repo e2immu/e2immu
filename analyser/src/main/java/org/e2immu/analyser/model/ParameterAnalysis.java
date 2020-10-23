@@ -33,6 +33,8 @@ import java.util.stream.IntStream;
 public class ParameterAnalysis extends Analysis {
 
     private final ParameterInfo parameterInfo;
+    private final TypeAnalysis typeAnalysisOfOwner;
+    private final TypeAnalysis typeAnalysisOfBestType;
     public final SetOnce<FieldInfo> assignedToField = new SetOnce<>();
     public final SetOnce<Boolean> copiedFromFieldToParameters = new SetOnce<>();
     public final Location location;
@@ -46,10 +48,12 @@ public class ParameterAnalysis extends Analysis {
     public static final int FIELDS_EXPOSED = -1;
     public final SetOnceMap<Integer, Boolean> exposed = new SetOnceMap<>();
 
-    public ParameterAnalysis(ParameterInfo parameterInfo) {
+    public ParameterAnalysis(ParameterInfo parameterInfo, TypeAnalysis typeAnalysisOfOwner, TypeAnalysis typeAnalysisOfBestType) {
         super(parameterInfo.hasBeenDefined(), parameterInfo.name);
         this.parameterInfo = parameterInfo;
         this.location = new Location(parameterInfo);
+        this.typeAnalysisOfOwner = typeAnalysisOfOwner;
+        this.typeAnalysisOfBestType = typeAnalysisOfBestType;
         ObjectFlow initialObjectFlow = new ObjectFlow(new Location(parameterInfo),
                 parameterInfo.parameterizedType, Origin.INITIAL_PARAMETER_FLOW);
         objectFlow = new FirstThen<>(initialObjectFlow);
@@ -62,7 +66,7 @@ public class ParameterAnalysis extends Analysis {
 
     @Override
     public AnnotationMode annotationMode() {
-        return parameterInfo.owner.typeInfo.typeAnalysis.get().annotationMode();
+        return typeAnalysisOfOwner.annotationMode();
     }
 
     @Override

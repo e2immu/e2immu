@@ -44,7 +44,9 @@ public class ParameterAnalyser {
     public ParameterAnalyser(ParameterInfo parameterInfo, AnalyserContext analyserContext) {
         this.e2 = analyserContext.getE2ImmuAnnotationExpressions();
         this.parameterInfo = parameterInfo;
-        parameterAnalysis = new ParameterAnalysis(parameterInfo);
+        TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
+        parameterAnalysis = new ParameterAnalysis(parameterInfo, analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo),
+                bestType == null ? null : analyserContext.getTypeAnalysis(bestType));
     }
 
     public ParameterAnalysis getParameterAnalysis() {
@@ -116,7 +118,7 @@ public class ParameterAnalyser {
      *
      * @return true if changes were made
      */
-    public AnalysisStatus analyse( ) {
+    public AnalysisStatus analyse() {
         boolean changed = false;
         boolean delays = false;
         // TODO we need to make a distinction between the field, and whether it has been assigned or not

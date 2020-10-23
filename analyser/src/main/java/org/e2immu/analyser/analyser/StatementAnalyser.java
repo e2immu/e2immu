@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -305,6 +306,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .add("checkUnreachableStatement", sharedState -> checkUnreachableStatement(previousStatementAnalysis, forwardAnalysisInfo.execution))
 
                     .add("singleStatementAnalysisSteps", sharedState -> singleStatementAnalysisSteps(sharedState, forwardAnalysisInfo))
+                    .add("tryToFreezeDependencyGraph", sharedState -> tryToFreezeDependencyGraph())
                     .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previousStatementAnalysis))
 
                     .add("analyseMethodLevelData", sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
@@ -345,6 +347,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         log(ANALYSER, "Returning from statement {} of {} with analysis status {}", statementAnalysis.index,
                 myMethodAnalyser.methodInfo.name, analysisStatus);
         return result;
+    }
+
+    private AnalysisStatus tryToFreezeDependencyGraph() {
+        if (statementAnalysis.dependencyGraph.isFrozen()) return DONE;
+        AtomicBoolean haveDelays = new AtomicBoolean();
+        statementAnalysis.dependencyGraph.visit((v, list) -> {
+            VariableInfo variableInfo = statementAnalysis.find(v);
+            if (variableInfo != null && !variableInfo.currentValue.isSet()) haveDelays.set(true);
+        });
+        if (haveDelays.get()) return DELAYS;
+        statementAnalysis.dependencyGraph.freeze();
+        return DONE;
     }
 
     private void visitStatementVisitors(String statementId, SharedState sharedState) {
