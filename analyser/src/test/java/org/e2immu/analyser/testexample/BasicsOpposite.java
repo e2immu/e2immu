@@ -9,9 +9,12 @@ public class BasicsOpposite {
 
     @Variable
     @Nullable
+    @Modified(type = AnnotationType.VERIFY_ABSENT)
+    @NotModified(type = AnnotationType.VERIFY_ABSENT)
     private String string;
 
     @Nullable
+    @NotModified
     public String getString() {
         return string;
     }
@@ -22,6 +25,8 @@ public class BasicsOpposite {
     }
 
     @Nullable(type = AnnotationType.VERIFY_ABSENT)
+    @NotNull(type = AnnotationType.VERIFY_ABSENT)
+    @NotModified
     public void add(@Modified @NotNull Collection<String> collection) {
         collection.add(string);
     }

@@ -57,7 +57,7 @@ public class TestInspectAnnotatedAPIs {
         URL url = new URL("file:src/main/resources/annotatedAPIs/java.util.annotated_api");
         Resources classPath = new Resources();
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(classPath, null, globalTypeContext, e2ImmuAnnotationExpressions);
-        InspectAnnotatedAPIs inspectAnnotatedAPIs = new InspectAnnotatedAPIs(globalTypeContext, e2ImmuAnnotationExpressions, byteCodeInspector);
+        InspectAnnotatedAPIs inspectAnnotatedAPIs = new InspectAnnotatedAPIs(globalTypeContext, byteCodeInspector);
         inspectAnnotatedAPIs.load(url);
 
         AtomicInteger counter = new AtomicInteger(0);

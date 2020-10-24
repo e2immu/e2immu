@@ -55,14 +55,11 @@ public class InspectAnnotatedAPIs {
     private final TypeStore localTypeStore = new MapBasedTypeStore();
     private final ByteCodeInspector byteCodeInspector;
     private final Messages messages = new Messages();
-    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
 
     public InspectAnnotatedAPIs(TypeContext globalTypeContext,
-                                E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                                 ByteCodeInspector byteCodeInspector) {
         this.globalTypeContext = globalTypeContext;
         this.byteCodeInspector = byteCodeInspector;
-        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
     }
 
     public List<TypeInfo> inspect(List<URL> annotatedAPIs, Charset sourceCharSet) throws IOException {

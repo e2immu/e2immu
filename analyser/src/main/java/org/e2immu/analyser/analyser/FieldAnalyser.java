@@ -161,6 +161,12 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
     }
 
+    public void write() {
+        // before we check, we copy the properties into annotations
+        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
+        fieldAnalysis.transferPropertiesToAnnotations(e2);
+    }
+
     private AnalysisStatus evaluateInitialiser(int iteration) {
 
         // STEP 1: THE INITIALISER
@@ -697,6 +703,14 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus analyseModified() {
         assert fieldAnalysis.getProperty(VariableProperty.MODIFIED) == Level.DELAY;
 
+        int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+        if (effectivelyFinal == Level.DELAY) return DELAYS;
+        if (effectivelyFinal == Level.FALSE) {
+            fieldAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
+            log(NOT_MODIFIED, "Field {} is @Modified, because it is @Variable", fieldInfo.fullyQualifiedName());
+            return DONE;
+        }
+
         if (fieldInfo.type.isFunctionalInterface()) {
             return analyseNotModifiedFunctionalInterface();
         }
@@ -777,8 +791,6 @@ public class FieldAnalyser extends AbstractAnalyser {
     @Override
     public void check() {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        // before we check, we copy the properties into annotations
-        fieldAnalysis.transferPropertiesToAnnotations(e2);
 
         log(ANALYSER, "Checking field {}", fieldInfo.fullyQualifiedName());
 

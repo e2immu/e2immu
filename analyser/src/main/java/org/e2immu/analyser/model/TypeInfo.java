@@ -1072,11 +1072,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public Messages copyAnnotationsIntoTypeAnalysisProperties(E2ImmuAnnotationExpressions typeContext) {
         assert !hasBeenDefined();
         Messages messages = new Messages();
-        boolean acceptVerify = isInterface();
         log(RESOLVE, "copy annotations into properties: {}", fullyQualifiedName);
 
         TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(this);
-        messages.addAll(builder.fromAnnotationsIntoProperties(acceptVerify, typeInspection.getPotentiallyRun().annotations, typeContext));
+        messages.addAll(builder.fromAnnotationsIntoProperties(true, typeInspection.getPotentiallyRun().annotations, typeContext));
 
         this.typeAnalysis.set(builder.build());
 

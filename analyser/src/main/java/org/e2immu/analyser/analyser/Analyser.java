@@ -24,20 +24,26 @@ import org.e2immu.analyser.parser.Message;
 import java.util.stream.Stream;
 
 public interface Analyser {
-    Stream<Message> getMessageStream();
 
-    void check();
+    // four stages
 
-    WithInspectionAndAnalysis getMember();
+    void initialize();
 
     AnalysisStatus analyse(int iteration);
 
-    void initialize();
+    void write();
+
+    void check();
+
+    // other methods
+
+    Stream<Message> getMessageStream();
+
+    WithInspectionAndAnalysis getMember();
 
     Analysis getAnalysis();
 
     String getName();
 
     AnalyserComponents<String, Integer> getAnalyserComponents();
-
 }

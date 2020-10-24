@@ -57,9 +57,6 @@ public class ParameterAnalyser {
     }
 
     public void check() {
-        // before we check, we copy the properties into annotations
-        parameterAnalysis.transferPropertiesToAnnotations(e2);
-
         log(ANALYSER, "Checking parameter {}", parameterInfo.fullyQualifiedName());
 
         check(NotModified.class, e2.notModified.get());
@@ -77,6 +74,10 @@ public class ParameterAnalyser {
         CheckSize.checkSizeForParameters(messages, parameterInfo, parameterAnalysis);
 
         checkWorseThanParent();
+    }
+
+    public void write() {
+        parameterAnalysis.transferPropertiesToAnnotations(e2);
     }
 
     private void checkWorseThanParent() {

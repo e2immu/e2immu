@@ -263,21 +263,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public void initialise(AnalyserContext analyserContext,
                            Collection<ParameterAnalyser> parameterAnalysers,
                            StatementAnalysis previous) {
-        if (previous == null) {
-            if (parent == null) {
-                for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
-                    ensureLocalVariableOrParameter(analyserContext, parameterAnalyser.parameterInfo);
-                }
-            } else {
-                parent().variableStream().forEach(variableInfo -> {
-                    variables.put(variableInfo.name, variableInfo.copy(true));
-                });
+        if (previous == null && parent == null) {
+            for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
+                ensureLocalVariableOrParameter(analyserContext, parameterAnalyser.parameterInfo);
             }
-        } else {
-            previous.variableStream().forEach(variableInfo -> {
-                variables.put(variableInfo.name, variableInfo.copy(false));
-            });
+            return;
         }
+        StatementAnalysis copyFrom = previous == null ? parent : previous;
+        copyFrom.variableStream().forEach(variableInfo -> {
+            variables.put(variableInfo.name, variableInfo.copy(false));
+        });
     }
 
     /**
@@ -384,7 +379,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (vi != null) return vi;
 
         Value initialValue = initialValueOfField(analyserContext, fieldReference);
-        return internalCreate(analyserContext, fieldReference, fqn, initialValue, initialValue);
+        VariableInfo newVi = internalCreate(analyserContext, fieldReference, fqn, initialValue, initialValue);
+        if (initialValue != UnknownValue.NO_VALUE && !newVi.currentValue.isSet()) {
+            newVi.currentValue.set(initialValue);
+        }
+        return newVi;
     }
 
     /**

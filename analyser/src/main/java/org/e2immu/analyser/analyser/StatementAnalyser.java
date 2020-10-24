@@ -647,6 +647,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     v = Level.FALSE;
                 }
             }
+            if(variableProperty == VariableProperty.SIZE_COPY && v == Level.DELAY) v = Level.FALSE; // TODO REMOVE ME at some point
             int current = transferValue.getProperty(variableProperty);
             if (v > current) {
                 transferValue.properties.put(variableProperty, v);

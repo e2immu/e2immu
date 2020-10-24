@@ -188,7 +188,6 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         // before we check, we copy the properties into annotations
         log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
-        typeAnalysis.transferPropertiesToAnnotations(e2);
 
         check(typeInfo, UtilityClass.class, e2.utilityClass.get());
         check(typeInfo, E1Immutable.class, e2.e1Immutable.get());
@@ -225,6 +224,12 @@ public class TypeAnalyser extends AbstractAnalyser {
             LOGGER.warn("Caught exception in type analyser: {}", typeInfo.fullyQualifiedName);
             throw rte;
         }
+    }
+
+    @Override
+    public void write() {
+        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
+        typeAnalysis.transferPropertiesToAnnotations(e2);
     }
 
     private AnalysisStatus makeInternalObjectFlowsPermanent() {

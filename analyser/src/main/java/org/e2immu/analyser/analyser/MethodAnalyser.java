@@ -161,8 +161,6 @@ public class MethodAnalyser extends AbstractAnalyser {
     @Override
     public void check() {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        // before we check, we copy the properties into annotations
-        methodAnalysis.transferPropertiesToAnnotations(e2);
 
         log(ANALYSER, "Checking method {}", methodInfo.fullyQualifiedName());
 
@@ -244,6 +242,14 @@ public class MethodAnalyser extends AbstractAnalyser {
             LOGGER.warn("Caught exception in method analyser: {}", methodInfo.distinguishingName());
             throw rte;
         }
+    }
+
+    @Override
+    public void write() {
+        E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
+        // before we check, we copy the properties into annotations
+        methodAnalysis.transferPropertiesToAnnotations(e2);
+        parameterAnalysers.forEach(ParameterAnalyser::write);
     }
 
     private AnalysisStatus detectMissingStaticModifier() {
@@ -638,10 +644,11 @@ public class MethodAnalyser extends AbstractAnalyser {
                 }
                 IntStream stream = methodLevelData.returnStatementSummaries.stream()
                         .mapToInt(entry -> entry.getValue().getProperty(VariableProperty.SIZE_COPY));
-                int min = stream.min().orElse(Level.DELAY);
+                int min = stream.min().orElse(Level.IS_A_SIZE);
                 return writeSize(VariableProperty.SIZE_COPY, min);
             }
-            return DONE; // not for me
+            // not for me
+            return writeSize(VariableProperty.SIZE_COPY, Level.NOT_A_SIZE);
         }
 
         // modifying method
@@ -667,7 +674,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     private int propagateSizeAnnotations() {
         if (methodLevelData.returnStatementSummaries.size() != 1) {
-            return Level.DELAY;
+            return Level.NOT_A_SIZE; // TODO
         }
         TransferValue tv = methodLevelData.returnStatementSummaries.stream().findFirst().orElseThrow().getValue();
         if (!tv.value.isSet()) {

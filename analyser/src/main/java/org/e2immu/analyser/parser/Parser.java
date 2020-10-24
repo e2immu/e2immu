@@ -75,7 +75,7 @@ public class Parser {
 
     // method result only used in tests
     public List<TypeInfo> runAnnotatedAPIs(List<URL> annotatedAPIs) throws IOException {
-        InspectAnnotatedAPIs inspectAnnotatedAPIs = new InspectAnnotatedAPIs(globalTypeContext, e2ImmuAnnotationExpressions, byteCodeInspector);
+        InspectAnnotatedAPIs inspectAnnotatedAPIs = new InspectAnnotatedAPIs(globalTypeContext, byteCodeInspector);
         return inspectAnnotatedAPIs.inspect(annotatedAPIs, configuration.inputConfiguration.sourceEncoding);
     }
 

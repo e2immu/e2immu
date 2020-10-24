@@ -27,6 +27,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -48,7 +49,6 @@ public class TestBasicsOpposite extends CommonTestRunner {
         if (d.iteration() == 0) {
             Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(
                     FieldAnalyser.EVALUATE_INITIALISER,
-                    FieldAnalyser.ANALYSE_SIZE,
                     FieldAnalyser.ANALYSE_NOT_MODIFIED_1));
             assertSubMap(expect, d.statuses());
         }
@@ -94,12 +94,12 @@ public class TestBasicsOpposite extends CommonTestRunner {
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             Assert.assertEquals(expectNotNull, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.TRUE, methodLevelData.fieldSummaries.get(string).getProperty(VariableProperty.READ));
-            int expectModified = d.iteration() == 0 ? Level.DELAY: Level.FALSE;
+            int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expectModified, modified);
         }
         if ("setString".equals(d.methodInfo().name)) {
             Assert.assertEquals(Level.TRUE, methodLevelData.fieldSummaries.get(string).getProperty(VariableProperty.ASSIGNED));
-            int expectModified = d.iteration() == 0 ? Level.DELAY: Level.FALSE;
+            int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expectModified, modified);
         }
     };
@@ -111,13 +111,20 @@ public class TestBasicsOpposite extends CommonTestRunner {
             Assert.assertTrue(d.evaluationResult().toString(), d.haveSetProperty(
                     "org.e2immu.analyser.testexample.BasicsOpposite.this", VariableProperty.READ, Level.TRUE));
             Assert.assertTrue(d.evaluationResult().toString(), d.haveAssignment(STRING_FIELD, STRING_PARAMETER));
-            Assert.assertTrue(d.evaluationResult().toString(), d.haveLinkVariable(STRING_FIELD, Set.of(STRING_PARAMETER)));
+            // link to empty set, because String is E2Immutable
+            Assert.assertTrue(d.evaluationResult().toString(), d.haveLinkVariable(STRING_FIELD, Set.of()));
             Assert.assertEquals(d.evaluationResult().toString(), STRING_PARAMETER, d.evaluationResult().value.toString());
         }
         if (d.methodInfo().name.equals("getString") && "0".equals(d.statementId())) {
             Assert.assertEquals(d.evaluationResult().toString(), 1L, d.evaluationResult().getModificationStream().count());
             Assert.assertTrue(d.evaluationResult().toString(), d.haveSetProperty(STRING_FIELD, VariableProperty.READ, Level.TRUE));
         }
+    };
+
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        // check that the XML annotations have been read properly, and copied into the correct place
+        TypeInfo stringType = Primitives.PRIMITIVES.stringTypeInfo;
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
     };
 
     @Test
@@ -127,6 +134,7 @@ public class TestBasicsOpposite extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addTypeContextVisitor(typeContextVisitor)
                 .build());
     }
 

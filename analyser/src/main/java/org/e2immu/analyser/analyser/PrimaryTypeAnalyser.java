@@ -168,6 +168,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
 
     public void write() {
         analysers.forEach(analyser -> {
+            analyser.write();
             analyser.getMember().setAnalysis(analyser.getAnalysis().build());
             if (analyser instanceof MethodAnalyser methodAnalyser) {
                 methodAnalyser.getParameterAnalysers().forEach(parameterAnalyser ->

@@ -540,12 +540,11 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
 
     public Messages copyAnnotationsIntoMethodAnalysisProperties(E2ImmuAnnotationExpressions typeContext) {
-        boolean acceptVerify = !typeInfo.hasBeenDefined() || isAbstract() || typeInfo.isInterface() && !isDefaultImplementation;
         Messages messages = new Messages();
 
         methodInspection.get().parameters.forEach(parameterInfo -> {
             ParameterAnalysisImpl.Builder builder = new ParameterAnalysisImpl.Builder(parameterInfo, null);
-            messages.addAll(builder.fromAnnotationsIntoProperties(acceptVerify,
+            messages.addAll(builder.fromAnnotationsIntoProperties(true,
                     parameterInfo.parameterInspection.get().annotations, typeContext));
             parameterInfo.setAnalysis(builder.build());
         });
@@ -555,7 +554,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         assert !typeInfo.hasBeenDefined();
         MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(AnalysisProvider.DEFAULT_PROVIDER, this, parameterAnalyses, null);
 
-        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(acceptVerify, methodInspection.get().annotations,
+        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(true, methodInspection.get().annotations,
                 typeContext));
         setAnalysis(methodAnalysisBuilder.build());
         return messages;

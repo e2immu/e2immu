@@ -238,7 +238,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             if (modified == Level.TRUE && MultiLevel.isEventuallyE2Immutable(ownerImmutable)) {
                 String marks = String.join(",", typeAnalysisOfOwner.marksRequiredForImmutable());
                 annotations.put(e2ImmuAnnotationExpressions.notModified.get().copyWith("after", marks), true);
-            } else if (allowModificationAnnotation()) {
+            } else if (allowModificationAnnotation(effectivelyFinal)) {
                 AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
                         e2ImmuAnnotationExpressions.modified.get();
                 annotations.put(ae, true);
@@ -260,7 +260,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             }
         }
 
-        private boolean allowModificationAnnotation() {
+        private boolean allowModificationAnnotation(int effectivelyFinal) {
+            if (effectivelyFinal <= Level.FALSE) return false;
             if (type.isAtLeastEventuallyE2Immutable() == Boolean.TRUE) return false;
             if (type.isFunctionalInterface()) {
                 return sam != null;
