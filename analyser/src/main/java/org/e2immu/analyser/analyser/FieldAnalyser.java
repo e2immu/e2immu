@@ -398,7 +398,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                         .filter(m -> !(m.methodInfo.isConstructor && m.methodInfo.typeInfo == fieldInfo.owner)) // not my own constructors
                         .filter(m -> m.methodLevelData().fieldSummaries.isSet(fieldInfo)) // field seen
                         .mapToInt(m -> m.methodLevelData().fieldSummaries.get(fieldInfo)
-                                .properties.getOtherwise(VariableProperty.READ, Level.FALSE))
+                                .properties.getOrDefault(VariableProperty.READ, Level.FALSE))
                         .max().orElse(Level.FALSE);
                 if (readInMethods == Level.DELAY) {
                     log(DELAYED, "Not yet ready to decide on read outside constructors");

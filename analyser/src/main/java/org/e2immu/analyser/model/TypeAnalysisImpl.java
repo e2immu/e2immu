@@ -28,7 +28,6 @@ import org.e2immu.annotation.AnnotationMode;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
@@ -38,11 +37,12 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     private final Set<ParameterizedType> implicitlyImmutableDataTypes;
 
     private TypeAnalysisImpl(TypeInfo typeInfo,
+                             Map<VariableProperty, Integer> properties,
                              Map<AnnotationExpression, Boolean> annotations,
                              Set<ObjectFlow> objectFlows,
                              Map<String, Value> approvedPreconditions,
                              Set<ParameterizedType> implicitlyImmutableDataTypes) {
-        super(typeInfo.hasBeenDefined(), annotations);
+        super(typeInfo.hasBeenDefined(), properties, annotations);
         this.typeInfo = typeInfo;
         this.approvedPreconditions = approvedPreconditions;
         this.objectFlows = objectFlows;
@@ -152,6 +152,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         public TypeAnalysis build() {
             return new TypeAnalysisImpl(typeInfo,
+                    properties.toImmutableMap(),
                     annotations.toImmutableMap(),
                     constantObjectFlows.toImmutableSet(),
                     approvedPreconditions.toImmutableMap(),

@@ -33,10 +33,10 @@ public class TransferValue {
     public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
 
     public int getProperty(VariableProperty variableProperty) {
-        return properties.getOtherwise(variableProperty, Level.DELAY);
+        return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 
     public boolean isDelayed(VariableProperty variableProperty) {
-        return properties.getOtherwise(variableProperty, Level.DELAY) == Level.DELAY;
+        return properties.getOrDefault(variableProperty, Level.DELAY) == Level.DELAY;
     }
 }

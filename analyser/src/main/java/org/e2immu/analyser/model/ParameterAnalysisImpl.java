@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -40,15 +39,15 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
     // associated with the parameter is a list of other parameter indices it exposes
     // this list is only filled in when the EXPOSED property is Level.TRUE.
-    public static final int FIELDS_EXPOSED = -1;
     public final SetOnceMap<Integer, Boolean> exposed = new SetOnceMap<>();
 
     private ParameterAnalysisImpl(ParameterInfo parameterInfo,
+                                  Map<VariableProperty, Integer> properties,
                                   Map<AnnotationExpression, Boolean> annotations,
                                   ObjectFlow objectFlow,
                                   FieldInfo assignedToField,
                                   boolean copiedFromFieldToParameters) {
-        super(parameterInfo.hasBeenDefined(), annotations);
+        super(parameterInfo.hasBeenDefined(), properties, annotations);
         this.parameterInfo = parameterInfo;
         this.objectFlow = objectFlow;
         this.assignedToField = assignedToField;
@@ -90,6 +89,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         public final SetOnce<FieldInfo> assignedToField = new SetOnce<>();
         public final SetOnce<Boolean> copiedFromFieldToParameters = new SetOnce<>();
         public final Location location;
+        private final AnalysisProvider analysisProvider;
 
         // initial flow object, used to collect call-outs
         // at the end of the method analysis replaced by a "final" flow object
@@ -97,16 +97,21 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
         // associated with the parameter is a list of other parameter indices it exposes
         // this list is only filled in when the EXPOSED property is Level.TRUE.
-        public static final int FIELDS_EXPOSED = -1;
         public final SetOnceMap<Integer, Boolean> exposed = new SetOnceMap<>();
 
-        public Builder(ParameterInfo parameterInfo, AnalyserContext analyserContext) {
+        public Builder(ParameterInfo parameterInfo, AnalysisProvider analysisProvider) {
             super(parameterInfo.hasBeenDefined(), parameterInfo.simpleName());
             this.parameterInfo = parameterInfo;
             this.location = new Location(parameterInfo);
             ObjectFlow initialObjectFlow = new ObjectFlow(new Location(parameterInfo),
                     parameterInfo.parameterizedType, Origin.INITIAL_PARAMETER_FLOW);
             objectFlow = new FirstThen<>(initialObjectFlow);
+            this.analysisProvider = analysisProvider;
+        }
+
+        @Override
+        public int getProperty(VariableProperty variableProperty) {
+            return getParameterProperty(analysisProvider, parameterInfo, getObjectFlow(), variableProperty);
         }
 
         @Override
@@ -142,6 +147,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         @Override
         public Analysis build() {
             return new ParameterAnalysisImpl(parameterInfo,
+                    properties.toImmutableMap(),
                     annotations.toImmutableMap(), getObjectFlow(), getAssignedToField(), isCopiedFromFieldToParameters());
         }
 

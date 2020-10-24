@@ -27,13 +27,14 @@ import java.util.stream.Stream;
 
 public abstract class AnalysisImpl implements Analysis {
 
-    public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
+    public final Map<VariableProperty, Integer> properties;
     public final boolean hasBeenDefined;
     private final Map<AnnotationExpression, Boolean> annotations;
 
-    protected AnalysisImpl(boolean hasBeenDefined, Map<AnnotationExpression, Boolean> annotations) {
+    protected AnalysisImpl(boolean hasBeenDefined, Map<VariableProperty, Integer> properties, Map<AnnotationExpression, Boolean> annotations) {
         this.hasBeenDefined = hasBeenDefined;
         this.annotations = annotations;
+        this.properties = properties;
     }
 
     @Override
@@ -52,12 +53,12 @@ public abstract class AnalysisImpl implements Analysis {
     }
 
     public int internalGetProperty(VariableProperty variableProperty) {
-        return properties.getOtherwise(variableProperty, hasBeenDefined ? Level.DELAY : variableProperty.valueWhenAbsent(annotationMode()));
+        return properties.getOrDefault(variableProperty, hasBeenDefined ? Level.DELAY : variableProperty.valueWhenAbsent(annotationMode()));
     }
 
     @Override
     public int getPropertyAsIs(VariableProperty variableProperty) {
-        return properties.getOtherwise(variableProperty, Level.DELAY);
+        return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 
 

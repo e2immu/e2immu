@@ -48,8 +48,9 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                               boolean fieldError,
                               Set<Variable> variablesLinkedToMe,
                               Value effectivelyFinalValue,
+                              Map<VariableProperty, Integer> properties,
                               Map<AnnotationExpression, Boolean> annotations) {
-        super(fieldInfo.hasBeenDefined(), annotations);
+        super(fieldInfo.hasBeenDefined(), properties, annotations);
         this.fieldInfo = fieldInfo;
         this.isOfImplicitlyImmutableDataType = isOfImplicitlyImmutableDataType;
         this.objectFlow = objectFlow;
@@ -207,6 +208,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     fieldError.getOrElse(false),
                     variablesLinkedToMe.getOrElse(Set.of()),
                     effectivelyFinalValue.getOrElse(null),
+                    properties.toImmutableMap(),
                     annotations.toImmutableMap());
         }
 

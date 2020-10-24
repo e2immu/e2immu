@@ -450,7 +450,7 @@ public class MethodLevelData {
 
                 // SIZE
                 int size = variableInfo.getProperty(VariableProperty.SIZE);
-                int currentSize = tv.properties.getOtherwise(VariableProperty.SIZE, haveDelay ? Level.DELAY : Level.NOT_A_SIZE);
+                int currentSize = tv.properties.getOrDefault(VariableProperty.SIZE, haveDelay ? Level.DELAY : Level.NOT_A_SIZE);
                 if (size > currentSize) {
                     tv.properties.put(VariableProperty.SIZE, size);
                     changes.set(true);
@@ -458,7 +458,7 @@ public class MethodLevelData {
 
                 // NOT_NULL (slightly different from SIZE, different type of level)
                 int notNull = variableInfo.getProperty(VariableProperty.NOT_NULL);
-                int currentNotNull = tv.properties.getOtherwise(VariableProperty.NOT_NULL, haveDelay ? Level.DELAY : MultiLevel.MUTABLE);
+                int currentNotNull = tv.properties.getOrDefault(VariableProperty.NOT_NULL, haveDelay ? Level.DELAY : MultiLevel.MUTABLE);
                 if (notNull > currentNotNull) {
                     tv.properties.put(VariableProperty.NOT_NULL, notNull);
                     changes.set(true);

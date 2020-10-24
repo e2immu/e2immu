@@ -69,8 +69,9 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                boolean complainedAboutMissingStaticModifier,
                                boolean complainedAboutApprovedPreconditions,
                                Value precondition,
+                               Map<VariableProperty, Integer> properties,
                                Map<AnnotationExpression, Boolean> annotations) {
-        super(hasBeenDefined, annotations);
+        super(hasBeenDefined, properties, annotations);
         this.methodInfo = methodInfo;
         this.overrides = overrides;
         this.firstStatement = firstStatement;
@@ -252,6 +253,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     complainedAboutMissingStaticModifier.getOrElse(false),
                     complainedAboutApprovedPreconditions.getOrElse(false),
                     precondition.getOrElse(UnknownValue.EMPTY),
+                    properties.toImmutableMap(),
                     annotations.toImmutableMap());
         }
 

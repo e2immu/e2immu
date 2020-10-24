@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -50,15 +49,15 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     public int getProperty(VariableProperty variableProperty) {
-        return properties.getOtherwise(variableProperty, hasBeenDefined ? Level.DELAY : variableProperty.valueWhenAbsent(annotationMode()));
+        return properties.getOrDefault(variableProperty, hasBeenDefined ? Level.DELAY : variableProperty.valueWhenAbsent(annotationMode()));
     }
 
     public int getPropertyAsIs(VariableProperty variableProperty) {
-        return properties.getOtherwise(variableProperty, Level.DELAY);
+        return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 
     public int internalGetProperty(VariableProperty variableProperty) {
-        return properties.getOtherwise(variableProperty, hasBeenDefined ? Level.DELAY : variableProperty.valueWhenAbsent(annotationMode()));
+        return properties.getOrDefault(variableProperty, hasBeenDefined ? Level.DELAY : variableProperty.valueWhenAbsent(annotationMode()));
     }
 
     public void setProperty(VariableProperty variableProperty, int i) {
@@ -201,9 +200,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         return e2ImmuAnnotationExpressions.size.get().copyWith(parameter, value);
     }
 
-    private final BiConsumer<VariableProperty, Integer> PUT = properties::put;
-    private final BiConsumer<VariableProperty, Integer> OVERWRITE = properties::overwrite;
-
     public Messages fromAnnotationsIntoProperties(boolean acceptVerify,
                                                   List<AnnotationExpression> annotations,
                                                   E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
@@ -211,7 +207,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         int notNull = -1;
         boolean container = false;
         Messages messages = new Messages();
-        BiConsumer<VariableProperty, Integer> method = PUT;
 
         AnnotationExpression only = null;
         AnnotationExpression mark = null;
@@ -246,42 +241,42 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.notNull2.get().typeInfo == t) {
                     notNull = MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL;
                 } else if (e2ImmuAnnotationExpressions.notModified.get().typeInfo == t) {
-                    method.accept(VariableProperty.MODIFIED, Level.FALSE);
+                    properties.put(VariableProperty.MODIFIED, Level.FALSE);
                 } else if (e2ImmuAnnotationExpressions.modified.get().typeInfo == t) {
-                    method.accept(VariableProperty.MODIFIED, Level.TRUE);
+                    properties.put(VariableProperty.MODIFIED, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.effectivelyFinal.get().typeInfo == t) {
-                    method.accept(VariableProperty.FINAL, Level.TRUE);
+                    properties.put(VariableProperty.FINAL, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.variableField.get().typeInfo == t) {
-                    method.accept(VariableProperty.FINAL, Level.FALSE);
+                    properties.put(VariableProperty.FINAL, Level.FALSE);
                 } else if (e2ImmuAnnotationExpressions.constant.get().typeInfo == t) {
-                    method.accept(VariableProperty.CONSTANT, Level.TRUE);
+                    properties.put(VariableProperty.CONSTANT, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.extensionClass.get().typeInfo == t) {
-                    method.accept(VariableProperty.EXTENSION_CLASS, Level.TRUE);
+                    properties.put(VariableProperty.EXTENSION_CLASS, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.fluent.get().typeInfo == t) {
-                    method.accept(VariableProperty.FLUENT, Level.TRUE);
+                    properties.put(VariableProperty.FLUENT, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.identity.get().typeInfo == t) {
-                    method.accept(VariableProperty.IDENTITY, Level.TRUE);
+                    properties.put(VariableProperty.IDENTITY, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.ignoreModifications.get().typeInfo == t) {
-                    method.accept(VariableProperty.IGNORE_MODIFICATIONS, Level.TRUE);
+                    properties.put(VariableProperty.IGNORE_MODIFICATIONS, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.independent.get().typeInfo == t) {
-                    method.accept(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
+                    properties.put(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
                 } else if (e2ImmuAnnotationExpressions.dependent.get().typeInfo == t) {
-                    method.accept(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
+                    properties.put(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
                 } else if (e2ImmuAnnotationExpressions.mark.get().typeInfo == t) {
                     mark = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.only.get().typeInfo == t) {
                     only = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.singleton.get().typeInfo == t) {
-                    method.accept(VariableProperty.SINGLETON, Level.TRUE);
+                    properties.put(VariableProperty.SINGLETON, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.utilityClass.get().typeInfo == t) {
-                    method.accept(VariableProperty.UTILITY_CLASS, Level.TRUE);
+                    properties.put(VariableProperty.UTILITY_CLASS, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.linked.get().typeInfo == t) {
-                    method.accept(VariableProperty.LINKED, Level.TRUE);
+                    properties.put(VariableProperty.LINKED, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.notModified1.get().typeInfo == t) {
-                    method.accept(VariableProperty.NOT_MODIFIED_1, Level.TRUE);
+                    properties.put(VariableProperty.NOT_MODIFIED_1, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.size.get().typeInfo == t) {
-                    method.accept(VariableProperty.SIZE, extractSizeMin(messages, annotationExpression));
-                    method.accept(VariableProperty.SIZE_COPY, extractSizeCopy(annotationExpression));
+                    properties.put(VariableProperty.SIZE, extractSizeMin(messages, annotationExpression));
+                    properties.put(VariableProperty.SIZE_COPY, extractSizeCopy(annotationExpression));
                 } else if (e2ImmuAnnotationExpressions.precondition.get().typeInfo == t) {
                     //String value = annotationExpression.extract("value", "");
                     throw new UnsupportedOperationException("Not yet implemented");
@@ -289,24 +284,18 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             }
         }
         if (container) {
-            method.accept(VariableProperty.CONTAINER, Level.TRUE);
+            properties.put(VariableProperty.CONTAINER, Level.TRUE);
         }
         if (immutable >= 0) {
-            int value;
-            switch (immutable) {
-                case 0:
-                    value = MultiLevel.EFFECTIVELY_E1IMMUTABLE;
-                    break;
-                case 1:
-                    value = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-                    break;
-                default:
-                    throw new UnsupportedOperationException();
-            }
-            method.accept(VariableProperty.IMMUTABLE, value);
+            int value = switch (immutable) {
+                case 0 -> MultiLevel.EFFECTIVELY_E1IMMUTABLE;
+                case 1 -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                default -> throw new UnsupportedOperationException();
+            };
+            properties.put(VariableProperty.IMMUTABLE, value);
         }
         if (notNull >= 0) {
-            method.accept(VariableProperty.NOT_NULL, notNull);
+            properties.put(VariableProperty.NOT_NULL, notNull);
         }
         if (mark != null && only == null) {
             String markValue = mark.extract("value", "");
@@ -316,7 +305,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             String markValue = mark == null ? null : mark.extract("value", "");
             String before = only.extract("before", "");
             String after = only.extract("after", "");
-            boolean framework = only.extract("framework", false);
+            //boolean framework = only.extract("framework", false); // TODO! implement
             boolean isAfter = before.isEmpty();
             String onlyMark = isAfter ? after : before;
             if (markValue != null && !onlyMark.equals(markValue)) {

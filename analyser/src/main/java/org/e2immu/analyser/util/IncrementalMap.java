@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.util;
 
+import com.google.common.collect.ImmutableMap;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
@@ -76,10 +77,6 @@ public class IncrementalMap<K> extends Freezable {
         return Objects.requireNonNull(map.get(k));
     }
 
-    public int getOtherwise(K k, int otherwise) {
-        return map.getOrDefault(k, otherwise);
-    }
-
     public boolean isSet(K k) {
         return map.containsKey(k);
     }
@@ -106,5 +103,9 @@ public class IncrementalMap<K> extends Freezable {
 
     public void copyFrom(IncrementalMap<K> other) {
         other.map.forEach(this::improve);
+    }
+
+    public Map<K, Integer> toImmutableMap() {
+        return ImmutableMap.copyOf(map);
     }
 }

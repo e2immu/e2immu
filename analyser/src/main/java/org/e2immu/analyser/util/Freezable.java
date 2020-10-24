@@ -59,4 +59,5 @@ public abstract class Freezable {
     protected void ensureFrozen() {
         if (!frozen) throw new UnsupportedOperationException("Not yet frozen!");
     }
+
 }

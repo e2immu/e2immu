@@ -253,7 +253,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             // we need to check if there's fields being read/assigned/
             if (absentUnlessStatic(VariableProperty.READ) &&
                     absentUnlessStatic(VariableProperty.ASSIGNED) &&
-                    (methodAnalysis.methodLevelData().thisSummary.get().properties.getOtherwise(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
+                    (methodAnalysis.methodLevelData().thisSummary.get().properties.getOrDefault(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
                     !methodInfo.hasOverrides() &&
                     !methodInfo.isDefaultImplementation) {
                 MethodResolution methodResolution = methodInfo.methodResolution.get();
@@ -270,7 +270,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     private boolean absentUnlessStatic(VariableProperty variableProperty) {
         return methodLevelData().fieldSummaries.stream().allMatch(e -> e.getValue()
-                .properties.getOtherwise(variableProperty, Level.DELAY) < Level.TRUE || e.getKey().isStatic());
+                .properties.getOrDefault(variableProperty, Level.DELAY) < Level.TRUE || e.getKey().isStatic());
     }
 
     // simply copy from last statement
