@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -113,11 +114,14 @@ public class TestBasicsOpposite extends CommonTestRunner {
             Assert.assertTrue(d.evaluationResult().toString(), d.haveAssignment(STRING_FIELD, STRING_PARAMETER));
             // link to empty set, because String is E2Immutable
             Assert.assertTrue(d.evaluationResult().toString(), d.haveLinkVariable(STRING_FIELD, Set.of()));
-            Assert.assertEquals(d.evaluationResult().toString(), STRING_PARAMETER, d.evaluationResult().value.toString());
+//            Assert.assertEquals(d.evaluationResult().toString(), STRING_PARAMETER, d.evaluationResult().value.toString());
         }
         if (d.methodInfo().name.equals("getString") && "0".equals(d.statementId())) {
             Assert.assertEquals(d.evaluationResult().toString(), 1L, d.evaluationResult().getModificationStream().count());
             Assert.assertTrue(d.evaluationResult().toString(), d.haveSetProperty(STRING_FIELD, VariableProperty.READ, Level.TRUE));
+        }
+        if (d.methodInfo().name.equals("add") && "0".equals(d.statementId())) {
+            Assert.assertSame(UnknownValue.NO_VALUE, d.evaluationResult().value);
         }
     };
 
@@ -129,7 +133,7 @@ public class TestBasicsOpposite extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("BasicsOpposite", 0, 0, new DebugConfiguration.Builder()
+        testClass("BasicsOpposite", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

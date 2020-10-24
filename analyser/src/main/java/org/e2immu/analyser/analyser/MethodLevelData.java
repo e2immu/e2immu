@@ -475,6 +475,18 @@ public class MethodLevelData {
                 }
             } else if (variableInfo.variable instanceof ParameterInfo parameterInfo) {
 
+                int notNull = variableInfo.getProperty(VariableProperty.NOT_NULL);
+                if (notNull != Level.DELAY) {
+                    ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getParameterAnalysis(parameterInfo);
+                    int notNullInParam = parameterAnalysis.getProperty(VariableProperty.NOT_NULL);
+                    if (notNullInParam == Level.DELAY) {
+                        // we can safely cast here to the builder
+                        ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
+                        sharedState.builder.add(builder.new SetProperty(VariableProperty.NOT_NULL, notNull));
+                        changes.set(true);
+                    }
+                }
+
                 if (parameterInfo.parameterizedType.hasSize()) {
                     int size = variableInfo.getProperty(VariableProperty.SIZE);
                     if (size == Level.DELAY && !haveDelay) {

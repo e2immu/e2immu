@@ -322,17 +322,17 @@ public class MethodAnalyser extends AbstractAnalyser {
         return parameterAnalyser;
     }
 
-    FieldAnalyser getFieldAnalyser(FieldInfo fieldInfo) {
-        return myFieldAnalysers.get(fieldInfo);
-    }
-
     private AnalysisStatus computeOnlyMarkAnnotate() {
         assert !methodAnalysis.markAndOnly.isSet();
 
         SetOnceMap<String, Value> approvedPreconditions = myTypeAnalyser.typeAnalysis.approvedPreconditions;
         if (!approvedPreconditions.isFrozen()) {
-            log(DELAYED, "No approved preconditions (yet) for {}", methodInfo.distinguishingName());
+            log(DELAYED, "No decision on approved preconditions yet for {}", methodInfo.distinguishingName());
             return DELAYS;
+        }
+        if (approvedPreconditions.size() == 0) {
+            log(DELAYED, "No approved preconditions for {}, so no @Mark, @Only", methodInfo.distinguishingName());
+            return DONE;
         }
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
         if (modified == Level.DELAY) {

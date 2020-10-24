@@ -28,6 +28,6 @@ public class BasicsOpposite {
     @NotNull(type = AnnotationType.VERIFY_ABSENT)
     @NotModified
     public void add(@Modified @NotNull Collection<String> collection) {
-        collection.add(string);
+        collection.add(string); // expect potential null pointer exception here
     }
 }

@@ -147,12 +147,16 @@ public class EvaluationResult {
             if (value == null && evaluationResult.value != null) {
                 value = evaluationResult.value;
             }
+            // we propagate NO_VALUE
+            if (evaluationResult.value == NO_VALUE) value = NO_VALUE;
         }
 
-        // also sets result of expression
+        // also sets result of expression, but cannot overwrite NO_VALUE
         public Builder setValue(Value value) {
             Objects.requireNonNull(value);
-            this.value = value;
+            if (this.value != NO_VALUE) {
+                this.value = value;
+            }
             return this;
         }
 
