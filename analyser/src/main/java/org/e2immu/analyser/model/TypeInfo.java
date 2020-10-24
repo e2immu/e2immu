@@ -67,7 +67,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     @Override
-    public void setAnalysis(IAnalysis analysis) {
+    public void setAnalysis(Analysis analysis) {
         typeAnalysis.set((TypeAnalysis) analysis);
     }
 

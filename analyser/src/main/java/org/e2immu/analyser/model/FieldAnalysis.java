@@ -21,16 +21,10 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.util.FirstThen;
-import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.annotation.AnnotationMode;
-import org.e2immu.annotation.NotModified;
 
 import java.util.Set;
 
-public interface FieldAnalysis extends IAnalysis {
+public interface FieldAnalysis extends Analysis {
 
     /**
      * @return null means: not decided yet, or field is not effectively final

@@ -30,8 +30,6 @@ import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
 import java.util.Map;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnalysis {
 
@@ -142,7 +140,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
-        public IAnalysis build() {
+        public Analysis build() {
             return new ParameterAnalysisImpl(parameterInfo,
                     annotations.toImmutableMap(), getObjectFlow(), getAssignedToField(), isCopiedFromFieldToParameters());
         }

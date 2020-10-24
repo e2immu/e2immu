@@ -40,7 +40,7 @@ public interface WithInspectionAndAnalysis {
 
     boolean hasBeenDefined();
 
-    default Boolean annotatedWith(IAnalysis analysis, AnnotationExpression annotation) {
+    default Boolean annotatedWith(Analysis analysis, AnnotationExpression annotation) {
         if (hasBeenDefined()) {
             return analysis.getAnnotation(annotation);
         }
@@ -80,5 +80,5 @@ public interface WithInspectionAndAnalysis {
 
     String fullyQualifiedName();
 
-    void setAnalysis(IAnalysis analysis);
+    void setAnalysis(Analysis analysis);
 }

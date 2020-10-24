@@ -24,7 +24,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.stream.IntStream;
 
-public interface ParameterAnalysis extends IAnalysis {
+public interface ParameterAnalysis extends Analysis {
 
     /**
      * @return Null means: object not yet set (only in the building phase)

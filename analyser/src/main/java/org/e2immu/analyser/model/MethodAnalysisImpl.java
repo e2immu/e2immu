@@ -238,7 +238,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public IAnalysis build() {
+        public Analysis build() {
             return new MethodAnalysisImpl(isHasBeenDefined(),
                     methodInfo,
                     ImmutableSet.copyOf(overrides.getOrElse(Set.of())),

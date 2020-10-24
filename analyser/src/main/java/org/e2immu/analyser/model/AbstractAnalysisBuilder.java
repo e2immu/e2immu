@@ -27,7 +27,6 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnceMap;
-import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.AnnotationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +36,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public abstract class AbstractAnalysisBuilder implements IAnalysis {
+public abstract class AbstractAnalysisBuilder implements Analysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractAnalysisBuilder.class);
 
     public final SetOnceMap<AnnotationExpression, Boolean> annotations = new SetOnceMap<>();
@@ -218,7 +217,7 @@ public abstract class AbstractAnalysisBuilder implements IAnalysis {
         AnnotationExpression mark = null;
 
         for (AnnotationExpression annotationExpression : annotations) {
-            AnnotationType annotationType = IAnalysis.e2immuAnnotation(annotationExpression);
+            AnnotationType annotationType = Analysis.e2immuAnnotation(annotationExpression);
             if (annotationType == AnnotationType.CONTRACT ||
                     // VERIFY is the default in annotated APIs, and non-default method declarations in interfaces...
                     acceptVerify && annotationType == AnnotationType.VERIFY) {

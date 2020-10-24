@@ -173,7 +173,7 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public IAnalysis getAnalysis() {
+    public Analysis getAnalysis() {
         return typeAnalysis;
     }
 

@@ -199,7 +199,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         @Override
-        public IAnalysis build() {
+        public Analysis build() {
             return new FieldAnalysisImpl(fieldInfo,
                     isOfImplicitlyImmutableDataType.getOrElse(false),
                     getObjectFlow(),

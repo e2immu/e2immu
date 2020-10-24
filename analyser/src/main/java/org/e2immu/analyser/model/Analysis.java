@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public interface IAnalysis {
+public interface Analysis {
 
     boolean isHasBeenDefined();
 
@@ -71,7 +71,7 @@ public interface IAnalysis {
         return null;
     }
 
-    default IAnalysis build() {
+    default Analysis build() {
         throw new UnsupportedOperationException();
     }
 

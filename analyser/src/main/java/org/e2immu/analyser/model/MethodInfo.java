@@ -142,7 +142,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     @Override
-    public void setAnalysis(IAnalysis analysis) {
+    public void setAnalysis(Analysis analysis) {
         methodAnalysis.set((MethodAnalysis) analysis);
     }
 

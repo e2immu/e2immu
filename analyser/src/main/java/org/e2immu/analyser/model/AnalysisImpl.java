@@ -25,7 +25,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 
-public abstract class AnalysisImpl implements IAnalysis {
+public abstract class AnalysisImpl implements Analysis {
 
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
     public final boolean hasBeenDefined;

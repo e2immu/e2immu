@@ -115,7 +115,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     }
 
     @Override
-    public void setAnalysis(IAnalysis analysis) {
+    public void setAnalysis(Analysis analysis) {
         parameterAnalysis.set((ParameterAnalysis) analysis);
     }
 

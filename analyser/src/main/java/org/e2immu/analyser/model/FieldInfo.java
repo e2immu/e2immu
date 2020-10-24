@@ -75,7 +75,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     }
 
     @Override
-    public void setAnalysis(IAnalysis analysis) {
+    public void setAnalysis(Analysis analysis) {
         fieldAnalysis.set((FieldAnalysis) analysis);
     }
 

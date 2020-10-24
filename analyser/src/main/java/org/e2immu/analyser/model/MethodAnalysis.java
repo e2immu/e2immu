@@ -18,28 +18,16 @@
 
 package org.e2immu.analyser.model;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.abstractvalue.ContractMark;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.util.FirstThen;
-import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.annotation.AnnotationMode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public interface MethodAnalysis extends IAnalysis {
+public interface MethodAnalysis extends Analysis {
 
     MethodInfo getMethodInfo();
 
