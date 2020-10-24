@@ -155,7 +155,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     @Override
     public Analysis getAnalysis() {
-        throw new UnsupportedOperationException(); // TODO implement!
+        return methodAnalysis;
     }
 
     @Override

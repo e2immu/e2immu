@@ -117,7 +117,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     @Override
     public Analysis getAnalysis() {
-        throw new UnsupportedOperationException(); // TODO implement!
+        return fieldAnalysis;
     }
 
     @Override

@@ -77,8 +77,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                               String index,
                               boolean inSyncBlock,
                               boolean inPartOfConstruction) {
-        this.analyserContext = analyserContext;
-        this.myMethodAnalyser = methodAnalyser;
+        this.analyserContext = Objects.requireNonNull(analyserContext);
+        this.myMethodAnalyser = Objects.requireNonNull(methodAnalyser);
         this.statementAnalysis = new StatementAnalysis(statement, parent, index, inSyncBlock, inPartOfConstruction);
     }
 

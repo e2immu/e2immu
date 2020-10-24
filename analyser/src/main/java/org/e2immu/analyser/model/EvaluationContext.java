@@ -74,7 +74,7 @@ public interface EvaluationContext {
     }
 
     default AnalyserContext getAnalyserContext() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
@@ -94,7 +94,8 @@ public interface EvaluationContext {
     }
 
     default ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
-        return getAnalyserContext().getParameterAnalysers().get(parameterInfo).parameterAnalysis;
+        ParameterAnalyser parameterAnalyser = getAnalyserContext().getParameterAnalysers().get(parameterInfo);
+        return parameterAnalyser != null ? parameterAnalyser.parameterAnalysis : parameterInfo.parameterAnalysis.get();
     }
 
     default TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
