@@ -78,7 +78,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                     d.statementAnalysis.errorFlags.uselessAssignments.stream().filter(Map.Entry::getValue).count());
 
             // ERROR: method should be static
-            Assert.assertTrue(d.methodInfo.methodAnalysis.get().complainedAboutMissingStaticModifier.get());
+            Assert.assertTrue(d.methodInfo.methodAnalysis.get().getComplainedAboutMissingStaticModifier());
         }
         if ("checkArray2".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
             Assert.assertEquals(1L, d.statementAnalysis.errorFlags.uselessAssignments.stream().filter(Map.Entry::getValue).count());
@@ -132,14 +132,14 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
 
         if ("method1".equals(d.methodInfo().name)) {
             // ERROR: method should be static
-            Assert.assertTrue(methodAnalysis.complainedAboutMissingStaticModifier.get());
+            Assert.assertTrue(methodAnalysis.getComplainedAboutMissingStaticModifier());
         }
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         // ERROR: b is never read
         if ("b".equals(d.fieldInfo().name) && d.iteration() >= 1) {
-            Assert.assertTrue(d.fieldAnalysis().fieldError.get());
+            Assert.assertTrue(d.fieldAnalysis().getFieldError());
         }
     };
 

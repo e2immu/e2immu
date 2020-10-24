@@ -133,7 +133,7 @@ public class AnnotationUploader {
             return;
         }
         for (Pair<String, AnnotationExpression> pair : typePairs) {
-            if (type.annotatedWith(pair.v) == Boolean.TRUE) {
+            if (type.annotatedWith(type.typeAnalysis.get(), pair.v) == Boolean.TRUE) {
                 SMapList.add(map, typeQn, pair.k + "-t");
                 log(UPLOAD, "Added {} as type", pair.k);
                 break;
@@ -142,7 +142,7 @@ public class AnnotationUploader {
         type.typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM).forEach(methodInfo -> {
             String methodQn = methodInfo.distinguishingName();
             for (Pair<String, AnnotationExpression> pair : methodPairs) {
-                if (methodInfo.annotatedWith(pair.v) == Boolean.TRUE) {
+                if (methodInfo.annotatedWith(methodInfo.methodAnalysis.get(), pair.v) == Boolean.TRUE) {
                     SMapList.add(map, methodQn, pair.k + "-m");
                     log(UPLOAD, "Added {} as method", pair.k);
                     break;
@@ -152,7 +152,7 @@ public class AnnotationUploader {
             for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
                 String parameterQn = methodQn + "#" + i;
                 for (Pair<String, AnnotationExpression> pair : parameterPairs) {
-                    if (parameterInfo.annotatedWith(pair.v) == Boolean.TRUE) {
+                    if (parameterInfo.annotatedWith(parameterInfo.parameterAnalysis.get(), pair.v) == Boolean.TRUE) {
                         SMapList.add(map, parameterQn, pair.k + "-p");
                         break;
                     }
@@ -164,7 +164,7 @@ public class AnnotationUploader {
                 if (bestType != null) {
                     String methodsTypeQn = bestType.fullyQualifiedName;
                     for (Pair<String, AnnotationExpression> pair : dynamicTypeAnnotations) {
-                        if (methodInfo.annotatedWith(pair.v) == Boolean.TRUE) {
+                        if (methodInfo.annotatedWith(methodInfo.methodAnalysis.get(), pair.v) == Boolean.TRUE) {
                             SMapList.add(map, methodQn + " " + methodsTypeQn, pair.k + "-mt");
                             break;
                         }
@@ -177,7 +177,7 @@ public class AnnotationUploader {
             TypeInfo bestType = fieldInfo.type.bestTypeInfo();
 
             for (Pair<String, AnnotationExpression> pair : fieldPairs) {
-                if (fieldInfo.annotatedWith(pair.v) == Boolean.TRUE) {
+                if (fieldInfo.annotatedWith(fieldInfo.fieldAnalysis.get(), pair.v) == Boolean.TRUE) {
                     SMapList.add(map, fieldQn, pair.k + "-f");
                     break;
                 }
@@ -185,7 +185,7 @@ public class AnnotationUploader {
             if (bestType != null) {
                 String fieldsTypeQn = bestType.fullyQualifiedName;
                 for (Pair<String, AnnotationExpression> pair : dynamicTypeAnnotations) {
-                    if (fieldInfo.annotatedWith(pair.v) == Boolean.TRUE) {
+                    if (fieldInfo.annotatedWith(fieldInfo.fieldAnalysis.get(), pair.v) == Boolean.TRUE) {
                         SMapList.add(map, fieldQn + " " + fieldsTypeQn, pair.k + "-mf");
                         break;
                     }

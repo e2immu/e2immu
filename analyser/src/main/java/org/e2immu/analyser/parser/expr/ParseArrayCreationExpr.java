@@ -54,7 +54,7 @@ public class ParseArrayCreationExpr {
         for (int i = 0; i < parameterizedType.arrays; i++) {
             ParameterInfo p = new ParameterInfo(constructor, Primitives.PRIMITIVES.intParameterizedType, "dim" + i, i);
             p.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().setVarArgs(false).build());
-            p.parameterAnalysis.set(new ParameterAnalysis(p, null, null));
+            p.setAnalysis(new ParameterAnalysisImpl.Builder(p, null).build());
             builder.addParameter(p);
         }
         constructor.methodInspection.set(builder.build(constructor));

@@ -23,7 +23,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
 
         if ("addIfGreater".equals(name)) {
             if (iteration > 0) {
-                List<Value> preconditions = d.methodAnalysis().preconditionForMarkAndOnly.get();
+                List<Value> preconditions = d.methodAnalysis().getPreconditionForMarkAndOnly();
                 Assert.assertEquals(1, preconditions.size());
                 Assert.assertEquals("this.j > 0", preconditions.get(0).toString());
                 Assert.assertEquals("(-this.j) >= 0", NegatedValue.negate(preconditions.get(0)).toString());
@@ -31,8 +31,8 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
         }
         if ("setNegativeJ".equals(name)) {
             if (iteration > 0) {
-                Assert.assertEquals("((-this.j) >= 0 and (-j) >= 0)", d.methodAnalysis().precondition.get().toString());
-                Assert.assertEquals("[(-this.j) >= 0]", d.methodAnalysis().preconditionForMarkAndOnly.get().toString());
+                Assert.assertEquals("((-this.j) >= 0 and (-j) >= 0)", d.methodAnalysis().getPrecondition().toString());
+                Assert.assertEquals("[(-this.j) >= 0]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
 
                 FieldInfo fieldJ = d.methodInfo().typeInfo.getFieldByName("j", true);
                 TransferValue tv = methodLevelData.fieldSummaries.get(fieldJ);
@@ -83,12 +83,12 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if (d.iteration() > 0) {
-            Assert.assertEquals(1, d.typeAnalysis().approvedPreconditions.size());
-            Assert.assertEquals("j=(-this.j) >= 0", d.typeAnalysis().approvedPreconditions.stream()
+            Assert.assertEquals(1, d.typeAnalysis().getApprovedPreconditions().size());
+            Assert.assertEquals("j=(-this.j) >= 0", d.typeAnalysis().getApprovedPreconditions().entrySet().stream()
                     .map(Object::toString)
                     .collect(Collectors.joining(";")));
         }
-        Set<ParameterizedType> implicitlyImmutable = d.typeAnalysis().implicitlyImmutableDataTypes.get();
+        Set<ParameterizedType> implicitlyImmutable = d.typeAnalysis().getImplicitlyImmutableDataTypes();
         Assert.assertTrue(implicitlyImmutable.isEmpty());
     };
 

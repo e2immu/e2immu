@@ -1,9 +1,7 @@
 package org.e2immu.analyser.analyser.check;
 
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.Location;
-import org.e2immu.analyser.model.MethodAnalysis;
-import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.annotation.AnnotationType;
@@ -18,19 +16,20 @@ public class CheckPrecondition {
         boolean mustBeAbsent = annotationType == AnnotationType.VERIFY_ABSENT;
 
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-        if (mustBeAbsent && methodAnalysis.precondition.isSet()) {
+        Value precondition = methodAnalysis.getPrecondition();
+        if (mustBeAbsent && precondition != UnknownValue.EMPTY && precondition != null) {
             messages.add(Message.newMessage(new Location(methodInfo), Message.ANNOTATION_UNEXPECTEDLY_PRESENT, "Precondition"));
             return;
         }
-        if (!methodAnalysis.precondition.isSet()) {
+        if (precondition == UnknownValue.EMPTY || precondition == null) {
             messages.add(Message.newMessage(new Location(methodInfo), Message.ANNOTATION_ABSENT, "Precondition"));
             return;
         }
         String inAnnotation = annotationExpression.extract("value", "");
-        String inMethod = methodAnalysis.precondition.get().toString();
+        String inMethod = methodAnalysis.getPrecondition().toString();
         if (!inAnnotation.equals(inMethod)) {
             messages.add(Message.newMessage(new Location(methodInfo), Message.WRONG_PRECONDITION, "Expected: '" +
-                    inAnnotation + "', but got: '" + inMethod+"'"));
+                    inAnnotation + "', but got: '" + inMethod + "'"));
         }
     }
 }

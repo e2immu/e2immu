@@ -25,6 +25,7 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
@@ -32,7 +33,6 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.*;
-import org.e2immu.analyser.parser.expr.ParseLambdaExpr;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
@@ -67,6 +67,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     @Override
+    public void setAnalysis(IAnalysis analysis) {
+        typeAnalysis.set((TypeAnalysis) analysis);
+    }
+
+    @Override
     public String name() {
         return simpleName;
     }
@@ -96,17 +101,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     @Override
     public String fullyQualifiedName() {
         return fullyQualifiedName;
-    }
-
-    @Override
-    @NotNull
-    public Analysis getAnalysis() {
-        return typeAnalysis.get();
-    }
-
-    @Override
-    public void setAnalysis(Analysis analysis) {
-        typeAnalysis.set((TypeAnalysis) analysis);
     }
 
     public boolean hasBeenInspected() {
@@ -636,7 +630,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             sb.append("\n");
         }
         if (typeAnalysis.isSet()) {
-            typeAnalysis.get().annotations.visit((annotation, present) -> {
+            typeAnalysis.get().getAnnotationStream().forEach(entry -> {
+                boolean present = entry.getValue();
+                AnnotationExpression annotation = entry.getKey();
                 if (present && !annotationsSeen.contains(annotation.typeInfo)) {
                     StringUtil.indent(sb, indent);
                     sb.append(annotation.stream());
@@ -1073,23 +1069,21 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return isNestedType() && isPrivate();
     }
 
-    public Messages copyAnnotationsIntoTypeAnalysisProperties(E2ImmuAnnotationExpressions typeContext, boolean overwrite, String where) {
+    public Messages copyAnnotationsIntoTypeAnalysisProperties(E2ImmuAnnotationExpressions typeContext) {
         assert !hasBeenDefined();
         Messages messages = new Messages();
         boolean acceptVerify = isInterface();
-        log(RESOLVE, "{}: copy annotations into properties: {}", where, fullyQualifiedName);
-        if (this.typeAnalysis.isSet()) {
-            if (!overwrite)
-                throw new UnsupportedOperationException("Type analysis already set for " + fullyQualifiedName);
-        } else {
-            TypeAnalysis typeAnalysis = new TypeAnalysis(this);
-            this.typeAnalysis.set(typeAnalysis);
-        }
-        messages.addAll(typeAnalysis.get().fromAnnotationsIntoProperties(acceptVerify, typeInspection.getPotentiallyRun().annotations, typeContext, overwrite));
+        log(RESOLVE, "copy annotations into properties: {}", fullyQualifiedName);
+
+        TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(this);
+        messages.addAll(builder.fromAnnotationsIntoProperties(acceptVerify, typeInspection.getPotentiallyRun().annotations, typeContext));
+
+        this.typeAnalysis.set(builder.build());
+
         typeInspection.getPotentiallyRun().methodsAndConstructors().forEach(methodInfo ->
-                messages.addAll(methodInfo.copyAnnotationsIntoMethodAnalysisProperties(typeContext, overwrite)));
+                messages.addAll(methodInfo.copyAnnotationsIntoMethodAnalysisProperties(typeContext)));
         typeInspection.getPotentiallyRun().fields.forEach(fieldInfo ->
-                messages.addAll(fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(typeContext, overwrite)));
+                messages.addAll(fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(typeContext)));
         return messages;
     }
 
@@ -1143,15 +1137,15 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 returnType == PRIMITIVES.longTypeInfo || returnType == PRIMITIVES.boxedLongTypeInfo;
     }
 
-    public Set<ObjectFlow> objectFlows() {
-        Set<ObjectFlow> result = typeAnalysis.get().constantObjectFlows.stream().collect(Collectors.toCollection(HashSet::new));
+    public Set<ObjectFlow> objectFlows(AnalysisProvider analysisProvider) {
+        Set<ObjectFlow> result = new HashSet<>(analysisProvider.getTypeAnalysis(this).getConstantObjectFlows());
         for (MethodInfo methodInfo : typeInspection.getPotentiallyRun().methodsAndConstructors()) {
             // set, because the returned object flow could equal either one of the non-returned, or parameter flows
             for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                result.add(parameterInfo.parameterAnalysis.get().getObjectFlow());
+                result.add(analysisProvider.getParameterAnalysis(parameterInfo).getObjectFlow());
             }
-            MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
-            result.addAll(methodAnalysis.internalObjectFlows.get());
+            MethodAnalysis methodAnalysis = analysisProvider.getMethodAnalysis(methodInfo);
+            result.addAll(methodAnalysis.getInternalObjectFlows());
 
             if (!methodInfo.isConstructor && !methodInfo.isVoid()) {
                 result.add(methodAnalysis.getObjectFlow());
@@ -1159,14 +1153,15 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         }
         // for fields we only add those owned by the field itself (i.e. with an initialiser)
         for (FieldInfo fieldInfo : typeInspection.getPotentiallyRun().fields) {
-            ObjectFlow objectFlow = fieldInfo.fieldAnalysis.get().getObjectFlow();
+            FieldAnalysis fieldAnalysis = analysisProvider.getFieldAnalysis(fieldInfo);
+            ObjectFlow objectFlow = fieldAnalysis.getObjectFlow();
             if (objectFlow != null && objectFlow.location.info == fieldInfo) {
                 result.add(objectFlow);
             }
-            result.addAll(fieldInfo.fieldAnalysis.get().internalObjectFlows.get());
+            result.addAll(fieldAnalysis.getInternalObjectFlows());
         }
         for (TypeInfo subType : typeInspection.getPotentiallyRun().subTypes) {
-            result.addAll(subType.objectFlows());
+            result.addAll(subType.objectFlows(analysisProvider));
         }
         return result;
     }

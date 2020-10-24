@@ -96,11 +96,11 @@ public class TestSetOnceMap extends CommonTestRunner {
         if ("put".equals(name)) {
             if (iteration > 0) {
                 Assert.assertEquals("(not (this.map.containsKey(k)) and not (this.frozen))",
-                        d.methodAnalysis().precondition.get().toString());
+                        d.methodAnalysis().getPrecondition().toString());
             }
             if (iteration > 1) {
                 Assert.assertEquals("[not (this.frozen), not (this.map.containsKey(k))]",
-                        d.methodAnalysis().preconditionForMarkAndOnly.get().toString());
+                        d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
             }
         }
     };
@@ -108,11 +108,11 @@ public class TestSetOnceMap extends CommonTestRunner {
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("SetOnceMap".equals(d.typeInfo().simpleName)) {
             Assert.assertEquals("K;V;java.util.Map.Entry<K, V>",
-                    d.typeAnalysis().implicitlyImmutableDataTypes.get().stream().map(ParameterizedType::detailedString).sorted().collect(Collectors.joining(";")));
+                    d.typeAnalysis().getImplicitlyImmutableDataTypes().stream().map(ParameterizedType::detailedString).sorted().collect(Collectors.joining(";")));
 
             if (d.iteration() > 1) {
-                Assert.assertEquals(2, d.typeAnalysis().approvedPreconditions.size());
-                Assert.assertEquals("frozen,map", d.typeAnalysis().approvedPreconditions.stream().map(Map.Entry::getKey)
+                Assert.assertEquals(2, d.typeAnalysis().getApprovedPreconditions().size());
+                Assert.assertEquals("frozen,map", d.typeAnalysis().getApprovedPreconditions().keySet().stream()
                         .sorted()
                         .collect(Collectors.joining(",")));
             }

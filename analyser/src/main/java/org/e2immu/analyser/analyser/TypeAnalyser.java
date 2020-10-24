@@ -72,7 +72,7 @@ public class TypeAnalyser extends AbstractAnalyser {
     public final TypeInfo primaryType;
     public final TypeInfo typeInfo;
     public final TypeInspection typeInspection;
-    public final TypeAnalysis typeAnalysis;
+    public final TypeAnalysisImpl.Builder typeAnalysis;
 
     // initialized in a separate method
     private List<MethodAnalyser> myMethodAnalysersExcludingSAMs;
@@ -93,7 +93,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         this.primaryType = primaryType;
         typeInspection = typeInfo.typeInspection.get();
 
-        typeAnalysis = new TypeAnalysis(typeInfo);
+        typeAnalysis = new TypeAnalysisImpl.Builder(typeInfo);
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
                 .add("analyseImplicitlyImmutableTypes", (iteration) -> analyseImplicitlyImmutableTypes());
 
@@ -110,7 +110,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         analyserComponents = builder.build();
 
         messages.addAll(typeAnalysis.fromAnnotationsIntoProperties(typeInfo.isInterface(), typeInspection.annotations,
-                analyserContext.getE2ImmuAnnotationExpressions(), false));
+                analyserContext.getE2ImmuAnnotationExpressions()));
     }
 
     @Override
@@ -173,7 +173,7 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public Analysis getAnalysis() {
+    public IAnalysis getAnalysis() {
         return typeAnalysis;
     }
 
@@ -439,14 +439,14 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         boolean fieldsReady = myFieldAnalysers.stream().allMatch(
                 fieldAnalyser -> fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE ||
-                        fieldAnalyser.fieldAnalysis.effectivelyFinalValue.isSet());
+                        fieldAnalyser.fieldAnalysis.getEffectivelyFinalValue() != null);
         if (!fieldsReady) {
             log(DELAYED, "Delaying container, need assignedToField to be set");
             return DELAYS;
         }
         boolean allReady = myMethodAndConstructorAnalysersExcludingSAMs.stream().allMatch(
                 methodAnalyser -> methodAnalyser.getParameterAnalysers().stream().allMatch(parameterAnalyser ->
-                        !parameterAnalyser.getParameterAnalysis().assignedToField.isSet() ||
+                        parameterAnalyser.getParameterAnalysis().getAssignedToField() == null ||
                                 parameterAnalyser.parameterAnalysis.copiedFromFieldToParameters.isSet()));
         if (!allReady) {
             log(DELAYED, "Delaying container, variables linked to fields and params not yet set");
@@ -523,13 +523,13 @@ public class TypeAnalyser extends AbstractAnalyser {
         if (parentOrEnclosing == DONE || parentOrEnclosing == DELAYS) return parentOrEnclosing;
 
         boolean variablesLinkedNotSet = myFieldAnalysers.stream()
-                .anyMatch(fieldAnalyser -> !fieldAnalyser.fieldAnalysis.variablesLinkedToMe.isSet());
+                .anyMatch(fieldAnalyser -> fieldAnalyser.fieldAnalysis.getVariablesLinkedToMe() == null);
         if (variablesLinkedNotSet) {
             log(DELAYED, "Delay independence of type {}, not all variables linked to fields set", typeInfo.fullyQualifiedName);
             return DELAYS;
         }
         List<FieldAnalyser> fieldsLinkedToParameters =
-                myFieldAnalysers.stream().filter(fieldAnalyser -> fieldAnalyser.fieldAnalysis.variablesLinkedToMe.get()
+                myFieldAnalysers.stream().filter(fieldAnalyser -> fieldAnalyser.fieldAnalysis.getVariablesLinkedToMe()
                         .stream().filter(v -> v instanceof ParameterInfo)
                         .map(v -> (ParameterInfo) v).anyMatch(pi -> pi.owner.isConstructor)).collect(Collectors.toList());
 
@@ -612,7 +612,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
         if (propertyValues.stream().anyMatch(level -> level != Level.TRUE)) {
             log(DELAYED, "{} cannot be {}, parent or enclosing class is not", typeInfo.fullyQualifiedName, variableProperty);
-            typeInfo.typeAnalysis.get().improveProperty(variableProperty, falseValue);
+            typeAnalysis.improveProperty(variableProperty, falseValue);
             return DONE;
         }
         return PROGRESS;
@@ -652,7 +652,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             FieldInfo fieldInfo = fieldAnalyser.fieldInfo;
             String fieldFQN = fieldInfo.fullyQualifiedName();
 
-            if (!fieldAnalysis.isOfImplicitlyImmutableDataType.isSet()) {
+            if (fieldAnalysis.isOfImplicitlyImmutableDataType() == null) {
                 log(DELAYED, "Field {} not yet known if @SupportData, delaying @E2Immutable on type", fieldFQN);
                 return DELAYS;
             }
@@ -675,7 +675,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             // we're allowing eventualities to cascade!
             if (fieldE2Immutable < MultiLevel.EVENTUAL) {
 
-                boolean fieldRequiresRules = !fieldAnalysis.isOfImplicitlyImmutableDataType.get();
+                boolean fieldRequiresRules = !fieldAnalysis.isOfImplicitlyImmutableDataType();
                 haveToEnforcePrivateAndIndependenceRules |= fieldRequiresRules;
 
                 int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);

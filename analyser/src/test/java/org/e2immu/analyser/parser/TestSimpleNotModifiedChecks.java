@@ -148,7 +148,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             }
             if (iteration == 1) {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                Assert.assertTrue(d.fieldAnalysis().effectivelyFinalValue.isSet());
+                Assert.assertNotNull(d.fieldAnalysis().getEffectivelyFinalValue());
             }
         }
         if (name.equals("set4")) {
@@ -157,12 +157,12 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             }
             if (iteration == 1) {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                Assert.assertTrue(d.fieldAnalysis().effectivelyFinalValue.isSet());
-                Assert.assertFalse(d.fieldAnalysis().variablesLinkedToMe.isSet());
+                Assert.assertNotNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                Assert.assertNull(d.fieldAnalysis().getVariablesLinkedToMe());
             }
             if (iteration >= 2) {
-                Assert.assertEquals(1, d.fieldAnalysis().variablesLinkedToMe.get().size());
-                Assert.assertEquals("in4", d.fieldAnalysis().variablesLinkedToMe.get().stream().findFirst().orElseThrow().simpleName());
+                Assert.assertEquals(1, d.fieldAnalysis().getVariablesLinkedToMe().size());
+                Assert.assertEquals("in4", d.fieldAnalysis().getVariablesLinkedToMe().stream().findFirst().orElseThrow().simpleName());
                 Assert.assertEquals(Level.TRUE, modified);
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
             }
@@ -172,11 +172,11 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
             }
             if (iteration == 1) {
-                Assert.assertTrue(d.fieldAnalysis().effectivelyFinalValue.isSet());
-                Assert.assertFalse(d.fieldAnalysis().variablesLinkedToMe.isSet());
+                Assert.assertNotNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                Assert.assertNull(d.fieldAnalysis().getVariablesLinkedToMe());
             }
             if (iteration >= 2) {
-                Assert.assertEquals("in6", d.fieldAnalysis().variablesLinkedToMe.get().stream().findFirst().orElseThrow().simpleName());
+                Assert.assertEquals("in6", d.fieldAnalysis().getVariablesLinkedToMe().stream().findFirst().orElseThrow().simpleName());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.TRUE, modified);
             }
@@ -243,7 +243,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         TypeInfo set = typeContext.getFullyQualified(Set.class);
         Assert.assertEquals(AnnotationMode.DEFENSIVE, set.typeInspection.getPotentiallyRun().annotationMode);
         MethodInfo add = set.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("add")).findFirst().orElseThrow();
-        Assert.assertFalse(add.methodAnalysis.get().hasBeenDefined);
+        Assert.assertFalse(add.methodAnalysis.get().isHasBeenDefined());
         Assert.assertEquals(Level.TRUE, add.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
         MethodInfo addAll = set.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("addAll")).findFirst().orElseThrow();

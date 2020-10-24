@@ -465,7 +465,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             Set<Variable> nullVariables = statementAnalysis.stateData.conditionManager.get().findIndividualNullConditions();
             for (Variable nullVariable : nullVariables) {
                 log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
-                ParameterAnalysis parameterAnalysis = myMethodAnalyser.getParameterAnalyser((ParameterInfo) nullVariable).parameterAnalysis;
+                ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser((ParameterInfo) nullVariable).parameterAnalysis;
                 sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
 
                 // as a context property
@@ -488,7 +488,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", parameterInfo.fullyQualifiedName(), negated);
                 int sizeRestriction = negated.encodedSizeRestriction();
                 if (sizeRestriction > 0) { // if the complement is a meaningful restriction
-                    ParameterAnalysis parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
+                    ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
                     sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.SIZE, sizeRestriction));
 
                     statementAnalysis.addProperty(parameterInfo, VariableProperty.SIZE, sizeRestriction);

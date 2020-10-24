@@ -56,9 +56,9 @@ public class TestModificationGraph extends CommonTestRunner {
         if ("C2".equals(name)) {
             ParameterInfo c1 = d.methodInfo().methodInspection.get().parameters.get(1);
             if (d.iteration() > 0) {
-                Assert.assertEquals("c1", c1.parameterAnalysis.get().assignedToField.get().name);
+                Assert.assertEquals("c1", c1.parameterAnalysis.get().getAssignedToField().name);
                 if (d.iteration() > 1) {
-                    Assert.assertTrue(c1.parameterAnalysis.get().copiedFromFieldToParameters.get());
+                    Assert.assertTrue(c1.parameterAnalysis.get().isCopiedFromFieldToParameters());
                 }
             }
         }
@@ -70,7 +70,7 @@ public class TestModificationGraph extends CommonTestRunner {
         }
         if ("C2".equals(d.typeInfo().simpleName)) {
             Assert.assertEquals(2, d.typeInfo().typeResolution.get().circularDependencies.get().size());
-            Assert.assertEquals("[]", d.typeAnalysis().implicitlyImmutableDataTypes.get().toString());
+            Assert.assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
         }
     };
 

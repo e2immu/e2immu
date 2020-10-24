@@ -61,7 +61,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     public final MethodInfo methodInfo;
     public final MethodInspection methodInspection;
     public final boolean isSAM;
-    public final MethodAnalysis methodAnalysis;
+    public final MethodAnalysisImpl.Builder methodAnalysis;
 
     public final TypeAnalyser myTypeAnalyser;
     public final List<ParameterAnalyser> parameterAnalysers;
@@ -95,7 +95,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                     this, null, block.structure.statements, "", true, false,
                     methodInfo.methodResolution.get().partOfConstruction.get());
         }
-        methodAnalysis = new MethodAnalysis(methodInfo, myTypeAnalyser.typeAnalysis, parameterAnalyses, firstStatementAnalyser);
+        methodAnalysis = new MethodAnalysisImpl.Builder(analyserContext, methodInfo, parameterAnalyses, firstStatementAnalyser);
         this.isSAM = isSAM;
 
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<>();
@@ -154,8 +154,8 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public Analysis getAnalysis() {
-        return methodAnalysis;
+    public IAnalysis getAnalysis() {
+        throw new UnsupportedOperationException(); // TODO implement!
     }
 
     @Override
@@ -298,7 +298,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         methodAnalysis.internalObjectFlows.set(internalObjectFlowsWithoutParametersAndLiterals);
 
         methodLevelData.internalObjectFlows.stream().filter(of -> of.origin == Origin.PARAMETER).forEach(of -> {
-            ParameterAnalysis parameterAnalysis = getParameterAnalyser(((ParameterInfo) of.location.info)).parameterAnalysis;
+            ParameterAnalysisImpl.Builder parameterAnalysis = getParameterAnalyser(((ParameterInfo) of.location.info)).parameterAnalysis;
             if (!parameterAnalysis.objectFlow.isSet()) {
                 of.finalize(parameterAnalysis.objectFlow.getFirst());
                 parameterAnalysis.objectFlow.set(of);
@@ -886,7 +886,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             }
             boolean supportDataSet = methodLevelData.fieldSummaries.stream()
                     .flatMap(e -> e.getValue().linkedVariables.get().stream())
-                    .allMatch(MethodAnalyser::isImplicitlyImmutableDataTypeSet);
+                    .allMatch(v -> isImplicitlyImmutableDataTypeSet(v, analyserContext));
             if (!supportDataSet) {
                 log(DELAYED, "Delaying @Independent on {}, support data not yet known for all field references", methodInfo.distinguishingName());
                 return DELAYS;
@@ -917,8 +917,8 @@ public class MethodAnalyser extends AbstractAnalyser {
     private Boolean independenceStatusOfReturnType(MethodInfo methodInfo, MethodLevelData methodLevelData) {
         if (methodInfo.isConstructor || methodInfo.isVoid()) return true;
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(methodInfo.typeInfo);
-        if (typeAnalysis.implicitlyImmutableDataTypes.isSet() &&
-                typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodInfo.returnType())) {
+        if (typeAnalysis.getImplicitlyImmutableDataTypes() != null &&
+                typeAnalysis.getImplicitlyImmutableDataTypes().contains(methodInfo.returnType())) {
             return true;
         }
 
@@ -929,7 +929,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
         // method does not return an implicitly immutable data type
         Set<Variable> variables = methodLevelData.variablesLinkedToMethodResult.get();
-        boolean implicitlyImmutableSet = variables.stream().allMatch(MethodAnalyser::isImplicitlyImmutableDataTypeSet);
+        boolean implicitlyImmutableSet = variables.stream().allMatch(v -> isImplicitlyImmutableDataTypeSet(v, analyserContext));
         if (!implicitlyImmutableSet) {
             log(DELAYED, "Delaying @Independent on {}, implicitly immutable status not known for all field references", methodInfo.distinguishingName());
             return null;
@@ -938,14 +938,14 @@ public class MethodAnalyser extends AbstractAnalyser {
         // TODO convert the variables into field analysers
 
         int e2ImmutableStatusOfFieldRefs = variables.stream()
-                .filter(MethodAnalyser::isFieldNotOfImplicitlyImmutableType)
+                .filter(v -> isFieldNotOfImplicitlyImmutableType(v, analyserContext))
                 .map(v -> analyserContext.getFieldAnalysers().get(((FieldReference) v).fieldInfo))
                 .mapToInt(fa -> MultiLevel.value(fa.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE))
                 .min().orElse(MultiLevel.EFFECTIVE);
         if (e2ImmutableStatusOfFieldRefs == MultiLevel.DELAY) {
             log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
                     variables.stream()
-                            .filter(v -> isFieldNotOfImplicitlyImmutableType(v) &&
+                            .filter(v -> isFieldNotOfImplicitlyImmutableType(v, analyserContext) &&
                                     MultiLevel.value(analyserContext.getFieldAnalysers()
                                                     .get(((FieldReference) v).fieldInfo).fieldAnalysis.getProperty(VariableProperty.IMMUTABLE),
                                             MultiLevel.E2IMMUTABLE) == MultiLevel.DELAY)
@@ -980,13 +980,15 @@ public class MethodAnalyser extends AbstractAnalyser {
         return false;
     }
 
-    public static boolean isImplicitlyImmutableDataTypeSet(Variable v) {
-        return !(v instanceof FieldReference) || ((FieldReference) v).fieldInfo.fieldAnalysis.get().isOfImplicitlyImmutableDataType.isSet();
+    public static boolean isImplicitlyImmutableDataTypeSet(Variable v, AnalysisProvider analysisProvider) {
+        return !(v instanceof FieldReference) ||
+                analysisProvider.getFieldAnalysis(((FieldReference) v).fieldInfo).isOfImplicitlyImmutableDataType() != null;
     }
 
-    public static boolean isFieldNotOfImplicitlyImmutableType(Variable variable) {
+    public static boolean isFieldNotOfImplicitlyImmutableType(Variable variable, AnalysisProvider analysisProvider) {
         if (!(variable instanceof FieldReference)) return false;
-        return !((FieldReference) variable).fieldInfo.fieldAnalysis.get().isOfImplicitlyImmutableDataType.get();
+        FieldAnalysis fieldAnalysis = analysisProvider.getFieldAnalysis(((FieldReference) variable).fieldInfo);
+        return fieldAnalysis.isOfImplicitlyImmutableDataType() == Boolean.FALSE;
     }
 
     public Stream<Message> getMessageStream() {

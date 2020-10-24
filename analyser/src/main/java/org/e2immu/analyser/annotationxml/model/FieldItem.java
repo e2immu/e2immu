@@ -38,7 +38,7 @@ public class FieldItem extends HasAnnotations implements Comparable<FieldItem> {
         this.name = fieldInfo.name;
         addAnnotations(fieldInfo.fieldInspection.isSet() ? fieldInfo.fieldInspection.get().annotations : List.of(),
                 fieldInfo.fieldAnalysis.isSet() ?
-                fieldInfo.fieldAnalysis.get().annotations.stream().filter(e -> e.getValue() == Boolean.TRUE)
+                fieldInfo.fieldAnalysis.get().getAnnotationStream().filter(e -> e.getValue() == Boolean.TRUE)
                         .map(Map.Entry::getKey)
                         .collect(Collectors.toList()): List.of());
         freeze();

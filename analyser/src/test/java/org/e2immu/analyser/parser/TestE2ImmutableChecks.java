@@ -65,7 +65,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         if ("E2Container1".equals(name) && iteration > 1) {
             ParameterInfo value = d.methodInfo().methodInspection.get().parameters.get(0);
             Assert.assertEquals("value", value.name);
-            Assert.assertTrue(value.parameterAnalysis.get().assignedToField.isSet());
+            Assert.assertNotNull(value.parameterAnalysis.get().getAssignedToField());
         }
         if ("E2Container2".equals(name) && 2 == d.methodInfo().methodInspection.get().parameters.size()) {
             if (iteration > 2) {
@@ -155,15 +155,15 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("E2Container5".equals(d.typeInfo().simpleName)) {
-            Assert.assertEquals("T", d.typeAnalysis().implicitlyImmutableDataTypes.get()
+            Assert.assertEquals("T", d.typeAnalysis().getImplicitlyImmutableDataTypes()
                     .stream().findFirst().orElseThrow().detailedString());
         } else if ("E2Container6".equals(d.typeInfo().simpleName)) {
             Assert.assertEquals("org.e2immu.analyser.testexample.E2ImmutableChecks.SimpleContainer",
-                    d.typeAnalysis().implicitlyImmutableDataTypes.get()
+                    d.typeAnalysis().getImplicitlyImmutableDataTypes()
                             .stream().findFirst().orElseThrow().detailedString());
 
         } else if ("E1Container7".equals(d.typeInfo().simpleName)) {
-            Assert.assertEquals(0, d.typeAnalysis().implicitlyImmutableDataTypes.get().size());
+            Assert.assertEquals(0, d.typeAnalysis().getImplicitlyImmutableDataTypes().size());
 
             if (d.iteration() > 2) {
                 Assert.assertEquals(MultiLevel.EFFECTIVE, d.typeAnalysis().getProperty(VariableProperty.INDEPENDENT));
@@ -179,7 +179,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
             Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, statement1.getStructure().expression);
             Assert.assertEquals("Map<String, SimpleContainer> incremented = new HashMap(map7);\n", statement1.statementString(0, null));
         } else {
-            Assert.assertEquals(0, d.typeAnalysis().implicitlyImmutableDataTypes.get().size());
+            Assert.assertEquals(0, d.typeAnalysis().getImplicitlyImmutableDataTypes().size());
         }
     };
 

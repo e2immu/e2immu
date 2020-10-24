@@ -25,7 +25,7 @@ import org.e2immu.analyser.pattern.PatternMatcher;
 import java.util.Map;
 import java.util.Objects;
 
-public interface AnalyserContext {
+public interface AnalyserContext extends AnalysisProvider {
     Configuration getConfiguration();
 
     E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions();
@@ -60,5 +60,11 @@ public interface AnalyserContext {
         TypeAnalyser typeAnalyser = getTypeAnalysers().get(typeInfo);
         if (typeAnalyser == null) return typeInfo.typeAnalysis.get();
         return typeAnalyser.typeAnalysis;
+    }
+
+    default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
+        MethodAnalyser methodAnalyser = getMethodAnalysers().get(methodInfo);
+        if (methodAnalyser == null) return methodInfo.methodAnalysis.get();
+        return methodAnalyser.methodAnalysis;
     }
 }

@@ -17,27 +17,27 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Analysis;
+import org.e2immu.analyser.model.AbstractAnalysisBuilder;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Stream;
 
 public class StatementAnalyserResult {
-    private final Stream<Analysis.Modification> modifications;
+    private final Stream<AbstractAnalysisBuilder.Modification> modifications;
     public final AnalysisStatus analysisStatus;
 
-    private StatementAnalyserResult(AnalysisStatus analysisStatus, Stream<Analysis.Modification> modifications) {
+    private StatementAnalyserResult(AnalysisStatus analysisStatus, Stream<AbstractAnalysisBuilder.Modification> modifications) {
         this.modifications = modifications;
         this.analysisStatus = analysisStatus;
     }
 
-    public Stream<Analysis.Modification> getModifications() {
+    public Stream<AbstractAnalysisBuilder.Modification> getModifications() {
         return modifications;
     }
 
     public static class Builder {
-        private List<Analysis.Modification> modifications;
+        private List<AbstractAnalysisBuilder.Modification> modifications;
         private AnalysisStatus analysisStatus;
 
         public Builder add(StatementAnalyserResult other) {
@@ -49,7 +49,7 @@ public class StatementAnalyserResult {
             return this;
         }
 
-        public Builder add(Analysis.Modification modification) {
+        public Builder add(AbstractAnalysisBuilder.Modification modification) {
             if (modifications == null) {
                 modifications = new LinkedList<>();
             }

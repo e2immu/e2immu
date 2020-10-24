@@ -33,7 +33,6 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.Container;
@@ -53,7 +52,7 @@ import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
 import static org.e2immu.analyser.util.Logger.log;
 
 @Container
-public class StatementAnalysis extends Analysis implements Comparable<StatementAnalysis>, HasNavigationData<StatementAnalysis> {
+public class StatementAnalysis extends AbstractAnalysisBuilder implements Comparable<StatementAnalysis>, HasNavigationData<StatementAnalysis> {
 
     public final Statement statement;
     public final String index;
@@ -243,8 +242,13 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
     }
 
     @Override
-    protected Location location() {
+    public Location location() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isHasBeenDefined() {
+        return true;
     }
 
     // ****************************************************************************************
@@ -466,8 +470,9 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
             return UnknownValue.NO_VALUE;
         }
         if (effectivelyFinal == Level.TRUE) {
-            if (fieldAnalysis.effectivelyFinalValue.isSet()) {
-                return fieldAnalysis.effectivelyFinalValue.get();
+            Value efv = fieldAnalysis.getEffectivelyFinalValue();
+            if (efv != null) {
+                return efv;
             }
             if (fieldReference.fieldInfo.owner.hasBeenDefined()) {
                 return UnknownValue.NO_VALUE; // delay
@@ -728,9 +733,9 @@ public class StatementAnalysis extends Analysis implements Comparable<StatementA
 
 
     private Value computeInitialValue(FieldAnalysis recordFieldAnalysis) {
-        if (recordFieldAnalysis.effectivelyFinalValue.isSet()) {
-            // TODO safe fieldAnalysis
-            return recordFieldAnalysis.effectivelyFinalValue.get();
+        Value efv = recordFieldAnalysis.getEffectivelyFinalValue();
+        if (efv != null) {
+            return efv;
         }
         // ? rest should have been done already
         throw new UnsupportedOperationException();

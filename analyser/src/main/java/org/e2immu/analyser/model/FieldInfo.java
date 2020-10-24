@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -74,12 +75,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     }
 
     @Override
-    public Analysis getAnalysis() {
-        return fieldAnalysis.get();
-    }
-
-    @Override
-    public void setAnalysis(Analysis analysis) {
+    public void setAnalysis(IAnalysis analysis) {
         fieldAnalysis.set((FieldAnalysis) analysis);
     }
 
@@ -117,7 +113,9 @@ public class FieldInfo implements WithInspectionAndAnalysis {
                 StringUtil.indent(sb, indent);
             });
             if (fieldAnalysis.isSet()) {
-                fieldAnalysis.get().annotations.visit((annotation, present) -> {
+                fieldAnalysis.get().getAnnotationStream().forEach(entry -> {
+                    boolean present = entry.getValue();
+                    AnnotationExpression annotation = entry.getKey();
                     if (present && !annotationsSeen.contains(annotation.typeInfo)) {
                         sb.append(annotation.stream());
                         sb.append("\n");
@@ -175,18 +173,14 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE);
     }
 
-    public Messages copyAnnotationsIntoFieldAnalysisProperties(E2ImmuAnnotationExpressions typeContext, boolean overwrite) {
-        if (fieldAnalysis.isSet()) {
-            if (!overwrite)
-                throw new UnsupportedOperationException("Field analysis already set for " + fullyQualifiedName());
-        } else {
-            FieldAnalysis fieldAnalysis = new FieldAnalysis(this, owner.typeAnalysis.get());
-            this.fieldAnalysis.set(fieldAnalysis);
-        }
+    public Messages copyAnnotationsIntoFieldAnalysisProperties(E2ImmuAnnotationExpressions typeContext) {
+
+        FieldAnalysisImpl.Builder fieldAnalysisBuilder = new FieldAnalysisImpl.Builder(AnalysisProvider.DEFAULT_PROVIDER,
+                this, owner.typeAnalysis.get());
         boolean acceptVerify = !owner.hasBeenDefined() || owner.isInterface();
         Messages messages = new Messages();
-        messages.addAll(fieldAnalysis.get().fromAnnotationsIntoProperties(acceptVerify, fieldInspection.get().annotations,
-                typeContext, overwrite));
+        messages.addAll(fieldAnalysisBuilder.fromAnnotationsIntoProperties(acceptVerify, fieldInspection.get().annotations,
+                typeContext));
         /*if (fieldInspection.get().initialiser.isSet() &&
                 fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod != null) {
             messages.addAll(fieldInspection.get().initialiser.get()
@@ -195,10 +189,12 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         } has already been set at creation time */
 
         // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
-        int effectivelyFinal = fieldAnalysis.get().getProperty(VariableProperty.FINAL);
+        int effectivelyFinal = fieldAnalysisBuilder.getProperty(VariableProperty.FINAL);
         if (isExplicitlyFinal() && effectivelyFinal != Level.TRUE) {
-            fieldAnalysis.get().improveProperty(VariableProperty.FINAL, Level.TRUE);
+            fieldAnalysisBuilder.improveProperty(VariableProperty.FINAL, Level.TRUE);
         }
+        setAnalysis(fieldAnalysisBuilder.build());
+
         return messages;
     }
 

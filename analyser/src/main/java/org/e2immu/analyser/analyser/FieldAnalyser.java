@@ -68,7 +68,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     public final TypeInfo primaryType;
     public final FieldInfo fieldInfo;
     public final FieldInspection fieldInspection;
-    public final FieldAnalysis fieldAnalysis;
+    public final FieldAnalysisImpl.Builder fieldAnalysis;
     public final MethodAnalyser sam;
     private final boolean fieldCanBeWrittenFromOutsideThisType;
     private final AnalyserComponents<String, Integer> analyserComponents;
@@ -88,7 +88,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         super("Field " + fieldInfo.name, analyserContext);
         this.fieldInfo = fieldInfo;
         fieldInspection = fieldInfo.fieldInspection.get();
-        fieldAnalysis = new FieldAnalysis(fieldInfo, ownerTypeAnalysis);
+        fieldAnalysis = new FieldAnalysisImpl.Builder(analyserContext, fieldInfo, ownerTypeAnalysis);
         this.primaryType = primaryType;
         this.sam = sam;
         fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord() || !fieldInfo.isPrivate() && !fieldInfo.isExplicitlyFinal();
@@ -116,8 +116,8 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public Analysis getAnalysis() {
-        return fieldAnalysis;
+    public IAnalysis getAnalysis() {
+        throw new UnsupportedOperationException(); // TODO implement!
     }
 
     @Override
@@ -208,12 +208,11 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus computeImplicitlyImmutableDataType() {
         assert !fieldAnalysis.isOfImplicitlyImmutableDataType.isSet();
-        if (!myTypeAnalyser.typeAnalysis.implicitlyImmutableDataTypes.isSet()) return DELAYS;
-        boolean implicit = myTypeAnalyser.typeAnalysis.implicitlyImmutableDataTypes.get().contains(fieldInfo.type);
+        if (myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes() == null) return DELAYS;
+        boolean implicit = myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes().contains(fieldInfo.type);
         fieldAnalysis.isOfImplicitlyImmutableDataType.set(implicit);
         return DONE;
     }
-
 
     private AnalysisStatus analyseNotModified1() {
         if (!fieldInfo.type.isFunctionalInterface() || sam == null) return DONE; // not for me
@@ -549,7 +548,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (variableValue != null) {
                 if (variableValue.variable instanceof ParameterInfo parameterInfo) {
                     ParameterAnalyser parameterAnalyser = analyserContext.getParameterAnalysers().get(parameterInfo);
-                    if (!parameterAnalyser.parameterAnalysis.assignedToField.isSet()) {
+                    if (parameterAnalyser.parameterAnalysis.assignedToField.isSet()) {
                         parameterAnalyser.parameterAnalysis.assignedToField.set(fieldInfo);
                         log(CONSTANT, "Field {} has been assigned to parameter {}", fieldInfo.name, parameterInfo.fullyQualifiedName());
                     }
@@ -770,10 +769,9 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (effectivelyFinal == Level.FALSE) {
             return new VariableValue(variable, objectFlow, true);
         }
-        if (fieldAnalysis.effectivelyFinalValue.isSet()) {
-            return fieldAnalysis.effectivelyFinalValue.get();
-        }
-        return new VariableValue(variable, objectFlow, false);
+        Value effectivelyFinalValue = fieldAnalysis.getEffectivelyFinalValue();
+        return Objects.requireNonNullElseGet(effectivelyFinalValue,
+                () -> new VariableValue(variable, objectFlow, false));
     }
 
     @Override

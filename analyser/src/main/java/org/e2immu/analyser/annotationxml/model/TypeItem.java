@@ -41,7 +41,7 @@ public class TypeItem extends HasAnnotations implements Comparable<TypeItem> {
         boolean haveTypeInspection = typeInfo.typeInspection.isSet();
         addAnnotations(haveTypeInspection ? typeInfo.typeInspection.getPotentiallyRun().annotations : List.of(),
                 typeInfo.typeAnalysis.isSet() ?
-                        typeInfo.typeAnalysis.get().annotations.stream().filter(e -> e.getValue() == Boolean.TRUE)
+                        typeInfo.typeAnalysis.get().getAnnotationStream().filter(e -> e.getValue() == Boolean.TRUE)
                                 .map(Map.Entry::getKey)
                                 .collect(Collectors.toList()) : List.of());
         if (haveTypeInspection) {

@@ -111,20 +111,20 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("method4".equals(d.methodInfo().name)) {
-            Assert.assertTrue(d.methodAnalysis().objectFlow.isSet());
-            ObjectFlow objectFlow = d.methodAnalysis().objectFlow.get();
+            ObjectFlow objectFlow = d.methodAnalysis().getObjectFlow();
+            Assert.assertNotNull(objectFlow);
             Assert.assertEquals("[mark]", objectFlow.marks().toString());
             Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
         }
         if ("method6".equals(d.methodInfo().name)) {
-            Assert.assertTrue(d.methodAnalysis().objectFlow.isSet());
-            ObjectFlow objectFlow = d.methodAnalysis().objectFlow.get();
+            ObjectFlow objectFlow = d.methodAnalysis().getObjectFlow();
+            Assert.assertNotNull(objectFlow);
             Assert.assertTrue(objectFlow.marks().isEmpty());
             Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_BEFORE_MARK, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
         }
         if ("method7".equals(d.methodInfo().name)) {
-            Assert.assertTrue(d.methodAnalysis().objectFlow.isSet());
-            ObjectFlow objectFlow = d.methodAnalysis().objectFlow.get();
+            ObjectFlow objectFlow = d.methodAnalysis().getObjectFlow();
+            Assert.assertNotNull(objectFlow);
             Assert.assertEquals("[mark]", objectFlow.marks().toString());
             Assert.assertEquals(MultiLevel.EVENTUALLY_E2IMMUTABLE_AFTER_MARK, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
         }

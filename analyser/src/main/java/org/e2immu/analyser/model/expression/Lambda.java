@@ -82,8 +82,7 @@ public class Lambda implements Expression {
     private Expression singleExpression() {
         if (block.structure.statements.size() != 1) return null;
         Statement statement = block.structure.statements.get(0);
-        if (!(statement instanceof ReturnStatement)) return null;
-        ReturnStatement returnStatement = (ReturnStatement) statement;
+        if (!(statement instanceof ReturnStatement returnStatement)) return null;
         return returnStatement.expression;
     }
 
@@ -102,7 +101,7 @@ public class Lambda implements Expression {
         } else {
             if (block.structure.statements.isEmpty()) blockString = "{ }";
             else {
-                StatementAnalysis firstStatement = methodInfo.methodAnalysis.get().firstStatement.followReplacements();
+                StatementAnalysis firstStatement = methodInfo.methodAnalysis.get().getFirstStatement().followReplacements();
                 blockString = block.statementString(indent, firstStatement);
             }
         }

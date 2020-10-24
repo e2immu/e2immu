@@ -61,7 +61,7 @@ public class TestObjectFlow2 extends CommonTestRunner {
 
         TypeInfo objectFlow2 = typeContext.typeStore.get(ObjectFlow2.class.getCanonicalName());
         MethodInfo ofMethod = objectFlow2.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "of".equals(m.name)).findAny().orElseThrow();
-        ObjectFlow newHashSet = ofMethod.methodAnalysis.get().internalObjectFlows.get().stream()
+        ObjectFlow newHashSet = ofMethod.methodAnalysis.get().getInternalObjectFlows().stream()
                 .filter(of -> of.type.typeInfo == hashSet)
                 .filter(of -> of.origin == Origin.NEW_OBJECT_CREATION)
                 .findAny().orElseThrow();
@@ -73,11 +73,11 @@ public class TestObjectFlow2 extends CommonTestRunner {
 
         MethodInfo useOf = objectFlow2.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "useOf".equals(m.name)).findAny().orElseThrow();
 
-        ObjectFlow constantX = objectFlow2.typeAnalysis.get().constantObjectFlows.stream()
+        ObjectFlow constantX = objectFlow2.typeAnalysis.get().getConstantObjectFlows().stream()
                 .filter(of -> of.type.typeInfo == Primitives.PRIMITIVES.stringTypeInfo).findFirst().orElseThrow();
         Assert.assertTrue(ofParam.containsPrevious(constantX));
 
-        ObjectFlow useOfFlow = useOf.methodAnalysis.get().internalObjectFlows.get().stream()
+        ObjectFlow useOfFlow = useOf.methodAnalysis.get().getInternalObjectFlows().stream()
                 .filter(of -> of.type.typeInfo == set)
                 .findAny().orElseThrow();
         Assert.assertSame(Origin.RESULT_OF_METHOD, useOfFlow.origin);

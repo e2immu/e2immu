@@ -36,70 +36,26 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class TypeAnalysis extends Analysis {
+public interface TypeAnalysis extends IAnalysis {
 
-    public final TypeInfo typeInfo;
+    Set<ObjectFlow> getConstantObjectFlows();
 
-    public TypeAnalysis(TypeInfo typeInfo) {
-        super(typeInfo.hasBeenDefined(), typeInfo.simpleName);
-        this.typeInfo = typeInfo;
+    Map<String, Value> getApprovedPreconditions();
+
+    default boolean isEventual() {
+        return !getApprovedPreconditions().isEmpty();
     }
 
-    @Override
-    protected Location location() {
-        return new Location(typeInfo);
+    default Set<String> marksRequiredForImmutable() {
+        return getApprovedPreconditions().keySet().stream().collect(Collectors.toUnmodifiableSet());
     }
 
-    @Override
-    public AnnotationMode annotationMode() {
-        return typeInfo.typeInspection.get().annotationMode;
-    }
-
-    // no delays when frozen
-    public final AddOnceSet<ObjectFlow> constantObjectFlows = new AddOnceSet<>();
-
-    // from label to condition BEFORE (used by @Mark and @Only(before="label"))
-    public final SetOnceMap<String, Value> approvedPreconditions = new SetOnceMap<>();
-
-    public boolean isEventual() {
-        return !approvedPreconditions.isEmpty();
-    }
-
-    public Set<String> marksRequiredForImmutable() {
-        return approvedPreconditions.stream().map(Map.Entry::getKey).collect(Collectors.toUnmodifiableSet());
-    }
-
-    public String allLabelsRequiredForImmutable() {
+    default String allLabelsRequiredForImmutable() {
         return String.join(",", marksRequiredForImmutable());
     }
 
-    public final SetOnce<Set<ParameterizedType>> implicitlyImmutableDataTypes = new SetOnce<>();
-
-    @Override
-    public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-
-        // @ExtensionClass
-        if (getProperty(VariableProperty.EXTENSION_CLASS) == Level.TRUE) {
-            annotations.put(e2ImmuAnnotationExpressions.extensionClass.get(), true);
-        }
-
-        // @UtilityClass
-        if (getProperty(VariableProperty.UTILITY_CLASS) == Level.TRUE) {
-            annotations.put(e2ImmuAnnotationExpressions.utilityClass.get(), true);
-        }
-
-        // @Singleton
-        if (getProperty(VariableProperty.SINGLETON) == Level.TRUE) {
-            annotations.put(e2ImmuAnnotationExpressions.singleton.get(), true);
-        }
-
-        int immutable = getProperty(VariableProperty.IMMUTABLE);
-        doImmutableContainer(e2ImmuAnnotationExpressions, immutable, false);
-
-        // @Independent
-        int independent = getProperty(VariableProperty.INDEPENDENT);
-        if (!MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) {
-            doIndependent(e2ImmuAnnotationExpressions, independent, typeInfo.isInterface());
-        }
-    }
+    /**
+     * @return null when not yet set
+     */
+    Set<ParameterizedType> getImplicitlyImmutableDataTypes();
 }

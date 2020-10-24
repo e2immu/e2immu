@@ -19,6 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -48,8 +49,8 @@ public class TestObjectFlow1 extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("useKv".equals(d.methodInfo().name)) {
             ParameterAnalysis p0 = d.methodInfo().methodInspection.get().parameters.get(0).parameterAnalysis.get();
-            Assert.assertTrue(p0.objectFlow.isSet());
-            ObjectFlow objectFlowP0 = p0.objectFlow.get();
+            ObjectFlow objectFlowP0 = p0.getObjectFlow();
+            Assert.assertNotNull(objectFlowP0);
             Assert.assertSame(Origin.PARAMETER, objectFlowP0.origin);
             Assert.assertEquals(1L, objectFlowP0.getNonModifyingCallouts().count());
             ObjectFlow callOutP0 = objectFlowP0.getNonModifyingCallouts().findAny().orElseThrow();
@@ -57,8 +58,8 @@ public class TestObjectFlow1 extends CommonTestRunner {
             Assert.assertEquals("value", callOutP0.location.info.name());
             Assert.assertTrue(callOutP0.containsPrevious(objectFlowP0));
 
-            Assert.assertTrue(d.methodAnalysis().internalObjectFlows.isSet());
-            Set<ObjectFlow> internalFlows = d.methodAnalysis().internalObjectFlows.get();
+            Set<ObjectFlow> internalFlows = d.methodAnalysis().getInternalObjectFlows();
+            Assert.assertNotNull(internalFlows);
             LOGGER.info("Have internal flows of useKv: {}", internalFlows);
             Assert.assertEquals(2, internalFlows.size());
             ObjectFlow newKeyValue = internalFlows.stream()
@@ -70,8 +71,8 @@ public class TestObjectFlow1 extends CommonTestRunner {
                     .findAny().orElseThrow();
             Assert.assertEquals("value", valueFieldOfNewKeyValue.location.info.name());
 
-            Assert.assertTrue(d.methodAnalysis().objectFlow.isSet());
-            ObjectFlow returnFlow = d.methodAnalysis().objectFlow.get();
+            ObjectFlow returnFlow = d.methodAnalysis().getObjectFlow();
+            Assert.assertNotNull(returnFlow);
             Assert.assertSame(Primitives.PRIMITIVES.integerTypeInfo, returnFlow.type.typeInfo);
             Assert.assertSame(valueFieldOfNewKeyValue, returnFlow);
         }
@@ -104,8 +105,8 @@ public class TestObjectFlow1 extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("ObjectFlow1".equals(d.typeInfo().simpleName)) {
-            Assert.assertEquals(1, d.typeAnalysis().constantObjectFlows.size());
-            ObjectFlow literal = d.typeAnalysis().constantObjectFlows.stream().findAny().orElseThrow();
+            Assert.assertEquals(1, d.typeAnalysis().getConstantObjectFlows().size());
+            ObjectFlow literal = d.typeAnalysis().getConstantObjectFlows().stream().findAny().orElseThrow();
             Assert.assertSame(Primitives.PRIMITIVES.stringTypeInfo, literal.type.typeInfo);
             Assert.assertSame(Origin.LITERAL, literal.origin);
             Assert.assertEquals(1L, literal.getNonModifyingCallouts().count());
@@ -124,15 +125,15 @@ public class TestObjectFlow1 extends CommonTestRunner {
         TypeInfo keyValue = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow1.KeyValue");
         MethodInfo keyValueConstructor = keyValue.typeInspection.getPotentiallyRun().constructors.get(0);
         ParameterInfo key = keyValueConstructor.methodInspection.get().parameters.get(0);
-        Assert.assertTrue(key.parameterAnalysis.get().objectFlow.isSet());
         ObjectFlow objectFlowKey = key.parameterAnalysis.get().getObjectFlow();
+        Assert.assertNotNull(objectFlowKey);
         Assert.assertSame(Origin.PARAMETER, objectFlowKey.getOrigin());
 
         Assert.assertEquals(1L, objectFlowKey.getPrevious().count());
         ObjectFlow keyConstant = objectFlowKey.getPrevious().findAny().orElseThrow();
 
         TypeInfo objectFlow1 = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow1");
-        ObjectFlow inType = objectFlow1.typeAnalysis.get().constantObjectFlows.stream().findFirst().orElseThrow();
+        ObjectFlow inType = objectFlow1.typeAnalysis.get().getConstantObjectFlows().stream().findFirst().orElseThrow();
         Assert.assertSame(inType, keyConstant);
         Assert.assertSame(Origin.LITERAL, inType.origin);
 
@@ -145,18 +146,18 @@ public class TestObjectFlow1 extends CommonTestRunner {
         ObjectFlow objectFlowK = k.parameterAnalysis.get().getObjectFlow();
         Assert.assertSame(Origin.PARAMETER, objectFlowK.origin);
 
-        Assert.assertEquals(2L, useKv.methodAnalysis.get().internalObjectFlows.get().size());
-        ObjectFlow newKeyValue = useKv.methodAnalysis.get().internalObjectFlows.get().stream()
+        Assert.assertEquals(2L, useKv.methodAnalysis.get().getInternalObjectFlows().size());
+        ObjectFlow newKeyValue = useKv.methodAnalysis.get().getInternalObjectFlows().stream()
                 .filter(of -> Origin.NEW_OBJECT_CREATION == of.origin).findAny().orElseThrow();
-        ObjectFlow accessValue = useKv.methodAnalysis.get().internalObjectFlows.get().stream()
+        ObjectFlow accessValue = useKv.methodAnalysis.get().getInternalObjectFlows().stream()
                 .filter(of -> Origin.FIELD_ACCESS == of.origin).findAny().orElseThrow();
 
 
         MethodInfo getKeyMethod = keyValue.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "getKey".equals(m.name)).findAny().orElseThrow();
-        ObjectFlow returnFlowGetKey = getKeyMethod.methodAnalysis.get().objectFlow.get();
+        ObjectFlow returnFlowGetKey = getKeyMethod.methodAnalysis.get().getObjectFlow();
         Assert.assertSame(Origin.FIELD_ACCESS, returnFlowGetKey.origin);
 
-        Set<ObjectFlow> flowsOfObjectFlow1 = objectFlow1.objectFlows();
+        Set<ObjectFlow> flowsOfObjectFlow1 = objectFlow1.objectFlows(AnalysisProvider.DEFAULT_PROVIDER);
         for (ObjectFlow objectFlow : flowsOfObjectFlow1) {
             LOGGER.info("Detailed: {}", objectFlow.detailed());
         }

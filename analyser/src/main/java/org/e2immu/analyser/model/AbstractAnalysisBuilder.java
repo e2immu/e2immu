@@ -20,8 +20,6 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ContractMark;
-import org.e2immu.analyser.model.expression.ArrayInitializer;
-import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -37,61 +35,31 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public abstract class Analysis {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Analysis.class);
+public abstract class AbstractAnalysisBuilder implements IAnalysis {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractAnalysisBuilder.class);
 
     public final SetOnceMap<AnnotationExpression, Boolean> annotations = new SetOnceMap<>();
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
     public final boolean hasBeenDefined;
     public final String simpleName; // for debugging purposes
 
-    protected Analysis(boolean hasBeenDefined, String simpleName) {
+    protected AbstractAnalysisBuilder(boolean hasBeenDefined, String simpleName) {
         this.simpleName = simpleName;
         this.hasBeenDefined = hasBeenDefined;
     }
-
-    // part of the streaming process, purely based on the annotations map
-    public void peekIntoAnnotations(AnnotationExpression annotation, Set<TypeInfo> annotationsSeen, StringBuilder sb) {
-        AnnotationType annotationType = e2immuAnnotation(annotation);
-        if (annotationType != null && annotationType != AnnotationType.CONTRACT) {
-            // so we have one of our own annotations, and we know its type
-            Boolean verified = annotations.getOtherwiseNull(annotation);
-            if (verified != null) {
-                boolean ok = verified && annotationType == AnnotationType.VERIFY
-                        || !verified && annotationType == AnnotationType.VERIFY_ABSENT;
-                annotationsSeen.add(annotation.typeInfo);
-                if (ok) {
-                    sb.append("/*OK*/");
-                } else {
-                    sb.append("/*FAIL*/");
-                }
-            } else {
-                if (annotationType == AnnotationType.VERIFY) {
-                    sb.append("/*FAIL:DELAYED*/");
-                } else if (annotationType == AnnotationType.VERIFY_ABSENT) {
-                    sb.append("/*OK:DELAYED*/");
-                }
-            }
-        }
-        if (annotationType == AnnotationType.CONTRACT) annotationsSeen.add(annotation.typeInfo);
-    }
-
-    private static AnnotationType e2immuAnnotation(AnnotationExpression annotation) {
-        if (annotation.typeInfo.fullyQualifiedName.startsWith("org.e2immu.annotation") && annotation.expressions.isSet()) {
-            return annotation.extract("type", AnnotationType.VERIFY);
-        }
-        return null;
-    }
-
-    public abstract AnnotationMode annotationMode();
 
     public int getProperty(VariableProperty variableProperty) {
         return properties.getOtherwise(variableProperty, hasBeenDefined ? Level.DELAY : variableProperty.valueWhenAbsent(annotationMode()));
     }
 
-    protected int getPropertyAsIs(VariableProperty variableProperty) {
+    public int getPropertyAsIs(VariableProperty variableProperty) {
         return properties.getOtherwise(variableProperty, Level.DELAY);
+    }
+
+    public int internalGetProperty(VariableProperty variableProperty) {
+        return properties.getOtherwise(variableProperty, hasBeenDefined ? Level.DELAY : variableProperty.valueWhenAbsent(annotationMode()));
     }
 
     public void setProperty(VariableProperty variableProperty, int i) {
@@ -108,6 +76,17 @@ public abstract class Analysis {
 
     public void improveProperty(VariableProperty variableProperty, int i) {
         properties.improve(variableProperty, i);
+    }
+
+
+    @Override
+    public Stream<Map.Entry<AnnotationExpression, Boolean>> getAnnotationStream() {
+        return annotations.stream();
+    }
+
+    @Override
+    public Boolean getAnnotation(AnnotationExpression annotationExpression) {
+        return annotations.getOrDefault(annotationExpression, null);
     }
 
     public abstract void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions);
@@ -175,7 +154,7 @@ public abstract class Analysis {
         int container = getProperty(VariableProperty.CONTAINER);
         String mark;
         boolean isType = this instanceof TypeAnalysis;
-        boolean isInterface = isType && ((TypeAnalysis) this).typeInfo.isInterface();
+        boolean isInterface = isType && ((TypeAnalysisImpl.Builder) this).typeInfo.isInterface();
         boolean eventual = isType && ((TypeAnalysis) this).isEventual();
         if (eventual) {
             mark = ((TypeAnalysis) this).allLabelsRequiredForImmutable();
@@ -228,19 +207,18 @@ public abstract class Analysis {
 
     public Messages fromAnnotationsIntoProperties(boolean acceptVerify,
                                                   List<AnnotationExpression> annotations,
-                                                  E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
-                                                  boolean overwrite) {
+                                                  E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         int immutable = -1;
         int notNull = -1;
         boolean container = false;
         Messages messages = new Messages();
-        BiConsumer<VariableProperty, Integer> method = overwrite ? OVERWRITE : PUT;
+        BiConsumer<VariableProperty, Integer> method = PUT;
 
         AnnotationExpression only = null;
         AnnotationExpression mark = null;
 
         for (AnnotationExpression annotationExpression : annotations) {
-            AnnotationType annotationType = e2immuAnnotation(annotationExpression);
+            AnnotationType annotationType = IAnalysis.e2immuAnnotation(annotationExpression);
             if (annotationType == AnnotationType.CONTRACT ||
                     // VERIFY is the default in annotated APIs, and non-default method declarations in interfaces...
                     acceptVerify && annotationType == AnnotationType.VERIFY) {
@@ -334,7 +312,7 @@ public abstract class Analysis {
         if (mark != null && only == null) {
             String markValue = mark.extract("value", "");
             List<Value> values = safeSplit(markValue).stream().map(ContractMark::new).collect(Collectors.toList());
-            ((MethodAnalysis) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, markValue, true, null));
+            ((MethodAnalysisImpl.Builder) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, markValue, true, null));
         } else if (only != null) {
             String markValue = mark == null ? null : mark.extract("value", "");
             String before = only.extract("before", "");
@@ -346,7 +324,7 @@ public abstract class Analysis {
                 LOGGER.warn("Have both @Only and @Mark, with different values? {} vs {}", onlyMark, markValue);
             }
             List<Value> values = safeSplit(onlyMark).stream().map(ContractMark::new).collect(Collectors.toList());
-            ((MethodAnalysis) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, onlyMark, mark != null, isAfter));
+            ((MethodAnalysisImpl.Builder) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, onlyMark, mark != null, isAfter));
         }
         return messages;
     }
@@ -384,8 +362,6 @@ public abstract class Analysis {
         messages.add(Message.newMessage(location(), Message.SIZE_NEED_PARAMETER));
         return Level.DELAY;
     }
-
-    protected abstract Location location();
 
     public static int extractSizeCopy(AnnotationExpression annotationExpression) {
         Boolean copy = annotationExpression.extract("copy", false);

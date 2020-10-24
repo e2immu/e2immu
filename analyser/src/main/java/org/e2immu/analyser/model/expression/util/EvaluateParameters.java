@@ -62,7 +62,7 @@ public class EvaluateParameters {
                     parameterInfo = params.get(i);
                 }
                 // NOT_NULL, NOT_MODIFIED, SIZE
-                Map<VariableProperty, Integer> map = parameterInfo.parameterAnalysis.get().getProperties(VariableProperty.FORWARD_PROPERTIES_ON_PARAMETERS);
+                Map<VariableProperty, Integer> map = evaluationContext.getParameterAnalysis(parameterInfo).getProperties(VariableProperty.FORWARD_PROPERTIES_ON_PARAMETERS);
 
                 if (notModified1Scope == Level.TRUE) {
                     map.put(VariableProperty.MODIFIED, Level.FALSE);
@@ -104,7 +104,8 @@ public class EvaluateParameters {
                 if (modified == Level.DELAY) {
                     source.delay();
                 } else {
-                    ObjectFlow destination = parameterInfo.parameterAnalysis.get().getObjectFlow();
+                    ParameterAnalysis parameterAnalysis = evaluationContext.getParameterAnalysis(parameterInfo);
+                    ObjectFlow destination = parameterAnalysis.getObjectFlow();
                     builder.addCallOut(modified == Level.TRUE, destination, parameterValue);
                 }
             } else {
@@ -128,42 +129,46 @@ public class EvaluateParameters {
             builder.addPropertyRestriction(scopeVariable.variable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL);
         }
 
-        if (methodInfo != null && methodInfo.methodAnalysis.isSet() && methodInfo.methodAnalysis.get().precondition.isSet()) {
-            // there is a precondition, and we have a list of values... let's see what we can learn
-            // the precondition is using parameter info's as variables so we'll have to substitute
-            Value precondition = methodInfo.methodAnalysis.get().precondition.get();
-            Map<Value, Value> translationMap = translationMap(evaluationContext, methodInfo, parameterValues);
-            EvaluationResult eRreEvaluated = precondition.reEvaluate(evaluationContext, translationMap);
-            Value reEvaluated = eRreEvaluated.value;
-            builder.compose(eRreEvaluated);
 
-            // from the result we either may infer another condition, or values to be set...
+        if (methodInfo != null) {
+            MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+            Value precondition = methodAnalysis.getPrecondition();
+            if (precondition != null && precondition != UnknownValue.EMPTY) {
+                // there is a precondition, and we have a list of values... let's see what we can learn
+                // the precondition is using parameter info's as variables so we'll have to substitute
+                Map<Value, Value> translationMap = translationMap(evaluationContext, methodInfo, parameterValues);
+                EvaluationResult eRreEvaluated = precondition.reEvaluate(evaluationContext, translationMap);
+                Value reEvaluated = eRreEvaluated.value;
+                builder.compose(eRreEvaluated);
 
-            // NOT_NULL
-            Map<Variable, Value> individualNullClauses = reEvaluated.filter(Value.FilterMode.ACCEPT, Value::isIndividualNotNullClause).accepted;
-            for (Map.Entry<Variable, Value> nullClauseEntry : individualNullClauses.entrySet()) {
-                if (!(nullClauseEntry.getValue().isInstanceOf(NullValue.class)) && nullClauseEntry.getKey() instanceof ParameterInfo) {
-                    builder.addPropertyRestriction(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-                }
-            }
+                // from the result we either may infer another condition, or values to be set...
 
-            // SIZE
-            Map<Variable, Value> sizeRestrictions = reEvaluated.filter(Value.FilterMode.ACCEPT, Value::isIndividualSizeRestriction).accepted;
-            for (Map.Entry<Variable, Value> sizeRestriction : sizeRestrictions.entrySet()) {
-                // now back to precondition world
-                if (sizeRestriction.getKey() instanceof ParameterInfo) {
-                    int v = sizeRestriction.getValue().encodedSizeRestriction();
-                    if (v > Level.NOT_A_SIZE) {
-                        builder.addPropertyRestriction(sizeRestriction.getKey(), VariableProperty.SIZE, v);
+                // NOT_NULL
+                Map<Variable, Value> individualNullClauses = reEvaluated.filter(Value.FilterMode.ACCEPT, Value::isIndividualNotNullClause).accepted;
+                for (Map.Entry<Variable, Value> nullClauseEntry : individualNullClauses.entrySet()) {
+                    if (!(nullClauseEntry.getValue().isInstanceOf(NullValue.class)) && nullClauseEntry.getKey() instanceof ParameterInfo) {
+                        builder.addPropertyRestriction(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                     }
                 }
-            }
 
-            // all the rest: preconditions
-            // TODO: also weed out conditions that are not on parameters, and not on `this`
-            Value rest = reEvaluated.filter(Value.FilterMode.ACCEPT, Value::isIndividualNotNullClauseOnParameter, Value::isIndividualSizeRestrictionOnParameter).rest;
-            if (rest != null) {
-                builder.addPrecondition(rest);
+                // SIZE
+                Map<Variable, Value> sizeRestrictions = reEvaluated.filter(Value.FilterMode.ACCEPT, Value::isIndividualSizeRestriction).accepted;
+                for (Map.Entry<Variable, Value> sizeRestriction : sizeRestrictions.entrySet()) {
+                    // now back to precondition world
+                    if (sizeRestriction.getKey() instanceof ParameterInfo) {
+                        int v = sizeRestriction.getValue().encodedSizeRestriction();
+                        if (v > Level.NOT_A_SIZE) {
+                            builder.addPropertyRestriction(sizeRestriction.getKey(), VariableProperty.SIZE, v);
+                        }
+                    }
+                }
+
+                // all the rest: preconditions
+                // TODO: also weed out conditions that are not on parameters, and not on `this`
+                Value rest = reEvaluated.filter(Value.FilterMode.ACCEPT, Value::isIndividualNotNullClauseOnParameter, Value::isIndividualSizeRestrictionOnParameter).rest;
+                if (rest != null) {
+                    builder.addPrecondition(rest);
+                }
             }
         }
         return new Pair<>(builder, parameterValues);
@@ -184,8 +189,7 @@ public class EvaluateParameters {
 
     // we should normally look at the value, but there is a chicken and egg problem
     public static Boolean tryToDetectUndeclared(EvaluationContext evaluationContext, Expression scope) {
-        if (scope instanceof VariableExpression) {
-            VariableExpression variableExpression = (VariableExpression) scope;
+        if (scope instanceof VariableExpression variableExpression) {
             if (variableExpression.variable instanceof ParameterInfo) return true;
             Value value = evaluationContext.currentValue(variableExpression.variable);
             if (value == UnknownValue.NO_VALUE) return null; // delay

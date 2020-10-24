@@ -36,7 +36,7 @@ import static org.e2immu.analyser.util.Logger.log;
 public class ParameterAnalyser {
     private final Messages messages = new Messages();
     public final ParameterInfo parameterInfo;
-    public final ParameterAnalysis parameterAnalysis;
+    public final ParameterAnalysisImpl.Builder parameterAnalysis;
 
     private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
     private final E2ImmuAnnotationExpressions e2;
@@ -45,8 +45,7 @@ public class ParameterAnalyser {
         this.e2 = analyserContext.getE2ImmuAnnotationExpressions();
         this.parameterInfo = parameterInfo;
         TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-        parameterAnalysis = new ParameterAnalysis(parameterInfo, analyserContext.getTypeAnalysis(parameterInfo.owner.typeInfo),
-                bestType == null ? null : analyserContext.getTypeAnalysis(bestType));
+        parameterAnalysis = new ParameterAnalysisImpl.Builder(parameterInfo, analyserContext);
     }
 
     public ParameterAnalysis getParameterAnalysis() {
@@ -83,7 +82,7 @@ public class ParameterAnalyser {
     private void checkWorseThanParent() {
         for (VariableProperty variableProperty : VariableProperty.CHECK_WORSE_THAN_PARENT) {
             int valueFromOverrides = parameterInfo.owner.methodAnalysis.get().getOverrides().stream()
-                    .map(ma -> ma.methodInfo.methodInspection.get().parameters.get(parameterInfo.index))
+                    .map(ma -> ma.getMethodInfo().methodInspection.get().parameters.get(parameterInfo.index))
                     .mapToInt(pi -> pi.parameterAnalysis.get().getProperty(variableProperty)).max().orElse(Level.DELAY);
             int value = parameterAnalysis.getProperty(variableProperty);
             if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {

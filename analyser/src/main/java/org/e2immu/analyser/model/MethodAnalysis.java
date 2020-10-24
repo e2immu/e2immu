@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -38,85 +39,67 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class MethodAnalysis extends Analysis {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalysis.class);
+public interface MethodAnalysis extends IAnalysis {
 
-    public final ParameterizedType returnType;
-    public final MethodInfo methodInfo;
-    public final TypeAnalysis typeAnalysis;
-    public final SetOnce<Set<MethodAnalysis>> overrides = new SetOnce<>();
+    MethodInfo getMethodInfo();
 
-    public final StatementAnalysis firstStatement;
-    public final List<ParameterAnalysis> parameterAnalyses;
+    Set<MethodAnalysis> getOverrides();
+
+    /**
+     * @return null when the method is not defined (has no statements)
+     */
+    StatementAnalysis getFirstStatement();
+
+    List<ParameterAnalysis> getParameterAnalyses();
+
+    /**
+     * @return null when the method is not defined (has no statements)
+     */
+    StatementAnalysis getLastStatement();
 
     // the value here (size will be one)
-    public final SetOnce<List<Value>> preconditionForMarkAndOnly = new SetOnce<>();
-    public final SetOnce<MarkAndOnly> markAndOnly = new SetOnce<>();
+    List<Value> getPreconditionForMarkAndOnly();
+
+    /**
+     * @return null when the method has no MarkAndOnly
+     */
+    MarkAndOnly getMarkAndOnly();
 
     // ************* object flow
 
-    public final SetOnce<Set<ObjectFlow>> internalObjectFlows = new SetOnce<>();
+    Set<ObjectFlow> getInternalObjectFlows();
 
-    public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
+    ObjectFlow getObjectFlow();
 
-    public ObjectFlow getObjectFlow() {
-        return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
-    }
+    Boolean getComplainedAboutMissingStaticModifier();
 
-    public final SetOnce<Boolean> complainedAboutMissingStaticModifier = new SetOnce<>();
-    public final SetOnce<Boolean> complainedAboutApprovedPreconditions = new SetOnce<>();
+    Boolean getComplainedAboutApprovedPreconditions();
 
 
     // replacements
 
     // set when all replacements have been done
-    public final SetOnce<StatementAnalysis> lastStatement = new SetOnce<>();
+
 
     // ************** PRECONDITION
 
-    public final SetOnce<Value> precondition = new SetOnce<>();
+    /**
+     * @return null when not yet computed, EMPTY when no precondition
+     */
+    Value getPrecondition();
 
-
-    public MethodAnalysis(MethodInfo methodInfo,
-                          TypeAnalysis typeAnalysis,
-                          List<ParameterAnalysis> parameterAnalyses,
-                          StatementAnalyser firstStatementAnalyser) {
-        super(methodInfo.hasBeenDefined(), methodInfo.name);
-        this.parameterAnalyses = parameterAnalyses;
-        this.methodInfo = methodInfo;
-        this.returnType = methodInfo.returnType();
-        this.typeAnalysis = typeAnalysis;
-        if (methodInfo.isConstructor || methodInfo.isVoid()) {
-            // we set a NO_FLOW, non-modifiable
-            objectFlow = new FirstThen<>(ObjectFlow.NO_FLOW);
-            objectFlow.set(ObjectFlow.NO_FLOW);
-        } else {
-            ObjectFlow initialObjectFlow = new ObjectFlow(new Location(methodInfo), returnType, Origin.INITIAL_METHOD_FLOW);
-            objectFlow = new FirstThen<>(initialObjectFlow);
-        }
-        firstStatement = firstStatementAnalyser == null ? null : firstStatementAnalyser.statementAnalysis;
+    default MethodLevelData methodLevelData() {
+        StatementAnalysis last = getLastStatement();
+        return last != null ? last.methodLevelData : getFirstStatement().lastStatement().methodLevelData;
     }
 
-    public MethodLevelData methodLevelData() {
-        return lastStatement.isSet() ? lastStatement.get().methodLevelData : firstStatement.lastStatement().methodLevelData;
-    }
-
-    @Override
-    protected Location location() {
-        return new Location(methodInfo);
-    }
-
-    @Override
-    public AnnotationMode annotationMode() {
-        return typeAnalysis.annotationMode();
-    }
-
-    @Override
-    public int getProperty(VariableProperty variableProperty) {
+    default int getMethodProperty(AnalysisProvider analysisProvider, MethodInfo methodInfo, VariableProperty variableProperty) {
+        ParameterizedType returnType = methodInfo.returnType();
         switch (variableProperty) {
             case MODIFIED:
                 // all methods in java.lang.String are @NotModified, but we do not bother writing that down
                 // we explicitly check on EFFECTIVE, because in an eventually E2IMMU we want the methods to remain @Modified
+                TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
                 if (!methodInfo.isConstructor &&
                         typeAnalysis.getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
                     return Level.FALSE;
@@ -142,8 +125,8 @@ public class MethodAnalysis extends Analysis {
                 if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || returnType.isVoid())
                     throw new UnsupportedOperationException(); //we should not even be asking
 
-                int immutableType = formalProperty();
-                int immutableDynamic = dynamicProperty(immutableType);
+                int immutableType = formalProperty(returnType);
+                int immutableDynamic = dynamicProperty(immutableType, returnType);
                 return MultiLevel.bestImmutable(immutableType, immutableDynamic);
 
             case CONTAINER:
@@ -155,111 +138,46 @@ public class MethodAnalysis extends Analysis {
 
             default:
         }
-        return super.getProperty(variableProperty);
+        return internalGetProperty(variableProperty);
     }
 
-    private int dynamicProperty(int formalImmutableProperty) {
+    private int dynamicProperty(int formalImmutableProperty, ParameterizedType returnType) {
         int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty, getObjectFlow().conditionsMetForEventual(returnType));
-        return Level.best(super.getProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
+        return Level.best(internalGetProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
     }
 
-    private int formalProperty() {
+    private static int formalProperty(ParameterizedType returnType) {
         return returnType.getProperty(VariableProperty.IMMUTABLE);
     }
 
-    public int valueFromOverrides(VariableProperty variableProperty) {
+    default int valueFromOverrides(VariableProperty variableProperty) {
         return getOverrides().stream().mapToInt(ma -> ma.getPropertyAsIs(variableProperty)).max().orElse(Level.DELAY);
     }
 
     private int getPropertyCheckOverrides(VariableProperty variableProperty) {
-        IntStream mine = IntStream.of(super.getPropertyAsIs(variableProperty));
+        IntStream mine = IntStream.of(getPropertyAsIs(variableProperty));
         IntStream theStream;
-        if (hasBeenDefined) {
+        if (isHasBeenDefined()) {
             theStream = mine;
         } else {
             IntStream overrideValues = getOverrides().stream().mapToInt(ma -> ma.getPropertyAsIs(variableProperty));
             theStream = IntStream.concat(mine, overrideValues);
         }
         int max = theStream.max().orElse(Level.DELAY);
-        if (max == Level.DELAY && !hasBeenDefined) {
+        if (max == Level.DELAY && !isHasBeenDefined()) {
             // no information found in the whole hierarchy
             return variableProperty.valueWhenAbsent(annotationMode());
         }
         return max;
     }
 
-    @Override
-    public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        int modified = getProperty(VariableProperty.MODIFIED);
-
-        // @Precondition
-        if (precondition.isSet()) {
-            Value value = precondition.get();
-            if (value != UnknownValue.EMPTY) {
-                AnnotationExpression ae = e2ImmuAnnotationExpressions.precondition.get()
-                        .copyWith("value", value.toString());
-                annotations.put(ae, true);
-            }
-        }
-
-        // @Dependent @Independent
-        if (methodInfo.isConstructor || modified == Level.FALSE && allowIndependentOnMethod()) {
-            int independent = getProperty(VariableProperty.INDEPENDENT);
-            doIndependent(e2ImmuAnnotationExpressions, independent, methodInfo.typeInfo.isInterface());
-        }
-
-        if (methodInfo.isConstructor) return;
-
-        // @NotModified, @Modified
-        AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
-                e2ImmuAnnotationExpressions.modified.get();
-        annotations.put(ae, true);
-
-        if (returnType.isVoid()) return;
-
-        // @Identity
-        if (getProperty(VariableProperty.IDENTITY) == Level.TRUE) {
-            annotations.put(e2ImmuAnnotationExpressions.identity.get(), true);
-        }
-
-        // all other annotations cannot be added to primitives
-        if (returnType.isPrimitive()) return;
-
-        // @Fluent
-        if (getProperty(VariableProperty.FLUENT) == Level.TRUE) {
-            annotations.put(e2ImmuAnnotationExpressions.fluent.get(), true);
-        }
-
-        // @NotNull
-        doNotNull(e2ImmuAnnotationExpressions);
-
-        // @Size
-        doSize(e2ImmuAnnotationExpressions);
-
-        // dynamic type annotations for functional interface types: @NotModified1
-        doNotModified1(e2ImmuAnnotationExpressions);
-
-        // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
-        int formallyImmutable = formalProperty();
-        int dynamicallyImmutable = dynamicProperty(formallyImmutable);
-        if (MultiLevel.isBetterImmutable(dynamicallyImmutable, formallyImmutable)) {
-            doImmutableContainer(e2ImmuAnnotationExpressions, dynamicallyImmutable, true);
-        }
-    }
-
-    private boolean allowIndependentOnMethod() {
+    private static boolean allowIndependentOnMethod(ParameterizedType returnType, TypeAnalysis typeAnalysis) {
         return !returnType.isVoid() && returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(typeAnalysis) != Boolean.TRUE;
-    }
-
-    protected void writeMarkAndOnly(MarkAndOnly markAndOnly) {
-        ContractMark contractMark = new ContractMark(markAndOnly.markLabel);
-        preconditionForMarkAndOnly.set(List.of(contractMark));
-        this.markAndOnly.set(markAndOnly);
     }
 
     // the name refers to the @Mark and @Only annotations. It is the data for this annotation.
 
-    public static class MarkAndOnly {
+    class MarkAndOnly {
         public final List<Value> preconditions;
         public final String markLabel;
         public final boolean mark;
@@ -278,19 +196,4 @@ public class MethodAnalysis extends Analysis {
         }
     }
 
-    public Set<MethodAnalysis> getOverrides() {
-        if (overrides.isSet()) return overrides.get();
-        Set<MethodAnalysis> computed = overrides(methodInfo);
-        overrides.set(ImmutableSet.copyOf(computed));
-        return computed;
-    }
-
-    private static Set<MethodAnalysis> overrides(MethodInfo methodInfo) {
-        try {
-            return methodInfo.typeInfo.overrides(methodInfo, true).stream().map(mi -> mi.methodAnalysis.get()).collect(Collectors.toSet());
-        } catch (RuntimeException rte) {
-            LOGGER.error("Cannot compute method analysis of {}", methodInfo.distinguishingName());
-            throw rte;
-        }
-    }
 }

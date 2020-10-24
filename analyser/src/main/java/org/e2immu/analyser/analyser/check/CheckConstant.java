@@ -56,8 +56,8 @@ public class CheckConstant {
 
 
     public static void checkConstantForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
-        Value singleReturnValue = fieldAnalysis.effectivelyFinalValue.isSet() ?
-                fieldAnalysis.effectivelyFinalValue.get() : UnknownValue.NO_VALUE;
+        Value singleReturnValue = fieldAnalysis.getEffectivelyFinalValue() != null ?
+                fieldAnalysis.getEffectivelyFinalValue() : UnknownValue.NO_VALUE;
         checkConstant(messages,
                 singleReturnValue,
                 fieldInfo.fieldInspection.get().annotations,

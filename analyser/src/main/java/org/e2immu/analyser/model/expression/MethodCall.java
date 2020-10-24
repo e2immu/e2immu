@@ -314,7 +314,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return builder.compose(reInline).setValue(reInline.value).build();
         }
 
-        if (methodAnalysis.hasBeenDefined && methodAnalysis.methodLevelData().singleReturnValue.isSet()) {
+        if (methodAnalysis.isHasBeenDefined() && methodAnalysis.methodLevelData().singleReturnValue.isSet()) {
             // if this method was identity?
             Value srv = methodAnalysis.methodLevelData().singleReturnValue.get();
             if (srv.isInstanceOf(InlineValue.class)) {
@@ -334,8 +334,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                             List<ParameterAnalysis> parameterAnalyses = evaluationContext
                                     .getParameterAnalyses(instance.constructor).collect(Collectors.toList());
                             for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
-                                if (parameterAnalysis.assignedToField.isSet() &&
-                                        parameterAnalysis.assignedToField.get() == fieldInfo) {
+                                if (parameterAnalysis.getAssignedToField() == fieldInfo) {
                                     return builder.setValue(instance.constructorParameterValues.get(i)).build();
                                 }
                                 i++;
@@ -351,7 +350,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (srv.isConstant()) {
                 return builder.setValue(srv).build();
             }
-        } else if (methodAnalysis.hasBeenDefined) {
+        } else if (methodAnalysis.isHasBeenDefined()) {
             // we will, at some point, analyse this method
             return builder.setValue(UnknownValue.NO_VALUE).build();
         }
@@ -400,7 +399,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private static Value computeFluent(MethodAnalysis methodAnalysis, Value scope) {
         int fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
-        if (fluent == Level.DELAY && methodAnalysis.hasBeenDefined) return UnknownValue.NO_VALUE;
+        if (fluent == Level.DELAY && methodAnalysis.isHasBeenDefined()) return UnknownValue.NO_VALUE;
         if (fluent != Level.TRUE) return null;
         return scope;
     }
@@ -408,7 +407,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private static Value computeIdentity(MethodAnalysis methodAnalysis, List<Value> parameters, ObjectFlow objectFlowOfResult) {
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
-        if (identity == Level.DELAY && methodAnalysis.hasBeenDefined) return UnknownValue.NO_VALUE; // delay
+        if (identity == Level.DELAY && methodAnalysis.isHasBeenDefined()) return UnknownValue.NO_VALUE; // delay
         if (identity != Level.TRUE) return null;
 
         Map<VariableProperty, Integer> map = new HashMap<>();
@@ -529,13 +528,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         sizeObjectFlow(builder, location, sizeMethodAnalysis, objectValue));
             }
         }
-        return new MethodValue(sizeMethodAnalysis.methodInfo, objectValue, List.of(),
+        return new MethodValue(sizeMethodAnalysis.getMethodInfo(), objectValue, List.of(),
                 sizeObjectFlow(builder, location, sizeMethodAnalysis, objectValue));
     }
 
     private static ObjectFlow sizeObjectFlow(EvaluationResult.Builder builder, Location location, MethodAnalysis sizeMethodAnalysis, Value object) {
         if (object.getObjectFlow() != ObjectFlow.NO_FLOW) {
-            builder.addAccess(false, new MethodAccess(sizeMethodAnalysis.methodInfo, List.of()), object);
+            builder.addAccess(false, new MethodAccess(sizeMethodAnalysis.getMethodInfo(), List.of()), object);
 
             ObjectFlow source = sizeMethodAnalysis.getObjectFlow();
             ObjectFlow resultOfMethod = builder.createInternalObjectFlow(location, Primitives.PRIMITIVES.intParameterizedType, Origin.RESULT_OF_METHOD);
@@ -605,13 +604,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 .reduce(SideEffect.LOCAL, SideEffect::combine);
 
         // look at the object... if it is static, we're in the same boat
-        if (object instanceof FieldAccess) {
-            FieldAccess fieldAccess = (FieldAccess) object;
+        if (object instanceof FieldAccess fieldAccess) {
             if (fieldAccess.variable.isStatic() && params.lessThan(SideEffect.SIDE_EFFECT))
                 return SideEffect.STATIC_ONLY;
         }
-        if (object instanceof VariableExpression) {
-            VariableExpression variableExpression = (VariableExpression) object;
+        if (object instanceof VariableExpression variableExpression) {
             if (variableExpression.variable.isStatic() && params.lessThan(SideEffect.SIDE_EFFECT))
                 return SideEffect.STATIC_ONLY;
         }

@@ -70,7 +70,7 @@ public class TestEither extends CommonTestRunner {
         }
         if ("Either".equals(d.methodInfo().name) && d.iteration() > 0) {
             Assert.assertEquals("((null == a or null == b) and (not (null == a) or not (null == b)))",
-                    d.methodAnalysis().precondition.get().toString());
+                    d.methodAnalysis().getPrecondition().toString());
         }
     };
 

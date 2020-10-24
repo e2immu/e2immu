@@ -56,7 +56,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
             // Assert.assertEquals(Level.TRUE, hasNext.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
         if ("ExampleManualIterator1".equals(typeInfo.simpleName)) {
-            Assert.assertEquals("E", d.typeAnalysis().implicitlyImmutableDataTypes.get()
+            Assert.assertEquals("E", d.typeAnalysis().getImplicitlyImmutableDataTypes()
                     .stream().map(ParameterizedType::detailedString).sorted().collect(Collectors.joining(";")));
         }
         if ("MyIteratorImpl".equals(typeInfo.simpleName)) {
@@ -86,8 +86,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
             Assert.assertEquals(expect, modified);
 
             if (iteration > 0) {
-                Assert.assertTrue(d.fieldAnalysis().variablesLinkedToMe.isSet());
-                Assert.assertEquals("", d.fieldAnalysis().variablesLinkedToMe.get().toString());
+                Assert.assertEquals("", d.fieldAnalysis().getVariablesLinkedToMe().toString());
             }
         }
         if ("list".equals(fieldInfo.name) && "ExampleManualIterator1".equals(fieldInfo.owner.simpleName)) {

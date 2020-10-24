@@ -115,12 +115,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     }
 
     @Override
-    public Analysis getAnalysis() {
-        return parameterAnalysis.get();
-    }
-
-    @Override
-    public void setAnalysis(Analysis analysis) {
+    public void setAnalysis(IAnalysis analysis) {
         parameterAnalysis.set((ParameterAnalysis) analysis);
     }
 
@@ -142,7 +137,9 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
             sb.append(" ");
         }
         if (parameterAnalysis.isSet()) {
-            parameterAnalysis.get().annotations.visit((annotation, present) -> {
+            parameterAnalysis.get().getAnnotationStream().forEach(entry -> {
+                boolean present = entry.getValue();
+                AnnotationExpression annotation = entry.getKey();
                 if (present && !annotationsSeen.contains(annotation.typeInfo)) {
                     sb.append(annotation.stream()).append(" ");
                 }

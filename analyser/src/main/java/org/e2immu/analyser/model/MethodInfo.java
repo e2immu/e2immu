@@ -27,6 +27,7 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.TypeParameter;
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
@@ -141,12 +142,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     @Override
-    public Analysis getAnalysis() {
-        return methodAnalysis.get();
-    }
-
-    @Override
-    public void setAnalysis(Analysis analysis) {
+    public void setAnalysis(IAnalysis analysis) {
         methodAnalysis.set((MethodAnalysis) analysis);
     }
 
@@ -279,7 +275,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 sb.append("\n");
             }
             if (methodAnalysis.isSet()) {
-                methodAnalysis.get().annotations.visit((annotation, present) -> {
+                methodAnalysis.get().getAnnotationStream().forEach(entry -> {
+                    boolean present = entry.getValue();
+                    AnnotationExpression annotation = entry.getKey();
                     if (present && !annotationsSeen.contains(annotation.typeInfo)) {
                         StringUtil.indent(sb, indent);
                         sb.append(annotation.stream());
@@ -322,8 +320,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                     .map(ParameterizedType::stream).collect(Collectors.joining(", ")));
         }
         if (hasBeenInspected() && methodInspection.get().methodBody.isSet()) {
-            if (methodAnalysis.isSet() && methodAnalysis.get().firstStatement != null) {
-                sb.append(methodInspection.get().methodBody.get().statementString(indent, methodAnalysis.get().firstStatement));
+            if (methodAnalysis.isSet() && methodAnalysis.get().getFirstStatement() != null) {
+                sb.append(methodInspection.get().methodBody.get().statementString(indent, methodAnalysis.get().getFirstStatement()));
             } else {
                 sb.append(methodInspection.get().methodBody.get().statementString(indent, null));
             }
@@ -541,28 +539,25 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
 
-    public Messages copyAnnotationsIntoMethodAnalysisProperties(E2ImmuAnnotationExpressions typeContext, boolean overwrite) {
+    public Messages copyAnnotationsIntoMethodAnalysisProperties(E2ImmuAnnotationExpressions typeContext) {
         boolean acceptVerify = !typeInfo.hasBeenDefined() || isAbstract() || typeInfo.isInterface() && !isDefaultImplementation;
         Messages messages = new Messages();
 
         methodInspection.get().parameters.forEach(parameterInfo -> {
-            if (!parameterInfo.parameterAnalysis.isSet()) {
-                ParameterAnalysis parameterAnalysis = new ParameterAnalysis(parameterInfo, parameterInfo.owner.typeInfo.typeAnalysis.get(), null);
-                parameterInfo.parameterAnalysis.set(parameterAnalysis);
-            }
-            messages.addAll(parameterInfo.parameterAnalysis.get().fromAnnotationsIntoProperties(acceptVerify,
-                    parameterInfo.parameterInspection.get().annotations, typeContext, overwrite));
+            ParameterAnalysisImpl.Builder builder = new ParameterAnalysisImpl.Builder(parameterInfo, null);
+            messages.addAll(builder.fromAnnotationsIntoProperties(acceptVerify,
+                    parameterInfo.parameterInspection.get().annotations, typeContext));
+            parameterInfo.setAnalysis(builder.build());
         });
 
-        if (!methodAnalysis.isSet()) {
-            List<ParameterAnalysis> parameterAnalyses = methodInspection.get().parameters.stream()
-                    .map(parameterInfo -> parameterInfo.parameterAnalysis.get()).collect(Collectors.toList());
-            assert !typeInfo.hasBeenDefined();
-            MethodAnalysis methodAnalysis = new MethodAnalysis(this, typeInfo.typeAnalysis.get(), parameterAnalyses, null);
-            this.methodAnalysis.set(methodAnalysis);
-        }
-        messages.addAll(methodAnalysis.get().fromAnnotationsIntoProperties(acceptVerify, methodInspection.get().annotations,
-                typeContext, overwrite));
+        List<ParameterAnalysis> parameterAnalyses = methodInspection.get().parameters.stream()
+                .map(parameterInfo -> parameterInfo.parameterAnalysis.get()).collect(Collectors.toList());
+        assert !typeInfo.hasBeenDefined();
+        MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(AnalysisProvider.DEFAULT_PROVIDER, this, parameterAnalyses, null);
+
+        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(acceptVerify, methodInspection.get().annotations,
+                typeContext));
+        setAnalysis(methodAnalysisBuilder.build());
         return messages;
     }
 

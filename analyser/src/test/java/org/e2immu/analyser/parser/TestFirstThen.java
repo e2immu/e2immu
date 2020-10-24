@@ -73,9 +73,9 @@ public class TestFirstThen extends CommonTestRunner {
 
         if ("set".equals(name)) {
             if (d.iteration() == 0) {
-                Assert.assertFalse(d.methodAnalysis().precondition.isSet());
+                Assert.assertNull(d.methodAnalysis().getPrecondition());
             } else {
-                Assert.assertEquals("not (null == this.first)", d.methodAnalysis().precondition.get().toString());
+                Assert.assertEquals("not (null == this.first)", d.methodAnalysis().getPrecondition().toString());
             }
         }
         if ("getFirst".equals(name)) {

@@ -233,11 +233,11 @@ public class MethodLevelData {
             Set<Variable> dependencies;
             if (variable instanceof FieldReference) {
                 FieldAnalysis fieldAnalysis = sharedState.evaluationContext.getFieldAnalysis(((FieldReference) variable).fieldInfo);
-                if (!fieldAnalysis.variablesLinkedToMe.isSet()) {
+                if (fieldAnalysis.getVariablesLinkedToMe() == null) {
                     log(DELAYED, "Dependencies of {} have not yet been established", variable.fullyQualifiedName());
                     return DELAYS;
                 }
-                dependencies = SetUtil.immutableUnion(fieldAnalysis.variablesLinkedToMe.get(), Set.of(variable));
+                dependencies = SetUtil.immutableUnion(fieldAnalysis.getVariablesLinkedToMe(), Set.of(variable));
             } else if (variable instanceof ParameterInfo) {
                 dependencies = Set.of(variable);
             } else if (variable instanceof LocalVariableReference) {
@@ -254,8 +254,10 @@ public class MethodLevelData {
         }
 
         variablesLinkedToMethodResult.set(variables);
-        MethodAnalysis methodAnalysis = sharedState.evaluationContext.getCurrentMethodAnalysis();
-        sharedState.builder.add(methodAnalysis.new SetProperty(VariableProperty.LINKED, variables.isEmpty() ? Level.FALSE : Level.TRUE));
+        // we can perfectly cast here
+        MethodAnalysisImpl.Builder methodAnalysisBuilder = (MethodAnalysisImpl.Builder)
+                sharedState.evaluationContext.getCurrentMethodAnalysis();
+        sharedState.builder.add(methodAnalysisBuilder.new SetProperty(VariableProperty.LINKED, variables.isEmpty() ? Level.FALSE : Level.TRUE));
         log(LINKED_VARIABLES, "Set variables linked to result of {} to [{}]", sharedState.logLocation, Variable.fullyQualifiedName(variables));
         return DONE;
     }
@@ -323,9 +325,10 @@ public class MethodLevelData {
                     }
                 } else if (linkedVariable instanceof ParameterInfo) {
                     ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getParameterAnalysis((ParameterInfo) linkedVariable);
-                    if (parameterAnalysis.assignedToField.isSet()) {
+                    FieldInfo assigned = parameterAnalysis.getAssignedToField();
+                    if (assigned != null) {
                         log(NOT_MODIFIED, "Parameter {} is assigned to field {}, not setting @NotModified {} directly",
-                                linkedVariable.fullyQualifiedName(), parameterAnalysis.assignedToField.get().fullyQualifiedName(), summary);
+                                linkedVariable.fullyQualifiedName(), assigned.fullyQualifiedName(), summary);
                     } else {
                         if (summary == Level.DELAY) {
                             log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), logLocation);
@@ -335,7 +338,9 @@ public class MethodLevelData {
                                     summary == Level.TRUE ? "@Modified" : "@NotModified", logLocation);
                             int currentModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
                             if (currentModified == Level.DELAY) {
-                                sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.MODIFIED, summary));
+                                // we can safely cast here to the builder
+                                ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
+                                sharedState.builder.add(builder.new SetProperty(VariableProperty.MODIFIED, summary));
                                 changes.set(true);
                             }
                         }
@@ -477,7 +482,9 @@ public class MethodLevelData {
                         ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getParameterAnalysis(parameterInfo);
                         int sizeInParam = parameterAnalysis.getProperty(VariableProperty.SIZE);
                         if (sizeInParam == Level.DELAY) {
-                            sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.SIZE, Level.IS_A_SIZE));
+                            // we can safely cast here to the builder
+                            ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
+                            sharedState.builder.add(builder.new SetProperty(VariableProperty.SIZE, Level.IS_A_SIZE));
                             changes.set(true);
                         }
                     }

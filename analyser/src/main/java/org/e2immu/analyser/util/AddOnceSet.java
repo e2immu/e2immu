@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.util;
 
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Only;
@@ -75,5 +76,9 @@ public class AddOnceSet<V> extends Freezable {
     @Size(copy = true)
     public Stream<V> stream() {
         return set.keySet().stream();
+    }
+
+    public Set<V> toImmutableSet() {
+        return ImmutableSet.copyOf(set.keySet());
     }
 }

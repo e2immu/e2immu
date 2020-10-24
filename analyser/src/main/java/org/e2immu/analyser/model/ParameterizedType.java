@@ -681,8 +681,11 @@ public class ParameterizedType {
         if (isUnboundParameterType()) return true;
         Boolean immu = isAtLeastEventuallyE2Immutable();
         if (immu == Boolean.TRUE) return true;
-        if (!typeAnalysis.implicitlyImmutableDataTypes.isSet()) return null;
-        boolean implicit = typeAnalysis.implicitlyImmutableDataTypes.get().contains(this);
+        if (typeAnalysis.getImplicitlyImmutableDataTypes() == null) {
+            // not yet defined
+            return null;
+        }
+        boolean implicit = typeAnalysis.getImplicitlyImmutableDataTypes().contains(this);
         if (implicit) return true;
         return immu;
     }

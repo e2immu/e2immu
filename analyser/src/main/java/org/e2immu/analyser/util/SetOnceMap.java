@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.util;
 
+import com.google.common.collect.ImmutableMap;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Only;
@@ -97,5 +98,9 @@ public class SetOnceMap<K, V> extends Freezable {
 
     public V getOrDefault(K k, V v) {
         return map.getOrDefault(k, v);
+    }
+
+    public Map<K, V> toImmutableMap() {
+        return ImmutableMap.copyOf(map);
     }
 }

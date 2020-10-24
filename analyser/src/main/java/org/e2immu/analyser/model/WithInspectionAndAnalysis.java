@@ -25,8 +25,6 @@ import java.util.Optional;
 
 public interface WithInspectionAndAnalysis {
 
-    Analysis getAnalysis();
-
     Inspection getInspection();
 
     String name();
@@ -42,33 +40,37 @@ public interface WithInspectionAndAnalysis {
 
     boolean hasBeenDefined();
 
-    default Boolean annotatedWith(Analysis analysis, AnnotationExpression annotation) {
+    default Boolean annotatedWith(IAnalysis analysis, AnnotationExpression annotation) {
         if (hasBeenDefined()) {
-            return analysis.annotations.getOtherwiseNull(annotation);
+            return analysis.getAnnotation(annotation);
         }
         return getInspection().annotations.stream()
                 .anyMatch(ae -> ae.typeInfo.fullyQualifiedName.equals(annotation.typeInfo.fullyQualifiedName));
     }
 
-    default Boolean annotatedWith(AnnotationExpression annotation) {
-        return annotatedWith(getAnalysis(), annotation);
+    default Boolean annotatedWith(AbstractAnalysisBuilder analysisBuilder, AnnotationExpression annotation) {
+        if (hasBeenDefined()) {
+            return analysisBuilder.annotations.getOrDefault(annotation, null);
+        }
+        return getInspection().annotations.stream()
+                .anyMatch(ae -> ae.typeInfo.fullyQualifiedName.equals(annotation.typeInfo.fullyQualifiedName));
     }
 
-    default Optional<Boolean> error(Analysis analysis, Class<?> annotation, AnnotationExpression expression) {
+    default Optional<Boolean> error(AbstractAnalysisBuilder analysisBuilder, Class<?> annotation, AnnotationExpression expression) {
         Optional<Boolean> mustBeAbsent = hasTestAnnotation(annotation).map(AnnotationExpression::isVerifyAbsent);
         if (mustBeAbsent.isEmpty()) return Optional.empty(); // no error, no check!
-        Boolean actual = analysis.annotations.getOtherwiseNull(expression);
+        Boolean actual = analysisBuilder.annotations.getOtherwiseNull(expression);
         if (actual == null && !mustBeAbsent.get() || mustBeAbsent.get() == actual) {
             return mustBeAbsent; // error!!!
         }
         return Optional.empty(); // no error
     }
 
-    default Optional<Boolean> error(Analysis analysis, Class<?> annotation, List<AnnotationExpression> expressions) {
+    default Optional<Boolean> error(AbstractAnalysisBuilder analysisBuilder, Class<?> annotation, List<AnnotationExpression> expressions) {
         Optional<Boolean> mustBeAbsent = hasTestAnnotation(annotation).map(AnnotationExpression::isVerifyAbsent);
         if (mustBeAbsent.isEmpty()) return Optional.empty(); // no error, no check!
         for (AnnotationExpression expression : expressions) {
-            Boolean actual = analysis.annotations.getOtherwiseNull(expression);
+            Boolean actual = analysisBuilder.annotations.getOtherwiseNull(expression);
             if (actual != null) {
                 return mustBeAbsent.get() == actual ? mustBeAbsent : Optional.empty();
             }
@@ -78,5 +80,5 @@ public interface WithInspectionAndAnalysis {
 
     String fullyQualifiedName();
 
-    void setAnalysis(Analysis analysis);
+    void setAnalysis(IAnalysis analysis);
 }

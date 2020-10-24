@@ -79,13 +79,13 @@ public class TestNotModifiedChecks extends CommonTestRunner {
             ParameterAnalysis set4 = d.parameterAnalyses().get(3);
 
             if (iteration == 0) {
-                Assert.assertFalse(list.assignedToField.isSet());
+                Assert.assertNull(list.getAssignedToField());
             } else {
-                Assert.assertTrue(list.assignedToField.isSet());
+                Assert.assertNotNull(list.getAssignedToField());
             }
             if (iteration >= 2) {
                 Assert.assertEquals(0, list.getProperty(VariableProperty.MODIFIED));
-                Assert.assertTrue(set3.assignedToField.isSet());
+                Assert.assertNotNull(set3.getAssignedToField());
                 Assert.assertEquals(1, set3.getProperty(VariableProperty.MODIFIED)); // directly assigned to s0
                 Assert.assertEquals(1, set2.getProperty(VariableProperty.MODIFIED));
                 Assert.assertEquals(1, set4.getProperty(VariableProperty.MODIFIED));
@@ -138,10 +138,10 @@ public class TestNotModifiedChecks extends CommonTestRunner {
         }
         if ("set".equals(fieldInfo.name)) {
             if (iteration > 0) {
-                Assert.assertEquals("this.set", d.fieldAnalysis().effectivelyFinalValue.get().toString());
+                Assert.assertEquals("this.set", d.fieldAnalysis().getEffectivelyFinalValue().toString());
             }
             if (iteration > 0) {
-                Assert.assertEquals("[0:set1]", d.fieldAnalysis().variablesLinkedToMe.get().toString());
+                Assert.assertEquals("[0:set1]", d.fieldAnalysis().getVariablesLinkedToMe().toString());
             }
         }
     };

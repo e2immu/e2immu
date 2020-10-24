@@ -42,7 +42,7 @@ public class TestNotNullWithPatterns extends CommonTestRunner {
         }
 
         if ("method4bis".equals(d.methodInfo().name) && d.iteration() > 0) {
-            StatementAnalysis start = d.methodAnalysis().firstStatement.followReplacements();
+            StatementAnalysis start = d.methodAnalysis().getFirstStatement().followReplacements();
             Assert.assertEquals("return a1 == null ? a2 == null ? \"abc\" : a2 : a3 == null ? \"xyz\" : a1;\n",
                     start.statement.statementString(0, null));
             Assert.assertNull(start.navigationData.next.get().orElse(null));

@@ -200,12 +200,13 @@ public class Primitives {
                     .setTypeNature(TypeNature.PRIMITIVE)
                     .build(false, ti));
             primitiveByName.put(ti.simpleName, ti);
-            ti.typeAnalysis.set(new TypeAnalysis(ti));
-            ti.typeAnalysis.get().properties.put(VariableProperty.CONTAINER, Level.TRUE);
-            ti.typeAnalysis.get().properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
-            ti.typeAnalysis.get().approvedPreconditions.freeze(); // cannot change these anymore; will never be eventual
-            ti.typeAnalysis.get().properties.put(VariableProperty.MODIFIED, Level.FALSE);
-            ti.typeAnalysis.get().implicitlyImmutableDataTypes.set(Set.of());
+            TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(ti);
+            ti.typeAnalysis.set(builder);
+            builder.properties.put(VariableProperty.CONTAINER, Level.TRUE);
+            builder.properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
+            builder.approvedPreconditions.freeze(); // cannot change these anymore; will never be eventual
+            builder.properties.put(VariableProperty.MODIFIED, Level.FALSE);
+            builder.implicitlyImmutableDataTypes.set(Set.of());
         }
 
         for (TypeInfo ti : List.of(stringTypeInfo, objectTypeInfo, classTypeInfo, annotationTypeTypeInfo, annotationModeTypeInfo, functionalInterface)) {

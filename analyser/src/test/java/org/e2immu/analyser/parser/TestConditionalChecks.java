@@ -93,8 +93,7 @@ public class TestConditionalChecks extends CommonTestRunner {
         }
 
         if ("method1".equals(d.methodInfo().name)) {
-            Assert.assertTrue(d.methodAnalysis().precondition.isSet());
-            Assert.assertSame(UnknownValue.EMPTY, d.methodAnalysis().precondition.get());
+            Assert.assertSame(UnknownValue.EMPTY, d.methodAnalysis().getPrecondition());
         }
     };
 

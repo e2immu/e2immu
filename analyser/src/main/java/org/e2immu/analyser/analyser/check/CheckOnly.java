@@ -13,7 +13,7 @@ import org.e2immu.annotation.Only;
 public class CheckOnly {
 
     public static void checkOnly(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        MethodAnalysis.MarkAndOnly markAndOnly = methodAnalysis.markAndOnly.isSet() ? methodAnalysis.markAndOnly.get() : null;
+        MethodAnalysis.MarkAndOnly markAndOnly = methodAnalysis.getMarkAndOnly();
         AnnotationExpression annotationExpression = methodInfo.hasTestAnnotation(Only.class).orElse(null);
         if (annotationExpression == null) return; // nothing to verify
 
@@ -63,7 +63,7 @@ public class CheckOnly {
     }
 
     public static void checkMark(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        MethodAnalysis.MarkAndOnly markAndOnly = methodAnalysis.markAndOnly.isSet() ? methodAnalysis.markAndOnly.get() : null;
+        MethodAnalysis.MarkAndOnly markAndOnly = methodAnalysis.getMarkAndOnly();
         AnnotationExpression annotationExpression = methodInfo.hasTestAnnotation(Mark.class).orElse(null);
         if (annotationExpression == null) return; // nothing to verify
 

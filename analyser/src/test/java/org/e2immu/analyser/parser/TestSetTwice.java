@@ -37,14 +37,14 @@ public class TestSetTwice extends CommonTestRunner {
         int iteration = d.iteration();
 
         if (Set.of("overwrite", "freeze").contains(name) && iteration > 1) {
-            Assert.assertEquals(PRECONDITION, d.methodAnalysis().precondition.get().toString());
-            Assert.assertEquals("[not (this.overwritten), not (null == this.t)]", d.methodAnalysis().preconditionForMarkAndOnly.get().toString());
+            Assert.assertEquals(PRECONDITION, d.methodAnalysis().getPrecondition().toString());
+            Assert.assertEquals("[not (this.overwritten), not (null == this.t)]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
         }
         if ("set".equals(name) && iteration > 1) {
-            Assert.assertEquals("[null == this.t]", d.methodAnalysis().preconditionForMarkAndOnly.get().toString());
+            Assert.assertEquals("[null == this.t]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
         }
         if ("get".equals(name) && iteration > 1) {
-            Assert.assertEquals("[not (null == this.t)]", d.methodAnalysis().preconditionForMarkAndOnly.get().toString());
+            Assert.assertEquals("[not (null == this.t)]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
         }
     };
 
