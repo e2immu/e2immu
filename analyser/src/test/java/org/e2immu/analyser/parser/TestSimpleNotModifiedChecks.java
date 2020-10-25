@@ -113,7 +113,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("add4".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
-            Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet()); // no potential null pointer exception
+            Assert.assertNull(d.haveError(Message.NULL_POINTER_EXCEPTION));
         }
     };
 

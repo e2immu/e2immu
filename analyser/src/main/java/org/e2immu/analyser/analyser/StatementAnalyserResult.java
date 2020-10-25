@@ -18,6 +18,8 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.AbstractAnalysisBuilder;
+import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -26,10 +28,13 @@ import java.util.stream.Stream;
 public class StatementAnalyserResult {
     private final Stream<AbstractAnalysisBuilder.Modification> modifications;
     public final AnalysisStatus analysisStatus;
+    public final Messages messages;
 
-    private StatementAnalyserResult(AnalysisStatus analysisStatus, Stream<AbstractAnalysisBuilder.Modification> modifications) {
+    private StatementAnalyserResult(AnalysisStatus analysisStatus, Stream<AbstractAnalysisBuilder.Modification> modifications,
+                                    Messages messages) {
         this.modifications = modifications;
         this.analysisStatus = analysisStatus;
+        this.messages = messages;
     }
 
     public Stream<AbstractAnalysisBuilder.Modification> getModifications() {
@@ -39,6 +44,7 @@ public class StatementAnalyserResult {
     public static class Builder {
         private List<AbstractAnalysisBuilder.Modification> modifications;
         private AnalysisStatus analysisStatus;
+        public final Messages messages = new Messages();
 
         public Builder add(StatementAnalyserResult other) {
             if (modifications == null) {
@@ -46,6 +52,7 @@ public class StatementAnalyserResult {
             }
             other.modifications.forEach(modifications::add);
             analysisStatus = analysisStatus == null ? other.analysisStatus : analysisStatus.combine(other.analysisStatus);
+            messages.addAll(other.messages);
             return this;
         }
 
@@ -70,7 +77,17 @@ public class StatementAnalyserResult {
 
         public StatementAnalyserResult build() {
             assert analysisStatus != null;
-            return new StatementAnalyserResult(analysisStatus, modifications == null ? Stream.empty() : modifications.stream());
+            return new StatementAnalyserResult(analysisStatus, modifications == null ? Stream.empty() : modifications.stream(), messages);
+        }
+
+        public Builder addMessages(Messages messages) {
+            this.messages.addAll(messages);
+            return this;
+        }
+
+        public Builder addMessages(Stream<Message> messageStream) {
+            this.messages.addAll(messageStream);
+            return this;
         }
     }
 }

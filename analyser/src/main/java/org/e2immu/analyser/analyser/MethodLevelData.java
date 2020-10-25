@@ -65,7 +65,7 @@ public class MethodLevelData {
 
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
 
-    private record SharedState(StatementAnalyserResult.Builder builder,
+    record SharedState(StatementAnalyserResult.Builder builder,
                                EvaluationContext evaluationContext,
                                StatementAnalysis statementAnalysis,
                                String logLocation,

@@ -58,11 +58,11 @@ import static org.e2immu.analyser.util.Logger.log;
 @Container(builds = StatementAnalysis.class)
 public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalyser.class);
+    public static final String ANALYSE_METHOD_LEVEL_DATA = "analyseMethodLevelData";
 
     public final StatementAnalysis statementAnalysis;
     private final MethodAnalyser myMethodAnalyser;
     private final AnalyserContext analyserContext;
-    private final Messages messages = new Messages();
     public final NavigationData<StatementAnalyser> navigationData = new NavigationData<>();
 
     // shared state over the different analysers
@@ -265,9 +265,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     // executed only once per statement; we're assuming that the flowData are computed correctly
     private AnalysisStatus checkUnreachableStatement(StatementAnalysis previousStatementAnalysis, FlowData.Execution execution) {
         if (statementAnalysis.flowData.computeGuaranteedToBeReached(previousStatementAnalysis, execution) &&
-                !statementAnalysis.inErrorState()) {
-            messages.add(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
-            statementAnalysis.errorFlags.errorValue.set(true);
+                !statementAnalysis.inErrorState(Message.UNREACHABLE_STATEMENT)) {
+            statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
         }
         return DONE;
     }
@@ -279,6 +278,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return statementAnalysis.flowData.guaranteedToBeReachedInMethod.get() == FlowData.Execution.ALWAYS;
         }
         return false;
+    }
+
+    public AnalyserComponents<String, SharedState> getAnalyserComponents() {
+        return analyserComponents;
     }
 
     record SharedState(EvaluationContext evaluationContext, StatementAnalyserResult.Builder builder) {
@@ -313,10 +316,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .add("tryToFreezeDependencyGraph", sharedState -> tryToFreezeDependencyGraph())
                     .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previousStatementAnalysis))
 
-                    .add("analyseMethodLevelData", sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
+                    .add(ANALYSE_METHOD_LEVEL_DATA, sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
                             previousStatementAnalysis == null ? null : previousStatementAnalysis.methodLevelData,
                             statementAnalysis.stateData))
-                    .add("copyErrorFlags", sharedState -> statementAnalysis.errorFlags.copy(statementAnalysis, previousStatementAnalysis))
                     .add("copyPrecondition", sharedState -> statementAnalysis.stateData.copyPrecondition(this, previousStatementAnalysis))
 
                     .add("checkNotNullEscapes", this::checkNotNullEscapes)
@@ -336,6 +338,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         AnalysisStatus overallStatus = analyserComponents.run(sharedState);
 
         StatementAnalyserResult result = sharedState.builder()
+                .addMessages(statementAnalysis.messages.stream())
                 .setAnalysisStatus(overallStatus)
                 .combineAnalysisStatus(wasReplacement ? PROGRESS : DONE).build();
         analysisStatus = result.analysisStatus;
@@ -421,10 +424,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         evaluationResult.getModificationStream().forEach(statementAnalysis::apply);
 
         evaluationResult.getValueChangeStream().forEach(e -> {
-            SetOnce<Value> setOnce = assignmentDestination.apply(e.getKey());
+            Variable variable = e.getKey();
+            Value value = e.getValue();
+            SetOnce<Value> setOnce = assignmentDestination.apply(variable);
             if (!setOnce.isSet()) {
-                log(ANALYSER, "Write value {} to variable {}", e.getValue(), e.getKey().fullyQualifiedName());
-                setOnce.set(e.getValue());
+                log(ANALYSER, "Write value {} to variable {}", value, variable.fullyQualifiedName());
+                setOnce.set(value);
+            }
+            VariableInfo variableInfo = statementAnalysis.find(analyserContext, variable);
+            if (!variableInfo.stateOnAssignment.isSet() && reducedState != NO_VALUE) {
+                variableInfo.stateOnAssignment.set(reducedState);
             }
             statementAnalysis.addProperty(analyserContext, e.getKey(), VariableProperty.ASSIGNED, Level.TRUE);
         });
@@ -691,18 +700,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     (combinedWithCondition.equals(previousConditional) || combinedWithState.isConstant())
                     || combinedWithCondition.isConstant();
 
-            if (noEffect && !ignoreErrorsOnCondition && !statementAnalysis.inErrorState()) {
-                messages.add(Message.newMessage(evaluationContext.getLocation(), Message.CONDITION_EVALUATES_TO_CONSTANT));
-                statementAnalysis.errorFlags.errorValue.set(true);
+            if (noEffect && !ignoreErrorsOnCondition && !statementAnalysis.inErrorState(Message.CONDITION_EVALUATES_TO_CONSTANT)) {
+                statementAnalysis.ensure(Message.newMessage(evaluationContext.getLocation(), Message.CONDITION_EVALUATES_TO_CONSTANT));
             }
             return true;
         }
 
         if (value != null && statementAnalysis.statement instanceof ForEachStatement) {
             int size = evaluationContext.getProperty(value, VariableProperty.SIZE);
-            if (size == Level.SIZE_EMPTY && !statementAnalysis.inErrorState()) {
-                messages.add(Message.newMessage(evaluationContext.getLocation(), Message.EMPTY_LOOP));
-                statementAnalysis.errorFlags.errorValue.set(true);
+            if (size == Level.SIZE_EMPTY && !statementAnalysis.inErrorState(Message.EMPTY_LOOP)) {
+                statementAnalysis.ensure(Message.newMessage(evaluationContext.getLocation(), Message.EMPTY_LOOP));
             }
         }
         return false;
@@ -900,10 +907,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                             alwaysInterrupts && statementAnalysis.isLocalVariable(analyserContext, variableInfo) ||
                                     variableInfo.isNotLocalCopy() && variableInfo.variable instanceof LocalVariableReference);
                     if (useless) {
-                        if (!statementAnalysis.errorFlags.uselessAssignments.isSet(variableInfo.variable)) {
-                            statementAnalysis.errorFlags.uselessAssignments.put(variableInfo.variable, true);
-                            messages.add(Message.newMessage(getLocation(), Message.USELESS_ASSIGNMENT, variableInfo.name));
-                        }
+                        statementAnalysis.ensure(Message.newMessage(getLocation(), Message.USELESS_ASSIGNMENT, variableInfo.name));
                         if (variableInfo.isLocalCopy()) toRemove.add(variableInfo.name);
                     }
                 }
@@ -924,10 +928,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (variableInfo.isNotLocalCopy() && variableInfo.variable instanceof LocalVariableReference
                         && variableInfo.getProperty(VariableProperty.READ) < Level.READ_ASSIGN_ONCE) {
                     LocalVariable localVariable = ((LocalVariableReference) variableInfo.variable).variable;
-                    if (!statementAnalysis.errorFlags.unusedLocalVariables.isSet(localVariable)) {
-                        statementAnalysis.errorFlags.unusedLocalVariables.put(localVariable, true);
-                        messages.add(Message.newMessage(getLocation(), Message.UNUSED_LOCAL_VARIABLE, localVariable.name));
-                    }
+                    statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNUSED_LOCAL_VARIABLE, localVariable.name));
                 }
             });
         }
@@ -938,8 +939,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      * Can be delayed
      */
     private AnalysisStatus checkUnusedReturnValue() {
-        if (statementAnalysis.statement instanceof ExpressionAsStatement eas && eas.expression instanceof MethodCall &&
-                !statementAnalysis.inErrorState()) {
+        if (statementAnalysis.statement instanceof ExpressionAsStatement eas && eas.expression instanceof MethodCall) {
             MethodCall methodCall = (MethodCall) (((ExpressionAsStatement) statementAnalysis.statement).expression);
             if (methodCall.methodInfo.returnType().isVoid()) return DONE;
             MethodAnalysis methodAnalysis = getMethodAnalysis(methodCall.methodInfo);
@@ -949,8 +949,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
             if (modified == Level.DELAY) return DELAYS;
             if (modified == Level.FALSE) {
-                messages.add(Message.newMessage(getLocation(), Message.IGNORING_RESULT_OF_METHOD_CALL));
-                statementAnalysis.errorFlags.errorValue.set(true);
+                statementAnalysis.ensure(Message.newMessage(getLocation(), Message.IGNORING_RESULT_OF_METHOD_CALL,
+                        methodCall.getMethodInfo().fullyQualifiedName()));
             }
         }
         return DONE;
@@ -1178,7 +1178,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void run() {
-            messages.add(message);
+            statementAnalysis.ensure(message);
         }
 
         @Override
@@ -1201,10 +1201,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void run() {
-            if (!statementAnalysis.errorFlags.errorAssigningToFieldOutsideType.isSet(fieldInfo)) {
-                statementAnalysis.errorFlags.errorAssigningToFieldOutsideType.put(fieldInfo, true);
-                messages.add(Message.newMessage(location, Message.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
-            }
+            statementAnalysis.ensure(Message.newMessage(location, Message.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
         }
 
         @Override
@@ -1227,10 +1224,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void run() {
-            if (!statementAnalysis.errorFlags.parameterAssignments.isSet(parameterInfo)) {
-                statementAnalysis.errorFlags.parameterAssignments.put(parameterInfo, true);
-                messages.add(Message.newMessage(location, Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO));
-            }
+            statementAnalysis.ensure(Message.newMessage(location, Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO,
+                    parameterInfo.fullyQualifiedName()));
         }
 
         @Override

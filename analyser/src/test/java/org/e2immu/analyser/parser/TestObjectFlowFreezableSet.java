@@ -132,18 +132,18 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method2".equals(d.methodInfo.name) && "3".equals(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
+            Assert.assertNotNull(d.haveError(Message.ONLY_AFTER));
         }
         if ("method3".equals(d.methodInfo.name) && "3".equals(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
+            Assert.assertNotNull(d.haveError(Message.ONLY_BEFORE));
         }
         // the argument to method9 should be frozen already, so we can call "stream()" but not "add()"
         if ("method9".equals(d.methodInfo.name)) {
             if ("0".equals(d.statementId)) {
-                Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
+                Assert.assertNotNull(d.haveError(Message.ONLY_AFTER));
             }
             if ("1".equals(d.statementId)) {
-                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
+                Assert.assertNotNull(d.haveError(Message.ONLY_AFTER));
             }
         }
     };

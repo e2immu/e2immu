@@ -21,16 +21,15 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         // ERROR: t.trim() result is not used
         if ("method1".equals(d.methodInfo.name) && "2".equals(d.statementId) && d.iteration > 1) {
-            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get());
+            Assert.assertNotNull(d.haveError(Message.IGNORING_RESULT_OF_METHOD_CALL));
         }
 
         if ("method2".equals(d.methodInfo.name) && d.iteration > 2) {
             if ("1".equals(d.statementAnalysis.index)) {
-                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get()); // if switches
+                Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
             }
             if ("1.0.0".equals(d.statementAnalysis.index)) {
-                Assert.assertTrue(d.statementAnalysis.inErrorState());
-                Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
+                Assert.assertNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
             }
         }
 
@@ -45,49 +44,34 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                 }
             }
             if ("1.0.1".equals(d.statementAnalysis.index)) {
-                if (d.iteration > 1) Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get()); // if switches
+                if (d.iteration > 1) {
+                    Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+                }
             }
             if ("1.0.1.0.0".equals(d.statementAnalysis.index) && d.iteration > 1) {
-                Assert.assertTrue(d.statementAnalysis.inErrorState());
-                Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
+                Assert.assertNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
             }
         }
         // ERROR: Unused variable "a"
         // ERROR: useless assignment to "a" as well
         if ("UnusedLocalVariableChecks".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
-            Assert.assertEquals(1L,
-                    d.statementAnalysis.errorFlags.unusedLocalVariables.stream().filter(Map.Entry::getValue).count());
-            Assert.assertEquals("a", d.statementAnalysis.errorFlags.unusedLocalVariables.stream()
-                    .findFirst().orElseThrow().getKey().name);
-
-            Assert.assertEquals(1L,
-                    d.statementAnalysis.errorFlags.uselessAssignments.stream().filter(Map.Entry::getValue).count());
-            Assert.assertEquals("a", d.statementAnalysis.errorFlags.uselessAssignments.stream()
-                    .findFirst().orElseThrow().getKey().simpleName());
+            Assert.assertEquals("a", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
+            Assert.assertEquals("a", d.haveError(Message.USELESS_ASSIGNMENT));
         }
 
         if ("method1".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
             // ERROR: unused variable "s"
-            Assert.assertEquals(1L,
-                    d.statementAnalysis.errorFlags.unusedLocalVariables.stream().filter(Map.Entry::getValue).count());
-            Assert.assertEquals("s", d.statementAnalysis.errorFlags.unusedLocalVariables.stream()
-                    .findFirst().orElseThrow().getKey().name);
-
-            // but NO useless assignment anymore
-            Assert.assertEquals(0L,
-                    d.statementAnalysis.errorFlags.uselessAssignments.stream().filter(Map.Entry::getValue).count());
+            Assert.assertEquals("s", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
+            Assert.assertNull(d.haveError(Message.USELESS_ASSIGNMENT));
 
             // ERROR: method should be static
-            Assert.assertTrue(d.methodInfo.methodAnalysis.get().getComplainedAboutMissingStaticModifier());
+            Assert.assertEquals("s", d.haveError(Message.METHOD_SHOULD_BE_MARKED_STATIC));
         }
         if ("checkArray2".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
-            Assert.assertEquals(1L, d.statementAnalysis.errorFlags.uselessAssignments.stream().filter(Map.Entry::getValue).count());
+            Assert.assertEquals("s", d.haveError(Message.USELESS_ASSIGNMENT));
         }
         if ("checkForEach".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId)) {
-            Assert.assertEquals(1L,
-                    d.statementAnalysis.errorFlags.unusedLocalVariables.stream().filter(Map.Entry::getValue).count());
-            Assert.assertEquals("loopVar", d.statementAnalysis.errorFlags.unusedLocalVariables.stream()
-                    .findFirst().orElseThrow().getKey().name);
+            Assert.assertEquals("s", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
         }
     };
 

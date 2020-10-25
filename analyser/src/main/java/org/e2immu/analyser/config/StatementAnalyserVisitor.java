@@ -4,6 +4,7 @@ import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.StatementAnalysis;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.parser.Message;
 
 import java.util.Map;
 
@@ -27,6 +28,15 @@ public interface StatementAnalyserVisitor {
             this.condition = condition;
             this.state = state;
             this.statusesAsMap = statusesAsMap;
+        }
+
+        // shortcut
+        public String haveError(String message) {
+            return statementAnalysis.messages.stream()
+                    .filter(m -> m.message.contains(message))
+                    .map(Message::toString)
+                    .findFirst()
+                    .orElse(null);
         }
     }
 

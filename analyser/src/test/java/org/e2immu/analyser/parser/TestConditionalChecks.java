@@ -53,11 +53,11 @@ public class TestConditionalChecks extends CommonTestRunner {
             // constant condition
             if ("3".equals(d.statementId)) {
                 Assert.assertEquals(BoolValue.FALSE, d.state);
-                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
+                Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
             }
             // unreachable statement
             if ("4".equals(d.statementId)) {
-                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
+                Assert.assertNotNull(d.haveError(Message.UNREACHABLE_STATEMENT));
             }
         }
         if ("method3".equals(d.methodInfo.name)) {

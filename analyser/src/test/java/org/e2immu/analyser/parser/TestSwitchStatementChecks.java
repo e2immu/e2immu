@@ -26,19 +26,17 @@ public class TestSwitchStatementChecks extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method7".equals(d.methodInfo.name)) {
             if ("2".equals(d.statementId)) {
-                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get());
+                Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
             }
             if ("2.2.0".equals(d.statementId)) {
-                Assert.assertTrue(d.statementAnalysis.inErrorState());
-                Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
+                Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
             }
         }
         if ("method3".equals(d.methodInfo.name) && "0.2.0".equals(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get()); // method evaluates to constant
+            Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
         }
         if ("method3".equals(d.methodInfo.name) && "0.2.0.0.0".equals(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.inErrorState());
-            Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
+            Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
         }
     };
 

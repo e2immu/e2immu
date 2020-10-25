@@ -79,7 +79,7 @@ public class TestPreconditionChecks extends CommonTestRunner {
         }
         if ("setInteger".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
             if (d.iteration > 0) {
-                Assert.assertTrue("Iteration: " + d.iteration, d.statementAnalysis.errorFlags.errorValue.isSet());
+                Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT)); // TODO
             }
         }
     };

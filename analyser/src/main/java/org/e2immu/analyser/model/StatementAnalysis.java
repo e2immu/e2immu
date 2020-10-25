@@ -30,6 +30,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.Container;
@@ -57,7 +58,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public final boolean inSyncBlock;
     public final boolean inPartOfConstruction;
 
-    public final ErrorFlags errorFlags = new ErrorFlags();
+    public final AddOnceSet<Message> messages = new AddOnceSet<>();
     public final NavigationData<StatementAnalysis> navigationData = new NavigationData<>();
     public final SetOnceMap<String, VariableInfo> variables = new SetOnceMap<>();
     public final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
@@ -92,10 +93,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return navigationData;
     }
 
-    public boolean inErrorState() {
-        boolean parentInErrorState = parent != null && parent.inErrorState();
+    public boolean inErrorState(String message) {
+        boolean parentInErrorState = parent != null && parent.inErrorState(message);
         if (parentInErrorState) return true;
-        return errorFlags.errorValue.isSet() && errorFlags.errorValue.get();
+        return messages.stream().anyMatch(m -> m.message.contains(message));
     }
 
     public static StatementAnalysis startOfBlock(StatementAnalysis sa, int block) {
@@ -217,6 +218,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public void copyBackLocalCopies(List<StatementAnalyser> lastStatements, boolean noBlockMayBeExecuted) {
         // TODO implement
+    }
+
+    public void ensure(Message newMessage) {
+        messages.add(newMessage);
     }
 
     public interface StateChange extends Function<Value, Value> {
@@ -350,14 +355,18 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (existing != null) throw new UnsupportedOperationException();
         VariableInfo vi = internalCreate(analyserContext, variable, fqn);
 
-        if (variable instanceof ParameterInfo && !vi.initialValue.isSet()) {
-            ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
-            VariableValue variableValue = new VariableValue(variable, objectFlow);
-            vi.initialValue.set(variableValue);
-        } else if (variable instanceof FieldReference fieldReference && !vi.initialValue.isSet()) {
-            Value initialValue = initialValueOfField(analyserContext, fieldReference);
-            if (initialValue != UnknownValue.NO_VALUE) {
-                vi.initialValue.set(initialValue);
+        if (!vi.initialValue.isSet()) {
+            if (variable instanceof This) {
+                vi.initialValue.set(new VariableValue(variable, ObjectFlow.NO_FLOW));
+            } else if ((variable instanceof ParameterInfo)) {
+                ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
+                VariableValue variableValue = new VariableValue(variable, objectFlow);
+                vi.initialValue.set(variableValue);
+            } else if (variable instanceof FieldReference fieldReference) {
+                Value initialValue = initialValueOfField(analyserContext, fieldReference);
+                if (initialValue != UnknownValue.NO_VALUE) {
+                    vi.initialValue.set(initialValue);
+                }
             }
         }
         return vi;

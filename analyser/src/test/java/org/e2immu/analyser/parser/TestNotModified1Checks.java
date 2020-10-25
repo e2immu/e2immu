@@ -21,7 +21,7 @@ public class TestNotModified1Checks extends CommonTestRunner {
 
         // checks the 2 errors
         if ("useApply".equals(d.methodInfo.name) && Set.of("2", "3").contains(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
+            Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT)); // TODO
         }
     };
 

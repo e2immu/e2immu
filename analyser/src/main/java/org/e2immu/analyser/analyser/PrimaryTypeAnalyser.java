@@ -155,13 +155,20 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
 
             iteration++;
             if (iteration > 10) {
-                LOGGER.warn("Status of analysers:\n{}", analyserComponents.details());
-                for (Pair<Analyser, AnalysisStatus> pair : analyserComponents.getStatuses()) {
-                    if (pair.v == AnalysisStatus.DELAYS) {
-                        LOGGER.warn("Analyser components of {}:\n{}", pair.k.getName(), pair.k.getAnalyserComponents().details());
-                    }
-                }
+                logAnalysisStatuses(analyserComponents);
                 throw new UnsupportedOperationException("More than 10 iterations needed for primary type " + primaryType.fullyQualifiedName + "?");
+            }
+        }
+    }
+
+    private void logAnalysisStatuses(AnalyserComponents<Analyser, Integer> analyserComponents) {
+        LOGGER.warn("Status of analysers:\n{}", analyserComponents.details());
+        for (Pair<Analyser, AnalysisStatus> pair : analyserComponents.getStatuses()) {
+            if (pair.v == AnalysisStatus.DELAYS) {
+                LOGGER.warn("Analyser components of {}:\n{}", pair.k.getName(), pair.k.getAnalyserComponents().details());
+                if (pair.k instanceof MethodAnalyser methodAnalyser) {
+                    methodAnalyser.logAnalysisStatuses();
+                }
             }
         }
     }

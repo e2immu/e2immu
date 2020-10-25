@@ -2,15 +2,14 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.annotation.*;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 @Container
 public class Messages {
 
     @NotNull1
-    private final List<Message> messages = new LinkedList<>();
+    private final Set<Message> messages = new HashSet<>();
 
     @Modified
     public void addAll(@NotNull1 @NotModified Messages messages) {
@@ -31,4 +30,5 @@ public class Messages {
     public Stream<Message> getMessageStream() {
         return messages.stream();
     }
+
 }

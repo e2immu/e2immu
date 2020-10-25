@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.parser.Message;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -50,7 +51,7 @@ public class TestDependencyGraph extends CommonTestRunner {
         }
         // we have to make sure that there is no "Empty loop" error raised
         if ("sorted".equals(d.methodInfo.name) && "3.0.1".equals(d.statementId)) {
-            Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
+            Assert.assertNull(d.haveError(Message.EMPTY_LOOP));
         }
     };
 

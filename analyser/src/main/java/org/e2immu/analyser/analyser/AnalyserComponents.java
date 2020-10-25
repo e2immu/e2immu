@@ -39,6 +39,10 @@ public class AnalyserComponents<T, S> {
         Arrays.fill(state, DELAYS);
     }
 
+    public AnalysisStatus getStatus(T t) {
+        return getStatusesAsMap().get(t);
+    }
+
     static class Builder<T, S> {
         private final LinkedHashMap<T, AnalysisStatus.AnalysisResultSupplier<S>> suppliers = new LinkedHashMap<>();
 

@@ -13,6 +13,7 @@ import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.parser.CommonTestRunner;
+import org.e2immu.analyser.parser.Message;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -47,11 +48,11 @@ public class TestLoopStatementChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method3bis".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
+            Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
         }
         if ("method6".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId)) {
-            Assert.assertEquals(1, d.statementAnalysis.errorFlags.uselessAssignments.size());
-            Assert.assertEquals(1, d.statementAnalysis.errorFlags.unusedLocalVariables.size());
+            Assert.assertNotNull(d.haveError(Message.USELESS_ASSIGNMENT));
+            Assert.assertNotNull(d.haveError(Message.UNUSED_LOCAL_VARIABLE));
         }
     };
 

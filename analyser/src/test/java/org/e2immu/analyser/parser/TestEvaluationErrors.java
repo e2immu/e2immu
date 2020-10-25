@@ -31,23 +31,22 @@ public class TestEvaluationErrors extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("testDivisionByZero".equals(d.methodInfo.name)) {
             if ("1".equals(d.statementId)) {
-                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get());
+                Assert.assertNotNull(d.haveError(Message.DIVISION_BY_ZERO));
             }
             if ("1.0.0".equals(d.statementId)) {
-                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get());
+                Assert.assertNotNull(d.haveError(Message.DIVISION_BY_ZERO));
             }
             if ("2".equals(d.statementId)) {
-                Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
+                Assert.assertNull(d.haveError(Message.DIVISION_BY_ZERO));
             }
         }
         if ("testDeadCode".equals(d.methodInfo.name)) {
             if ("1".equals(d.statementId)) {
-                Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.get());
+                Assert.assertNotNull(d.haveError(Message.UNREACHABLE_STATEMENT));
             }
             // this one does not render a dead-code error, because its parent already has an error raised
             if ("1.0.0".equals(d.statementId)) {
-                Assert.assertTrue(d.statementAnalysis.inErrorState());
-                Assert.assertFalse(d.statementAnalysis.errorFlags.errorValue.isSet());
+                Assert.assertNull(d.haveError(Message.UNREACHABLE_STATEMENT));
             }
         }
     };

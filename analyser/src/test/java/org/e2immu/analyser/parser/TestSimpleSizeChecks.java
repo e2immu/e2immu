@@ -45,13 +45,13 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method1".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
+            Assert.assertNotNull(d.haveError(Message.METHOD_EVALUATES_TO_CONSTANT));
         }
         if ("method1bis".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
+            Assert.assertNotNull(d.haveError(Message.METHOD_EVALUATES_TO_CONSTANT));
         }
         if ("method1bis".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
-            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
+            Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
         }
     };
 

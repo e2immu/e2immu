@@ -85,7 +85,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method9".equals(d.methodInfo.name) && d.iteration > 0) {
-            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
+            Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT)); // TODO
         }
     };
 

@@ -41,6 +41,8 @@ public class TestBasicsOpposite extends CommonTestRunner {
 
     public static final String STRING_PARAMETER = "org.e2immu.analyser.testexample.BasicsOpposite.setString(String):0:string";
     public static final String STRING_FIELD = "org.e2immu.analyser.testexample.BasicsOpposite.string";
+    private static final String METHOD_VALUE_ADD = "org.e2immu.analyser.testexample.BasicsOpposite.add(Collection<String>):0:collection" +
+            ".add(org.e2immu.analyser.testexample.BasicsOpposite.string)";
 
     public TestBasicsOpposite() {
         super(true);
@@ -124,7 +126,8 @@ public class TestBasicsOpposite extends CommonTestRunner {
             Assert.assertTrue(d.evaluationResult().toString(), d.haveSetProperty(STRING_FIELD, VariableProperty.READ, Level.TRUE));
         }
         if (d.methodInfo().name.equals("add") && "0".equals(d.statementId())) {
-            Assert.assertSame(UnknownValue.NO_VALUE, d.evaluationResult().value);
+            String expectEvalString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : METHOD_VALUE_ADD;
+            Assert.assertEquals(d.evaluationResult().toString(), expectEvalString, d.evaluationResult().value.toString());
         }
     };
 

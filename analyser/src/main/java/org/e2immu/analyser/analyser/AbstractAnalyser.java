@@ -58,4 +58,5 @@ public abstract class AbstractAnalyser implements Analyser {
     public String toString() {
         return name;
     }
+
 }

@@ -57,6 +57,7 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class MethodAnalyser extends AbstractAnalyser {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalyser.class);
+    public static final String STATEMENT_ANALYSER = "StatementAnalyser";
 
     public final MethodInfo methodInfo;
     public final MethodInspection methodInspection;
@@ -105,10 +106,11 @@ public class MethodAnalyser extends AbstractAnalyser {
                 StatementAnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(iteration, ForwardAnalysisInfo.START_OF_METHOD);
                 // apply all modifications
                 result.getModifications().forEach(Runnable::run);
+                this.messages.addAll(result.messages);
                 return result.analysisStatus;
             };
 
-            builder.add("StatementAnalyser", statementAnalyser)
+            builder.add(STATEMENT_ANALYSER, statementAnalyser)
                     .add("obtainMostCompletePrecondition", (iteration) -> obtainMostCompletePrecondition())
                     .add("makeInternalObjectFlowsPermanent", (iteration) -> makeInternalObjectFlowsPermanent())
                     .add("propertiesOfReturnStatements", (iteration) -> methodInfo.isConstructor ? DONE : propertiesOfReturnStatements())
@@ -1005,5 +1007,22 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     public MethodLevelData methodLevelData() {
         return methodAnalysis.methodLevelData();
+    }
+
+    public void logAnalysisStatuses() {
+        AnalysisStatus statusOfStatementAnalyser = analyserComponents.getStatus(MethodAnalyser.STATEMENT_ANALYSER);
+        if (statusOfStatementAnalyser == AnalysisStatus.DELAYS) {
+            StatementAnalyser lastStatement = firstStatementAnalyser.lastStatement();
+            AnalyserComponents<String, StatementAnalyser.SharedState> analyserComponentsOfStatement = lastStatement.getAnalyserComponents();
+            LOGGER.warn("Analyser components of last statement {}:\n{}", lastStatement.index(),
+                    analyserComponentsOfStatement.details());
+            AnalysisStatus statusOfMethodLevelData = analyserComponentsOfStatement.getStatus(StatementAnalyser.ANALYSE_METHOD_LEVEL_DATA);
+            if (statusOfMethodLevelData == AnalysisStatus.DELAYS) {
+                AnalyserComponents<String, MethodLevelData.SharedState> analyserComponentsOfMethodLevelData =
+                        lastStatement.statementAnalysis.methodLevelData.analyserComponents;
+                LOGGER.warn("Analyser components of method level data of last statement {}:\n{}", lastStatement.index(),
+                        analyserComponentsOfMethodLevelData.details());
+            }
+        }
     }
 }

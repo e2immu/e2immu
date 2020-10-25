@@ -43,7 +43,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         }
     };
 
-    TypeAnalyserVisitor typeAnalyserVisitor =d  -> {
+    TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         TypeInfo typeInfo = d.typeInfo();
         if ("MyConsumer".equals(typeInfo.simpleName)) {
             MethodInfo accept = typeInfo.findUniqueMethod("accept", 1);
@@ -119,7 +119,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
     // TODO we allow for one error at the moment, a transfer of @Size from Collections.addAll which has not yet been implemented
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("visit".equals(d.methodInfo.name) && "0".equals(d.statementId) && d.iteration > 1) {
-            Assert.assertTrue(d.statementAnalysis.errorFlags.errorValue.isSet());
+            Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT)); // TODO change message
         }
     };
 

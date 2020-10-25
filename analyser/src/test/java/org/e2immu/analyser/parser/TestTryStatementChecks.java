@@ -20,7 +20,7 @@ public class TestTryStatementChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method3".equals(d.methodInfo.name) && "1.1.1".equals(d.statementId)) {
-            Assert.assertEquals(1, d.statementAnalysis.errorFlags.uselessAssignments.size());
+            Assert.assertEquals("s", d.haveError(Message.USELESS_ASSIGNMENT));
         }
     };
 
