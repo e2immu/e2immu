@@ -919,21 +919,15 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (variable instanceof FieldReference) {
                 return getVariableValue(variable);
             }
-            if (variable instanceof This || variable instanceof DependentVariable) {
+            if (variable instanceof This) {
                 return myTypeAnalyser.getVariableValue(variable);
             }
-            throw new UnsupportedOperationException();
+            throw new UnsupportedOperationException("Variable of " + variable.getClass() + " not implemented here");
         }
 
         @Override
         public Stream<ObjectFlow> getInternalObjectFlows() {
             return internalObjectFlows.stream();
-        }
-
-        @Override
-        public Value currentValue(String variableName) {
-            FieldInfo fieldInfo = primaryType.getFieldByName(variableName, true);
-            return getVariableValue(new FieldReference(fieldInfo, new This(fieldInfo.owner)));
         }
 
     }

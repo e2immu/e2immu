@@ -115,10 +115,6 @@ public interface EvaluationContext {
         return value.getPropertyOutsideContext(variableProperty);
     }
 
-    default Value currentValue(String variableName) {
-        return UnknownValue.NO_VALUE;
-    }
-
     default int getProperty(Variable variable, VariableProperty variableProperty) {
         return currentValue(variable).getPropertyOutsideContext(variableProperty);
     }
@@ -132,10 +128,6 @@ public interface EvaluationContext {
             if (methodDelay == Level.TRUE) hasDelays = true;
         }
         return hasDelays ? Level.DELAY : Level.FALSE;
-    }
-
-    default String logLocation() {
-        return getLocation().toString();
     }
 
     // Replacer

@@ -164,20 +164,20 @@ public class MethodLevelData {
         StatementAnalysis statementAnalysis = sharedState.statementAnalysis;
 
         // final fields need to have a value set; all the others act as local variables
-        boolean someVariablesHaveNotBeenEvaluated = statementAnalysis.variableStream().anyMatch(vi -> vi.getCurrentValue() == UnknownValue.NO_VALUE);
+        boolean someVariablesHaveNotBeenEvaluated = statementAnalysis.variableStream().anyMatch(vi -> vi.valueForNextStatement() == UnknownValue.NO_VALUE);
         if (someVariablesHaveNotBeenEvaluated) {
-            log(DELAYED, "Some variables have not yet been evaluated -- delaying establishing links");
+            log(DELAYED, "Some variables have not yet been evaluated -- delaying establishing links in {}", sharedState.logLocation);
             return DELAYS;
         }
         if (statementAnalysis.isDelaysInDependencyGraph()) {
-            log(DELAYED, "Dependency graph suffers delays -- delaying establishing links");
+            log(DELAYED, "Dependency graph suffers delays -- delaying establishing links in {}", sharedState.logLocation);
             return DELAYS;
         }
         EvaluationContext evaluationContext = sharedState.evaluationContext;
         boolean allFieldsFinalDetermined = evaluationContext.getCurrentMethod().methodInfo.typeInfo.typeInspection.getPotentiallyRun()
                 .fields.stream().allMatch(fieldInfo -> evaluationContext.getFieldAnalysis(fieldInfo).getProperty(VariableProperty.FINAL) != Level.DELAY);
         if (!allFieldsFinalDetermined) {
-            log(DELAYED, "Delay, we don't know about final values for some fields");
+            log(DELAYED, "Delay, we don't know about final values for some fields in {}", sharedState.logLocation);
             return DELAYS;
         }
 
@@ -413,7 +413,7 @@ public class MethodLevelData {
             if (variableInfo.variable instanceof FieldReference && variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE) {
                 FieldInfo fieldInfo = ((FieldReference) variableInfo.variable).fieldInfo;
                 TransferValue tv = fieldSummaries.get(fieldInfo);
-                Value value = variableInfo.getCurrentValue();
+                Value value = variableInfo.valueForNextStatement();
                 if (value == UnknownValue.NO_VALUE) {
                     analysisStatus.set(DELAYS);
                 } else if (!tv.value.isSet()) {
@@ -442,7 +442,7 @@ public class MethodLevelData {
 
         sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
             int methodDelay = variableInfo.getProperty(VariableProperty.METHOD_DELAY);
-            boolean haveDelay = methodDelay == Level.TRUE || variableInfo.getCurrentValue() == UnknownValue.NO_VALUE;
+            boolean haveDelay = methodDelay == Level.TRUE || variableInfo.valueForNextStatement() == UnknownValue.NO_VALUE;
             if (haveDelay) anyDelay.set(true);
             if (variableInfo.variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variableInfo.variable).fieldInfo;

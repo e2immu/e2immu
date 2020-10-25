@@ -19,6 +19,7 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -40,7 +41,7 @@ public class EvaluationResult {
     private final List<ObjectFlow> objectFlows;
     public final Value value;
     public final int iteration;
-    public final Map<String, Value> valueChanges;
+    public final Map<Variable, Value> valueChanges;
 
     public Stream<StatementAnalysis.StatementAnalysisModification> getModificationStream() {
         return modifications.stream();
@@ -52,6 +53,10 @@ public class EvaluationResult {
 
     public Stream<StatementAnalysis.StateChange> getStateChangeStream() {
         return stateChanges.stream();
+    }
+
+    public Stream<Map.Entry<Variable, Value>> getValueChangeStream() {
+        return valueChanges.entrySet().stream();
     }
 
     public Value getValue() {
@@ -72,7 +77,7 @@ public class EvaluationResult {
                              List<StatementAnalysis.StatementAnalysisModification> modifications,
                              List<StatementAnalysis.StateChange> stateChanges,
                              List<ObjectFlow> objectFlows,
-                             Map<String, Value> valueChanges) {
+                             Map<Variable, Value> valueChanges) {
         this.modifications = modifications;
         this.stateChanges = stateChanges;
         this.objectFlows = objectFlows;
@@ -105,7 +110,7 @@ public class EvaluationResult {
         private List<StatementAnalysis.StateChange> stateChanges;
         private List<ObjectFlow> objectFlows;
         private Value value;
-        private final Map<String, Value> valueChanges = new HashMap<>();
+        private final Map<Variable, Value> valueChanges = new HashMap<>();
 
         // for a constant EvaluationResult
         public Builder() {
@@ -194,20 +199,12 @@ public class EvaluationResult {
             }
         }
 
-        public Value createArrayVariableValue(EvaluationResult array,
-                                              EvaluationResult indexValue,
-                                              Location location,
-                                              ParameterizedType parameterizedType,
-                                              Set<Variable> dependencies,
-                                              Variable arrayVariable) {
-            String name = DependentVariable.dependentVariableName(array.value, indexValue.value);
-            Value current = evaluationContext.currentValue(name);
+        public Value createArrayVariableValue(DependentVariable dependentVariable, Location location) {
+            Value current = evaluationContext.currentValue(dependentVariable);
             if (current != null) return current;
-            String arrayName = arrayVariable == null ? null : arrayVariable.fullyQualifiedName();
-            DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name, arrayName);
             modifications.add(statementAnalyser.new AddVariable(dependentVariable));
 
-            ObjectFlow objectFlow = createInternalObjectFlow(location, parameterizedType, Origin.FIELD_ACCESS);
+            ObjectFlow objectFlow = createInternalObjectFlow(location, dependentVariable.parameterizedType, Origin.FIELD_ACCESS);
             return new VariableValue(dependentVariable, dependentVariable.simpleName(), objectFlow, false);
         }
 
@@ -259,22 +256,18 @@ public class EvaluationResult {
         }
 
         public Value currentValue(Variable variable) {
-            Value currentValue = valueChanges.get(variable.fullyQualifiedName());
+            Value currentValue = valueChanges.get(variable);
             if (currentValue == null) return evaluationContext.currentValue(variable);
             return currentValue;
         }
 
-        public Value currentValue(String variableName) {
-            Value currentValue = valueChanges.get(variableName);
-            if (currentValue == null) return evaluationContext.currentValue(variableName);
-            return currentValue;
+        private void setCurrentValue(Variable variable, Value value) {
+            if (value != NO_VALUE) {
+                valueChanges.put(variable, value);
+            }
         }
 
-        private void setCurrentValue(String variableName, Value value) {
-            valueChanges.put(variableName, value);
-        }
-
-        public Stream<Map.Entry<String, Value>> getCurrentValuesStream() {
+        public Stream<Map.Entry<Variable, Value>> getCurrentValuesStream() {
             return valueChanges.entrySet().stream();
         }
 
@@ -328,8 +321,9 @@ public class EvaluationResult {
         }
 
         public void assignmentBasics(Variable at, Value resultOfExpression, boolean assignmentToNonEmptyExpression) {
-            setCurrentValue(at.fullyQualifiedName(), resultOfExpression);
-            add(statementAnalyser.new Assignment(at, resultOfExpression, assignmentToNonEmptyExpression, evaluationContext));
+            if (assignmentToNonEmptyExpression) {
+                setCurrentValue(at, resultOfExpression);
+            }
         }
 
         public void merge(EvaluationContext copyForThen) {

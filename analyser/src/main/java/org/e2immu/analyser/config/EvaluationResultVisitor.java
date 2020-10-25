@@ -36,18 +36,16 @@ public interface EvaluationResultVisitor {
                     .anyMatch(sp -> variableName.equals(sp.variable.fullyQualifiedName()) && variableProperty == sp.property && value == sp.value);
         }
 
-        public boolean haveAssignment(String assignmentTargetName, String valueString) {
-            return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.Assignment)
-                    .map(sam -> (StatementAnalyser.Assignment) sam)
-                    .anyMatch(ass -> assignmentTargetName.equals(ass.assignmentTarget.fullyQualifiedName()) &&
-                            valueString.equals(ass.value.toString()));
-        }
-
         public boolean haveLinkVariable(String fromName, Set<String> toNames) {
             return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.LinkVariable)
                     .map(sam -> (StatementAnalyser.LinkVariable) sam)
                     .anyMatch(lv -> fromName.equals(lv.variable.fullyQualifiedName()) &&
                             toNames.equals(lv.to.stream().map(v -> v.fullyQualifiedName()).collect(Collectors.toSet())));
+        }
+
+        public boolean haveAssignment(String variableName, String valueToString) {
+            return evaluationResult().getValueChangeStream().anyMatch(e -> e.getKey().fullyQualifiedName().equals(variableName) &&
+                    e.getValue().toString().equals(valueToString));
         }
     }
 }

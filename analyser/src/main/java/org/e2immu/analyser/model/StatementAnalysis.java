@@ -18,12 +18,9 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
-import org.e2immu.analyser.model.expression.ArrayAccess;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.model.statement.SynchronizedStatement;
@@ -218,8 +215,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return -1;
     }
 
-    public interface StateChange extends Function<Value, Value> {
+    public void copyBackLocalCopies(List<StatementAnalyser> lastStatements, boolean noBlockMayBeExecuted) {
+        // TODO implement
+    }
 
+    public interface StateChange extends Function<Value, Value> {
+        // nothing
     }
 
     public interface StatementAnalysisModification extends Runnable {
@@ -254,21 +255,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     // ****************************************************************************************
 
     /**
-     * Before iteration 0, all statements
+     * Before iteration 0, all statements: create what was already present higher up
      *
-     * @param analyserContext    overview object for the analysis of this primary type
-     * @param parameterAnalysers the collection of parameter analysers to create local parameter variables for
-     * @param previous           the previous statement, or null if there is none (start of block)
+     * @param previous the previous statement, or null if there is none (start of block)
      */
-    public void initialise(AnalyserContext analyserContext,
-                           Collection<ParameterAnalyser> parameterAnalysers,
-                           StatementAnalysis previous) {
-        if (previous == null && parent == null) {
-            for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
-                ensureLocalVariableOrParameter(analyserContext, parameterAnalyser.parameterInfo);
-            }
-            return;
-        }
+    public void initialise(StatementAnalysis previous) {
+        if (previous == null && parent == null) return;
         StatementAnalysis copyFrom = previous == null ? parent : previous;
         copyFrom.variableStream().forEach(variableInfo -> {
             variables.put(variableInfo.name, variableInfo.copy(false));
@@ -285,18 +277,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public void updateStatements(AnalyserContext analyserContext, MethodInfo currentMethod, StatementAnalysis previous) {
         if (previous == null && parent == null) {
             for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().parameters) {
-                copyParameterPropertiesFromAnalysis(analyserContext, find(parameterInfo.fullyQualifiedName()), parameterInfo);
+                copyParameterPropertiesFromAnalysis(analyserContext, find(analyserContext, parameterInfo), parameterInfo);
             }
         }
         StatementAnalysis copyFrom = previous == null ? parent : previous;
         variableStream().forEach(variableInfo -> {
             if (variableInfo.variable instanceof FieldReference fieldReference) {
                 int read = variableInfo.getProperty(READ);
-                if (read >= Level.TRUE && noEarlierAccess(fieldReference, copyFrom)) {
-                    if (!variableInfo.currentValue.isSet()) {
+                if (read >= Level.TRUE && noEarlierAccess(variableInfo.variable, copyFrom)) {
+                    if (!variableInfo.initialValue.isSet()) {
                         Value initialValue = initialValueOfField(analyserContext, fieldReference);
-                        variableInfo.currentValue.set(initialValue); // TODO, what if we're assigning a new value in this statement?, and initialValue is not NO_VALUE?
-                        variableInfo.resetValue.set(initialValue);
                         variableInfo.initialValue.set(initialValue);
                     }
                     copyFieldPropertiesFromAnalysis(analyserContext, variableInfo, fieldReference.fieldInfo);
@@ -306,14 +296,18 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 VariableInfo previousVariableInfo = copyFrom.variables.get(variableInfo.name);
                 if (previousVariableInfo != null) {
                     variableInfo.properties.copyFrom(previousVariableInfo.properties);
+                    if (!variableInfo.initialValue.isSet()) {
+                        Value value = previousVariableInfo.valueForNextStatement();
+                        variableInfo.initialValue.set(value);
+                    }
                 }
             }
         });
     }
 
-    private static boolean noEarlierAccess(FieldReference fieldReference, StatementAnalysis previous) {
+    private static boolean noEarlierAccess(Variable variable, StatementAnalysis previous) {
         if (previous == null) return true;
-        VariableInfo variableInfo = previous.find(fieldReference.fieldInfo.fullyQualifiedName());
+        VariableInfo variableInfo = previous.variables.get(variable.fullyQualifiedName());
         if (variableInfo == null) return true;
         return variableInfo.getProperty(ASSIGNED) != Level.TRUE;
     }
@@ -334,13 +328,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             copyValuesFrom = previous;
         }
         variableStream().forEach(variableInfo -> {
-            VariableInfo viPrevious = copyValuesFrom.find(variableInfo.name);
+            VariableInfo viPrevious = copyValuesFrom.variables.get(variableInfo.variable.fullyQualifiedName());
             if (viPrevious != null) {
-                variableInfo.currentValue.copyIfNotSet(viPrevious.currentValue);
                 variableInfo.objectFlow.copyIfNotSet(viPrevious.objectFlow);
                 variableInfo.stateOnAssignment.copyIfNotSet(viPrevious.stateOnAssignment);
-                variableInfo.resetValue.copyIfNotSet(viPrevious.resetValue);
-                variableInfo.initialValue.copyIfNotSet(viPrevious.initialValue);
+
+                assert variableInfo.initialValue.isSet() || variableInfo.expressionValue.isSet() || variableInfo.endValue.isSet();
             }
         });
     }
@@ -351,40 +344,25 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         MULTI_COPY
     }
 
-    public void ensureLocalVariableOrParameter(AnalyserContext analyserContext, Variable variable) {
-        if (find(variable) != null) return;
+    private VariableInfo createVariable(AnalyserContext analyserContext, Variable variable) {
+        String fqn = variable.fullyQualifiedName();
+        VariableInfo existing = variables.getOtherwiseNull(fqn);
+        if (existing != null) throw new UnsupportedOperationException();
+        VariableInfo vi = internalCreate(analyserContext, variable, fqn);
 
-        if (variable instanceof LocalVariableReference || variable instanceof ParameterInfo || variable instanceof DependentVariable) {
+        if (variable instanceof ParameterInfo && !vi.initialValue.isSet()) {
             ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
             VariableValue variableValue = new VariableValue(variable, objectFlow);
-            VariableInfo vi = internalCreate(analyserContext, variable, variable.fullyQualifiedName(), variableValue, variableValue);
-            if (variable instanceof ParameterInfo) {
-                vi.currentValue.set(variableValue);
+            vi.initialValue.set(variableValue);
+        } else if (variable instanceof FieldReference fieldReference && !vi.initialValue.isSet()) {
+            Value initialValue = initialValueOfField(analyserContext, fieldReference);
+            if (initialValue != UnknownValue.NO_VALUE) {
+                vi.initialValue.set(initialValue);
             }
-        } else {
-            throw new UnsupportedOperationException("Not allowed to add This or FieldReference using this method");
         }
+        return vi;
     }
 
-    /**
-     * Called every iteration, every occurrence, but only effective in iteration 0, first time
-     *
-     * @param analyserContext overview object for the analysis of this primary type; needed to grab the field analysers
-     * @param fieldReference  reference to the field to be created
-     * @return the new or existing VariableInfo object
-     */
-    public VariableInfo ensureFieldReference(AnalyserContext analyserContext, FieldReference fieldReference) {
-        String fqn = fieldReference.fullyQualifiedName();
-        VariableInfo vi = find(fqn);
-        if (vi != null) return vi;
-
-        Value initialValue = initialValueOfField(analyserContext, fieldReference);
-        VariableInfo newVi = internalCreate(analyserContext, fieldReference, fqn, initialValue, initialValue);
-        if (initialValue != UnknownValue.NO_VALUE && !newVi.currentValue.isSet()) {
-            newVi.currentValue.set(initialValue);
-        }
-        return newVi;
-    }
 
     /**
      * Properties of fields travel via {@link MethodLevelData}'s <code>fieldSummaries</code> to methods, then to fields.
@@ -507,35 +485,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return ObjectFlow.NO_FLOW; // will be assigned to soon enough
     }
 
-    private VariableInfo internalCreate(
-            AnalyserContext analyserContext,
-            Variable variable,
-            String name,
-            Value initialValue,
-            Value resetValue) {
-
+    private VariableInfo internalCreate(AnalyserContext analyserContext, Variable variable, String name) {
         VariableInfo variableInfo = new VariableInfo(variable, null, name);
         variables.put(name, variableInfo);
-        if (initialValue != UnknownValue.NO_VALUE) variableInfo.initialValue.set(initialValue);
-        if (resetValue != UnknownValue.NO_VALUE) variableInfo.resetValue.set(resetValue);
-
-        copyPropertiesFromAnalysis(analyserContext, variable, variableInfo);
-
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", name);
 
-        // regardless of whether we're a field, a parameter or a local variable...
-        if (isRecordType(variable)) {
-            TypeInfo recordType = variable.parameterizedType().typeInfo;
-            for (FieldInfo recordField : recordType.typeInspection.get().fields) {
-                FieldReference fieldReference = new FieldReference(recordField, variable);
-                FieldAnalysis recordFieldAnalysis = analyserContext.getFieldAnalysis(recordField);
-                Value newInitialValue = computeInitialValue(recordFieldAnalysis);
-                boolean variableField = false;// TODO this is not correct
-                String newName = fieldReference.fullyQualifiedName();
-                Value newResetValue = new VariableValue(fieldReference, newName, ObjectFlow.NO_FLOW, variableField);
-                internalCreate(analyserContext, fieldReference, newName, newInitialValue, newResetValue);
-            }
-        }
+        copyPropertiesFromAnalysis(analyserContext, variable, variableInfo);
         return variableInfo;
     }
 
@@ -566,8 +521,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private void copyFieldPropertiesFromAnalysis(AnalyserContext analyserContext, VariableInfo variableInfo, FieldInfo fieldInfo) {
-        if (!fieldInfo.hasBeenDefined() || variableInfo.resetValue.isSet() &&
-                variableInfo.resetValue.get().isInstanceOf(VariableValue.class)) {
+        if (!fieldInfo.hasBeenDefined() || variableInfo.initialValue.isSet() &&
+                variableInfo.initialValue.get().isInstanceOf(VariableValue.class)) {
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
             for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
                 int value = fieldAnalysis.getProperty(variableProperty);
@@ -577,54 +532,22 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
     }
 
-    private static boolean isRecordType(Variable variable) {
-        return !(variable instanceof This) && variable.parameterizedType().typeInfo != null && variable.parameterizedType().typeInfo.isRecord();
-    }
-
-    public void addProperty(Variable variable, VariableProperty variableProperty, int value) {
-
+    public void addProperty(AnalyserContext analyserContext, Variable variable, VariableProperty variableProperty, int value) {
         Objects.requireNonNull(variable);
-        VariableInfo aboutVariable = find(variable);
-        if (aboutVariable == null) return;
+        VariableInfo aboutVariable = find(analyserContext, variable);
         int current = aboutVariable.getProperty(variableProperty);
         if (current < value) {
             aboutVariable.setProperty(variableProperty, value);
         }
 
-        Value currentValue = aboutVariable.getCurrentValue();
+        Value currentValue = aboutVariable.valueForNextStatement();
         VariableValue valueWithVariable;
         if ((valueWithVariable = currentValue.asInstanceOf(VariableValue.class)) == null) return;
         Variable other = valueWithVariable.variable;
         if (!variable.equals(other)) {
-            addProperty(other, variableProperty, value);
+            addProperty(analyserContext, other, variableProperty, value);
         }
     }
-
-    private static List<String> variableNamesOfLocalRecordVariables(VariableInfo aboutVariable) {
-        TypeInfo recordType = aboutVariable.variable.parameterizedType().typeInfo;
-        return recordType.typeInspection.getPotentiallyRun().fields.stream()
-                .map(fieldInfo -> aboutVariable.name + "." + fieldInfo.name).collect(Collectors.toList());
-    }
-
-    // same as addProperty, but "descend" into fields of records as well
-    // it is important that "variable" is not used to create VariableValue or so, given that it might be a "superficial" copy
-
-    public void addPropertyAlsoRecords(Variable variable, VariableProperty variableProperty, int value) {
-        VariableInfo aboutVariable = find(variable);
-        if (aboutVariable == null) return; //not known to us, ignoring!
-        recursivelyAddPropertyAlsoRecords(aboutVariable, variableProperty, value);
-    }
-
-    private void recursivelyAddPropertyAlsoRecords(VariableInfo aboutVariable, VariableProperty variableProperty, int value) {
-        aboutVariable.setProperty(variableProperty, value);
-        if (isRecordType(aboutVariable.variable)) {
-            for (String name : variableNamesOfLocalRecordVariables(aboutVariable)) {
-                VariableInfo aboutLocalVariable = Objects.requireNonNull(find(name));
-                recursivelyAddPropertyAlsoRecords(aboutLocalVariable, variableProperty, value);
-            }
-        }
-    }
-
 
     /**
      * Example: this.j = j; j has a state j<0;
@@ -645,84 +568,22 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return UnknownValue.EMPTY;
     }
 
-    // the difference with resetToUnknownValue is 2-fold: we check properties, and we initialise record fields
-    private void resetToNewInstance(VariableInfo aboutVariable, Instance instance, EvaluationContext evaluationContext) {
-        // this breaks an infinite NO_VALUE cycle
-        if (aboutVariable.resetValue.isSet()) {
-            aboutVariable.setCurrentValue(aboutVariable.resetValue.get(),
-                    stateOfValue(aboutVariable.variable, aboutVariable.resetValue.get(), evaluationContext),
-                    instance.getObjectFlow());
-        } else {
-            aboutVariable.setCurrentValue(instance, UnknownValue.EMPTY, instance.getObjectFlow());
-        }
-        // we can only copy the INSTANCE_PROPERTIES like NOT_NULL for VariableValues
-        // for other values, NOT_NULL in the properties means a restriction
-        if (aboutVariable.getCurrentValue().isInstanceOf(VariableValue.class)) {
-            for (VariableProperty variableProperty : INSTANCE_PROPERTIES) {
-                aboutVariable.setProperty(variableProperty, instance.getPropertyOutsideContext(variableProperty));
-            }
-        }
-        if (isRecordType(aboutVariable.variable)) {
-            List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
-            for (String name : recordNames) {
-                VariableInfo aboutLocalVariable = Objects.requireNonNull(find(name));
-                resetToInitialValues(aboutLocalVariable, evaluationContext);
-            }
-        }
-    }
-
-    private void resetToInitialValues(VariableInfo aboutVariable, EvaluationContext evaluationContext) {
-        Instance instance;
-        if (aboutVariable.initialValue.isSet() && (instance = aboutVariable.initialValue.get().asInstanceOf(Instance.class)) != null) {
-            resetToNewInstance(aboutVariable, instance, evaluationContext);
-        } else {
-            aboutVariable.setCurrentValue(aboutVariable.initialValue.get(),
-                    stateOfValue(aboutVariable.variable, aboutVariable.initialValue.get(), evaluationContext),
-                    aboutVariable.initialValue.get().getObjectFlow());
-            if (isRecordType(aboutVariable.variable)) {
-                List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
-                for (String name : recordNames) {
-                    VariableInfo aboutLocalVariable = Objects.requireNonNull(find(name));
-                    resetToInitialValues(aboutLocalVariable, evaluationContext);
-                }
-            }
-        }
-    }
-
-    private void resetToUnknownValue(VariableInfo aboutVariable, EvaluationContext evaluationContext) {
-        aboutVariable.setCurrentValue(aboutVariable.resetValue.get(),
-                stateOfValue(aboutVariable.variable, aboutVariable.resetValue.get(), evaluationContext),
-                ObjectFlow.NO_FLOW);
-        if (isRecordType(aboutVariable.variable)) {
-            List<String> recordNames = variableNamesOfLocalRecordVariables(aboutVariable);
-            for (String name : recordNames) {
-                VariableInfo aboutLocalVariable = Objects.requireNonNull(find(name));
-                resetToUnknownValue(aboutLocalVariable, evaluationContext);
-            }
-        }
-    }
-
-    public int getProperty(Variable variable, VariableProperty variableProperty) {
-        VariableInfo aboutVariable = findComplain(variable);
+    public int getProperty(AnalyserContext analyserContext, Variable variable, VariableProperty variableProperty) {
+        VariableInfo aboutVariable = find(analyserContext, variable);
         if (IDENTITY == variableProperty && aboutVariable.variable instanceof ParameterInfo) {
             return ((ParameterInfo) aboutVariable.variable).index == 0 ? Level.TRUE : Level.FALSE;
         }
         return aboutVariable.getProperty(variableProperty);
     }
 
-
-    public boolean isLocalVariable(VariableInfo variableInfo) {
-        if (variableInfo.isLocalVariableReference()) return true;
-        if (variableInfo.isLocalCopy() && variableInfo.localCopyOf.isLocalVariableReference())
-            return true;
-        if (variableInfo.variable instanceof DependentVariable dependentVariable &&
-                dependentVariable.arrayName != null) {
-            VariableInfo avArray = find(dependentVariable.arrayName);
-            return avArray != null && isLocalVariable(avArray);
+    public boolean isLocalVariable(AnalyserContext analyserContext, VariableInfo variableInfo) {
+        if (variableInfo.variable instanceof LocalVariableReference) return true;
+        if (variableInfo.variable instanceof DependentVariable dependentVariable && dependentVariable.arrayVariable != null) {
+            VariableInfo avArray = find(analyserContext, dependentVariable.arrayVariable);
+            return avArray.variable instanceof LocalVariableReference;
         }
         return false;
     }
-
 
     private FieldReferenceState singleCopy(int effectivelyFinal, boolean inSyncBlock, boolean inPartOfConstruction) {
         if (effectivelyFinal == Level.DELAY) return EFFECTIVELY_FINAL_DELAYED;
@@ -730,60 +591,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return isEffectivelyFinal || inSyncBlock || inPartOfConstruction ? SINGLE_COPY : MULTI_COPY;
     }
 
-
-    private Value computeInitialValue(FieldAnalysis recordFieldAnalysis) {
-        Value efv = recordFieldAnalysis.getEffectivelyFinalValue();
-        if (efv != null) {
-            return efv;
-        }
-        // ? rest should have been done already
-        throw new UnsupportedOperationException();
+    public void assertVariableExists(Variable variable) {
+        assert variables.isSet(variable.fullyQualifiedName());
     }
 
-    public boolean isKnown(Variable variable) {
-        String name = variable.fullyQualifiedName();
-        if (name == null) return false;
-        return find(name) != null;
-    }
-
-    public DependentVariable ensureArrayVariable(AnalyserContext analyserContext,
-                                                 ArrayAccess arrayAccess, String name, Variable arrayVariable) {
-        Set<Variable> dependencies = new HashSet<>(arrayAccess.expression.variables());
-        dependencies.addAll(arrayAccess.index.variables());
-        ParameterizedType parameterizedType = arrayAccess.expression.returnType();
-        String arrayName = arrayVariable == null ? null : arrayVariable.fullyQualifiedName();
-        DependentVariable dependentVariable = new DependentVariable(parameterizedType, ImmutableSet.copyOf(dependencies), name, arrayName);
-        if (!isKnown(dependentVariable)) {
-            ensureLocalVariableOrParameter(analyserContext, dependentVariable);
-        }
-        return dependentVariable;
-    }
-
-    public VariableInfo ensureThisVariable(AnalyserContext analyserContext, This thisVariable) {
-        String name = thisVariable.fullyQualifiedName();
-        VariableInfo vi = find(name);
-        if (vi != null) return vi;
-        VariableInfo newVi = internalCreate(analyserContext, thisVariable, name, UnknownValue.NO_VALUE, UnknownValue.NO_VALUE);
-        newVi.currentValue.set(new VariableValue(thisVariable));
-        return newVi;
-    }
-
-    private VariableInfo findComplain(@NotNull Variable variable) {
-        VariableInfo variableInfo = find(variable);
-        if (variableInfo != null) {
-            return variableInfo;
-        }
-        throw new UnsupportedOperationException("Cannot find variable " + variable.fullyQualifiedName());
-    }
-
-    public VariableInfo find(@NotNull Variable variable) {
+    public VariableInfo find(@NotNull AnalyserContext analyserContext, @NotNull Variable variable) {
         String fqn = variable.fullyQualifiedName();
-        if (fqn == null) return null;
-        return find(fqn);
-    }
-
-    public VariableInfo find(String name) {
-        return variables.getOrDefault(name, null);
+        VariableInfo vi = variables.getOtherwiseNull(fqn);
+        if (vi != null) return vi;
+        return createVariable(analyserContext, variable);
     }
 
     public boolean isDelaysInDependencyGraph() {
@@ -791,11 +607,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     public void removeAllVariables(List<String> toRemove) {
-        toRemove.forEach(name -> find(name).remove());
+        toRemove.forEach(name -> variables.get(name).remove());
     }
 
-    public int levelVariable(Variable assignmentTarget) {
-        VariableInfo variableInfo = find(assignmentTarget);
+    public int levelAtWhichVariableIsDefined(AnalyserContext analyserContext, Variable assignmentTarget) {
+        VariableInfo variableInfo = find(analyserContext, assignmentTarget);
         if (variableInfo.variable instanceof FieldReference) return Integer.MAX_VALUE;
         int steps = 0;
         while (variableInfo != null) {
@@ -805,76 +621,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return -1;
     }
 
-    public void copyBackLocalCopies(List<StatementAnalyser> lastStatements, boolean noBlockMayBeExecuted) {
-    }
-
     public Set<String> allUnqualifiedVariableNames(TypeInfo currentType) {
         Set<String> fromFields = currentType.accessibleFieldsStream().map(fieldInfo -> fieldInfo.name).collect(Collectors.toSet());
         Set<String> local = variableStream().map(vi -> vi.name).collect(Collectors.toSet());
         return SetUtil.immutableUnion(fromFields, local);
     }
-    // ***************** ASSIGNMENT BASICS **************
-
-
-    private VariableInfo ensureLocalCopy(Variable variable) {
-        VariableInfo master = findComplain(variable);
-        if (!variables.isSet(master.name)) {
-            // we'll make a local copy
-            VariableInfo copy = master.copy(true);
-            variables.put(copy.name, copy);
-            return copy;
-        }
-        return master;
-    }
-
-    public ConditionManager assignmentBasics(Variable at, Value value, boolean assignmentToNonEmptyExpression,
-                                             EvaluationContext evaluationContext) {
-        // assignment to local variable: could be that we're in the block where it was created, then nothing happens
-        // but when we're down in some descendant block, a local AboutVariable block is created (we MAY have to undo...)
-        VariableInfo aboutVariable = ensureLocalCopy(at);
-
-        if (assignmentToNonEmptyExpression) {
-            Instance instance;
-            VariableValue variableValue;
-            if ((instance = value.asInstanceOf(Instance.class)) != null) {
-                resetToNewInstance(aboutVariable, instance, evaluationContext);
-            } else if ((variableValue = value.asInstanceOf(VariableValue.class)) != null) {
-                VariableInfo other = findComplain(variableValue.variable);
-                FieldReferenceState otherFieldReferenceState;
-                if (other.variable instanceof FieldReference) {
-                    int effectivelyFinal = evaluationContext.getProperty(other.variable, FINAL);
-                    otherFieldReferenceState = singleCopy(effectivelyFinal, inSyncBlock, inPartOfConstruction);
-                } else {
-                    otherFieldReferenceState = SINGLE_COPY;
-                }
-                if (otherFieldReferenceState == SINGLE_COPY) {
-                    aboutVariable.setCurrentValue(value, stateOfValue(at, value, evaluationContext), value.getObjectFlow());
-                } else if (otherFieldReferenceState == EFFECTIVELY_FINAL_DELAYED) {
-                    aboutVariable.setCurrentValue(UnknownValue.NO_VALUE, UnknownValue.EMPTY, ObjectFlow.NO_FLOW);
-                } else {
-                    resetToUnknownValue(aboutVariable, evaluationContext);
-                }
-            } else {
-                aboutVariable.setCurrentValue(value, stateOfValue(at, value, evaluationContext), value.getObjectFlow());
-            }
-            aboutVariable.markAssigned();
-
-            aboutVariable.setProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED,
-                    Level.fromBool(guaranteedToBeReached(aboutVariable)));
-            return evaluationContext.getConditionManager().variableReassigned(at);
-        }
-        return evaluationContext.getConditionManager();
-    }
-
-    private boolean guaranteedToBeReached(VariableInfo aboutVariable) {
-        return true;// TODO
-    }
 
     // ***************** OBJECT FLOW CODE ***************
 
-
-    public ObjectFlow getObjectFlow(Variable variable) {
-        VariableInfo aboutVariable = findComplain(variable);
+    public ObjectFlow getObjectFlow(AnalyserContext analyserContext, Variable variable) {
+        VariableInfo aboutVariable = find(analyserContext, variable);
         return aboutVariable.getObjectFlow();
     }
 
@@ -915,7 +671,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             split.addPrevious(objectFlow);
             VariableValue variableValue;
             if ((variableValue = value.asInstanceOf(VariableValue.class)) != null) {
-                updateObjectFlow(variableValue.variable, split);
+                updateObjectFlow(evaluationContext.getAnalyserContext(), variableValue.variable, split);
             }
             log(OBJECT_FLOW, "Split {}", objectFlow);
             return split;
@@ -934,10 +690,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         throw new UnsupportedOperationException("Object flow already exists"); // TODO
     }
 
-    private void updateObjectFlow(Variable variable, ObjectFlow objectFlow) {
-        VariableInfo variableInfo = findComplain(variable);
+    private void updateObjectFlow(AnalyserContext analyserContext, Variable variable, ObjectFlow objectFlow) {
+        VariableInfo variableInfo = find(analyserContext, variable);
         variableInfo.setObjectFlow(objectFlow);
-
+        // TODO this will crash
     }
 
     public Stream<VariableInfo> variableStream() {

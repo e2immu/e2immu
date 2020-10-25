@@ -93,10 +93,9 @@ public class ArrayAccess implements Expression {
         EvaluationResult indexValue = index.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(array, indexValue);
 
-        if (array.value instanceof ArrayValue && indexValue instanceof NumericValue) {
+        if (array.value instanceof ArrayValue arrayValue && indexValue instanceof NumericValue) {
             // known array, known index (a[] = {1,2,3}, a[2] == 3)
-            int intIndex = (indexValue).value.toInt().value;
-            ArrayValue arrayValue = (ArrayValue) array.value;
+            int intIndex = indexValue.value.toInt().value;
             if (intIndex < 0 || intIndex >= arrayValue.values.size()) {
                 throw new ArrayIndexOutOfBoundsException();
             }
@@ -106,7 +105,8 @@ public class ArrayAccess implements Expression {
             dependencies.addAll(index.variables());
             Variable arrayVariable = expression instanceof VariableExpression ? ((VariableExpression) expression).variable : null;
             Location location = evaluationContext.getLocation(this);
-            Value avv = builder.createArrayVariableValue(array, indexValue, location, expression.returnType(), dependencies, arrayVariable);
+            DependentVariable dependentVariable = new DependentVariable(array.value, indexValue.value, expression.returnType(), dependencies, arrayVariable);
+            Value avv = builder.createArrayVariableValue(dependentVariable, location);
             builder.setValue(avv);
 
             if (arrayVariable != null) {

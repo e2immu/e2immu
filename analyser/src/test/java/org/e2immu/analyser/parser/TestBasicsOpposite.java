@@ -84,6 +84,8 @@ public class TestBasicsOpposite extends CommonTestRunner {
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
             int expectNotNull = d.iteration == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
+            String expertValue = d.iteration == 0 ? UnknownValue.NO_VALUE.toString() : STRING_FIELD;
+            Assert.assertEquals(expertValue, d.currentValue.toString());
         }
     };
 
@@ -107,14 +109,15 @@ public class TestBasicsOpposite extends CommonTestRunner {
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if (d.methodInfo().name.equals("setString") && "0".equals(d.statementId())) {
-            Assert.assertEquals(d.evaluationResult().toString(), 4L, d.evaluationResult().getModificationStream().count());
+            Assert.assertEquals(d.evaluationResult().toString(), 3L, d.evaluationResult().getModificationStream().count());
             Assert.assertTrue(d.evaluationResult().toString(), d.haveSetProperty(STRING_PARAMETER, VariableProperty.READ, Level.TRUE));
             Assert.assertTrue(d.evaluationResult().toString(), d.haveSetProperty(
                     "org.e2immu.analyser.testexample.BasicsOpposite.this", VariableProperty.READ, Level.TRUE));
             Assert.assertTrue(d.evaluationResult().toString(), d.haveAssignment(STRING_FIELD, STRING_PARAMETER));
             // link to empty set, because String is E2Immutable
             Assert.assertTrue(d.evaluationResult().toString(), d.haveLinkVariable(STRING_FIELD, Set.of()));
-//            Assert.assertEquals(d.evaluationResult().toString(), STRING_PARAMETER, d.evaluationResult().value.toString());
+            String expectEvalString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : STRING_PARAMETER;
+            Assert.assertEquals(d.evaluationResult().toString(), expectEvalString, d.evaluationResult().value.toString());
         }
         if (d.methodInfo().name.equals("getString") && "0".equals(d.statementId())) {
             Assert.assertEquals(d.evaluationResult().toString(), 1L, d.evaluationResult().getModificationStream().count());

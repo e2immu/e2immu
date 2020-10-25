@@ -35,11 +35,12 @@ public class VariableInfo {
 
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
 
-    public final SetOnce<Value> currentValue = new SetOnce<>();
-    public final SetOnce<Value> stateOnAssignment = new SetOnce<>(); // EMPTY when no info
+    public final SetOnce<Value> initialValue = new SetOnce<>(); // value from step 3 (initialisers)
+    public final SetOnce<Value> expressionValue = new SetOnce<>(); // value from step 4 (main evaluation)
+    public final SetOnce<Value> endValue = new SetOnce<>(); // value from step 9 (summary of sub-blocks)
+
     public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
-    public final SetOnce<Value> initialValue = new SetOnce<>();
-    public final SetOnce<Value> resetValue = new SetOnce<>();
+    public final SetOnce<Value> stateOnAssignment = new SetOnce<>(); // EMPTY when no info
 
     public boolean isLocalCopy() {
         return localCopyOf != null;
@@ -47,10 +48,6 @@ public class VariableInfo {
 
     public boolean isNotLocalCopy() {
         return localCopyOf == null;
-    }
-
-    public boolean isLocalVariableReference() {
-        return variable instanceof LocalVariableReference;
     }
 
     public ObjectFlow getObjectFlow() {
@@ -63,8 +60,10 @@ public class VariableInfo {
         this.variable = Objects.requireNonNull(variable);
     }
 
-    public Value getCurrentValue() {
-        return currentValue.getOrElse(UnknownValue.NO_VALUE);
+    public Value valueForNextStatement() {
+        if (endValue.isSet()) return endValue.get();
+        if (expressionValue.isSet()) return expressionValue.get();
+        return initialValue.getOrElse(UnknownValue.NO_VALUE);
     }
 
     public Value getStateOnAssignment() {
@@ -77,10 +76,10 @@ public class VariableInfo {
 
     // simply copy from the same level
     public VariableInfo copy(boolean isLocalCopy) {
-        VariableInfo variableInfo = new VariableInfo(variable, isLocalCopy ? this: null, name);
+        VariableInfo variableInfo = new VariableInfo(variable, isLocalCopy ? this : null, name);
         variableInfo.properties.putAll(properties);
         variableInfo.initialValue.copy(initialValue);
-        variableInfo.resetValue.copy(resetValue);
+        variableInfo.endValue.copy(endValue);
         return variableInfo;
     }
 
@@ -88,17 +87,16 @@ public class VariableInfo {
     public String toString() {
         final StringBuilder sb = new StringBuilder();
         sb.append("props=").append(properties);
-        if (currentValue.isSet()) {
-            sb.append(", currentValue=").append(currentValue.get());
+        if (initialValue.isSet()) {
+            sb.append(", initialValue=").append(initialValue.get());
+        }
+        if (expressionValue.isSet()) {
+            sb.append(", expressionValue=").append(expressionValue.get());
+        }
+        if (endValue.isSet()) {
+            sb.append(", endValue=").append(endValue.get());
         }
         return sb.toString();
-    }
-
-    public void setCurrentValue(Value value, Value stateOnAssignment, ObjectFlow objectFlow) {
-        assert value != UnknownValue.NO_VALUE;
-        this.currentValue.set(value);
-        this.stateOnAssignment.set(stateOnAssignment);
-        this.objectFlow.set(objectFlow);
     }
 
     public void setProperty(VariableProperty variableProperty, int value) {
