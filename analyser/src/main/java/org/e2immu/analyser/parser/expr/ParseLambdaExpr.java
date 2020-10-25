@@ -113,6 +113,7 @@ public class ParseLambdaExpr {
 
     private static MethodInfo createAnonymousTypeAndApplyMethod(String name, TypeInfo enclosingType, int nextId) {
         TypeInfo typeInfo = new TypeInfo(enclosingType, nextId);
+        typeInfo.setAnalysis(new TypeAnalysisImpl.Builder(typeInfo).build());
         return new MethodInfo(typeInfo, name, false);
     }
 
@@ -128,6 +129,7 @@ public class ParseLambdaExpr {
         methodInspectionBuilder.addParameters(parameters);
         methodInspectionBuilder.setBlock(block);
         methodInfo.methodInspection.set(methodInspectionBuilder.build(methodInfo));
+        methodInfo.setAnalysis(MethodAnalysis.createEmpty(methodInfo));
 
         TypeInspection.TypeInspectionBuilder typeInspectionBuilder = new TypeInspection.TypeInspectionBuilder();
         typeInspectionBuilder.setTypeNature(TypeNature.CLASS);

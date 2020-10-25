@@ -27,17 +27,17 @@ import java.util.stream.Stream;
 
 public interface Analysis {
 
-    boolean isHasBeenDefined();
+    default boolean isHasBeenDefined() { return false; }
 
-    Stream<Map.Entry<AnnotationExpression, Boolean>> getAnnotationStream();
+    default Stream<Map.Entry<AnnotationExpression, Boolean>> getAnnotationStream() { return Stream.empty(); }
 
-    Boolean getAnnotation(AnnotationExpression annotationExpression);
+    default Boolean getAnnotation(AnnotationExpression annotationExpression) { return null; }
 
-    int getProperty(VariableProperty variableProperty);
+    default int getProperty(VariableProperty variableProperty) { return Level.DELAY; }
 
     Location location();
 
-    AnnotationMode annotationMode();
+    default AnnotationMode annotationMode() { return AnnotationMode.DEFENSIVE; }
 
     default void peekIntoAnnotations(AnnotationExpression annotation, Set<TypeInfo> annotationsSeen, StringBuilder sb) {
         AnnotationType annotationType = e2immuAnnotation(annotation);
@@ -75,12 +75,12 @@ public interface Analysis {
         throw new UnsupportedOperationException();
     }
 
-    Map<VariableProperty, Integer> getProperties(Set<VariableProperty> forwardPropertiesOnParameters);
+    default Map<VariableProperty, Integer> getProperties(Set<VariableProperty> forwardPropertiesOnParameters) { return Map.of(); }
 
     default int getPropertyAsIs(VariableProperty variableProperty) {
         return getProperty(variableProperty);
     }
 
-    int internalGetProperty(VariableProperty variableProperty);
+    default int internalGetProperty(VariableProperty variableProperty) { return Level.DELAY; }
 
 }

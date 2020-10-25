@@ -87,7 +87,7 @@ public abstract class CommonTestRunner {
 
                         TRANSFORM,
                         LAMBDA,
-                        //METHOD_CALL,
+                        RESOLVE,
     DELAYED,
                         //VARIABLE_PROPERTIES,
                         FINAL,

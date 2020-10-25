@@ -286,7 +286,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         boolean e2immuDelay = typesOfFields.stream().anyMatch(type -> {
             TypeInfo bestType = type.bestTypeInfo();
             if (bestType == null) return false;
-            int immutable = bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+            int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
             return immutable == MultiLevel.DELAY && bestType.hasBeenDefined();
         });
         if (e2immuDelay) {
@@ -296,7 +296,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         typesOfFields.removeIf(type -> {
             TypeInfo bestType = type.bestTypeInfo();
             if (bestType == null) return false;
-            int immutable = bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+            int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
             return MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
         });
 

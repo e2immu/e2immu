@@ -26,23 +26,33 @@ import java.util.stream.IntStream;
 
 public interface ParameterAnalysis extends Analysis {
 
+    static ParameterAnalysis createEmpty(ParameterInfo parameterInfo) {
+        return () -> new Location(parameterInfo);
+    }
+
     /**
      * @return Null means: object not yet set (only in the building phase)
      */
-    ObjectFlow getObjectFlow();
+    default ObjectFlow getObjectFlow() {
+        return ObjectFlow.NO_FLOW;
+    }
 
     /**
      * @return Null means: not assigned to a field.
      */
-    FieldInfo getAssignedToField();
+    default FieldInfo getAssignedToField() {
+        return null;
+    }
 
-    boolean isCopiedFromFieldToParameters();
+    default boolean isCopiedFromFieldToParameters() {
+        return false;
+    }
 
     // the reason the following methods sit here, is that they are shared by ParameterAnalysisImpl and ParameterAnalysisImpl.Builder
 
     default int getParameterPropertyCheckOverrides(AnalysisProvider analysisProvider,
-                                                     ParameterInfo parameterInfo,
-                                                     VariableProperty variableProperty) {
+                                                   ParameterInfo parameterInfo,
+                                                   VariableProperty variableProperty) {
         IntStream mine = IntStream.of(getPropertyAsIs(variableProperty));
         IntStream theStream;
         if (isHasBeenDefined()) {
@@ -62,9 +72,9 @@ public interface ParameterAnalysis extends Analysis {
     }
 
     default int getParameterProperty(AnalysisProvider analysisProvider,
-                                       ParameterInfo parameterInfo,
-                                       ObjectFlow objectFlow,
-                                       VariableProperty variableProperty) {
+                                     ParameterInfo parameterInfo,
+                                     ObjectFlow objectFlow,
+                                     VariableProperty variableProperty) {
         switch (variableProperty) {
             case MODIFIED: {
                 // if the parameter is level 2 immutable, it cannot be modified

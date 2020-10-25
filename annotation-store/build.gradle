@@ -28,6 +28,10 @@ compileJava {
     options.compilerArgs.add("--enable-preview")
 }
 
+compileTestJava {
+    options.compilerArgs.add("--enable-preview")
+}
+
 application {
     mainClassName = 'org.e2immu.kvstore.Store'
 

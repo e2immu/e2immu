@@ -20,7 +20,7 @@ public class TestNonIndividualCondition extends CommonAbstractValue {
         Assert.assertEquals("null == s", rest(sEqualsNull, Value.FilterMode.ACCEPT).toString());
 
         Value pEqualsNull = equals(NullValue.NULL_VALUE, p);
-        Assert.assertEquals("null == p", pEqualsNull.toString());
+        Assert.assertEquals("null == some.type.type(String):0:p", pEqualsNull.toString());
         Assert.assertSame(UnknownValue.EMPTY, rest(pEqualsNull, Value.FilterMode.ACCEPT));
         Assert.assertSame(UnknownValue.EMPTY, rest(NegatedValue.negate(pEqualsNull), Value.FilterMode.ACCEPT));
 
@@ -28,16 +28,16 @@ public class TestNonIndividualCondition extends CommonAbstractValue {
         Assert.assertEquals("null == s", rest(orValue, Value.FilterMode.REJECT).toString());
 
         Value orValue2 = new OrValue().append(sEqualsNull, pEqualsNull);
-        Assert.assertEquals("(null == p or null == s)", rest(orValue2, Value.FilterMode.ACCEPT).toString());
+        Assert.assertEquals("(null == s or null == some.type.type(String):0:p)", rest(orValue2, Value.FilterMode.ACCEPT).toString());
 
         Value andValue = new AndValue().append(sEqualsNull, pEqualsNull);
-        Assert.assertEquals("(null == p and null == s)", rest(andValue, Value.FilterMode.REJECT).toString());
+        Assert.assertEquals("(null == s and null == some.type.type(String):0:p)", rest(andValue, Value.FilterMode.REJECT).toString());
 
         Value andValue2 = new AndValue().append(sEqualsNull, pEqualsNull);
         Assert.assertEquals("null == s", rest(andValue, Value.FilterMode.ACCEPT).toString());
 
         Value notAndValue = NegatedValue.negate(andValue);
-        Assert.assertEquals("(not (null == p) or not (null == s))", notAndValue.toString());
+        Assert.assertEquals("(not (null == s) or not (null == some.type.type(String):0:p))", notAndValue.toString());
         Assert.assertEquals("not (null == s)", rest(notAndValue, Value.FilterMode.REJECT).toString());
     }
 }

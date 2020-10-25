@@ -45,26 +45,41 @@ public interface AnalyserContext extends AnalysisProvider {
     TypeAnalysis getPrimaryTypeAnalysis();
 
     default FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
-        FieldAnalyser fieldAnalyser = getFieldAnalysers().get(fieldInfo);
-        if (fieldAnalyser == null) return fieldInfo.fieldAnalysis.get();
-        return fieldAnalyser.fieldAnalysis;
+        try {
+            FieldAnalyser fieldAnalyser = getFieldAnalysers().get(fieldInfo);
+            if (fieldAnalyser == null) return fieldInfo.fieldAnalysis.get();
+            return fieldAnalyser.fieldAnalysis;
+        } catch (UnsupportedOperationException e) {
+            throw new UnsupportedOperationException("Field analysis of " + fieldInfo.fullyQualifiedName() + " not yet set");
+        }
     }
 
     default ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
         ParameterAnalyser parameterAnalyser = getParameterAnalysers().get(parameterInfo);
-        Objects.requireNonNull(parameterAnalyser, "Parameter analyser is null for " + parameterInfo.fullyQualifiedName());
+        if (parameterAnalyser == null) {
+            if (parameterInfo.parameterAnalysis.isSet()) return parameterInfo.parameterAnalysis.get();
+            throw new UnsupportedOperationException("Parameter analysis of " + parameterInfo.fullyQualifiedName() + " not yet set");
+        }
         return parameterAnalyser.parameterAnalysis;
     }
 
     default TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
-        TypeAnalyser typeAnalyser = getTypeAnalysers().get(typeInfo);
-        if (typeAnalyser == null) return typeInfo.typeAnalysis.get();
-        return typeAnalyser.typeAnalysis;
+        try {
+            TypeAnalyser typeAnalyser = getTypeAnalysers().get(typeInfo);
+            if (typeAnalyser == null) return typeInfo.typeAnalysis.get();
+            return typeAnalyser.typeAnalysis;
+        } catch (UnsupportedOperationException e) {
+            throw new UnsupportedOperationException("Type analysis of " + typeInfo.fullyQualifiedName + " not yet set");
+        }
     }
 
     default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
-        MethodAnalyser methodAnalyser = getMethodAnalysers().get(methodInfo);
-        if (methodAnalyser == null) return methodInfo.methodAnalysis.get();
-        return methodAnalyser.methodAnalysis;
+        try {
+            MethodAnalyser methodAnalyser = getMethodAnalysers().get(methodInfo);
+            if (methodAnalyser == null) return methodInfo.methodAnalysis.get();
+            return methodAnalyser.methodAnalysis;
+        } catch (UnsupportedOperationException e) {
+            throw new UnsupportedOperationException("Method analysis of " + methodInfo.fullyQualifiedName() + " not yet set");
+        }
     }
 }

@@ -526,8 +526,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     private static TypeNature typeNature(TypeDeclaration<?> typeDeclaration) {
-        if (typeDeclaration instanceof ClassOrInterfaceDeclaration) {
-            ClassOrInterfaceDeclaration cid = (ClassOrInterfaceDeclaration) typeDeclaration;
+        if (typeDeclaration instanceof ClassOrInterfaceDeclaration cid) {
             if (cid.isInterface()) {
                 return TypeNature.INTERFACE;
             }
@@ -978,6 +977,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                                                        Resolver resolver) {
         MethodTypeParameterMap method = functionalInterfaceType.findSingleAbstractMethodOfInterface();
         TypeInfo typeInfo = new TypeInfo(enclosingType, expressionContext.topLevel.newIndex(enclosingType));
+        typeInfo.setAnalysis(new TypeAnalysisImpl.Builder(typeInfo).build());
         TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
         builder.setEnclosingType(this);
         builder.setTypeNature(TypeNature.CLASS);
@@ -1012,7 +1012,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         resolver.sortTypes(Map.of(typeInfo, expressionContext.typeContext));
         ensureLambdaResolutionDefaults();
-
         return methodInfo;
     }
 

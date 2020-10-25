@@ -21,47 +21,70 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public interface MethodAnalysis extends Analysis {
 
+    static MethodAnalysis createEmpty(MethodInfo methodInfo) {
+        List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().parameters.stream()
+                .map(ParameterAnalysis::createEmpty).collect(Collectors.toList());
+        return new MethodAnalysis() {
+            @Override
+            public MethodInfo getMethodInfo() {
+                return methodInfo;
+            }
+
+            @Override
+            public List<ParameterAnalysis> getParameterAnalyses() {
+                return parameterAnalyses;
+            }
+
+            @Override
+            public Location location() {
+                return new Location(methodInfo);
+            }
+        };
+    }
+
     MethodInfo getMethodInfo();
 
-    Set<MethodAnalysis> getOverrides();
+    default Set<MethodAnalysis> getOverrides() { return Set.of(); }
 
     /**
      * @return null when the method is not defined (has no statements)
      */
-    StatementAnalysis getFirstStatement();
+    default StatementAnalysis getFirstStatement() { return null; }
 
     List<ParameterAnalysis> getParameterAnalyses();
 
     /**
      * @return null when the method is not defined (has no statements)
      */
-    StatementAnalysis getLastStatement();
+    default StatementAnalysis getLastStatement() { return null; }
 
     // the value here (size will be one)
-    List<Value> getPreconditionForMarkAndOnly();
+    default List<Value> getPreconditionForMarkAndOnly() { return List.of(); }
 
     /**
      * @return null when the method has no MarkAndOnly
      */
-    MarkAndOnly getMarkAndOnly();
+    default MarkAndOnly getMarkAndOnly() { return null; }
 
     // ************* object flow
 
-    Set<ObjectFlow> getInternalObjectFlows();
+    default Set<ObjectFlow> getInternalObjectFlows() { return Set.of(); }
 
-    ObjectFlow getObjectFlow();
+    default ObjectFlow getObjectFlow() { return ObjectFlow.NO_FLOW; }
 
-    Boolean getComplainedAboutMissingStaticModifier();
+    default Boolean getComplainedAboutMissingStaticModifier() { return null; }
 
-    Boolean getComplainedAboutApprovedPreconditions();
+    default Boolean getComplainedAboutApprovedPreconditions() { return null; }
 
 
     // replacements
@@ -74,7 +97,9 @@ public interface MethodAnalysis extends Analysis {
     /**
      * @return null when not yet computed, EMPTY when no precondition
      */
-    Value getPrecondition();
+    default Value getPrecondition() {
+        return UnknownValue.EMPTY;
+    }
 
     default MethodLevelData methodLevelData() {
         StatementAnalysis last = getLastStatement();

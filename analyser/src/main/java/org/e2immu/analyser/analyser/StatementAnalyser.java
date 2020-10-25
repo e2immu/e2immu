@@ -123,7 +123,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             boolean newInSyncBlock = inSyncBlock || statement instanceof SynchronizedStatement;
 
             if (structure.haveStatements()) {
-                StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser, parent, statements,
+                StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser,
+                        statementAnalyser.statementAnalysis, structure.getStatements(),
                         iPlusSt + "." + blockIndex, true, newInSyncBlock, inPartOfConstruction);
                 blocks.add(subStatementAnalyser);
                 analysisBlocks.add(subStatementAnalyser.statementAnalysis);
@@ -131,7 +132,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             }
             for (Structure subStatements : structure.subStatements) {
                 if (subStatements.haveStatements()) {
-                    StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser, parent, statements,
+                    StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser,
+                            statementAnalyser.statementAnalysis, structure.getStatements(),
                             iPlusSt + "." + blockIndex, true, newInSyncBlock, inPartOfConstruction);
                     blocks.add(subStatementAnalyser);
                     analysisBlocks.add(subStatementAnalyser.statementAnalysis);

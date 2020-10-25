@@ -73,16 +73,22 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         this.primaryTypeAnalysis = primaryTypeAnalyser.get().typeAnalysis;
 
         // then methods
+        // filter out those that have NOT been defined!
         ImmutableMap.Builder<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new ImmutableMap.Builder<>();
         ImmutableMap.Builder<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new ImmutableMap.Builder<>();
         sortedType.methods.forEach(methodInfo -> {
-            MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo),
-                    false, this);
-            for (ParameterAnalyser parameterAnalyser : analyser.getParameterAnalysers()) {
-                parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
+            if (methodInfo.hasBeenDefined()) {
+                MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo),
+                        false, this);
+                for (ParameterAnalyser parameterAnalyser : analyser.getParameterAnalysers()) {
+                    parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
+                }
+                methodAnalysersBuilder.put(methodInfo, analyser);
+            } else {
+                methodInfo.setAnalysis(MethodAnalysis.createEmpty(methodInfo));
             }
-            methodAnalysersBuilder.put(methodInfo, analyser);
         });
+
         parameterAnalysers = parameterAnalysersBuilder.build();
         methodAnalysers = methodAnalysersBuilder.build();
 
@@ -106,7 +112,10 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
                 if (samAnalyser != null) {
                     return List.of(analyser, samAnalyser).stream();
                 }
-            } else if (mfs instanceof MethodInfo) {
+            } else if (mfs instanceof MethodInfo methodInfo) {
+                if (!methodInfo.hasBeenDefined()) {
+                    return Stream.empty(); // interface method
+                }
                 MethodAnalyser methodAnalyser = methodAnalysers.get(mfs);
                 analyser = methodAnalyser;
                 methodAnalyser.methodAnalysis.overrides.set(overrides((MethodInfo) mfs, methodAnalysers));
@@ -116,6 +125,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
             return List.of(analyser).stream();
         }).collect(Collectors.toList());
         fieldAnalysers = fieldAnalysersBuilder.build();
+
         // all important fields of the interface have been set.
         analysers.forEach(Analyser::initialize);
     }

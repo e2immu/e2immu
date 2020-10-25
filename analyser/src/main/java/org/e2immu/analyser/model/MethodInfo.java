@@ -573,15 +573,13 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         Consumer<Element> visitor = element -> {
 
             // a.method() -> type of a cannot be replaced by unbound type parameter
-            if (element instanceof MethodCall) {
-                MethodCall mc = (MethodCall) element;
+            if (element instanceof MethodCall mc) {
                 result.add(mc.computedScope.returnType());
                 addTypesFromParameters(result, mc.methodInfo);
             }
 
             // new A() -> A cannot be replaced by unbound type parameter
-            if (element instanceof NewObject) {
-                NewObject newObject = (NewObject) element;
+            if (element instanceof NewObject newObject) {
                 result.add(newObject.parameterizedType);
                 if (newObject.constructor != null) { // can be null, anonymous implementation of interface
                     addTypesFromParameters(result, newObject.constructor);
@@ -589,20 +587,17 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             }
 
             // a.b -> type of a cannot be replaced by unbound type parameter
-            if (element instanceof FieldAccess) {
-                FieldAccess fieldAccess = (FieldAccess) element;
+            if (element instanceof FieldAccess fieldAccess) {
                 result.add(fieldAccess.expression.returnType());
             }
 
             // for(E e: list) -> type of list cannot be replaced by unbound type parameter
-            if (element instanceof ForEachStatement) {
-                ForEachStatement forEach = (ForEachStatement) element;
+            if (element instanceof ForEachStatement forEach) {
                 result.add(forEach.expression.returnType());
             }
 
             // switch(e) -> type of e cannot be replaced
-            if (element instanceof SwitchStatement) {
-                SwitchStatement switchStatement = (SwitchStatement) element;
+            if (element instanceof SwitchStatement switchStatement) {
                 result.add(switchStatement.expression.returnType());
             }
         };
