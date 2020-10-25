@@ -69,7 +69,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     // which would cause an error; it is this error that is eliminated
     private boolean ignoreErrorsOnCondition;
 
-
     private StatementAnalyser(AnalyserContext analyserContext,
                               MethodAnalyser methodAnalyser,
                               Statement statement,
@@ -647,7 +646,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     v = Level.FALSE;
                 }
             }
-            if(variableProperty == VariableProperty.SIZE_COPY && v == Level.DELAY) v = Level.FALSE; // TODO REMOVE ME at some point
+            if (variableProperty == VariableProperty.SIZE_COPY && v == Level.DELAY)
+                v = Level.FALSE; // TODO REMOVE ME at some point
             int current = transferValue.getProperty(variableProperty);
             if (v > current) {
                 transferValue.properties.put(variableProperty, v);
@@ -1074,6 +1074,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         @Override
         public Value currentValue(Variable variable) {
             VariableInfo vi = find(variable);
+            if(vi == null && variable instanceof FieldReference fieldReference) {
+                vi = statementAnalysis.ensureFieldReference(analyserContext, fieldReference);
+            }
             return vi == null ? NO_VALUE : vi.getCurrentValue();
         }
 

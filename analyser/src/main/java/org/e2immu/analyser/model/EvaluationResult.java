@@ -40,6 +40,7 @@ public class EvaluationResult {
     private final List<ObjectFlow> objectFlows;
     public final Value value;
     public final int iteration;
+    public final Map<String, Value> valueChanges;
 
     public Stream<StatementAnalysis.StatementAnalysisModification> getModificationStream() {
         return modifications.stream();
@@ -70,12 +71,14 @@ public class EvaluationResult {
                              Value value,
                              List<StatementAnalysis.StatementAnalysisModification> modifications,
                              List<StatementAnalysis.StateChange> stateChanges,
-                             List<ObjectFlow> objectFlows) {
+                             List<ObjectFlow> objectFlows,
+                             Map<String, Value> valueChanges) {
         this.modifications = modifications;
         this.stateChanges = stateChanges;
         this.objectFlows = objectFlows;
         this.value = value;
         this.iteration = iteration;
+        this.valueChanges = valueChanges;
     }
 
     @Override
@@ -102,6 +105,7 @@ public class EvaluationResult {
         private List<StatementAnalysis.StateChange> stateChanges;
         private List<ObjectFlow> objectFlows;
         private Value value;
+        private final Map<String, Value> valueChanges = new HashMap<>();
 
         // for a constant EvaluationResult
         public Builder() {
@@ -149,6 +153,7 @@ public class EvaluationResult {
             }
             // we propagate NO_VALUE
             if (evaluationResult.value == NO_VALUE) value = NO_VALUE;
+            valueChanges.putAll(evaluationResult.valueChanges);
         }
 
         // also sets result of expression, but cannot overwrite NO_VALUE
@@ -170,7 +175,8 @@ public class EvaluationResult {
 
         public EvaluationResult build() {
             return new EvaluationResult(getIteration(), value, modifications == null ? List.of() : modifications,
-                    stateChanges == null ? List.of() : stateChanges, objectFlows == null ? List.of() : objectFlows);
+                    stateChanges == null ? List.of() : stateChanges, objectFlows == null ? List.of() : objectFlows,
+                    valueChanges);
         }
 
         public void variableOccursInNotNullContext(Variable variable, Value value, int notNullRequired) {
@@ -253,8 +259,23 @@ public class EvaluationResult {
         }
 
         public Value currentValue(Variable variable) {
-            // TODO we may want to look inside the modifications, to see if there are assignments?
-            return evaluationContext.currentValue(variable);
+            Value currentValue = valueChanges.get(variable.fullyQualifiedName());
+            if (currentValue == null) return evaluationContext.currentValue(variable);
+            return currentValue;
+        }
+
+        public Value currentValue(String variableName) {
+            Value currentValue = valueChanges.get(variableName);
+            if (currentValue == null) return evaluationContext.currentValue(variableName);
+            return currentValue;
+        }
+
+        private void setCurrentValue(String variableName, Value value) {
+            valueChanges.put(variableName, value);
+        }
+
+        public Stream<Map.Entry<String, Value>> getCurrentValuesStream() {
+            return valueChanges.entrySet().stream();
         }
 
         public void markMethodDelay(Variable variable, int methodDelay) {
@@ -307,6 +328,7 @@ public class EvaluationResult {
         }
 
         public void assignmentBasics(Variable at, Value resultOfExpression, boolean assignmentToNonEmptyExpression) {
+            setCurrentValue(at.fullyQualifiedName(), resultOfExpression);
             add(statementAnalyser.new Assignment(at, resultOfExpression, assignmentToNonEmptyExpression, evaluationContext));
         }
 

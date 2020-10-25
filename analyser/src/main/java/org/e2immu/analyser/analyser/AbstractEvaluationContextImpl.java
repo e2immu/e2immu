@@ -18,6 +18,12 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Stream;
 
 public abstract class AbstractEvaluationContextImpl implements EvaluationContext {
 
@@ -26,7 +32,7 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
     public final ConditionManager conditionManager;
 
     protected AbstractEvaluationContextImpl(int iteration, ConditionManager conditionManager) {
-        this.iteration =iteration;
+        this.iteration = iteration;
         this.conditionManager = conditionManager;
     }
 
@@ -39,4 +45,5 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
     public ConditionManager getConditionManager() {
         return conditionManager;
     }
+
 }
