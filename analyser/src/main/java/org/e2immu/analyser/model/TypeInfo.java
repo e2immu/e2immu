@@ -973,11 +973,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public MethodInfo convertMethodReferenceIntoLambda(ParameterizedType functionalInterfaceType,
                                                        TypeInfo enclosingType,
                                                        MethodReference methodReference,
-                                                       ExpressionContext expressionContext,
-                                                       Resolver resolver) {
+                                                       ExpressionContext expressionContext) {
         MethodTypeParameterMap method = functionalInterfaceType.findSingleAbstractMethodOfInterface();
         TypeInfo typeInfo = new TypeInfo(enclosingType, expressionContext.topLevel.newIndex(enclosingType));
-        typeInfo.setAnalysis(new TypeAnalysisImpl.Builder(typeInfo).build());
         TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
         builder.setEnclosingType(this);
         builder.setTypeNature(TypeNature.CLASS);
@@ -1009,9 +1007,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         log(LAMBDA, "Result of translating block: {}", block.statementString(0, null));
         methodInfo.methodInspection.get().methodBody.set(block);
         typeInfo.typeInspection.set(builder.build(true, typeInfo));
-
-        resolver.sortTypes(Map.of(typeInfo, expressionContext.typeContext));
-        ensureLambdaResolutionDefaults();
+        expressionContext.addNewlyCreatedType(typeInfo);
         return methodInfo;
     }
 
@@ -1214,13 +1210,4 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.isSet() && typeInspection.get().packageNameOrEnclosingType.isLeft();
     }
 
-    public void ensureLambdaResolutionDefaults() {
-        MethodInfo sam = findOverriddenSingleAbstractMethod();
-        if (!sam.methodResolution.isSet()) {
-            sam.methodResolution.set(new MethodResolution());
-        }
-        if (!sam.methodResolution.get().partOfConstruction.isSet()) {
-            sam.methodResolution.get().partOfConstruction.set(false);
-        }
-    }
 }

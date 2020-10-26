@@ -131,30 +131,18 @@ public class Lambda implements Expression {
         ParameterizedType parameterizedType = methodInfo.typeInfo.asParameterizedType();
         Location location = evaluationContext.getLocation(this);
         ObjectFlow objectFlow = builder.createInternalObjectFlow(location, parameterizedType, Origin.NEW_OBJECT_CREATION);
-        Value result = new Instance(parameterizedType, null, List.of(), objectFlow);
+        Value result = null;
 
-        if (block != Block.EMPTY_BLOCK) {
-            // we have no guarantee that this block will be executed. maybe there are situations?
-            EvaluationContext child = evaluationContext.child(UnknownValue.EMPTY);
-
-            TypeAnalyser typeAnalyser = evaluationContext.getCurrentType();
-            AnalyserContext analyserContext = evaluationContext.getAnalyserContext();
-            MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, typeAnalyser, true, analyserContext);
-            builder.addResultOfMethodAnalyser(methodAnalyser.analyse(evaluationContext.getIteration()));
-
-            methodAnalyser.getMessageStream().forEach(builder::addMessage);
-            builder.merge(child);
-
-            MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
-            SetOnce<Value> srv = methodAnalysis.methodLevelData().singleReturnValue;
-            if (srv.isSet()) {
-                InlineValue inlineValue = srv.get().asInstanceOf(InlineValue.class);
-                if (inlineValue != null) {
-                    result = inlineValue;
-                }
-            } else {
-                result = UnknownValue.NO_VALUE; // DELAY, we may have to iterate again
+        MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+        SetOnce<Value> srv = methodAnalysis.methodLevelData().singleReturnValue;
+        if (srv.isSet()) {
+            InlineValue inlineValue = srv.get().asInstanceOf(InlineValue.class);
+            if (inlineValue != null) {
+                result = inlineValue;
             }
+        }
+        if (result == null) {
+            result = new Instance(parameterizedType, null, List.of(), objectFlow);
         }
 
         builder.setValue(result);

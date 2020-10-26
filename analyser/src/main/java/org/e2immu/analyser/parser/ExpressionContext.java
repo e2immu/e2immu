@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.CONTEXT;
 import static org.e2immu.analyser.util.Logger.log;
@@ -54,6 +55,16 @@ public class ExpressionContext {
     public final TypeInfo primaryType;
     public final VariableContext variableContext; // gets modified! so this class cannot even be a container...
     public final TopLevel topLevel;
+
+    private final List<TypeInfo> newlyCreatedTypes = new LinkedList<>();
+
+    public void addNewlyCreatedType(TypeInfo anonymousType) {
+        newlyCreatedTypes.add(anonymousType);
+    }
+
+    public Stream<TypeInfo> streamNewlyCreatedTypes() {
+        return newlyCreatedTypes.stream();
+    }
 
     public static class TopLevel {
         final Map<TypeInfo, AtomicInteger> anonymousClassCounter = new HashMap<>();
@@ -334,7 +345,7 @@ public class ExpressionContext {
         TypeInfo typeInfo = new TypeInfo(localName);
         typeInfo.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
         typeContext.addToContext(typeInfo);
-        new Resolver(true).sortTypes(Map.of(typeInfo, typeContext));
+        addNewlyCreatedType(typeInfo);
         return new LocalClassDeclaration(typeInfo);
     }
 

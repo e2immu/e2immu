@@ -64,10 +64,12 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         // do the types first, so we can pass on a TypeAnalysis objects
         ImmutableMap.Builder<TypeInfo, TypeAnalyser> typeAnalysersBuilder = new ImmutableMap.Builder<>();
         SetOnce<TypeAnalyser> primaryTypeAnalyser = new SetOnce<>();
-        sortedType.types.forEach(typeInfo -> {
-            TypeAnalyser typeAnalyser = new TypeAnalyser(typeInfo, primaryType, this);
-            typeAnalysersBuilder.put(typeInfo, typeAnalyser);
-            if (typeInfo == primaryType) primaryTypeAnalyser.set(typeAnalyser);
+        sortedType.methodsFieldsSubTypes.forEach(mfs -> {
+            if (mfs instanceof TypeInfo typeInfo) {
+                TypeAnalyser typeAnalyser = new TypeAnalyser(typeInfo, primaryType, this);
+                typeAnalysersBuilder.put(typeInfo, typeAnalyser);
+                if (typeInfo == primaryType) primaryTypeAnalyser.set(typeAnalyser);
+            }
         });
         typeAnalysers = typeAnalysersBuilder.build();
         this.primaryTypeAnalysis = primaryTypeAnalyser.get().typeAnalysis;
@@ -76,16 +78,18 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         // filter out those that have NOT been defined!
         ImmutableMap.Builder<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new ImmutableMap.Builder<>();
         ImmutableMap.Builder<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new ImmutableMap.Builder<>();
-        sortedType.methods.forEach(methodInfo -> {
-            if (methodInfo.hasBeenDefined()) {
-                MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo),
-                        false, this);
-                for (ParameterAnalyser parameterAnalyser : analyser.getParameterAnalysers()) {
-                    parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
+        sortedType.methodsFieldsSubTypes.forEach(mfs -> {
+            if (mfs instanceof MethodInfo methodInfo) {
+                if (methodInfo.hasBeenDefined()) {
+                    MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo),
+                            false, this);
+                    for (ParameterAnalyser parameterAnalyser : analyser.getParameterAnalysers()) {
+                        parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
+                    }
+                    methodAnalysersBuilder.put(methodInfo, analyser);
+                } else {
+                    methodInfo.setAnalysis(MethodAnalysis.createEmpty(methodInfo));
                 }
-                methodAnalysersBuilder.put(methodInfo, analyser);
-            } else {
-                methodInfo.setAnalysis(MethodAnalysis.createEmpty(methodInfo));
             }
         });
 
@@ -122,6 +126,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
             } else if (mfs instanceof TypeInfo) {
                 analyser = typeAnalysers.get(mfs);
             } else throw new UnsupportedOperationException();
+            assert analyser != null : "Cannot find analyser for " + mfs.fullyQualifiedName();
             return List.of(analyser).stream();
         }).collect(Collectors.toList());
         fieldAnalysers = fieldAnalysersBuilder.build();
@@ -134,6 +139,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         return methodInfo.typeInfo.overrides(methodInfo, true)
                 .stream().map(mi -> {
                     MethodAnalyser methodAnalyser = methodAnalysers.get(mi);
+                    assert methodAnalyser != null || mi.methodAnalysis.isSet() : "No analysis known for " + mi.fullyQualifiedName();
                     return methodAnalyser != null ? methodAnalyser.methodAnalysis : mi.methodAnalysis.get();
                 }).collect(Collectors.toSet());
     }

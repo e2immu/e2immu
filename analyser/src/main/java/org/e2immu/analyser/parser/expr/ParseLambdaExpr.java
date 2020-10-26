@@ -99,8 +99,7 @@ public class ParseLambdaExpr {
         TypeInfo anonymousType = continueCreationOfAnonymousType(expressionContext.enclosingType, functionalType, owner, parameters, block, inferredReturnType);
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}", functionalType, anonymousType.fullyQualifiedName);
 
-        new Resolver(true).sortTypes(Map.of(anonymousType, expressionContext.typeContext));
-        anonymousType.ensureLambdaResolutionDefaults();
+        expressionContext.addNewlyCreatedType(anonymousType);
 
         return new Lambda(functionalType, anonymousType.asParameterizedType());
     }
@@ -113,7 +112,6 @@ public class ParseLambdaExpr {
 
     private static MethodInfo createAnonymousTypeAndApplyMethod(String name, TypeInfo enclosingType, int nextId) {
         TypeInfo typeInfo = new TypeInfo(enclosingType, nextId);
-        typeInfo.setAnalysis(new TypeAnalysisImpl.Builder(typeInfo).build());
         return new MethodInfo(typeInfo, name, false);
     }
 
@@ -129,7 +127,6 @@ public class ParseLambdaExpr {
         methodInspectionBuilder.addParameters(parameters);
         methodInspectionBuilder.setBlock(block);
         methodInfo.methodInspection.set(methodInspectionBuilder.build(methodInfo));
-        methodInfo.setAnalysis(MethodAnalysis.createEmpty(methodInfo));
 
         TypeInspection.TypeInspectionBuilder typeInspectionBuilder = new TypeInspection.TypeInspectionBuilder();
         typeInspectionBuilder.setTypeNature(TypeNature.CLASS);

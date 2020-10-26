@@ -35,15 +35,9 @@ public class SortedType {
 
     public final List<WithInspectionAndAnalysis> methodsFieldsSubTypes;
 
-    // these two lists are there to avoid running over the full list 3 times in the PrimaryTypeAnalyser
-    public final List<TypeInfo> types;
-    public final List<MethodInfo> methods;
-
-    public SortedType(TypeInfo primaryType, List<TypeInfo> types, List<MethodInfo> methods, List<WithInspectionAndAnalysis> methodsFieldsSubTypes) {
+    public SortedType(TypeInfo primaryType, List<WithInspectionAndAnalysis> methodsFieldsSubTypes) {
         this.primaryType = Objects.requireNonNull(primaryType);
         this.methodsFieldsSubTypes = Objects.requireNonNull(methodsFieldsSubTypes);
-        this.types = types;
-        this.methods = methods;
     }
 
     @Override

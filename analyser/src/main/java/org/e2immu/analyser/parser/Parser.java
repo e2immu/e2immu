@@ -109,7 +109,7 @@ public class Parser {
 
     private List<SortedType> phase2ResolveAndAnalyse(Map<TypeInfo, TypeContext> inspectedPrimaryTypesToTypeContextOfFile) {
         // phase 2: resolve methods and fields
-        Resolver resolver = new Resolver(false);
+        Resolver resolver = new Resolver();
         List<SortedType> sortedPrimaryTypes = resolver.sortTypes(inspectedPrimaryTypesToTypeContextOfFile);
         messages.addAll(resolver.getMessageStream());
 
