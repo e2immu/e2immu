@@ -59,8 +59,7 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
 
     public static Value negate(@NotNull Value v) {
         Objects.requireNonNull(v);
-        if (v instanceof BoolValue) {
-            BoolValue boolValue = (BoolValue) v;
+        if (v instanceof BoolValue boolValue) {
             return boolValue.negate();
         }
         if (v instanceof NumericValue) {
@@ -69,18 +68,15 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
         if (v.isUnknown()) return v;
 
         if (v instanceof NegatedValue) return ((NegatedValue) v).value;
-        if (v instanceof OrValue) {
-            OrValue or = (OrValue) v;
+        if (v instanceof OrValue or) {
             Value[] negated = or.values.stream().map(NegatedValue::negate).toArray(Value[]::new);
             return new AndValue(v.getObjectFlow()).append(negated);
         }
-        if (v instanceof AndValue) {
-            AndValue and = (AndValue) v;
+        if (v instanceof AndValue and) {
             List<Value> negated = and.values.stream().map(NegatedValue::negate).collect(Collectors.toList());
             return new OrValue(v.getObjectFlow()).append(negated);
         }
-        if (v instanceof EqualsValue) {
-            EqualsValue equalsValue = (EqualsValue) v;
+        if (v instanceof EqualsValue equalsValue) {
             if (equalsValue.lhs instanceof NumericValue && equalsValue.rhs instanceof ConstrainedNumericValue) {
                 Value improve = ((ConstrainedNumericValue) equalsValue.rhs).notEquals((NumericValue) equalsValue.lhs);
                 if (improve != null) return improve;

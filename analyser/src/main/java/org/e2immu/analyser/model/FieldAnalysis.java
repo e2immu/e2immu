@@ -64,12 +64,12 @@ public interface FieldAnalysis extends Analysis {
                 if (fieldInfo.type.arrays > 0) return MultiLevel.MUTABLE;
                 int fieldImmutable = internalGetProperty(variableProperty);
                 if (fieldImmutable == Level.DELAY) return Level.DELAY;
-                int typeImmutable = typeImmutable(fieldInfo, bestType);
+                int typeImmutable = typeImmutable(analysisProvider, fieldInfo, bestType);
                 return MultiLevel.bestImmutable(typeImmutable, fieldImmutable);
 
             // container is, for fields, a property purely on the type
             case CONTAINER:
-                return bestType == null ? Level.TRUE : bestType.typeAnalysis.get().getProperty(VariableProperty.CONTAINER);
+                return bestType == null ? Level.TRUE : analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);
 
             case NOT_NULL:
                 if (fieldInfo.type.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
@@ -79,8 +79,8 @@ public interface FieldAnalysis extends Analysis {
         return internalGetProperty(variableProperty);
     }
 
-    private static int typeImmutable(FieldInfo fieldInfo, TypeInfo bestType) {
+    private int typeImmutable(AnalysisProvider analysisProvider, FieldInfo fieldInfo, TypeInfo bestType) {
         return fieldInfo.owner == bestType || bestType == null ? MultiLevel.FALSE :
-                bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+                analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
     }
 }

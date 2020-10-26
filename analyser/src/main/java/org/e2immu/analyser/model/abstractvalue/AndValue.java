@@ -226,8 +226,7 @@ public class AndValue extends PrimitiveValue {
 
         // simplification of the OrValue
 
-        if (value instanceof OrValue) {
-            OrValue orValue = (OrValue) value;
+        if (value instanceof OrValue orValue) {
             if (orValue.values.size() == 1) {
                 newConcat.add(orValue.values.get(0));
                 return Action.SKIP;
@@ -238,9 +237,8 @@ public class AndValue extends PrimitiveValue {
         // combinations with equality
 
         if (prev instanceof NegatedValue && ((NegatedValue) prev).value instanceof EqualsValue) {
-            if (value instanceof EqualsValue) {
+            if (value instanceof EqualsValue ev2) {
                 EqualsValue ev1 = (EqualsValue) ((NegatedValue) prev).value;
-                EqualsValue ev2 = (EqualsValue) value;
                 // not (3 == a) && (4 == a)  (the situation 3 == a && not (3 == a) has been solved as A && not A == False
                 if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
                     newConcat.remove(newConcat.size() - 1); // full replace
@@ -249,10 +247,8 @@ public class AndValue extends PrimitiveValue {
             }
         }
 
-        if (prev instanceof EqualsValue) {
-            if (value instanceof EqualsValue) {
-                EqualsValue ev1 = (EqualsValue) prev;
-                EqualsValue ev2 = (EqualsValue) value;
+        if (prev instanceof EqualsValue ev1) {
+            if (value instanceof EqualsValue ev2) {
                 // 3 == a && 4 == a
                 if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
                     return Action.FALSE;
@@ -260,9 +256,7 @@ public class AndValue extends PrimitiveValue {
             }
 
             // EQ and NOT EQ
-            if (value instanceof NegatedValue && ((NegatedValue) value).value instanceof EqualsValue) {
-                EqualsValue ev1 = (EqualsValue) prev;
-                EqualsValue ev2 = (EqualsValue) ((NegatedValue) value).value;
+            if (value instanceof NegatedValue && ((NegatedValue) value).value instanceof EqualsValue ev2) {
                 // 3 == a && not (4 == a)  (the situation 3 == a && not (3 == a) has been solved as A && not A == False
                 if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
                     return Action.SKIP;
@@ -270,12 +264,10 @@ public class AndValue extends PrimitiveValue {
             }
 
             // GE and EQ (note: GE always comes after EQ)
-            if (value instanceof GreaterThanZeroValue) {
-                GreaterThanZeroValue ge = (GreaterThanZeroValue) value;
+            if (value instanceof GreaterThanZeroValue ge) {
                 GreaterThanZeroValue.XB xb = ge.extract();
-                EqualsValue equalsValue = (EqualsValue) prev;
-                if (equalsValue.lhs instanceof NumericValue && equalsValue.rhs.equals(xb.x)) {
-                    double y = ((NumericValue) equalsValue.lhs).getNumber().doubleValue();
+                if (ev1.lhs instanceof NumericValue && ev1.rhs.equals(xb.x)) {
+                    double y = ((NumericValue) ev1.lhs).getNumber().doubleValue();
                     if (xb.lessThan) {
                         // y==x and x <= b
                         if (ge.allowEquals && y <= xb.b || !ge.allowEquals && y < xb.b) {
@@ -294,10 +286,8 @@ public class AndValue extends PrimitiveValue {
         }
 
         //  GE and NOT EQ
-        if (value instanceof GreaterThanZeroValue && prev instanceof NegatedValue && ((NegatedValue) prev).value instanceof EqualsValue) {
-            GreaterThanZeroValue ge = (GreaterThanZeroValue) value;
+        if (value instanceof GreaterThanZeroValue ge && prev instanceof NegatedValue && ((NegatedValue) prev).value instanceof EqualsValue equalsValue) {
             GreaterThanZeroValue.XB xb = ge.extract();
-            EqualsValue equalsValue = (EqualsValue) ((NegatedValue) prev).value;
             if (equalsValue.lhs instanceof NumericValue && equalsValue.rhs.equals(xb.x)) {
                 double y = ((NumericValue) equalsValue.lhs).getNumber().doubleValue();
 
@@ -309,10 +299,8 @@ public class AndValue extends PrimitiveValue {
         }
 
         // GE and GE
-        if (value instanceof GreaterThanZeroValue && prev instanceof GreaterThanZeroValue) {
-            GreaterThanZeroValue ge1 = (GreaterThanZeroValue) prev;
+        if (value instanceof GreaterThanZeroValue ge2 && prev instanceof GreaterThanZeroValue ge1) {
             GreaterThanZeroValue.XB xb1 = ge1.extract();
-            GreaterThanZeroValue ge2 = (GreaterThanZeroValue) value;
             GreaterThanZeroValue.XB xb2 = ge2.extract();
             if (xb1.x.equals(xb2.x)) {
                 // x>= b1 && x >= b2, with < or > on either
@@ -347,10 +335,7 @@ public class AndValue extends PrimitiveValue {
                 }
                 return Action.FALSE;
             }
-            if (xb1.x instanceof ConstrainedNumericValue && xb2.x instanceof ConstrainedNumericValue) {
-                ConstrainedNumericValue cnv1 = (ConstrainedNumericValue) xb1.x;
-                ConstrainedNumericValue cnv2 = (ConstrainedNumericValue) xb2.x;
-
+            if (xb1.x instanceof ConstrainedNumericValue cnv1 && xb2.x instanceof ConstrainedNumericValue cnv2) {
                 // x,?>=a1 >= b1 && x,?>=a2 >= b2
                 if (!xb1.lessThan && !xb2.lessThan && cnv1.value.equals(cnv2.value) && cnv1.onlyLowerBound() && cnv2.onlyLowerBound()) {
                     // we know that a1<b1 and a2<b2, otherwise there would be no CNV; the greatest one survives

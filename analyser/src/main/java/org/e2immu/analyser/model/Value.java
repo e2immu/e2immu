@@ -64,7 +64,6 @@ public interface Value extends Comparable<Value> {
     int ORDER_TYPE = 68;
     int ORDER_NO_VALUE = 69;
     int ORDER_CONDITIONAL = 70;
-    int ORDER_ALT_ASSIGNMENT = 71;
 
     // boolean operations
     int ORDER_INSTANCE_OF = 81;
@@ -105,8 +104,11 @@ public interface Value extends Comparable<Value> {
         return type != null && type.isDiscrete();
     }
 
-    // executed without context, default for all constant types
-    default int getPropertyOutsideContext(VariableProperty variableProperty) {
+    // only called from EvaluationContext.getProperty().
+    // Use that method as the general way of obtaining a value for a property from a Value object
+    // do NOT fall back on evaluationContext.getProperty(this, ...) because that'll be an infinite loop!
+
+    default int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) return variableProperty.best;
         if (VariableProperty.NOT_NULL == variableProperty)
             return MultiLevel.EFFECTIVELY_NOT_NULL; // constants are not null
@@ -114,12 +116,6 @@ public interface Value extends Comparable<Value> {
         if (VariableProperty.IDENTITY == variableProperty) return Level.FALSE;
         if (VariableProperty.NOT_MODIFIED_1 == variableProperty) return Level.FALSE;
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
-    }
-
-    // only called from EvaluationContext.getProperty().
-    // Use that method as the general way of obtaining a value for a property from a Value object
-    default int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return getPropertyOutsideContext(variableProperty);
     }
 
     default IntValue toInt() {
@@ -228,12 +224,4 @@ public interface Value extends Comparable<Value> {
         }
         return null;
     }
-
-    static int safeGetProperty(EvaluationContext evaluationContext, Value value, VariableProperty variableProperty) {
-        if (evaluationContext == null) {
-            return value.getPropertyOutsideContext(variableProperty);
-        }
-        return value.getProperty(evaluationContext, variableProperty);
-    }
-
 }

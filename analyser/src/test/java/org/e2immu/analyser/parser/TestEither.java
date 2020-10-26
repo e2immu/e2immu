@@ -43,7 +43,7 @@ public class TestEither extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("getLeftOrElse".equals(d.methodInfo.name) && "orElse".equals(d.variableName) && "1".equals(d.statementId)) {
             Assert.assertEquals("orElse", d.currentValue.toString());
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
         }
     };
 
@@ -66,7 +66,7 @@ public class TestEither extends CommonTestRunner {
             Assert.assertTrue(tv.value.get() instanceof ConditionalValue);
             ConditionalValue conditionalValue = (ConditionalValue) tv.value.get();
             Assert.assertEquals("null == this.left?orElse,@NotNull:this.left", conditionalValue.toString());
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.value.get().getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(tv.value.get(), VariableProperty.NOT_NULL));
         }
         if ("Either".equals(d.methodInfo().name) && d.iteration() > 0) {
             Assert.assertEquals("((null == a or null == b) and (not (null == a) or not (null == b)))",

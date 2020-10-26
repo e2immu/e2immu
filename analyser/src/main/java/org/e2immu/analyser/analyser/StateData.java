@@ -53,6 +53,10 @@ public class StateData {
         return AnalysisStatus.DONE;
     }
 
+    public ConditionManager getConditionManager() {
+        return conditionManager.getOrElse(ConditionManager.DELAYED);
+    }
+
     public static class RemoveVariableFromState implements StatementAnalysis.StateChange {
         private final Variable variable;
 

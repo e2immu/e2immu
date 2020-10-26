@@ -48,10 +48,6 @@ public interface EvaluationContext {
         return null;
     }
 
-    default FieldAnalyser getCurrentField() {
-        return null;
-    }
-
     default StatementAnalyser getCurrentStatement() {
         return null;
     }
@@ -112,11 +108,11 @@ public interface EvaluationContext {
     }
 
     default int getProperty(Value value, VariableProperty variableProperty) {
-        return value.getPropertyOutsideContext(variableProperty);
+        throw new UnsupportedOperationException();
     }
 
     default int getProperty(Variable variable, VariableProperty variableProperty) {
-        return currentValue(variable).getPropertyOutsideContext(variableProperty);
+        throw new UnsupportedOperationException();
     }
 
     default int summarizeModification(Set<Variable> linkedVariables) {

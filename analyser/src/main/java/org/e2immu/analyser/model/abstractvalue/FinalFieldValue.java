@@ -68,11 +68,6 @@ public class FinalFieldValue implements Value {
     }
 
     @Override
-    public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, Level.DELAY);
-    }
-
-    @Override
     public boolean hasConstantProperties() {
         return true;
     }

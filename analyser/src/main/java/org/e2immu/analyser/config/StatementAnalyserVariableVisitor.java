@@ -1,10 +1,7 @@
 package org.e2immu.analyser.config;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.IncrementalMap;
 
@@ -22,8 +19,11 @@ public interface StatementAnalyserVariableVisitor {
         public final Value stateOnAssignment;
         public final ObjectFlow objectFlow;
         public final IncrementalMap<VariableProperty> properties;
+        public final EvaluationContext evaluationContext;
 
-        public Data(int iteration, MethodInfo methodInfo, String statementId,
+        public Data(int iteration,
+                    EvaluationContext evaluationContext,
+                    MethodInfo methodInfo, String statementId,
                     String variableName, Variable variable, Value currentValue, Value stateOnAssignment,
                     ObjectFlow objectFlow, IncrementalMap<VariableProperty> properties) {
             this.iteration = iteration;
@@ -35,10 +35,15 @@ public interface StatementAnalyserVariableVisitor {
             this.objectFlow = objectFlow;
             this.properties = properties;
             this.statementId = statementId;
+            this.evaluationContext = evaluationContext;
         }
 
         public int getProperty(VariableProperty variableProperty) {
             return properties.getOrDefault(variableProperty, Level.DELAY);
+        }
+
+        public int getPropertyOfCurrentValue(VariableProperty variableProperty) {
+            return evaluationContext.getProperty(currentValue, variableProperty);
         }
     }
 

@@ -35,19 +35,19 @@ public class TryStatement extends StatementWithStructure {
                                               List<Pair<CatchParameter, Block>> catchClauses,
                                               Block finallyBlock) {
         Structure.Builder builder = new Structure.Builder().addInitialisers(resources)
-                .setStatementsExecutedAtLeastOnce(v -> true)
+                .setStatementsExecutedAtLeastOnce((v, ec) -> true)
                 .setBlock(tryBlock)
                 .setNoBlockMayBeExecuted(false); //there's always the main block
         for (Pair<CatchParameter, Block> pair : catchClauses) {
             builder.addSubStatement(new Structure.Builder().setLocalVariableCreation(pair.k.localVariable)
-                    .setStatementsExecutedAtLeastOnce(v -> false)
+                    .setStatementsExecutedAtLeastOnce((v, ec) -> false)
                     .setBlock(pair.v).build());
         }
         if (finallyBlock != null) {
             builder.addSubStatement(new Structure.Builder()
                     .setExpression(EmptyExpression.FINALLY_EXPRESSION)
                     .setBlock(finallyBlock)
-                    .setStatementsExecutedAtLeastOnce(v -> true)
+                    .setStatementsExecutedAtLeastOnce((v, ec) -> true)
                     .build());
         }
         return builder.build();

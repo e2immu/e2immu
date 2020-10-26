@@ -1,6 +1,5 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.config.AnalyserConfiguration;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
@@ -35,16 +34,13 @@ public class TestEvaluateConstants extends CommonTestRunner {
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
         if ("print".equals(d.methodInfo().name)) {
-            Assert.assertTrue(methodLevelData.singleReturnValue.isSet());
-            Value singleReturnValue = methodLevelData.singleReturnValue.get();
-            Assert.assertSame(UnknownValue.RETURN_VALUE, singleReturnValue); // not constant, the ee() error is ignored
+            Value srv = d.methodAnalysis().getSingleReturnValue();
+            Assert.assertSame(UnknownValue.RETURN_VALUE, srv); // not constant, the ee() error is ignored
         }
         if ("print2".equals(d.methodInfo().name) && d.iteration() > 0) {
-            Assert.assertTrue(methodLevelData.singleReturnValue.isSet());
-            Value singleReturnValue = methodLevelData.singleReturnValue.get();
-            Assert.assertTrue(singleReturnValue instanceof StringValue); // inline conditional works as advertised
+            Value srv = d.methodAnalysis().getSingleReturnValue();
+            Assert.assertTrue(srv instanceof StringValue); // inline conditional works as advertised
         }
     };
 

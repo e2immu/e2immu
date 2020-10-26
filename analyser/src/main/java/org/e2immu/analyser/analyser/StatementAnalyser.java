@@ -29,11 +29,9 @@ import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.ConstantValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.Container;
@@ -48,9 +46,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
-import static org.e2immu.analyser.analyser.VariableProperty.FINAL;
-import static org.e2immu.analyser.model.StatementAnalysis.FieldReferenceState.EFFECTIVELY_FINAL_DELAYED;
-import static org.e2immu.analyser.model.StatementAnalysis.FieldReferenceState.SINGLE_COPY;
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
@@ -192,7 +187,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             } while (statementAnalyser != null);
             return builder.build();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught exception in while analysing block of: {}", this);
+            LOGGER.warn("Caught exception while analysing block {} of: {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName());
             throw rte;
         }
     }
@@ -308,8 +303,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             boolean startOfNewBlock = previousStatementAnalysis == null;
             localConditionManager = startOfNewBlock ? (statementAnalysis.parent == null ?
                     ConditionManager.INITIAL :
-                    statementAnalysis.parent.stateData.conditionManager.get().addCondition(forwardAnalysisInfo.conditionManager.condition)) :
-                    previousStatementAnalysis.stateData.conditionManager.get();
+                    statementAnalysis.parent.stateData.getConditionManager().addCondition(forwardAnalysisInfo.conditionManager.condition)) :
+                    previousStatementAnalysis.stateData.getConditionManager();
 
             analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
                     .add("checkUnreachableStatement", sharedState -> checkUnreachableStatement(previousStatementAnalysis, forwardAnalysisInfo.execution))
@@ -318,10 +313,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .add("tryToFreezeDependencyGraph", sharedState -> tryToFreezeDependencyGraph())
                     .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previousStatementAnalysis))
 
+                    .add("copyPrecondition", sharedState -> statementAnalysis.stateData.copyPrecondition(this, previousStatementAnalysis))
                     .add(ANALYSE_METHOD_LEVEL_DATA, sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
                             previousStatementAnalysis == null ? null : previousStatementAnalysis.methodLevelData,
                             statementAnalysis.stateData))
-                    .add("copyPrecondition", sharedState -> statementAnalysis.stateData.copyPrecondition(this, previousStatementAnalysis))
 
                     .add("checkNotNullEscapes", this::checkNotNullEscapes)
                     .add("checkSizeEscapes", this::checkSizeEscapes)
@@ -380,6 +375,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .forEach(variableInfo -> statementAnalyserVariableVisitor.visit(
                             new StatementAnalyserVariableVisitor.Data(
                                     sharedState.evaluationContext.getIteration(),
+                                    sharedState.evaluationContext,
                                     myMethodAnalyser.methodInfo,
                                     statementId,
                                     variableInfo.name,
@@ -394,11 +390,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             statementAnalyserVisitor.visit(
                     new StatementAnalyserVisitor.Data(
                             sharedState.evaluationContext.getIteration(),
+                            sharedState.evaluationContext,
                             myMethodAnalyser.methodInfo,
                             statementAnalysis,
                             statementAnalysis.index,
-                            statementAnalysis.stateData.conditionManager.get().condition,
-                            statementAnalysis.stateData.conditionManager.get().state,
+                            statementAnalysis.stateData.getConditionManager().condition,
+                            statementAnalysis.stateData.getConditionManager().state,
                             analyserComponents.getStatusesAsMap()));
         }
     }
@@ -466,7 +463,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     private AnalysisStatus checkPrecondition(SharedState sharedState) {
         if (isEscapeAlwaysExecuted()) {
-            EvaluationResult er = statementAnalysis.stateData.conditionManager.get().escapeCondition(sharedState.evaluationContext);
+            EvaluationResult er = statementAnalysis.stateData.getConditionManager().escapeCondition(sharedState.evaluationContext);
             Value precondition = er.value;
             if (precondition != UnknownValue.EMPTY) {
                 boolean atLeastFieldOrParameterInvolved = precondition.variables().stream()
@@ -488,7 +485,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     private AnalysisStatus checkNotNullEscapes(SharedState sharedState) {
         if (isEscapeAlwaysExecuted()) {
-            Set<Variable> nullVariables = statementAnalysis.stateData.conditionManager.get().findIndividualNullConditions();
+            Set<Variable> nullVariables = statementAnalysis.stateData.getConditionManager().findIndividualNullConditions();
             for (Variable nullVariable : nullVariables) {
                 log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
                 ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser((ParameterInfo) nullVariable).parameterAnalysis;
@@ -507,7 +504,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     private AnalysisStatus checkSizeEscapes(SharedState sharedState) {
         if (isEscapeAlwaysExecuted()) {
-            Map<Variable, Value> individualSizeRestrictions = statementAnalysis.stateData.conditionManager.get().findIndividualSizeRestrictionsInCondition();
+            Map<Variable, Value> individualSizeRestrictions = statementAnalysis.stateData.getConditionManager().findIndividualSizeRestrictionsInCondition();
             for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
                 ParameterInfo parameterInfo = (ParameterInfo) entry.getKey();
                 Value negated = NegatedValue.negate(entry.getValue());
@@ -564,7 +561,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             }
             try {
                 EvaluationResult result = initialiser.evaluate(sharedState.evaluationContext, ForwardEvaluationInfo.DEFAULT);
-                sharedState.builder.combineAnalysisStatus(apply(result, null));
+                sharedState.builder.combineAnalysisStatus(apply(result, variable -> statementAnalysis.find(analyserContext, variable).initialValue));
 
                 Value value = result.value;
                 // initialisers size 1 means expression as statement, local variable creation
@@ -592,10 +589,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
+    // for(int i=0 (step2); i<3 (step4); i++ (step3))
     private void step3_updaters(EvaluationContext evaluationContext, Structure structure) {
         for (Expression updater : structure.updaters) {
             EvaluationResult result = updater.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-            apply(result, variable -> statementAnalysis.find(analyserContext, variable).initialValue);
+            apply(result, variable -> statementAnalysis.find(analyserContext, variable).expressionValue);
         }
     }
 
@@ -722,7 +720,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                        Structure structure,
                                        StatementAnalyser startOfFirstBlock,
                                        StatementAnalyserResult.Builder builder) {
-        boolean statementsExecutedAtLeastOnce = structure.statementsExecutedAtLeastOnce.test(value);
+        boolean statementsExecutedAtLeastOnce = structure.statementsExecutedAtLeastOnce.test(value, evaluationContext);
 
         // in a synchronized block, some fields can behave like variables
         boolean inSyncBlock = statementAnalysis.inSyncBlock || statementAnalysis.statement instanceof SynchronizedStatement;
@@ -772,7 +770,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                          int count,
                                          Value value,
                                          Value valueForSubStatement) {
-        boolean statementsExecutedAtLeastOnce = structure.statementsExecutedAtLeastOnce.test(value);
+        boolean statementsExecutedAtLeastOnce = structure.statementsExecutedAtLeastOnce.test(value, evaluationContext);
         FlowData.Execution execution = statementsExecutedAtLeastOnce ? FlowData.Execution.ALWAYS : FlowData.Execution.CONDITIONALLY;
 
 
@@ -1005,11 +1003,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public FieldAnalyser getCurrentField() {
-            return null;
-        }
-
-        @Override
         public StatementAnalyser getCurrentStatement() {
             return StatementAnalyser.this;
         }
@@ -1035,7 +1028,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // IMPORTANT: here we do not want to catch VariableValues wrapped in the PropertyWrapper
             if (value instanceof VariableValue) {
                 Variable variable = ((VariableValue) value).variable;
-                if (VariableProperty.NOT_NULL == variableProperty && MultiLevel.isEffectivelyNotNull(notNullAccordingToConditionManager(value))) {
+                if (VariableProperty.NOT_NULL == variableProperty && notNullAccordingToConditionManager(variable)) {
                     return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL, statementAnalysis.getProperty(analyserContext, variable, variableProperty));
                 }
                 if (VariableProperty.SIZE == variableProperty) {
@@ -1046,22 +1039,32 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 }
                 return statementAnalysis.getProperty(analyserContext, variable, variableProperty);
             }
+            /*
             // the following situation occurs when the state contains, e.g., not (null == map.get(a)),
             // and we need to evaluate the NOT_NULL property in the return transfer value in StatementAnalyser
             // See TestSMapList; also, same situation, we may have a conditional value, and the condition will decide...
             // TODO smells like dedicated code
             if (!(value.isInstanceOf(ConstantValue.class)) && conditionManager.haveNonEmptyState() && !conditionManager.inErrorState()) {
                 if (VariableProperty.NOT_NULL == variableProperty) {
+                    if(value instanceof VariableValue variableValue) {
+                        if(notNullAccordingToConditionManager(variableValue.variable)) return MultiLevel.EFFECTIVELY_NOT_NULL;
+                    }
                     int notNull = notNullAccordingToConditionManager(value);
                     if (notNull != Level.DELAY) return notNull;
                 }
                 // TODO add SIZE support?
             }
+
+             */
             // redirect to Value.getProperty()
             // this is the only usage of this method; all other evaluation of a Value in an evaluation context
             // must go via the current method
             return value.getProperty(this, variableProperty);
 
+        }
+
+        private boolean notNullAccordingToConditionManager(Variable variable) {
+            return conditionManager.findIndividualNullConditions().contains(variable);
         }
 
 
@@ -1102,7 +1105,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (currentValue instanceof VariableValue) {
                 return statementAnalysis.find(analyserContext, variable).getProperty(variableProperty);
             }
-            return currentValue.getPropertyOutsideContext(variableProperty);
+            return currentValue.getProperty(this, variableProperty);
         }
 
         @Override

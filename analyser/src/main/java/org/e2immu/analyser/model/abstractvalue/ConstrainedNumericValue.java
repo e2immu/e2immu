@@ -34,8 +34,7 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
     }
 
     public static ConstrainedNumericValue lowerBound(Value value, double lowerBound) {
-        if (value instanceof ConstrainedNumericValue) {
-            ConstrainedNumericValue cnv = (ConstrainedNumericValue) value;
+        if (value instanceof ConstrainedNumericValue cnv) {
             if (cnv.lowerBound >= lowerBound) return cnv; // nothing to do!
             return new ConstrainedNumericValue(cnv.value, lowerBound, cnv.upperBound);
         }
@@ -43,8 +42,7 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
     }
 
     public static ConstrainedNumericValue upperBound(Value value, double upperBound) {
-        if (value instanceof ConstrainedNumericValue) {
-            ConstrainedNumericValue cnv = (ConstrainedNumericValue) value;
+        if (value instanceof ConstrainedNumericValue cnv) {
             if (cnv.upperBound <= upperBound) return cnv; // nothing to do!
             return new ConstrainedNumericValue(cnv.value, cnv.lowerBound, upperBound);
         }
@@ -77,8 +75,7 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
         if (lowerBound == MIN) {
             return upperBound(value, upperBound);
         }
-        if (value instanceof ConstrainedNumericValue) {
-            ConstrainedNumericValue cnv = (ConstrainedNumericValue) value;
+        if (value instanceof ConstrainedNumericValue cnv) {
             // save ourselves a new object....
             if (cnv.lowerBound >= lowerBound && cnv.upperBound <= upperBound) return value;
             return new ConstrainedNumericValue(value, Math.max(lowerBound, cnv.lowerBound), Math.min(upperBound, cnv.upperBound));

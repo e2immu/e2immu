@@ -25,7 +25,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 
 /**
  * <ul>
@@ -50,7 +50,7 @@ public class Structure {
     public final Block block;
 
     @NotNull
-    public final Predicate<Value> statementsExecutedAtLeastOnce;
+    public final BiPredicate<Value, EvaluationContext> statementsExecutedAtLeastOnce;
 
     public final List<Structure> subStatements; // catches, finally, switch entries
 
@@ -65,7 +65,7 @@ public class Structure {
                       @NotNull List<Expression> updaters,
                       Block block,
                       List<Statement> statements,
-                      @NotNull Predicate<Value> statementsExecutedAtLeastOnce,
+                      @NotNull BiPredicate<Value, EvaluationContext> statementsExecutedAtLeastOnce,
                       List<Structure> subStatements,
                       boolean noBlockMayBeExecuted) {
         this.initialisers = Objects.requireNonNull(initialisers);
@@ -77,7 +77,7 @@ public class Structure {
         this.block = block;
         if (block != null && statements != null)
             throw new UnsupportedOperationException("Either block, or statements, but not both");
-        if(block != null && block.structure.statements == null) throw new UnsupportedOperationException();
+        if (block != null && block.structure.statements == null) throw new UnsupportedOperationException();
         this.subStatements = Objects.requireNonNull(subStatements);
         this.statementsExecutedAtLeastOnce = statementsExecutedAtLeastOnce;
         this.noBlockMayBeExecuted = noBlockMayBeExecuted;
@@ -103,7 +103,7 @@ public class Structure {
         private Expression expression; // for, forEach, while, do, return, expression statement, switch primary  (typically, the condition); OR condition for switch entry
         private ForwardEvaluationInfo forwardEvaluationInfo;
         private final List<Expression> updaters = new ArrayList<>(); // for
-        private Predicate<Value> statementsExecutedAtLeastOnce;
+        private BiPredicate<Value, EvaluationContext> statementsExecutedAtLeastOnce;
         private List<Statement> statements;  // switch statement, block itself
         private Block block;
         private final List<Structure> subStatements = new ArrayList<>(); // catches, finally, switch entries
@@ -144,7 +144,7 @@ public class Structure {
             return this;
         }
 
-        public Builder setStatementsExecutedAtLeastOnce(Predicate<Value> predicate) {
+        public Builder setStatementsExecutedAtLeastOnce(BiPredicate<Value, EvaluationContext> predicate) {
             this.statementsExecutedAtLeastOnce = predicate;
             return this;
         }
@@ -168,7 +168,7 @@ public class Structure {
                     ImmutableList.copyOf(updaters),
                     block,
                     statements == null ? null : ImmutableList.copyOf(statements),
-                    statementsExecutedAtLeastOnce == null ? v -> false : statementsExecutedAtLeastOnce,
+                    statementsExecutedAtLeastOnce == null ? (v, ec) -> false : statementsExecutedAtLeastOnce,
                     ImmutableList.copyOf(subStatements),
                     noBlockMayBeExecuted);
         }

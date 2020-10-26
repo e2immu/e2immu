@@ -65,10 +65,8 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         if (value instanceof ConstrainedNumericValue) {
             return new CNVGreaterThan((ConstrainedNumericValue) value, 0.0);
         }
-        if (value instanceof SumValue) {
-            SumValue sumValue = (SumValue) value;
-            if (sumValue.lhs instanceof NumericValue && sumValue.rhs instanceof ConstrainedNumericValue) {
-                ConstrainedNumericValue cnv = (ConstrainedNumericValue) sumValue.rhs;
+        if (value instanceof SumValue sumValue) {
+            if (sumValue.lhs instanceof NumericValue && sumValue.rhs instanceof ConstrainedNumericValue cnv) {
                 double v = ((NumericValue) sumValue.lhs).getNumber().doubleValue();
                 return new CNVGreaterThan(cnv, -v);
             }
@@ -110,8 +108,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     // NOT (x > 0)  == x <= 0 == (not x) >= 0
     // note that this one does not solve the int-problem where we always want to maintain allowEquals == True
     public Value negate() {
-        if (value instanceof SumValue) {
-            SumValue sumValue = (SumValue) value;
+        if (value instanceof SumValue sumValue) {
             if (sumValue.lhs instanceof NumericValue && sumValue.lhs.isDiscreteType()) {
                 // NOT (-3 + x >= 0) == NOT (x >= 3) == x < 3 == x <= 2 == 2 + -x >= 0
                 // NOT (3 + x >= 0) == NOT (x >= -3) == x < -3 == x <= -4 == -4 + -x >= 0
@@ -140,8 +137,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     }
 
     public XB extract() {
-        if (value instanceof SumValue) {
-            SumValue sumValue = (SumValue) value;
+        if (value instanceof SumValue sumValue) {
             if (sumValue.lhs instanceof NumericValue) {
                 Value v = sumValue.rhs;
                 Value x;
@@ -213,8 +209,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
 
     // check ConstrainedNV
     private static Value tautologyGreaterThan(Value l, Value r, boolean allowEquals) {
-        if (l instanceof ConstrainedNumericValue && r instanceof NumericValue) {
-            ConstrainedNumericValue cnv = (ConstrainedNumericValue) l;
+        if (l instanceof ConstrainedNumericValue cnv && r instanceof NumericValue) {
             double v = ((NumericValue) r).getNumber().doubleValue();
             // cnv,?>= v, >= v (trivial)   and   > v (real restriction)
             if (v == cnv.lowerBound) return allowEquals ? BoolValue.TRUE : null;
@@ -300,14 +295,11 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     @Override
     public FilterResult isIndividualSizeRestrictionOnParameter() {
         XB xb = extract();
-        if (!xb.lessThan && xb.x instanceof ConstrainedNumericValue) {
-            ConstrainedNumericValue cnv = (ConstrainedNumericValue) xb.x;
-            if (cnv.value instanceof MethodValue) {
-                MethodValue methodValue = (MethodValue) cnv.value;
+        if (!xb.lessThan && xb.x instanceof ConstrainedNumericValue cnv) {
+            if (cnv.value instanceof MethodValue methodValue) {
                 if (methodValue.methodInfo.typeInfo.sizeMethod() == methodValue.methodInfo) {
                     // I am the size method!
-                    if (methodValue.object instanceof VariableValue) {
-                        VariableValue v = (VariableValue) methodValue.object;
+                    if (methodValue.object instanceof VariableValue v) {
                         return new FilterResult(Map.of(v.variable, this), UnknownValue.NO_VALUE);
                     }
                 }

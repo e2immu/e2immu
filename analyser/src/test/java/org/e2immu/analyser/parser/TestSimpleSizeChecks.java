@@ -22,8 +22,8 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("method1bis".equals(d.methodInfo.name) && "0".equals(d.statementId) && "set".equals(d.variableName)) {
             Assert.assertTrue(d.currentValue instanceof MethodValue);
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.currentValue.getPropertyOutsideContext(VariableProperty.IMMUTABLE));
-            Assert.assertEquals(Level.TRUE, d.currentValue.getPropertyOutsideContext(VariableProperty.CONTAINER));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getPropertyOfCurrentValue(VariableProperty.IMMUTABLE));
+            Assert.assertEquals(Level.TRUE, d.getPropertyOfCurrentValue(VariableProperty.CONTAINER));
             Assert.assertTrue(d.variable instanceof LocalVariableReference);
 
             // properties are on the value; in the map is the value of the type before the assignment
@@ -37,7 +37,7 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
                 Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
 
                 if (d.iteration > 1) {
-                    Assert.assertEquals(SIZE_EQUALS_2, d.currentValue.getPropertyOutsideContext(VariableProperty.SIZE));
+                    Assert.assertEquals(SIZE_EQUALS_2, d.getPropertyOfCurrentValue(VariableProperty.SIZE));
                 }
             }
         }

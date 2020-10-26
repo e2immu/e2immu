@@ -294,7 +294,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // @Identity as method annotation
-        Value identity = computeIdentity(methodAnalysis, parameters, objectFlowOfResult);
+        Value identity = computeIdentity(evaluationContext, methodAnalysis, parameters, objectFlowOfResult);
         if (identity != null) {
             return builder.setValue(identity).build();
         }
@@ -314,9 +314,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return builder.compose(reInline).setValue(reInline.value).build();
         }
 
-        if (methodAnalysis.isHasBeenDefined() && methodAnalysis.methodLevelData().singleReturnValue.isSet()) {
+        if (methodAnalysis.isHasBeenDefined() && methodAnalysis.getSingleReturnValue() != null) {
             // if this method was identity?
-            Value srv = methodAnalysis.methodLevelData().singleReturnValue.get();
+            Value srv = methodAnalysis.getSingleReturnValue();
             if (srv.isInstanceOf(InlineValue.class)) {
                 InlineValue iv = srv.asInstanceOf(InlineValue.class);
 
@@ -405,7 +405,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
 
-    private static Value computeIdentity(MethodAnalysis methodAnalysis, List<Value> parameters, ObjectFlow objectFlowOfResult) {
+    private static Value computeIdentity(EvaluationContext evaluationContext,
+                                         MethodAnalysis methodAnalysis,
+                                         List<Value> parameters,
+                                         ObjectFlow objectFlowOfResult) {
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
         if (identity == Level.DELAY && methodAnalysis.isHasBeenDefined()) return UnknownValue.NO_VALUE; // delay
         if (identity != Level.TRUE) return null;
@@ -415,7 +418,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             int v = methodAnalysis.getProperty(property);
             if (v != Level.DELAY) map.put(property, v);
         }
-        return PropertyWrapper.propertyWrapper(parameters.get(0), map, objectFlowOfResult);
+        return PropertyWrapper.propertyWrapper(evaluationContext, parameters.get(0), map, objectFlowOfResult);
     }
 
     private static Value computeSize(EvaluationResult.Builder builder,

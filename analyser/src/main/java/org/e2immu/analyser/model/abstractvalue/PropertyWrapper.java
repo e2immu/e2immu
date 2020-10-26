@@ -60,13 +60,14 @@ public class PropertyWrapper implements Value, ValueWrapper {
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
         EvaluationResult reValue = value.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reValue);
-        return builder.setValue(PropertyWrapper.propertyWrapper(reValue.value, properties, getObjectFlow())).build();
+        return builder.setValue(PropertyWrapper.propertyWrapper(evaluationContext, reValue.value, properties, getObjectFlow())).build();
     }
 
-    public static Value propertyWrapper(Value value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
+    public static Value propertyWrapper(EvaluationContext evaluationContext, Value value,
+                                        Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
         Map<VariableProperty, Integer> newMap = new HashMap<>();
         for (Map.Entry<VariableProperty, Integer> entry : properties.entrySet()) {
-            int newPropertyValue = value.getPropertyOutsideContext(entry.getKey());
+            int newPropertyValue = evaluationContext.getProperty(value, entry.getKey());
             if (newPropertyValue < entry.getValue()) {
                 newMap.put(entry.getKey(), entry.getValue());
             }
@@ -113,13 +114,6 @@ public class PropertyWrapper implements Value, ValueWrapper {
         int inMap = properties.getOrDefault(variableProperty, Level.DELAY);
         if (inMap != Level.DELAY) return inMap;
         return evaluationContext.getProperty(value, variableProperty);
-    }
-
-    @Override
-    public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        int inMap = properties.getOrDefault(variableProperty, Level.DELAY);
-        if (inMap != Level.DELAY) return inMap;
-        return value.getPropertyOutsideContext(variableProperty);
     }
 
     @Override

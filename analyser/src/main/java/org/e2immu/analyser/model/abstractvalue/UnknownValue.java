@@ -62,11 +62,6 @@ public class UnknownValue implements Value {
     }
 
     @Override
-    public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        return Level.FALSE;
-    }
-
-    @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         return Level.FALSE;
     }

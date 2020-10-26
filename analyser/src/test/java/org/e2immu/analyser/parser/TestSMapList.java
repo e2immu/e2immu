@@ -38,7 +38,7 @@ public class TestSMapList extends CommonTestRunner {
             Assert.assertEquals("map.get(a)", d.currentValue.toString());
 
             // NOTE: this is in contradiction with the state, but here we test the fact that get can return null
-            Assert.assertEquals(MultiLevel.NULLABLE, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.NULLABLE, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
         }
         if ("add".equals(d.methodInfo.name) && "bs".equals(d.variableName) && "3".equals(d.statementId)) {
             Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));

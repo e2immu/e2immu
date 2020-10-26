@@ -112,7 +112,7 @@ public class TestNotModifiedChecks extends CommonTestRunner {
 
             }
             if (iteration > 1) {
-                Value value = methodLevelData.singleReturnValue.get();
+                Value value = d.methodAnalysis().getSingleReturnValue();
                 Assert.assertEquals("inline getSet on this.set", value.toString());
             }
         }

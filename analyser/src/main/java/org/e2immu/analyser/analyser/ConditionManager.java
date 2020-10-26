@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 public class ConditionManager {
 
     public static final ConditionManager INITIAL = new ConditionManager(UnknownValue.EMPTY, UnknownValue.EMPTY);
+    public static final ConditionManager DELAYED = new ConditionManager(UnknownValue.NO_VALUE, UnknownValue.NO_VALUE);
+
     public final Value condition;
     public final Value state;
 
@@ -96,6 +98,23 @@ public class ConditionManager {
      * @return individual variables that appear in a top-level disjunction as variable == null
      */
     public Set<Variable> findIndividualNullConditions() {
+        if (condition == UnknownValue.EMPTY || delayedCondition()) {
+            return Set.of();
+        }
+        Map<Variable, Value> individualNullClauses = condition.filter(Value.FilterMode.REJECT,
+                Value::isIndividualNotNullClauseOnParameter).accepted;
+        return individualNullClauses.entrySet()
+                .stream()
+                .filter(e -> e.getValue().isInstanceOf(NullValue.class))
+                .map(Map.Entry::getKey).collect(Collectors.toSet());
+    }
+
+    /**
+     * Extract NOT_NULL properties from the current condition
+     *
+     * @return individual variables that appear in a top-level disjunction as variable == null
+     */
+    public Set<Variable> findNotNullConditionsOnVariables() {
         if (condition == UnknownValue.EMPTY || delayedCondition()) {
             return Set.of();
         }

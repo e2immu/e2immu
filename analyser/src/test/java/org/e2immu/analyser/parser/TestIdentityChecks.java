@@ -27,17 +27,17 @@ public class TestIdentityChecks extends CommonTestRunner {
                 Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
                 Assert.assertEquals(Level.READ_ASSIGN_ONCE, d.properties.get(VariableProperty.READ)); // read 1x
                 // there is an explicit @NotNull on the first parameter of debug
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             } else if ("1".equals(d.statementId)) {
                 Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
                 Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, d.properties.get(VariableProperty.READ)); // read 2x
                 // there is an explicit @NotNull on the first parameter of debug
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             } else Assert.fail();
         }
         if (d.methodInfo.name.equals("idem3") && "s".equals(d.variableName)) {
             // there is an explicit @NotNull on the first parameter of debug
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
         }
     };
 
@@ -50,7 +50,7 @@ public class TestIdentityChecks extends CommonTestRunner {
             Value valueInside2 = ((PropertyWrapper) valueInside).value;
             Assert.assertTrue(valueInside2 instanceof VariableValue);
 
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, value.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(value, VariableProperty.NOT_NULL));
         }
     };
 

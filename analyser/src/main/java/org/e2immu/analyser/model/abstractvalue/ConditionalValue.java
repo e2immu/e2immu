@@ -174,11 +174,11 @@ public class ConditionalValue implements Value {
                 Value rhs = equalsValue.rhs;
                 if (ifTrue.equals(rhs)) {
                     // null == a ? a : something;  null != a ? a : something
-                    return not ? Value.safeGetProperty(evaluationContext, ifFalse, variableProperty) : MultiLevel.NULLABLE;
+                    return not ? evaluationContext.getProperty(ifFalse, variableProperty) : MultiLevel.NULLABLE;
                 }
                 if (ifFalse.equals(rhs)) {
                     // null == a ? something: a
-                    return not ? MultiLevel.NULLABLE : Value.safeGetProperty(evaluationContext, ifTrue, variableProperty);
+                    return not ? MultiLevel.NULLABLE : evaluationContext.getProperty(ifTrue, variableProperty);
                 }
             }
         }
@@ -192,20 +192,12 @@ public class ConditionalValue implements Value {
             if (sizeRestriction != null) {
                 // have a size restriction on ifTrue
                 int t = sizeRestriction.encodedSizeRestriction();
-                int f = evaluationContext == null ? ifFalse.getPropertyOutsideContext(VariableProperty.SIZE) :
-                        evaluationContext.getProperty(ifFalse, VariableProperty.SIZE);
+                int f = evaluationContext.getProperty(ifFalse, VariableProperty.SIZE);
                 if (Level.haveEquals(t) && Level.haveEquals(f) && t != f) return Level.IS_A_SIZE;
                 return Level.joinSizeRestrictions(t, f);
             }
         }
         return NO_PATTERN;
-    }
-
-    @Override
-    public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        int inCondition = lookForPatterns(null, variableProperty);
-        if (inCondition != Level.DELAY) return inCondition;
-        return combinedValue.getPropertyOutsideContext(variableProperty);
     }
 
     @Override

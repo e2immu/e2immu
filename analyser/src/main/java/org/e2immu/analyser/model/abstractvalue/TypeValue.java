@@ -3,7 +3,6 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.Primitives;
 
 /**
  * the thing that, for now, makes TypeValue different from UnknownValue is that it is not null.
@@ -45,18 +44,13 @@ public class TypeValue implements Value {
     }
 
     @Override
-    public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        if (variableProperty == VariableProperty.NOT_NULL) return MultiLevel.EFFECTIVELY_NOT_NULL;
-        return Level.FALSE;
-    }
-
-    @Override
     public boolean hasConstantProperties() {
         return true;
     }
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return getPropertyOutsideContext(variableProperty);
+        if (variableProperty == VariableProperty.NOT_NULL) return MultiLevel.EFFECTIVELY_NOT_NULL;
+        return Level.FALSE;
     }
 }

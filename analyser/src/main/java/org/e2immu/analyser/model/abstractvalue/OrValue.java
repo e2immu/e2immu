@@ -43,10 +43,6 @@ public class OrValue extends PrimitiveValue {
         this(objectFlow, List.of());
     }
 
-    OrValue(ObjectFlow objectFlow, Value... values) {
-        this(objectFlow, List.of(values));
-    }
-
     private OrValue(ObjectFlow objectFlow, List<Value> values) {
         super(objectFlow);
         this.values = values;
@@ -105,7 +101,6 @@ public class OrValue extends PrimitiveValue {
 
             ArrayList<Value> newConcat = new ArrayList<>(concat.size());
             Value prev = null;
-            int pos = 0;
             for (Value value : concat) {
 
                 // this works because of sorting
@@ -118,8 +113,7 @@ public class OrValue extends PrimitiveValue {
                 // A || A
                 if (value.equals(prev)) {
                     changes = true;
-                } else if (value instanceof AndValue) {
-                    AndValue andValue = (AndValue) value;
+                } else if (value instanceof AndValue andValue) {
                     if (andValue.values.size() == 1) {
                         newConcat.add(andValue.values.get(0));
                         changes = true;
@@ -133,7 +127,6 @@ public class OrValue extends PrimitiveValue {
                     newConcat.add(value);
                 }
                 prev = value;
-                pos++;
             }
             concat = newConcat;
         }

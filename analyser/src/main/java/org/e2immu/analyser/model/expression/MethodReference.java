@@ -118,13 +118,12 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             }
             Value result;
             ObjectFlow objectFlow = ObjectFlow.NO_FLOW; // TODO
-            SetOnce<Value> singleReturnValue = methodAnalysis.methodLevelData().singleReturnValue;
-            if (singleReturnValue.isSet()) {
-                Value singleValue = singleReturnValue.get();
-                if (!(singleValue instanceof UnknownValue) && methodInfo.cannotBeOverridden()) {
-                    result = singleValue;
+            Value singleReturnValue = methodAnalysis.getSingleReturnValue();
+            if (singleReturnValue != null) {
+                if (!(singleReturnValue.isInstanceOf(UnknownValue.class)) && methodInfo.cannotBeOverridden()) {
+                    result = singleReturnValue;
                 } else {
-                    if (scopeResult.value instanceof NullValue) {
+                    if (scopeResult.value.isInstanceOf(NullValue.class)) {
                         builder.raiseError(Message.NULL_POINTER_EXCEPTION);
                     }
                     result = new MethodValue(methodInfo, scopeResult.value, List.of(), objectFlow);

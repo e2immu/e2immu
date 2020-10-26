@@ -34,12 +34,12 @@ public class TestFinalChecks extends CommonTestRunner {
                 Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
             } else if (d.iteration == 1) {
                 Assert.assertEquals("s1 + abc", d.currentValue.toString());
-                Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
                 Assert.assertFalse(d.properties.isSet(VariableProperty.NOT_NULL));
             } else if (d.iteration > 1) {
                 Assert.assertEquals("s1 + abc", d.currentValue.toString());
                 Assert.assertTrue(d.currentValue instanceof StringConcat);
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, MultiLevel.value(d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, MultiLevel.value(d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
             }
         }
 

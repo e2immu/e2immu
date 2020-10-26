@@ -51,18 +51,6 @@ public class ArrayValue implements Value {
     }
 
     @Override
-    public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        if (VariableProperty.NOT_NULL == variableProperty) {
-            int notNull = combinedValue.getPropertyOutsideContext(variableProperty);
-            return MultiLevel.shift(MultiLevel.EFFECTIVE, notNull); // default = @NotNull level 0
-        }
-        if (VariableProperty.SIZE == variableProperty) {
-            return Level.encodeSizeEquals(values.size());
-        }
-        throw new UnsupportedOperationException("No info about " + variableProperty);
-    }
-
-    @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (VariableProperty.NOT_NULL == variableProperty) {
             int notNull = evaluationContext.getProperty(combinedValue, variableProperty);

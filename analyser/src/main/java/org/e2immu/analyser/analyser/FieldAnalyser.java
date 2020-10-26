@@ -151,10 +151,13 @@ public class FieldAnalyser extends AbstractAnalyser {
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(iteration);
 
-            for (FieldAnalyserVisitor fieldAnalyserVisitor : analyserContext.getConfiguration().debugConfiguration.afterFieldAnalyserVisitors) {
-                fieldAnalyserVisitor.visit(new FieldAnalyserVisitor.Data(iteration, fieldInfo, fieldAnalysis, analyserComponents.getStatusesAsMap()));
+            List<FieldAnalyserVisitor> visitors = analyserContext.getConfiguration().debugConfiguration.afterFieldAnalyserVisitors;
+            if (!visitors.isEmpty()) {
+                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
+                for (FieldAnalyserVisitor fieldAnalyserVisitor : visitors) {
+                    fieldAnalyserVisitor.visit(new FieldAnalyserVisitor.Data(iteration, evaluationContext, fieldInfo, fieldAnalysis, analyserComponents.getStatusesAsMap()));
+                }
             }
-
             return analysisStatus;
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in method analyser: {}", fieldInfo.fullyQualifiedName());
@@ -855,11 +858,6 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public FieldAnalyser getCurrentField() {
-            return FieldAnalyser.this;
-        }
-
-        @Override
         public MethodAnalysis getCurrentMethodAnalysis() {
             return null;
         }
@@ -912,7 +910,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }
                 throw new UnsupportedOperationException("?? variable of " + variableValue.variable.getClass());
             }
-            return value.getPropertyOutsideContext(variableProperty);
+            return value.getProperty(this, variableProperty);
         }
 
         @Override

@@ -65,12 +65,10 @@ public class ProductValue extends PrimitiveValue {
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
-        if (r instanceof SumValue) {
-            SumValue sum = (SumValue) r;
+        if (r instanceof SumValue sum) {
             return SumValue.sum(product(l, sum.lhs, objectFlow), product(l, sum.rhs, objectFlow), objectFlow);
         }
-        if (l instanceof SumValue) {
-            SumValue sum = (SumValue) l;
+        if (l instanceof SumValue sum) {
             return SumValue.sum(product(sum.lhs, r, objectFlow), product(sum.rhs, r, objectFlow), objectFlow);
         }
         return l.compareTo(r) < 0 ? new ProductValue(l, r, objectFlow) : new ProductValue(r, l, objectFlow);

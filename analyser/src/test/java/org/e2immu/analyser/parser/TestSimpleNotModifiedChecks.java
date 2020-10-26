@@ -50,7 +50,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 }
             }
             if ("1".equals(d.statementId) && d.iteration > 1) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             }
         }
         if ("add4".equals(d.methodInfo.name) && "Example4.this.set4".equals(d.variableName)) {
@@ -60,7 +60,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 } else {
                     Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
                     if (d.iteration > 1) {
-                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
                     }
                 }
             }
@@ -87,21 +87,21 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         if ("add6".equals(d.methodInfo.name) && "values6".equals(d.variableName)) {
             if (d.iteration > 1) {
                 Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             }
         }
         if ("add6".equals(d.methodInfo.name) && "example6".equals(d.variableName)) {
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
         }
         if ("add6".equals(d.methodInfo.name) && "example6.set6".equals(d.variableName)) {
             Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.MODIFIED));
             if (d.iteration > 1)
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
         }
         if ("Example6".equals(d.methodInfo.name) && "set6".equals(d.variableName) && "0".equals(d.statementId)) {
             if (d.iteration == 3) {
                 Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.MODIFIED));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             }
         }
         if ("Example6".equals(d.methodInfo.name) && "in6".equals(d.variableName) && "0".equals(d.statementId)) {

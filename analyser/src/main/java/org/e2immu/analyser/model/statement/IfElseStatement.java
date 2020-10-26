@@ -42,10 +42,10 @@ public class IfElseStatement extends StatementWithExpression {
                 .setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setBlock(ifBlock)
-                .setStatementsExecutedAtLeastOnce(v -> false);
+                .setStatementsExecutedAtLeastOnce((v, ec) -> false);
         if (elseBlock != Block.EMPTY_BLOCK) {
             builder.addSubStatement(new Structure.Builder().setExpression(EmptyExpression.DEFAULT_EXPRESSION)
-                    .setStatementsExecutedAtLeastOnce(v -> false)
+                    .setStatementsExecutedAtLeastOnce((v, ec) -> false)
                     .setBlock(elseBlock)
                     .build())
                     .setNoBlockMayBeExecuted(false); // either the if or the else block, but one shall be executed

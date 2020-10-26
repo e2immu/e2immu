@@ -55,26 +55,12 @@ public class NullValue extends ConstantValue implements Constant<Object> {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return getPropertyOutsideContext(variableProperty);
-    }
-
-    @Override
-    public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        switch (variableProperty) {
-            case NOT_NULL:
-                return MultiLevel.NULLABLE;
-            case SIZE:
-            case SIZE_COPY:
-            case MODIFIED:
-            case IDENTITY:
-            case METHOD_DELAY:
-                return FALSE;
-            case IMMUTABLE:
-                return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-            case CONTAINER:
-                return TRUE;
-            default:
-                throw new UnsupportedOperationException("Asking for " + variableProperty);
-        }
+        return switch (variableProperty) {
+            case NOT_NULL -> MultiLevel.NULLABLE;
+            case SIZE, SIZE_COPY, MODIFIED, IDENTITY, METHOD_DELAY -> FALSE;
+            case IMMUTABLE -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            case CONTAINER -> TRUE;
+            default -> throw new UnsupportedOperationException("Asking for " + variableProperty);
+        };
     }
 }

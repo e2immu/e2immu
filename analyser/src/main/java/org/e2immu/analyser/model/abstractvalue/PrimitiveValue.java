@@ -22,9 +22,8 @@ public abstract class PrimitiveValue implements Value {
         return objectFlow;
     }
 
-    // executed without context, default for all constant types
     @Override
-    public int getPropertyOutsideContext(VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         switch (variableProperty) {
             case IMMUTABLE:
                 return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
@@ -40,11 +39,6 @@ public abstract class PrimitiveValue implements Value {
                 return Level.FALSE;
         }
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
-    }
-
-    @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return getPropertyOutsideContext(variableProperty);
     }
 
     @Override

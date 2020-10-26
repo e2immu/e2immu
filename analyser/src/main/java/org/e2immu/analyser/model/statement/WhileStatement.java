@@ -28,7 +28,7 @@ public class WhileStatement extends LoopStatement {
                           Expression expression,
                           Block block) {
         super(new Structure.Builder()
-                .setStatementsExecutedAtLeastOnce(v -> v == BoolValue.TRUE)
+                .setStatementsExecutedAtLeastOnce((v, ec) -> v == BoolValue.TRUE)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setExpression(expression)
                 .setBlock(block).build(), label);

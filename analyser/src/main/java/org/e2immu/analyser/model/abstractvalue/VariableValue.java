@@ -76,11 +76,6 @@ public class VariableValue implements Value {
     }
 
     @Override
-    public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean hasConstantProperties() {
         return true;
     }

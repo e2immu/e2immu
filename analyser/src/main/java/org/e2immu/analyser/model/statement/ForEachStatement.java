@@ -31,7 +31,7 @@ public class ForEachStatement extends LoopStatement {
                             Expression expression,
                             Block block) {
         super(new Structure.Builder()
-                .setStatementsExecutedAtLeastOnce(v -> v.getPropertyOutsideContext(VariableProperty.SIZE) >= Level.SIZE_NOT_EMPTY)
+                .setStatementsExecutedAtLeastOnce((v, evaluationContext) -> evaluationContext.getProperty(v, VariableProperty.SIZE) >= Level.SIZE_NOT_EMPTY)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setLocalVariableCreation(localVariable)
                 .setExpression(expression)

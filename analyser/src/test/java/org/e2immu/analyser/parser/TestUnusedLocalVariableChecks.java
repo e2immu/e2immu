@@ -98,7 +98,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
             if ("integers".equals(d.variableName)) {
                 Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned); // integers=, NOT integers[i]=
                 Assert.assertEquals(assigned + 1, read);
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL)); // because in scope side
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL)); // because in scope side
             } else if ("i".equals(d.variableName)) {
                 Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned);
                 Assert.assertEquals(assigned + 1, read);

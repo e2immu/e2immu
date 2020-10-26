@@ -52,8 +52,6 @@ public class MethodLevelData {
 
     // ************** SUMMARIES
     // in combination with the properties in the super class, this forms the knowledge about the method itself
-    public final SetOnce<Value> singleReturnValue = new SetOnce<>();
-
     public final SetOnce<TransferValue> thisSummary = new SetOnce<>();
     public final SetOnceMap<String, TransferValue> returnStatementSummaries = new SetOnceMap<>();
     public final SetOnceMap<FieldInfo, TransferValue> fieldSummaries = new SetOnceMap<>();

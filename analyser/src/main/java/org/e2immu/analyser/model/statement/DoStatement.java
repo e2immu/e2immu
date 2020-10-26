@@ -27,7 +27,7 @@ public class DoStatement extends LoopStatement {
                        Expression expression,
                        Block block) {
         super(new Structure.Builder()
-                .setStatementsExecutedAtLeastOnce(v -> true)
+                .setStatementsExecutedAtLeastOnce((v, ec) -> true)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setExpression(expression)
                 .setBlock(block).build(), label);

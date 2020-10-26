@@ -47,7 +47,7 @@ public class TestSetOnceMap extends CommonTestRunner {
 
         MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
         if ("get".equals(name) && iteration > 0) {
-            Value srv = methodLevelData.singleReturnValue.get();
+            Value srv = d.methodAnalysis().getSingleReturnValue();
             Assert.assertEquals("inline get on this.map.get(k),@NotNull", srv.toString());
             InlineValue inlineValue = (InlineValue) srv;
             Assert.assertEquals(InlineValue.Applicability.TYPE, inlineValue.applicability);
@@ -80,7 +80,7 @@ public class TestSetOnceMap extends CommonTestRunner {
             // there is no reason to have a @Size annotation on this expression
             Assert.assertEquals(Level.DELAY, tv.getProperty(VariableProperty.SIZE));
             if (iteration > 0) {
-                Value srv = methodLevelData.singleReturnValue.get();
+                Value srv = d.methodAnalysis().getSingleReturnValue();
                 Assert.assertEquals("inline isEmpty on 0 == this.map.size(),?>=0", srv.toString());
                 // @Size(equals = 0)
                 Assert.assertEquals(Level.SIZE_EMPTY, d.methodAnalysis().getProperty(VariableProperty.SIZE));
@@ -91,7 +91,7 @@ public class TestSetOnceMap extends CommonTestRunner {
             Assert.assertNotNull(tv);
             Value stream = tv.value.get();
             Assert.assertEquals("this.map.entrySet().stream()", stream.toString());
-            Assert.assertEquals(Level.SIZE_COPY_TRUE, stream.getPropertyOutsideContext(VariableProperty.SIZE_COPY));
+            Assert.assertEquals(Level.SIZE_COPY_TRUE, d.getProperty(stream, VariableProperty.SIZE_COPY));
         }
         if ("put".equals(name)) {
             if (iteration > 0) {

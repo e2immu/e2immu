@@ -32,7 +32,7 @@ public class TestTryStatementChecks extends CommonTestRunner {
             Assert.assertTrue("Got " + value0.getClass(), value0 instanceof StringConcat);
             Value value1 = methodLevelData.returnStatementSummaries.get("0.1.0").value.get();
             Assert.assertTrue("Got " + value1.getClass(), value1 instanceof Constant);
-            Value srv = methodLevelData.singleReturnValue.get();
+            Value srv = d.methodAnalysis().getSingleReturnValue();
             Assert.assertSame(UnknownValue.RETURN_VALUE, srv);
         }
     };

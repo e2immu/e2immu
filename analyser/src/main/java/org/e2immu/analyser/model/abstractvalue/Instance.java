@@ -130,27 +130,18 @@ public class Instance implements Value {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        if (variableProperty == VariableProperty.SIZE) {
-            return MethodValue.checkSize(evaluationContext, constructor, constructorParameterValues);
-        }
-
-        return getPropertyOutsideContext(variableProperty);
-    }
-
-    @Override
-    public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        TypeInfo bestType = parameterizedType.bestTypeInfo();
         switch (variableProperty) {
-            case NOT_NULL:
+            case NOT_NULL: {
+                TypeInfo bestType = parameterizedType.bestTypeInfo();
                 return bestType == null ? MultiLevel.EFFECTIVELY_NOT_NULL :
                         MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
-                                bestType.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-
+                                evaluationContext.getTypeAnalysis(bestType).getProperty(VariableProperty.NOT_NULL));
+            }
             case SIZE:
-                return MethodValue.checkSize(null, constructor, constructorParameterValues);
+                return MethodValue.checkSize(evaluationContext, constructor, constructorParameterValues);
 
             case SIZE_COPY:
-                return MethodValue.checkSizeCopy(constructor);
+                return MethodValue.checkSizeCopy(evaluationContext, constructor);
 
             case MODIFIED:
             case IDENTITY:
@@ -158,10 +149,12 @@ public class Instance implements Value {
                 return Level.FALSE;
 
             case IMMUTABLE:
-            case CONTAINER:
+            case CONTAINER: {
+                TypeInfo bestType = parameterizedType.bestTypeInfo();
                 return bestType == null ? variableProperty.falseValue :
-                        Math.max(variableProperty.falseValue, bestType.typeAnalysis.get().getProperty(variableProperty));
-
+                        Math.max(variableProperty.falseValue,
+                                evaluationContext.getTypeAnalysis(bestType).getProperty(variableProperty));
+            }
             default:
         }
         // @NotModified should not be asked here

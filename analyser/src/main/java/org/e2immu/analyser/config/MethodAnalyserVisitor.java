@@ -1,9 +1,8 @@
 package org.e2immu.analyser.config;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.model.MethodAnalysis;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterAnalysis;
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.*;
 
 import java.util.List;
 import java.util.Map;
@@ -11,7 +10,13 @@ import java.util.Map;
 public interface MethodAnalyserVisitor {
     void visit(Data data);
 
-    record Data(int iteration, MethodInfo methodInfo, MethodAnalysis methodAnalysis,
-                List<ParameterAnalysis> parameterAnalyses,  Map<String, AnalysisStatus> statuses) {
+    record Data(int iteration,
+                EvaluationContext evaluationContext, MethodInfo methodInfo,
+                MethodAnalysis methodAnalysis,
+                List<ParameterAnalysis> parameterAnalyses, Map<String, AnalysisStatus> statuses) {
+
+        public int getProperty(Value value, VariableProperty variableProperty) {
+            return evaluationContext.getProperty(value, variableProperty);
+        }
     }
 }

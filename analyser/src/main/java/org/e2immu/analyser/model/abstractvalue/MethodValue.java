@@ -114,28 +114,23 @@ public class MethodValue implements Value {
     }
 
     @Override
-    public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        if (variableProperty == VariableProperty.SIZE) {
-            return checkSize(null, methodInfo, parameters);
-        }
-        if (variableProperty == VariableProperty.SIZE_COPY) {
-            return checkSizeCopy(methodInfo);
-        }
-        if (variableProperty == VariableProperty.NOT_NULL) {
-            int fluent = methodInfo.methodAnalysis.get().getProperty(VariableProperty.FLUENT);
-            if (fluent == Level.TRUE) return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL,
-                    methodInfo.typeInfo.typeAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-        }
-        return methodInfo.methodAnalysis.get().getProperty(variableProperty);
-    }
-
-    @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         boolean recursiveCall = methodInfo == evaluationContext.getCurrentMethod().methodInfo;
         if (recursiveCall) {
             return variableProperty.best;
         }
-        return getPropertyOutsideContext(variableProperty);
+        if (variableProperty == VariableProperty.SIZE) {
+            return checkSize(evaluationContext, methodInfo, parameters);
+        }
+        if (variableProperty == VariableProperty.SIZE_COPY) {
+            return checkSizeCopy(evaluationContext, methodInfo);
+        }
+        if (variableProperty == VariableProperty.NOT_NULL) {
+            int fluent = evaluationContext.getMethodAnalysis(methodInfo).getProperty(VariableProperty.FLUENT);
+            if (fluent == Level.TRUE) return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL,
+                    evaluationContext.getTypeAnalysis(methodInfo.typeInfo).getProperty(VariableProperty.NOT_NULL));
+        }
+        return evaluationContext.getMethodAnalysis(methodInfo).getProperty(variableProperty);
     }
 
     public static int checkSize(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Value> parameters) {
@@ -144,33 +139,32 @@ public class MethodValue implements Value {
         if (!methodInfo.returnType().hasSize() && !methodInfo.typeInfo.hasSize()) return Level.DELAY;
 
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-            int sizeCopy = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
+            int sizeCopy = evaluationContext.getParameterAnalysis(parameterInfo).getProperty(VariableProperty.SIZE_COPY);
             if (sizeCopy == Level.SIZE_COPY_MIN_TRUE || sizeCopy == Level.SIZE_COPY_TRUE) {
                 // copyMin == True
                 // copyEquals == True
                 Value value = parameters.get(parameterInfo.index);
-                int sizeOfValue = evaluationContext == null ? value.getPropertyOutsideContext(VariableProperty.SIZE) :
-                        evaluationContext.getProperty(value, VariableProperty.SIZE);
+                int sizeOfValue = evaluationContext.getProperty(value, VariableProperty.SIZE);
                 if (Level.haveEquals(sizeOfValue) && sizeCopy == 1) return sizeOfValue - 1;
                 return sizeOfValue;
             }
         }
-        return methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
+        return evaluationContext.getMethodAnalysis(methodInfo).getProperty(VariableProperty.SIZE);
     }
 
-    public static int checkSizeCopy(MethodInfo methodInfo) {
+    public static int checkSizeCopy(EvaluationContext evaluationContext, MethodInfo methodInfo) {
         if (methodInfo == null) return Level.DELAY;
         // the method either belongs to a type that has size, or it returns a type that has size
         if (!methodInfo.returnType().hasSize() && !methodInfo.typeInfo.hasSize()) return Level.DELAY;
 
         // we give priority to the value of the parameters, rather than that of the method
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-            int sizeCopy = parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
+            int sizeCopy = evaluationContext.getParameterAnalysis(parameterInfo).getProperty(VariableProperty.SIZE_COPY);
             if (sizeCopy == Level.SIZE_COPY_MIN_TRUE || sizeCopy == Level.SIZE_COPY_TRUE) {
                 return sizeCopy;
             }
         }
-        return methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY);
+        return evaluationContext.getMethodAnalysis(methodInfo).getProperty(VariableProperty.SIZE_COPY);
     }
 
 
@@ -229,7 +223,7 @@ public class MethodValue implements Value {
         // RULE 4: independent method: no link to object
 
         int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
-        int objectE2Immutable = MultiLevel.value(object.getProperty(evaluationContext, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
+        int objectE2Immutable = MultiLevel.value(evaluationContext.getProperty(object, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
         if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY) return null;
         boolean objectOfSameType = methodInfo.typeInfo == evaluationContext.getCurrentType().typeInfo;
         if (objectOfSameType || (objectE2Immutable < MultiLevel.EVENTUAL_AFTER && independent == MultiLevel.FALSE)) {

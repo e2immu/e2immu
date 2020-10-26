@@ -55,6 +55,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final boolean complainedAboutMissingStaticModifier;
     public final boolean complainedAboutApprovedPreconditions;
     public final Value precondition;
+    public final Value singleReturnValue;
 
     private MethodAnalysisImpl(boolean hasBeenDefined,
                                MethodInfo methodInfo,
@@ -62,6 +63,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                StatementAnalysis firstStatement,
                                StatementAnalysis lastStatement,
                                List<ParameterAnalysis> parameterAnalyses,
+                               Value singleReturnValue,
                                ObjectFlow objectFlow,
                                Set<ObjectFlow> internalObjectFlows,
                                List<Value> preconditionForMarkAndOnly,
@@ -84,6 +86,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.complainedAboutMissingStaticModifier = complainedAboutMissingStaticModifier;
         this.complainedAboutApprovedPreconditions = complainedAboutApprovedPreconditions;
         this.precondition = precondition;
+        this.singleReturnValue = singleReturnValue;
+    }
+
+    @Override
+    public Value getSingleReturnValue() {
+        return singleReturnValue;
     }
 
     @Override
@@ -177,6 +185,9 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public final SetOnce<Boolean> complainedAboutMissingStaticModifier = new SetOnce<>();
         public final SetOnce<Boolean> complainedAboutApprovedPreconditions = new SetOnce<>();
 
+        public final SetOnce<Value> singleReturnValue = new SetOnce<>();
+        public final SetOnce<Integer> singleReturnValueImmutable = new SetOnce<>();
+
         // ************* object flow
 
         public final SetOnce<Set<ObjectFlow>> internalObjectFlows = new SetOnce<>();
@@ -246,6 +257,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     firstStatement,
                     lastStatement.getOrElse(null),
                     parameterAnalyses,
+                    getSingleReturnValue(),
                     getObjectFlow(),
                     ImmutableSet.copyOf(internalObjectFlows.getOrElse(Set.of())),
                     ImmutableList.copyOf(preconditionForMarkAndOnly.getOrElse(List.of())),
@@ -259,6 +271,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public MethodLevelData methodLevelData() {
             return lastStatement.isSet() ? lastStatement.get().methodLevelData : firstStatement.lastStatement().methodLevelData;
+        }
+
+        @Override
+        public Value getSingleReturnValue() {
+            return singleReturnValue.getOrElse(null);
         }
 
         @Override

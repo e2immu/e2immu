@@ -18,7 +18,7 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("toString".equals(d.methodInfo.name) && "FinalNotNullChecks.this.input".equals(d.variableName)) {
-            int notNull = d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL);
+            int notNull = d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL);
             if (d.iteration == 0) {
                 Assert.assertTrue(d.currentValue instanceof UnknownValue);
                 Assert.assertEquals(Level.FALSE, notNull);
@@ -31,7 +31,7 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
             }
         }
         if ("FinalNotNullChecks".equals(d.methodInfo.name) && "param".equals(d.variableName)) {
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             if (d.iteration == 0) {
                 // only during the 1st iteration there is no @NotNull on the parameter, so there is a restriction
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.properties.get(VariableProperty.NOT_NULL));

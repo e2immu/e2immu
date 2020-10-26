@@ -21,13 +21,9 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
-import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.value.ConstantValue;
-import org.e2immu.analyser.model.value.IntValue;
-import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 

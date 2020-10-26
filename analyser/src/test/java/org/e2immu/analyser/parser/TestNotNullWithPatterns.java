@@ -35,7 +35,7 @@ public class TestNotNullWithPatterns extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("conditionalValue".equals(d.methodInfo().name) && d.iteration() > 2) {
-            Value srv = d.methodAnalysis().methodLevelData().singleReturnValue.get();
+            Value srv = d.methodAnalysis().getSingleReturnValue();
             Assert.assertEquals("inline conditionalValue on condition.test(initial)?alternative:initial", srv.toString());
             Assert.assertTrue(srv instanceof InlineValue);
 

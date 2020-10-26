@@ -59,22 +59,22 @@ public class TestIfStatementChecks extends CommonTestRunner {
         if (d.iteration() > 0) {
             MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
             if ("method1".equals(name)) {
-                Value value = methodLevelData.singleReturnValue.get();
+                Value value = d.methodAnalysis().getSingleReturnValue();
                 Assert.assertTrue("Got: " + value.getClass(), value instanceof InlineValue);
             }
 
             if ("method2".equals(name)) {
-                Value value = methodLevelData.singleReturnValue.get();
+                Value value = d.methodAnalysis().getSingleReturnValue();
                 Assert.assertTrue("Got: " + value.getClass(), value instanceof InlineValue);
             }
 
             if ("method3".equals(name)) {
-                Value value = methodLevelData.singleReturnValue.get();
+                Value value = d.methodAnalysis().getSingleReturnValue();
                 Assert.assertTrue("Got: " + value.getClass(), value instanceof InlineValue);
             }
 
             if ("method4".equals(name)) {
-                Value value = methodLevelData.singleReturnValue.get();
+                Value value = d.methodAnalysis().getSingleReturnValue();
                 // with more transformations, we can make this into an inline value TODO
                 Assert.assertEquals("<return value>", value.toString());
             }

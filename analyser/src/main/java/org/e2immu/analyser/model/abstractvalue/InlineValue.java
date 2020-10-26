@@ -72,17 +72,9 @@ public class InlineValue implements Value {
     }
 
     @Override
-    public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        if (VariableProperty.METHOD_PROPERTIES_IN_INLINE_SAM.contains(variableProperty)) {
-            return methodInfo.methodAnalysis.get().getProperty(variableProperty);
-        }
-        return value.getPropertyOutsideContext(variableProperty);
-    }
-
-    @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (VariableProperty.METHOD_PROPERTIES_IN_INLINE_SAM.contains(variableProperty)) {
-            return methodInfo.methodAnalysis.get().getProperty(variableProperty);
+            return evaluationContext.getMethodAnalysis(methodInfo).getProperty(variableProperty);
         }
         return value.getProperty(evaluationContext, variableProperty);
     }
@@ -109,20 +101,13 @@ public class InlineValue implements Value {
     }
 
     public boolean canBeApplied(EvaluationContext evaluationContext) {
-        switch (applicability) {
-            case EVERYWHERE:
-                return true;
-            case NONE:
-                return false;
-            case TYPE:
-                return evaluationContext.getCurrentType().equals(methodInfo.typeInfo);
-            case METHOD:
-                return methodInfo.equals(evaluationContext.getCurrentMethod());
-            case PACKAGE:
-                return evaluationContext.getCurrentType().typeInfo.packageName().equals(methodInfo.typeInfo.packageName());
-            case PROTECTED:
-            default:
-                throw new UnsupportedOperationException("TODO");
-        }
+        return switch (applicability) {
+            case EVERYWHERE -> true;
+            case NONE -> false;
+            case TYPE -> evaluationContext.getCurrentType().typeInfo.equals(methodInfo.typeInfo);
+            case METHOD -> methodInfo.equals(evaluationContext.getCurrentMethod().methodInfo);
+            case PACKAGE -> evaluationContext.getCurrentType().typeInfo.packageName().equals(methodInfo.typeInfo.packageName());
+            default -> throw new UnsupportedOperationException("TODO");
+        };
     }
 }

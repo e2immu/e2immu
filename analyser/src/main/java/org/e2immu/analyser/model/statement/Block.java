@@ -39,7 +39,7 @@ public class Block extends StatementWithStructure {
 
     private Block(@NotNull List<Statement> statements, String label) {
         structure = new Structure.Builder()
-                .setStatementsExecutedAtLeastOnce(v -> true)
+                .setStatementsExecutedAtLeastOnce((v, ec) -> true)
                 .setNoBlockMayBeExecuted(false)
                 .setStatements(statements).build();
         this.label = label;

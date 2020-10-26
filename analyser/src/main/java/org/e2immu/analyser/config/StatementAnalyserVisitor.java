@@ -1,6 +1,8 @@
 package org.e2immu.analyser.config;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.StatementAnalysis;
 import org.e2immu.analyser.model.Value;
@@ -18,8 +20,11 @@ public interface StatementAnalyserVisitor {
         public final Value condition;
         public final Value state;
         public final Map<String, AnalysisStatus> statusesAsMap;
+        public final EvaluationContext evaluationContext;
 
-        public Data(int iteration, MethodInfo methodInfo, StatementAnalysis statementAnalysis,
+        public Data(int iteration,
+                    EvaluationContext evaluationContext,
+                    MethodInfo methodInfo, StatementAnalysis statementAnalysis,
                     String statementId, Value condition, Value state, Map<String, AnalysisStatus> statusesAsMap) {
             this.iteration = iteration;
             this.methodInfo = methodInfo;
@@ -28,6 +33,7 @@ public interface StatementAnalyserVisitor {
             this.condition = condition;
             this.state = state;
             this.statusesAsMap = statusesAsMap;
+            this.evaluationContext = evaluationContext;
         }
 
         // shortcut
@@ -37,6 +43,10 @@ public interface StatementAnalyserVisitor {
                     .map(Message::toString)
                     .findFirst()
                     .orElse(null);
+        }
+
+        public int getProperty(Value value, VariableProperty variableProperty) {
+            return evaluationContext.getProperty(value, variableProperty);
         }
     }
 

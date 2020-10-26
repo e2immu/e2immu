@@ -25,10 +25,10 @@ public class TestContainerChecks extends CommonTestRunner {
                 Assert.assertFalse(d.properties.isSet(VariableProperty.NOT_NULL));
             }
             if ("strings1param".equals(d.variableName) && "1".equals(d.statementId)) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             }
             if ("Container1.this.strings1".equals(d.variableName) && "1".equals(d.statementId)) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.currentValue.getPropertyOutsideContext(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             }
         }
         if ("setStrings3".equals(d.methodInfo.name)) {

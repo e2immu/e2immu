@@ -41,11 +41,6 @@ public class CombinedValue implements Value {
     }
 
     @Override
-    public int getPropertyOutsideContext(VariableProperty variableProperty) {
-        return values.stream().mapToInt(value -> value.getPropertyOutsideContext(variableProperty)).min().orElse(Level.DELAY);
-    }
-
-    @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         return values.stream().mapToInt(value -> evaluationContext.getProperty(value, variableProperty)).min().orElse(Level.DELAY);
     }

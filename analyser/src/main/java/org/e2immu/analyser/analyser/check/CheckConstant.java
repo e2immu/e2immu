@@ -65,8 +65,7 @@ public class CheckConstant {
     }
 
     public static void checkConstantForMethods(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        Value singleReturnValue = methodAnalysis.methodLevelData().singleReturnValue.isSet() ?
-                methodAnalysis.methodLevelData().singleReturnValue.get() : UnknownValue.NO_VALUE;
+        Value singleReturnValue = methodAnalysis.getSingleReturnValue();
         checkConstant(messages,
                 singleReturnValue,
                 methodInfo.methodInspection.get().annotations,

@@ -134,9 +134,9 @@ public class Lambda implements Expression {
         Value result = null;
 
         MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
-        SetOnce<Value> srv = methodAnalysis.methodLevelData().singleReturnValue;
-        if (srv.isSet()) {
-            InlineValue inlineValue = srv.get().asInstanceOf(InlineValue.class);
+        Value srv = methodAnalysis.getSingleReturnValue();
+        if (srv != null) {
+            InlineValue inlineValue = srv.asInstanceOf(InlineValue.class);
             if (inlineValue != null) {
                 result = inlineValue;
             }

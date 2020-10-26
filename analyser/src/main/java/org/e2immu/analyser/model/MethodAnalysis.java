@@ -54,37 +54,62 @@ public interface MethodAnalysis extends Analysis {
 
     MethodInfo getMethodInfo();
 
-    default Set<MethodAnalysis> getOverrides() { return Set.of(); }
+    /**
+     * @return null when not yet decided
+     */
+    default Value getSingleReturnValue() {
+        return UnknownValue.NO_VALUE;
+    }
+
+    default Set<MethodAnalysis> getOverrides() {
+        return Set.of();
+    }
 
     /**
      * @return null when the method is not defined (has no statements)
      */
-    default StatementAnalysis getFirstStatement() { return null; }
+    default StatementAnalysis getFirstStatement() {
+        return null;
+    }
 
     List<ParameterAnalysis> getParameterAnalyses();
 
     /**
      * @return null when the method is not defined (has no statements)
      */
-    default StatementAnalysis getLastStatement() { return null; }
+    default StatementAnalysis getLastStatement() {
+        return null;
+    }
 
     // the value here (size will be one)
-    default List<Value> getPreconditionForMarkAndOnly() { return List.of(); }
+    default List<Value> getPreconditionForMarkAndOnly() {
+        return List.of();
+    }
 
     /**
      * @return null when the method has no MarkAndOnly
      */
-    default MarkAndOnly getMarkAndOnly() { return null; }
+    default MarkAndOnly getMarkAndOnly() {
+        return null;
+    }
 
     // ************* object flow
 
-    default Set<ObjectFlow> getInternalObjectFlows() { return Set.of(); }
+    default Set<ObjectFlow> getInternalObjectFlows() {
+        return Set.of();
+    }
 
-    default ObjectFlow getObjectFlow() { return ObjectFlow.NO_FLOW; }
+    default ObjectFlow getObjectFlow() {
+        return ObjectFlow.NO_FLOW;
+    }
 
-    default Boolean getComplainedAboutMissingStaticModifier() { return null; }
+    default Boolean getComplainedAboutMissingStaticModifier() {
+        return null;
+    }
 
-    default Boolean getComplainedAboutApprovedPreconditions() { return null; }
+    default Boolean getComplainedAboutApprovedPreconditions() {
+        return null;
+    }
 
 
     // replacements

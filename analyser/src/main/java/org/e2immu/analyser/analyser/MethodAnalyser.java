@@ -233,12 +233,15 @@ public class MethodAnalyser extends AbstractAnalyser {
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(iteration);
 
-            for (MethodAnalyserVisitor methodAnalyserVisitor : analyserContext.getConfiguration().
-                    debugConfiguration.afterMethodAnalyserVisitors) {
-                methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration, methodInfo, methodAnalysis,
-                        parameterAnalyses, analyserComponents.getStatusesAsMap()));
+            List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration().debugConfiguration.afterMethodAnalyserVisitors;
+            if (!visitors.isEmpty()) {
+                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
+                for (MethodAnalyserVisitor methodAnalyserVisitor : visitors) {
+                    methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration,
+                            evaluationContext, methodInfo, methodAnalysis,
+                            parameterAnalyses, analyserComponents.getStatusesAsMap()));
+                }
             }
-
             return analysisStatus;
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught exception in method analyser: {}", methodInfo.distinguishingName());
@@ -460,7 +463,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
     private AnalysisStatus methodIsConstant() {
-        assert !methodLevelData.singleReturnValue.isSet();
+        assert !methodAnalysis.singleReturnValue.isSet();
         if (methodLevelData.returnStatementSummaries.isEmpty()) return DONE;
 
         boolean allReturnValuesSet = methodLevelData.returnStatementSummaries.stream().allMatch(e -> e.getValue().value.isSet());
@@ -471,6 +474,8 @@ public class MethodAnalyser extends AbstractAnalyser {
         List<TransferValue> remainingReturnStatementSummaries = methodLevelData.returnStatementSummaries.stream().map(Map.Entry::getValue).collect(Collectors.toList());
 
         Value value = null;
+        int immutable = Level.DELAY;
+
         if (remainingReturnStatementSummaries.size() == 1) {
             Value single = remainingReturnStatementSummaries.get(0).value.get();
             if (!methodAnalysis.internalObjectFlows.isSet()) {
@@ -485,6 +490,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             }
             if (single.isConstant()) {
                 value = single;
+                immutable = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
             } else {
                 int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
                 if (modified == Level.DELAY) return DELAYS;
@@ -492,6 +498,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                     InlineValue.Applicability applicability = applicability(single);
                     if (applicability != InlineValue.Applicability.NONE) {
                         value = new InlineValue(methodInfo, single, applicability);
+                        immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
                     }
                 }
             }
@@ -502,11 +509,13 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
         // fallback
         if (value == null) {
+            immutable = MultiLevel.MUTABLE;
             value = UnknownValue.RETURN_VALUE;
         }
         boolean isConstant = value.isConstant();
 
-        methodLevelData.singleReturnValue.set(value);
+        methodAnalysis.singleReturnValue.set(value);
+        methodAnalysis.singleReturnValueImmutable.set(immutable);
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         if (isConstant) {
             AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(e2, value);
@@ -974,8 +983,8 @@ public class MethodAnalyser extends AbstractAnalyser {
             return true;
         }
 
-        if (methodLevelData.singleReturnValue.isSet()) {
-            int imm = methodLevelData.singleReturnValue.get().getPropertyOutsideContext(VariableProperty.IMMUTABLE);
+        if (methodAnalysis.singleReturnValue.isSet()) {
+            int imm = methodAnalysis.singleReturnValueImmutable.get();
             int dynamicE2ImmutableStatusOfReturnType = MultiLevel.value(imm, MultiLevel.E2IMMUTABLE);
             if (dynamicE2ImmutableStatusOfReturnType == MultiLevel.DELAY) {
                 log(DELAYED, "Have dynamic return type, no idea if E2Immutable: {}", methodInfo.distinguishingName());
@@ -1023,6 +1032,34 @@ public class MethodAnalyser extends AbstractAnalyser {
                 LOGGER.warn("Analyser components of method level data of last statement {}:\n{}", lastStatement.index(),
                         analyserComponentsOfMethodLevelData.details());
             }
+        }
+    }
+
+    private class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
+
+        protected EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
+            super(iteration, conditionManager);
+        }
+
+        @Override
+        public AnalyserContext getAnalyserContext() {
+            return analyserContext;
+        }
+
+        @Override
+        public int getProperty(Variable variable, VariableProperty variableProperty) {
+            if (variable instanceof FieldReference fieldReference) {
+                return getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
+            }
+            if (variable instanceof ParameterInfo parameterInfo) {
+                return getParameterAnalysis(parameterInfo).getProperty(variableProperty);
+            }
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int getProperty(Value value, VariableProperty variableProperty) {
+            return value.getProperty(this, variableProperty);
         }
     }
 }

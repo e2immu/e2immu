@@ -26,9 +26,9 @@ public abstract class ConstantValue implements Value {
         return true;
     }
 
-    // executed without context, default for all constant types
+
     @Override
-    public int getPropertyOutsideContext(VariableProperty variableProperty) {
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         switch (variableProperty) {
             case CONTAINER:
                 return Level.TRUE;
@@ -47,11 +47,6 @@ public abstract class ConstantValue implements Value {
                 return Level.FALSE;
         }
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
-    }
-
-    @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return getPropertyOutsideContext(variableProperty);
     }
 
     @Override
