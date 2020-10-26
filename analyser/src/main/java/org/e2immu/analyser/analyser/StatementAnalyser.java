@@ -183,6 +183,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         wasReplacement, previousStatementAnalysis, forwardAnalysisInfo);
                 builder.add(result);
                 previousStatement = statementAnalyser;
+
                 statementAnalyser = statementAnalyser.navigationData.next.get().orElse(null);
             } while (statementAnalyser != null);
             return builder.build();
@@ -341,12 +342,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         analysisStatus = result.analysisStatus;
 
         visitStatementVisitors(statementAnalysis.index, sharedState);
-
-        if (analysisStatus == DONE) {
-            localConditionManager = null;
-            analyserComponents = null;
-            // note that we must keep analysisStatus to DONE
-        }
 
         log(ANALYSER, "Returning from statement {} of {} with analysis status {}", statementAnalysis.index,
                 myMethodAnalyser.methodInfo.name, analysisStatus);

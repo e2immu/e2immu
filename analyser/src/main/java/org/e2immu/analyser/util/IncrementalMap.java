@@ -108,4 +108,12 @@ public class IncrementalMap<K> extends Freezable {
     public Map<K, Integer> toImmutableMap() {
         return ImmutableMap.copyOf(map);
     }
+
+    @Override
+    public String toString() {
+        return "IncrementalMap{" +
+                "map=" + map +
+                ", accept=" + accept +
+                '}';
+    }
 }

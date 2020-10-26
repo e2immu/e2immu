@@ -609,7 +609,9 @@ public class MethodAnalyser extends AbstractAnalyser {
             if (methodInfo.isConstructor) return DONE; // non-modifying constructor would be weird anyway; not for me
             if (methodInfo.returnType().hasSize()) {
                 // non-modifying method that returns a type with @Size (like Collection, Map, ...)
+                log(SIZE, "Return type {} of method {} has a size!", methodInfo.returnType().detailedString(), methodInfo.fullyQualifiedName());
 
+                methodLevelData.returnStatementSummaries.stream().forEach(e -> log(DELAYED, "RSS: {} = {}", e.getKey(), e.getValue()));
                 // then try @Size(min, equals)
                 boolean delays = methodLevelData.returnStatementSummaries.stream().anyMatch(entry -> entry.getValue().isDelayed(VariableProperty.SIZE));
                 if (delays) {
@@ -619,6 +621,8 @@ public class MethodAnalyser extends AbstractAnalyser {
                 IntStream stream = methodLevelData.returnStatementSummaries.stream()
                         .mapToInt(entry -> entry.getValue().getProperty(VariableProperty.SIZE));
                 return writeSize(VariableProperty.SIZE, safeMinimumForSize(messages, new Location(methodInfo), stream));
+            } else {
+                log(SIZE, "Return type {} of method {} has no size", methodInfo.returnType().detailedString(), methodInfo.fullyQualifiedName());
             }
 
             // non-modifying method that defines @Size (size(), isEmpty())

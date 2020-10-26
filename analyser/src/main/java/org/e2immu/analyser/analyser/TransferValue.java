@@ -39,4 +39,14 @@ public class TransferValue {
     public boolean isDelayed(VariableProperty variableProperty) {
         return properties.getOrDefault(variableProperty, Level.DELAY) == Level.DELAY;
     }
+
+    @Override
+    public String toString() {
+        return "TransferValue{" +
+                "value=" + value +
+                ", properties=" + properties +
+                ", stateOnAssignment=" + stateOnAssignment +
+                ", linkedVariables=" + linkedVariables +
+                '}';
+    }
 }

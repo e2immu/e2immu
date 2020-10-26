@@ -72,4 +72,11 @@ public class SetOnce<T> {
     public void copyIfNotSet(SetOnce<T> other) {
         if (!isSet() && other.isSet()) set(other.get());
     }
+
+    @Override
+    public String toString() {
+        return "SetOnce{" +
+                "t=" + t +
+                '}';
+    }
 }
