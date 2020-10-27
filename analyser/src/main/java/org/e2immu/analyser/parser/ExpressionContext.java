@@ -254,11 +254,12 @@ public class ExpressionContext {
                     parseStatement(blockBuilder, statement, null);
                 }
                 boolean java12Style = switchEntry.getType() != com.github.javaparser.ast.stmt.SwitchEntry.Type.STATEMENT_GROUP;
-                return new SwitchEntry.StatementsEntry(switchVariableAsExpression, java12Style, labels, blockBuilder.build().structure.statements);
+                return new SwitchEntry.StatementsEntry(typeContext.getPrimitives(),
+                        switchVariableAsExpression, java12Style, labels, blockBuilder.build().structure.statements);
             }
             case BLOCK -> {
                 Block block = parseBlockOrStatement(switchEntry.getStatements().get(0));
-                return new SwitchEntry.BlockEntry(switchVariableAsExpression, labels, block);
+                return new SwitchEntry.BlockEntry(typeContext.getPrimitives(), switchVariableAsExpression, labels, block);
             }
             default -> throw new UnsupportedOperationException("Unknown type " + switchEntry.getType());
         }
@@ -429,10 +430,7 @@ public class ExpressionContext {
                     typeInfo = null;
                 }
                 MethodInfo operatorMethod = BinaryOperator.getOperator(typeContext.getPrimitives(), binaryExpr.getOperator(), typeInfo);
-                return new BinaryOperator(
-                        lhs,
-                        operatorMethod,
-                        rhs,
+                return new BinaryOperator(lhs, operatorMethod, rhs,
                         BinaryOperator.precedence(typeContext.getPrimitives(), operatorMethod));
             }
             if (expression.isUnaryExpr()) {

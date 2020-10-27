@@ -7,16 +7,23 @@ import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class CheckLinks {
+    private final Primitives primitives;
 
-    public static AnnotationExpression createLinkAnnotation(E2ImmuAnnotationExpressions typeContext, Set<Variable> links) {
+    public CheckLinks(Primitives primitives) {
+        this.primitives = primitives;
+    }
+
+    public AnnotationExpression createLinkAnnotation(E2ImmuAnnotationExpressions typeContext, Set<Variable> links) {
         Expression computed = typeContext.constant.get().expressions.get().get(0);
-        List<Expression> linkNameList = links.stream().map(variable -> new StringConstant(variable.simpleName())).collect(Collectors.toList());
+        List<Expression> linkNameList = links.stream().map(variable -> new StringConstant(primitives,
+                variable.simpleName())).collect(Collectors.toList());
         Expression linksStringArray = new MemberValuePair("to", new ArrayInitializer(linkNameList));
         List<Expression> expressions = List.of(computed, linksStringArray);
         return AnnotationExpression.fromAnalyserExpressions(typeContext.linked.get().typeInfo, expressions);

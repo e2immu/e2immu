@@ -33,11 +33,14 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
     public final List<Expression> labels;
     public final Expression switchVariableAsExpression;
+    protected final Primitives primitives;
 
-    private SwitchEntry(Structure structure, Expression switchVariableAsExpression, List<Expression> labels) {
+    private SwitchEntry(Primitives primitives,
+                        Structure structure, Expression switchVariableAsExpression, List<Expression> labels) {
         super(structure);
         this.labels = labels;
         this.switchVariableAsExpression = switchVariableAsExpression;
+        this.primitives = primitives;
     }
 
     protected void appendLabels(StringBuilder sb, int indent, boolean java12Style, boolean newLine) {
@@ -61,15 +64,17 @@ public abstract class SwitchEntry extends StatementWithStructure {
         }
     }
 
-    private static Expression generateConditionExpression(List<Expression> labels, Expression switchVariableAsExpression) {
+    private static Expression generateConditionExpression(
+            Primitives primitives,
+            List<Expression> labels, Expression switchVariableAsExpression) {
         if (labels.isEmpty()) {
             return EmptyExpression.DEFAULT_EXPRESSION; // this will become the negation of the disjunction of all previous expressions
         }
-        MethodInfo operator = operator(switchVariableAsExpression);
+        MethodInfo operator = operator(primitives, switchVariableAsExpression);
         Expression or = equality(labels.get(0), switchVariableAsExpression, operator);
         // we group multiple "labels" into one disjunction
         for (int i = 1; i < labels.size(); i++) {
-            or = new BinaryOperator(or, Primitives.PRIMITIVES.orOperatorBool,
+            or = new BinaryOperator(or, primitives.orOperatorBool,
                     equality(labels.get(i), switchVariableAsExpression, operator),
                     BinaryOperator.LOGICAL_OR_PRECEDENCE);
         }
@@ -80,9 +85,9 @@ public abstract class SwitchEntry extends StatementWithStructure {
         return new BinaryOperator(switchVariableAsExpression, operator, label, BinaryOperator.EQUALITY_PRECEDENCE);
     }
 
-    private static MethodInfo operator(Expression switchVariableAsExpression) {
-        boolean primitive = switchVariableAsExpression.variables().get(0).concreteReturnType().isPrimitive();
-        return primitive ? Primitives.PRIMITIVES.equalsOperatorInt : Primitives.PRIMITIVES.equalsOperatorObject;
+    private static MethodInfo operator(Primitives primitives, Expression switchVariableAsExpression) {
+        boolean primitive = Primitives.isPrimitiveExcludingVoid(switchVariableAsExpression.variables().get(0).concreteReturnType());
+        return primitive ? primitives.equalsOperatorInt : primitives.equalsOperatorObject;
     }
 
     public boolean isNotDefault() {
@@ -94,12 +99,14 @@ public abstract class SwitchEntry extends StatementWithStructure {
     public static class StatementsEntry extends SwitchEntry {
         public final boolean java12Style;
 
-        public StatementsEntry(Expression switchVariableAsExpression,
-                               boolean java12Style,
-                               List<Expression> labels,
-                               List<Statement> statements) {
-            super(new Structure.Builder()
-                    .setExpression(generateConditionExpression(labels, switchVariableAsExpression))
+        public StatementsEntry(
+                Primitives primitives,
+                Expression switchVariableAsExpression,
+                boolean java12Style,
+                List<Expression> labels,
+                List<Statement> statements) {
+            super(primitives, new Structure.Builder()
+                    .setExpression(generateConditionExpression(primitives, labels, switchVariableAsExpression))
                     .setStatements(statements == null ? List.of() : statements)
                     .build(), switchVariableAsExpression, labels);
             this.java12Style = java12Style;
@@ -107,7 +114,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
         @Override
         public Statement translate(TranslationMap translationMap) {
-            return new StatementsEntry(translationMap.translateExpression(switchVariableAsExpression),
+            return new StatementsEntry(primitives, translationMap.translateExpression(switchVariableAsExpression),
                     java12Style,
                     labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
                     structure.statements.stream()
@@ -142,14 +149,16 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
     public static class BlockEntry extends SwitchEntry {
 
-        public BlockEntry(Expression switchVariableAsExpression, List<Expression> labels, Block block) {
-            super(new Structure.Builder().setExpression(generateConditionExpression(labels, switchVariableAsExpression))
-                    .setBlock(block).build(), switchVariableAsExpression, labels);
+        public BlockEntry(Primitives primitives,
+                          Expression switchVariableAsExpression, List<Expression> labels, Block block) {
+            super(primitives,
+                    new Structure.Builder().setExpression(generateConditionExpression(primitives, labels, switchVariableAsExpression))
+                            .setBlock(block).build(), switchVariableAsExpression, labels);
         }
 
         @Override
         public Statement translate(TranslationMap translationMap) {
-            return new BlockEntry(translationMap.translateExpression(switchVariableAsExpression),
+            return new BlockEntry(primitives, translationMap.translateExpression(switchVariableAsExpression),
                     labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
                     translationMap.translateBlock(structure.block));
         }

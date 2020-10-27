@@ -70,11 +70,13 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
         if (v instanceof NegatedValue) return ((NegatedValue) v).value;
         if (v instanceof OrValue or) {
             Value[] negated = or.values.stream().map(ov -> NegatedValue.negate(evaluationContext, ov)).toArray(Value[]::new);
-            return new AndValue(v.getObjectFlow()).append(negated);
+            return new AndValue(evaluationContext.getAnalyserContext().getPrimitives(), v.getObjectFlow())
+                    .append(evaluationContext, negated);
         }
         if (v instanceof AndValue and) {
             List<Value> negated = and.values.stream().map(av -> NegatedValue.negate(evaluationContext, av)).collect(Collectors.toList());
-            return new OrValue(v.getObjectFlow()).append(negated);
+            return new OrValue(evaluationContext.getAnalyserContext().getPrimitives(), v.getObjectFlow())
+                    .append(evaluationContext, negated);
         }
         if (v instanceof EqualsValue equalsValue) {
             if (equalsValue.lhs instanceof NumericValue && equalsValue.rhs instanceof ConstrainedNumericValue) {

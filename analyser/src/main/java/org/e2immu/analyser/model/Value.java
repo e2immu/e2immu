@@ -200,7 +200,7 @@ public interface Value extends Comparable<Value> {
         return Set.of();
     }
 
-    default int encodedSizeRestriction() {
+    default int encodedSizeRestriction(EvaluationContext evaluationContext) {
         return Level.FALSE;
     }
 

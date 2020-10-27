@@ -10,6 +10,7 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.model.value.StringValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -41,17 +42,17 @@ public class CheckConstant {
             boolean testExplicitly = constant.test();
             Boolean testBoolean = constant.extract("boolValue", null);
             if (testBoolean != null) {
-                toTest.valueToTest = new BoolValue(testBoolean);
+                toTest.valueToTest = new BoolValue(primitives, testBoolean);
                 if (testBoolean) testExplicitly = true;
             } else {
                 Integer testInteger = constant.extract("intValue", null);
                 if (testInteger != null) {
-                    toTest.valueToTest = new IntValue(primitives, testInteger);
+                    toTest.valueToTest = new IntValue(primitives, testInteger, ObjectFlow.NO_FLOW);
                     if (testInteger != 0) testExplicitly = true;
                 } else {
                     String testString = constant.extract("stringValue", null);
                     if (testString != null) {
-                        toTest.valueToTest = new StringValue(testString);
+                        toTest.valueToTest = new StringValue(primitives, testString, ObjectFlow.NO_FLOW);
                         if (!testString.isEmpty()) testExplicitly = true;
                     }
                 }

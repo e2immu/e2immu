@@ -109,7 +109,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
                     MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod;
                     if (sam != null) {
                         samAnalyser = new MethodAnalyser(sam, typeAnalysers.get(fieldInfo.owner), true, this);
-                        samAnalyser.methodAnalysis.overrides.set(overrides(sam, methodAnalysers));
+                        samAnalyser.methodAnalysis.overrides.set(overrides(typeContext.getPrimitives(), sam, methodAnalysers));
                     }
                 }
                 TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).typeAnalysis;
@@ -124,7 +124,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
                 }
                 MethodAnalyser methodAnalyser = methodAnalysers.get(mfs);
                 analyser = methodAnalyser;
-                methodAnalyser.methodAnalysis.overrides.set(overrides((MethodInfo) mfs, methodAnalysers));
+                methodAnalyser.methodAnalysis.overrides.set(overrides(typeContext.getPrimitives(), (MethodInfo) mfs, methodAnalysers));
             } else if (mfs instanceof TypeInfo) {
                 analyser = typeAnalysers.get(mfs);
             } else throw new UnsupportedOperationException();
@@ -142,8 +142,8 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         return typeContext.getPrimitives();
     }
 
-    private static Set<MethodAnalysis> overrides(MethodInfo methodInfo, Map<MethodInfo, MethodAnalyser> methodAnalysers) {
-        return methodInfo.typeInfo.overrides(methodInfo, true)
+    private static Set<MethodAnalysis> overrides(Primitives primitives, MethodInfo methodInfo, Map<MethodInfo, MethodAnalyser> methodAnalysers) {
+        return methodInfo.typeInfo.overrides(primitives, methodInfo, true)
                 .stream().map(mi -> {
                     MethodAnalyser methodAnalyser = methodAnalysers.get(mi);
                     assert methodAnalyser != null || mi.methodAnalysis.isSet() : "No analysis known for " + mi.fullyQualifiedName();

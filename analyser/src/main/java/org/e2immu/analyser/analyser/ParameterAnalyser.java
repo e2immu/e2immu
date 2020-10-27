@@ -41,11 +41,11 @@ public class ParameterAnalyser {
     private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
     private final E2ImmuAnnotationExpressions e2;
 
-    public ParameterAnalyser(ParameterInfo parameterInfo, AnalyserContext analyserContext) {
+    public ParameterAnalyser(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
         this.e2 = analyserContext.getE2ImmuAnnotationExpressions();
         this.parameterInfo = parameterInfo;
         TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-        parameterAnalysis = new ParameterAnalysisImpl.Builder(parameterInfo, analyserContext);
+        parameterAnalysis = new ParameterAnalysisImpl.Builder(analyserContext, parameterInfo);
     }
 
     public ParameterAnalysis getParameterAnalysis() {

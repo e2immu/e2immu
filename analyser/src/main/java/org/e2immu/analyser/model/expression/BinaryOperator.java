@@ -67,10 +67,11 @@ public class BinaryOperator implements Expression {
     public static final int LOGICAL_AND_PRECEDENCE = 4;
     public static final int LOGICAL_OR_PRECEDENCE = 3;
 
-    public BinaryOperator(@NotNull Expression lhs,
-                          @NotNull MethodInfo operator,
-                          @NotNull Expression rhs,
-                          int precedence) {
+    public BinaryOperator(
+            @NotNull Expression lhs,
+            @NotNull MethodInfo operator,
+            @NotNull Expression rhs,
+            int precedence) {
         this.lhs = Objects.requireNonNull(lhs);
         this.rhs = Objects.requireNonNull(rhs);
         this.precedence = precedence;
@@ -131,49 +132,51 @@ public class BinaryOperator implements Expression {
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
         if (operator == primitives.equalsOperatorObject) {
-            if (l.equals(r)) return BoolValue.TRUE;
+            if (l.equals(r)) return BoolValue.createTrue(primitives);
 
             // HERE are the ==null checks
             if (l == NullValue.NULL_VALUE && right.isNotNull0(evaluationContext) ||
                     r == NullValue.NULL_VALUE && left.isNotNull0(evaluationContext)) {
-                return BoolValue.FALSE;
+                return BoolValue.createFalse(primitives);
             }
-            return EqualsValue.equals(l, r, booleanObjectFlow(primitives, evaluationContext), evaluationContext);
+            return EqualsValue.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.equalsOperatorInt) {
-            if (l.equals(r)) return BoolValue.TRUE;
+            if (l.equals(r)) return BoolValue.createTrue(primitives);
             if (l == NullValue.NULL_VALUE || r == NullValue.NULL_VALUE) {
                 // TODO need more resolution here to distinguish int vs Integer comparison throw new UnsupportedOperationException();
             }
-            return EqualsValue.equals(l, r, booleanObjectFlow(primitives, evaluationContext), evaluationContext);
+            return EqualsValue.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.notEqualsOperatorObject) {
-            if (l.equals(r)) return BoolValue.FALSE;
+            if (l.equals(r)) BoolValue.createFalse(primitives);
 
             // HERE are the !=null checks
             if (l == NullValue.NULL_VALUE && right.isNotNull0(evaluationContext) ||
                     r == NullValue.NULL_VALUE && left.isNotNull0(evaluationContext)) {
-                return BoolValue.TRUE;
+                return BoolValue.createTrue(primitives);
             }
-            return NegatedValue.negate(EqualsValue.equals(l, r, booleanObjectFlow(primitives, evaluationContext), evaluationContext));
+            return NegatedValue.negate(evaluationContext,
+                    EqualsValue.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext)));
         }
         if (operator == primitives.notEqualsOperatorInt) {
-            if (l.equals(r)) return BoolValue.FALSE;
+            if (l.equals(r)) return BoolValue.createFalse(primitives);
             if (l == NullValue.NULL_VALUE || r == NullValue.NULL_VALUE) {
                 // TODO need more resolution throw new UnsupportedOperationException();
             }
-            return NegatedValue.negate(EqualsValue.equals(l, r, booleanObjectFlow(primitives, evaluationContext), evaluationContext));
+            return NegatedValue.negate(evaluationContext,
+                    EqualsValue.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext)));
         }
 
         // from here on, straightforward operations
         if (operator == primitives.plusOperatorInt) {
-            return SumValue.sum(l, r, intObjectFlow(primitives, evaluationContext));
+            return SumValue.sum(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.minusOperatorInt) {
-            return SumValue.sum(l, NegatedValue.negate(r), intObjectFlow(primitives, evaluationContext));
+            return SumValue.sum(evaluationContext, l, NegatedValue.negate(evaluationContext, r), intObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.multiplyOperatorInt) {
-            return ProductValue.product(l, r, intObjectFlow(primitives, evaluationContext));
+            return ProductValue.product(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.divideOperatorInt) {
             EvaluationResult er = DivideValue.divide(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
@@ -186,19 +189,19 @@ public class BinaryOperator implements Expression {
             return er.value;
         }
         if (operator == primitives.lessEqualsOperatorInt) {
-            return GreaterThanZeroValue.less(l, r, true, booleanObjectFlow(primitives, evaluationContext));
+            return GreaterThanZeroValue.less(evaluationContext, l, r, true, booleanObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.lessOperatorInt) {
-            return GreaterThanZeroValue.less(l, r, false, booleanObjectFlow(primitives, evaluationContext));
+            return GreaterThanZeroValue.less(evaluationContext, l, r, false, booleanObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.greaterEqualsOperatorInt) {
-            return GreaterThanZeroValue.greater(l, r, true, booleanObjectFlow(primitives, evaluationContext));
+            return GreaterThanZeroValue.greater(evaluationContext, l, r, true, booleanObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.greaterOperatorInt) {
-            return GreaterThanZeroValue.greater(l, r, false, booleanObjectFlow(primitives, evaluationContext));
+            return GreaterThanZeroValue.greater(evaluationContext, l, r, false, booleanObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.bitwiseAndOperatorInt) {
-            return BitwiseAndValue.bitwiseAnd(l, r, intObjectFlow(primitives, evaluationContext));
+            return BitwiseAndValue.bitwiseAnd(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
         }
         /*
             if (operator == primitives.bitwiseOrOperatorInt) {
@@ -232,15 +235,16 @@ public class BinaryOperator implements Expression {
     private EvaluationResult shortCircuit(EvaluationContext evaluationContext, boolean and) {
         ForwardEvaluationInfo forward = ForwardEvaluationInfo.NOT_NULL;
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
 
         EvaluationResult l = lhs.evaluate(evaluationContext, forward);
-        Value constant = and ? BoolValue.FALSE : BoolValue.TRUE;
+        Value constant = and ? BoolValue.createFalse(primitives) : BoolValue.createTrue(primitives);
         if (l.value == constant) {
             builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return builder.compose(l).build();
         }
 
-        Value condition = and ? l.value : NegatedValue.negate(l.value);
+        Value condition = and ? l.value : NegatedValue.negate(evaluationContext, l.value);
         EvaluationContext child = evaluationContext.child(condition);
         EvaluationResult r = rhs.evaluate(child, forward);
         if (r.value == constant) {
@@ -250,9 +254,9 @@ public class BinaryOperator implements Expression {
         ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(),
                 evaluationContext.getAnalyserContext().getPrimitives().booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
         if (and) {
-            builder.setValue(new AndValue(objectFlow).append(l.value, r.value));
+            builder.setValue(new AndValue(primitives, objectFlow).append(evaluationContext, l.value, r.value));
         } else {
-            builder.setValue(new OrValue(objectFlow).append(l.value, r.value));
+            builder.setValue(new OrValue(primitives, objectFlow).append(evaluationContext, l.value, r.value));
         }
         return builder.build();
     }
@@ -269,7 +273,7 @@ public class BinaryOperator implements Expression {
     public static MethodInfo getOperator(@NotNull Primitives primitives,
                                          @NotNull @NotModified BinaryExpr.Operator operator,
                                          @NotModified TypeInfo widestType) {
-        if (widestType == null || !widestType.isPrimitiveOrBoxed()) {
+        if (widestType == null || !Primitives.isPrimitiveExcludingVoid(widestType) && !Primitives.isBoxedExcludingVoid(widestType)) {
             if (operator == BinaryExpr.Operator.EQUALS) {
                 return primitives.equalsOperatorObject;
             }
@@ -307,7 +311,7 @@ public class BinaryOperator implements Expression {
             }
             throw new UnsupportedOperationException("Operator " + operator + " on char");
         }
-        if (widestType.isNumericPrimitiveBoxed()) {
+        if (Primitives.isNumeric(widestType)) {
             switch (operator) {
                 case MULTIPLY:
                     return primitives.multiplyOperatorInt;
@@ -398,14 +402,7 @@ public class BinaryOperator implements Expression {
     // TODO needs cleanup
     @Override
     public ParameterizedType returnType() {
-        if (operator == primitives.equalsOperatorObject || operator == primitives.notEqualsOperatorObject
-                || operator == primitives.equalsOperatorInt || operator == primitives.notEqualsOperatorInt
-                || operator == primitives.lessEqualsOperatorInt || operator == primitives.lessOperatorInt
-                || operator == primitives.greaterEqualsOperatorInt || operator == primitives.greaterOperatorInt
-                || operator == primitives.orOperatorBool || operator == primitives.andOperatorBool) {
-            return primitives.booleanParameterizedType;
-        }
-        return primitives.widestType(lhs.returnType(), rhs.returnType());
+        return operator.returnType();
     }
 
     @Override

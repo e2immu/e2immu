@@ -85,7 +85,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         methodInspection = methodInfo.methodInspection.get();
         ImmutableList.Builder<ParameterAnalyser> parameterAnalysersBuilder = new ImmutableList.Builder<>();
         for (ParameterInfo parameterInfo : methodInspection.parameters) {
-            parameterAnalysersBuilder.add(new ParameterAnalyser(parameterInfo, analyserContext));
+            parameterAnalysersBuilder.add(new ParameterAnalyser(analyserContext, parameterInfo));
         }
         parameterAnalysers = parameterAnalysersBuilder.build();
         this.myTypeAnalyser = myTypeAnalyser;
@@ -120,10 +120,10 @@ public class MethodAnalyser extends AbstractAnalyser {
                     .add("methodIsConstant", (iteration) -> methodInfo.isConstructor ? DONE : methodIsConstant())
                     .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                     .add("methodIsModified", (iteration) -> methodInfo.isConstructor ? DONE : methodIsModified())
-                    .add("computeOnlyMarkPrepWork", (iteration) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork())
-                    .add("computeOnlyMarkAnnotate", (iteration) -> methodInfo.isConstructor ? DONE : computeOnlyMarkAnnotate())
+                    .add("computeOnlyMarkPrepWork", (iteration) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork(iteration))
+                    .add("computeOnlyMarkAnnotate", (iteration) -> methodInfo.isConstructor ? DONE : computeOnlyMarkAnnotate(iteration))
                     .add("methodIsIndependent", (iteration) -> methodIsIndependent())
-                    .add("computeSize", (iteration) -> computeSize())
+                    .add("computeSize", this::computeSize)
                     .add("computeSizeCopy", (iteration) -> computeSizeCopy());
 
             for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
@@ -330,7 +330,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return parameterAnalyser;
     }
 
-    private AnalysisStatus computeOnlyMarkAnnotate() {
+    private AnalysisStatus computeOnlyMarkAnnotate(int iteration) {
         assert !methodAnalysis.markAndOnly.isSet();
 
         SetOnceMap<String, Value> approvedPreconditions = myTypeAnalyser.typeAnalysis.approvedPreconditions;
@@ -355,6 +355,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         boolean mark = false;
         Boolean after = null;
+        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
         for (Value precondition : preconditions) {
             String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(precondition);
             if (!approvedPreconditions.isSet(markLabel)) {
@@ -367,7 +368,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             if (before.toString().equals(precondition.toString())) {
                 after = false;
             } else {
-                Value negated = NegatedValue.negate(precondition);
+                Value negated = NegatedValue.negate(evaluationContext, precondition);
                 if (before.toString().equals(negated.toString())) {
                     if (after == null) after = true;
                 } else {
@@ -387,7 +388,8 @@ public class MethodAnalyser extends AbstractAnalyser {
                 log(MARK, "Method {} is @NotModified, so it'll be @Only rather than @Mark", methodInfo.distinguishingName());
             } else {
                 // for the before methods, we need to check again if we were mark or only
-                mark = mark || (!after && TypeAnalyser.assignmentIncompatibleWithPrecondition(precondition, methodInfo, methodLevelData()));
+                mark = mark || (!after && TypeAnalyser.assignmentIncompatibleWithPrecondition(evaluationContext,
+                        precondition, methodInfo, methodLevelData()));
             }
         }
         if (after == null) {
@@ -422,7 +424,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private AnalysisStatus computeOnlyMarkPrepWork() {
+    private AnalysisStatus computeOnlyMarkPrepWork(int iteration) {
         assert !methodAnalysis.preconditionForMarkAndOnly.isSet();
 
         TypeInfo typeInfo = methodInfo.typeInfo;
@@ -453,7 +455,8 @@ public class MethodAnalyser extends AbstractAnalyser {
         // at this point, the null and size checks on parameters have been removed.
         // we still need to remove other parameter components; what remains can be used for marking/only
 
-        Value.FilterResult filterResult = precondition.filter(Value.FilterMode.ACCEPT, Value::isIndividualFieldCondition);
+        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
+        Value.FilterResult filterResult = precondition.filter(evaluationContext, Value.FilterMode.ACCEPT, Value::isIndividualFieldCondition);
         if (filterResult.accepted.isEmpty()) {
             log(MARK, "No @Mark/@Only annotation in {}: found no individual field preconditions", methodInfo.distinguishingName());
             methodAnalysis.preconditionForMarkAndOnly.set(List.of());
@@ -602,7 +605,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private AnalysisStatus computeSize() {
+    private AnalysisStatus computeSize(int iteration) {
         assert methodAnalysis.getProperty(VariableProperty.SIZE) == Level.DELAY;
 
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
@@ -631,7 +634,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             }
 
             // non-modifying method that defines @Size (size(), isEmpty())
-            return writeSize(VariableProperty.SIZE, propagateSizeAnnotations());
+            return writeSize(VariableProperty.SIZE, propagateSizeAnnotations(iteration));
         }
 
         // modifying method
@@ -692,7 +695,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private int propagateSizeAnnotations() {
+    private int propagateSizeAnnotations(int iteration) {
         if (methodLevelData.returnStatementSummaries.size() != 1) {
             return Level.NOT_A_SIZE; // TODO
         }
@@ -731,7 +734,8 @@ public class MethodAnalyser extends AbstractAnalyser {
             } else {
                 GreaterThanZeroValue gzv;
                 if ((gzv = value.asInstanceOf(GreaterThanZeroValue.class)) != null) {
-                    GreaterThanZeroValue.XB xb = gzv.extract();
+                    EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
+                    GreaterThanZeroValue.XB xb = gzv.extract(evaluationContext);
                     ConstrainedNumericValue cnvXb;
                     if (!xb.lessThan && ((cnvXb = xb.x.asInstanceOf(ConstrainedNumericValue.class)) != null)) {
                         MethodValue methodValue;

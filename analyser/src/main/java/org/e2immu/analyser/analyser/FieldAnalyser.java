@@ -366,9 +366,12 @@ public class FieldAnalyser extends AbstractAnalyser {
                         Value assignment = m.methodLevelData().fieldSummaries.get(fieldInfo).value.get();
                         // the properties of the fieldSummary are in the "properties" of TransferValue, not in the value
                         // TODO there should be a better way to do this
-                        Value fieldIsNotNull = NegatedValue.negate(EqualsValue.equals(NullValue.NULL_VALUE, assignment, ObjectFlow.NO_FLOW, null));
-                        Value andValue = new AndValue(ObjectFlow.NO_FLOW).append(m.methodAnalysis.precondition.get(), fieldIsNotNull);
-                        return andValue != BoolValue.FALSE;
+                        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
+                        Value fieldIsNotNull = NegatedValue.negate(evaluationContext,
+                                EqualsValue.equals(evaluationContext, NullValue.NULL_VALUE, assignment, ObjectFlow.NO_FLOW));
+                        Value andValue = new AndValue(evaluationContext.getAnalyserContext().getPrimitives(), ObjectFlow.NO_FLOW)
+                                .append(evaluationContext, m.methodAnalysis.precondition.get(), fieldIsNotNull);
+                        return !andValue.equals(BoolValue.createFalse(evaluationContext.getAnalyserContext().getPrimitives()));
                     });
                     if (allCompatible) {
                         log(NOT_NULL, "Setting @Nullable on {}, already in precondition", fieldInfo.fullyQualifiedName());
@@ -670,7 +673,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         // explicitly adding the annotation here; it will not be inspected.
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        AnnotationExpression linkAnnotation = CheckLinks.createLinkAnnotation(e2, links);
+        AnnotationExpression linkAnnotation = new CheckLinks(analyserContext.getPrimitives()).createLinkAnnotation(e2, links);
         fieldAnalysis.annotations.put(linkAnnotation, !links.isEmpty());
         return DONE;
     }

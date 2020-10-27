@@ -315,7 +315,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .add("tryToFreezeDependencyGraph", sharedState -> tryToFreezeDependencyGraph())
                     .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previousStatementAnalysis))
 
-                    .add("copyPrecondition", sharedState -> statementAnalysis.stateData.copyPrecondition(this, previousStatementAnalysis))
+                    .add("copyPrecondition", sharedState -> statementAnalysis.stateData.copyPrecondition(this,
+                            previousStatementAnalysis, sharedState.evaluationContext))
                     .add(ANALYSE_METHOD_LEVEL_DATA, sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
                             previousStatementAnalysis == null ? null : previousStatementAnalysis.methodLevelData,
                             statementAnalysis.stateData))
@@ -500,12 +501,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     private AnalysisStatus checkSizeEscapes(SharedState sharedState) {
         if (isEscapeAlwaysExecuted()) {
-            Map<Variable, Value> individualSizeRestrictions = statementAnalysis.stateData.getConditionManager().findIndividualSizeRestrictionsInCondition();
+            Map<Variable, Value> individualSizeRestrictions = statementAnalysis.stateData
+                    .getConditionManager().findIndividualSizeRestrictionsInCondition();
             for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
                 ParameterInfo parameterInfo = (ParameterInfo) entry.getKey();
-                Value negated = NegatedValue.negate(entry.getValue());
+                Value negated = NegatedValue.negate(sharedState.evaluationContext, entry.getValue());
                 log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", parameterInfo.fullyQualifiedName(), negated);
-                int sizeRestriction = negated.encodedSizeRestriction();
+                int sizeRestriction = negated.encodedSizeRestriction(sharedState.evaluationContext);
                 if (sizeRestriction > 0) { // if the complement is a meaningful restriction
                     ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
                     sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.SIZE, sizeRestriction));
@@ -739,13 +741,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         Value valueForSubStatement;
         if (EmptyExpression.DEFAULT_EXPRESSION == expression) {
-            if (start == 1) valueForSubStatement = NegatedValue.negate(value);
+            if (start == 1) valueForSubStatement = NegatedValue.negate(evaluationContext, value);
             else {
+                Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
                 if (conditions.isEmpty()) {
-                    valueForSubStatement = BoolValue.TRUE;
+                    valueForSubStatement = BoolValue.createTrue(primitives);
                 } else {
-                    Value[] negated = conditions.stream().map(NegatedValue::negate).toArray(Value[]::new);
-                    valueForSubStatement = new AndValue(ObjectFlow.NO_FLOW).append(negated);
+                    Value[] negated = conditions.stream().map(c -> NegatedValue.negate(evaluationContext, c)).toArray(Value[]::new);
+                    valueForSubStatement = new AndValue(primitives, ObjectFlow.NO_FLOW).append(evaluationContext, negated);
                 }
             }
         } else if (EmptyExpression.FINALLY_EXPRESSION == expression || EmptyExpression.EMPTY_EXPRESSION == expression) {
@@ -823,7 +826,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             boolean inSyncBlock = step8_primaryBlock(evaluationContext, value, structure, startOfFirstBlock, builder);
 
             if (!inSyncBlock && value != NO_VALUE && value != null) {
-                defaultCondition = NegatedValue.negate(value);
+                defaultCondition = NegatedValue.negate(evaluationContext, value);
             }
             start = 1;
         } else {
@@ -1030,7 +1033,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (VariableProperty.SIZE == variableProperty) {
                     Value sizeRestriction = conditionManager.individualSizeRestrictions().get(variable);
                     if (sizeRestriction != null) {
-                        return sizeRestriction.encodedSizeRestriction();
+                        return sizeRestriction.encodedSizeRestriction(this);
                     }
                 }
                 return statementAnalysis.getProperty(analyserContext, variable, variableProperty);
@@ -1076,10 +1079,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             // action: if we add value == null, and nothing changes, we know it is true, we rely on value.getProperty
             // if the whole thing becomes false, we know it is false, which means we can return Level.TRUE
-            Value equalsNull = EqualsValue.equals(NullValue.NULL_VALUE, value, ObjectFlow.NO_FLOW, this);
-            if (equalsNull == BoolValue.FALSE) return MultiLevel.EFFECTIVELY_NOT_NULL;
+            Value equalsNull = EqualsValue.equals(this, NullValue.NULL_VALUE, value, ObjectFlow.NO_FLOW);
+            Value boolValueFalse = BoolValue.createFalse(getAnalyserContext().getPrimitives());
+            if (equalsNull.equals(boolValueFalse)) return MultiLevel.EFFECTIVELY_NOT_NULL;
             Value withCondition = conditionManager.combineWithState(equalsNull);
-            if (withCondition == BoolValue.FALSE) return MultiLevel.EFFECTIVELY_NOT_NULL; // we know != null
+            if (withCondition.equals(boolValueFalse)) return MultiLevel.EFFECTIVELY_NOT_NULL; // we know != null
             if (withCondition.equals(equalsNull)) return MultiLevel.NULLABLE; // we know == null was already there
             return Level.DELAY;
         }

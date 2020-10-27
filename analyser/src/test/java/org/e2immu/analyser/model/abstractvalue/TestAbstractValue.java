@@ -32,6 +32,22 @@ import java.util.stream.Collectors;
 
 public class TestAbstractValue extends CommonAbstractValue {
 
+    private static Value newAndAppend(Value... values) {
+        return new AndValue(PRIMITIVES).append(minimalEvaluationContext, values);
+    }
+
+    private static Value newOrAppend(Value... values) {
+        return new OrValue(PRIMITIVES).append(minimalEvaluationContext, values);
+    }
+
+    private static Value negate(Value value) {
+        return NegatedValue.negate(minimalEvaluationContext, value);
+    }
+
+    private static Value newInt(int i) {
+        return new IntValue(PRIMITIVES, i, ObjectFlow.NO_FLOW);
+    }
+
     @Test
     public void test() {
         Value notA = NegatedValue.negate(minimalEvaluationContext, a);
@@ -40,51 +56,50 @@ public class TestAbstractValue extends CommonAbstractValue {
         Assert.assertEquals(notA, notA2);
         Assert.assertEquals(a, NegatedValue.negate(minimalEvaluationContext, notA));
 
-        Assert.assertEquals(a, new AndValue().append(a, a));
-        Assert.assertEquals(notA, new AndValue().append(notA, notA));
-        Assert.assertEquals(FALSE, new AndValue().append(a, notA));
+        Assert.assertEquals(a, newAndAppend(a, a));
+        Assert.assertEquals(notA, newAndAppend(notA, notA));
+        Assert.assertEquals(FALSE, newAndAppend(a, notA));
 
         // A && A, !A && !A
-        Assert.assertEquals(a, new AndValue().append(a, a));
-        Assert.assertEquals(notA, new AndValue().append(notA, notA));
+        Assert.assertEquals(a, newAndAppend(a, a));
+        Assert.assertEquals(notA, newAndAppend(notA, notA));
         // A && !A, !A && A
-        Assert.assertEquals(FALSE, new AndValue().append(a, notA));
-        Assert.assertEquals(FALSE, new AndValue().append(notA, a));
+        Assert.assertEquals(FALSE, newAndAppend(a, notA));
+        Assert.assertEquals(FALSE, newAndAppend(notA, a));
 
         // F || T
-        Assert.assertEquals(TRUE, new OrValue().append(FALSE, TRUE));
+        Assert.assertEquals(TRUE, newOrAppend(FALSE, TRUE));
         // A || A, !A || !A
-        Assert.assertEquals(a, new OrValue().append(a, a));
-        Assert.assertEquals(notA, new OrValue().append(notA, notA));
+        Assert.assertEquals(a, newOrAppend(a, a));
+        Assert.assertEquals(notA, newOrAppend(notA, notA));
         // A || !A, !A || A
-        Assert.assertEquals(TRUE, new OrValue().append(a, notA));
-        Assert.assertEquals(TRUE, new OrValue().append(notA, a));
+        Assert.assertEquals(TRUE, newOrAppend(a, notA));
+        Assert.assertEquals(TRUE, newOrAppend(notA, a));
     }
 
     @Test
     public void testAndOfTrues() {
-        Value v = new AndValue().append(TRUE, TRUE);
+        Value v = newAndAppend(TRUE, TRUE);
         Assert.assertEquals(TRUE, v);
     }
 
     @Test
     public void testMoreComplicatedAnd() {
-        Value aAndAOrB = new AndValue().append(a, new OrValue().append(a, b));
+        Value aAndAOrB = newAndAppend(a, newOrAppend(a, b));
         Assert.assertEquals(a, aAndAOrB);
 
-        Value aAndNotAOrB = new AndValue().append(a, new OrValue().append(NegatedValue.negate(minimalEvaluationContext, a), b));
+        Value aAndNotAOrB = newAndAppend(a, newOrAppend(NegatedValue.negate(minimalEvaluationContext, a), b));
         Assert.assertEquals("(a and b)", aAndNotAOrB.toString());
 
         //D && A && !B && (!A || B) && C (the && C, D is there just for show)
-        Value v = new AndValue().append(d, a, NegatedValue.negate(minimalEvaluationContext, b),
-                new OrValue().append(NegatedValue.negate(minimalEvaluationContext, a), b), c);
+        Value v = newAndAppend(d, a, negate(b), newOrAppend(negate(a), b), c);
         Assert.assertEquals(FALSE, v);
     }
 
     @Test
     public void testExpandAndInOr() {
         // A || (B && C)
-        Value v = new OrValue().append(a, new AndValue().append(b, c));
+        Value v = newOrAppend(a, newAndAppend(b, c));
         Assert.assertEquals("((a or b) and (a or c))", v.toString());
     }
 
@@ -93,10 +108,10 @@ public class TestAbstractValue extends CommonAbstractValue {
         Value iva = new InstanceOfValue(PRIMITIVES, va, PRIMITIVES.stringParameterizedType, ObjectFlow.NO_FLOW);
         Assert.assertEquals("a instanceof java.lang.String", iva.toString());
         Value ivb = new InstanceOfValue(PRIMITIVES, vb, PRIMITIVES.stringParameterizedType, ObjectFlow.NO_FLOW);
-        Value or = new OrValue().append(ivb, iva);
+        Value or = newOrAppend(ivb, iva);
         Assert.assertEquals("(a instanceof java.lang.String or b instanceof java.lang.String)", or.toString());
         Value iva2 = new InstanceOfValue(PRIMITIVES, va, PRIMITIVES.objectParameterizedType, ObjectFlow.NO_FLOW);
-        Value or2 = new OrValue().append(iva, iva2);
+        Value or2 = newOrAppend(iva, iva2);
         Assert.assertEquals("(a instanceof java.lang.Object or a instanceof java.lang.String)", or2.toString());
     }
 
@@ -119,7 +134,7 @@ public class TestAbstractValue extends CommonAbstractValue {
         Assert.assertEquals(1, nullClauses2.size());
         Assert.assertEquals(true, nullClauses2.get(vb));
 
-        Value orValue = new OrValue().append(v, NegatedValue.negate(minimalEvaluationContext, v2));
+        Value orValue = newOrAppend(v, negate(v2));
         Assert.assertEquals("(null == a or not (null == b))", orValue.toString());
         Map<Variable, Boolean> nullClausesAnd = nullClauses(orValue, Value.FilterMode.REJECT);
         Assert.assertEquals(2, nullClausesAnd.size());
@@ -142,23 +157,23 @@ public class TestAbstractValue extends CommonAbstractValue {
     @Test
     public void testCNF() {
         // (a && b) || (c && d)
-        Value or = new OrValue().append(new AndValue().append(a, b), new AndValue().append(c, d));
+        Value or = newOrAppend(newAndAppend(a, b), newAndAppend(c, d));
         Assert.assertEquals(EXPECTED, or.toString());
-        or = new OrValue().append(new AndValue().append(b, a), new AndValue().append(d, c));
+        or = newOrAppend(newAndAppend(b, a), newAndAppend(d, c));
         Assert.assertEquals(EXPECTED, or.toString());
-        or = new OrValue().append(new AndValue().append(d, c), new AndValue().append(b, a));
+        or = newOrAppend(newAndAppend(d, c), newAndAppend(b, a));
         Assert.assertEquals(EXPECTED, or.toString());
     }
 
     @Test
     public void testCNFWithNot() {
-        Value notB = NegatedValue.negate(minimalEvaluationContext, b);
-        Value notC = NegatedValue.negate(minimalEvaluationContext, c);
-        Value or = new OrValue().append(new AndValue().append(a, notB), new AndValue().append(notC, d));
+        Value notB = negate(b);
+        Value notC = negate(c);
+        Value or = newOrAppend(newAndAppend(a, notB), newAndAppend(notC, d));
         Assert.assertEquals(EXPECTED2, or.toString());
-        or = new OrValue().append(new AndValue().append(notB, a), new AndValue().append(d, notC));
+        or = newOrAppend(newAndAppend(notB, a), newAndAppend(d, notC));
         Assert.assertEquals(EXPECTED2, or.toString());
-        or = new OrValue().append(new AndValue().append(d, notC), new AndValue().append(notB, a));
+        or = newOrAppend(newAndAppend(d, notC), newAndAppend(notB, a));
         Assert.assertEquals(EXPECTED2, or.toString());
     }
 
@@ -167,8 +182,7 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testForSwitchStatement() {
-        Value v = new AndValue().append(NegatedValue.negate(minimalEvaluationContext, a),
-                NegatedValue.negate(minimalEvaluationContext, b), new OrValue().append(a, b));
+        Value v = newAndAppend(negate(a), negate(b), newOrAppend(a, b));
         Assert.assertEquals(FALSE, v);
 
         Value cIsA = equals(new CharValue(PRIMITIVES, 'a', ObjectFlow.NO_FLOW), c);
@@ -177,21 +191,19 @@ public class TestAbstractValue extends CommonAbstractValue {
 
         Value cIsB = equals(new CharValue(PRIMITIVES, 'b', ObjectFlow.NO_FLOW), c);
 
-        Value v2 = new AndValue().append(NegatedValue.negate(minimalEvaluationContext, cIsA),
-                NegatedValue.negate(minimalEvaluationContext, cIsB), new OrValue().append(cIsA, cIsB));
+        Value v2 = newAndAppend(negate(cIsA), negate(cIsB), newOrAppend(cIsA, cIsB));
         Assert.assertEquals(FALSE, v2);
     }
 
     @Test
     public void testCompare() {
-        Value aGt4 = GreaterThanZeroValue.greater(minimalEvaluationContext, a, new IntValue(PRIMITIVES, 4, ObjectFlow.NO_FLOW), true);
+        Value aGt4 = GreaterThanZeroValue.greater(minimalEvaluationContext, a, newInt(4), true);
         Assert.assertEquals("((-4) + a) >= 0", aGt4.toString());
 
-        Value n4ltB = GreaterThanZeroValue.less(minimalEvaluationContext, new IntValue(PRIMITIVES, 4, ObjectFlow.NO_FLOW), b, false);
+        Value n4ltB = GreaterThanZeroValue.less(minimalEvaluationContext, newInt(4), b, false);
         Assert.assertEquals("((-5) + b) >= 0", n4ltB.toString());
 
-        Value n4lt8 = GreaterThanZeroValue.less(minimalEvaluationContext, new IntValue(PRIMITIVES, 4, ObjectFlow.NO_FLOW),
-                new IntValue(PRIMITIVES, 8, ObjectFlow.NO_FLOW), false);
+        Value n4lt8 = GreaterThanZeroValue.less(minimalEvaluationContext, newInt(4), newInt(8), false);
         Assert.assertEquals(TRUE, n4lt8);
     }
 
@@ -199,20 +211,20 @@ public class TestAbstractValue extends CommonAbstractValue {
     public void testSumProduct() {
         Value aa = SumValue.sum(minimalEvaluationContext, a, a, ObjectFlow.NO_FLOW);
         Assert.assertEquals("2 * a", aa.toString());
-        Value a0 = SumValue.sum(minimalEvaluationContext, a, new IntValue(PRIMITIVES, 0, ObjectFlow.NO_FLOW), ObjectFlow.NO_FLOW);
+        Value a0 = SumValue.sum(minimalEvaluationContext, a, newInt(0), ObjectFlow.NO_FLOW);
         Assert.assertEquals(a, a0);
         Value aTimes0 = ProductValue.product(minimalEvaluationContext, a,
                 new IntValue(PRIMITIVES, 0, ObjectFlow.NO_FLOW), ObjectFlow.NO_FLOW);
-        Assert.assertEquals(new IntValue(PRIMITIVES, 0, ObjectFlow.NO_FLOW), aTimes0);
+        Assert.assertEquals(newInt(0), aTimes0);
 
         Value a3a = SumValue.sum(minimalEvaluationContext, a,
-                ProductValue.product(minimalEvaluationContext, new IntValue(PRIMITIVES, 3, ObjectFlow.NO_FLOW), a, ObjectFlow.NO_FLOW),
+                ProductValue.product(minimalEvaluationContext, newInt(3), a, ObjectFlow.NO_FLOW),
                 ObjectFlow.NO_FLOW);
         Assert.assertEquals("4 * a", a3a.toString());
 
-        Value b2 = ProductValue.product(minimalEvaluationContext, b, new IntValue(PRIMITIVES, 2, ObjectFlow.NO_FLOW),
+        Value b2 = ProductValue.product(minimalEvaluationContext, b, newInt(2),
                 ObjectFlow.NO_FLOW);
-        Value fourB2 = ProductValue.product(minimalEvaluationContext, new IntValue(PRIMITIVES, 4, ObjectFlow.NO_FLOW),
+        Value fourB2 = ProductValue.product(minimalEvaluationContext, newInt(4),
                 b2, ObjectFlow.NO_FLOW);
         Value b4b2 = SumValue.sum(minimalEvaluationContext, fourB2, b2, ObjectFlow.NO_FLOW);
         Assert.assertEquals("6 * b", b4b2.toString());

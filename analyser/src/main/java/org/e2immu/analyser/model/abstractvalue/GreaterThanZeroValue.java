@@ -187,10 +187,10 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     }
 
     public static Value greater(EvaluationContext evaluationContext, Value l, Value r, boolean allowEquals, ObjectFlow objectFlow) {
-        if (l.equals(r) && !allowEquals) return BoolValue.FALSE;
+        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        if (l.equals(r) && !allowEquals) return BoolValue.createFalse(primitives);
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
 
         if (l instanceof NumericValue && r instanceof NumericValue) {
             if (allowEquals)
@@ -198,7 +198,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
             return new BoolValue(primitives, l.toInt().value > r.toInt().value, objectFlow);
         }
 
-        Value v = tautologyGreaterThan(l, r, allowEquals);
+        Value v = tautologyGreaterThan(primitives, l, r, allowEquals);
         if (v != null) return v;
 
         ParameterizedType intParameterizedType = evaluationContext.getAnalyserContext().getPrimitives().intParameterizedType;
@@ -226,14 +226,14 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     }
 
     // check ConstrainedNV
-    private static Value tautologyGreaterThan(Value l, Value r, boolean allowEquals) {
+    private static Value tautologyGreaterThan(Primitives primitives, Value l, Value r, boolean allowEquals) {
         if (l instanceof ConstrainedNumericValue cnv && r instanceof NumericValue) {
             double v = ((NumericValue) r).getNumber().doubleValue();
             // cnv,?>= v, >= v (trivial)   and   > v (real restriction)
-            if (v == cnv.lowerBound) return allowEquals ? BoolValue.TRUE : null;
+            if (v == cnv.lowerBound) return allowEquals ? BoolValue.createTrue(primitives) : null;
 
             // cnv,?>=x >= v, v<x
-            if (cnv.onlyLowerBound() && v < cnv.lowerBound) return BoolValue.TRUE;
+            if (cnv.onlyLowerBound() && v < cnv.lowerBound) return BoolValue.createTrue(primitives);
         }
         return null;
     }
@@ -244,10 +244,10 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     }
 
     public static Value less(EvaluationContext evaluationContext, Value l, Value r, boolean allowEquals, ObjectFlow objectFlow) {
-        if (l.equals(r) && !allowEquals) return BoolValue.FALSE;
+        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        if (l.equals(r) && !allowEquals) return BoolValue.createFalse(primitives);
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
 
         if (l instanceof NumericValue && r instanceof NumericValue) {
             if (allowEquals)
@@ -311,8 +311,8 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     }
 
     @Override
-    public int encodedSizeRestriction() {
-        XB xb = extract();
+    public int encodedSizeRestriction(EvaluationContext evaluationContext) {
+        XB xb = extract(evaluationContext);
         if (!xb.lessThan) {
             return Level.encodeSizeMin((int) xb.b);
         }

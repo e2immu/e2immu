@@ -52,6 +52,14 @@ public class BoolValue extends ConstantValue implements Constant<Boolean> {
         return builder.setValue(new BoolValue(primitives, b, objectFlow)).build();
     }
 
+    public static Value createTrue(Primitives primitives) {
+        return new BoolValue(primitives, true, ObjectFlow.NO_FLOW);
+    }
+
+    public static Value createFalse(Primitives primitives) {
+        return new BoolValue(primitives, false, ObjectFlow.NO_FLOW);
+    }
+
     @Override
     public int order() {
         return ORDER_CONSTANT_BOOLEAN;

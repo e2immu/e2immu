@@ -36,19 +36,21 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class AndValue extends PrimitiveValue {
     public final List<Value> values;
+    private final Primitives primitives;
 
     // testing only
-    public AndValue() {
-        this(ObjectFlow.NO_FLOW);
+    public AndValue(Primitives primitives) {
+        this(primitives, ObjectFlow.NO_FLOW);
     }
 
-    public AndValue(ObjectFlow objectFlow) {
-        this(objectFlow, List.of());
+    public AndValue(Primitives primitives, ObjectFlow objectFlow) {
+        this(primitives, objectFlow, List.of());
     }
 
-    private AndValue(ObjectFlow objectFlow, List<Value> values) {
+    private AndValue(Primitives primitives, ObjectFlow objectFlow, List<Value> values) {
         super(objectFlow);
         this.values = values;
+        this.primitives = primitives;
     }
 
     private enum Action {
@@ -56,7 +58,7 @@ public class AndValue extends PrimitiveValue {
     }
 
     // we try to maintain a CNF
-    public Value append(Value... values) {
+    public Value append(EvaluationContext evaluationContext, Value... values) {
 
         // STEP 1: trivial reductions
 
@@ -94,7 +96,7 @@ public class AndValue extends PrimitiveValue {
             for (Value value : concat) {
                 if (value instanceof BoolValue && !((BoolValue) value).value) {
                     log(CNF, "Return FALSE in And, found FALSE", value);
-                    return BoolValue.FALSE;
+                    return BoolValue.createFalse(primitives);
                 }
             }
             concat.removeIf(value -> value instanceof BoolValue); // TRUE can go
@@ -106,12 +108,12 @@ public class AndValue extends PrimitiveValue {
             int pos = 0;
             for (Value value : concat) {
 
-                Action action = analyse(pos, newConcat, prev, value);
+                Action action = analyse(evaluationContext, pos, newConcat, prev, value);
                 switch (action) {
                     case FALSE:
-                        return BoolValue.FALSE;
+                        return BoolValue.createFalse(primitives);
                     case TRUE:
-                        return BoolValue.TRUE;
+                        return BoolValue.createTrue(primitives);
                     case ADD:
                         newConcat.add(value);
                         break;
@@ -133,18 +135,18 @@ public class AndValue extends PrimitiveValue {
         }
         if (concat.isEmpty()) {
             log(CNF, "And reduced to 0 components, return true");
-            return BoolValue.TRUE;
+            return BoolValue.createTrue(primitives);
         }
         if (concat.size() == 1) {
             log(CNF, "And reduced to 1 component: {}", concat.get(0));
             return concat.get(0);
         }
-        AndValue res = new AndValue(objectFlow, ImmutableList.copyOf(concat));
+        AndValue res = new AndValue(primitives, objectFlow, ImmutableList.copyOf(concat));
         log(CNF, "Constructed {}", res);
         return res;
     }
 
-    private Action analyse(int pos, ArrayList<Value> newConcat, Value prev, Value value) {
+    private Action analyse(EvaluationContext evaluationContext, int pos, ArrayList<Value> newConcat, Value prev, Value value) {
         // A && A
         if (value.equals(prev)) return Action.SKIP;
 
@@ -165,7 +167,7 @@ public class AndValue extends PrimitiveValue {
             boolean changed = false;
             while (iterator.hasNext()) {
                 Value value1 = iterator.next();
-                Value negated1 = NegatedValue.negate(value1);
+                Value negated1 = NegatedValue.negate(evaluationContext, value1);
                 boolean found = false;
                 for (int pos2 = 0; pos2 < newConcat.size(); pos2++) {
                     if (pos2 != pos && negated1.equals(newConcat.get(pos2))) {
@@ -184,7 +186,7 @@ public class AndValue extends PrimitiveValue {
                     return Action.FALSE;
                 }
                 // replace
-                Value orValue = new OrValue(objectFlow).append(remaining);
+                Value orValue = new OrValue(primitives, objectFlow).append(evaluationContext, remaining);
                 newConcat.add(orValue);
                 return Action.SKIP;
             }
@@ -211,14 +213,14 @@ public class AndValue extends PrimitiveValue {
             for (Value value1 : components) {
                 if (prevComponents.contains(value1)) {
                     equal.add(value1);
-                } else if (!prevComponents.contains(NegatedValue.negate(value1))) {
+                } else if (!prevComponents.contains(NegatedValue.negate(evaluationContext, value1))) {
                     // not opposite, e.g. C
                     ok = false;
                     break;
                 }
             }
             if (ok && !equal.isEmpty()) {
-                Value orValue = new OrValue(objectFlow).append(equal);
+                Value orValue = new OrValue(primitives, objectFlow).append(evaluationContext, equal);
                 newConcat.set(newConcat.size() - 1, orValue);
                 return Action.SKIP;
             }
@@ -265,7 +267,7 @@ public class AndValue extends PrimitiveValue {
 
             // GE and EQ (note: GE always comes after EQ)
             if (value instanceof GreaterThanZeroValue ge) {
-                GreaterThanZeroValue.XB xb = ge.extract();
+                GreaterThanZeroValue.XB xb = ge.extract(evaluationContext);
                 if (ev1.lhs instanceof NumericValue && ev1.rhs.equals(xb.x)) {
                     double y = ((NumericValue) ev1.lhs).getNumber().doubleValue();
                     if (xb.lessThan) {
@@ -287,7 +289,7 @@ public class AndValue extends PrimitiveValue {
 
         //  GE and NOT EQ
         if (value instanceof GreaterThanZeroValue ge && prev instanceof NegatedValue && ((NegatedValue) prev).value instanceof EqualsValue equalsValue) {
-            GreaterThanZeroValue.XB xb = ge.extract();
+            GreaterThanZeroValue.XB xb = ge.extract(evaluationContext);
             if (equalsValue.lhs instanceof NumericValue && equalsValue.rhs.equals(xb.x)) {
                 double y = ((NumericValue) equalsValue.lhs).getNumber().doubleValue();
 
@@ -300,8 +302,8 @@ public class AndValue extends PrimitiveValue {
 
         // GE and GE
         if (value instanceof GreaterThanZeroValue ge2 && prev instanceof GreaterThanZeroValue ge1) {
-            GreaterThanZeroValue.XB xb1 = ge1.extract();
-            GreaterThanZeroValue.XB xb2 = ge2.extract();
+            GreaterThanZeroValue.XB xb1 = ge1.extract(evaluationContext);
+            GreaterThanZeroValue.XB xb2 = ge2.extract(evaluationContext);
             if (xb1.x.equals(xb2.x)) {
                 // x>= b1 && x >= b2, with < or > on either
                 if (xb1.lessThan && xb2.lessThan) {
@@ -328,8 +330,9 @@ public class AndValue extends PrimitiveValue {
                 if (xb1.b > xb2.b) return !xb1.lessThan ? Action.FALSE : Action.ADD;
                 if (xb1.b < xb2.b) return !xb1.lessThan ? Action.ADD : Action.FALSE;
                 if (ge1.allowEquals && ge2.allowEquals) {
-                    Value newValue = EqualsValue.equals(NumericValue.intOrDouble(xb1.b, ge1.getObjectFlow()),
-                            xb1.x, ge1.getObjectFlow(), null); // null-checks are irrelevant here
+                    Value newValue = EqualsValue.equals(evaluationContext,
+                            NumericValue.intOrDouble(primitives, xb1.b, ge1.getObjectFlow()),
+                            xb1.x, ge1.getObjectFlow()); // null-checks are irrelevant here
                     newConcat.set(newConcat.size() - 1, newValue);
                     return Action.SKIP;
                 }
@@ -401,7 +404,7 @@ public class AndValue extends PrimitiveValue {
 
     @Override
     public ParameterizedType type() {
-        return booleanParameterizedType;
+        return primitives.booleanParameterizedType;
     }
 
     @Override
@@ -410,10 +413,10 @@ public class AndValue extends PrimitiveValue {
     }
 
     @Override
-    public FilterResult filter(FilterMode filterMode, FilterMethod... filterMethods) {
+    public FilterResult filter(EvaluationContext evaluationContext, FilterMode filterMode, FilterMethod... filterMethods) {
         if (filterMode == FilterMode.REJECT) return new FilterResult(Map.of(), this);
 
-        List<FilterResult> results = values.stream().map(v -> v.filter(filterMode, filterMethods)).collect(Collectors.toList());
+        List<FilterResult> results = values.stream().map(v -> v.filter(evaluationContext, filterMode, filterMethods)).collect(Collectors.toList());
 
         List<Value> restList = results.stream().map(r -> r.rest).filter(r -> r != UnknownValue.EMPTY).collect(Collectors.toList());
         Map<Variable, Value> acceptedCombined = results.stream().flatMap(r -> r.accepted.entrySet().stream())
@@ -422,7 +425,7 @@ public class AndValue extends PrimitiveValue {
         Value rest;
         if (restList.isEmpty()) rest = UnknownValue.EMPTY;
         else if (restList.size() == 1) rest = restList.get(0);
-        else rest = new AndValue().append(restList.toArray(Value[]::new));
+        else rest = new AndValue(primitives).append(evaluationContext, restList.toArray(Value[]::new));
 
         return new FilterResult(acceptedCombined, rest);
     }
@@ -433,7 +436,7 @@ public class AndValue extends PrimitiveValue {
         Value[] reClauses = reClauseERs.stream().map(er -> er.value).toArray(Value[]::new);
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setValue(new AndValue(objectFlow).append(reClauses))
+                .setValue(new AndValue(primitives, objectFlow).append(evaluationContext, reClauses))
                 .build();
     }
 

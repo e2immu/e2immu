@@ -33,27 +33,29 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class OrValue extends PrimitiveValue {
     public final List<Value> values;
+    private final Primitives primitives;
 
     // testing only
-    public OrValue() {
-        this(ObjectFlow.NO_FLOW);
+    public OrValue(Primitives primitives) {
+        this(primitives, ObjectFlow.NO_FLOW);
     }
 
-    public OrValue(ObjectFlow objectFlow) {
-        this(objectFlow, List.of());
+    public OrValue(Primitives primitives, ObjectFlow objectFlow) {
+        this(primitives, objectFlow, List.of());
     }
 
-    private OrValue(ObjectFlow objectFlow, List<Value> values) {
+    private OrValue(Primitives primitives, ObjectFlow objectFlow, List<Value> values) {
         super(objectFlow);
         this.values = values;
+        this.primitives = primitives;
     }
 
-    public Value append(Value... values) {
-        return append(Arrays.asList(values));
+    public Value append(EvaluationContext evaluationContext, Value... values) {
+        return append(evaluationContext, Arrays.asList(values));
     }
 
     // we try to maintain a CNF
-    public Value append(List<Value> values) {
+    public Value append(EvaluationContext evaluationContext, List<Value> values) {
 
         // STEP 1: trivial reductions
 
@@ -92,7 +94,7 @@ public class OrValue extends PrimitiveValue {
             for (Value value : concat) {
                 if (value instanceof BoolValue && ((BoolValue) value).value) {
                     log(CNF, "Return TRUE in Or, found TRUE");
-                    return BoolValue.TRUE;
+                    return BoolValue.createTrue(primitives);
                 }
             }
             concat.removeIf(value -> value instanceof BoolValue); // FALSE can go
@@ -107,7 +109,7 @@ public class OrValue extends PrimitiveValue {
                 // A || !A will always sit next to each other
                 if (value instanceof NegatedValue && ((NegatedValue) value).value.equals(prev)) {
                     log(CNF, "Return TRUE in Or, found opposites {}", value);
-                    return BoolValue.TRUE;
+                    return BoolValue.createTrue(primitives);
                 }
 
                 // A || A
@@ -133,13 +135,13 @@ public class OrValue extends PrimitiveValue {
         ArrayList<Value> finalValues = concat;
         if (firstAnd != null) {
             Value[] components = firstAnd.values.stream()
-                    .map(v -> append(ListUtil.immutableConcat(finalValues, List.of(v))))
+                    .map(v -> append(evaluationContext, ListUtil.immutableConcat(finalValues, List.of(v))))
                     .toArray(Value[]::new);
             log(CNF, "Found And-clause {} in {}, components for new And are {}", firstAnd, this, Arrays.toString(components));
-            return new AndValue(objectFlow).append(components);
+            return new AndValue(primitives, objectFlow).append(evaluationContext, components);
         }
         if (finalValues.size() == 1) return finalValues.get(0);
-        return new OrValue(objectFlow, finalValues);
+        return new OrValue(primitives, objectFlow, finalValues);
     }
 
     private void recursivelyAdd(ArrayList<Value> concat, List<Value> collect) {
@@ -188,16 +190,16 @@ public class OrValue extends PrimitiveValue {
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.booleanParameterizedType;
+        return primitives.booleanParameterizedType;
     }
 
     // no implementation of any of the filters
 
     @Override
-    public FilterResult filter(FilterMode filterMode, FilterMethod... filterMethods) {
+    public FilterResult filter(EvaluationContext evaluationContext, FilterMode filterMode, FilterMethod... filterMethods) {
         if (filterMode == FilterMode.ACCEPT) return new FilterResult(Map.of(), this);
 
-        List<FilterResult> results = values.stream().map(v -> v.filter(filterMode, filterMethods)).collect(Collectors.toList());
+        List<FilterResult> results = values.stream().map(v -> v.filter(evaluationContext, filterMode, filterMethods)).collect(Collectors.toList());
         List<Value> restList = results.stream().map(r -> r.rest).filter(r -> r != UnknownValue.EMPTY).collect(Collectors.toList());
 
         Map<Variable, Value> acceptedCombined = results.stream().flatMap(r -> r.accepted.entrySet().stream())
@@ -206,7 +208,7 @@ public class OrValue extends PrimitiveValue {
         Value rest;
         if (restList.isEmpty()) rest = UnknownValue.EMPTY;
         else if (restList.size() == 1) rest = restList.get(0);
-        else rest = new OrValue().append(restList);
+        else rest = new OrValue(primitives).append(evaluationContext, restList);
 
         return new FilterResult(acceptedCombined, rest);
     }
@@ -217,7 +219,7 @@ public class OrValue extends PrimitiveValue {
         Value[] reClauses = reClauseERs.stream().map(er -> er.value).toArray(Value[]::new);
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setValue(new OrValue(objectFlow).append(reClauses))
+                .setValue(new OrValue(primitives, objectFlow).append(evaluationContext, reClauses))
                 .build();
     }
 

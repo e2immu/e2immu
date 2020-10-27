@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.ConstantValue;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.Objects;
@@ -47,21 +48,23 @@ public class StringConcat implements Value {
     public static Value stringConcat(EvaluationContext evaluationContext, Value l, Value r, ObjectFlow objectFlow) {
         StringValue lsv = l.asInstanceOf(StringValue.class);
         StringValue rsv = r.asInstanceOf(StringValue.class);
+        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+
         if (lsv != null && rsv != null) {
-            return lsv.value.isEmpty() ? r : rsv.value.isEmpty() ? l : new StringValue(lsv.value + rsv.value, objectFlow);
+            return lsv.value.isEmpty() ? r : rsv.value.isEmpty() ? l : new StringValue(primitives, lsv.value + rsv.value, objectFlow);
         }
         ConstantValue rcv = r.asInstanceOf(ConstantValue.class);
         if (lsv != null && rcv != null) {
-            return new StringValue(lsv.value + rcv.toString(), objectFlow);
+            return new StringValue(primitives, lsv.value + rcv.toString(), objectFlow);
         }
         ConstantValue lcv = l.asInstanceOf(ConstantValue.class);
         if (rsv != null && lcv != null) {
-            return new StringValue(lcv.toString() + rsv.value, objectFlow);
+            return new StringValue(primitives, lcv.toString() + rsv.value, objectFlow);
         }
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
-        return new StringConcat(l, r, objectFlow);
+        return new StringConcat(l, r, primitives.stringParameterizedType, objectFlow);
     }
 
     @Override

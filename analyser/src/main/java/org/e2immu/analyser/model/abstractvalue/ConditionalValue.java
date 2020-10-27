@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.List;
@@ -54,7 +55,9 @@ public class ConditionalValue implements Value {
     }
 
     public static EvaluationResult conditionalValueCurrentState(EvaluationContext evaluationContext, Value conditionBeforeState, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
-        Value condition = checkState(evaluationContext.getConditionManager().state, conditionBeforeState);
+        Value condition = checkState(evaluationContext,
+                evaluationContext.getAnalyserContext().getPrimitives(),
+                evaluationContext.getConditionManager().state, conditionBeforeState);
         return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalse, objectFlow);
     }
 
@@ -66,7 +69,8 @@ public class ConditionalValue implements Value {
             return builder.setValue(first ? ifTrue : ifFalse).build();
         }
 
-        Value edgeCase = edgeCases(condition, ifTrue, ifFalse);
+        Value edgeCase = edgeCases(evaluationContext, evaluationContext.getAnalyserContext().getPrimitives(),
+                condition, ifTrue, ifFalse);
         if (edgeCase != null) return builder.setValue(edgeCase).build();
 
         // standardization... we swap!
@@ -78,24 +82,29 @@ public class ConditionalValue implements Value {
         // TODO more advanced! if a "large" part of ifTrue or ifFalse appears in condition, we should create a temp variable
     }
 
-    private static Value checkState(Value state, Value condition) {
+    private static Value checkState(EvaluationContext evaluationContext, Primitives primitives, Value state, Value condition) {
         if (state == UnknownValue.EMPTY) return condition;
-        Value and = new AndValue().append(state, condition);
+        Value and = new AndValue(primitives).append(evaluationContext, state, condition);
         if (and.equals(condition)) {
-            return BoolValue.TRUE;
+            return BoolValue.createTrue(primitives);
         }
         if (and instanceof BoolValue) return and;
         return condition;
     }
 
-    private static Value edgeCases(Value condition, Value ifTrue, Value ifFalse) {
+    private static Value edgeCases(EvaluationContext evaluationContext, Primitives primitives,
+                                   Value condition, Value ifTrue, Value ifFalse) {
         // x ? a : a == a
         if (ifTrue.equals(ifFalse)) return ifTrue;
         // a ? a : !a == a == !a ? !a : a
-        if (condition.equals(ifTrue) && condition.equals(NegatedValue.negate(ifFalse))) return BoolValue.TRUE;
+        if (condition.equals(ifTrue) && condition.equals(NegatedValue.negate(evaluationContext, ifFalse))) {
+            return BoolValue.createTrue(primitives);
+        }
         // !a ? a : !a == !a == a ? !a : a
-        Value notIfTrue = NegatedValue.negate(ifTrue);
-        if (condition.equals(notIfTrue) && condition.equals(ifFalse)) return BoolValue.FALSE;
+        Value notIfTrue = NegatedValue.negate(evaluationContext, ifTrue);
+        if (condition.equals(notIfTrue) && condition.equals(ifFalse)) {
+            return BoolValue.createFalse(primitives);
+        }
         return null;
     }
 
@@ -105,10 +114,10 @@ public class ConditionalValue implements Value {
         EvaluationResult reTrue = ifTrue.reEvaluate(evaluationContext, translation);
         EvaluationResult reFalse = ifFalse.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reCondition, reTrue, reFalse);
-        if (reCondition.value == BoolValue.TRUE) {
+        if (reCondition.value == BoolValue.createTrue(evaluationContext.getAnalyserContext().getPrimitives())) {
             return builder.setValue(reTrue.value).build();
         }
-        if (reCondition.value == BoolValue.FALSE) {
+        if (reCondition.value == BoolValue.createFalse(evaluationContext.getAnalyserContext().getPrimitives())) {
             return builder.setValue(reFalse.value).build();
         }
         return builder.setValue(new ConditionalValue(reCondition.value, reTrue.value, reFalse.value, getObjectFlow())).build();
@@ -159,7 +168,7 @@ public class ConditionalValue implements Value {
         if (variableProperty == VariableProperty.SIZE) {
             // contrary to null situation, we never have a negation because not equals to 0 is written as >= 1
             return Level.bestSize(checkSizeRestriction(evaluationContext, condition, ifTrue, ifFalse),
-                    checkSizeRestriction(evaluationContext, NegatedValue.negate(condition), ifFalse, ifTrue));
+                    checkSizeRestriction(evaluationContext, NegatedValue.negate(evaluationContext, condition), ifFalse, ifTrue));
         }
         if (variableProperty == VariableProperty.NOT_NULL) {
             Value c = condition;
@@ -186,7 +195,8 @@ public class ConditionalValue implements Value {
     }
 
     private static int checkSizeRestriction(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse) {
-        Map<Variable, Value> sizeRestrictions = condition.filter(FilterMode.REJECT, Value::isIndividualSizeRestriction).accepted;
+        Map<Variable, Value> sizeRestrictions = condition.filter(evaluationContext,
+                FilterMode.REJECT, val -> val.isIndividualSizeRestriction(evaluationContext)).accepted;
         if (ifTrue instanceof VariableValue) {
             Value sizeRestriction = sizeRestrictions.get(((VariableValue) ifTrue).variable);
             if (sizeRestriction != null) {

@@ -17,18 +17,14 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.model.StatementAnalysis;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
-import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.statement.ThrowStatement;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.annotation.Modified;
 
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class StateData {
@@ -40,14 +36,15 @@ public class StateData {
 
     public final SetOnce<Value> valueOfExpression = new SetOnce<>();
 
-    public AnalysisStatus copyPrecondition(StatementAnalyser statementAnalyser, StatementAnalysis previous) {
+    public AnalysisStatus copyPrecondition(StatementAnalyser statementAnalyser, StatementAnalysis previous, EvaluationContext evaluationContext) {
         if (!precondition.isSet()) {
             Stream<Value> fromPrevious = Stream.of(previous == null ? UnknownValue.EMPTY : previous.stateData.precondition.get());
             Stream<Value> fromBlocks = statementAnalyser.lastStatementsOfSubBlocks().stream()
                     .map(sa -> sa.statementAnalysis.stateData.precondition.get());
 
             Value reduced = Stream.concat(fromBlocks, fromPrevious)
-                    .reduce(UnknownValue.EMPTY, (v1, v2) -> new AndValue().append(v1, v2));
+                    .reduce(UnknownValue.EMPTY, (v1, v2) -> new AndValue(evaluationContext.getAnalyserContext().getPrimitives())
+                            .append(evaluationContext, v1, v2));
             precondition.set(reduced);
         }
         return AnalysisStatus.DONE;

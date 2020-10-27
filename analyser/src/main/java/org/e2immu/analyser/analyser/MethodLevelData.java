@@ -77,7 +77,7 @@ public class MethodLevelData {
             .add("establishLinks", this::establishLinks)
             .add("updateVariablesLinkedToMethodResult", this::updateVariablesLinkedToMethodResult)
             .add("computeContentModifications", this::computeContentModifications)
-            .add("combinePrecondition", sharedState -> combinePrecondition(sharedState.previous, sharedState.stateData))
+            .add("combinePrecondition", this::combinePrecondition)
             .build();
 
     public AnalysisStatus analyse(StatementAnalyser.SharedState sharedState,
@@ -100,20 +100,22 @@ public class MethodLevelData {
     // preconditions come from the precondition object in stateData, and preconditions from method calls; they're accumulated
     // in the state.precondition field
 
-    private AnalysisStatus combinePrecondition(MethodLevelData previous, StateData stateData) {
+    private AnalysisStatus combinePrecondition(SharedState sharedState) {
         if (!combinedPrecondition.isSet()) {
             Value result;
-            if (previous == null) {
-                result = stateData.precondition.isSet() ? stateData.precondition.get() : UnknownValue.EMPTY;
+
+            if (sharedState.previous == null) {
+                result = sharedState.stateData.precondition.isSet() ? sharedState.stateData.precondition.get() : UnknownValue.EMPTY;
             } else {
-                Value v1 = previous.combinedPrecondition.get();
-                Value v2 = stateData.precondition.get();
+                Value v1 = sharedState.previous.combinedPrecondition.get();
+                Value v2 = sharedState.stateData.precondition.get();
                 if (v1 == UnknownValue.EMPTY) {
                     result = v2;
                 } else if (v2 == UnknownValue.EMPTY) {
                     result = v1;
                 } else {
-                    result = new AndValue().append(v1, v2);
+                    result = new AndValue(sharedState.evaluationContext.getAnalyserContext().getPrimitives())
+                            .append(sharedState.evaluationContext, v1, v2);
                 }
             }
             combinedPrecondition.set(result);

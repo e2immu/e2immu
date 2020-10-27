@@ -68,7 +68,8 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
         EvaluationResult re = value.reEvaluate(evaluationContext, translation);
         if (re.value.isConstant()) return re;
-        return new EvaluationResult.Builder().compose(re).setValue(ConstrainedNumericValue.create(re.value, lowerBound, upperBound)).build();
+        return new EvaluationResult.Builder().compose(re).setValue(ConstrainedNumericValue.create(evaluationContext,
+                re.value, lowerBound, upperBound)).build();
     }
 
     private static Value create(EvaluationContext evaluationContext, Value value, double lowerBound, double upperBound) {
@@ -82,7 +83,7 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
         if (value instanceof ConstrainedNumericValue cnv) {
             // save ourselves a new object....
             if (cnv.lowerBound >= lowerBound && cnv.upperBound <= upperBound) return value;
-            return new ConstrainedNumericValue(primitives,value, Math.max(lowerBound, cnv.lowerBound), Math.min(upperBound, cnv.upperBound));
+            return new ConstrainedNumericValue(primitives, value, Math.max(lowerBound, cnv.lowerBound), Math.min(upperBound, cnv.upperBound));
         }
         return new ConstrainedNumericValue(primitives, value, lowerBound, upperBound);
     }

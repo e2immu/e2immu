@@ -94,12 +94,12 @@ public class TypeAnalyser extends AbstractAnalyser {
         this.primaryType = primaryType;
         typeInspection = typeInfo.typeInspection.get();
 
-        typeAnalysis = new TypeAnalysisImpl.Builder(typeInfo);
+        typeAnalysis = new TypeAnalysisImpl.Builder(analyserContext, typeInfo);
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
                 .add("analyseImplicitlyImmutableTypes", (iteration) -> analyseImplicitlyImmutableTypes());
 
         if (typeInfo.hasBeenDefined() && !typeInfo.isInterface()) {
-            builder.add("analyseOnlyMarkEventuallyE1Immutable", (iteration) -> analyseOnlyMarkEventuallyE1Immutable())
+            builder.add("analyseOnlyMarkEventuallyE1Immutable", this::analyseOnlyMarkEventuallyE1Immutable)
                     .add("analyseEffectivelyE1Immutable", (iteration) -> analyseEffectivelyE1Immutable())
                     .add("analyseIndependent", (iteration) -> analyseIndependent())
                     .add("analyseEffectivelyEventuallyE2Immutable", (iteration) -> analyseEffectivelyEventuallyE2Immutable())
@@ -280,7 +280,8 @@ public class TypeAnalyser extends AbstractAnalyser {
             TypeInfo bestType = type.bestTypeInfo();
             if (bestType == null) return false;
             boolean self = type.typeInfo == typeInfo;
-            if (self || Primitives.isPrimitiveExcludingVoid(typeInfo) || Primitives.isBoxedExcludingVoid(typeInfo)) return true;
+            if (self || Primitives.isPrimitiveExcludingVoid(typeInfo) || Primitives.isBoxedExcludingVoid(typeInfo))
+                return true;
             return explicitTypes.contains(type) || explicitTypes.stream().anyMatch(t -> type.isAssignableFrom(primitives, t));
         });
 
@@ -330,7 +331,7 @@ public class TypeAnalyser extends AbstractAnalyser {
           when? all modifying methods must have methodAnalysis.preconditionForOnlyData set with value != NO_VALUE
 
          */
-    private AnalysisStatus analyseOnlyMarkEventuallyE1Immutable() {
+    private AnalysisStatus analyseOnlyMarkEventuallyE1Immutable(int iteration) {
         if (typeAnalysis.approvedPreconditions.isFrozen()) {
             return DONE;
         }
@@ -360,7 +361,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             if (modified == Level.TRUE) {
                 List<Value> preconditions = methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.get();
                 for (Value precondition : preconditions) {
-                    handlePrecondition(methodAnalyser, precondition, tempApproved);
+                    handlePrecondition(methodAnalyser, precondition, tempApproved, iteration);
                 }
             }
         }
@@ -378,12 +379,14 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private void handlePrecondition(@NotModified MethodAnalyser methodAnalyser, Value precondition, Map<String, Value> tempApproved) {
-        Value negated = NegatedValue.negate(precondition);
+    private void handlePrecondition(@NotModified MethodAnalyser methodAnalyser, Value precondition, Map<String, Value> tempApproved, int iteration) {
+        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
+        Value negated = NegatedValue.negate(evaluationContext, precondition);
         String label = labelOfPreconditionForMarkAndOnly(precondition);
         Value inMap = tempApproved.get(label);
 
-        boolean isMark = assignmentIncompatibleWithPrecondition(precondition, methodAnalyser.methodInfo, methodAnalyser.methodLevelData());
+        boolean isMark = assignmentIncompatibleWithPrecondition(evaluationContext,
+                precondition, methodAnalyser.methodInfo, methodAnalyser.methodLevelData());
         if (isMark) {
             if (inMap == null) {
                 tempApproved.put(label, precondition);
@@ -400,7 +403,10 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
     }
 
-    public static boolean assignmentIncompatibleWithPrecondition(Value precondition, MethodInfo methodInfo, @NotModified MethodLevelData methodLevelData) {
+    public static boolean assignmentIncompatibleWithPrecondition(EvaluationContext evaluationContext,
+                                                                 Value precondition,
+                                                                 MethodInfo methodInfo,
+                                                                 @NotModified MethodLevelData methodLevelData) {
         Set<Variable> variables = precondition.variables();
         for (Variable variable : variables) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
@@ -412,7 +418,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
                 if (assigned && tv.stateOnAssignment.isSet()) {
                     Value state = tv.stateOnAssignment.get();
-                    if (isCompatible(state, precondition)) {
+                    if (isCompatible(evaluationContext, state, precondition)) {
                         log(MARK, "We checked, and found the state {} compatible with the precondition {}", state, precondition);
                         return false;
                     }
@@ -424,8 +430,8 @@ public class TypeAnalyser extends AbstractAnalyser {
         return false;
     }
 
-    private static boolean isCompatible(Value v1, Value v2) {
-        Value and = new AndValue().append(v1, v2);
+    private static boolean isCompatible(EvaluationContext evaluationContext, Value v1, Value v2) {
+        Value and = new AndValue(evaluationContext.getAnalyserContext().getPrimitives()).append(evaluationContext, v1, v2);
         return v1.equals(and) || v2.equals(and);
     }
 
@@ -882,4 +888,15 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
+    class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
+
+        protected EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
+            super(iteration, conditionManager);
+        }
+
+        @Override
+        public AnalyserContext getAnalyserContext() {
+            return analyserContext;
+        }
+    }
 }
