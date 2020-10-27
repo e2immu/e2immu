@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ContractMark;
 import org.e2immu.analyser.model.expression.MemberValuePair;
@@ -26,6 +25,7 @@ import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationType;
@@ -43,12 +43,12 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
     public final boolean hasBeenDefined;
     public final String simpleName; // for debugging purposes
-    public final AnalyserContext analyserContext;
+    public final Primitives primitives;
 
-    protected AbstractAnalysisBuilder(AnalyserContext analyserContext, boolean hasBeenDefined, String simpleName) {
+    protected AbstractAnalysisBuilder(Primitives primitives, boolean hasBeenDefined, String simpleName) {
         this.simpleName = simpleName;
         this.hasBeenDefined = hasBeenDefined;
-        this.analyserContext = analyserContext;
+        this.primitives = primitives;
     }
 
     public int getProperty(VariableProperty variableProperty) {
@@ -168,7 +168,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 list = List.of();
             } else {
                 list = entry.getValue().entrySet().stream().map(e -> new MemberValuePair(e.getKey(),
-                        new StringConstant(analyserContext.getPrimitives(), e.getValue()))).collect(Collectors.toList());
+                        new StringConstant(primitives, e.getValue()))).collect(Collectors.toList());
             }
             AnnotationExpression expression = AnnotationExpression.fromAnalyserExpressions(
                     e2ImmuAnnotationExpressions.getFullyQualified(entry.getKey().getCanonicalName()), list);
@@ -192,16 +192,16 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         if (!eventual) throw new UnsupportedOperationException("??");
         String mark = ((TypeAnalysis) this).allLabelsRequiredForImmutable();
         AnnotationExpression ae = AnnotationExpression.fromAnalyserExpressions(e2ImmuAnnotationExpressions.independent.get().typeInfo,
-                List.of(new MemberValuePair("after", new StringConstant(analyserContext.getPrimitives(), mark))));
+                List.of(new MemberValuePair("after", new StringConstant(primitives, mark))));
         annotations.put(ae, true);
     }
 
     private AnnotationExpression sizeAnnotationTrue(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, String parameter) {
-        return e2ImmuAnnotationExpressions.size.get().copyWith(analyserContext.getPrimitives(), parameter, true);
+        return e2ImmuAnnotationExpressions.size.get().copyWith(primitives, parameter, true);
     }
 
     private AnnotationExpression sizeAnnotation(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, String parameter, int value) {
-        return e2ImmuAnnotationExpressions.size.get().copyWith(analyserContext.getPrimitives(), parameter, value);
+        return e2ImmuAnnotationExpressions.size.get().copyWith(primitives, parameter, value);
     }
 
     public Messages fromAnnotationsIntoProperties(boolean acceptVerify,

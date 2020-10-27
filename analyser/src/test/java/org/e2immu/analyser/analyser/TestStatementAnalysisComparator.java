@@ -22,19 +22,20 @@ import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.StatementAnalysis;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
+import org.e2immu.analyser.parser.Primitives;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class TestStatementAnalysisComparator {
+    Primitives primitives = new Primitives();
+    Statement emptyStatement = new ExpressionAsStatement(EmptyExpression.EMPTY_EXPRESSION);
+
     @Test
     public void test() {
-        Statement emptyStatement = new ExpressionAsStatement(EmptyExpression.EMPTY_EXPRESSION);
-        StatementAnalysis parent = null;
-
-        StatementAnalysis ns0 = new StatementAnalysis(emptyStatement, parent, "", false, false);
-        StatementAnalysis ns1 = new StatementAnalysis(emptyStatement, parent, "1", false, false);
-        StatementAnalysis ns01 = new StatementAnalysis(emptyStatement, parent, "0.1", false, false);
-        StatementAnalysis ns10 = new StatementAnalysis(emptyStatement, parent, "1.0", false, false);
+        StatementAnalysis ns0 = newStatementAnalysis("0");
+        StatementAnalysis ns1 = newStatementAnalysis("1");
+        StatementAnalysis ns01 = newStatementAnalysis("0.1");
+        StatementAnalysis ns10 = newStatementAnalysis("1.0");
 
         Assert.assertTrue(ns0.compareTo(ns0) == 0);
         Assert.assertTrue(ns0.compareTo(ns1) < 0);
@@ -55,5 +56,9 @@ public class TestStatementAnalysisComparator {
         Assert.assertTrue(ns10.compareTo(ns01) > 0);
         Assert.assertTrue(ns10.compareTo(ns1) > 0);
         Assert.assertTrue(ns10.compareTo(ns10) == 0);
+    }
+
+    private StatementAnalysis newStatementAnalysis(String s) {
+        return new StatementAnalysis(primitives, emptyStatement, null, s, false, false);
     }
 }

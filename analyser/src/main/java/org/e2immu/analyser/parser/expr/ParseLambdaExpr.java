@@ -20,6 +20,7 @@ package org.e2immu.analyser.parser.expr;
 
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.LambdaExpr;
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
@@ -72,7 +73,7 @@ public class ParseLambdaExpr {
             types.add(parameterType);
             ParameterInfo parameterInfo = new ParameterInfo(owner, parameterType, parameter.getName().asString(), cnt++);
             parameterInfo.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
-            parameterInfo.setAnalysis(new ParameterAnalysisImpl.Builder(analyserContext, parameterInfo).build());
+            // parameter analysis will be set later
             parameters.add(parameterInfo);
             newVariableContext.add(parameterInfo);
         }

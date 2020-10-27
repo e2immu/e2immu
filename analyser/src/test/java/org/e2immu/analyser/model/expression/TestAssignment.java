@@ -10,38 +10,36 @@ import java.util.List;
 
 public class TestAssignment {
 
+    private final Primitives primitives = new Primitives();
+
     @Test
     public void testNormal() {
-        Primitives primitives = new Primitives();
         LocalVariable lvi = new LocalVariable(List.of(), "i", primitives.intParameterizedType, List.of());
         LocalVariableCreation i = new LocalVariableCreation(primitives, lvi, new IntConstant(primitives, 0));
-        Expression iPlusEquals1 = new Assignment(new VariableExpression(i.localVariableReference), new IntConstant(primitives, 1));
+        Expression iPlusEquals1 = new Assignment(primitives,
+                new VariableExpression(i.localVariableReference), new IntConstant(primitives, 1));
         Assert.assertEquals("i = 1", iPlusEquals1.expressionString(0));
     }
 
     @Test
     public void testPlusEqualsOne() {
-        Primitives primitives = new Primitives();
-
         LocalVariable lvi = new LocalVariable(List.of(), "i", primitives.intParameterizedType, List.of());
         LocalVariableCreation i = new LocalVariableCreation(primitives, lvi, new IntConstant(primitives, 0));
-        Expression iPlusEquals1 = new Assignment(new VariableExpression(i.localVariableReference),
+        Expression iPlusEquals1 = new Assignment(primitives, new VariableExpression(i.localVariableReference),
                 new IntConstant(primitives, 1), primitives.assignPlusOperatorInt, null);
         Assert.assertEquals("i += 1", iPlusEquals1.expressionString(0));
 
-        Expression iPlusEquals1AsPlusPlusI = new Assignment(new VariableExpression(i.localVariableReference),
+        Expression iPlusEquals1AsPlusPlusI = new Assignment(primitives, new VariableExpression(i.localVariableReference),
                 new IntConstant(primitives, 1), primitives.assignPlusOperatorInt, true);
         Assert.assertEquals("++i", iPlusEquals1AsPlusPlusI.expressionString(0));
 
-        Expression iPlusEquals1AsIPlusPlus = new Assignment(new VariableExpression(i.localVariableReference),
+        Expression iPlusEquals1AsIPlusPlus = new Assignment(primitives, new VariableExpression(i.localVariableReference),
                 new IntConstant(primitives, 1), primitives.assignPlusOperatorInt, false);
         Assert.assertEquals("i++", iPlusEquals1AsIPlusPlus.expressionString(0));
     }
 
     @Test
     public void testPlusPlus() {
-        Primitives primitives = new Primitives();
-
         LocalVariable lvi = new LocalVariable(List.of(), "i", primitives.intParameterizedType, List.of());
         LocalVariableCreation i = new LocalVariableCreation(primitives, lvi, new IntConstant(primitives, 0));
 

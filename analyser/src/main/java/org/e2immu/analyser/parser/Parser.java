@@ -162,7 +162,7 @@ public class Parser {
         globalTypeContext.typeStore.visit(new String[0], (s, list) -> {
             for (TypeInfo typeInfo : list) {
                 if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() && !typeInfo.hasBeenDefined()) {
-                    typeInfo.copyAnnotationsIntoTypeAnalysisProperties(e2ImmuAnnotationExpressions);
+                    typeInfo.copyAnnotationsIntoTypeAnalysisProperties(globalTypeContext.getPrimitives(), e2ImmuAnnotationExpressions);
                 }
             }
         });

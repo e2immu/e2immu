@@ -32,22 +32,6 @@ import java.util.stream.Collectors;
 
 public class TestAbstractValue extends CommonAbstractValue {
 
-    private static Value newAndAppend(Value... values) {
-        return new AndValue(PRIMITIVES).append(minimalEvaluationContext, values);
-    }
-
-    private static Value newOrAppend(Value... values) {
-        return new OrValue(PRIMITIVES).append(minimalEvaluationContext, values);
-    }
-
-    private static Value negate(Value value) {
-        return NegatedValue.negate(minimalEvaluationContext, value);
-    }
-
-    private static Value newInt(int i) {
-        return new IntValue(PRIMITIVES, i, ObjectFlow.NO_FLOW);
-    }
-
     @Test
     public void test() {
         Value notA = NegatedValue.negate(minimalEvaluationContext, a);

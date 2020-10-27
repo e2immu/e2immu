@@ -10,6 +10,7 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -17,7 +18,7 @@ public class CheckLinks {
     private final Primitives primitives;
 
     public CheckLinks(Primitives primitives) {
-        this.primitives = primitives;
+        this.primitives = Objects.requireNonNull(primitives);
     }
 
     public AnnotationExpression createLinkAnnotation(E2ImmuAnnotationExpressions typeContext, Set<Variable> links) {

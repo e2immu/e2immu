@@ -19,7 +19,6 @@
 package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.junit.Assert;
 import org.junit.Test;
@@ -31,14 +30,14 @@ public class TestParameterizedTypeFactory {
 
     @Test
     public void testInt() {
-        Assert.assertEquals(Primitives.PRIMITIVES.intParameterizedType,
+        Assert.assertEquals(typeContext.getPrimitives().intParameterizedType,
                 ParameterizedTypeFactory.from(typeContext, "I").parameterizedType);
     }
 
     @Test
     public void testString() {
         ParameterizedType pt = ParameterizedTypeFactory.from(typeContext, "[Ljava/lang/String;").parameterizedType;
-        Assert.assertEquals(Primitives.PRIMITIVES.stringTypeInfo,
+        Assert.assertEquals(typeContext.getPrimitives().stringTypeInfo,
                 pt.typeInfo);
         Assert.assertEquals(1, pt.arrays);
     }
@@ -47,7 +46,7 @@ public class TestParameterizedTypeFactory {
     public void testStringAndInt() {
         String desc = "[Ljava/lang/String;I";
         ParameterizedTypeFactory.Result res = ParameterizedTypeFactory.from(typeContext, desc);
-        Assert.assertEquals(Primitives.PRIMITIVES.stringTypeInfo,
+        Assert.assertEquals(typeContext.getPrimitives().stringTypeInfo,
                 res.parameterizedType.typeInfo);
         Assert.assertEquals(1, res.parameterizedType.arrays);
         Assert.assertEquals('I', desc.charAt(res.nextPos));
@@ -56,7 +55,7 @@ public class TestParameterizedTypeFactory {
     @Test
     public void testCharArray() {
         ParameterizedType pt = ParameterizedTypeFactory.from(typeContext, "[C").parameterizedType;
-        Assert.assertEquals(Primitives.PRIMITIVES.charTypeInfo,
+        Assert.assertEquals(typeContext.getPrimitives().charTypeInfo,
                 pt.typeInfo);
         Assert.assertEquals(1, pt.arrays);
     }

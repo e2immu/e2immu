@@ -18,7 +18,6 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.IntValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -28,17 +27,17 @@ public class TestBooleanAndComparison extends CommonAbstractValue {
 
     @Test
     public void test1() {
-        GreaterThanZeroValue iGe0 = (GreaterThanZeroValue) GreaterThanZeroValue.greater(minimalEvaluationContext, i, new IntValue(0), true);
-        GreaterThanZeroValue iLt0 = (GreaterThanZeroValue) GreaterThanZeroValue.less(minimalEvaluationContext, i, new IntValue(0), false);
-        GreaterThanZeroValue jGe0 = (GreaterThanZeroValue) GreaterThanZeroValue.greater(minimalEvaluationContext, j, new IntValue(0), true);
+        GreaterThanZeroValue iGe0 = (GreaterThanZeroValue) GreaterThanZeroValue.greater(minimalEvaluationContext, i, newInt(0), true);
+        GreaterThanZeroValue iLt0 = (GreaterThanZeroValue) GreaterThanZeroValue.less(minimalEvaluationContext, i, newInt(0), false);
+        GreaterThanZeroValue jGe0 = (GreaterThanZeroValue) GreaterThanZeroValue.greater(minimalEvaluationContext, j, newInt(0), true);
 
-        Value iGe0_and__iLt0_or_jGe0 = new AndValue().append(iGe0, new OrValue().append(iLt0, jGe0));
+        Value iGe0_and__iLt0_or_jGe0 = newAndAppend(iGe0, newOrAppend(iLt0, jGe0));
         Assert.assertEquals("(i >= 0 and j >= 0)", iGe0_and__iLt0_or_jGe0.toString());
 
-        Value addIGe0Again = new AndValue().append(iGe0_and__iLt0_or_jGe0, iGe0);
+        Value addIGe0Again = newAndAppend(iGe0_and__iLt0_or_jGe0, iGe0);
         Assert.assertEquals(iGe0_and__iLt0_or_jGe0, addIGe0Again);
 
-        Value addIGe0Again2 = new AndValue().append(iGe0, iGe0_and__iLt0_or_jGe0);
+        Value addIGe0Again2 = newAndAppend(iGe0, iGe0_and__iLt0_or_jGe0);
         Assert.assertEquals(iGe0_and__iLt0_or_jGe0, addIGe0Again2);
     }
 

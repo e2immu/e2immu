@@ -73,7 +73,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
 
             ObjectFlow returnFlow = d.methodAnalysis().getObjectFlow();
             Assert.assertNotNull(returnFlow);
-            Assert.assertSame(Primitives.PRIMITIVES.integerTypeInfo, returnFlow.type.typeInfo);
+            Assert.assertSame(d.evaluationContext().getAnalyserContext().getPrimitives().integerTypeInfo, returnFlow.type.typeInfo);
             Assert.assertSame(valueFieldOfNewKeyValue, returnFlow);
         }
     };
@@ -107,7 +107,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
         if ("ObjectFlow1".equals(d.typeInfo().simpleName)) {
             Assert.assertEquals(1, d.typeAnalysis().getConstantObjectFlows().size());
             ObjectFlow literal = d.typeAnalysis().getConstantObjectFlows().stream().findAny().orElseThrow();
-            Assert.assertSame(Primitives.PRIMITIVES.stringTypeInfo, literal.type.typeInfo);
+            Assert.assertSame(d.primitives().stringTypeInfo, literal.type.typeInfo);
             Assert.assertSame(Origin.LITERAL, literal.origin);
             Assert.assertEquals(1L, literal.getNonModifyingCallouts().count());
         }

@@ -5,6 +5,7 @@ import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,17 +31,17 @@ public class ConditionManager {
     }
 
     // adding a condition always adds to the state as well (testing only)
-    public ConditionManager addCondition(Value value) {
+    public ConditionManager addCondition(EvaluationContext evaluationContext, Value value) {
         if (value == null || value == UnknownValue.EMPTY) return this;
-        if (value != BoolValue.TRUE) {
-            return new ConditionManager(combineWithCondition(value), combineWithState(value));
+        if (value != BoolValue.createTrue(evaluationContext.getAnalyserContext().getPrimitives())) {
+            return new ConditionManager(combineWithCondition(evaluationContext, value), combineWithState(evaluationContext, value));
         }
         return this;
     }
 
-    public ConditionManager addToState(Value value) {
+    public ConditionManager addToState(EvaluationContext evaluationContext, Value value) {
         if (!(value.isInstanceOf(BoolValue.class))) {
-            return new ConditionManager(condition, combineWithState(value));
+            return new ConditionManager(condition, combineWithState(evaluationContext, value));
         }
         return this;
     }
@@ -51,15 +52,15 @@ public class ConditionManager {
      * @param value the restriction given by the program
      * @return the computed, real restriction
      */
-    public Value evaluateWithCondition(Value value) {
-        return evaluateWith(condition, value);
+    public Value evaluateWithCondition(EvaluationContext evaluationContext, Value value) {
+        return evaluateWith(evaluationContext, condition, value);
     }
 
-    public Value evaluateWithState(Value value) {
-        return evaluateWith(state, value);
+    public Value evaluateWithState(EvaluationContext evaluationContext, Value value) {
+        return evaluateWith(evaluationContext, state, value);
     }
 
-    private static Value evaluateWith(Value condition, Value value) {
+    private static Value evaluateWith(EvaluationContext evaluationContext, Value condition, Value value) {
         if (condition == UnknownValue.EMPTY) return value; // allow to go delayed
         // one delayed, all delayed
         if (isDelayed(condition) || value == UnknownValue.NO_VALUE) return UnknownValue.NO_VALUE;
@@ -68,28 +69,30 @@ public class ConditionManager {
 
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the condition
-        Value result = new AndValue(value.getObjectFlow()).append(condition, value);
+        Value result = new AndValue(evaluationContext.getAnalyserContext().getPrimitives(), value.getObjectFlow())
+                .append(evaluationContext, condition, value);
         if (result.equals(condition)) {
             // constant true: adding the value has no effect at all
-            return BoolValue.TRUE;
+            return BoolValue.createTrue(evaluationContext.getAnalyserContext().getPrimitives());
         }
         return result;
     }
 
-    public Value combineWithCondition(Value value) {
-        return combineWith(condition, value);
+    public Value combineWithCondition(EvaluationContext evaluationContext, Value value) {
+        return combineWith(evaluationContext, condition, value);
     }
 
-    public Value combineWithState(Value value) {
-        return combineWith(state, value);
+    public Value combineWithState(EvaluationContext evaluationContext, Value value) {
+        return combineWith(evaluationContext, state, value);
     }
 
-    public static Value combineWith(Value condition, Value value) {
+    public static Value combineWith(EvaluationContext evaluationContext, Value condition, Value value) {
         Objects.requireNonNull(value);
         if (condition == UnknownValue.EMPTY) return value;
         if (value == UnknownValue.EMPTY) return condition;
         if (isDelayed(condition) || isDelayed(value)) return UnknownValue.NO_VALUE;
-        return new AndValue(value.getObjectFlow()).append(condition, value);
+        return new AndValue(evaluationContext.getAnalyserContext().getPrimitives(), value.getObjectFlow())
+                .append(evaluationContext, condition, value);
     }
 
     /**
@@ -97,11 +100,11 @@ public class ConditionManager {
      *
      * @return individual variables that appear in a top-level disjunction as variable == null
      */
-    public Set<Variable> findIndividualNullConditions() {
+    public Set<Variable> findIndividualNullConditions(EvaluationContext evaluationContext) {
         if (condition == UnknownValue.EMPTY || delayedCondition()) {
             return Set.of();
         }
-        Map<Variable, Value> individualNullClauses = condition.filter(Value.FilterMode.REJECT,
+        Map<Variable, Value> individualNullClauses = condition.filter(evaluationContext, Value.FilterMode.REJECT,
                 Value::isIndividualNotNullClauseOnParameter).accepted;
         return individualNullClauses.entrySet()
                 .stream()
@@ -114,11 +117,11 @@ public class ConditionManager {
      *
      * @return individual variables that appear in a top-level disjunction as variable == null
      */
-    public Set<Variable> findNotNullConditionsOnVariables() {
+    public Set<Variable> findNotNullConditionsOnVariables(EvaluationContext evaluationContext) {
         if (condition == UnknownValue.EMPTY || delayedCondition()) {
             return Set.of();
         }
-        Map<Variable, Value> individualNullClauses = condition.filter(Value.FilterMode.REJECT,
+        Map<Variable, Value> individualNullClauses = condition.filter(evaluationContext, Value.FilterMode.REJECT,
                 Value::isIndividualNotNullClauseOnParameter).accepted;
         return individualNullClauses.entrySet()
                 .stream()
@@ -126,20 +129,23 @@ public class ConditionManager {
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 
-    public Map<Variable, Value> findIndividualSizeRestrictionsInCondition() {
-        return getIndividualSizeRestrictions(condition, Value.FilterMode.REJECT, true);
+    public Map<Variable, Value> findIndividualSizeRestrictionsInCondition(EvaluationContext evaluationContext) {
+        return getIndividualSizeRestrictions(evaluationContext, condition, Value.FilterMode.REJECT, true);
     }
 
-    public Map<Variable, Value> individualSizeRestrictions() {
-        return getIndividualSizeRestrictions(state, Value.FilterMode.ACCEPT, false);
+    public Map<Variable, Value> individualSizeRestrictions(EvaluationContext evaluationContext) {
+        return getIndividualSizeRestrictions(evaluationContext, state, Value.FilterMode.ACCEPT, false);
     }
 
-    private static Map<Variable, Value> getIndividualSizeRestrictions(Value base, Value.FilterMode filterMode, boolean parametersOnly) {
+    private static Map<Variable, Value> getIndividualSizeRestrictions(
+            EvaluationContext evaluationContext,
+            Value base, Value.FilterMode filterMode, boolean parametersOnly) {
         if (base == null || isDelayed(base)) {
             return Map.of();
         }
-        Map<Variable, Value> map = base.filter(filterMode,
-                parametersOnly ? Value::isIndividualSizeRestrictionOnParameter : Value::isIndividualSizeRestriction).accepted;
+        Map<Variable, Value> map = base.filter(evaluationContext, filterMode,
+                parametersOnly ? val -> val.isIndividualSizeRestrictionOnParameter(evaluationContext) :
+                        val -> val.isIndividualSizeRestriction(evaluationContext)).accepted;
         if (parametersOnly) {
             return map.entrySet().stream()
                     .filter(e -> e.getKey() instanceof ParameterInfo)
@@ -158,26 +164,26 @@ public class ConditionManager {
         return isDelayed(condition);
     }
 
-    public boolean delayedState() {
-        return isDelayed(state);
+    public boolean notInDelayedState() {
+        return !isDelayed(state);
     }
 
     static boolean isDelayed(Value value) {
         return value == UnknownValue.NO_VALUE;
     }
 
-    public boolean inErrorState() {
-        return BoolValue.FALSE == state;
+    public boolean inErrorState(Primitives primitives) {
+        return BoolValue.createFalse(primitives).equals(state);
     }
 
     // used in assignments (it gets a new value, so whatever was known, must go)
-    public ConditionManager variableReassigned(Variable variable) {
-        return new ConditionManager(condition, removeClausesInvolving(state, variable, true));
+    public ConditionManager variableReassigned(EvaluationContext evaluationContext, Variable variable) {
+        return new ConditionManager(condition, removeClausesInvolving(evaluationContext, state, variable, true));
     }
 
     // after a modifying method call, we lose whatever we know about this variable; except assignment!
-    public ConditionManager modifyingMethodAccess(Variable variable) {
-        return new ConditionManager(condition, removeClausesInvolving(state, variable, false));
+    public ConditionManager modifyingMethodAccess(EvaluationContext evaluationContext, Variable variable) {
+        return new ConditionManager(condition, removeClausesInvolving(evaluationContext, state, variable, false));
     }
 
     private static Value.FilterResult removeVariableFilter(Variable variable, Value value, boolean removeEqualityOnVariable) {
@@ -210,8 +216,9 @@ public class ConditionManager {
      * @param variable                 the variable to be removed
      * @param removeEqualityOnVariable in the case of modifying method access, clauses with equality should STAY rather than be removed
      */
-    public static Value removeClausesInvolving(Value conditional, Variable variable, boolean removeEqualityOnVariable) {
-        Value.FilterResult filterResult = conditional.filter(Value.FilterMode.ALL,
+    public static Value removeClausesInvolving(EvaluationContext evaluationContext,
+                                               Value conditional, Variable variable, boolean removeEqualityOnVariable) {
+        Value.FilterResult filterResult = conditional.filter(evaluationContext, Value.FilterMode.ALL,
                 value -> removeVariableFilter(variable, value, removeEqualityOnVariable));
         return filterResult.rest;
     }
@@ -225,8 +232,8 @@ public class ConditionManager {
         }
 
         // TRUE: parameters only FALSE: preconditionSide; OR of 2 filters
-        Value.FilterResult filterResult = condition.filter(Value.FilterMode.REJECT, Value::isIndividualNotNullClauseOnParameter,
-                Value::isIndividualSizeRestrictionOnParameter); // those parts that have nothing to do with individual clauses
+        Value.FilterResult filterResult = condition.filter(evaluationContext, Value.FilterMode.REJECT, Value::isIndividualNotNullClauseOnParameter,
+                val -> val.isIndividualSizeRestrictionOnParameter(evaluationContext)); // those parts that have nothing to do with individual clauses
         if (filterResult.rest == UnknownValue.EMPTY) {
             return builder.setValue(UnknownValue.EMPTY).build();
         }
@@ -244,7 +251,7 @@ public class ConditionManager {
 
         // and negate. This will become the precondition or "initial state"
         EvaluationResult reRest = filterResult.rest.reEvaluate(evaluationContext, translation);
-        return builder.compose(reRest).setValue(NegatedValue.negate(reRest.value)).build();
+        return builder.compose(reRest).setValue(NegatedValue.negate(evaluationContext, reRest.value)).build();
     }
 
     private static Value.FilterResult obtainVariableFilter(Variable variable, Value value) {
@@ -256,8 +263,8 @@ public class ConditionManager {
     }
 
     // note: very similar to remove, except that here we're interested in the actual value
-    public Value individualStateInfo(Variable variable) {
-        Value.FilterResult filterResult = state.filter(Value.FilterMode.ACCEPT,
+    public Value individualStateInfo(EvaluationContext evaluationContext, Variable variable) {
+        Value.FilterResult filterResult = state.filter(evaluationContext, Value.FilterMode.ACCEPT,
                 value -> obtainVariableFilter(variable, value));
         return filterResult.accepted.getOrDefault(variable, UnknownValue.EMPTY);
     }

@@ -53,8 +53,9 @@ public class ParseFieldAccessExpr {
 
     public static Expression createFieldAccess(ExpressionContext expressionContext, Expression object, String name, Position positionForErrorReporting) {
         ParameterizedType objectType = object.returnType();
-        if (objectType.arrays > 0 && "length".equals(name)) return new ArrayLengthExpression(object);
-
+        if (objectType.arrays > 0 && "length".equals(name)) {
+            return new ArrayLengthExpression(expressionContext.typeContext.getPrimitives(), object);
+        }
         if (objectType.typeInfo != null) {
             Optional<FieldInfo> oFieldInfo = objectType.typeInfo.accessibleFieldsStream().filter(f -> name.equals(f.name)).findFirst();
             if (oFieldInfo.isPresent()) {

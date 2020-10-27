@@ -79,7 +79,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                               boolean inPartOfConstruction) {
         this.analyserContext = Objects.requireNonNull(analyserContext);
         this.myMethodAnalyser = Objects.requireNonNull(methodAnalyser);
-        this.statementAnalysis = new StatementAnalysis(statement, parent, index, inSyncBlock, inPartOfConstruction);
+        this.statementAnalysis = new StatementAnalysis(analyserContext.getPrimitives(), statement, parent, index, inSyncBlock, inPartOfConstruction);
     }
 
     public static StatementAnalyser recursivelyCreateAnalysisObjects(
@@ -305,7 +305,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             boolean startOfNewBlock = previousStatementAnalysis == null;
             localConditionManager = startOfNewBlock ? (statementAnalysis.parent == null ?
                     ConditionManager.INITIAL :
-                    statementAnalysis.parent.stateData.getConditionManager().addCondition(forwardAnalysisInfo.conditionManager.condition)) :
+                    statementAnalysis.parent.stateData.getConditionManager()
+                            .addCondition(new EvaluationContextImpl(iteration, ConditionManager.INITIAL),
+                                    forwardAnalysisInfo.conditionManager.condition)) :
                     previousStatementAnalysis.stateData.getConditionManager();
 
             analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
@@ -482,7 +484,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     private AnalysisStatus checkNotNullEscapes(SharedState sharedState) {
         if (isEscapeAlwaysExecuted()) {
-            Set<Variable> nullVariables = statementAnalysis.stateData.getConditionManager().findIndividualNullConditions();
+            Set<Variable> nullVariables = statementAnalysis.stateData.getConditionManager()
+                    .findIndividualNullConditions(sharedState.evaluationContext);
             for (Variable nullVariable : nullVariables) {
                 log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
                 ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser((ParameterInfo) nullVariable).parameterAnalysis;
@@ -502,7 +505,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private AnalysisStatus checkSizeEscapes(SharedState sharedState) {
         if (isEscapeAlwaysExecuted()) {
             Map<Variable, Value> individualSizeRestrictions = statementAnalysis.stateData
-                    .getConditionManager().findIndividualSizeRestrictionsInCondition();
+                    .getConditionManager().findIndividualSizeRestrictionsInCondition(sharedState.evaluationContext);
             for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
                 ParameterInfo parameterInfo = (ParameterInfo) entry.getKey();
                 Value negated = NegatedValue.negate(sharedState.evaluationContext, entry.getValue());
@@ -690,8 +693,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             Objects.requireNonNull(value);
 
             Value previousConditional = localConditionManager.condition;
-            Value combinedWithCondition = localConditionManager.evaluateWithCondition(value);
-            Value combinedWithState = localConditionManager.evaluateWithState(value);
+            Value combinedWithCondition = localConditionManager.evaluateWithCondition(evaluationContext, value);
+            Value combinedWithState = localConditionManager.evaluateWithState(evaluationContext, value);
 
             // we have no idea which of the 2 remains
             boolean noEffect = combinedWithCondition != NO_VALUE && combinedWithState != NO_VALUE &&
@@ -727,7 +730,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         FlowData.Execution execution = statementAnalysis.flowData.guaranteedToBeReachedInMethod.get();
 
         StatementAnalyserResult recursiveResult = startOfFirstBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
-                new ForwardAnalysisInfo(execution.worst(executionBlock), localConditionManager.addCondition(value), false));
+                new ForwardAnalysisInfo(execution.worst(executionBlock), localConditionManager.addCondition(evaluationContext, value), false));
         builder.add(recursiveResult);
         return inSyncBlock;
     }
@@ -776,7 +779,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         StatementAnalyser subStatementStart = navigationData.blocks.get().get(count);
         boolean inCatch = structure.localVariableCreation != null;
         StatementAnalyserResult result = subStatementStart.analyseAllStatementsInBlock(evaluationContext.getIteration(),
-                new ForwardAnalysisInfo(execution, localConditionManager.addCondition(valueForSubStatement), inCatch));
+                new ForwardAnalysisInfo(execution, localConditionManager.addCondition(evaluationContext, valueForSubStatement), inCatch));
         builder.add(result);
     }
 
@@ -866,7 +869,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 boolean allButLastSubStatementsEscape = escapes.stream().limit(escapes.size() - 1).allMatch(b -> b)
                         && !escapes.get(escapes.size() - 1);
                 if (allButLastSubStatementsEscape) {
-                    localConditionManager = localConditionManager.addToState(defaultCondition);
+                    localConditionManager = localConditionManager.addToState(evaluationContext, defaultCondition);
                     log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", defaultCondition);
                 }
             }
@@ -874,7 +877,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         // FINALLY, set the state
 
-        if (!localConditionManager.delayedState() && !statementAnalysis.stateData.conditionManager.isSet()) {
+        if (localConditionManager.notInDelayedState() && !statementAnalysis.stateData.conditionManager.isSet()) {
             statementAnalysis.stateData.conditionManager.set(localConditionManager);
         }
 
@@ -1018,7 +1021,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public EvaluationContext child(Value condition) {
-            return new EvaluationContextImpl(iteration, conditionManager.addCondition(condition));
+            return new EvaluationContextImpl(iteration, conditionManager.addCondition(this, condition));
         }
 
         @Override
@@ -1031,7 +1034,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL, statementAnalysis.getProperty(analyserContext, variable, variableProperty));
                 }
                 if (VariableProperty.SIZE == variableProperty) {
-                    Value sizeRestriction = conditionManager.individualSizeRestrictions().get(variable);
+                    Value sizeRestriction = conditionManager.individualSizeRestrictions(this).get(variable);
                     if (sizeRestriction != null) {
                         return sizeRestriction.encodedSizeRestriction(this);
                     }
@@ -1063,7 +1066,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         private boolean notNullAccordingToConditionManager(Variable variable) {
-            return conditionManager.findIndividualNullConditions().contains(variable);
+            return conditionManager.findIndividualNullConditions(this).contains(variable);
         }
 
 
@@ -1082,7 +1085,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             Value equalsNull = EqualsValue.equals(this, NullValue.NULL_VALUE, value, ObjectFlow.NO_FLOW);
             Value boolValueFalse = BoolValue.createFalse(getAnalyserContext().getPrimitives());
             if (equalsNull.equals(boolValueFalse)) return MultiLevel.EFFECTIVELY_NOT_NULL;
-            Value withCondition = conditionManager.combineWithState(equalsNull);
+            Value withCondition = conditionManager.combineWithState(this, equalsNull);
             if (withCondition.equals(boolValueFalse)) return MultiLevel.EFFECTIVELY_NOT_NULL; // we know != null
             if (withCondition.equals(equalsNull)) return MultiLevel.NULLABLE; // we know == null was already there
             return Level.DELAY;

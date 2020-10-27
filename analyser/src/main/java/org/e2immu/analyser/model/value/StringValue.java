@@ -30,6 +30,10 @@ public class StringValue extends ConstantValue implements Constant<String> {
     public final String value;
     private final ParameterizedType stringParameterizedType;
 
+    public StringValue(Primitives primitives, String value) {
+        this(primitives, value, ObjectFlow.NO_FLOW);
+    }
+
     public StringValue(Primitives primitives, String value, ObjectFlow objectFlow) {
         super(objectFlow);
         this.value = Objects.requireNonNull(value);

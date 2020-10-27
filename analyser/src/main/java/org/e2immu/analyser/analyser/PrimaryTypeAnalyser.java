@@ -29,7 +29,10 @@ import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -57,6 +60,8 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
                                @NotNull E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
+        Objects.requireNonNull(typeContext);
+        Objects.requireNonNull(typeContext.getPrimitives());
         this.typeContext = typeContext;
         patternMatcher = configuration.analyserConfiguration.newPatternMatcher();
 

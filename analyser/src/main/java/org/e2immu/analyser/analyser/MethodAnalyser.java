@@ -99,7 +99,8 @@ public class MethodAnalyser extends AbstractAnalyser {
                     this, null, block.structure.statements, "", true, false,
                     methodInfo.methodResolution.get().partOfConstruction.get());
         }
-        methodAnalysis = new MethodAnalysisImpl.Builder(analyserContext, methodInfo, parameterAnalyses, firstStatementAnalyser);
+        methodAnalysis = new MethodAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext,
+                methodInfo, parameterAnalyses, firstStatementAnalyser);
         this.isSAM = isSAM;
 
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<>();

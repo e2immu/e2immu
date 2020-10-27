@@ -26,7 +26,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                 List<Value> preconditions = d.methodAnalysis().getPreconditionForMarkAndOnly();
                 Assert.assertEquals(1, preconditions.size());
                 Assert.assertEquals("this.j > 0", preconditions.get(0).toString());
-                Assert.assertEquals("(-this.j) >= 0", NegatedValue.negate(preconditions.get(0)).toString());
+                Assert.assertEquals("(-this.j) >= 0", NegatedValue.negate(d.evaluationContext(), preconditions.get(0)).toString());
             }
         }
         if ("setNegativeJ".equals(name)) {

@@ -45,7 +45,7 @@ public class ParameterAnalyser {
         this.e2 = analyserContext.getE2ImmuAnnotationExpressions();
         this.parameterInfo = parameterInfo;
         TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-        parameterAnalysis = new ParameterAnalysisImpl.Builder(analyserContext, parameterInfo);
+        parameterAnalysis = new ParameterAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, parameterInfo);
     }
 
     public ParameterAnalysis getParameterAnalysis() {

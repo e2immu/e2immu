@@ -68,7 +68,7 @@ public class TestBasics extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.READ));
                 Assert.assertFalse(d.properties.isSet(VariableProperty.ASSIGNED));
                 Assert.assertFalse(d.properties.isSet(VariableProperty.NOT_NULL));
-                Assert.assertEquals(new StringValue("abc"), d.currentValue);
+                Assert.assertEquals(new StringValue(d.evaluationContext.getAnalyserContext().getPrimitives(), "abc"), d.currentValue);
                 return;
             }
             if (d.iteration == 1 || d.iteration == 2) {
@@ -85,9 +85,9 @@ public class TestBasics extends CommonTestRunner {
 
     TypeContextVisitor typeContextVisitor = typeContext -> {
         // check that the XML annotations have been read properly, and copied into the correct place
-        TypeInfo stringType = Primitives.PRIMITIVES.stringTypeInfo;
+        TypeInfo stringType = typeContext.getPrimitives().stringTypeInfo;
         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
-        Assert.assertFalse(stringType.hasSize());
+        Assert.assertFalse(stringType.hasSize(typeContext.getPrimitives()));
     };
 
     @Test

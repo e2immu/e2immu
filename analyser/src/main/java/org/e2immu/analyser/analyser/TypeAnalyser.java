@@ -94,7 +94,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         this.primaryType = primaryType;
         typeInspection = typeInfo.typeInspection.get();
 
-        typeAnalysis = new TypeAnalysisImpl.Builder(analyserContext, typeInfo);
+        typeAnalysis = new TypeAnalysisImpl.Builder(analyserContext.getPrimitives(), typeInfo);
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
                 .add("analyseImplicitlyImmutableTypes", (iteration) -> analyseImplicitlyImmutableTypes());
 
@@ -217,7 +217,9 @@ public class TypeAnalyser extends AbstractAnalyser {
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(iteration);
             for (TypeAnalyserVisitor typeAnalyserVisitor : analyserContext.getConfiguration().debugConfiguration.afterTypePropertyComputations) {
-                typeAnalyserVisitor.visit(new TypeAnalyserVisitor.Data(iteration, typeInfo, typeAnalysis, analyserComponents.getStatusesAsMap()));
+                typeAnalyserVisitor.visit(new TypeAnalyserVisitor.Data(iteration,
+                        analyserContext.getPrimitives(),
+                        typeInfo, typeAnalysis, analyserComponents.getStatusesAsMap()));
             }
 
             return analysisStatus;

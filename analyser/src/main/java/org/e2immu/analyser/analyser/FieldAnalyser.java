@@ -90,7 +90,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         this.checkConstant = new CheckConstant(analyserContext.getPrimitives());
         this.fieldInfo = fieldInfo;
         fieldInspection = fieldInfo.fieldInspection.get();
-        fieldAnalysis = new FieldAnalysisImpl.Builder(analyserContext, fieldInfo, ownerTypeAnalysis);
+        fieldAnalysis = new FieldAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, fieldInfo, ownerTypeAnalysis);
         this.primaryType = primaryType;
         this.sam = sam;
         fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord() || !fieldInfo.isPrivate() && !fieldInfo.isExplicitlyFinal();
@@ -893,7 +893,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         @Override
         public EvaluationContext child(Value condition) {
-            return FieldAnalyser.this.new EvaluationContextImpl(iteration, conditionManager.addCondition(condition));
+            return FieldAnalyser.this.new EvaluationContextImpl(iteration, conditionManager.addCondition(this, condition));
         }
 
         @Override

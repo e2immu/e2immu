@@ -6,7 +6,6 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.value.BoolValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -52,7 +51,7 @@ public class TestConditionalChecks extends CommonTestRunner {
             }
             // constant condition
             if ("3".equals(d.statementId)) {
-                Assert.assertEquals(BoolValue.FALSE, d.state);
+                Assert.assertEquals(d.evaluationContext.boolValueFalse(), d.state);
                 Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
             }
             // unreachable statement

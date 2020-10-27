@@ -74,7 +74,7 @@ public class TestObjectFlow2 extends CommonTestRunner {
         MethodInfo useOf = objectFlow2.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "useOf".equals(m.name)).findAny().orElseThrow();
 
         ObjectFlow constantX = objectFlow2.typeAnalysis.get().getConstantObjectFlows().stream()
-                .filter(of -> of.type.typeInfo == Primitives.PRIMITIVES.stringTypeInfo).findFirst().orElseThrow();
+                .filter(of -> of.type.typeInfo == typeContext.getPrimitives().stringTypeInfo).findFirst().orElseThrow();
         Assert.assertTrue(ofParam.containsPrevious(constantX));
 
         ObjectFlow useOfFlow = useOf.methodAnalysis.get().getInternalObjectFlows().stream()

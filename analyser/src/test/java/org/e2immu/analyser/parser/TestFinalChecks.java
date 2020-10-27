@@ -46,7 +46,7 @@ public class TestFinalChecks extends CommonTestRunner {
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        TypeInfo stringType = Primitives.PRIMITIVES.stringTypeInfo;
+        TypeInfo stringType = d.evaluationContext().getAnalyserContext().getPrimitives().stringTypeInfo;
         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
         int iteration = d.iteration();
         MethodInfo methodInfo = d.methodInfo();

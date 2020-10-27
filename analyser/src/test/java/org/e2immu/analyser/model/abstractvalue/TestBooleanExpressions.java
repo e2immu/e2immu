@@ -19,41 +19,41 @@ public class TestBooleanExpressions extends CommonAbstractValue {
      */
     @Test
     public void test1() {
-        Value aAndB = new AndValue().append(a, b);
+        Value aAndB = newAndAppend(a, b);
         Assert.assertEquals("(a and b)", aAndB.toString());
-        Value not_AAndB = NegatedValue.negate(aAndB);
+        Value not_AAndB = negate(aAndB);
         Assert.assertEquals("(not (a) or not (b))", not_AAndB.toString());
 
-        Value notAAndNotB = new AndValue().append(NegatedValue.negate(a), NegatedValue.negate(b));
+        Value notAAndNotB = newAndAppend(negate(a), negate(b));
         Assert.assertEquals("(not (a) and not (b))", notAAndNotB.toString());
-        Value notNotAAndNotB = NegatedValue.negate(notAAndNotB);
+        Value notNotAAndNotB = negate(notAAndNotB);
         Assert.assertEquals("(a or b)", notNotAAndNotB.toString());
 
         // then we combine these two
-        Value n1AndN2 = new AndValue().append(not_AAndB, notNotAAndNotB);
+        Value n1AndN2 = newAndAppend(not_AAndB, notNotAAndNotB);
         Assert.assertEquals("((a or b) and (not (a) or not (b)))", n1AndN2.toString());
 
-        Value notA_andB = new AndValue().append(NegatedValue.negate(a), b);
-        Value bOrNotA = NegatedValue.negate(notA_andB);
+        Value notA_andB = newAndAppend(negate(a), b);
+        Value bOrNotA = negate(notA_andB);
         Assert.assertEquals("(a or not (b))", bOrNotA.toString());
 
-        Value n1AndN2AndN3 = new AndValue().append(n1AndN2, bOrNotA);
+        Value n1AndN2AndN3 = newAndAppend(n1AndN2, bOrNotA);
         Assert.assertEquals("(a and not (b))", n1AndN2AndN3.toString());
     }
 
     @Test
     public void testEither() {
-        Value aAndB = new AndValue().append(a, b);
-        Value notAandNotB = new AndValue().append(NegatedValue.negate(a), NegatedValue.negate(b));
-        Value aAndB_or_notAandNotB = new OrValue().append(aAndB, notAandNotB);
+        Value aAndB = newAndAppend(a, b);
+        Value notAandNotB = newAndAppend(negate(a), negate(b));
+        Value aAndB_or_notAandNotB = newOrAppend(aAndB, notAandNotB);
         Assert.assertEquals("((a or not (b)) and (not (a) or b))", aAndB_or_notAandNotB.toString());
 
-        Value not__aAndB_or_notAandNotB = NegatedValue.negate(aAndB_or_notAandNotB);
+        Value not__aAndB_or_notAandNotB = negate(aAndB_or_notAandNotB);
         Assert.assertEquals("((a or b) and (not (a) or not (b)))", not__aAndB_or_notAandNotB.toString());
 
-        Value combined = new AndValue().append(not__aAndB_or_notAandNotB, aAndB_or_notAandNotB);
+        Value combined = newAndAppend(not__aAndB_or_notAandNotB, aAndB_or_notAandNotB);
         Assert.assertEquals("false", combined.toString());
-        Value combined2 = new AndValue().append(aAndB_or_notAandNotB, not__aAndB_or_notAandNotB);
+        Value combined2 = newAndAppend(aAndB_or_notAandNotB, not__aAndB_or_notAandNotB);
         Assert.assertEquals("false", combined2.toString());
     }
 }

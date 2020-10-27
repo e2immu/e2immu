@@ -24,13 +24,14 @@ import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.model.statement.SynchronizedStatement;
-import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.model.value.ConstantValue;
 import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.Container;
@@ -43,7 +44,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.VariableProperty.*;
-import static org.e2immu.analyser.analyser.VariableProperty.IDENTITY;
 import static org.e2immu.analyser.model.StatementAnalysis.FieldReferenceState.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
 import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
@@ -70,8 +70,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public final SetOnce<Boolean> done = new SetOnce<>(); // if not done, there have been delays
 
-    public StatementAnalysis(Statement statement, StatementAnalysis parent, String index, boolean inSyncBlock, boolean inPartOfConstruction) {
-        super(true, index);
+    public StatementAnalysis(Primitives primitives,
+                             Statement statement, StatementAnalysis parent, String index, boolean inSyncBlock, boolean inPartOfConstruction) {
+        super(primitives, true, index);
         this.index = super.simpleName;
         this.statement = statement;
         this.parent = parent;
@@ -144,11 +145,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     @Override
     public BiFunction<List<Statement>, String, StatementAnalysis> generator(EvaluationContext evaluationContext) {
-        return (statements, startIndex) -> recursivelyCreateAnalysisObjects(parent(), statements, startIndex, false,
+        return (statements, startIndex) -> recursivelyCreateAnalysisObjects(primitives, parent(), statements, startIndex, false,
                 inSyncBlock, inPartOfConstruction);
     }
 
     public static StatementAnalysis recursivelyCreateAnalysisObjects(
+            Primitives primitives,
             StatementAnalysis parent,
             List<Statement> statements,
             String indices,
@@ -167,7 +169,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         StatementAnalysis previous = null;
         for (Statement statement : statements) {
             String iPlusSt = indices + "." + statementIndex;
-            StatementAnalysis statementAnalysis = new StatementAnalysis(statement, parent, iPlusSt, inSyncBlock, inPartOfConstruction);
+            StatementAnalysis statementAnalysis = new StatementAnalysis(primitives, statement, parent, iPlusSt, inSyncBlock, inPartOfConstruction);
             if (previous != null) {
                 previous.navigationData.next.set(Optional.of(statementAnalysis));
             }
@@ -180,14 +182,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             boolean newInSyncBlock = inSyncBlock || statement instanceof SynchronizedStatement;
             Structure structure = statement.getStructure();
             if (structure.haveStatements()) {
-                StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(parent, statements,
+                StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, parent, statements,
                         iPlusSt + "." + blockIndex, true, newInSyncBlock, inPartOfConstruction);
                 analysisBlocks.add(subStatementAnalysis);
                 blockIndex++;
             }
             for (Structure subStatements : structure.subStatements) {
                 if (subStatements.haveStatements()) {
-                    StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(parent, statements,
+                    StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, parent, statements,
                             iPlusSt + "." + blockIndex, true, newInSyncBlock, inPartOfConstruction);
                     analysisBlocks.add(subStatementAnalysis);
                     blockIndex++;
@@ -448,7 +450,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      */
     private Value initialValueOfField(AnalyserContext analyserContext, FieldReference fieldReference) {
         if (inPartOfConstruction) {
-            return ConstantValue.nullValue(fieldReference.fieldInfo.type);
+            return ConstantValue.nullValue(analyserContext.getPrimitives(), fieldReference.fieldInfo.type.typeInfo);
         }
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
         int effectivelyFinal = fieldAnalysis.getProperty(FINAL);
@@ -568,8 +570,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     private Value stateOfValue(Variable assignmentTarget, Value value, EvaluationContext evaluationContext) {
         VariableValue valueWithVariable;
         ConditionManager conditionManager = evaluationContext.getConditionManager();
-        if ((valueWithVariable = value.asInstanceOf(VariableValue.class)) != null && conditionManager.haveNonEmptyState() && !conditionManager.delayedState()) {
-            Value state = conditionManager.individualStateInfo(valueWithVariable.variable);
+        if ((valueWithVariable = value.asInstanceOf(VariableValue.class)) != null && conditionManager.haveNonEmptyState() && conditionManager.notInDelayedState()) {
+            Value state = conditionManager.individualStateInfo(evaluationContext, valueWithVariable.variable);
             // now translate the state (j < 0) into state of the assignment target (this.j < 0)
             // TODO for now we're ignoring messages etc. encountered in the re-evaluation
             return state.reEvaluate(evaluationContext, Map.of(value, new VariableValue(assignmentTarget, ObjectFlow.NO_FLOW))).value;

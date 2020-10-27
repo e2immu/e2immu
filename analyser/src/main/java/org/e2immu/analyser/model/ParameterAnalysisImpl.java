@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -91,6 +90,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         public final SetOnce<FieldInfo> assignedToField = new SetOnce<>();
         public final SetOnce<Boolean> copiedFromFieldToParameters = new SetOnce<>();
         public final Location location;
+        private final AnalysisProvider analysisProvider;
 
         // initial flow object, used to collect call-outs
         // at the end of the method analysis replaced by a "final" flow object
@@ -100,18 +100,19 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         // this list is only filled in when the EXPOSED property is Level.TRUE.
         public final SetOnceMap<Integer, Boolean> exposed = new SetOnceMap<>();
 
-        public Builder(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
-            super(analyserContext, parameterInfo.hasBeenDefined(), parameterInfo.simpleName());
+        public Builder(Primitives primitives, AnalysisProvider analysisProvider, ParameterInfo parameterInfo) {
+            super(primitives, parameterInfo.hasBeenDefined(), parameterInfo.simpleName());
             this.parameterInfo = parameterInfo;
             this.location = new Location(parameterInfo);
             ObjectFlow initialObjectFlow = new ObjectFlow(new Location(parameterInfo),
                     parameterInfo.parameterizedType, Origin.INITIAL_PARAMETER_FLOW);
             objectFlow = new FirstThen<>(initialObjectFlow);
+            this.analysisProvider = analysisProvider;
         }
 
         @Override
         public int getProperty(VariableProperty variableProperty) {
-            return getParameterProperty(analyserContext, parameterInfo, getObjectFlow(), variableProperty);
+            return getParameterProperty(analysisProvider, parameterInfo, getObjectFlow(), variableProperty);
         }
 
         @Override
@@ -161,7 +162,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             // implicitly @NotModified when E2Immutable, or functional interface
             int modified = getProperty(VariableProperty.MODIFIED);
             if (!parameterInfo.parameterizedType.isFunctionalInterface() &&
-                    parameterInfo.parameterizedType.isAtLeastEventuallyE2Immutable(analyserContext) != Boolean.TRUE) {
+                    parameterInfo.parameterizedType.isAtLeastEventuallyE2Immutable(analysisProvider) != Boolean.TRUE) {
                 AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
                         e2ImmuAnnotationExpressions.modified.get();
                 annotations.put(ae, true);

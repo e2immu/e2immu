@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -114,12 +113,14 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         public final FieldInfo fieldInfo;
         public final MethodInfo sam;
         private final TypeAnalysis typeAnalysisOfOwner;
+        private final AnalysisProvider analysisProvider;
 
-        public Builder(AnalyserContext analyserContext, @NotModified FieldInfo fieldInfo, TypeAnalysis typeAnalysisOfOwner) {
-            super(analyserContext, fieldInfo.hasBeenDefined(), fieldInfo.name);
+        public Builder(Primitives primitives, AnalysisProvider analysisProvider, @NotModified FieldInfo fieldInfo, TypeAnalysis typeAnalysisOfOwner) {
+            super(primitives, fieldInfo.hasBeenDefined(), fieldInfo.name);
             this.typeAnalysisOfOwner = typeAnalysisOfOwner;
             this.bestType = fieldInfo.type.bestTypeInfo();
             isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
+            this.analysisProvider = analysisProvider;
             type = fieldInfo.type;
             this.sam = !fieldInfo.fieldInspection.get().initialiser.isSet() ? null :
                     fieldInfo.fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod;
@@ -166,7 +167,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         @Override
         public int getProperty(VariableProperty variableProperty) {
-            return getFieldProperty(analyserContext, fieldInfo, bestType, variableProperty);
+            return getFieldProperty(analysisProvider, fieldInfo, bestType, variableProperty);
         }
 
         @Override
@@ -222,7 +223,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             if (effectivelyFinal == Level.FALSE && MultiLevel.isEventuallyE1Immutable(ownerImmutable)) {
                 String labels = typeAnalysisOfOwner.allLabelsRequiredForImmutable();
                 annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.get()
-                        .copyWith(analyserContext.getPrimitives(), "after", labels), true);
+                        .copyWith(primitives, "after", labels), true);
             } else {
                 if (effectivelyFinal == Level.TRUE && !isExplicitlyFinal) {
                     annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.get(), true);
@@ -239,8 +240,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             if (modified == Level.TRUE && MultiLevel.isEventuallyE2Immutable(ownerImmutable)) {
                 String marks = String.join(",", typeAnalysisOfOwner.marksRequiredForImmutable());
                 annotations.put(e2ImmuAnnotationExpressions.notModified.get()
-                        .copyWith(analyserContext.getPrimitives(), "after", marks), true);
-            } else if (allowModificationAnnotation(analyserContext, effectivelyFinal)) {
+                        .copyWith(primitives, "after", marks), true);
+            } else if (allowModificationAnnotation(effectivelyFinal)) {
                 AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
                         e2ImmuAnnotationExpressions.modified.get();
                 annotations.put(ae, true);
@@ -262,7 +263,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             }
         }
 
-        private boolean allowModificationAnnotation(AnalysisProvider analysisProvider, int effectivelyFinal) {
+        private boolean allowModificationAnnotation(int effectivelyFinal) {
             if (effectivelyFinal <= Level.FALSE) return false;
             if (type.isAtLeastEventuallyE2Immutable(analysisProvider) == Boolean.TRUE) return false;
             if (type.isFunctionalInterface()) {

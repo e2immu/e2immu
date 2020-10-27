@@ -20,7 +20,10 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.MethodLevelData;
+import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ContractMark;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -171,9 +174,9 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public final ParameterizedType returnType;
         public final MethodInfo methodInfo;
         public final SetOnce<Set<MethodAnalysis>> overrides = new SetOnce<>();
-        public final TypeAnalysis typeAnalysis;
         public final StatementAnalysis firstStatement;
         public final List<ParameterAnalysis> parameterAnalyses;
+        private final AnalysisProvider analysisProvider;
 
         // the value here (size will be one)
         public final SetOnce<List<Value>> preconditionForMarkAndOnly = new SetOnce<>();
@@ -225,15 +228,16 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return precondition.getOrElse(null);
         }
 
-        public Builder(AnalyserContext analyserContext,
+        public Builder(Primitives primitives,
+                       AnalysisProvider analysisProvider,
                        MethodInfo methodInfo,
                        List<ParameterAnalysis> parameterAnalyses,
                        StatementAnalyser firstStatementAnalyser) {
-            super(analyserContext, methodInfo.hasBeenDefined(), methodInfo.name);
+            super(primitives, methodInfo.hasBeenDefined(), methodInfo.name);
             this.parameterAnalyses = parameterAnalyses;
             this.methodInfo = methodInfo;
             this.returnType = methodInfo.returnType();
-            this.typeAnalysis = analyserContext.getTypeAnalysis(methodInfo.typeInfo);
+            this.analysisProvider = analysisProvider;
             if (methodInfo.isConstructor || methodInfo.isVoid()) {
                 // we set a NO_FLOW, non-modifiable
                 objectFlow = new FirstThen<>(ObjectFlow.NO_FLOW);
@@ -291,7 +295,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public int getProperty(VariableProperty variableProperty) {
-            return getMethodProperty(analyserContext, methodInfo, variableProperty);
+            return getMethodProperty(analysisProvider, methodInfo, variableProperty);
         }
 
         private int dynamicProperty(int formalImmutableProperty) {
@@ -312,7 +316,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 Value value = precondition.get();
                 if (value != UnknownValue.EMPTY) {
                     AnnotationExpression ae = e2ImmuAnnotationExpressions.precondition.get()
-                            .copyWith(analyserContext.getPrimitives(), "value", value.toString());
+                            .copyWith(primitives, "value", value.toString());
                     annotations.put(ae, true);
                 }
             }
@@ -363,7 +367,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         private boolean allowIndependentOnMethod() {
-            return !Primitives.isVoid(returnType) && returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(analyserContext) != Boolean.TRUE;
+            return !Primitives.isVoid(returnType) && returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(analysisProvider) != Boolean.TRUE;
         }
 
         protected void writeMarkAndOnly(MarkAndOnly markAndOnly) {
@@ -376,7 +380,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public Set<MethodAnalysis> getOverrides() {
             if (overrides.isSet()) return overrides.get();
-            Set<MethodAnalysis> computed = overrides(analyserContext.getPrimitives(), methodInfo);
+            Set<MethodAnalysis> computed = overrides(primitives, methodInfo);
             overrides.set(ImmutableSet.copyOf(computed));
             return computed;
         }

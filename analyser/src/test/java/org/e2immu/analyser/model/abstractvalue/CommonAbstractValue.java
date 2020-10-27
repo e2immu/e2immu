@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
@@ -89,6 +90,23 @@ public abstract class CommonAbstractValue {
         };
     }
 
+    protected static Value newAndAppend(Value... values) {
+        return new AndValue(PRIMITIVES).append(minimalEvaluationContext, values);
+    }
+
+    protected static Value newOrAppend(Value... values) {
+        return new OrValue(PRIMITIVES).append(minimalEvaluationContext, values);
+    }
+
+    protected static Value negate(Value value) {
+        return NegatedValue.negate(minimalEvaluationContext, value);
+    }
+
+    protected static Value newInt(int i) {
+        return new IntValue(PRIMITIVES, i, ObjectFlow.NO_FLOW);
+    }
+
+
     static ParameterInfo createParameter(String name) {
         assert PRIMITIVES != null;
         if (!PRIMITIVES.objectTypeInfo.typeInspection.isSetPotentiallyRun()) {
@@ -97,11 +115,11 @@ public abstract class CommonAbstractValue {
                     .build(false, PRIMITIVES.objectTypeInfo));
         }
         TypeInfo someType = new TypeInfo("some.type");
-        someType.typeAnalysis.set(new TypeAnalysisImpl.Builder(someType).build());
+        someType.typeAnalysis.set(new TypeAnalysisImpl.Builder(PRIMITIVES, someType).build());
         MethodInfo methodInfo = new MethodInfo(someType, List.of());
         ParameterInfo pi = new ParameterInfo(methodInfo, PRIMITIVES.stringParameterizedType, name, 0);
         pi.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
-        pi.setAnalysis(new ParameterAnalysisImpl.Builder(pi, null));
+        pi.setAnalysis(new ParameterAnalysisImpl.Builder(PRIMITIVES, null, pi));
         methodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .addParameter(pi)
                 .build(methodInfo));
@@ -182,7 +200,7 @@ public abstract class CommonAbstractValue {
     };
 
     protected static Value equals(Value v1, Value v2) {
-        return EqualsValue.equals(v1, v2, ObjectFlow.NO_FLOW, minimalEvaluationContext);
+        return EqualsValue.equals(minimalEvaluationContext, v1, v2, ObjectFlow.NO_FLOW);
     }
 
     static final Variable va = createVariable("a");

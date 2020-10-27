@@ -20,8 +20,6 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.*;
 
@@ -196,95 +194,73 @@ public class Primitives {
         return parameterizedType.typeInfo != null && isJavaLangObject(parameterizedType.typeInfo);
     }
 
-    public final MethodInfo plusOperatorInt = new MethodInfo(intTypeInfo, "+",
-            List.of(), intParameterizedType, true);
-
-    public final MethodInfo minusOperatorInt = new MethodInfo(intTypeInfo, "-",
-            List.of(), intParameterizedType, true);
-    public final MethodInfo bitwiseOrOperatorInt = new MethodInfo(intTypeInfo, "|",
-            List.of(), intParameterizedType, true);
-
-    public final MethodInfo bitwiseAndOperatorInt = new MethodInfo(intTypeInfo, "&",
-            List.of(), intParameterizedType, true);
-
-    public final MethodInfo bitwiseXorOperatorInt = new MethodInfo(intTypeInfo, "^",
-            List.of(), intParameterizedType, true);
-    public final MethodInfo remainderOperatorInt = new MethodInfo(intTypeInfo, "%",
-            List.of(), intParameterizedType, true);
-
-    public final MethodInfo signedRightShiftOperatorInt = new MethodInfo(intTypeInfo, ">>",
-            List.of(), intParameterizedType, true);
-    public final MethodInfo unsignedRightShiftOperatorInt = new MethodInfo(intTypeInfo, ">>>",
-            List.of(), intParameterizedType, true);
-    public final MethodInfo leftShiftOperatorInt = new MethodInfo(intTypeInfo, "<<",
-            List.of(), intParameterizedType, true);
-
-    public final MethodInfo divideOperatorInt = new MethodInfo(intTypeInfo, "/",
-            List.of(), intParameterizedType, true);
-
-    public final MethodInfo equalsOperatorInt = new MethodInfo(intTypeInfo, "==",
-            List.of(), booleanParameterizedType, true);
-    public final MethodInfo notEqualsOperatorInt = new MethodInfo(intTypeInfo, "!=",
-            List.of(), booleanParameterizedType, true);
-    public final MethodInfo greaterOperatorInt = new MethodInfo(intTypeInfo, ">",
-            List.of(), booleanParameterizedType, true);
-    public final MethodInfo greaterEqualsOperatorInt = new MethodInfo(intTypeInfo, ">=",
-            List.of(), booleanParameterizedType, true);
-    public final MethodInfo lessOperatorInt = new MethodInfo(intTypeInfo, "<",
-            List.of(), booleanParameterizedType, true);
-    public final MethodInfo lessEqualsOperatorInt = new MethodInfo(intTypeInfo, "<=",
-            List.of(), booleanParameterizedType, true);
-
-    public final MethodInfo multiplyOperatorInt = new MethodInfo(intTypeInfo, "*",
-            List.of(), intParameterizedType, true);
-
-    public final MethodInfo assignOperatorInt = new MethodInfo(intTypeInfo, "=",
-            List.of(), intParameterizedType, true);
-
-    public final MethodInfo assignPlusOperatorInt = new MethodInfo(intTypeInfo, "+=",
-            List.of(), intParameterizedType, true);
-    public final MethodInfo assignMinusOperatorInt = new MethodInfo(intTypeInfo, "-=",
-            List.of(), intParameterizedType, true);
-    public final MethodInfo assignMultiplyOperatorInt = new MethodInfo(intTypeInfo, "*=",
-            List.of(), intParameterizedType, true);
-    public final MethodInfo assignDivideOperatorInt = new MethodInfo(intTypeInfo, "/=",
-            List.of(), intParameterizedType, true);
-
-    public final MethodInfo assignOrOperatorBoolean = new MethodInfo(intTypeInfo, "|=",
-            List.of(), booleanParameterizedType, true);
-
-    public final MethodInfo postfixIncrementOperatorInt = new MethodInfo(intTypeInfo, "++",
-            List.of(), intParameterizedType, true);
-    public final MethodInfo prefixIncrementOperatorInt = new MethodInfo(intTypeInfo, "++",
-            List.of(), intParameterizedType, true);
-    public final MethodInfo postfixDecrementOperatorInt = new MethodInfo(intTypeInfo, "--",
-            List.of(), intParameterizedType, true);
-    public final MethodInfo prefixDecrementOperatorInt = new MethodInfo(intTypeInfo, "--",
-            List.of(), intParameterizedType, true);
-    public final MethodInfo unaryPlusOperatorInt = new MethodInfo(intTypeInfo, "+",
-            List.of(), intParameterizedType, true);
-    public final MethodInfo unaryMinusOperatorInt = new MethodInfo(intTypeInfo, "-",
-            List.of(), intParameterizedType, true);
-
-    public static boolean isUnaryMinusOperatorInt(MethodInfo operator) {
+    private MethodInfo createOperator(TypeInfo owner, String name, List<ParameterizedType> parameterizedTypes, ParameterizedType returnType) {
+        MethodInfo methodInfo = new MethodInfo(owner, name, true);
+        int i = 0;
+        MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
+        for (ParameterizedType parameterizedType : parameterizedTypes) {
+            ParameterInfo parameterInfo = new ParameterInfo(methodInfo, parameterizedType, "p" + i, i++);
+            parameterInfo.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
+            builder.addParameter(parameterInfo);
+        }
+        builder.setReturnType(returnType);
+        methodInfo.methodInspection.set(builder.build(methodInfo));
+        return methodInfo;
     }
 
-    public final MethodInfo bitWiseNotOperatorInt = new MethodInfo(intTypeInfo, "~",
-            List.of(), intParameterizedType, true);
-    public final MethodInfo logicalNotOperatorBool = new MethodInfo(booleanTypeInfo, "!",
-            List.of(), booleanParameterizedType, true);
-    public final MethodInfo orOperatorBool = new MethodInfo(booleanTypeInfo, "||",
-            List.of(), booleanParameterizedType, true);
-    public final MethodInfo andOperatorBool = new MethodInfo(booleanTypeInfo, "&&",
-            List.of(), booleanParameterizedType, true);
+    private final List<ParameterizedType> intInt = List.of(intParameterizedType, intParameterizedType);
+    private final List<ParameterizedType> boolBool = List.of(booleanParameterizedType, booleanParameterizedType);
 
-    public final MethodInfo plusOperatorString = new MethodInfo(stringTypeInfo, "+",
-            List.of(), stringParameterizedType, true);
+    public final MethodInfo plusOperatorInt = createOperator(intTypeInfo, "+", intInt, intParameterizedType);
+    public final MethodInfo minusOperatorInt = createOperator(intTypeInfo, "-", intInt, intParameterizedType);
+    public final MethodInfo bitwiseOrOperatorInt = createOperator(intTypeInfo, "|", intInt, intParameterizedType);
+    public final MethodInfo bitwiseAndOperatorInt = createOperator(intTypeInfo, "&", intInt, intParameterizedType);
+    public final MethodInfo bitwiseXorOperatorInt = createOperator(intTypeInfo, "^", intInt, intParameterizedType);
+    public final MethodInfo remainderOperatorInt = createOperator(intTypeInfo, "%", intInt, intParameterizedType);
+    public final MethodInfo signedRightShiftOperatorInt = createOperator(intTypeInfo, ">>", intInt, intParameterizedType);
+    public final MethodInfo unsignedRightShiftOperatorInt = createOperator(intTypeInfo, ">>>", intInt, intParameterizedType);
+    public final MethodInfo leftShiftOperatorInt = createOperator(intTypeInfo, "<<", intInt, intParameterizedType);
+    public final MethodInfo divideOperatorInt = createOperator(intTypeInfo, "/", intInt, intParameterizedType);
+    public final MethodInfo multiplyOperatorInt = createOperator(intTypeInfo, "*", intInt, intParameterizedType);
 
-    public final MethodInfo equalsOperatorObject = new MethodInfo(objectTypeInfo, "==",
-            List.of(), booleanParameterizedType, true);
-    public final MethodInfo notEqualsOperatorObject = new MethodInfo(objectTypeInfo, "!=",
-            List.of(), booleanParameterizedType, true);
+    public final MethodInfo equalsOperatorInt = createOperator(intTypeInfo, "==", intInt, booleanParameterizedType);
+    public final MethodInfo notEqualsOperatorInt = createOperator(intTypeInfo, "!=", intInt, booleanParameterizedType);
+    public final MethodInfo greaterOperatorInt = createOperator(intTypeInfo, ">", intInt, booleanParameterizedType);
+    public final MethodInfo greaterEqualsOperatorInt = createOperator(intTypeInfo, ">=", intInt, booleanParameterizedType);
+    public final MethodInfo lessOperatorInt = createOperator(intTypeInfo, "<", intInt, booleanParameterizedType);
+    public final MethodInfo lessEqualsOperatorInt = createOperator(intTypeInfo, "<=", intInt, booleanParameterizedType);
+
+    public final MethodInfo assignOperatorInt = createOperator(intTypeInfo, "=", List.of(intParameterizedType), intParameterizedType);
+    public final MethodInfo assignPlusOperatorInt = createOperator(intTypeInfo, "+=", List.of(intParameterizedType), intParameterizedType);
+    public final MethodInfo assignMinusOperatorInt = createOperator(intTypeInfo, "-=", List.of(intParameterizedType), intParameterizedType);
+    public final MethodInfo assignMultiplyOperatorInt = createOperator(intTypeInfo, "*=", List.of(intParameterizedType), intParameterizedType);
+    public final MethodInfo assignDivideOperatorInt = createOperator(intTypeInfo, "/=", List.of(intParameterizedType), intParameterizedType);
+    public final MethodInfo assignOrOperatorBoolean = createOperator(intTypeInfo, "|=", List.of(intParameterizedType), intParameterizedType);
+
+    public final MethodInfo postfixIncrementOperatorInt = createOperator(intTypeInfo, "++", List.of(), intParameterizedType);
+    public final MethodInfo prefixIncrementOperatorInt = createOperator(intTypeInfo, "++", List.of(), intParameterizedType);
+    public final MethodInfo postfixDecrementOperatorInt = createOperator(intTypeInfo, "--", List.of(), intParameterizedType);
+    public final MethodInfo prefixDecrementOperatorInt = createOperator(intTypeInfo, "--", List.of(), intParameterizedType);
+
+    public final MethodInfo unaryPlusOperatorInt = createOperator(intTypeInfo, "+", List.of(intParameterizedType), intParameterizedType);
+    public final MethodInfo unaryMinusOperatorInt = createOperator(intTypeInfo, "-", List.of(intParameterizedType), intParameterizedType);
+
+    public static boolean isUnaryMinusOperatorInt(MethodInfo operator) {
+        return "int.-".equals(operator.fullyQualifiedName()) && operator.methodInspection.get().parameters.size() == 1;
+    }
+
+    public final MethodInfo bitWiseNotOperatorInt = createOperator(intTypeInfo, "~", List.of(intParameterizedType), intParameterizedType);
+    public final MethodInfo logicalNotOperatorBool = createOperator(booleanTypeInfo, "!", List.of(booleanParameterizedType), booleanParameterizedType);
+    public final MethodInfo orOperatorBool = createOperator(booleanTypeInfo, "||", boolBool, booleanParameterizedType);
+    public final MethodInfo andOperatorBool = createOperator(booleanTypeInfo, "&&", boolBool, booleanParameterizedType);
+
+    public final MethodInfo plusOperatorString = createOperator(stringTypeInfo, "+", List.of(stringParameterizedType,
+            stringParameterizedType), stringParameterizedType);
+
+    public final MethodInfo equalsOperatorObject = createOperator(objectTypeInfo, "==",
+            List.of(objectParameterizedType, objectParameterizedType), objectParameterizedType);
+    public final MethodInfo notEqualsOperatorObject = createOperator(objectTypeInfo, "!=",
+            List.of(objectParameterizedType, objectParameterizedType), objectParameterizedType);
 
     public final Map<String, TypeInfo> primitiveByName = new HashMap<>();
     public final Map<String, TypeInfo> typeByName = new HashMap<>();
@@ -295,11 +271,6 @@ public class Primitives {
     public final Set<TypeInfo> primitives = Set.of(booleanTypeInfo, byteTypeInfo, doubleTypeInfo, floatTypeInfo,
             longTypeInfo, shortTypeInfo, voidTypeInfo, intTypeInfo, charTypeInfo);
 
-    public final Set<TypeInfo> numericPrimitives = Set.of(shortTypeInfo, intTypeInfo, doubleTypeInfo, floatTypeInfo, byteTypeInfo, longTypeInfo);
-
-    public final Set<TypeInfo> numericBoxed = Set.of(boxedShortTypeInfo, integerTypeInfo, boxedDoubleTypeInfo,
-            boxedFloatTypeInfo, boxedLongTypeInfo, boxedByteTypeInfo);
-
 
     public Primitives() {
         for (TypeInfo ti : primitives) {
@@ -308,7 +279,7 @@ public class Primitives {
                     .setTypeNature(TypeNature.PRIMITIVE)
                     .build(false, ti));
             primitiveByName.put(ti.simpleName, ti);
-            TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(ti);
+            TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(this, ti);
             ti.typeAnalysis.set(builder);
             builder.properties.put(VariableProperty.CONTAINER, Level.TRUE);
             builder.properties.put(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);

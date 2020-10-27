@@ -43,7 +43,8 @@ public class TestDependencyGraph extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("sorted".equals(d.methodInfo.name) && "3.0.0".equals(d.statementId)) {
             Assert.assertEquals("((-1) + toDo.size(),?>=0) >= 0", d.condition.toString());
-            Map<Variable, Value> isr = d.condition.filter(Value.FilterMode.ACCEPT, Value::isIndividualSizeRestriction).accepted;
+            Map<Variable, Value> isr = d.condition.filter(d.evaluationContext, Value.FilterMode.ACCEPT,
+                    val -> val.isIndividualSizeRestriction(d.evaluationContext)).accepted;
             Assert.assertEquals(1, isr.size());
             Map.Entry<Variable, Value> entry = isr.entrySet().stream().findAny().orElseThrow();
             Assert.assertEquals("toDo", entry.getKey().simpleName());

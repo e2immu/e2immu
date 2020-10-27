@@ -30,14 +30,15 @@ public class TestFilter extends CommonAbstractValue {
 
     @Test
     public void test() {
-        AndValue andValue = (AndValue) new AndValue().append(a, b);
+        AndValue andValue = (AndValue) newAndAppend(a, b);
         Assert.assertEquals("(a and b)", andValue.toString());
 
-        Value.FilterResult filterResult = andValue.filter(Value.FilterMode.ALL, value -> new Value.FilterResult(Map.of(), value));
+        Value.FilterResult filterResult = andValue.filter(minimalEvaluationContext,
+                Value.FilterMode.ALL, value -> new Value.FilterResult(Map.of(), value));
         Assert.assertNotSame(filterResult.rest, andValue);
         Assert.assertEquals(filterResult.rest, andValue);
 
-        Value.FilterResult filterResult2 = andValue.filter(Value.FilterMode.ALL, value -> {
+        Value.FilterResult filterResult2 = andValue.filter(minimalEvaluationContext, Value.FilterMode.ALL, value -> {
             if (value instanceof VariableValue && ((VariableValue) value).variable == b.variable) {
                 return new Value.FilterResult(Map.of(b.variable, b), UnknownValue.EMPTY);
             }
@@ -51,11 +52,11 @@ public class TestFilter extends CommonAbstractValue {
 
     @Test
     public void testWithEquals() {
-        Value sNotNull = NegatedValue.negate(equals(NullValue.NULL_VALUE, s));
-        AndValue andValue = (AndValue) new AndValue().append(a, sNotNull);
+        Value sNotNull = negate(equals(NullValue.NULL_VALUE, s));
+        AndValue andValue = (AndValue) newAndAppend(a, sNotNull);
         Assert.assertEquals("(a and not (null == s))", andValue.toString());
 
-        Value.FilterResult filterResult = andValue.filter(Value.FilterMode.ALL, value -> {
+        Value.FilterResult filterResult = andValue.filter(minimalEvaluationContext, Value.FilterMode.ALL, value -> {
             if (value instanceof EqualsValue equalsValue) {
                 if (equalsValue.rhs instanceof VariableValue && ((VariableValue) equalsValue.rhs).variable == s.variable) {
                     return new Value.FilterResult(Map.of(s.variable, s), UnknownValue.EMPTY);

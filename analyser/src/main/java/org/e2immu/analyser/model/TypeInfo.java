@@ -1051,20 +1051,20 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return isNestedType() && isPrivate();
     }
 
-    public Messages copyAnnotationsIntoTypeAnalysisProperties(E2ImmuAnnotationExpressions typeContext) {
+    public Messages copyAnnotationsIntoTypeAnalysisProperties(Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         assert !hasBeenDefined();
         Messages messages = new Messages();
         log(RESOLVE, "copy annotations into properties: {}", fullyQualifiedName);
 
-        TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(anathis);
-        messages.addAll(builder.fromAnnotationsIntoProperties(true, typeInspection.getPotentiallyRun().annotations, typeContext));
+        TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(primitives, this);
+        messages.addAll(builder.fromAnnotationsIntoProperties(true, typeInspection.getPotentiallyRun().annotations, e2ImmuAnnotationExpressions));
 
         this.typeAnalysis.set(builder.build());
 
         typeInspection.getPotentiallyRun().methodsAndConstructors().forEach(methodInfo ->
-                messages.addAll(methodInfo.copyAnnotationsIntoMethodAnalysisProperties(typeContext)));
+                messages.addAll(methodInfo.copyAnnotationsIntoMethodAnalysisProperties(primitives, e2ImmuAnnotationExpressions)));
         typeInspection.getPotentiallyRun().fields.forEach(fieldInfo ->
-                messages.addAll(fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(typeContext)));
+                messages.addAll(fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(primitives, e2ImmuAnnotationExpressions)));
         return messages;
     }
 

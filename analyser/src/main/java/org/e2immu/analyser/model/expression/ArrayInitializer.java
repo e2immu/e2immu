@@ -39,7 +39,7 @@ public class ArrayInitializer implements Expression {
     public ArrayInitializer(Primitives primitives, @NotNull @NotModified List<Expression> expressions) {
         this.expressions = Objects.requireNonNull(expressions);
         commonType = commonType(expressions);
-        this.primitives = primitives;
+        this.primitives = Objects.requireNonNull(primitives);
     }
 
     @Override

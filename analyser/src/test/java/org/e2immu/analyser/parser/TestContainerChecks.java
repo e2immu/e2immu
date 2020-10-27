@@ -138,7 +138,7 @@ public class TestContainerChecks extends CommonTestRunner {
     TypeContextVisitor typeContextVisitor = typeContext -> {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
         MethodInfo forEach = collection.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "forEach".equals(m.name)).findAny().orElseThrow();
-        Assert.assertSame(Primitives.PRIMITIVES.voidTypeInfo, forEach.returnType().typeInfo);
+        Assert.assertSame(typeContext.getPrimitives().voidTypeInfo, forEach.returnType().typeInfo);
 
         TypeInfo hashSet = typeContext.getFullyQualified(HashSet.class);
         MethodInfo constructor1 = hashSet.typeInspection.getPotentiallyRun().constructors.stream()

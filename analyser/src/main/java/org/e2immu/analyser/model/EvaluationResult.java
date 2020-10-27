@@ -17,9 +17,10 @@
 
 package org.e2immu.analyser.model;
 
-import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.StateData;
+import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -346,7 +347,7 @@ public class EvaluationResult {
         }
 
         public void modifyingMethodAccess(Variable variable) {
-            add(new StateData.RemoveVariableFromState(variable));
+            add(new StateData.RemoveVariableFromState(evaluationContext, variable));
         }
 
         public void addResultOfMethodAnalyser(AnalysisStatus analysisStatus) {

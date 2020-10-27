@@ -133,9 +133,9 @@ public class TestBasicsOpposite extends CommonTestRunner {
 
     TypeContextVisitor typeContextVisitor = typeContext -> {
         // check that the XML annotations have been read properly, and copied into the correct place
-        TypeInfo stringType = Primitives.PRIMITIVES.stringTypeInfo;
+        TypeInfo stringType = typeContext.getPrimitives().stringTypeInfo;
         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
-        Assert.assertTrue(stringType.hasSize());
+        Assert.assertTrue(stringType.hasSize(typeContext.getPrimitives()));
     };
 
     @Test

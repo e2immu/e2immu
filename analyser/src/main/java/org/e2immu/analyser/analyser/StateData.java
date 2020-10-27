@@ -31,9 +31,7 @@ public class StateData {
 
     // precondition = conditions that cause an escape
     public final SetOnce<Value> precondition = new SetOnce<>(); // set on statements of depth 1, ie., 0, 1, 2,..., not 0.0.0, 1.0.0
-
     public final SetOnce<ConditionManager> conditionManager = new SetOnce<>(); // the state as it is after evaluating the statement
-
     public final SetOnce<Value> valueOfExpression = new SetOnce<>();
 
     public AnalysisStatus copyPrecondition(StatementAnalyser statementAnalyser, StatementAnalysis previous, EvaluationContext evaluationContext) {
@@ -56,14 +54,16 @@ public class StateData {
 
     public static class RemoveVariableFromState implements StatementAnalysis.StateChange {
         private final Variable variable;
+        private final EvaluationContext evaluationContext;
 
-        public RemoveVariableFromState(Variable variable) {
+        public RemoveVariableFromState(EvaluationContext evaluationContext, Variable variable) {
             this.variable = variable;
+            this.evaluationContext = evaluationContext;
         }
 
         @Override
         public Value apply(Value value) {
-            return ConditionManager.removeClausesInvolving(value, variable, true);
+            return ConditionManager.removeClausesInvolving(evaluationContext, value, variable, true);
         }
     }
 

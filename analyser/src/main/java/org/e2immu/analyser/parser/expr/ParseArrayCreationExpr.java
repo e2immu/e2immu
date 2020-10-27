@@ -19,6 +19,7 @@
 package org.e2immu.analyser.parser.expr;
 
 import com.github.javaparser.ast.expr.ArrayCreationExpr;
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -33,8 +34,9 @@ import java.util.stream.Collectors;
 public class ParseArrayCreationExpr {
     public static Expression parse(ExpressionContext expressionContext, ArrayCreationExpr arrayCreationExpr) {
         ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, arrayCreationExpr.createdType());
-        ArrayInitializer arrayInitializer = arrayCreationExpr.getInitializer().map(i -> new ArrayInitializer(i.getValues().stream()
-                .map(expressionContext::parseExpression).collect(Collectors.toList()))).orElse(null);
+        ArrayInitializer arrayInitializer = arrayCreationExpr.getInitializer().map(i ->
+                new ArrayInitializer(expressionContext.typeContext.getPrimitives(), i.getValues().stream()
+                        .map(expressionContext::parseExpression).collect(Collectors.toList()))).orElse(null);
         List<Expression> indexExpressions = arrayCreationExpr.getLevels()
                 .stream().map(level -> level.getDimension().map(expressionContext::parseExpression)
                         .orElse(EmptyExpression.EMPTY_EXPRESSION)).collect(Collectors.toList());
@@ -52,7 +54,7 @@ public class ParseArrayCreationExpr {
         for (int i = 0; i < parameterizedType.arrays; i++) {
             ParameterInfo p = new ParameterInfo(constructor, typeContext.getPrimitives().intParameterizedType, "dim" + i, i);
             p.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().setVarArgs(false).build());
-            p.setAnalysis(new ParameterAnalysisImpl.Builder(typeContext, p).build());
+            p.setAnalysis(new ParameterAnalysisImpl.Builder(typeContext.getPrimitives(), AnalysisProvider.DEFAULT_PROVIDER, p).build());
             builder.addParameter(p);
         }
         constructor.methodInspection.set(builder.build(constructor));
