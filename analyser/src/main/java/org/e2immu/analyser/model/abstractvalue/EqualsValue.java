@@ -180,7 +180,7 @@ public class EqualsValue extends PrimitiveValue {
     }
 
     @Override
-    public int encodedSizeRestriction() {
+    public int encodedSizeRestriction(EvaluationContext evaluationContext) {
         if (lhs instanceof NumericValue && lhs.isDiscreteType()) {
             int size = ((NumericValue) lhs).getNumber().intValue();
             return Level.encodeSizeEquals(size);

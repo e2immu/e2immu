@@ -158,7 +158,7 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
     }
 
     @Override
-    public int encodedSizeRestriction() {
+    public int encodedSizeRestriction(EvaluationContext evaluationContext) {
         if (!integer) throw new UnsupportedOperationException();
 
         if (lowerBound == upperBound) {

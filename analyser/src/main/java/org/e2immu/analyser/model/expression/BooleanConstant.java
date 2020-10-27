@@ -30,18 +30,18 @@ import java.util.Objects;
 
 @E2Container
 public class BooleanConstant implements ConstantExpression<Boolean> {
-    private final ParameterizedType booleanParameterizedType;
+    private final Primitives primitives;
 
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return booleanParameterizedType;
+        return primitives.booleanParameterizedType;
     }
 
     public final boolean constant;
 
     public BooleanConstant(Primitives primitives, boolean constant) {
-        booleanParameterizedType = primitives.booleanParameterizedType;
+        this.primitives = primitives;
         this.constant = constant;
     }
 
@@ -76,6 +76,6 @@ public class BooleanConstant implements ConstantExpression<Boolean> {
 
     @Override
     public Value newValue() {
-        return new BoolValue(constant);
+        return new BoolValue(primitives, constant);
     }
 }

@@ -83,36 +83,37 @@ public class UnaryOperator implements Expression {
         EvaluationResult evaluationResult = expression.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         return new EvaluationResult.Builder(evaluationContext)
                 .compose(evaluationResult)
-                .setValue(computeValue(evaluationContext.getAnalyserContext().getPrimitives(), evaluationResult))
+                .setValue(computeValue(evaluationContext,
+                        evaluationContext.getAnalyserContext().getPrimitives(), evaluationResult))
                 .build();
     }
 
-    private Value computeValue(Primitives primitives, EvaluationResult evaluationResult) {
+    private Value computeValue(EvaluationContext evaluationContext, Primitives primitives, EvaluationResult evaluationResult) {
         Value v = evaluationResult.value;
 
         if (v.isUnknown()) return v;
 
         if (operator == primitives.logicalNotOperatorBool ||
                 operator == primitives.unaryMinusOperatorInt) {
-            return NegatedValue.negate(v);
+            return NegatedValue.negate(evaluationContext, v);
         }
         if (operator == primitives.unaryPlusOperatorInt) {
             return v;
         }
         if (operator == primitives.bitWiseNotOperatorInt) {
             if (v instanceof IntValue)
-                return new IntValue(~((IntValue) v).value);
+                return new IntValue(primitives, ~((IntValue) v).value, v.getObjectFlow());
             return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         }
         if (operator == primitives.postfixDecrementOperatorInt
                 || operator == primitives.prefixDecrementOperatorInt) {
             if (v instanceof IntValue)
-                return new IntValue(((IntValue) v).value - 1);
+                return new IntValue(primitives, ((IntValue) v).value - 1, v.getObjectFlow());
             return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         }
         if (operator == primitives.postfixIncrementOperatorInt || operator == primitives.prefixIncrementOperatorInt) {
             if (v instanceof IntValue)
-                return new IntValue(((IntValue) v).value + 1);
+                return new IntValue(primitives, ((IntValue) v).value + 1, v.getObjectFlow());
             return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         }
         throw new UnsupportedOperationException();

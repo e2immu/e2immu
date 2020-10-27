@@ -40,17 +40,20 @@ public class Assignment implements Expression {
     public final Expression value;
     public final MethodInfo assignmentOperator;
     public final MethodInfo binaryOperator;
+    private final Primitives primitives;
 
     // if null, and binary operator not null, then the primitive operator counts (i += value)
     // if true, we have ++i
     // if false, we have i++ if primitive operator is +=, i-- if primitive is -=
     public final Boolean prefixPrimitiveOperator;
 
-    public Assignment(@NotNull Expression target, @NotNull Expression value) {
-        this(target, value, null, null);
+    public Assignment(Primitives primitives,
+                      @NotNull Expression target, @NotNull Expression value) {
+        this(primitives, target, value, null, null);
     }
 
-    public Assignment(@NotNull Expression target, @NotNull Expression value,
+    public Assignment(Primitives primitives,
+                      @NotNull Expression target, @NotNull Expression value,
                       MethodInfo assignmentOperator,
                       Boolean prefixPrimitiveOperator) {
         this.target = Objects.requireNonNull(target);
@@ -58,6 +61,7 @@ public class Assignment implements Expression {
         this.assignmentOperator = assignmentOperator; // as in i+=1;
         this.prefixPrimitiveOperator = prefixPrimitiveOperator;
         binaryOperator = assignmentOperator == null ? null : BinaryOperator.fromAssignmentOperatorToNormalOperator(primitives, assignmentOperator);
+        this.primitives = primitives;
     }
 
     @Override
@@ -78,7 +82,7 @@ public class Assignment implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new Assignment(translationMap.translateExpression(target),
+        return new Assignment(primitives, translationMap.translateExpression(target),
                 translationMap.translateExpression(value), assignmentOperator, prefixPrimitiveOperator);
     }
 

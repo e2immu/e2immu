@@ -24,7 +24,7 @@ public class CheckLinks {
         Expression computed = typeContext.constant.get().expressions.get().get(0);
         List<Expression> linkNameList = links.stream().map(variable -> new StringConstant(primitives,
                 variable.simpleName())).collect(Collectors.toList());
-        Expression linksStringArray = new MemberValuePair("to", new ArrayInitializer(linkNameList));
+        Expression linksStringArray = new MemberValuePair("to", new ArrayInitializer(primitives, linkNameList));
         List<Expression> expressions = List.of(computed, linksStringArray);
         return AnnotationExpression.fromAnalyserExpressions(typeContext.linked.get().typeInfo, expressions);
     }

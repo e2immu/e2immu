@@ -201,7 +201,7 @@ public class ConditionalValue implements Value {
             Value sizeRestriction = sizeRestrictions.get(((VariableValue) ifTrue).variable);
             if (sizeRestriction != null) {
                 // have a size restriction on ifTrue
-                int t = sizeRestriction.encodedSizeRestriction();
+                int t = sizeRestriction.encodedSizeRestriction(evaluationContext);
                 int f = evaluationContext.getProperty(ifFalse, VariableProperty.SIZE);
                 if (Level.haveEquals(t) && Level.haveEquals(f) && t != f) return Level.IS_A_SIZE;
                 return Level.joinSizeRestrictions(t, f);

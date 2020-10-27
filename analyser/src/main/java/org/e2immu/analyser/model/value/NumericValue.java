@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.value;
 
 import com.google.common.math.DoubleMath;
+import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -40,7 +41,7 @@ public interface NumericValue extends Value {
     Number getNumber();
 
     @Override
-    default int encodedSizeRestriction() {
+    default int encodedSizeRestriction(EvaluationContext evaluationContext) {
         return Level.encodeSizeEquals(getNumber().intValue());
     }
 

@@ -34,10 +34,12 @@ import java.util.stream.Collectors;
 public class ArrayInitializer implements Expression {
     public final List<Expression> expressions;
     public final ParameterizedType commonType;
+    private final Primitives primitives;
 
-    public ArrayInitializer(@NotNull @NotModified List<Expression> expressions) {
+    public ArrayInitializer(Primitives primitives, @NotNull @NotModified List<Expression> expressions) {
         this.expressions = Objects.requireNonNull(expressions);
         commonType = commonType(expressions);
+        this.primitives = primitives;
     }
 
     @Override
@@ -56,7 +58,7 @@ public class ArrayInitializer implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new ArrayInitializer(expressions.stream().map(translationMap::translateExpression)
+        return new ArrayInitializer(primitives, expressions.stream().map(translationMap::translateExpression)
                 .collect(Collectors.toList()));
     }
 
@@ -65,7 +67,7 @@ public class ArrayInitializer implements Expression {
         return commonType;
     }
 
-    private static ParameterizedType commonType(List<Expression> expressions) {
+    private ParameterizedType commonType(List<Expression> expressions) {
         ParameterizedType commonType = null;
         for (Expression expression : expressions) {
             if (expression != NullConstant.NULL_CONSTANT) {
@@ -74,7 +76,7 @@ public class ArrayInitializer implements Expression {
                 else commonType = commonType.commonType(parameterizedType);
             }
         }
-        return commonType == null ? Primitives.PRIMITIVES.objectParameterizedType : commonType;
+        return commonType == null ? primitives.objectParameterizedType : commonType;
     }
 
     @Override

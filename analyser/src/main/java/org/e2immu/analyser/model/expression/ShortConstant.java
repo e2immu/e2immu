@@ -22,6 +22,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.ShortValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -30,19 +31,19 @@ import java.util.Objects;
 
 @E2Container
 public class ShortConstant implements ConstantExpression<Short> {
-    private final ParameterizedType shortParameterizedType;
+    private final Primitives primitives;
 
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return shortParameterizedType;
+        return primitives.shortParameterizedType;
     }
 
     @NotNull
     public final short constant;
 
     public ShortConstant(Primitives primitives, short constant) {
-        shortParameterizedType = primitives.shortParameterizedType;
+        this.primitives = primitives;
         this.constant = constant;
     }
 
@@ -72,7 +73,7 @@ public class ShortConstant implements ConstantExpression<Short> {
 
     @Override
     public Value newValue() {
-        return new ShortValue(constant);
+        return new ShortValue(primitives, constant, ObjectFlow.NO_FLOW);
     }
 
     @Override

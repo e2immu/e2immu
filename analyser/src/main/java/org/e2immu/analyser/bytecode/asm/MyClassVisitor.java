@@ -75,7 +75,8 @@ public class MyClassVisitor extends ClassVisitor {
         this.typeContext = typeContext;
         this.onDemandInspection = onDemandInspection;
         this.annotationStore = annotationStore;
-        jetBrainsAnnotationTranslator = annotationStore != null ? new JetBrainsAnnotationTranslator(e2ImmuAnnotationExpressions) : null;
+        jetBrainsAnnotationTranslator = annotationStore != null ? new JetBrainsAnnotationTranslator(typeContext.getPrimitives(),
+                e2ImmuAnnotationExpressions) : null;
     }
 
     @Override
@@ -162,7 +163,7 @@ public class MyClassVisitor extends ClassVisitor {
                     errorStateForType(parentFqName);
                     return;
                 }
-                if (Primitives.PRIMITIVES.objectTypeInfo != res.parameterizedType.typeInfo) {
+                if (typeContext.getPrimitives().objectTypeInfo != res.parameterizedType.typeInfo) {
                     typeInspectionBuilder.setParentClass(res.parameterizedType);
                 }
                 pos += res.nextPos;
@@ -177,7 +178,7 @@ public class MyClassVisitor extends ClassVisitor {
                         errorStateForType(parentFqName);
                         return;
                     }
-                    if (Primitives.PRIMITIVES.objectTypeInfo != interFaceRes.parameterizedType.typeInfo) {
+                    if (typeContext.getPrimitives().objectTypeInfo != interFaceRes.parameterizedType.typeInfo) {
                         typeInspectionBuilder.addInterfaceImplemented(interFaceRes.parameterizedType);
                     }
                     pos += interFaceRes.nextPos;
@@ -312,10 +313,10 @@ public class MyClassVisitor extends ClassVisitor {
                 signature.substring(afterColon));
         if (result == null) return null; // unable to load type
         List<ParameterizedType> typeBounds;
-        if(result.parameterizedType.typeInfo != null && Primitives.PRIMITIVES.objectTypeInfo == result.parameterizedType.typeInfo) {
+        if (result.parameterizedType.typeInfo != null && typeContext.getPrimitives().objectTypeInfo == result.parameterizedType.typeInfo) {
             typeBounds = List.of();
         } else {
-           typeBounds = List.of(result.parameterizedType);
+            typeBounds = List.of(result.parameterizedType);
         }
         typeParameter.typeParameterInspection.set(new TypeParameterInspection(typeBounds));
 

@@ -443,7 +443,8 @@ public class ExpressionContext {
                 if (primitives.isPreOrPostFixOperator(operator)) {
                     boolean isPrefix = primitives.isPrefixOperator(operator);
                     MethodInfo associatedAssignment = primitives.prePostFixToAssignment(operator);
-                    return new Assignment(exp, new IntConstant(typeContext.getPrimitives(), 1), associatedAssignment, isPrefix);
+                    return new Assignment(typeContext.getPrimitives(),
+                            exp, new IntConstant(typeContext.getPrimitives(), 1), associatedAssignment, isPrefix);
                 }
                 return new UnaryOperator(
                         operator,
@@ -500,7 +501,7 @@ public class ExpressionContext {
             if (expression.isClassExpr()) {
                 ClassExpr classExpr = (ClassExpr) expression;
                 ParameterizedType parameterizedType = ParameterizedType.from(typeContext, classExpr.getType());
-                return new ClassExpression(parameterizedType);
+                return new ClassExpression(typeContext.getPrimitives(), parameterizedType);
             }
             if (expression.isNameExpr()) {
                 return ParseNameExpr.parse(this, expression.asNameExpr());
@@ -531,9 +532,9 @@ public class ExpressionContext {
                         target.returnType().isType() && Primitives.isPrimitiveExcludingVoid(target.returnType())) {
                     ParameterizedType widestType = typeContext.getPrimitives().widestType(value.returnType(), target.returnType());
                     MethodInfo primitiveOperator = Assignment.operator(typeContext.getPrimitives(), assignExpr.getOperator(), widestType.typeInfo);
-                    return new Assignment(target, value, primitiveOperator, null);
+                    return new Assignment(typeContext.getPrimitives(), target, value, primitiveOperator, null);
                 }
-                return new Assignment(target, value);
+                return new Assignment(typeContext.getPrimitives(), target, value);
             }
             if (expression.isMethodCallExpr()) {
                 return ParseMethodCallExpr.parse(this, expression.asMethodCallExpr(), singleAbstractMethod);
@@ -558,7 +559,7 @@ public class ExpressionContext {
                 return ParseArrayCreationExpr.parse(this, expression.asArrayCreationExpr());
             }
             if (expression.isArrayInitializerExpr()) {
-                return new ArrayInitializer(expression.asArrayInitializerExpr().getValues().stream()
+                return new ArrayInitializer(typeContext.getPrimitives(), expression.asArrayInitializerExpr().getValues().stream()
                         .map(this::parseExpression).collect(Collectors.toList()));
             }
             if (expression.isEnclosedExpr()) {

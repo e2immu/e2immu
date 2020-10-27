@@ -367,7 +367,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         StringValue stringValue;
         if ("java.lang.String.length()".equals(methodInfo.fullyQualifiedName()) &&
                 (stringValue = objectValue.asInstanceOf(StringValue.class)) != null) {
-            return new IntValue(primitives, stringValue.value.length());
+            return new IntValue(primitives, stringValue.value.length(), ObjectFlow.NO_FLOW);
         }
         return null;
     }
@@ -465,12 +465,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 if (Level.haveEquals(sizeOfObject)) {
                     builder.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
                     log(SIZE, "Required @Size is {}, and we have {}. Result is a constant true or false.", requiredSize, sizeOfObject);
-                    return sizeOfObject == requiredSize ? BoolValue.TRUE : BoolValue.FALSE;
+                    return sizeOfObject == requiredSize ? BoolValue.createTrue(primitives) : BoolValue.createFalse(primitives);
                 }
                 if (sizeOfObject > requiredSize) {
                     log(SIZE, "Required @Size is {}, and we have {}. Result is always false.", requiredSize, sizeOfObject);
                     builder.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
-                    return BoolValue.FALSE;
+                    return BoolValue.createFalse(primitives);
                 }
                 log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);
                 return sizeMethodValue(builder, location, evaluationContext, sizeMethodAnalysis, objectValue, requiredSize); // we want =3, but we have >= 2; could be anything
@@ -478,7 +478,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (sizeOfObject > requiredSize) {
                 log(SIZE, "Required @Size is {}, and we have {}. Result is always true.", requiredSize, sizeOfObject);
                 builder.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
-                return BoolValue.TRUE;
+                return BoolValue.createFalse(primitives);
             }
             log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);
             return sizeMethodValue(builder, location, evaluationContext, sizeMethodAnalysis, objectValue, requiredSize);
@@ -487,7 +487,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // SITUATION 2: @Size int size(): this method returns the size
         if (TypeInfo.returnsIntOrLong(methodInfo)) {
             if (Level.haveEquals(sizeOfObject)) {
-                return new IntValue(primitives, Level.decodeSizeEquals(sizeOfObject));
+                return new IntValue(primitives, Level.decodeSizeEquals(sizeOfObject), ObjectFlow.NO_FLOW);
             }
             ObjectFlow objectFlow = sizeObjectFlow(evaluationContext, builder, location, sizeMethodAnalysis, objectValue);
             return ConstrainedNumericValue.lowerBound(evaluationContext,
@@ -508,9 +508,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
             ConstrainedNumericValue constrainedSizeMethod = ConstrainedNumericValue.lowerBound(evaluationContext, sizeMethod, 0);
             ObjectFlow objectFlow = builder.createInternalObjectFlow(location, primitives.booleanParameterizedType, Origin.RESULT_OF_METHOD);
-            return EqualsValue.equals(new IntValue(primitives, Level.decodeSizeEquals(requiredSize),
+            return EqualsValue.equals(evaluationContext,
+                    new IntValue(primitives, Level.decodeSizeEquals(requiredSize),
                             builder.createInternalObjectFlow(location, primitives.intParameterizedType, Origin.RESULT_OF_METHOD)),
-                    constrainedSizeMethod, objectFlow, evaluationContext);
+                    constrainedSizeMethod, objectFlow);
         }
         return ConstrainedNumericValue.lowerBound(evaluationContext, sizeMethod, Level.decodeSizeMin(requiredSize));
     }

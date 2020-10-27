@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownPrimitiveValue;
 import org.e2immu.analyser.model.value.IntValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -33,9 +34,12 @@ import java.util.Objects;
 public class ArrayLengthExpression implements Expression {
 
     public final Expression scope;
+    private final Primitives primitives;
 
-    public ArrayLengthExpression(@NotNull Expression scope) {
+    public ArrayLengthExpression(Primitives primitives,
+                                 @NotNull Expression scope) {
         this.scope = Objects.requireNonNull(scope);
+        this.primitives = primitives;
     }
 
     @Override
@@ -53,7 +57,7 @@ public class ArrayLengthExpression implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new ArrayLengthExpression(translationMap.translateExpression(scope));
+        return new ArrayLengthExpression(primitives, translationMap.translateExpression(scope));
     }
 
     @Override
@@ -63,7 +67,7 @@ public class ArrayLengthExpression implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        return Primitives.PRIMITIVES.intParameterizedType;
+        return primitives.intParameterizedType;
     }
 
     @Override
@@ -81,9 +85,9 @@ public class ArrayLengthExpression implements Expression {
         EvaluationResult result = scope.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(result);
 
-        if (result.value instanceof ArrayValue) {
-            ArrayValue arrayValue = (ArrayValue) result.value;
-            builder.setValue(new IntValue(arrayValue.values.size()));
+        if (result.value instanceof ArrayValue arrayValue) {
+            Value size = new IntValue(evaluationContext.getAnalyserContext().getPrimitives(), arrayValue.values.size(), ObjectFlow.NO_FLOW);
+            builder.setValue(size);
         } else {
             builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE);
         }

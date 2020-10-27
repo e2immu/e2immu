@@ -34,10 +34,12 @@ public class ClassExpression implements ConstantExpression<ParameterizedType> {
     public final ParameterizedType parameterizedType;
     @NotNull
     public final ParameterizedType parameterizedClassType;
+    private final Primitives primitives;
 
-    public ClassExpression(@NotNull ParameterizedType parameterizedType) {
+    public ClassExpression(Primitives primitives, @NotNull ParameterizedType parameterizedType) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
-        this.parameterizedClassType = new ParameterizedType(Primitives.PRIMITIVES.classTypeInfo, List.of(parameterizedType));
+        this.parameterizedClassType = new ParameterizedType(primitives.classTypeInfo, List.of(parameterizedType));
+        this.primitives = primitives;
     }
 
     @Override
@@ -55,12 +57,12 @@ public class ClassExpression implements ConstantExpression<ParameterizedType> {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new ClassExpression(translationMap.translateType(parameterizedType));
+        return new ClassExpression(primitives, translationMap.translateType(parameterizedType));
     }
 
     @Override
     public Value newValue() {
-        return new ClassValue(parameterizedType);
+        return new ClassValue(primitives, parameterizedType);
     }
 
     @Override

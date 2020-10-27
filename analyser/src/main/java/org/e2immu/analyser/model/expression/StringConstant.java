@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.StringValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -29,18 +30,18 @@ import java.util.Objects;
 
 @E2Container
 public class StringConstant implements ConstantExpression<String> {
-    private final ParameterizedType stringParameterizedType;
+    private final Primitives primitives;
 
     @Override
     public ParameterizedType returnType() {
-        return stringParameterizedType;
+        return primitives.stringParameterizedType;
     }
 
     @NotNull
     public final String constant;
 
     public StringConstant(Primitives primitives, @NotNull String constant) {
-        stringParameterizedType = primitives.stringParameterizedType;
+        this.primitives = primitives;
         this.constant = Objects.requireNonNull(constant);
     }
 
@@ -59,7 +60,7 @@ public class StringConstant implements ConstantExpression<String> {
 
     @Override
     public Value newValue() {
-        return new StringValue(constant);
+        return new StringValue(primitives, constant, ObjectFlow.NO_FLOW);
     }
 
     @Override

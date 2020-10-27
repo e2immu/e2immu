@@ -74,7 +74,7 @@ public class InlineConditionalOperator implements Expression {
         builder.compose(ifTrueResult);
         builder.merge(copyForThen);
 
-        EvaluationContext copyForElse = evaluationContext.child(NegatedValue.negate(conditionResult.value));
+        EvaluationContext copyForElse = evaluationContext.child(NegatedValue.negate(evaluationContext, conditionResult.value));
         EvaluationResult ifFalseResult = ifFalse.evaluate(copyForElse, forwardEvaluationInfo);
         builder.compose(ifFalseResult);
         builder.merge(copyForElse);
