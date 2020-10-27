@@ -32,6 +32,7 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.Container;
@@ -936,7 +937,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private AnalysisStatus checkUnusedReturnValue() {
         if (statementAnalysis.statement instanceof ExpressionAsStatement eas && eas.expression instanceof MethodCall) {
             MethodCall methodCall = (MethodCall) (((ExpressionAsStatement) statementAnalysis.statement).expression);
-            if (methodCall.methodInfo.returnType().isVoid()) return DONE;
+            if (Primitives.isVoid(methodCall.methodInfo.returnType())) return DONE;
             MethodAnalysis methodAnalysis = getMethodAnalysis(methodCall.methodInfo);
             int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
             if (identity == Level.DELAY) return DELAYS;

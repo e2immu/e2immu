@@ -35,6 +35,7 @@ import static org.e2immu.analyser.util.Logger.log;
  */
 public class TypeContext {
     private final TypeContext parentContext;
+    private final Primitives primitives;
 
     public final TypeStore typeStore;
     public final String packageName; // this one is filled in UNLESS parentContext == null, because that is the root level
@@ -43,6 +44,7 @@ public class TypeContext {
 
     public TypeContext() {
         typeStore = new MapBasedTypeStore();
+        primitives = new Primitives();
         parentContext = null;
         packageName = null;
         importStaticAsterisk = new ArrayList<>();
@@ -55,6 +57,7 @@ public class TypeContext {
         importStaticMemberToTypeInfo = new HashMap<>(parentContext.importStaticMemberToTypeInfo);
         importStaticAsterisk = new ArrayList<>(parentContext.importStaticAsterisk);
         this.packageName = packageName;
+        this.primitives = parentContext.primitives;
     }
 
     public TypeContext(@NotNull TypeContext parentContext) {
@@ -71,6 +74,7 @@ public class TypeContext {
         importStaticMemberToTypeInfo = new HashMap<>(parentContext.importStaticMemberToTypeInfo);
         importStaticAsterisk = new ArrayList<>(parentContext.importStaticAsterisk);
         this.packageName = packageName;
+        this.primitives = parentContext.primitives;
     }
 
     private final Map<String, NamedType> map = new HashMap<>();
@@ -135,7 +139,7 @@ public class TypeContext {
         return constructor;
     }
 
-    private static List<TypeInfo> extractTypeInfo(ParameterizedType typeOfObject, Map<NamedType, ParameterizedType> typeMap) {
+    private List<TypeInfo> extractTypeInfo(ParameterizedType typeOfObject, Map<NamedType, ParameterizedType> typeMap) {
         TypeInfo typeInfo;
         if (typeOfObject.typeInfo == null) {
             if (typeOfObject.typeParameter == null) throw new UnsupportedOperationException();
@@ -147,7 +151,7 @@ public class TypeContext {
                 if (!typeBounds.isEmpty()) {
                     return typeBounds.stream().flatMap(bound -> extractTypeInfo(bound, typeMap).stream()).collect(Collectors.toList());
                 } else {
-                    typeInfo = Primitives.PRIMITIVES.objectTypeInfo;
+                    typeInfo = primitives.objectTypeInfo;
                 }
             } else {
                 typeInfo = pt.typeInfo;
@@ -155,6 +159,7 @@ public class TypeContext {
         } else {
             typeInfo = typeOfObject.typeInfo;
         }
+        assert typeInfo != null;
         if (!typeInfo.hasBeenInspected())
             throw new UnsupportedOperationException("Type " + typeInfo.fullyQualifiedName + " has not been inspected");
         return List.of(typeInfo);
@@ -185,6 +190,10 @@ public class TypeContext {
                     .forEach(fieldInfo -> map.put(fieldInfo.name, new FieldReference(fieldInfo, null)));
         }
         return map;
+    }
+
+    public Primitives getPrimitives() {
+        return primitives;
     }
 
     // TODO: this would be a good candidate to make into a non-static inner class, so that it can be made
@@ -284,8 +293,8 @@ public class TypeContext {
         for (ParameterizedType interfaceImplemented : typeInfo.typeInspection.getPotentiallyRun().interfacesImplemented) {
             recursivelyResolveOverloadedMethods(interfaceImplemented, methodName, parametersPresented, decrementWhenNotStatic, joinMaps(typeMap, interfaceImplemented), result, visited, staticOnly);
         }
-        if (!staticOnly && typeInfo != Primitives.PRIMITIVES.objectTypeInfo) {
-            recursivelyResolveOverloadedMethods(Primitives.PRIMITIVES.objectParameterizedType, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, visited, false);
+        if (!staticOnly && typeInfo != primitives.objectTypeInfo) {
+            recursivelyResolveOverloadedMethods(primitives.objectParameterizedType, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, visited, false);
         }
         if (typeInfo.typeInspection.getPotentiallyRun().packageNameOrEnclosingType.isRight()) {
             // if I'm in a static subtype, I can only access the static methods of the enclosing type
@@ -295,14 +304,14 @@ public class TypeContext {
         }
     }
 
-    private static Set<Integer> findIndicesOfFunctionalInterfaces(MethodInfo m) {
+    private Set<Integer> findIndicesOfFunctionalInterfaces(MethodInfo m) {
         Set<Integer> res = new HashSet<>();
         int i = 0;
         for (ParameterInfo parameterInfo : m.methodInspection.get().parameters) {
             if (parameterInfo.parameterizedType.typeInfo != null && parameterInfo.parameterizedType.typeInfo.typeInspection.isSetPotentiallyRun()) {
                 TypeInspection typeInspection = parameterInfo.parameterizedType.typeInfo.typeInspection.getPotentiallyRun();
                 if (typeInspection.typeNature == TypeNature.INTERFACE && typeInspection.annotations.contains(
-                        Primitives.PRIMITIVES.functionalInterfaceAnnotationExpression)) {
+                        primitives.functionalInterfaceAnnotationExpression)) {
                     res.add(i);
                 }
             }

@@ -29,8 +29,13 @@ import com.github.javaparser.ast.type.ReferenceType;
 import com.github.javaparser.ast.type.TypeParameter;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.statement.*;
+import org.e2immu.analyser.model.expression.FieldAccess;
+import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ForEachStatement;
+import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.model.statement.SwitchStatement;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetTwice;
@@ -39,8 +44,6 @@ import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -52,7 +55,6 @@ import static org.e2immu.analyser.util.Logger.log;
 @Container
 @E2Immutable(after = "TypeAnalyser.analyse()") // and not MethodAnalyser.analyse(), given the back reference
 public class MethodInfo implements WithInspectionAndAnalysis {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MethodInfo.class);
 
     public final TypeInfo typeInfo; // back reference, only @ContextClass after...
     public final String name;
@@ -487,8 +489,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return mi.parameters.get(mi.parameters.size() - 1).parameterInspection.get().varArgs;
     }
 
-    public boolean hasOverrides() {
-        return !typeInfo.overrides(this, true).isEmpty();
+    public boolean hasOverrides(Primitives primitives) {
+        return !typeInfo.overrides(primitives, this, true).isEmpty();
     }
 
 
@@ -504,7 +506,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean isVoid() {
-        return returnType() == Primitives.PRIMITIVES.voidParameterizedType;
+        return Primitives.isVoid(returnType());
     }
 
     /**
@@ -611,7 +613,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         Objects.requireNonNull(methodInfo);
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
             ParameterizedType formal = parameterInfo.parameterizedType;
-            if (!formal.equals(Primitives.PRIMITIVES.objectParameterizedType) && !formal.isUnboundParameterType()) {
+            if (!Primitives.isJavaLangObject(formal) && !formal.isUnboundParameterType()) {
                 result.add(formal);
             }
         }

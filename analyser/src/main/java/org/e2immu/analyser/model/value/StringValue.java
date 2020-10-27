@@ -19,10 +19,8 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Constant;
-import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -30,15 +28,12 @@ import java.util.Objects;
 
 public class StringValue extends ConstantValue implements Constant<String> {
     public final String value;
+    private final ParameterizedType stringParameterizedType;
 
-    // for testing only
-    public StringValue(String value) {
-        this(value, ObjectFlow.NO_FLOW);
-    }
-
-    public StringValue(String value, ObjectFlow objectFlow) {
+    public StringValue(Primitives primitives, String value, ObjectFlow objectFlow) {
         super(objectFlow);
         this.value = Objects.requireNonNull(value);
+        this.stringParameterizedType = primitives.stringParameterizedType;
     }
 
     @Override
@@ -76,6 +71,6 @@ public class StringValue extends ConstantValue implements Constant<String> {
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.stringParameterizedType;
+        return stringParameterizedType;
     }
 }

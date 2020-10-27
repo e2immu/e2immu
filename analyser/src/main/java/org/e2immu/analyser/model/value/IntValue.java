@@ -27,18 +27,17 @@ import org.e2immu.analyser.parser.Primitives;
 import java.util.Objects;
 
 public class IntValue extends ConstantValue implements Constant<Integer>, NumericValue {
-    public static final IntValue ZERO_VALUE = new IntValue(0);
-    public static final IntValue TWO_VALUE = new IntValue(2);
-
+    private final ParameterizedType intParameterizedType;
     public final int value;
 
-    public IntValue(int value, ObjectFlow objectFlow) {
+    private IntValue(ParameterizedType intParameterizedType, int value, ObjectFlow objectFlow) {
         super(objectFlow);
         this.value = value;
+        this.intParameterizedType = intParameterizedType;
     }
 
-    public IntValue(int value) {
-        this(value, ObjectFlow.NO_FLOW);
+    public IntValue(Primitives primitives, int value, ObjectFlow objectFlow) {
+        this(primitives.intParameterizedType, value, objectFlow);
     }
 
     @Override
@@ -48,7 +47,7 @@ public class IntValue extends ConstantValue implements Constant<Integer>, Numeri
 
     @Override
     public NumericValue negate() {
-        return new IntValue(-value);
+        return new IntValue(intParameterizedType, -value, objectFlow);
     }
 
     @Override
@@ -91,6 +90,6 @@ public class IntValue extends ConstantValue implements Constant<Integer>, Numeri
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.intParameterizedType;
+        return intParameterizedType;
     }
 }

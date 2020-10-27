@@ -38,10 +38,12 @@ import java.util.Objects;
 public class InstanceOf implements Expression {
     public final ParameterizedType parameterizedType;
     public final Expression expression;
+    private final ParameterizedType booleanParameterizedType;
 
-    public InstanceOf(Expression expression, ParameterizedType parameterizedType) {
+    public InstanceOf(Expression expression, ParameterizedType parameterizedType, ParameterizedType booleanParameterizedType) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.expression = Objects.requireNonNull(expression);
+        this.booleanParameterizedType = Objects.requireNonNull(booleanParameterizedType);
     }
 
     @Override
@@ -60,7 +62,9 @@ public class InstanceOf implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new InstanceOf(translationMap.translateExpression(expression), translationMap.translateType(parameterizedType));
+        return new InstanceOf(translationMap.translateExpression(expression),
+                translationMap.translateType(parameterizedType),
+                booleanParameterizedType);
     }
 
     @Override
@@ -75,11 +79,10 @@ public class InstanceOf implements Expression {
             return builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE).build();
         }
         if (value instanceof NullValue) {
-            return builder.setValue(BoolValue.FALSE).build();
+            return builder.setValue(new BoolValue(evaluationContext.getAnalyserContext().getPrimitives(), false)).build();
 
         }
-        if (value instanceof CombinedValue) {
-            CombinedValue combinedValue = (CombinedValue) value;
+        if (value instanceof CombinedValue combinedValue) {
             if (combinedValue.values.size() == 1) {
                 return localEvaluation(builder, evaluationContext, combinedValue.values.get(0));
             }
@@ -87,11 +90,13 @@ public class InstanceOf implements Expression {
         }
         if (value instanceof VariableValue) {
             Location location = evaluationContext.getLocation(this);
-            ObjectFlow objectFlow = builder.createInternalObjectFlow(location, Primitives.PRIMITIVES.booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
-            return builder.setValue(new InstanceOfValue(((VariableValue) value).variable, parameterizedType, objectFlow)).build();
+            Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+            ObjectFlow objectFlow = builder.createInternalObjectFlow(location, primitives.booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
+            return builder.setValue(new InstanceOfValue(primitives, ((VariableValue) value).variable, parameterizedType, objectFlow)).build();
         }
         if (value instanceof Instance) {
-            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(((Instance) value).parameterizedType),
+            Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(primitives, ((Instance) value).parameterizedType),
                     evaluationContext.getLocation(this), evaluationContext, Origin.RESULT_OF_OPERATOR);
             return builder.compose(er).setValue(er.value).build();
         }
@@ -99,7 +104,8 @@ public class InstanceOf implements Expression {
             return builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE).build(); // no clue, too deep
         }
         if (value instanceof ClassValue) {
-            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(((ClassValue) value).value),
+            Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(primitives, ((ClassValue) value).value),
                     evaluationContext.getLocation(this), evaluationContext, Origin.RESULT_OF_OPERATOR);
             return builder.compose(er).setValue(er.value).build();
         }
@@ -112,7 +118,7 @@ public class InstanceOf implements Expression {
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return Primitives.PRIMITIVES.booleanParameterizedType;
+        return booleanParameterizedType;
     }
 
     @Override

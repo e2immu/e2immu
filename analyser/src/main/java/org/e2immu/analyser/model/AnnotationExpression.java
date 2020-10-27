@@ -79,10 +79,9 @@ public class AnnotationExpression {
 
     public static AnnotationExpression from(@NotModified AnnotationExpr ae, ExpressionContext expressionContext) {
         NamedType namedType = expressionContext.typeContext.get(ae.getNameAsString(), true);
-        if (!(namedType instanceof TypeInfo)) {
+        if (!(namedType instanceof TypeInfo ti)) {
             throw new UnsupportedOperationException("??");
         }
-        TypeInfo ti = (TypeInfo) namedType;
         return AnnotationExpression.fromJavaParserExpression(ti, ae);
     }
 
@@ -121,8 +120,7 @@ public class AnnotationExpression {
                 else sb.append(", ");
                 if (expression instanceof Constant) {
                     sb.append(expression.expressionString(0));
-                } else if (expression instanceof MemberValuePair) {
-                    MemberValuePair memberValuePair = (MemberValuePair) expression;
+                } else if (expression instanceof MemberValuePair memberValuePair) {
                     if (!memberValuePair.name.equals("value")) {
                         sb.append(memberValuePair.name);
                         sb.append("=");
@@ -149,8 +147,7 @@ public class AnnotationExpression {
                         .filter(m -> m.name.equals(fieldName))
                         .findFirst()
                         .map(MethodInfo::returnType).orElseThrow();
-                if (expression instanceof MemberValuePair) {
-                    MemberValuePair mvp = (MemberValuePair) expression;
+                if (expression instanceof MemberValuePair mvp) {
                     if (mvp.name.equals(fieldName)) {
                         return (T) returnValueOfAnnotationExpression(returnType, mvp.value);
                     }
@@ -167,8 +164,7 @@ public class AnnotationExpression {
     private static Object returnValueOfAnnotationExpression(ParameterizedType returnType, Expression expression) {
         // it is always possible that the return type is an array, but only one value is present...
 
-        if (expression instanceof ArrayInitializer) {
-            ArrayInitializer arrayInitializer = (ArrayInitializer) expression;
+        if (expression instanceof ArrayInitializer arrayInitializer) {
             Object[] array = createArray(arrayInitializer.returnType(), arrayInitializer.expressions.size());
             int i = 0;
             for (Expression element : arrayInitializer.expressions) {
@@ -199,17 +195,14 @@ public class AnnotationExpression {
         }
 
         // AnnotationType.VERIFY_ABSENT
-        if (expression instanceof FieldAccess) {
-            FieldAccess fieldAccess = (FieldAccess) expression;
-            if (fieldAccess.expression instanceof TypeExpression) {
-                TypeExpression typeExpression = (TypeExpression) fieldAccess.expression;
+        if (expression instanceof FieldAccess fieldAccess) {
+            if (fieldAccess.expression instanceof TypeExpression typeExpression) {
                 return enumInstance(returnType, typeExpression.parameterizedType.typeInfo, fieldAccess.variable.simpleName());
             } else throw new UnsupportedOperationException("? did not expect " + fieldAccess.expression.getClass());
         }
-        if (expression instanceof UnaryOperator) {
-            UnaryOperator unaryOperator = ((UnaryOperator) expression);
-            if (unaryOperator.operator == Primitives.PRIMITIVES.unaryMinusOperatorInt && unaryOperator.expression instanceof IntConstant) {
-                IntConstant intConstant = (IntConstant) unaryOperator.expression;
+        if (expression instanceof UnaryOperator unaryOperator) {
+            if (Primitives.isUnaryMinusOperatorInt(unaryOperator.operator) &&
+                    unaryOperator.expression instanceof IntConstant intConstant) {
                 return -intConstant.getValue();
             }
         }
@@ -247,18 +240,18 @@ public class AnnotationExpression {
         return extract("test", false);
     }
 
-    public AnnotationExpression copyWith(String parameter, int value) {
-        MemberValuePair memberValuePair = new MemberValuePair(parameter, new IntConstant(value));
+    public AnnotationExpression copyWith(Primitives primitives, String parameter, int value) {
+        MemberValuePair memberValuePair = new MemberValuePair(parameter, new IntConstant(primitives, value));
         return AnnotationExpression.fromAnalyserExpressions(typeInfo, List.of(memberValuePair));
     }
 
-    public AnnotationExpression copyWith(String parameter, boolean value) {
-        MemberValuePair memberValuePair = new MemberValuePair(parameter, new BooleanConstant(value));
+    public AnnotationExpression copyWith(Primitives primitives, String parameter, boolean value) {
+        MemberValuePair memberValuePair = new MemberValuePair(parameter, new BooleanConstant(primitives, value));
         return AnnotationExpression.fromAnalyserExpressions(typeInfo, List.of(memberValuePair));
     }
 
-    public AnnotationExpression copyWith(String parameter, String value) {
-        MemberValuePair memberValuePair = new MemberValuePair(parameter, new StringConstant(value));
+    public AnnotationExpression copyWith(Primitives primitives, String parameter, String value) {
+        MemberValuePair memberValuePair = new MemberValuePair(parameter, new StringConstant(primitives, value));
         return AnnotationExpression.fromAnalyserExpressions(typeInfo, List.of(memberValuePair));
     }
 

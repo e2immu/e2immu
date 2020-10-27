@@ -28,14 +28,16 @@ import java.util.Objects;
 
 public class ClassValue extends ConstantValue implements Constant<ParameterizedType> {
     public final ParameterizedType value;
+    public final ParameterizedType classParameterizedType;
 
-    public ClassValue(ParameterizedType value) {
-        this(value, ObjectFlow.NO_FLOW);
+    public ClassValue(Primitives primitives, ParameterizedType value) {
+        this(primitives, value, ObjectFlow.NO_FLOW);
     }
 
-    public ClassValue(ParameterizedType value, ObjectFlow objectFlow) {
+    public ClassValue(Primitives primitives, ParameterizedType value, ObjectFlow objectFlow) {
         super(objectFlow);
         this.value = Objects.requireNonNull(value);
+        this.classParameterizedType = primitives.classTypeInfo.asParameterizedType();
     }
 
     @Override
@@ -73,6 +75,6 @@ public class ClassValue extends ConstantValue implements Constant<ParameterizedT
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.classTypeInfo.asParameterizedType();
+        return classParameterizedType;
     }
 }

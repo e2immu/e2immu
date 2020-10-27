@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
 import java.util.Set;
@@ -147,20 +148,19 @@ public interface MethodAnalysis extends Analysis {
             case FLUENT:
             case IDENTITY:
             case SIZE:
-                return getPropertyCheckOverrides(variableProperty);
 
             case INDEPENDENT:
                 // TODO if we have an array constructor created on-the-fly, it should be EFFECTIVELY INDEPENDENT
                 return getPropertyCheckOverrides(variableProperty);
 
             case NOT_NULL:
-                if (returnType.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
+                if (Primitives.isPrimitiveExcludingVoid(returnType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 int fluent = getProperty(VariableProperty.FLUENT);
                 if (fluent == Level.TRUE) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 return getPropertyCheckOverrides(VariableProperty.NOT_NULL);
 
             case IMMUTABLE:
-                if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || returnType.isVoid())
+                if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || Primitives.isPrimitiveExcludingVoid(returnType))
                     throw new UnsupportedOperationException(); //we should not even be asking
 
                 int immutableType = formalProperty(returnType);
@@ -168,7 +168,7 @@ public interface MethodAnalysis extends Analysis {
                 return MultiLevel.bestImmutable(immutableType, immutableDynamic);
 
             case CONTAINER:
-                if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || returnType.isVoid())
+                if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || Primitives.isPrimitiveExcludingVoid(returnType))
                     throw new UnsupportedOperationException(); //we should not even be asking
                 int container = returnType.getProperty(VariableProperty.CONTAINER);
                 if (container == Level.DELAY) return Level.DELAY;
@@ -207,10 +207,6 @@ public interface MethodAnalysis extends Analysis {
             return variableProperty.valueWhenAbsent(annotationMode());
         }
         return max;
-    }
-
-    private static boolean allowIndependentOnMethod(ParameterizedType returnType, TypeAnalysis typeAnalysis) {
-        return !returnType.isVoid() && returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(typeAnalysis) != Boolean.TRUE;
     }
 
     // the name refers to the @Mark and @Only annotations. It is the data for this annotation.

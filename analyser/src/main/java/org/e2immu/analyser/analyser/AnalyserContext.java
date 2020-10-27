@@ -20,6 +20,8 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.pattern.PatternMatcher;
 
 import java.util.Map;
@@ -27,6 +29,9 @@ import java.util.Objects;
 
 public interface AnalyserContext extends AnalysisProvider {
     Configuration getConfiguration();
+
+    // gives access to primitives
+    Primitives getPrimitives();
 
     E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions();
 

@@ -27,7 +27,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.MethodReference;
+import org.e2immu.analyser.model.expression.TypeExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
@@ -43,7 +46,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.parser.Primitives.PRIMITIVES;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -191,7 +193,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 log(INSPECT, "Have member {} in {}", amd.getNameAsString(), fullyQualifiedName);
                 String methodName = amd.getName().getIdentifier();
                 MethodInfo methodInfo = new MethodInfo(this, methodName, List.of(),
-                        PRIMITIVES.voidParameterizedType, true, true);
+                        expressionContext.typeContext.getPrimitives().voidParameterizedType, true, true);
                 methodInfo.inspect(amd, subContext);
 
                 builder.addMethod(methodInfo);
@@ -213,16 +215,17 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             builder.addField(fieldInfo);
             // TODO we have arguments, class body
         });
+        Primitives primitives = expressionContext.typeContext.getPrimitives();
         MethodInfo nameMethodInfo = new MethodInfo(this, "name", List.of(),
-                PRIMITIVES.stringParameterizedType, false);
+                primitives.stringParameterizedType, false);
         nameMethodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .addAnnotation(expressionContext.e2ImmuAnnotationExpressions.notModified.get())
-                .setReturnType(PRIMITIVES.stringParameterizedType)
+                .setReturnType(primitives.stringParameterizedType)
                 .build(nameMethodInfo));
 
         MethodInfo valueOfMethodInfo = new MethodInfo(this, "valueOf", List.of(),
-                PRIMITIVES.stringParameterizedType, true);
-        ParameterInfo valueOfP0 = new ParameterInfo(valueOfMethodInfo, PRIMITIVES.stringParameterizedType, "name", 0);
+                primitives.stringParameterizedType, true);
+        ParameterInfo valueOfP0 = new ParameterInfo(valueOfMethodInfo, primitives.stringParameterizedType, "name", 0);
         valueOfP0.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
                 .addAnnotation(expressionContext.e2ImmuAnnotationExpressions.notNull.get())
                 .build());
@@ -412,7 +415,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 // parameters that we'll be parsing soon at inspection. That's why we can live with "void" for now
                 String methodName = md.getName().getIdentifier();
                 MethodInfo methodInfo = new MethodInfo(this, methodName, List.of(),
-                        PRIMITIVES.voidParameterizedType, md.isStatic(), md.isDefault());
+                        expressionContext.typeContext.getPrimitives().voidParameterizedType, md.isStatic(), md.isDefault());
                 methodInfo.inspect(isInterface, md, subContext);
                 if (isInterface && !methodInfo.isStatic && !methodInfo.isDefaultImplementation) {
                     countNonStaticNonDefaultIfInterface.incrementAndGet();
@@ -430,7 +433,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 }
             }
             if (!haveNonStaticNonDefaultsInSuperType) {
-                builder.addAnnotation(PRIMITIVES.functionalInterfaceAnnotationExpression);
+                builder.addAnnotation(expressionContext.typeContext.getPrimitives().functionalInterfaceAnnotationExpression);
             }
         }
         typeInspection.set(builder.build(hasBeenDefined, this));
@@ -711,24 +714,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             sb.append(suffix);
     }
 
-    public boolean isPrimitive() {
-        return PRIMITIVES.primitives.contains(this);
-    }
-
-    public boolean isPrimitiveOrBoxed() {
-        return isPrimitive() || PRIMITIVES.boxed.contains(this);
-    }
-
-    public boolean isNumericPrimitive() {
-        return PRIMITIVES.numericPrimitives.contains(this);
-    }
-
-    public boolean isNumericPrimitiveBoxed() {
-        return isNumericPrimitive() || PRIMITIVES.numericBoxed.contains(this);
-    }
-
     public boolean isJavaLang() {
-        if (isPrimitive()) return true;
+        if (Primitives.isPrimitiveExcludingVoid(this)) return true;
         return Primitives.JAVA_LANG.equals(packageName());
     }
 
@@ -837,14 +824,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return null;
     }
 
-    public List<ParameterizedType> directSuperTypes() {
-        if (Primitives.JAVA_LANG_OBJECT.equals(fullyQualifiedName)) return List.of();
+    public List<ParameterizedType> directSuperTypes(Primitives primitives) {
+        if (Primitives.isJavaLangObject(this)) return List.of();
         List<ParameterizedType> list = new ArrayList<>();
         ParameterizedType parentPt = typeInspection.getPotentiallyRun().parentClass;
         boolean parentIsJLO = parentPt == ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT;
         ParameterizedType parent;
         if (parentIsJLO) {
-            parent = Objects.requireNonNull(PRIMITIVES.objectParameterizedType);
+            parent = Objects.requireNonNull(primitives.objectParameterizedType);
         } else {
             parent = Objects.requireNonNull(parentPt);
         }
@@ -853,8 +840,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return list;
     }
 
-    public List<TypeInfo> superTypes() {
-        if (Primitives.JAVA_LANG_OBJECT.equals(fullyQualifiedName)) return List.of();
+    public List<TypeInfo> superTypes(Primitives primitives) {
+        if (Primitives.isJavaLangObject(this)) return List.of();
         if (typeInspection.getPotentiallyRun().superTypes.isSet())
             return typeInspection.getPotentiallyRun().superTypes.get();
         List<TypeInfo> list = new ArrayList<>();
@@ -862,19 +849,19 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         TypeInfo parent;
         boolean parentIsJLO = parentPt == ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT;
         if (parentIsJLO) {
-            parent = Objects.requireNonNull(PRIMITIVES.objectTypeInfo);
+            parent = primitives.objectTypeInfo;
             if (typeInspection.getPotentiallyRun().isClass()) {
                 list.add(parent);
             }
         } else {
             parent = Objects.requireNonNull(parentPt.typeInfo);
             list.add(parent);
-            list.addAll(parent.superTypes());
+            list.addAll(parent.superTypes(primitives));
         }
 
         typeInspection.getPotentiallyRun().interfacesImplemented.forEach(i -> {
             list.add(i.typeInfo);
-            list.addAll(i.typeInfo.superTypes());
+            list.addAll(i.typeInfo.superTypes(primitives));
         });
         List<TypeInfo> immutable = ImmutableList.copyOf(list);
         typeInspection.getPotentiallyRun().superTypes.set(immutable);
@@ -888,14 +875,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      * @param methodInfo: the method for which we're looking for overrides
      * @return all super methods
      */
-    public Set<MethodInfo> overrides(MethodInfo methodInfo, boolean cacheResult) {
+    public Set<MethodInfo> overrides(Primitives primitives, MethodInfo methodInfo, boolean cacheResult) {
         // NOTE: we cache, but only at our own level
         boolean ourOwnLevel = methodInfo.typeInfo == this;
         if (cacheResult) {
             Set<MethodInfo> myOverrides = ourOwnLevel ? typeInspection.getPotentiallyRun().overrides.getOtherwiseNull(methodInfo) : null;
             if (myOverrides != null) return myOverrides;
         }
-        Set<MethodInfo> result = recursiveOverridesCall(methodInfo, Map.of());
+        Set<MethodInfo> result = recursiveOverridesCall(primitives, methodInfo, Map.of());
         Set<MethodInfo> immutable = ImmutableSet.copyOf(result);
         if (ourOwnLevel && cacheResult) {
             typeInspection.getPotentiallyRun().overrides.put(methodInfo, immutable);
@@ -903,9 +890,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return immutable;
     }
 
-    private Set<MethodInfo> recursiveOverridesCall(MethodInfo methodInfo, Map<NamedType, ParameterizedType> translationMap) {
+    private Set<MethodInfo> recursiveOverridesCall(Primitives primitives, MethodInfo methodInfo, Map<NamedType, ParameterizedType> translationMap) {
         Set<MethodInfo> result = new HashSet<>();
-        for (ParameterizedType superType : directSuperTypes()) {
+        for (ParameterizedType superType : directSuperTypes(primitives)) {
             Map<NamedType, ParameterizedType> translationMapOfSuperType;
             if (superType.parameters.isEmpty()) {
                 translationMapOfSuperType = translationMap;
@@ -923,8 +910,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             if (override != null) {
                 result.add(override);
             }
-            if (superType.typeInfo != PRIMITIVES.objectTypeInfo) {
-                result.addAll(superType.typeInfo.recursiveOverridesCall(methodInfo, translationMapOfSuperType));
+            if (superType.typeInfo != primitives.objectTypeInfo) {
+                result.addAll(superType.typeInfo.recursiveOverridesCall(primitives, methodInfo, translationMapOfSuperType));
             }
         }
         return result;
@@ -1069,7 +1056,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         Messages messages = new Messages();
         log(RESOLVE, "copy annotations into properties: {}", fullyQualifiedName);
 
-        TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(this);
+        TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(anathis);
         messages.addAll(builder.fromAnnotationsIntoProperties(true, typeInspection.getPotentiallyRun().annotations, typeContext));
 
         this.typeAnalysis.set(builder.build());
@@ -1106,10 +1093,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (typeInspection.getPotentiallyRun("isFunctionalInterface on " + fullyQualifiedName).typeNature != TypeNature.INTERFACE) {
             return false;
         }
-        return typeInspection.getPotentiallyRun().annotations.contains(PRIMITIVES.functionalInterfaceAnnotationExpression);
+        return typeInspection.getPotentiallyRun().annotations.stream()
+                .anyMatch(ann -> Primitives.isFunctionalInterfaceAnnotation(ann.typeInfo));
     }
 
-    public MethodInfo sizeMethod() {
+    public MethodInfo sizeMethod(Primitives primitives) {
         MethodInfo methodInfo = typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(mi -> returnsIntOrLong(mi) && mi.methodInspection.get().parameters.isEmpty())
                 .filter(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.SIZE) > Level.FALSE)
@@ -1118,17 +1106,18 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (methodInfo != null) {
             return methodInfo;
         }
-        return superTypes().stream().map(TypeInfo::sizeMethod).filter(Objects::nonNull).findFirst().orElse(null);
+        return superTypes(primitives).stream().map(t -> t.sizeMethod(primitives)).filter(Objects::nonNull).findFirst().orElse(null);
     }
 
-    public boolean hasSize() {
-        return sizeMethod() != null;
+    public boolean hasSize(Primitives primitives) {
+        return sizeMethod(primitives) != null;
     }
 
     public static boolean returnsIntOrLong(MethodInfo methodInfo) {
         TypeInfo returnType = methodInfo.returnType().typeInfo;
-        return returnType == PRIMITIVES.integerTypeInfo || returnType == PRIMITIVES.intTypeInfo ||
-                returnType == PRIMITIVES.longTypeInfo || returnType == PRIMITIVES.boxedLongTypeInfo;
+        if (returnType == null) return false;
+        return Primitives.isInt(returnType) || Primitives.isInteger(returnType) ||
+                Primitives.isLong(returnType) || Primitives.isBoxedLong(returnType);
     }
 
     public Set<ObjectFlow> objectFlows(AnalysisProvider analysisProvider) {

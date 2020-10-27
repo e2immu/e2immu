@@ -18,9 +18,14 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.Logger;
 import org.junit.BeforeClass;
 
@@ -30,8 +35,15 @@ import java.util.Set;
 
 public abstract class CommonAbstractValue {
 
+    protected static Primitives PRIMITIVES;
+    protected static BoolValue TRUE;
+    protected static BoolValue FALSE;
+
     @BeforeClass
     public static void beforeClass() {
+        PRIMITIVES = new Primitives();
+        TRUE = new BoolValue(PRIMITIVES, true);
+        FALSE = new BoolValue(PRIMITIVES, false);
         Logger.activate(Logger.LogTarget.CNF);
     }
 
@@ -39,9 +51,9 @@ public abstract class CommonAbstractValue {
         return new Variable() {
             @Override
             public ParameterizedType parameterizedType() {
-                if (Set.of("a", "b", "c", "d").contains(name)) return Primitives.PRIMITIVES.booleanParameterizedType;
-                if (Set.of("i", "j", "k").contains(name)) return Primitives.PRIMITIVES.intParameterizedType;
-                if (Set.of("s", "t", "p").contains(name)) return Primitives.PRIMITIVES.stringParameterizedType;
+                if (Set.of("a", "b", "c", "d").contains(name)) return PRIMITIVES.booleanParameterizedType;
+                if (Set.of("i", "j", "k").contains(name)) return PRIMITIVES.intParameterizedType;
+                if (Set.of("s", "t", "p").contains(name)) return PRIMITIVES.stringParameterizedType;
                 return null;
             }
 
@@ -78,15 +90,16 @@ public abstract class CommonAbstractValue {
     }
 
     static ParameterInfo createParameter(String name) {
-        if (!Primitives.PRIMITIVES.objectTypeInfo.typeInspection.isSetPotentiallyRun()) {
-            Primitives.PRIMITIVES.objectTypeInfo.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
+        assert PRIMITIVES != null;
+        if (!PRIMITIVES.objectTypeInfo.typeInspection.isSetPotentiallyRun()) {
+            PRIMITIVES.objectTypeInfo.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
                     .setPackageName("java.lang")
-                    .build(false, Primitives.PRIMITIVES.objectTypeInfo));
+                    .build(false, PRIMITIVES.objectTypeInfo));
         }
         TypeInfo someType = new TypeInfo("some.type");
         someType.typeAnalysis.set(new TypeAnalysisImpl.Builder(someType).build());
         MethodInfo methodInfo = new MethodInfo(someType, List.of());
-        ParameterInfo pi = new ParameterInfo(methodInfo, Primitives.PRIMITIVES.stringParameterizedType, name, 0);
+        ParameterInfo pi = new ParameterInfo(methodInfo, PRIMITIVES.stringParameterizedType, name, 0);
         pi.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
         pi.setAnalysis(new ParameterAnalysisImpl.Builder(pi, null));
         methodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
@@ -110,6 +123,61 @@ public abstract class CommonAbstractValue {
         @Override
         public boolean isNotNull0(Value value) {
             return false; // no opinion
+        }
+
+        @Override
+        public AnalyserContext getAnalyserContext() {
+            return new AnalyserContext() {
+                @Override
+                public Configuration getConfiguration() {
+                    return null;
+                }
+
+                @Override
+                public Primitives getPrimitives() {
+                    return PRIMITIVES;
+                }
+
+                @Override
+                public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
+                    return null;
+                }
+
+                @Override
+                public PatternMatcher<StatementAnalyser> getPatternMatcher() {
+                    return null;
+                }
+
+                @Override
+                public TypeInfo getPrimaryType() {
+                    return null;
+                }
+
+                @Override
+                public Map<MethodInfo, MethodAnalyser> getMethodAnalysers() {
+                    return null;
+                }
+
+                @Override
+                public Map<FieldInfo, FieldAnalyser> getFieldAnalysers() {
+                    return null;
+                }
+
+                @Override
+                public Map<TypeInfo, TypeAnalyser> getTypeAnalysers() {
+                    return null;
+                }
+
+                @Override
+                public Map<ParameterInfo, ParameterAnalyser> getParameterAnalysers() {
+                    return null;
+                }
+
+                @Override
+                public TypeAnalysis getPrimaryTypeAnalysis() {
+                    return null;
+                }
+            };
         }
     };
 

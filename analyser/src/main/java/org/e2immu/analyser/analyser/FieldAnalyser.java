@@ -72,6 +72,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     public final MethodAnalyser sam;
     private final boolean fieldCanBeWrittenFromOutsideThisType;
     private final AnalyserComponents<String, Integer> analyserComponents;
+    private final CheckConstant checkConstant;
 
     private List<MethodAnalyser> allMethodsAndConstructors;
     private List<MethodAnalyser> myMethodsAndConstructors;
@@ -86,6 +87,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                          MethodAnalyser sam,
                          AnalyserContext analyserContext) {
         super("Field " + fieldInfo.name, analyserContext);
+        this.checkConstant = new CheckConstant(analyserContext.getPrimitives());
         this.fieldInfo = fieldInfo;
         fieldInspection = fieldInfo.fieldInspection.get();
         fieldAnalysis = new FieldAnalysisImpl.Builder(analyserContext, fieldInfo, ownerTypeAnalysis);
@@ -246,7 +248,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus analyseSize(int iteration) {
         assert fieldAnalysis.getProperty(VariableProperty.SIZE) == Level.DELAY;
 
-        if (!fieldInfo.type.hasSize()) {
+        if (!fieldInfo.type.hasSize(analyserContext.getPrimitives())) {
             log(SIZE, "No @Size annotation on {}, because the type has no size!", fieldInfo.fullyQualifiedName());
             fieldAnalysis.setProperty(VariableProperty.SIZE, Level.FALSE); // in the case of size, FALSE there cannot be size
             return DONE;
@@ -600,7 +602,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         if (effectivelyFinalValue.isConstant()) {
             // directly adding the annotation; it will not be used for inspection
-            AnnotationExpression constantAnnotation = CheckConstant.createConstantAnnotation(e2, initialiserValue);
+            AnnotationExpression constantAnnotation = checkConstant.createConstantAnnotation(e2, initialiserValue);
             fieldAnalysis.annotations.put(constantAnnotation, true);
             log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
         } else {
@@ -819,7 +821,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         check(Modified.class, e2.modified.get());
         check(Nullable.class, e2.nullable.get());
 
-        CheckConstant.checkConstantForFields(messages, fieldInfo, fieldAnalysis);
+        checkConstant.checkConstantForFields(messages, fieldInfo, fieldAnalysis);
         CheckSize.checkSizeForFields(messages, fieldInfo, fieldAnalysis);
     }
 

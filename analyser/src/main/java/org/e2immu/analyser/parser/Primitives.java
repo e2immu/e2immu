@@ -26,8 +26,6 @@ import java.util.*;
 import static org.e2immu.analyser.model.ParameterizedType.NOT_ASSIGNABLE;
 
 public class Primitives {
-    public static final Primitives PRIMITIVES = new Primitives();
-
     public static final String JAVA_LANG = "java.lang";
     public static final String JAVA_LANG_OBJECT = "java.lang.Object";
 
@@ -35,42 +33,135 @@ public class Primitives {
 
     public final TypeInfo intTypeInfo = new TypeInfo("int");
     public final ParameterizedType intParameterizedType = intTypeInfo.asParameterizedType();
+
+    public static boolean isInt(TypeInfo typeInfo) {
+        return "int".equals(typeInfo.fullyQualifiedName);
+    }
+
     public final TypeInfo integerTypeInfo = new TypeInfo("java.lang.Integer");
+
+    public static boolean isInteger(TypeInfo typeInfo) {
+        return "java.lang.Integer".equals(typeInfo.fullyQualifiedName);
+    }
 
     public final TypeInfo charTypeInfo = new TypeInfo("char");
     public final ParameterizedType charParameterizedType = charTypeInfo.asParameterizedType();
+
+    public static boolean isChar(TypeInfo typeInfo) {
+        return "char".equals(typeInfo.fullyQualifiedName);
+    }
+
     public final TypeInfo characterTypeInfo = new TypeInfo("java.lang.Character");
+
+    public static boolean isCharacter(TypeInfo typeInfo) {
+        return "java.lang.Character".equals(typeInfo.fullyQualifiedName);
+    }
 
     public final TypeInfo booleanTypeInfo = new TypeInfo("boolean");
     public final ParameterizedType booleanParameterizedType = booleanTypeInfo.asParameterizedType();
+
+    public static boolean isBoolean(TypeInfo typeInfo) {
+        return "boolean".equals(typeInfo.fullyQualifiedName);
+    }
+
     public final TypeInfo boxedBooleanTypeInfo = new TypeInfo("java.lang.Boolean");
+
+    public static boolean isBoxedBoolean(TypeInfo typeInfo) {
+        return "java.lang.Boolean".equals(typeInfo.fullyQualifiedName);
+    }
+
+    public static boolean isBooleanOrBoxedBoolean(ParameterizedType parameterizedType) {
+        if (parameterizedType.typeInfo == null) return false; // for parameterized types
+        return isBoolean(parameterizedType.typeInfo) || isBoxedBoolean(parameterizedType.typeInfo);
+    }
 
     public final TypeInfo longTypeInfo = new TypeInfo("long");
     public final ParameterizedType longParameterizedType = longTypeInfo.asParameterizedType();
+
+    public static boolean isLong(TypeInfo typeInfo) {
+        return "long".equals(typeInfo.fullyQualifiedName);
+    }
+
     public final TypeInfo boxedLongTypeInfo = new TypeInfo("java.lang.Long");
+
+    public static boolean isBoxedLong(TypeInfo typeInfo) {
+        return "java.lang.Long".equals(typeInfo.fullyQualifiedName);
+    }
 
     public final TypeInfo shortTypeInfo = new TypeInfo("short");
     public final ParameterizedType shortParameterizedType = shortTypeInfo.asParameterizedType();
+
+    public static boolean isShort(TypeInfo typeInfo) {
+        return "short".equals(typeInfo.fullyQualifiedName);
+    }
+
     public final TypeInfo boxedShortTypeInfo = new TypeInfo("java.lang.Short");
+
+    public static boolean isBoxedShort(TypeInfo typeInfo) {
+        return "java.lang.Short".equals(typeInfo.fullyQualifiedName);
+    }
 
     public final TypeInfo byteTypeInfo = new TypeInfo("byte");
     public final ParameterizedType byteParameterizedType = byteTypeInfo.asParameterizedType();
+
+    public static boolean isByte(TypeInfo typeInfo) {
+        return "byte".equals(typeInfo.fullyQualifiedName);
+    }
+
     public final TypeInfo boxedByteTypeInfo = new TypeInfo("java.lang.Byte");
+
+    public static boolean isBoxedByte(TypeInfo typeInfo) {
+        return "java.lang.Byte".equals(typeInfo.fullyQualifiedName);
+    }
 
     public final TypeInfo doubleTypeInfo = new TypeInfo("double");
     public final ParameterizedType doubleParameterizedType = doubleTypeInfo.asParameterizedType();
+
+    public static boolean isDouble(TypeInfo typeInfo) {
+        return "double".equals(typeInfo.fullyQualifiedName);
+    }
+
     public final TypeInfo boxedDoubleTypeInfo = new TypeInfo("java.lang.Double");
+
+    public static boolean isBoxedDouble(TypeInfo typeInfo) {
+        return "java.lang.Double".equals(typeInfo.fullyQualifiedName);
+    }
 
     public final TypeInfo floatTypeInfo = new TypeInfo("float");
     public final ParameterizedType floatParameterizedType = floatTypeInfo.asParameterizedType();
+
+    public static boolean isFloat(TypeInfo typeInfo) {
+        return "float".equals(typeInfo.fullyQualifiedName);
+    }
+
     public final TypeInfo boxedFloatTypeInfo = new TypeInfo("java.lang.Float");
+
+    public static boolean isBoxedFloat(TypeInfo typeInfo) {
+        return "java.lang.Float".equals(typeInfo.fullyQualifiedName);
+    }
 
     public final TypeInfo voidTypeInfo = new TypeInfo("void");
     public final ParameterizedType voidParameterizedType = voidTypeInfo.asParameterizedType();
     public final TypeInfo boxedVoidTypeInfo = new TypeInfo("java.lang.Void");
 
+    public static boolean isVoid(TypeInfo typeInfo) {
+        return "void".equals(typeInfo.fullyQualifiedName);
+    }
+
+    public static boolean isJavaLangVoid(TypeInfo typeInfo) {
+        return "java.lang.Void".equals(typeInfo.fullyQualifiedName);
+    }
+
+    public static boolean isVoid(ParameterizedType parameterizedType) {
+        return parameterizedType.typeInfo != null && (isJavaLangVoid(parameterizedType.typeInfo) || isVoid(parameterizedType.typeInfo));
+    }
+
     public final TypeInfo stringTypeInfo = new TypeInfo(JAVA_LANG, "String");
     public final ParameterizedType stringParameterizedType = stringTypeInfo.asParameterizedType();
+
+    public static boolean isJavaLangString(TypeInfo typeInfo) {
+        return "java.lang.String".equals(typeInfo.fullyQualifiedName);
+    }
 
     public final TypeInfo annotationTypeTypeInfo = new TypeInfo(ORG_E2IMMU_ANNOTATION, "AnnotationType");
     public final FieldInfo annotationTypeComputed = new FieldInfo(annotationTypeTypeInfo, "COMPUTED", annotationTypeTypeInfo);
@@ -86,10 +177,22 @@ public class Primitives {
     public final AnnotationExpression functionalInterfaceAnnotationExpression =
             AnnotationExpression.fromAnalyserExpressions(functionalInterface, List.of());
 
+    public static boolean isFunctionalInterfaceAnnotation(TypeInfo typeInfo) {
+        return "java.lang.FunctionalInterface".equals(typeInfo.fullyQualifiedName);
+    }
+
     public final TypeInfo classTypeInfo = new TypeInfo(JAVA_LANG, "Class");
 
     public final TypeInfo objectTypeInfo = new TypeInfo(JAVA_LANG, "Object");
     public final ParameterizedType objectParameterizedType = objectTypeInfo.asParameterizedType();
+
+    public static boolean isJavaLangObject(TypeInfo typeInfo) {
+        return "java.lang.Object".equals(typeInfo.fullyQualifiedName);
+    }
+
+    public static boolean isJavaLangObject(ParameterizedType parameterizedType) {
+        return parameterizedType.typeInfo != null && isJavaLangObject(parameterizedType.typeInfo);
+    }
 
     public final MethodInfo plusOperatorInt = new MethodInfo(intTypeInfo, "+",
             List.of(), intParameterizedType, true);
@@ -161,6 +264,9 @@ public class Primitives {
     public final MethodInfo unaryMinusOperatorInt = new MethodInfo(intTypeInfo, "-",
             List.of(), intParameterizedType, true);
 
+    public static boolean isUnaryMinusOperatorInt(MethodInfo operator) {
+    }
+
     public final MethodInfo bitWiseNotOperatorInt = new MethodInfo(intTypeInfo, "~",
             List.of(), intParameterizedType, true);
     public final MethodInfo logicalNotOperatorBool = new MethodInfo(booleanTypeInfo, "!",
@@ -223,6 +329,20 @@ public class Primitives {
                 .setPackageName("java.lang")
                 .setTypeNature(TypeNature.ANNOTATION)
                 .build(false, functionalInterface));
+    }
+
+    public static boolean isPrimitiveExcludingVoid(ParameterizedType parameterizedType) {
+        return parameterizedType.typeInfo != null && isPrimitiveExcludingVoid(parameterizedType.typeInfo);
+    }
+
+    public static boolean isPrimitiveExcludingVoid(TypeInfo typeInfo) {
+        return isByte(typeInfo) || isShort(typeInfo) || isInt(typeInfo) || isLong(typeInfo) ||
+                isChar(typeInfo) || isFloat(typeInfo) || isDouble(typeInfo);
+    }
+
+    public static boolean isBoxedExcludingVoid(TypeInfo typeInfo) {
+        return isBoxedByte(typeInfo) || isBoxedShort(typeInfo) || isInteger(typeInfo) || isBoxedLong(typeInfo)
+                || isCharacter(typeInfo) || isBoxedFloat(typeInfo) || isBoxedDouble(typeInfo);
     }
 
     private void processEnum(TypeInfo typeInfo, List<FieldInfo> fields) {
@@ -313,5 +433,44 @@ public class Primitives {
             return assignPlusOperatorInt;
         }
         throw new UnsupportedOperationException();
+    }
+
+    public TypeInfo boxed(TypeInfo typeInfo) {
+        if (typeInfo == longTypeInfo)
+            return boxedLongTypeInfo;
+        if (typeInfo == intTypeInfo)
+            return integerTypeInfo;
+        if (typeInfo == shortTypeInfo)
+            return boxedShortTypeInfo;
+        if (typeInfo == byteTypeInfo)
+            return boxedByteTypeInfo;
+        if (typeInfo == charTypeInfo)
+            return characterTypeInfo;
+        if (typeInfo == booleanTypeInfo)
+            return boxedBooleanTypeInfo;
+        if (typeInfo == floatTypeInfo)
+            return boxedFloatTypeInfo;
+        if (typeInfo == doubleTypeInfo)
+            return boxedDoubleTypeInfo;
+        throw new UnsupportedOperationException();
+    }
+
+    public static boolean isDiscrete(ParameterizedType parameterizedType) {
+        TypeInfo typeInfo = parameterizedType.typeInfo;
+        if (parameterizedType.typeInfo == null) return false;
+        return isInt(typeInfo) || isInteger(typeInfo) ||
+                isLong(typeInfo) || isBoxedLong(typeInfo) ||
+                isShort(typeInfo) || isBoxedShort(typeInfo) ||
+                isByte(typeInfo) || isBoxedByte(typeInfo);
+    }
+
+    public static boolean isNumeric(TypeInfo typeInfo) {
+        if (typeInfo == null) return false;
+        return isInt(typeInfo) || isInteger(typeInfo) ||
+                isLong(typeInfo) || isBoxedLong(typeInfo) ||
+                isShort(typeInfo) || isBoxedShort(typeInfo) ||
+                isByte(typeInfo) || isBoxedByte(typeInfo) ||
+                isFloat(typeInfo) || isBoxedFloat(typeInfo) ||
+                isDouble(typeInfo) || isBoxedDouble(typeInfo);
     }
 }

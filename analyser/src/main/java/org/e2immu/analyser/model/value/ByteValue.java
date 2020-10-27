@@ -28,13 +28,12 @@ import java.util.Objects;
 
 public class ByteValue extends ConstantValue implements Constant<Byte>, NumericValue {
     public final byte value;
+    private final Primitives primitives;
 
-    public ByteValue(byte value) {
-        this(value, ObjectFlow.NO_FLOW);
-    }
-    public ByteValue(byte value, ObjectFlow objectFlow) {
+    public ByteValue(Primitives primitives, byte value, ObjectFlow objectFlow) {
         super(objectFlow);
         this.value = value;
+        this.primitives = primitives;
     }
 
     @Override
@@ -49,12 +48,12 @@ public class ByteValue extends ConstantValue implements Constant<Byte>, NumericV
 
     @Override
     public NumericValue negate() {
-        return new IntValue(-value, getObjectFlow());
+        return new IntValue(primitives, -value, getObjectFlow());
     }
 
     @Override
     public IntValue toInt() {
-        return new IntValue((int) value, getObjectFlow());
+        return new IntValue(primitives, value, getObjectFlow());
     }
 
     @Override
@@ -87,6 +86,6 @@ public class ByteValue extends ConstantValue implements Constant<Byte>, NumericV
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.byteParameterizedType;
+        return primitives.byteParameterizedType;
     }
 }

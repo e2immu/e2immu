@@ -45,24 +45,26 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
         MethodInfo listOf2 = list.findUniqueMethod("of", 2);
         Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, listOf2.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
 
-        ParameterizedType setString = new ParameterizedType(set, List.of(Primitives.PRIMITIVES.stringParameterizedType));
-        ParameterizedType stringArray = new ParameterizedType(Primitives.PRIMITIVES.stringTypeInfo, 1, ParameterizedType.WildCard.NONE, List.of());
+        Primitives primitives = typeContext.getPrimitives();
+        
+        ParameterizedType setString = new ParameterizedType(set, List.of(primitives.stringParameterizedType));
+        ParameterizedType stringArray = new ParameterizedType(primitives.stringTypeInfo, 1, ParameterizedType.WildCard.NONE, List.of());
         TypeInfo freezableSet = typeContext.typeStore.get(ImmutabilityAnnotations.class.getCanonicalName() + ".FreezableSet");
 
         // Set<String> contains Set
-        Assert.assertTrue(setString.containsComponent(Primitives.PRIMITIVES.stringParameterizedType));
+        Assert.assertTrue(setString.containsComponent(primitives, primitives.stringParameterizedType));
 
         // FreezableSet contains boolean
-        Assert.assertTrue(freezableSet.asParameterizedType().containsComponent(Primitives.PRIMITIVES.booleanParameterizedType));
+        Assert.assertTrue(freezableSet.asParameterizedType().containsComponent(primitives, primitives.booleanParameterizedType));
 
         // String[] contains String
-        Assert.assertTrue(stringArray.containsComponent(Primitives.PRIMITIVES.stringParameterizedType));
+        Assert.assertTrue(stringArray.containsComponent(primitives, primitives.stringParameterizedType));
 
         // some negative cases
-        Assert.assertFalse(Primitives.PRIMITIVES.booleanParameterizedType.containsComponent(Primitives.PRIMITIVES.stringParameterizedType));
+        Assert.assertFalse(primitives.booleanParameterizedType.containsComponent(primitives, primitives.stringParameterizedType));
 
         // interesting... String is a complex type, it contains boolean
-        Assert.assertTrue(stringArray.containsComponent(Primitives.PRIMITIVES.booleanParameterizedType));
+        Assert.assertTrue(stringArray.containsComponent(primitives, primitives.booleanParameterizedType));
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

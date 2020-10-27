@@ -20,15 +20,13 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.StatementAnalyser;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.abstractvalue.ContractMark;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationMode;
@@ -172,7 +170,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public static class Builder extends AbstractAnalysisBuilder implements MethodAnalysis {
         public final ParameterizedType returnType;
         public final MethodInfo methodInfo;
-        public final AnalysisProvider analysisProvider;
         public final SetOnce<Set<MethodAnalysis>> overrides = new SetOnce<>();
         public final TypeAnalysis typeAnalysis;
         public final StatementAnalysis firstStatement;
@@ -228,16 +225,15 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return precondition.getOrElse(null);
         }
 
-        public Builder(AnalysisProvider analysisProvider,
+        public Builder(AnalyserContext analyserContext,
                        MethodInfo methodInfo,
                        List<ParameterAnalysis> parameterAnalyses,
                        StatementAnalyser firstStatementAnalyser) {
-            super(methodInfo.hasBeenDefined(), methodInfo.name);
+            super(analyserContext, methodInfo.hasBeenDefined(), methodInfo.name);
             this.parameterAnalyses = parameterAnalyses;
             this.methodInfo = methodInfo;
             this.returnType = methodInfo.returnType();
-            this.analysisProvider = analysisProvider;
-            this.typeAnalysis = analysisProvider.getTypeAnalysis(methodInfo.typeInfo);
+            this.typeAnalysis = analyserContext.getTypeAnalysis(methodInfo.typeInfo);
             if (methodInfo.isConstructor || methodInfo.isVoid()) {
                 // we set a NO_FLOW, non-modifiable
                 objectFlow = new FirstThen<>(ObjectFlow.NO_FLOW);
@@ -295,7 +291,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public int getProperty(VariableProperty variableProperty) {
-            return getMethodProperty(analysisProvider, methodInfo, variableProperty);
+            return getMethodProperty(analyserContext, methodInfo, variableProperty);
         }
 
         private int dynamicProperty(int formalImmutableProperty) {
@@ -316,7 +312,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 Value value = precondition.get();
                 if (value != UnknownValue.EMPTY) {
                     AnnotationExpression ae = e2ImmuAnnotationExpressions.precondition.get()
-                            .copyWith("value", value.toString());
+                            .copyWith(analyserContext.getPrimitives(), "value", value.toString());
                     annotations.put(ae, true);
                 }
             }
@@ -334,7 +330,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     e2ImmuAnnotationExpressions.modified.get();
             annotations.put(ae, true);
 
-            if (returnType.isVoid()) return;
+            if (Primitives.isVoid(returnType)) return;
 
             // @Identity
             if (getProperty(VariableProperty.IDENTITY) == Level.TRUE) {
@@ -342,7 +338,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             }
 
             // all other annotations cannot be added to primitives
-            if (returnType.isPrimitive()) return;
+            if (Primitives.isPrimitiveExcludingVoid(returnType)) return;
 
             // @Fluent
             if (getProperty(VariableProperty.FLUENT) == Level.TRUE) {
@@ -367,7 +363,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         private boolean allowIndependentOnMethod() {
-            return !returnType.isVoid() && returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(typeAnalysis) != Boolean.TRUE;
+            return !Primitives.isVoid(returnType) && returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(analyserContext) != Boolean.TRUE;
         }
 
         protected void writeMarkAndOnly(MarkAndOnly markAndOnly) {
@@ -380,7 +376,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public Set<MethodAnalysis> getOverrides() {
             if (overrides.isSet()) return overrides.get();
-            Set<MethodAnalysis> computed = overrides(methodInfo);
+            Set<MethodAnalysis> computed = overrides(analyserContext.getPrimitives(), methodInfo);
             overrides.set(ImmutableSet.copyOf(computed));
             return computed;
         }
@@ -415,9 +411,10 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return null;
         }
 
-        private static Set<MethodAnalysis> overrides(MethodInfo methodInfo) {
+        private static Set<MethodAnalysis> overrides(Primitives primitives, MethodInfo methodInfo) {
             try {
-                return methodInfo.typeInfo.overrides(methodInfo, true).stream().map(mi -> mi.methodAnalysis.get()).collect(Collectors.toSet());
+                return methodInfo.typeInfo.overrides(primitives, methodInfo, true).stream()
+                        .map(mi -> mi.methodAnalysis.get()).collect(Collectors.toSet());
             } catch (RuntimeException rte) {
                 LOGGER.error("Cannot compute method analysis of {}", methodInfo.distinguishingName());
                 throw rte;

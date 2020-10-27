@@ -22,6 +22,7 @@ import com.github.javaparser.ast.expr.MethodReferenceExpr;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.ExpressionContext;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 
 import java.util.*;
@@ -72,6 +73,7 @@ public class ParseMethodReferenceExpr {
             throw new UnsupportedOperationException("Cannot find a candidate for " + methodNameForErrorReporting + " at " + methodReferenceExpr.getBegin());
         }
         if (methodCandidates.size() > 1) {
+            Primitives primitives = expressionContext.typeContext.getPrimitives();
             // check types of parameters in SAM
             // see if the method candidate's type fits the SAMs
             for (int i = 0; i < singleAbstractMethod.methodInfo.methodInspection.get().parameters.size(); i++) {
@@ -82,7 +84,7 @@ public class ParseMethodReferenceExpr {
                 List<TypeContext.MethodCandidate> copy = new LinkedList<>(methodCandidates);
                 copy.removeIf(mc -> {
                     ParameterizedType typeOfMethodCandidate = typeOfMethodCandidate(mc, index, scopeIsAType, constructor);
-                    boolean isAssignable = typeOfMethodCandidate.isAssignableFrom(concreteType);
+                    boolean isAssignable = typeOfMethodCandidate.isAssignableFrom(primitives, concreteType);
                     return !isAssignable;
                 });
                 // only accept of this is an improvement
@@ -96,7 +98,7 @@ public class ParseMethodReferenceExpr {
                     ParameterizedType typeOfMc1 = typeOfMethodCandidate(mc1, index, scopeIsAType, constructor);
                     ParameterizedType typeOfMc2 = typeOfMethodCandidate(mc2, index, scopeIsAType, constructor);
                     if (typeOfMc1.equals(typeOfMc2)) return 0;
-                    return typeOfMc2.isAssignableFrom(typeOfMc1) ? -1 : 1;
+                    return typeOfMc2.isAssignableFrom(primitives, typeOfMc1) ? -1 : 1;
                 });
             }
             if (methodCandidates.size() > 1) {

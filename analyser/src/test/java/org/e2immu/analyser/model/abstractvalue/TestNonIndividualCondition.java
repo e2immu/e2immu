@@ -1,9 +1,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -34,7 +32,7 @@ public class TestNonIndividualCondition extends CommonAbstractValue {
         Assert.assertEquals("(null == s and null == some.type.type(String):0:p)", rest(andValue, Value.FilterMode.REJECT).toString());
 
         Value andValue2 = new AndValue().append(sEqualsNull, pEqualsNull);
-        Assert.assertEquals("null == s", rest(andValue, Value.FilterMode.ACCEPT).toString());
+        Assert.assertEquals("null == s", rest(andValue2, Value.FilterMode.ACCEPT).toString());
 
         Value notAndValue = NegatedValue.negate(andValue);
         Assert.assertEquals("(not (null == s) or not (null == some.type.type(String):0:p))", notAndValue.toString());

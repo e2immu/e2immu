@@ -57,8 +57,7 @@ public class Input {
     private final Resources sourcePath = new Resources();
     private final TypeContext globalTypeContext = new TypeContext();
     private final TypeStore sourceTypeStore = new MapBasedTypeStore();
-    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions(globalTypeContext.typeStore);
-    private final AnnotationStore annotationStore;
+    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions(globalTypeContext);
     private final ByteCodeInspector byteCodeInspector;
     private final List<URL> annotatedAPIs;
     private final Map<TypeInfo, URL> sourceURLs;
@@ -67,7 +66,7 @@ public class Input {
         this.configuration = configuration;
         initializeClassPath();
         assembleClassPath(classPath, "Classpath", configuration.inputConfiguration.classPathParts);
-        annotationStore = new AnnotationXmlReader(classPath);
+        AnnotationStore annotationStore = new AnnotationXmlReader(classPath);
         LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
         byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext, e2ImmuAnnotationExpressions);
         preload("org.e2immu.annotation"); // needed for our own stuff
@@ -118,7 +117,7 @@ public class Input {
     }
 
     private void initializeClassPath() throws IOException {
-        for (TypeInfo typeInfo : Primitives.PRIMITIVES.typeByName.values()) {
+        for (TypeInfo typeInfo : globalTypeContext.getPrimitives().typeByName.values()) {
             globalTypeContext.typeStore.add(typeInfo);
             globalTypeContext.addToContext(typeInfo);
         }
@@ -138,7 +137,7 @@ public class Input {
             // we'll loop over the primary types only
             if (!expansion[expansion.length - 1].contains("$")) {
                 String fqn = ParseAndInspect.fqnOfClassFile(thePackage, expansion);
-                TypeInfo typeInfo = (TypeInfo) globalTypeContext.getFullyQualified(fqn, false);
+                TypeInfo typeInfo = globalTypeContext.getFullyQualified(fqn, false);
                 if (typeInfo == null || !typeInfo.typeInspection.isSet()) {
                     String path = fqn.replace(".", "/"); // this is correct!
                     byteCodeInspector.inspectFromPath(path);

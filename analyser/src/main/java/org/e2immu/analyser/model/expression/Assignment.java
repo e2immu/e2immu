@@ -57,7 +57,7 @@ public class Assignment implements Expression {
         this.value = Objects.requireNonNull(value);
         this.assignmentOperator = assignmentOperator; // as in i+=1;
         this.prefixPrimitiveOperator = prefixPrimitiveOperator;
-        binaryOperator = assignmentOperator == null ? null : BinaryOperator.fromAssignmentOperatorToNormalOperator(assignmentOperator);
+        binaryOperator = assignmentOperator == null ? null : BinaryOperator.fromAssignmentOperatorToNormalOperator(primitives, assignmentOperator);
     }
 
     @Override
@@ -83,21 +83,21 @@ public class Assignment implements Expression {
     }
 
     @NotNull
-    public static MethodInfo operator(@NotNull AssignExpr.Operator operator,
+    public static MethodInfo operator(Primitives primitives, @NotNull AssignExpr.Operator operator,
                                       @NotNull TypeInfo widestType) {
         switch (operator) {
             case PLUS:
-                return Primitives.PRIMITIVES.assignPlusOperatorInt;
+                return primitives.assignPlusOperatorInt;
             case MINUS:
-                return Primitives.PRIMITIVES.assignMinusOperatorInt;
+                return primitives.assignMinusOperatorInt;
             case MULTIPLY:
-                return Primitives.PRIMITIVES.assignMultiplyOperatorInt;
+                return primitives.assignMultiplyOperatorInt;
             case DIVIDE:
-                return Primitives.PRIMITIVES.assignDivideOperatorInt;
+                return primitives.assignDivideOperatorInt;
             case BINARY_OR:
-                return Primitives.PRIMITIVES.assignOrOperatorBoolean;
+                return primitives.assignOrOperatorBoolean;
             case ASSIGN:
-                return Primitives.PRIMITIVES.assignOperatorInt;
+                return primitives.assignOperatorInt;
         }
         throw new UnsupportedOperationException("Need to add primitive operator " +
                 operator + " on type " + widestType.fullyQualifiedName);
@@ -111,13 +111,13 @@ public class Assignment implements Expression {
     @Override
     public String expressionString(int indent) {
         if (prefixPrimitiveOperator != null) {
-            String operator = assignmentOperator == Primitives.PRIMITIVES.assignPlusOperatorInt ? "++" : "--";
+            String operator = assignmentOperator == primitives.assignPlusOperatorInt ? "++" : "--";
             if (prefixPrimitiveOperator) {
                 return operator + target.expressionString(indent);
             }
             return target.expressionString(indent) + operator;
         }
-        //  != null && primitiveOperator != Primitives.PRIMITIVES.assignOperatorInt ? "=" + primitiveOperator.name : "=";
+        //  != null && primitiveOperator != primitives.assignOperatorInt ? "=" + primitiveOperator.name : "=";
         String operator = assignmentOperator == null ? "=" : assignmentOperator.name;
         return target.expressionString(indent) + " " + operator + " " + value.expressionString(indent);
     }
@@ -160,7 +160,7 @@ public class Assignment implements Expression {
         Value assignedToTarget;
         if (binaryOperator != null) {
             BinaryOperator operation = new BinaryOperator(new VariableExpression(at), binaryOperator, value,
-                    BinaryOperator.precedence(binaryOperator));
+                    BinaryOperator.precedence(evaluationContext.getAnalyserContext().getPrimitives(), binaryOperator));
             EvaluationResult operationResult = operation.evaluate(evaluationContext, forwardEvaluationInfo);
             builder.compose(operationResult);
 

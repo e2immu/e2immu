@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 import java.util.Objects;
@@ -96,7 +97,7 @@ public class FinalFieldValue implements Value {
     @Override
     public boolean isNumeric() {
         TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
-        return typeInfo.isNumericPrimitive() || typeInfo.isNumericPrimitiveBoxed();
+        return Primitives.isNumeric(typeInfo);
     }
 
     @Override

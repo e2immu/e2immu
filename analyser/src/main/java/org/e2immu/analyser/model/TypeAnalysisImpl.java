@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -87,8 +88,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public final SetOnceMap<String, Value> approvedPreconditions = new SetOnceMap<>();
         public final SetOnce<Set<ParameterizedType>> implicitlyImmutableDataTypes = new SetOnce<>();
 
-        public Builder(TypeInfo typeInfo) {
-            super(typeInfo.hasBeenDefined(), typeInfo.simpleName);
+        public Builder(AnalyserContext analyserContext, TypeInfo typeInfo) {
+            super(analyserContext, typeInfo.hasBeenDefined(), typeInfo.simpleName);
             this.typeInfo = typeInfo;
         }
 

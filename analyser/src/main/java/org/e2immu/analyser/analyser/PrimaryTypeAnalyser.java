@@ -21,9 +21,7 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.SortedType;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
@@ -51,11 +49,15 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
     private final Map<MethodInfo, MethodAnalyser> methodAnalysers;
     private final Map<FieldInfo, FieldAnalyser> fieldAnalysers;
     private final Map<ParameterInfo, ParameterAnalyser> parameterAnalysers;
+    private final TypeContext typeContext;
 
-    public PrimaryTypeAnalyser(SortedType sortedType, Configuration configuration, @NotNull E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    public PrimaryTypeAnalyser(@NotNull SortedType sortedType,
+                               @NotNull Configuration configuration,
+                               @NotNull TypeContext typeContext,
+                               @NotNull E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
-
+        this.typeContext = typeContext;
         patternMatcher = configuration.analyserConfiguration.newPatternMatcher();
 
         this.primaryType = Objects.requireNonNull(sortedType.primaryType);
@@ -133,6 +135,11 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
 
         // all important fields of the interface have been set.
         analysers.forEach(Analyser::initialize);
+    }
+
+    @Override
+    public Primitives getPrimitives() {
+        return typeContext.getPrimitives();
     }
 
     private static Set<MethodAnalysis> overrides(MethodInfo methodInfo, Map<MethodInfo, MethodAnalyser> methodAnalysers) {

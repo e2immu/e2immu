@@ -59,18 +59,16 @@ public abstract class ConstantValue implements Value {
         return objectFlow;
     }
 
-    public static Value nullValue(ParameterizedType type) {
-        if (type.isPrimitive()) {
-            if (Primitives.PRIMITIVES.integerTypeInfo == type.typeInfo) return new IntValue(0);
-            if (Primitives.PRIMITIVES.booleanTypeInfo == type.typeInfo) return new BoolValue(false);
-            if (Primitives.PRIMITIVES.charTypeInfo == type.typeInfo) return new CharValue('\0');
-            if (Primitives.PRIMITIVES.shortTypeInfo == type.typeInfo) return new ShortValue((short) 0);
-            if (Primitives.PRIMITIVES.longTypeInfo == type.typeInfo) return new LongValue(0L);
-            if (Primitives.PRIMITIVES.byteTypeInfo == type.typeInfo) return new ByteValue((byte) 0);
-            if (Primitives.PRIMITIVES.doubleTypeInfo == type.typeInfo) return new DoubleValue(0.0d);
-            if (Primitives.PRIMITIVES.floatTypeInfo == type.typeInfo) return new FloatValue(0.0f);
-
-            throw new UnsupportedOperationException("Need to implement null value for " + type);
+    public static Value nullValue(Primitives primitives, TypeInfo typeInfo) {
+        if (typeInfo != null) {
+            if (Primitives.isBoolean(typeInfo)) return new BoolValue(primitives, false, ObjectFlow.NO_FLOW);
+            if (Primitives.isInt(typeInfo)) return new IntValue(primitives, 0, ObjectFlow.NO_FLOW);
+            if (Primitives.isLong(typeInfo)) return new LongValue(primitives, 0L, ObjectFlow.NO_FLOW);
+            if (Primitives.isShort(typeInfo)) return new ShortValue(primitives, (short) 0, ObjectFlow.NO_FLOW);
+            if (Primitives.isByte(typeInfo)) return new ByteValue(primitives, (byte) 0, ObjectFlow.NO_FLOW);
+            if (Primitives.isFloat(typeInfo)) return new FloatValue(primitives, 0, ObjectFlow.NO_FLOW);
+            if (Primitives.isDouble(typeInfo)) return new DoubleValue(primitives, 0, ObjectFlow.NO_FLOW);
+            if (Primitives.isChar(typeInfo)) return new CharValue(primitives, '\0', ObjectFlow.NO_FLOW);
         }
         return NullValue.NULL_VALUE;
     }

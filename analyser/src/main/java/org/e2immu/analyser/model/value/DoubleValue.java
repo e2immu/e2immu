@@ -28,18 +28,17 @@ import java.util.Objects;
 
 public class DoubleValue extends ConstantValue implements Constant<Double>, NumericValue {
     public final double value;
+    private  final  Primitives primitives;
 
-    public DoubleValue(double value) {
-        this(value, ObjectFlow.NO_FLOW);
-    }
-    public DoubleValue(double value, ObjectFlow objectFlow) {
+    public DoubleValue(Primitives primitives, double value, ObjectFlow objectFlow) {
         super(objectFlow);
         this.value = value;
+        this.primitives = primitives;
     }
 
     @Override
     public NumericValue negate() {
-        return new DoubleValue(-value, getObjectFlow());
+        return new DoubleValue(primitives, -value, getObjectFlow());
     }
 
     @Override
@@ -87,6 +86,6 @@ public class DoubleValue extends ConstantValue implements Constant<Double>, Nume
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.doubleParameterizedType;
+        return primitives.doubleParameterizedType;
     }
 }

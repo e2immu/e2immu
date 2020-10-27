@@ -18,13 +18,13 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.ConstantValue;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.Objects;
@@ -34,15 +34,17 @@ import java.util.function.Consumer;
 public class StringConcat implements Value {
     public final Value lhs;
     public final Value rhs;
-    public  final ObjectFlow objectFlow;
+    public final ObjectFlow objectFlow;
+    private final ParameterizedType stringParameterizedType;
 
-    public StringConcat(Value lhs, Value rhs, ObjectFlow objectFlow) {
+    private StringConcat(Value lhs, Value rhs, ParameterizedType stringParameterizedType, ObjectFlow objectFlow) {
         this.lhs = lhs;
         this.rhs = rhs;
         this.objectFlow = objectFlow;
+        this.stringParameterizedType = stringParameterizedType;
     }
 
-    public static Value stringConcat(Value l, Value r, ObjectFlow objectFlow) {
+    public static Value stringConcat(EvaluationContext evaluationContext, Value l, Value r, ObjectFlow objectFlow) {
         StringValue lsv = l.asInstanceOf(StringValue.class);
         StringValue rsv = r.asInstanceOf(StringValue.class);
         if (lsv != null && rsv != null) {
@@ -98,7 +100,7 @@ public class StringConcat implements Value {
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.stringParameterizedType;
+        return stringParameterizedType;
     }
 
     @Override

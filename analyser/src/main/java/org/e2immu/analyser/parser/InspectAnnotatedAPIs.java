@@ -154,7 +154,7 @@ public class InspectAnnotatedAPIs {
             if (!isInTypeTo) {
                 // make sure it is in one of the supertypes; otherwise, raise error
                 MethodInfo copy = copy(methodInfo, typeTo);
-                Set<MethodInfo> overrides = typeTo.overrides(copy, false);
+                Set<MethodInfo> overrides = typeTo.overrides(globalTypeContext.getPrimitives(), copy, false);
                 if (overrides.isEmpty()) {
                     Message error = Message.newMessage(new Location(methodInfo), Message.CANNOT_FIND_METHOD_IN_SUPER_TYPE, distinguishingName);
                     messages.add(error);
@@ -176,7 +176,7 @@ public class InspectAnnotatedAPIs {
      */
     private MethodInfo copy(MethodInfo methodInfo, TypeInfo typeTo) {
         MethodInfo copy = methodInfo.isConstructor ? new MethodInfo(typeTo, List.of()) :
-                new MethodInfo(typeTo, methodInfo.name, List.of(), Primitives.PRIMITIVES.voidParameterizedType,
+                new MethodInfo(typeTo, methodInfo.name, List.of(), globalTypeContext.getPrimitives().voidParameterizedType,
                         methodInfo.isStatic, methodInfo.isDefaultImplementation);
         MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
         MethodInspection methodInspection = methodInfo.methodInspection.get();

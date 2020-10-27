@@ -22,9 +22,11 @@ public class E2ImmuAnnotationExpressions {
 
     @NotModified
     private final TypeStore typeStore;
+    private final FieldInfo annotationTypeComputed;
 
-    public E2ImmuAnnotationExpressions(@NotNull TypeStore typeStore) {
-        this.typeStore = typeStore;
+    public E2ImmuAnnotationExpressions(@NotNull TypeContext typeContext) {
+        this.typeStore = typeContext.typeStore;
+        annotationTypeComputed = typeContext.getPrimitives().annotationTypeComputed;
     }
 
     public final Lazy<AnnotationExpression> beforeMark = new Lazy<>(() -> create(BeforeMark.class));
@@ -67,8 +69,7 @@ public class E2ImmuAnnotationExpressions {
     @NotModified
     private AnnotationExpression create(Class<?> clazz) {
         TypeInfo annotationType = typeStore.get(AnnotationType.class.getCanonicalName());
-        FieldInfo computed = Primitives.PRIMITIVES.annotationTypeComputed;
-        FieldReference computedRef = new FieldReference(computed, null);
+        FieldReference computedRef = new FieldReference(annotationTypeComputed, null);
         FieldAccess computedAccess = new FieldAccess(new TypeExpression(annotationType.asParameterizedType()), computedRef);
         // NOTE: we've added an import statement in TypeInfo.imports() for this...
         return AnnotationExpression.fromAnalyserExpressions(typeStore.get(clazz.getCanonicalName()),

@@ -54,10 +54,10 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
         EvaluationResult reValue = value.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reValue);
-        return builder.setValue(NegatedValue.negate(reValue.value)).build();
+        return builder.setValue(NegatedValue.negate(evaluationContext, reValue.value)).build();
     }
 
-    public static Value negate(@NotNull Value v) {
+    public static Value negate(EvaluationContext evaluationContext, @NotNull Value v) {
         Objects.requireNonNull(v);
         if (v instanceof BoolValue boolValue) {
             return boolValue.negate();
@@ -69,24 +69,24 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
 
         if (v instanceof NegatedValue) return ((NegatedValue) v).value;
         if (v instanceof OrValue or) {
-            Value[] negated = or.values.stream().map(NegatedValue::negate).toArray(Value[]::new);
+            Value[] negated = or.values.stream().map(ov -> NegatedValue.negate(evaluationContext, ov)).toArray(Value[]::new);
             return new AndValue(v.getObjectFlow()).append(negated);
         }
         if (v instanceof AndValue and) {
-            List<Value> negated = and.values.stream().map(NegatedValue::negate).collect(Collectors.toList());
+            List<Value> negated = and.values.stream().map(av -> NegatedValue.negate(evaluationContext, av)).collect(Collectors.toList());
             return new OrValue(v.getObjectFlow()).append(negated);
         }
         if (v instanceof EqualsValue equalsValue) {
             if (equalsValue.lhs instanceof NumericValue && equalsValue.rhs instanceof ConstrainedNumericValue) {
-                Value improve = ((ConstrainedNumericValue) equalsValue.rhs).notEquals((NumericValue) equalsValue.lhs);
+                Value improve = ((ConstrainedNumericValue) equalsValue.rhs).notEquals(evaluationContext, (NumericValue) equalsValue.lhs);
                 if (improve != null) return improve;
             }
         }
         if (v instanceof SumValue) {
-            return ((SumValue) v).negate();
+            return ((SumValue) v).negate(evaluationContext);
         }
         if (v instanceof GreaterThanZeroValue) {
-            return ((GreaterThanZeroValue) v).negate();
+            return ((GreaterThanZeroValue) v).negate(evaluationContext);
         }
         return new NegatedValue(v);
     }
@@ -133,11 +133,12 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
     // no need to implement any of the filter methods; they all do the same
 
     @Override
-    public FilterResult filter(FilterMode filterMode, FilterMethod... filterMethods) {
-        FilterResult filterResult = value.filter(filterMode, filterMethods);
+    public FilterResult filter(EvaluationContext evaluationContext, FilterMode filterMode, FilterMethod... filterMethods) {
+        FilterResult filterResult = value.filter(evaluationContext, filterMode, filterMethods);
         return new FilterResult(filterResult.accepted.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, e -> NegatedValue.negate(e.getValue()), (v1, v2) -> v1)),
-                NegatedValue.negate(filterResult.rest));
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        e -> NegatedValue.negate(evaluationContext, e.getValue()), (v1, v2) -> v1)),
+                NegatedValue.negate(evaluationContext, filterResult.rest));
     }
 
     @Override

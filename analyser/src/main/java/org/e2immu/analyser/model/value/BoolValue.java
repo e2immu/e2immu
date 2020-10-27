@@ -26,27 +26,30 @@ import org.e2immu.analyser.parser.Primitives;
 import java.util.Objects;
 
 public class BoolValue extends ConstantValue implements Constant<Boolean> {
-    public static final BoolValue TRUE = new BoolValue(true);
-    public static final BoolValue FALSE = new BoolValue(false);
-
     public final boolean value;
+    private final ParameterizedType booleanParameterizedType;
 
-    public BoolValue(boolean value) {
-        this(value, ObjectFlow.NO_FLOW);
+    public BoolValue(Primitives primitives, boolean value) {
+        this(primitives, value, ObjectFlow.NO_FLOW);
     }
 
-    public BoolValue(boolean value, ObjectFlow objectFlow) {
+    public BoolValue(Primitives primitives, boolean value, ObjectFlow objectFlow) {
         super(objectFlow);
         this.value = value;
+        this.booleanParameterizedType = primitives.booleanParameterizedType;
+    }
+
+    private BoolValue(ParameterizedType booleanParameterizedType, boolean value, ObjectFlow objectFlow) {
+        super(objectFlow);
+        this.value = value;
+        this.booleanParameterizedType = booleanParameterizedType;
     }
 
     public static EvaluationResult of(boolean b, Location location, EvaluationContext evaluationContext, Origin origin) {
-        if (evaluationContext == null) {
-            return new EvaluationResult.Builder().setValue(b ? TRUE : FALSE).build();
-        }
+        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        ObjectFlow objectFlow = builder.createInternalObjectFlow(location, Primitives.PRIMITIVES.booleanParameterizedType, origin);
-        return builder.setValue(new BoolValue(b, objectFlow)).build();
+        ObjectFlow objectFlow = builder.createInternalObjectFlow(location, primitives.booleanParameterizedType, origin);
+        return builder.setValue(new BoolValue(primitives, b, objectFlow)).build();
     }
 
     @Override
@@ -84,13 +87,10 @@ public class BoolValue extends ConstantValue implements Constant<Boolean> {
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.booleanParameterizedType;
+        return booleanParameterizedType;
     }
 
     public Value negate() {
-        if (objectFlow == null) {
-            return value ? BoolValue.FALSE : BoolValue.TRUE;
-        }
-        return new BoolValue(!value, objectFlow);
+        return new BoolValue(booleanParameterizedType, !value, objectFlow);
     }
 }

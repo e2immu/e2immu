@@ -22,6 +22,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.DoubleValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -30,17 +31,20 @@ import java.util.Objects;
 
 @E2Container
 public class DoubleConstant implements ConstantExpression<Double> {
+    private final Primitives primitives;
+
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return Primitives.PRIMITIVES.doubleParameterizedType;
+        return primitives.doubleParameterizedType;
     }
 
     @NotNull
     public final double constant;
 
-    public DoubleConstant(double constant) {
+    public DoubleConstant(Primitives primitives, double constant) {
         this.constant = constant;
+        this.primitives = primitives;
     }
 
     @Override
@@ -69,7 +73,7 @@ public class DoubleConstant implements ConstantExpression<Double> {
 
     @Override
     public Value newValue() {
-        return new DoubleValue(constant);
+        return new DoubleValue(primitives, constant, ObjectFlow.NO_FLOW);
     }
 
     @Override

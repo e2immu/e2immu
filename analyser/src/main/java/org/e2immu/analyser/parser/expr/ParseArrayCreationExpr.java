@@ -19,14 +19,12 @@
 package org.e2immu.analyser.parser.expr;
 
 import com.github.javaparser.ast.expr.ArrayCreationExpr;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.ExpressionContext;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 
 import java.util.List;
@@ -52,9 +50,9 @@ public class ParseArrayCreationExpr {
                 .setReturnType(parameterizedType)
                 .addModifier(MethodModifier.PUBLIC);
         for (int i = 0; i < parameterizedType.arrays; i++) {
-            ParameterInfo p = new ParameterInfo(constructor, Primitives.PRIMITIVES.intParameterizedType, "dim" + i, i);
+            ParameterInfo p = new ParameterInfo(constructor, typeContext.getPrimitives().intParameterizedType, "dim" + i, i);
             p.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().setVarArgs(false).build());
-            p.setAnalysis(new ParameterAnalysisImpl.Builder(p, null).build());
+            p.setAnalysis(new ParameterAnalysisImpl.Builder(typeContext, p).build());
             builder.addParameter(p);
         }
         constructor.methodInspection.set(builder.build(constructor));

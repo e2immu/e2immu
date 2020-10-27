@@ -43,7 +43,7 @@ public class TestTypeInfoStream {
     final TypeInfo containerTypeInfo = new TypeInfo("com.wrc.equivalent.model.TestTypeInfoStream.Container");
     final FieldInfo logger = new FieldInfo(loggerTypeInfo, "LOGGER", typeInfo);
 
-    final Primitives primitives = Primitives.PRIMITIVES;
+    final Primitives primitives = new Primitives();
 
     TypeParameter typeParameterT = new TypeParameter(containerTypeInfo, "T", 0);
     ParameterizedType typeT = new ParameterizedType(typeParameterT, 0, ParameterizedType.WildCard.NONE);
@@ -72,7 +72,7 @@ public class TestTypeInfoStream {
                 .build());
         LocalVariable mapLocalVariable = new LocalVariable.LocalVariableBuilder()
                 .setName("map")
-                .setParameterizedType(new ParameterizedType(map, List.of(Primitives.PRIMITIVES.stringParameterizedType, typeT)))
+                .setParameterizedType(new ParameterizedType(map, List.of(primitives.stringParameterizedType, typeT)))
                 .build();
         MethodInfo hashMapConstructor = new MethodInfo(hashMap, List.of());
         Expression creationExpression = new NewObject(hashMapConstructor, hashMapParameterizedType, List.of(), null);
@@ -87,7 +87,7 @@ public class TestTypeInfoStream {
                         new Block.BlockBuilder()
                                 .addStatement(
                                         new ExpressionAsStatement(
-                                                new LocalVariableCreation(
+                                                new LocalVariableCreation(primitives,
                                                         mapLocalVariable,
                                                         creationExpression)
                                         )
@@ -96,12 +96,12 @@ public class TestTypeInfoStream {
                                         new ForEachStatement(null,
                                                 new LocalVariable.LocalVariableBuilder()
                                                         .setName("entry")
-                                                        .setParameterizedType(new ParameterizedType(mapEntry, List.of(Primitives.PRIMITIVES.stringParameterizedType, typeT)))
+                                                        .setParameterizedType(new ParameterizedType(mapEntry, List.of(primitives.stringParameterizedType, typeT)))
                                                         .build(),
                                                 new VariableExpression(new LocalVariableReference(mapLocalVariable, List.of(creationExpression))),
                                                 new Block.BlockBuilder()
                                                         .addStatement(new IfElseStatement(
-                                                                new BooleanConstant(true),
+                                                                new BooleanConstant(primitives, true),
                                                                 new Block.BlockBuilder().build(),
                                                                 Block.EMPTY_BLOCK
                                                         ))
@@ -113,7 +113,7 @@ public class TestTypeInfoStream {
 
         FieldInfo intFieldInContainer = new FieldInfo(primitives.intTypeInfo, "i", containerTypeInfo);
         intFieldInContainer.fieldInspection.set(new FieldInspection.FieldInspectionBuilder()
-                .setInitializer(new IntConstant(27))
+                .setInitializer(new IntConstant(primitives, 27))
                 .build());
 
         FieldInfo doubleFieldInContainer = new FieldInfo(primitives.doubleTypeInfo, "d", containerTypeInfo);
@@ -123,7 +123,7 @@ public class TestTypeInfoStream {
         FieldInfo stringFieldInContainer = new FieldInfo(primitives.stringTypeInfo, "s", containerTypeInfo);
         stringFieldInContainer.fieldInspection.set(new FieldInspection.FieldInspectionBuilder()
                 .addModifier(FieldModifier.FINAL)
-                .setInitializer(new StringConstant("first value"))
+                .setInitializer(new StringConstant(primitives, "first value"))
                 .build());
 
         FieldInfo tInContainer = new FieldInfo(typeT, "t", containerTypeInfo);
@@ -148,9 +148,9 @@ public class TestTypeInfoStream {
         TypeInfo commutative = new TypeInfo(GENERATED_PACKAGE, "Commutative");
         TypeInfo testEquivalent = new TypeInfo(TEST_PACKAGE, "TestEquivalent");
         MethodInfo referenceMethodInfo = new MethodInfo(testEquivalent, "reference", List.of(),
-                Primitives.PRIMITIVES.stringParameterizedType, false);
+                primitives.stringParameterizedType, false);
         referenceMethodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
-                .setReturnType(Primitives.PRIMITIVES.stringTypeInfo)
+                .setReturnType(primitives.stringTypeInfo)
                 .setBlock(new Block.BlockBuilder().build())
                 .build(referenceMethodInfo));
         testEquivalent.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
@@ -175,12 +175,12 @@ public class TestTypeInfoStream {
                 .addParameter(x)
                 .addParameter(y)
                 .addAnnotation(AnnotationExpression.fromAnalyserExpressions(commutative, List.of()))
-                .addAnnotation(AnnotationExpression.fromAnalyserExpressions(testEquivalent, List.of(new StringConstant("hello"))))
+                .addAnnotation(AnnotationExpression.fromAnalyserExpressions(testEquivalent, List.of(new StringConstant(primitives, "hello"))))
                 .setBlock(
                         new Block.BlockBuilder().addStatement(
                                 new ReturnStatement(
                                         new BinaryOperator(
-                                                new VariableExpression(x), Primitives.PRIMITIVES.plusOperatorInt, new VariableExpression(y), BinaryOperator.ADDITIVE_PRECEDENCE
+                                                new VariableExpression(x), primitives.plusOperatorInt, new VariableExpression(y), BinaryOperator.ADDITIVE_PRECEDENCE
                                         ))
                         ).build())
                 .build(intSum));

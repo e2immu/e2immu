@@ -28,19 +28,17 @@ import java.util.Objects;
 
 public class ShortValue extends ConstantValue implements Constant<Short>, NumericValue {
     public final short value;
+    private final Primitives primitives;
 
-    public ShortValue(short value) {
-        this(value, ObjectFlow.NO_FLOW);
-    }
-
-    public ShortValue(short value, ObjectFlow objectFlow) {
+    public ShortValue(Primitives primitives, short value, ObjectFlow objectFlow) {
         super(objectFlow);
         this.value = value;
+        this.primitives = primitives;
     }
 
     @Override
     public NumericValue negate() {
-        return new IntValue(-value, getObjectFlow());
+        return new IntValue(primitives, -value, getObjectFlow());
     }
 
     @Override
@@ -50,7 +48,7 @@ public class ShortValue extends ConstantValue implements Constant<Short>, Numeri
 
     @Override
     public IntValue toInt() {
-        return new IntValue(value, getObjectFlow());
+        return new IntValue(primitives, value, getObjectFlow());
     }
 
     @Override
@@ -88,6 +86,6 @@ public class ShortValue extends ConstantValue implements Constant<Short>, Numeri
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.shortParameterizedType;
+        return primitives.shortParameterizedType;
     }
 }

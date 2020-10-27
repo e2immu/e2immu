@@ -56,8 +56,7 @@ public class TestFilter extends CommonAbstractValue {
         Assert.assertEquals("(a and not (null == s))", andValue.toString());
 
         Value.FilterResult filterResult = andValue.filter(Value.FilterMode.ALL, value -> {
-            if (value instanceof EqualsValue) {
-                EqualsValue equalsValue = (EqualsValue) value;
+            if (value instanceof EqualsValue equalsValue) {
                 if (equalsValue.rhs instanceof VariableValue && ((VariableValue) equalsValue.rhs).variable == s.variable) {
                     return new Value.FilterResult(Map.of(s.variable, s), UnknownValue.EMPTY);
                 }

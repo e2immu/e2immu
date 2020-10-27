@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.NOT_MODIFIED;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class MethodLevelData {
@@ -64,11 +63,11 @@ public class MethodLevelData {
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
 
     record SharedState(StatementAnalyserResult.Builder builder,
-                               EvaluationContext evaluationContext,
-                               StatementAnalysis statementAnalysis,
-                               String logLocation,
-                               MethodLevelData previous,
-                               StateData stateData) {
+                       EvaluationContext evaluationContext,
+                       StatementAnalysis statementAnalysis,
+                       String logLocation,
+                       MethodLevelData previous,
+                       StateData stateData) {
     }
 
     public final AnalyserComponents<String, SharedState> analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
@@ -485,7 +484,7 @@ public class MethodLevelData {
                     }
                 }
 
-                if (parameterInfo.parameterizedType.hasSize()) {
+                if (parameterInfo.parameterizedType.hasSize(sharedState.evaluationContext.getAnalyserContext().getPrimitives())) {
                     int size = variableInfo.getProperty(VariableProperty.SIZE);
                     if (size == Level.DELAY && !haveDelay) {
                         // we could not find anything related to size, let's advertise that

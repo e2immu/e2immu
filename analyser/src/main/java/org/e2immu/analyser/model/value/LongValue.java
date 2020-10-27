@@ -28,18 +28,17 @@ import java.util.Objects;
 
 public class LongValue extends ConstantValue implements Constant<Long>, NumericValue {
     public final long value;
+    private final Primitives primitives;
 
-    public LongValue(long value) {
-        this(value, ObjectFlow.NO_FLOW);
-    }
-    public LongValue(long value, ObjectFlow objectFlow) {
+    public LongValue(Primitives primitives, long value, ObjectFlow objectFlow) {
         super(objectFlow);
         this.value = value;
+        this.primitives = primitives;
     }
 
     @Override
     public NumericValue negate() {
-        return new LongValue(-value);
+        return new LongValue(primitives, -value, objectFlow);
     }
 
     @Override
@@ -50,7 +49,7 @@ public class LongValue extends ConstantValue implements Constant<Long>, NumericV
     @Override
     public IntValue toInt() {
         if (value >= Integer.MIN_VALUE && value < Integer.MAX_VALUE) {
-            return new IntValue((int) value, getObjectFlow());
+            return new IntValue(primitives, (int) value, getObjectFlow());
         }
         throw new UnsupportedOperationException("Cannot cast from long to int without loss");
     }
@@ -90,6 +89,6 @@ public class LongValue extends ConstantValue implements Constant<Long>, NumericV
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.longParameterizedType;
+        return primitives.longParameterizedType;
     }
 }

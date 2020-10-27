@@ -23,6 +23,7 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.type.WildcardType;
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Primitives;
@@ -70,7 +71,7 @@ public class ParameterizedType {
         }
         if (varargs) arrays++; // if we have a varargs type Object..., we store a parameterized type Object[]
         if (baseType.isPrimitiveType()) {
-            return new ParameterizedType(Primitives.PRIMITIVES.primitiveByName(baseType.asString()), arrays);
+            return new ParameterizedType(context.getPrimitives().primitiveByName(baseType.asString()), arrays);
         }
         if (type instanceof WildcardType) {
             WildcardType wildcardType = (WildcardType) type;
@@ -84,7 +85,7 @@ public class ParameterizedType {
             }
             return WILDCARD_PARAMETERIZED_TYPE; // <?>
         }
-        if ("void".equals(baseType.asString())) return Primitives.PRIMITIVES.voidParameterizedType;
+        if ("void".equals(baseType.asString())) return context.getPrimitives().voidParameterizedType;
 
         String name;
         List<ParameterizedType> parameters = new ArrayList<>();
@@ -247,7 +248,7 @@ public class ParameterizedType {
     // from one type context into another one
     public ParameterizedType copy(TypeContext localTypeContext) {
         TypeInfo newTypeInfo;
-        if (typeInfo == null || typeInfo.isPrimitive()) {
+        if (typeInfo == null || Primitives.isPrimitiveExcludingVoid(typeInfo)) {
             newTypeInfo = typeInfo;
         } else {
             newTypeInfo = Objects.requireNonNull(localTypeContext.typeStore.get(typeInfo.fullyQualifiedName));
@@ -375,21 +376,12 @@ public class ParameterizedType {
         return pt1.typeParameter.index == pt2.typeParameter.index;
     }
 
-    public boolean isPrimitive() {
-        return typeInfo != null && typeInfo.isPrimitive();
-    }
-
-    public boolean isVoid() {
-        return typeInfo == Primitives.PRIMITIVES.voidTypeInfo ||
-                typeInfo == Primitives.PRIMITIVES.boxedVoidTypeInfo;
-    }
-
     public boolean allowsForOperators() {
-        if (isVoid()) return false;
+        if (Primitives.isVoid(this)) return false;
         if (typeInfo == null) return false;
-        return Primitives.PRIMITIVES.primitives.contains(typeInfo)
-                || Primitives.PRIMITIVES.boxed.contains(typeInfo)
-                || typeInfo == Primitives.PRIMITIVES.stringTypeInfo;
+        return Primitives.isPrimitiveExcludingVoid(typeInfo)
+                || Primitives.isBoxedExcludingVoid(typeInfo)
+                || Primitives.isJavaLangString(typeInfo);
     }
 
     // ******************************************************************************************************
@@ -469,8 +461,8 @@ public class ParameterizedType {
      */
     public static int NOT_ASSIGNABLE = -1;
 
-    public boolean isAssignableFrom(ParameterizedType type) {
-        return numericIsAssignableFrom(type) != NOT_ASSIGNABLE;
+    public boolean isAssignableFrom(Primitives primitives, ParameterizedType type) {
+        return numericIsAssignableFrom(primitives, type) != NOT_ASSIGNABLE;
     }
 
     private static final IntBinaryOperator REDUCER = (a, b) -> a == NOT_ASSIGNABLE || b == NOT_ASSIGNABLE ? NOT_ASSIGNABLE : a + b;
@@ -482,15 +474,15 @@ public class ParameterizedType {
     private static final int IN_HIERARCHY = 100;
     private static final int UNBOUND_WILDCARD = 1000;
 
-    public int numericIsAssignableFrom(ParameterizedType type) {
-        return numericIsAssignableFrom(type, false);
+    public int numericIsAssignableFrom(Primitives primitives, ParameterizedType type) {
+        return numericIsAssignableFrom(primitives, type, false);
     }
 
-    private int numericIsAssignableFrom(ParameterizedType type, boolean ignoreArrays) {
+    private int numericIsAssignableFrom(Primitives primitives, ParameterizedType type, boolean ignoreArrays) {
         Objects.requireNonNull(type);
         if (type == this || equals(type)) return 0;
         if (type == ParameterizedType.NULL_CONSTANT) {
-            if (isPrimitive()) return NOT_ASSIGNABLE;
+            if (Primitives.isPrimitiveExcludingVoid(this)) return NOT_ASSIGNABLE;
             return 1;
         }
         if (typeInfo != null) {
@@ -500,28 +492,28 @@ public class ParameterizedType {
                 if (typeInfo.equals(type.typeInfo)) {
                     return SAME_UNDERLYING_TYPE;
                 }
-                if (type.isPrimitive()) {
+                if (Primitives.isPrimitiveExcludingVoid(type)) {
                     if (arrays == 0) {
-                        if (isPrimitive()) {
-                            return Primitives.PRIMITIVES.isAssignableFromTo(type, this);
+                        if (Primitives.isPrimitiveExcludingVoid(this)) {
+                            return primitives.isAssignableFromTo(type, this);
                         }
-                        return checkBoxing(type.typeInfo) ? BOXING_FROM_PRIMITIVE : NOT_ASSIGNABLE;
+                        return checkBoxing(primitives, type.typeInfo) ? BOXING_FROM_PRIMITIVE : NOT_ASSIGNABLE;
                     }
                     // TODO; for now: primitive array can only be assigned to its own type
                     return NOT_ASSIGNABLE;
                 }
-                if (isPrimitive()) {
+                if (Primitives.isPrimitiveExcludingVoid(this)) {
                     // the other one is not a primitive
-                    return arrays == 0 && type.checkBoxing(typeInfo) ? BOXING_TO_PRIMITIVE : NOT_ASSIGNABLE;
+                    return arrays == 0 && type.checkBoxing(primitives, typeInfo) ? BOXING_TO_PRIMITIVE : NOT_ASSIGNABLE;
                 }
 
                 for (ParameterizedType interfaceImplemented : type.typeInfo.typeInspection.getPotentiallyRun().interfacesImplemented) {
-                    int scoreInterface = numericIsAssignableFrom(interfaceImplemented, true);
+                    int scoreInterface = numericIsAssignableFrom(primitives, interfaceImplemented, true);
                     if (scoreInterface != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreInterface;
                 }
                 ParameterizedType parentClass = type.typeInfo.typeInspection.getPotentiallyRun().parentClass;
                 if (parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
-                    int scoreParent = numericIsAssignableFrom(parentClass, true);
+                    int scoreParent = numericIsAssignableFrom(primitives, parentClass, true);
                     if (scoreParent != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreParent;
                 }
             }
@@ -535,10 +527,10 @@ public class ParameterizedType {
                 List<ParameterizedType> typeBounds = typeParameter.typeParameterInspection.get().typeBounds;
                 if (!typeBounds.isEmpty()) {
                     if (wildCard == WildCard.EXTENDS) {
-                        return typeBounds.stream().mapToInt(this::numericIsAssignableFrom).reduce(IN_HIERARCHY, REDUCER);
+                        return typeBounds.stream().mapToInt(pt -> numericIsAssignableFrom(primitives, pt)).reduce(IN_HIERARCHY, REDUCER);
                     }
                     if (wildCard == WildCard.SUPER) {
-                        return typeBounds.stream().mapToInt(tb -> tb.numericIsAssignableFrom(this)).reduce(IN_HIERARCHY, REDUCER);
+                        return typeBounds.stream().mapToInt(tb -> tb.numericIsAssignableFrom(primitives, this)).reduce(IN_HIERARCHY, REDUCER);
                     }
                     throw new UnsupportedOperationException("?");
                 }
@@ -551,8 +543,8 @@ public class ParameterizedType {
         return wildCard == WildCard.UNBOUND ? UNBOUND_WILDCARD : NOT_ASSIGNABLE; // <?> anything goes
     }
 
-    private boolean checkBoxing(TypeInfo primitiveType) {
-        TypeInfo boxed = primitiveType.asParameterizedType().boxed();
+    private boolean checkBoxing(Primitives primitives, TypeInfo primitiveType) {
+        TypeInfo boxed = primitiveType.asParameterizedType().toBoxed(primitives);
         return boxed == typeInfo;
     }
 
@@ -638,31 +630,9 @@ public class ParameterizedType {
         return false;
     }
 
-    public Value defaultValue() {
-        if (isPrimitive()) {
-            if (typeInfo == Primitives.PRIMITIVES.booleanTypeInfo) return BoolValue.FALSE;
-            if (typeInfo == Primitives.PRIMITIVES.intTypeInfo) return IntValue.ZERO_VALUE;
-            if (typeInfo == Primitives.PRIMITIVES.longTypeInfo) return new LongValue(0L);
-            if (typeInfo == Primitives.PRIMITIVES.charTypeInfo) return new CharValue('\0');
-            throw new UnsupportedOperationException();
-        }
-        return NullValue.NULL_VALUE;
-    }
-
-    public boolean isBoolean() {
-        return typeInfo == Primitives.PRIMITIVES.boxedBooleanTypeInfo || Primitives.PRIMITIVES.booleanTypeInfo == typeInfo;
-    }
-
-    public boolean hasSize() {
+    public boolean hasSize(Primitives primitives) {
         TypeInfo bestType = bestTypeInfo();
-        return bestType != null && bestType.hasSize();
-    }
-
-    public boolean isDiscrete() {
-        return typeInfo == Primitives.PRIMITIVES.intTypeInfo || typeInfo == Primitives.PRIMITIVES.longTypeInfo ||
-                typeInfo == Primitives.PRIMITIVES.shortTypeInfo || typeInfo == Primitives.PRIMITIVES.byteTypeInfo ||
-                typeInfo == Primitives.PRIMITIVES.integerTypeInfo || typeInfo == Primitives.PRIMITIVES.boxedLongTypeInfo ||
-                typeInfo == Primitives.PRIMITIVES.boxedShortTypeInfo || typeInfo == Primitives.PRIMITIVES.boxedByteTypeInfo;
+        return bestType != null && bestType.hasSize(primitives);
     }
 
     /**
@@ -676,11 +646,12 @@ public class ParameterizedType {
         return this; // TODO implement!!
     }
 
-    public Boolean isImplicitlyOrAtLeastEventuallyE2Immutable(TypeAnalysis typeAnalysis) {
+    public Boolean isImplicitlyOrAtLeastEventuallyE2Immutable(AnalysisProvider analysisProvider) {
         if (arrays > 0) return false;
         if (isUnboundParameterType()) return true;
-        Boolean immu = isAtLeastEventuallyE2Immutable();
+        Boolean immu = isAtLeastEventuallyE2Immutable(analysisProvider);
         if (immu == Boolean.TRUE) return true;
+        TypeAnalysis typeAnalysis = analysisProvider.getTypeAnalysis(bestTypeInfo());
         if (typeAnalysis.getImplicitlyImmutableDataTypes() == null) {
             // not yet defined
             return null;
@@ -690,43 +661,29 @@ public class ParameterizedType {
         return immu;
     }
 
-    public Boolean isAtLeastEventuallyE2Immutable() {
+    public Boolean isAtLeastEventuallyE2Immutable(AnalysisProvider analysisProvider) {
         TypeInfo bestType = bestTypeInfo();
         if (bestType == null) return false;
-        int immutable = bestType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE);
+        int immutable = analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
         if (immutable == Level.DELAY) return null;
         return MultiLevel.isAtLeastEventuallyE2Immutable(immutable);
     }
 
-    public TypeInfo boxed() {
-        if (typeInfo == Primitives.PRIMITIVES.longTypeInfo)
-            return Primitives.PRIMITIVES.boxedLongTypeInfo;
-        if (typeInfo == Primitives.PRIMITIVES.intTypeInfo)
-            return Primitives.PRIMITIVES.integerTypeInfo;
-        if (typeInfo == Primitives.PRIMITIVES.shortTypeInfo)
-            return Primitives.PRIMITIVES.boxedShortTypeInfo;
-        if (typeInfo == Primitives.PRIMITIVES.byteTypeInfo)
-            return Primitives.PRIMITIVES.boxedByteTypeInfo;
-        if (typeInfo == Primitives.PRIMITIVES.charTypeInfo)
-            return Primitives.PRIMITIVES.characterTypeInfo;
-        if (typeInfo == Primitives.PRIMITIVES.booleanTypeInfo)
-            return Primitives.PRIMITIVES.boxedBooleanTypeInfo;
-        if (typeInfo == Primitives.PRIMITIVES.floatTypeInfo)
-            return Primitives.PRIMITIVES.boxedFloatTypeInfo;
-        if (typeInfo == Primitives.PRIMITIVES.doubleTypeInfo)
-            return Primitives.PRIMITIVES.boxedDoubleTypeInfo;
-        throw new UnsupportedOperationException();
+    public TypeInfo toBoxed(Primitives primitives) {
+        return primitives.boxed(typeInfo);
     }
 
 
     // I am the bigger type, the argument is the component
     // TODO this needs much more work
-    public boolean containsComponent(ParameterizedType component) {
+    public boolean containsComponent(Primitives primitives, ParameterizedType component) {
 
         // String[], String
-        if (arrays > component.arrays && numericIsAssignableFrom(component, true) != NOT_ASSIGNABLE) return true;
+        if (arrays > component.arrays && numericIsAssignableFrom(primitives, component, true) != NOT_ASSIGNABLE)
+            return true;
         // Set<X>, X; this is a bit of a hack, but one that's clear to understand
-        ParameterizedType boxedComponent = component.isPrimitive() ? component.boxed().asParameterizedType() : component;
+        ParameterizedType boxedComponent = Primitives.isPrimitiveExcludingVoid(component) ?
+                component.toBoxed(primitives).asParameterizedType() : component;
         if (parameters.contains(boxedComponent)) return true;
 
         TypeInfo bestType = bestTypeInfo();
@@ -739,11 +696,11 @@ public class ParameterizedType {
         return false;
     }
 
-    public ParameterizedType mostSpecific(ParameterizedType other) {
-        if (this == Primitives.PRIMITIVES.voidParameterizedType || other == Primitives.PRIMITIVES.voidParameterizedType) {
-            return Primitives.PRIMITIVES.voidParameterizedType;
+    public ParameterizedType mostSpecific(Primitives primitives, ParameterizedType other) {
+        if (isType() && Primitives.isVoid(typeInfo) || other.isType() && Primitives.isVoid(other.typeInfo)) {
+            return primitives.voidParameterizedType;
         }
-        if (isAssignableFrom(other)) {
+        if (isAssignableFrom(primitives, other)) {
             return other;
         }
         return this;
@@ -752,7 +709,8 @@ public class ParameterizedType {
     public UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
         return UpgradableBooleanMap.of(
                 parameters.stream().flatMap(pt -> pt.typesReferenced(explicit).stream()).collect(UpgradableBooleanMap.collector()),
-                isType() && !typeInfo.isPrimitive() ? UpgradableBooleanMap.of(typeInfo, explicit) : UpgradableBooleanMap.of());
+                isType() && !Primitives.isPrimitiveExcludingVoid(typeInfo) ?
+                        UpgradableBooleanMap.of(typeInfo, explicit) : UpgradableBooleanMap.of());
     }
 
 }

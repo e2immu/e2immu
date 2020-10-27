@@ -29,15 +29,18 @@ import java.util.Objects;
 
 @E2Container
 public class StringConstant implements ConstantExpression<String> {
+    private final ParameterizedType stringParameterizedType;
+
     @Override
     public ParameterizedType returnType() {
-        return Primitives.PRIMITIVES.stringParameterizedType;
+        return stringParameterizedType;
     }
 
     @NotNull
     public final String constant;
 
-    public StringConstant(@NotNull String constant) {
+    public StringConstant(Primitives primitives, @NotNull String constant) {
+        stringParameterizedType = primitives.stringParameterizedType;
         this.constant = Objects.requireNonNull(constant);
     }
 

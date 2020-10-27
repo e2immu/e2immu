@@ -19,7 +19,6 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.util.StringUtil;
 
 public class WhileStatement extends LoopStatement {
@@ -28,7 +27,7 @@ public class WhileStatement extends LoopStatement {
                           Expression expression,
                           Block block) {
         super(new Structure.Builder()
-                .setStatementsExecutedAtLeastOnce((v, ec) -> v == BoolValue.TRUE)
+                .setStatementsExecutedAtLeastOnce((v, ec) -> v.equals(ec.boolValueTrue()))
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setExpression(expression)
                 .setBlock(block).build(), label);

@@ -20,7 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
@@ -31,6 +31,7 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;
@@ -271,6 +272,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         Set<ParameterizedType> explicitTypes = typeInspection.explicitTypes();
         log(E2IMMUTABLE, "Explicit types: {}", explicitTypes);
 
+        Primitives primitives = analyserContext.getPrimitives();
         typesOfFields.removeIf(type -> {
             if (type.arrays > 0) return true;
             if (type.isUnboundParameterType()) return false;
@@ -278,8 +280,8 @@ public class TypeAnalyser extends AbstractAnalyser {
             TypeInfo bestType = type.bestTypeInfo();
             if (bestType == null) return false;
             boolean self = type.typeInfo == typeInfo;
-            if (self || typeInfo.isPrimitiveOrBoxed()) return true;
-            return explicitTypes.contains(type) || explicitTypes.stream().anyMatch(type::isAssignableFrom);
+            if (self || Primitives.isPrimitiveExcludingVoid(typeInfo) || Primitives.isBoxedExcludingVoid(typeInfo)) return true;
+            return explicitTypes.contains(type) || explicitTypes.stream().anyMatch(t -> type.isAssignableFrom(primitives, t));
         });
 
         // e2immu is more work, we need to check delays

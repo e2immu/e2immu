@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.ValueComparator;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.Nullable;
 
@@ -101,7 +102,7 @@ public interface Value extends Comparable<Value> {
 
     default boolean isDiscreteType() {
         ParameterizedType type = type();
-        return type != null && type.isDiscrete();
+        return type != null && Primitives.isDiscrete(type);
     }
 
     // only called from EvaluationContext.getProperty().
@@ -150,11 +151,11 @@ public interface Value extends Comparable<Value> {
         return new FilterResult(Map.of(), this);
     }
 
-    default FilterResult isIndividualSizeRestrictionOnParameter() {
+    default FilterResult isIndividualSizeRestrictionOnParameter(EvaluationContext evaluationContext) {
         return new FilterResult(Map.of(), this);
     }
 
-    default FilterResult isIndividualSizeRestriction() {
+    default FilterResult isIndividualSizeRestriction(EvaluationContext evaluationContext) {
         return new FilterResult(Map.of(), this);
     }
 
@@ -184,7 +185,7 @@ public interface Value extends Comparable<Value> {
      * @param filterMethods if multiple accepted, the map contains the first result. (It should contain an AND, but see null clause)
      * @return a FilterResult object, always, if only NO_RESULT
      */
-    default FilterResult filter(FilterMode filterMode, FilterMethod... filterMethods) {
+    default FilterResult filter(EvaluationContext evaluationContext, FilterMode filterMode, FilterMethod... filterMethods) {
         return filterMethods[0].apply(this);
     }
 

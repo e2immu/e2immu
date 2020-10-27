@@ -455,7 +455,7 @@ public class ParseMethodCallExpr {
             MethodTypeParameterMap sam2 = returnType.findSingleAbstractMethodOfInterface();
             return sam1.isAssignableFrom(sam2) ? 0 : NOT_ASSIGNABLE;
         }
-        return typeOfParameter.numericIsAssignableFrom(returnType);
+        return typeOfParameter.numericIsAssignableFrom(expressionContext.typeContext.getPrimitives(), returnType);
     }
 
     /*

@@ -33,23 +33,26 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
         return WRAPPER_ORDER_CONSTRAINED_NUMERIC_VALUE;
     }
 
-    public static ConstrainedNumericValue lowerBound(Value value, double lowerBound) {
+    public static ConstrainedNumericValue lowerBound(EvaluationContext evaluationContext, Value value, double lowerBound) {
+        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
         if (value instanceof ConstrainedNumericValue cnv) {
             if (cnv.lowerBound >= lowerBound) return cnv; // nothing to do!
-            return new ConstrainedNumericValue(cnv.value, lowerBound, cnv.upperBound);
+            return new ConstrainedNumericValue(primitives, cnv.value, lowerBound, cnv.upperBound);
         }
-        return new ConstrainedNumericValue(value, lowerBound, MAX);
+        return new ConstrainedNumericValue(primitives, value, lowerBound, MAX);
     }
 
-    public static ConstrainedNumericValue upperBound(Value value, double upperBound) {
+    public static ConstrainedNumericValue upperBound(EvaluationContext evaluationContext, Value value, double upperBound) {
+        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+
         if (value instanceof ConstrainedNumericValue cnv) {
             if (cnv.upperBound <= upperBound) return cnv; // nothing to do!
-            return new ConstrainedNumericValue(cnv.value, cnv.lowerBound, upperBound);
+            return new ConstrainedNumericValue(primitives, cnv.value, cnv.lowerBound, upperBound);
         }
-        return new ConstrainedNumericValue(value, MIN, upperBound);
+        return new ConstrainedNumericValue(primitives, value, MIN, upperBound);
     }
 
-    public ConstrainedNumericValue(Value value, double lowerBound, double upperBound) {
+    public ConstrainedNumericValue(Primitives primitives, Value value, double lowerBound, double upperBound) {
         super(value.getObjectFlow());
         if (value instanceof ConstrainedNumericValue) throw new UnsupportedOperationException();
 
@@ -58,7 +61,7 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
         assert upperBound >= lowerBound;
         this.value = value;
         ParameterizedType type = value.type();
-        this.integer = type.typeInfo != Primitives.PRIMITIVES.floatTypeInfo && type.typeInfo != Primitives.PRIMITIVES.doubleTypeInfo;
+        this.integer = type.typeInfo != primitives.floatTypeInfo && type.typeInfo != primitives.doubleTypeInfo;
     }
 
     @Override
@@ -68,19 +71,20 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
         return new EvaluationResult.Builder().compose(re).setValue(ConstrainedNumericValue.create(re.value, lowerBound, upperBound)).build();
     }
 
-    private static Value create(Value value, double lowerBound, double upperBound) {
+    private static Value create(EvaluationContext evaluationContext, Value value, double lowerBound, double upperBound) {
         if (upperBound == MAX) {
-            return lowerBound(value, lowerBound);
+            return lowerBound(evaluationContext, value, lowerBound);
         }
         if (lowerBound == MIN) {
-            return upperBound(value, upperBound);
+            return upperBound(evaluationContext, value, upperBound);
         }
+        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
         if (value instanceof ConstrainedNumericValue cnv) {
             // save ourselves a new object....
             if (cnv.lowerBound >= lowerBound && cnv.upperBound <= upperBound) return value;
-            return new ConstrainedNumericValue(value, Math.max(lowerBound, cnv.lowerBound), Math.min(upperBound, cnv.upperBound));
+            return new ConstrainedNumericValue(primitives,value, Math.max(lowerBound, cnv.lowerBound), Math.min(upperBound, cnv.upperBound));
         }
-        return new ConstrainedNumericValue(value, lowerBound, upperBound);
+        return new ConstrainedNumericValue(primitives, value, lowerBound, upperBound);
     }
 
     @Override
@@ -171,7 +175,7 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
     0 == v,?>=0 is not something that can be resolved. But the boolean complement can be simplified to 0 < v,?>=0
      */
 
-    public Value notEquals(NumericValue numericValue) {
+    public Value notEquals(EvaluationContext evaluationContext, NumericValue numericValue) {
         double x = numericValue.getNumber().doubleValue();
 
         if (lowerBound == upperBound) {
@@ -179,11 +183,11 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
         }
         if (equals(x, lowerBound)) {
             // not(x == v,?>=x) transforms to v,?>=x > x
-            return GreaterThanZeroValue.greater(this, numericValue, false, getObjectFlow());
+            return GreaterThanZeroValue.greater(evaluationContext, this, numericValue, false, getObjectFlow());
         }
         if (equals(x, upperBound)) {
             // not(x == v,?<=x) transforms to v,?<=x < x
-            return GreaterThanZeroValue.less(this, numericValue, false, getObjectFlow());
+            return GreaterThanZeroValue.less(evaluationContext, this, numericValue, false, getObjectFlow());
         }
         return null;
     }

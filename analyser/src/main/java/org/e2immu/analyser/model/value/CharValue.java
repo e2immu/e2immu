@@ -28,14 +28,12 @@ import java.util.Objects;
 
 public class CharValue extends ConstantValue implements Constant<Character> {
     public final char value;
+    private final ParameterizedType charParameterizedType;
 
-    public CharValue(char value) {
-        this(value, ObjectFlow.NO_FLOW);
-    }
-
-    public CharValue(char value, ObjectFlow objectFlow) {
+    public CharValue(Primitives primitives, char value, ObjectFlow objectFlow) {
         super(objectFlow);
         this.value = value;
+        this.charParameterizedType = primitives.charParameterizedType;
     }
 
     @Override
@@ -73,6 +71,6 @@ public class CharValue extends ConstantValue implements Constant<Character> {
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.charParameterizedType;
+        return charParameterizedType;
     }
 }

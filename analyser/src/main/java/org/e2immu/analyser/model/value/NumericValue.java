@@ -22,16 +22,17 @@ import com.google.common.math.DoubleMath;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 
 public interface NumericValue extends Value {
 
-    static Value intOrDouble(double b, ObjectFlow objectFlow) {
+    static Value intOrDouble(Primitives primitives, double b, ObjectFlow objectFlow) {
         if (DoubleMath.isMathematicalInteger(b)) {
             long l = Math.round(b);
-            if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) return new LongValue(l, objectFlow);
-            return new IntValue((int) l, objectFlow);
+            if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) return new LongValue(primitives, l, objectFlow);
+            return new IntValue(primitives, (int) l, objectFlow);
         }
-        return new DoubleValue(b, objectFlow);
+        return new DoubleValue(primitives, b, objectFlow);
     }
 
     NumericValue negate();

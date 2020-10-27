@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Set;
 
@@ -72,7 +73,7 @@ public interface FieldAnalysis extends Analysis {
                 return bestType == null ? Level.TRUE : analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.CONTAINER);
 
             case NOT_NULL:
-                if (fieldInfo.type.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
+                if (Primitives.isPrimitiveExcludingVoid(fieldInfo.type)) return MultiLevel.EFFECTIVELY_NOT_NULL;
 
             default:
         }

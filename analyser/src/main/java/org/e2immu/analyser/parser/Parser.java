@@ -20,7 +20,6 @@ package org.e2immu.analyser.parser;
 
 import org.apache.commons.io.IOUtils;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
-import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.annotationxml.AnnotationXmlWriter;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
@@ -122,7 +121,7 @@ public class Parser {
         }
 
         for (SortedType sortedType : sortedPrimaryTypes) {
-            PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(sortedType, configuration, e2ImmuAnnotationExpressions);
+            PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(sortedType, configuration, globalTypeContext, e2ImmuAnnotationExpressions);
             try {
                 primaryTypeAnalyser.analyse();
             } catch (RuntimeException rte) {

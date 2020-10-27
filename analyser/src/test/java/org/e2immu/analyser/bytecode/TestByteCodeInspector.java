@@ -53,7 +53,7 @@ public class TestByteCodeInspector {
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
         TypeContext typeContext = new TypeContext();
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, typeContext,
-                new E2ImmuAnnotationExpressions(typeContext.typeStore));
+                new E2ImmuAnnotationExpressions(typeContext));
         List<TypeInfo> types = byteCodeInspector.inspectFromPath(path);
         return types.get(0);
     }
@@ -66,7 +66,7 @@ public class TestByteCodeInspector {
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
         TypeContext typeContext = new TypeContext();
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, typeContext,
-                new E2ImmuAnnotationExpressions(typeContext.typeStore));
+                new E2ImmuAnnotationExpressions(typeContext));
         List<TypeInfo> types = byteCodeInspector.inspectFromPath(path);
         if (types.isEmpty()) throw new UnsupportedOperationException("Cannot find path " + path);
         return types.get(0);

@@ -31,11 +31,14 @@ import java.util.Set;
 public class InstanceOfValue extends PrimitiveValue {
     public final ParameterizedType parameterizedType;
     public final Variable variable;
+    private final ParameterizedType booleanParameterizedType;
 
-    public InstanceOfValue(Variable variable, ParameterizedType parameterizedType, ObjectFlow objectFlow) {
+    public InstanceOfValue(Primitives primitives,
+                           Variable variable, ParameterizedType parameterizedType, ObjectFlow objectFlow) {
         super(objectFlow);
         this.parameterizedType = parameterizedType;
         this.variable = variable;
+        booleanParameterizedType = primitives.booleanParameterizedType;
     }
 
     @Override
@@ -77,7 +80,7 @@ public class InstanceOfValue extends PrimitiveValue {
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.booleanParameterizedType;
+        return booleanParameterizedType;
     }
 
     @Override

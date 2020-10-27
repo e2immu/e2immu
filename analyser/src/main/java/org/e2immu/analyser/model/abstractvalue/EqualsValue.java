@@ -35,17 +35,15 @@ import java.util.function.Consumer;
 public class EqualsValue extends PrimitiveValue {
     public final Value lhs;
     public final Value rhs;
+    private final Primitives primitives;
 
-    // testing only
-    public EqualsValue(Value lhs, Value rhs) {
-        this(lhs, rhs, ObjectFlow.NO_FLOW);
-    }
-
-    public EqualsValue(Value lhs, Value rhs, ObjectFlow objectFlow) {
+    // public for testing
+    public EqualsValue(Primitives primitives, Value lhs, Value rhs, ObjectFlow objectFlow) {
         super(objectFlow);
         boolean swap = lhs.compareTo(rhs) > 0;
         this.lhs = swap ? rhs : lhs;
         this.rhs = swap ? lhs : rhs;
+        this.primitives = primitives;
     }
 
     @Override
@@ -53,20 +51,21 @@ public class EqualsValue extends PrimitiveValue {
         EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
         EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setValue(EqualsValue.equals(reLhs.value, reRhs.value, objectFlow, evaluationContext)).build();
+        return builder.setValue(EqualsValue.equals(evaluationContext, reLhs.value, reRhs.value, objectFlow)).build();
     }
 
-    public static Value equals(Value l, Value r, ObjectFlow objectFlow, EvaluationContext evaluationContext) {
-        if (l.equals(r)) return BoolValue.TRUE;
-
-        if (l instanceof NullValue && evaluationContext.isNotNull0(r)) return BoolValue.FALSE;
-        if (r instanceof NullValue && evaluationContext.isNotNull0(l)) return BoolValue.FALSE;
-
+    public static Value equals(EvaluationContext evaluationContext, Value l, Value r, ObjectFlow objectFlow) {
+        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        if (l.equals(r)) return new BoolValue(primitives, true, objectFlow);
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
-        if (l instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) l).rejects(r)) return BoolValue.FALSE;
-        if (r instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) r).rejects(l)) return BoolValue.FALSE;
 
-        return new EqualsValue(l, r, objectFlow);
+        if (l instanceof NullValue && evaluationContext.isNotNull0(r) ||
+                r instanceof NullValue && evaluationContext.isNotNull0(l) ||
+                l instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) l).rejects(r) ||
+                r instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) r).rejects(l))
+            return new BoolValue(primitives, false, objectFlow);
+
+        return new EqualsValue(primitives, l, r, objectFlow);
     }
 
     @Override
@@ -105,7 +104,7 @@ public class EqualsValue extends PrimitiveValue {
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.booleanParameterizedType;
+        return primitives.booleanParameterizedType;
     }
 
 
@@ -119,7 +118,7 @@ public class EqualsValue extends PrimitiveValue {
         // methods for size should be wrapped with a ConstrainedNumericValue
         if (lhs instanceof NumericValue && rhs instanceof ConstrainedNumericValue &&
                 ((ConstrainedNumericValue) rhs).value instanceof MethodValue methodValue) {
-            if (methodValue.methodInfo.typeInfo.hasSize()) {
+            if (methodValue.methodInfo.typeInfo.hasSize(primitives)) {
                 int sizeOnMethod = methodValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
                 if (sizeOnMethod >= Level.TRUE && methodValue.object instanceof VariableValue variableValue) {
                     if (!parametersOnly || variableValue.variable instanceof ParameterInfo) {
@@ -132,12 +131,12 @@ public class EqualsValue extends PrimitiveValue {
     }
 
     @Override
-    public FilterResult isIndividualSizeRestrictionOnParameter() {
+    public FilterResult isIndividualSizeRestrictionOnParameter(EvaluationContext evaluationContext) {
         return isIndividualSizeRestriction(true);
     }
 
     @Override
-    public FilterResult isIndividualSizeRestriction() {
+    public FilterResult isIndividualSizeRestriction(EvaluationContext evaluationContext) {
         return isIndividualSizeRestriction(false);
     }
 
@@ -172,7 +171,7 @@ public class EqualsValue extends PrimitiveValue {
     }
 
     @Override
-    public FilterResult filter(FilterMode filterMode, FilterMethod... filterMethods) {
+    public FilterResult filter(EvaluationContext evaluationContext, FilterMode filterMode, FilterMethod... filterMethods) {
         for (FilterMethod filterMethod : filterMethods) {
             FilterResult filterResult = filterMethod.apply(this);
             if (!filterResult.accepted.isEmpty()) return filterResult;

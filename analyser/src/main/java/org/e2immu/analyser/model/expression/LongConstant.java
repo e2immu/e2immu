@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.LongValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -29,17 +30,20 @@ import java.util.Objects;
 
 @E2Container
 public class LongConstant implements ConstantExpression<Long> {
+    private final Primitives primitives;
+
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return Primitives.PRIMITIVES.longParameterizedType;
+        return primitives.longParameterizedType;
     }
 
     @NotNull
     public final long constant;
 
-    public LongConstant(long constant) {
+    public LongConstant(Primitives primitives, long constant) {
         this.constant = constant;
+        this.primitives = primitives;
     }
 
     @Override
@@ -68,7 +72,7 @@ public class LongConstant implements ConstantExpression<Long> {
 
     @Override
     public Value newValue() {
-        return new LongValue(constant);
+        return new LongValue(primitives, constant, ObjectFlow.NO_FLOW);
     }
 
     @Override

@@ -28,7 +28,9 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Pair;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class EvaluateParameters {
 
@@ -62,7 +64,8 @@ public class EvaluateParameters {
                     parameterInfo = params.get(i);
                 }
                 // NOT_NULL, NOT_MODIFIED, SIZE
-                Map<VariableProperty, Integer> map = evaluationContext.getParameterAnalysis(parameterInfo).getProperties(VariableProperty.FORWARD_PROPERTIES_ON_PARAMETERS);
+                Map<VariableProperty, Integer> map = evaluationContext.getParameterAnalysis(parameterInfo)
+                        .getProperties(VariableProperty.FORWARD_PROPERTIES_ON_PARAMETERS);
 
                 if (notModified1Scope == Level.TRUE) {
                     map.put(VariableProperty.MODIFIED, Level.FALSE);
@@ -74,7 +77,8 @@ public class EvaluateParameters {
                 if (notModified1Scope != Level.TRUE && methodInfo.isSingleAbstractMethod()) {
                     // we compute on the parameter expression, not the value (chicken and egg)
                     TypeAnalysis typeAnalysis = evaluationContext.getTypeAnalysis(methodInfo.typeInfo);
-                    Boolean cannotBeModified = parameterExpression.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(typeAnalysis);
+                    Boolean cannotBeModified = parameterExpression.returnType()
+                            .isImplicitlyOrAtLeastEventuallyE2Immutable(evaluationContext.getAnalyserContext());
                     if (cannotBeModified == null) {
                         map.put(VariableProperty.METHOD_DELAY, Level.TRUE); // DELAY
                     } else if (cannotBeModified) {
@@ -165,7 +169,8 @@ public class EvaluateParameters {
 
                 // all the rest: preconditions
                 // TODO: also weed out conditions that are not on parameters, and not on `this`
-                Value rest = reEvaluated.filter(Value.FilterMode.ACCEPT, Value::isIndividualNotNullClauseOnParameter, Value::isIndividualSizeRestrictionOnParameter).rest;
+                Value rest = reEvaluated.filter(evaluationContext,
+                        Value.FilterMode.ACCEPT, Value::isIndividualNotNullClauseOnParameter, Value::isIndividualSizeRestrictionOnParameter).rest;
                 if (rest != null) {
                     builder.addPrecondition(rest);
                 }

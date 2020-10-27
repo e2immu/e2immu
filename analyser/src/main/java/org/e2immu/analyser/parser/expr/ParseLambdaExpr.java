@@ -27,10 +27,13 @@ import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.ExpressionContext;
-import org.e2immu.analyser.parser.Resolver;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.VariableContext;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
 import static org.e2immu.analyser.util.Logger.log;
@@ -69,7 +72,7 @@ public class ParseLambdaExpr {
             types.add(parameterType);
             ParameterInfo parameterInfo = new ParameterInfo(owner, parameterType, parameter.getName().asString(), cnt++);
             parameterInfo.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
-            parameterInfo.setAnalysis(new ParameterAnalysisImpl.Builder(parameterInfo, null).build());
+            parameterInfo.setAnalysis(new ParameterAnalysisImpl.Builder(analyserContext, parameterInfo).build());
             parameters.add(parameterInfo);
             newVariableContext.add(parameterInfo);
         }
@@ -93,10 +96,11 @@ public class ParseLambdaExpr {
             block = new Block.BlockBuilder().addStatement(new ReturnStatement(expr)).build();
         } else {
             block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());
-            inferredReturnType = block.mostSpecificReturnType();
+            inferredReturnType = block.mostSpecificReturnType(expressionContext.typeContext.getPrimitives());
         }
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, inferredReturnType);
-        TypeInfo anonymousType = continueCreationOfAnonymousType(expressionContext.enclosingType, functionalType, owner, parameters, block, inferredReturnType);
+        TypeInfo anonymousType = continueCreationOfAnonymousType(expressionContext.typeContext.getPrimitives(),
+                expressionContext.enclosingType, functionalType, owner, parameters, block, inferredReturnType);
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}", functionalType, anonymousType.fullyQualifiedName);
 
         expressionContext.addNewlyCreatedType(anonymousType);
@@ -115,14 +119,16 @@ public class ParseLambdaExpr {
         return new MethodInfo(typeInfo, name, false);
     }
 
-    private static TypeInfo continueCreationOfAnonymousType(TypeInfo enclosingType,
+    private static TypeInfo continueCreationOfAnonymousType(Primitives primitives,
+                                                            TypeInfo enclosingType,
                                                             ParameterizedType functionalInterfaceType,
                                                             MethodInfo methodInfo,
                                                             List<ParameterInfo> parameters,
                                                             Block block,
                                                             ParameterizedType returnType) {
         MethodInspection.MethodInspectionBuilder methodInspectionBuilder = new MethodInspection.MethodInspectionBuilder();
-        ParameterizedType bestReturnType = returnType.mostSpecific(functionalInterfaceType.findSingleAbstractMethodOfInterface().methodInfo.returnType());
+        ParameterizedType bestReturnType = returnType.mostSpecific(primitives,
+                functionalInterfaceType.findSingleAbstractMethodOfInterface().methodInfo.returnType());
         methodInspectionBuilder.setReturnType(Objects.requireNonNull(bestReturnType));
         methodInspectionBuilder.addParameters(parameters);
         methodInspectionBuilder.setBlock(block);

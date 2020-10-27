@@ -33,45 +33,48 @@ import java.util.function.Consumer;
 public class ProductValue extends PrimitiveValue {
     public final Value lhs;
     public final Value rhs;
+    private final Primitives primitives;
 
-    public ProductValue(Value lhs, Value rhs, ObjectFlow objectFlow) {
+    public ProductValue(Primitives primitives, Value lhs, Value rhs, ObjectFlow objectFlow) {
         super(objectFlow);
         this.lhs = lhs;
         this.rhs = rhs;
+        this.primitives = primitives;
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
         EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
         EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setValue(ProductValue.product(reLhs.value, reRhs.value, getObjectFlow())).build();
-    }
-
-    public static Value product(Value l, Value r) {
-        return product(l, r, ObjectFlow.NO_FLOW);
+        return builder.setValue(ProductValue.product(evaluationContext, reLhs.value, reRhs.value, getObjectFlow())).build();
     }
 
     // we try to maintain a sum of products
-    public static Value product(Value l, Value r, ObjectFlow objectFlow) {
+    public static Value product(EvaluationContext evaluationContext, Value l, Value r, ObjectFlow objectFlow) {
+        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
 
-        if (l instanceof NumericValue && l.toInt().value == 0) return IntValue.ZERO_VALUE;
-        if (r instanceof NumericValue && r.toInt().value == 0) return IntValue.ZERO_VALUE;
+        if (l instanceof NumericValue && l.toInt().value == 0 ||
+                r instanceof NumericValue && r.toInt().value == 0) {
+            return new IntValue(primitives, 0, ObjectFlow.NO_FLOW);
+        }
 
         if (l instanceof NumericValue && l.toInt().value == 1) return r;
         if (r instanceof NumericValue && r.toInt().value == 1) return l;
         if (l instanceof NumericValue && r instanceof NumericValue)
-            return new IntValue(l.toInt().value * r.toInt().value);
+            return new IntValue(primitives, l.toInt().value * r.toInt().value, ObjectFlow.NO_FLOW);
 
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
         if (r instanceof SumValue sum) {
-            return SumValue.sum(product(l, sum.lhs, objectFlow), product(l, sum.rhs, objectFlow), objectFlow);
+            return SumValue.sum(evaluationContext, product(evaluationContext, l, sum.lhs, objectFlow), product(evaluationContext, l, sum.rhs, objectFlow), objectFlow);
         }
         if (l instanceof SumValue sum) {
-            return SumValue.sum(product(sum.lhs, r, objectFlow), product(sum.rhs, r, objectFlow), objectFlow);
+            return SumValue.sum(evaluationContext,
+                    product(evaluationContext, sum.lhs, r, objectFlow),
+                    product(evaluationContext, sum.rhs, r, objectFlow), objectFlow);
         }
-        return l.compareTo(r) < 0 ? new ProductValue(l, r, objectFlow) : new ProductValue(r, l, objectFlow);
+        return l.compareTo(r) < 0 ? new ProductValue(primitives, l, r, objectFlow) : new ProductValue(primitives, r, l, objectFlow);
     }
 
     @Override
@@ -115,7 +118,7 @@ public class ProductValue extends PrimitiveValue {
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.widestType(lhs.type(), rhs.type());
+        return primitives.widestType(lhs.type(), rhs.type());
     }
 
     @Override

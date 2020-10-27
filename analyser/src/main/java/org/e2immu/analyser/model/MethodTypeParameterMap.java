@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableMap;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashMap;
@@ -140,7 +141,7 @@ public class MethodTypeParameterMap {
             i++;
         }
         // TODO
-        return mi.returnType.isVoid() == miOther.returnType.isVoid();
+        return Primitives.isVoid(mi.returnType) == Primitives.isVoid(miOther.returnType);
     }
 
     public MethodInfo buildCopy(TypeInfo typeInfo) {

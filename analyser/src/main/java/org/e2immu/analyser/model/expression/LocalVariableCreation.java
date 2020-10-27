@@ -32,11 +32,15 @@ public class LocalVariableCreation implements Expression {
     public final LocalVariable localVariable;
     public final LocalVariableReference localVariableReference;
     public final Expression expression;
+    private final Primitives primitives;
 
-    public LocalVariableCreation(@NotNull LocalVariable localVariable,
-                                 @NotNull Expression expression) {
+    public LocalVariableCreation(
+            @NotNull Primitives primitives,
+            @NotNull LocalVariable localVariable,
+            @NotNull Expression expression) {
         this.localVariable = Objects.requireNonNull(localVariable);
         this.expression = Objects.requireNonNull(expression);
+        this.primitives = primitives;
         localVariableReference = new LocalVariableReference(localVariable,
                 expression == EmptyExpression.EMPTY_EXPRESSION ? List.of() : List.of(expression));
     }
@@ -57,13 +61,13 @@ public class LocalVariableCreation implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new LocalVariableCreation(translationMap.translateLocalVariable(localVariable),
+        return new LocalVariableCreation(primitives, translationMap.translateLocalVariable(localVariable),
                 translationMap.translateExpression(expression));
     }
 
     @Override
     public ParameterizedType returnType() {
-        return Primitives.PRIMITIVES.voidParameterizedType;
+        return primitives.voidParameterizedType;
     }
 
     @Override

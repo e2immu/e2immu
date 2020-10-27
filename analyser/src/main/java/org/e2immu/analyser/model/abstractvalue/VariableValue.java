@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
 import java.util.Set;
@@ -104,7 +105,7 @@ public class VariableValue implements Value {
     @Override
     public boolean isNumeric() {
         TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
-        return typeInfo.isNumericPrimitive() || typeInfo.isNumericPrimitiveBoxed();
+        return Primitives.isNumeric(typeInfo);
     }
 
     @Override

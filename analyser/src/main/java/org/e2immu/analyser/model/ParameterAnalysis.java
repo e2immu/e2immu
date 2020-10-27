@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.stream.IntStream;
 
@@ -78,7 +79,7 @@ public interface ParameterAnalysis extends Analysis {
         switch (variableProperty) {
             case MODIFIED: {
                 // if the parameter is level 2 immutable, it cannot be modified
-                Boolean e2immu = parameterInfo.parameterizedType.isAtLeastEventuallyE2Immutable();
+                Boolean e2immu = parameterInfo.parameterizedType.isAtLeastEventuallyE2Immutable(analysisProvider);
                 if (e2immu == Boolean.TRUE) return Level.FALSE;
                 if (parameterInfo.parameterizedType.isFunctionalInterface()) {
                     return Level.FALSE; // by definition, see manual
@@ -120,7 +121,8 @@ public interface ParameterAnalysis extends Analysis {
 
             case NOT_NULL: {
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-                if (bestType != null && bestType.isPrimitive()) return MultiLevel.EFFECTIVELY_NOT_NULL;
+                if (bestType != null && Primitives.isPrimitiveExcludingVoid(bestType))
+                    return MultiLevel.EFFECTIVELY_NOT_NULL;
                 return getParameterPropertyCheckOverrides(AnalysisProvider.DEFAULT_PROVIDER, parameterInfo, variableProperty);
             }
 

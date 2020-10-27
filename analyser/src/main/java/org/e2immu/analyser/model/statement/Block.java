@@ -28,7 +28,8 @@ import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -121,20 +122,19 @@ public class Block extends StatementWithStructure {
         return sb.toString();
     }
 
-    public ParameterizedType mostSpecificReturnType() {
+    public ParameterizedType mostSpecificReturnType(Primitives primitives) {
         AtomicReference<ParameterizedType> mostSpecific = new AtomicReference<>();
         visit(statement -> {
-            if (statement instanceof ReturnStatement) {
-                ReturnStatement returnStatement = (ReturnStatement) statement;
+            if (statement instanceof ReturnStatement returnStatement) {
                 if (returnStatement.expression == EmptyExpression.EMPTY_EXPRESSION) {
-                    mostSpecific.set(Primitives.PRIMITIVES.voidParameterizedType);
+                    mostSpecific.set(primitives.voidParameterizedType);
                 } else {
                     ParameterizedType returnType = returnStatement.expression.returnType();
-                    mostSpecific.set(mostSpecific.get() == null ? returnType : mostSpecific.get().mostSpecific(returnType));
+                    mostSpecific.set(mostSpecific.get() == null ? returnType : mostSpecific.get().mostSpecific(primitives, returnType));
                 }
             }
         });
-        return mostSpecific.get() == null ? Primitives.PRIMITIVES.voidParameterizedType : mostSpecific.get();
+        return mostSpecific.get() == null ? primitives.voidParameterizedType : mostSpecific.get();
     }
 
     @Override

@@ -33,11 +33,13 @@ import java.util.function.Consumer;
 public class RemainderValue extends PrimitiveValue {
     public final Value lhs;
     public final Value rhs;
+    private final Primitives primitives;
 
-    public RemainderValue(Value lhs, Value rhs, ObjectFlow objectFlow) {
+    public RemainderValue(Primitives primitives, Value lhs, Value rhs, ObjectFlow objectFlow) {
         super(objectFlow);
         this.lhs = lhs;
         this.rhs = rhs;
+        this.primitives = primitives;
     }
 
     public static EvaluationResult remainder(EvaluationContext evaluationContext, Value l, Value r, ObjectFlow objectFlow) {
@@ -48,13 +50,14 @@ public class RemainderValue extends PrimitiveValue {
             return builder.setValue(l).build();
         }
         if (r instanceof NumericValue && r.toInt().value == 1) return builder.setValue(l).build();
+        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
         if (l instanceof IntValue && r instanceof IntValue)
-            return builder.setValue(new IntValue(l.toInt().value % r.toInt().value, objectFlow)).build();
+            return builder.setValue(new IntValue(primitives, l.toInt().value % r.toInt().value, objectFlow)).build();
 
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) return builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE).build();
 
-        return builder.setValue(new RemainderValue(l, r, objectFlow)).build();
+        return builder.setValue(new RemainderValue(primitives, l, r, objectFlow)).build();
     }
 
     @Override
@@ -98,7 +101,7 @@ public class RemainderValue extends PrimitiveValue {
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.widestType(lhs.type(), rhs.type());
+        return primitives.widestType(lhs.type(), rhs.type());
     }
 
     @Override

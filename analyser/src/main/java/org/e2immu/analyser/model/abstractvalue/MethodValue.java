@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
@@ -33,12 +34,15 @@ public class MethodValue implements Value {
     public final List<Value> parameters;
     public final Value object;
     public final ObjectFlow objectFlow;
+    private final Primitives primitives;
 
-    public MethodValue(@NotNull MethodInfo methodInfo, @NotNull Value object, @NotNull List<Value> parameters, ObjectFlow objectFlow) {
+    public MethodValue(Primitives primitives,
+                       @NotNull MethodInfo methodInfo, @NotNull Value object, @NotNull List<Value> parameters, ObjectFlow objectFlow) {
         this.methodInfo = Objects.requireNonNull(methodInfo);
         this.parameters = Objects.requireNonNull(parameters);
         this.object = Objects.requireNonNull(object);
         this.objectFlow = Objects.requireNonNull(objectFlow);
+        this.primitives = primitives;
     }
 
     @Override
@@ -63,9 +67,9 @@ public class MethodValue implements Value {
      the interface and the implementation, or the interface and sub-interface
      */
     private boolean checkSpecialCasesWhereDifferentMethodsAreEquals(MethodInfo m1, MethodInfo m2) {
-        Set<MethodInfo> overrides1 = m1.typeInfo.overrides(m1, true);
+        Set<MethodInfo> overrides1 = m1.typeInfo.overrides(primitives, m1, true);
         if (m2.typeInfo.isInterface() && overrides1.contains(m2)) return true;
-        Set<MethodInfo> overrides2 = m2.typeInfo.overrides(m2, true);
+        Set<MethodInfo> overrides2 = m2.typeInfo.overrides(primitives, m2, true);
         return m1.typeInfo.isInterface() && overrides2.contains(m1);
 
         // any other?
@@ -136,7 +140,9 @@ public class MethodValue implements Value {
     public static int checkSize(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Value> parameters) {
         if (methodInfo == null) return Level.DELAY;
         // the method either belongs to a type that has size, or it returns a type that has size
-        if (!methodInfo.returnType().hasSize() && !methodInfo.typeInfo.hasSize()) return Level.DELAY;
+        if (!methodInfo.returnType().hasSize(evaluationContext.getAnalyserContext().getPrimitives()) &&
+                !methodInfo.typeInfo.hasSize(evaluationContext.getAnalyserContext().getPrimitives()))
+            return Level.DELAY;
 
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
             int sizeCopy = evaluationContext.getParameterAnalysis(parameterInfo).getProperty(VariableProperty.SIZE_COPY);
@@ -155,7 +161,9 @@ public class MethodValue implements Value {
     public static int checkSizeCopy(EvaluationContext evaluationContext, MethodInfo methodInfo) {
         if (methodInfo == null) return Level.DELAY;
         // the method either belongs to a type that has size, or it returns a type that has size
-        if (!methodInfo.returnType().hasSize() && !methodInfo.typeInfo.hasSize()) return Level.DELAY;
+        if (!methodInfo.returnType().hasSize(evaluationContext.getAnalyserContext().getPrimitives()) &&
+                !methodInfo.typeInfo.hasSize(evaluationContext.getAnalyserContext().getPrimitives()))
+            return Level.DELAY;
 
         // we give priority to the value of the parameters, rather than that of the method
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
@@ -195,7 +203,7 @@ public class MethodValue implements Value {
 
         // RULE 0: void method cannot link
         ParameterizedType returnType = methodInfo.returnType();
-        if (returnType.isVoid()) return NOT_LINKED; // no assignment
+        if (Primitives.isVoid(returnType)) return NOT_LINKED; // no assignment
 
         MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
 

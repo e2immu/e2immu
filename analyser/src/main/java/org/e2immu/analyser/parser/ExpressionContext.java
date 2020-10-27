@@ -105,7 +105,7 @@ public class ExpressionContext {
         this.enclosingType = enclosingType;
         this.topLevel = topLevel;
         this.variableContext = variableContext;
-        this.e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions(typeContext.typeStore);
+        this.e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions(typeContext);
     }
 
     public ExpressionContext newVariableContext(@NotNull String reason) {
@@ -248,20 +248,19 @@ public class ExpressionContext {
     private SwitchEntry switchEntry(Expression switchVariableAsExpression, @NotNull com.github.javaparser.ast.stmt.SwitchEntry switchEntry) {
         List<Expression> labels = switchEntry.getLabels().stream().map(this::parseExpression).collect(Collectors.toList());
         switch (switchEntry.getType()) {
-            case EXPRESSION:
-            case THROWS_STATEMENT:
-            case STATEMENT_GROUP:
+            case EXPRESSION, THROWS_STATEMENT, STATEMENT_GROUP -> {
                 Block.BlockBuilder blockBuilder = new Block.BlockBuilder();
                 for (Statement statement : switchEntry.getStatements()) {
                     parseStatement(blockBuilder, statement, null);
                 }
                 boolean java12Style = switchEntry.getType() != com.github.javaparser.ast.stmt.SwitchEntry.Type.STATEMENT_GROUP;
                 return new SwitchEntry.StatementsEntry(switchVariableAsExpression, java12Style, labels, blockBuilder.build().structure.statements);
-            case BLOCK:
+            }
+            case BLOCK -> {
                 Block block = parseBlockOrStatement(switchEntry.getStatements().get(0));
                 return new SwitchEntry.BlockEntry(switchVariableAsExpression, labels, block);
-            default:
-                throw new UnsupportedOperationException("Unknown type " + switchEntry.getType());
+            }
+            default -> throw new UnsupportedOperationException("Unknown type " + switchEntry.getType());
         }
     }
 
@@ -394,15 +393,15 @@ public class ExpressionContext {
         try {
             if (expression.isStringLiteralExpr()) {
                 StringLiteralExpr stringLiteralExpr = (StringLiteralExpr) expression;
-                return new StringConstant(stringLiteralExpr.asString());
+                return new StringConstant(typeContext.getPrimitives(), stringLiteralExpr.asString());
             }
             if (expression.isIntegerLiteralExpr()) {
                 IntegerLiteralExpr integerLiteralExpr = (IntegerLiteralExpr) expression;
-                return new IntConstant(integerLiteralExpr.asInt());
+                return new IntConstant(typeContext.getPrimitives(), integerLiteralExpr.asInt());
             }
             if (expression.isBooleanLiteralExpr()) {
                 BooleanLiteralExpr booleanLiteralExpr = (BooleanLiteralExpr) expression;
-                return new BooleanConstant(booleanLiteralExpr.getValue());
+                return new BooleanConstant(typeContext.getPrimitives(), booleanLiteralExpr.getValue());
             }
             if (expression.isNullLiteralExpr()) {
                 return NullConstant.NULL_CONSTANT;
@@ -422,30 +421,31 @@ public class ExpressionContext {
                 } else if (rhs instanceof NullConstant) {
                     typeInfo = lhs.returnType().typeInfo;
                 } else if (lhs.returnType().allowsForOperators() || rhs.returnType().allowsForOperators()) {
-                    ParameterizedType widestType = Primitives.PRIMITIVES.widestType(lhs.returnType(), rhs.returnType());
+                    ParameterizedType widestType = typeContext.getPrimitives().widestType(lhs.returnType(), rhs.returnType());
                     if (!widestType.isType())
                         throw new UnsupportedOperationException("? for " + lhs.returnType() + " and " + rhs.returnType());
                     typeInfo = widestType.typeInfo;
                 } else {
                     typeInfo = null;
                 }
-                MethodInfo operatorMethod = BinaryOperator.getOperator(binaryExpr.getOperator(), typeInfo);
+                MethodInfo operatorMethod = BinaryOperator.getOperator(typeContext.getPrimitives(), binaryExpr.getOperator(), typeInfo);
                 return new BinaryOperator(
                         lhs,
                         operatorMethod,
                         rhs,
-                        BinaryOperator.precedence(operatorMethod));
+                        BinaryOperator.precedence(typeContext.getPrimitives(), operatorMethod));
             }
             if (expression.isUnaryExpr()) {
                 UnaryExpr unaryExpr = (UnaryExpr) expression;
                 org.e2immu.analyser.model.Expression exp = parseExpression(unaryExpr.getExpression());
                 ParameterizedType pt = exp.returnType();
                 if (pt.typeInfo == null) throw new UnsupportedOperationException("??");
-                MethodInfo operator = UnaryOperator.getOperator(unaryExpr.getOperator(), pt.typeInfo);
-                if (Primitives.PRIMITIVES.isPreOrPostFixOperator(operator)) {
-                    boolean isPrefix = Primitives.PRIMITIVES.isPrefixOperator(operator);
-                    MethodInfo associatedAssignment = Primitives.PRIMITIVES.prePostFixToAssignment(operator);
-                    return new Assignment(exp, new IntConstant(1), associatedAssignment, isPrefix);
+                MethodInfo operator = UnaryOperator.getOperator(typeContext.getPrimitives(), unaryExpr.getOperator(), pt.typeInfo);
+                Primitives primitives = typeContext.getPrimitives();
+                if (primitives.isPreOrPostFixOperator(operator)) {
+                    boolean isPrefix = primitives.isPrefixOperator(operator);
+                    MethodInfo associatedAssignment = primitives.prePostFixToAssignment(operator);
+                    return new Assignment(exp, new IntConstant(typeContext.getPrimitives(), 1), associatedAssignment, isPrefix);
                 }
                 return new UnaryOperator(
                         operator,
@@ -523,16 +523,16 @@ public class ExpressionContext {
                 org.e2immu.analyser.model.Expression initializer = var.getInitializer()
                         .map(i -> parseExpression(i, parameterizedType.findSingleAbstractMethodOfInterface()))
                         .orElse(EmptyExpression.EMPTY_EXPRESSION);
-                return new LocalVariableCreation(localVariable.build(), initializer);
+                return new LocalVariableCreation(typeContext.getPrimitives(), localVariable.build(), initializer);
             }
             if (expression.isAssignExpr()) {
                 AssignExpr assignExpr = (AssignExpr) expression;
                 org.e2immu.analyser.model.Expression target = parseExpression(assignExpr.getTarget());
                 org.e2immu.analyser.model.Expression value = parseExpression(assignExpr.getValue(), target.returnType().findSingleAbstractMethodOfInterface());
-                if (value.returnType().isType() && value.returnType().typeInfo.isPrimitive() &&
-                        target.returnType().isType() && target.returnType().typeInfo.isPrimitive()) {
-                    ParameterizedType widestType = Primitives.PRIMITIVES.widestType(value.returnType(), target.returnType());
-                    MethodInfo primitiveOperator = Assignment.operator(assignExpr.getOperator(), widestType.typeInfo);
+                if (value.returnType().isType() && Primitives.isPrimitiveExcludingVoid(value.returnType()) &&
+                        target.returnType().isType() && Primitives.isPrimitiveExcludingVoid(target.returnType())) {
+                    ParameterizedType widestType = typeContext.getPrimitives().widestType(value.returnType(), target.returnType());
+                    MethodInfo primitiveOperator = Assignment.operator(typeContext.getPrimitives(), assignExpr.getOperator(), widestType.typeInfo);
                     return new Assignment(target, value, primitiveOperator, null);
                 }
                 return new Assignment(target, value);
@@ -569,15 +569,15 @@ public class ExpressionContext {
             if (expression.isLongLiteralExpr()) {
                 String valueWithL = expression.asLongLiteralExpr().getValue();
                 String value = valueWithL.endsWith("L") || valueWithL.endsWith("l") ? valueWithL.substring(0, valueWithL.length() - 1) : valueWithL;
-                return new LongConstant(Long.parseLong(value));
+                return new LongConstant(typeContext.getPrimitives(), Long.parseLong(value));
             }
             if (expression.isDoubleLiteralExpr()) {
                 String valueWithD = expression.asDoubleLiteralExpr().getValue();
                 String value = valueWithD.endsWith("D") || valueWithD.endsWith("d") ? valueWithD.substring(0, valueWithD.length() - 1) : valueWithD;
-                return new DoubleConstant(Double.parseDouble(value));
+                return new DoubleConstant(typeContext.getPrimitives(), Double.parseDouble(value));
             }
             if (expression.isCharLiteralExpr()) {
-                return new CharConstant(expression.asCharLiteralExpr().asChar());
+                return new CharConstant(typeContext.getPrimitives(), expression.asCharLiteralExpr().asChar());
             }
             if (expression.isArrayAccessExpr()) {
                 ArrayAccessExpr arrayAccessExpr = expression.asArrayAccessExpr();
@@ -589,7 +589,7 @@ public class ExpressionContext {
                 InstanceOfExpr instanceOfExpr = expression.asInstanceOfExpr();
                 Expression e = parseExpression(instanceOfExpr.getExpression());
                 ParameterizedType type = ParameterizedType.from(typeContext, instanceOfExpr.getType());
-                return new InstanceOf(e, type);
+                return new InstanceOf(e, type, typeContext.getPrimitives().booleanParameterizedType);
             }
             throw new UnsupportedOperationException("Unknown expression type " + expression +
                     " class " + expression.getClass() + " at " + expression.getBegin());

@@ -20,6 +20,7 @@ package org.e2immu.analyser.bytecode;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.annotation.AnnotationType;
 import org.objectweb.asm.Type;
@@ -27,16 +28,17 @@ import org.objectweb.asm.Type;
 public class ExpressionFactory {
 
     public static Expression from(TypeContext typeContext, Object value) {
+        Primitives primitives = typeContext.getPrimitives();
         if (value == null) return NullConstant.NULL_CONSTANT;
-        if (value instanceof String s) return new StringConstant(s);
-        if (value instanceof Integer i) return new IntConstant(i);
-        if (value instanceof Short s) return new ShortConstant(s);
-        if (value instanceof Long l) return new LongConstant(l);
-        if (value instanceof Byte b) return new ByteConstant(b);
-        if (value instanceof Double d) return new DoubleConstant(d);
-        if (value instanceof Float f) return new FloatConstant(f);
-        if (value instanceof Character c) return new CharConstant(c);
-        if (value instanceof Boolean b) return new BooleanConstant(b);
+        if (value instanceof String s) return new StringConstant(primitives, s);
+        if (value instanceof Integer i) return new IntConstant(primitives, i);
+        if (value instanceof Short s) return new ShortConstant(primitives, s);
+        if (value instanceof Long l) return new LongConstant(primitives, l);
+        if (value instanceof Byte b) return new ByteConstant(primitives, b);
+        if (value instanceof Double d) return new DoubleConstant(primitives, d);
+        if (value instanceof Float f) return new FloatConstant(primitives, f);
+        if (value instanceof Character c) return new CharConstant(primitives, c);
+        if (value instanceof Boolean b) return new BooleanConstant(primitives, b);
         if (value instanceof Type t)
             return new TypeExpression(typeContext.getFullyQualified(t.getClassName(), true).asParameterizedType());
 

@@ -20,6 +20,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
@@ -71,6 +72,14 @@ public interface EvaluationContext {
 
     default AnalyserContext getAnalyserContext() {
         throw new UnsupportedOperationException();
+    }
+
+    default BoolValue boolValueTrue() {
+        return new BoolValue(getAnalyserContext().getPrimitives(), true, ObjectFlow.NO_FLOW);
+    }
+
+    default BoolValue boolValueFalse() {
+        return new BoolValue(getAnalyserContext().getPrimitives(), true, ObjectFlow.NO_FLOW);
     }
 
     default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {

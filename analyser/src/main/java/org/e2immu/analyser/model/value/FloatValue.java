@@ -28,18 +28,17 @@ import java.util.Objects;
 
 public class FloatValue extends ConstantValue implements Constant<Float>, NumericValue {
     public final float value;
+    private final Primitives primitives;
 
-    public FloatValue(float value) {
-        this(value, ObjectFlow.NO_FLOW);
-    }
-    public FloatValue(float value, ObjectFlow objectFlow) {
+    public FloatValue(Primitives primitives, float value, ObjectFlow objectFlow) {
         super(objectFlow);
         this.value = value;
+        this.primitives = primitives;
     }
 
     @Override
     public NumericValue negate() {
-        return new FloatValue(-value, getObjectFlow());
+        return new FloatValue(primitives, -value, getObjectFlow());
     }
 
     @Override
@@ -88,6 +87,6 @@ public class FloatValue extends ConstantValue implements Constant<Float>, Numeri
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.floatParameterizedType;
+        return primitives.floatParameterizedType;
     }
 }

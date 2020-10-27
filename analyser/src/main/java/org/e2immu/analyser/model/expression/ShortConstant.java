@@ -30,16 +30,19 @@ import java.util.Objects;
 
 @E2Container
 public class ShortConstant implements ConstantExpression<Short> {
+    private final ParameterizedType shortParameterizedType;
+
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return Primitives.PRIMITIVES.shortParameterizedType;
+        return shortParameterizedType;
     }
 
     @NotNull
     public final short constant;
 
-    public ShortConstant(short constant) {
+    public ShortConstant(Primitives primitives, short constant) {
+        shortParameterizedType = primitives.shortParameterizedType;
         this.constant = constant;
     }
 

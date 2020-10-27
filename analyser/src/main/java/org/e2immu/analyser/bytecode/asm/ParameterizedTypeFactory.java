@@ -22,12 +22,11 @@ import org.e2immu.analyser.model.NamedType;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeParameter;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.e2immu.analyser.parser.Primitives.PRIMITIVES;
 
 // signatures formally defined in https://docs.oracle.com/javase/specs/jvms/se13/html/jvms-4.html
 
@@ -93,14 +92,15 @@ public class ParameterizedTypeFactory {
                 // this is possible
                 // <T:Ljava/lang/Object;T_SPLITR::Ljava/util/Spliterator$OfPrimitive<TT;TT_CONS;TT_SPLITR;>;T_CONS:Ljava/lang/Object;>Ljava/util/stream/StreamSpliterators$SliceSpliterator<TT;TT_SPLITR;>;Ljava/util/Spliterator$OfPrimitive<TT;TT_CONS;TT_SPLITR;>;
                 // problem is that T_CONS is used before it is declared
-                return new Result(PRIMITIVES.objectParameterizedType, semiColon + 1, true);
+                ParameterizedType objectParameterizedType = typeContext.getPrimitives().objectParameterizedType;
+                return new Result(objectParameterizedType, semiColon + 1, true);
             }
             if (!(namedType instanceof TypeParameter))
                 throw new RuntimeException("?? expected " + typeParamName + " to be a type parameter");
             return new Result(new ParameterizedType((TypeParameter) namedType,
                     arrays, wildCard), semiColon + 1, false);
         }
-        ParameterizedType primitivePt = primitive(firstChar);
+        ParameterizedType primitivePt = primitive(typeContext.getPrimitives(), firstChar);
         if (arrays > 0) {
             return new Result(new ParameterizedType(primitivePt.typeInfo, arrays), arrays + 1, false);
         }
@@ -168,29 +168,19 @@ public class ParameterizedTypeFactory {
         return new Result(parameterizedType, semiColon + 1, typeNotFoundError);
     }
 
-    private static ParameterizedType primitive(char firstChar) {
-        switch (firstChar) {
-            case 'B':
-                return PRIMITIVES.byteParameterizedType;
-            case 'C':
-                return PRIMITIVES.charParameterizedType;
-            case 'D':
-                return PRIMITIVES.doubleParameterizedType;
-            case 'F':
-                return PRIMITIVES.floatParameterizedType;
-            case 'I':
-                return PRIMITIVES.intParameterizedType;
-            case 'J':
-                return PRIMITIVES.longParameterizedType;
-            case 'S':
-                return PRIMITIVES.shortParameterizedType;
-            case 'V':
-                return PRIMITIVES.voidParameterizedType;
-            case 'Z':
-                return PRIMITIVES.booleanParameterizedType;
-            default:
-                throw new RuntimeException("Char " + firstChar + " does NOT represent a primitive!");
-        }
+    private static ParameterizedType primitive(Primitives primitives, char firstChar) {
+        return switch (firstChar) {
+            case 'B' -> primitives.byteParameterizedType;
+            case 'C' -> primitives.charParameterizedType;
+            case 'D' -> primitives.doubleParameterizedType;
+            case 'F' -> primitives.floatParameterizedType;
+            case 'I' -> primitives.intParameterizedType;
+            case 'J' -> primitives.longParameterizedType;
+            case 'S' -> primitives.shortParameterizedType;
+            case 'V' -> primitives.voidParameterizedType;
+            case 'Z' -> primitives.booleanParameterizedType;
+            default -> throw new RuntimeException("Char " + firstChar + " does NOT represent a primitive!");
+        };
     }
 
     private static class IterativeParsing {

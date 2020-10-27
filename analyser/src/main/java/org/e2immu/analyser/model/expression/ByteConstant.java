@@ -22,6 +22,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.ByteValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -30,17 +31,20 @@ import java.util.Objects;
 
 @E2Container
 public class ByteConstant implements ConstantExpression<Byte> {
+    private final Primitives primitives;
+
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return Primitives.PRIMITIVES.byteParameterizedType;
+        return primitives.byteParameterizedType;
     }
 
     @NotNull
     public final byte constant;
 
-    public ByteConstant(byte constant) {
+    public ByteConstant(Primitives primitives, byte constant) {
         this.constant = constant;
+        this.primitives = primitives;
     }
 
     @Override
@@ -69,7 +73,7 @@ public class ByteConstant implements ConstantExpression<Byte> {
 
     @Override
     public Value newValue() {
-        return new ByteValue(constant);
+        return new ByteValue(primitives, constant, ObjectFlow.NO_FLOW);
     }
 
     @Override

@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.FloatValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -29,17 +30,20 @@ import java.util.Objects;
 
 @E2Container
 public class FloatConstant implements ConstantExpression<Float> {
+    private final ParameterizedType floatParameterizedType;
+
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return Primitives.PRIMITIVES.floatParameterizedType;
+        return floatParameterizedType;
     }
 
     @NotNull
     public final FloatValue constant;
 
-    public FloatConstant(float constant) {
-        this.constant = new FloatValue(constant);
+    public FloatConstant(Primitives primitives, float constant) {
+        this.constant = new FloatValue(primitives, constant, ObjectFlow.NO_FLOW);
+        this.floatParameterizedType = primitives.floatParameterizedType;
     }
 
     @Override

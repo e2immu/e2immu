@@ -70,13 +70,10 @@ public class UnaryOperator implements Expression {
     }
 
     public static int precedence(@NotNull @NotModified UnaryExpr.Operator operator) {
-        switch (operator) {
-            case POSTFIX_DECREMENT:
-            case POSTFIX_INCREMENT:
-                return PRECEDENCE_POST_INCREMENT;
-            default:
-                return DEFAULT_PRECEDENCE;
-        }
+        return switch (operator) {
+            case POSTFIX_DECREMENT, POSTFIX_INCREMENT -> PRECEDENCE_POST_INCREMENT;
+            default -> DEFAULT_PRECEDENCE;
+        };
     }
 
     // NOTE: we're not visiting here!
@@ -86,34 +83,34 @@ public class UnaryOperator implements Expression {
         EvaluationResult evaluationResult = expression.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         return new EvaluationResult.Builder(evaluationContext)
                 .compose(evaluationResult)
-                .setValue(computeValue(evaluationResult))
+                .setValue(computeValue(evaluationContext.getAnalyserContext().getPrimitives(), evaluationResult))
                 .build();
     }
 
-    private Value computeValue(EvaluationResult evaluationResult) {
+    private Value computeValue(Primitives primitives, EvaluationResult evaluationResult) {
         Value v = evaluationResult.value;
 
         if (v.isUnknown()) return v;
 
-        if (operator == Primitives.PRIMITIVES.logicalNotOperatorBool ||
-                operator == Primitives.PRIMITIVES.unaryMinusOperatorInt) {
+        if (operator == primitives.logicalNotOperatorBool ||
+                operator == primitives.unaryMinusOperatorInt) {
             return NegatedValue.negate(v);
         }
-        if (operator == Primitives.PRIMITIVES.unaryPlusOperatorInt) {
+        if (operator == primitives.unaryPlusOperatorInt) {
             return v;
         }
-        if (operator == Primitives.PRIMITIVES.bitWiseNotOperatorInt) {
+        if (operator == primitives.bitWiseNotOperatorInt) {
             if (v instanceof IntValue)
                 return new IntValue(~((IntValue) v).value);
             return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         }
-        if (operator == Primitives.PRIMITIVES.postfixDecrementOperatorInt
-                || operator == Primitives.PRIMITIVES.prefixDecrementOperatorInt) {
+        if (operator == primitives.postfixDecrementOperatorInt
+                || operator == primitives.prefixDecrementOperatorInt) {
             if (v instanceof IntValue)
                 return new IntValue(((IntValue) v).value - 1);
             return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
         }
-        if (operator == Primitives.PRIMITIVES.postfixIncrementOperatorInt || operator == Primitives.PRIMITIVES.prefixIncrementOperatorInt) {
+        if (operator == primitives.postfixIncrementOperatorInt || operator == primitives.prefixIncrementOperatorInt) {
             if (v instanceof IntValue)
                 return new IntValue(((IntValue) v).value + 1);
             return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
@@ -121,29 +118,31 @@ public class UnaryOperator implements Expression {
         throw new UnsupportedOperationException();
     }
 
-    public static MethodInfo getOperator(@NotNull @NotModified UnaryExpr.Operator operator, @NotNull @NotModified TypeInfo typeInfo) {
-        if (typeInfo.isNumericPrimitive()) {
+    public static MethodInfo getOperator(@NotNull @NotModified Primitives primitives,
+                                         @NotNull @NotModified UnaryExpr.Operator operator,
+                                         @NotNull @NotModified TypeInfo typeInfo) {
+        if (Primitives.isNumeric(typeInfo)) {
             switch (operator) {
                 case MINUS:
-                    return Primitives.PRIMITIVES.unaryMinusOperatorInt;
+                    return primitives.unaryMinusOperatorInt;
                 case PLUS:
-                    return Primitives.PRIMITIVES.unaryPlusOperatorInt;
+                    return primitives.unaryPlusOperatorInt;
                 case BITWISE_COMPLEMENT:
-                    return Primitives.PRIMITIVES.bitWiseNotOperatorInt;
+                    return primitives.bitWiseNotOperatorInt;
                 case POSTFIX_DECREMENT:
-                    return Primitives.PRIMITIVES.postfixDecrementOperatorInt;
+                    return primitives.postfixDecrementOperatorInt;
                 case POSTFIX_INCREMENT:
-                    return Primitives.PRIMITIVES.postfixIncrementOperatorInt;
+                    return primitives.postfixIncrementOperatorInt;
                 case PREFIX_DECREMENT:
-                    return Primitives.PRIMITIVES.prefixDecrementOperatorInt;
+                    return primitives.prefixDecrementOperatorInt;
                 case PREFIX_INCREMENT:
-                    return Primitives.PRIMITIVES.prefixIncrementOperatorInt;
+                    return primitives.prefixIncrementOperatorInt;
                 default:
             }
         }
-        if (typeInfo == Primitives.PRIMITIVES.booleanTypeInfo || "java.lang.Boolean".equals(typeInfo.fullyQualifiedName)) {
+        if (typeInfo == primitives.booleanTypeInfo || "java.lang.Boolean".equals(typeInfo.fullyQualifiedName)) {
             if (operator == UnaryExpr.Operator.LOGICAL_COMPLEMENT) {
-                return Primitives.PRIMITIVES.logicalNotOperatorBool;
+                return primitives.logicalNotOperatorBool;
             }
         }
         throw new UnsupportedOperationException("?? unknown operator " + operator);

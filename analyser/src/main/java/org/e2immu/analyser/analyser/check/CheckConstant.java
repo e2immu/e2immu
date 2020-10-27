@@ -13,6 +13,7 @@ import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.Constant;
 
 import java.util.List;
@@ -20,12 +21,18 @@ import java.util.Optional;
 
 public class CheckConstant {
 
+    private final Primitives primitives;
+
+    public CheckConstant(Primitives primitives) {
+        this.primitives = primitives;
+    }
+
     private static class ToTest {
         Value valueToTest; // can be null, then we will not test a value, but test Constant
         boolean verifyAbsent;
     }
 
-    private static ToTest constantAnnotationToVerify(List<AnnotationExpression> annotationExpressions) {
+    private ToTest constantAnnotationToVerify(List<AnnotationExpression> annotationExpressions) {
         Optional<AnnotationExpression> oConstant = annotationExpressions.stream()
                 .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(Constant.class.getName())).findFirst();
         return oConstant.map(constant -> {
@@ -39,7 +46,7 @@ public class CheckConstant {
             } else {
                 Integer testInteger = constant.extract("intValue", null);
                 if (testInteger != null) {
-                    toTest.valueToTest = new IntValue(testInteger);
+                    toTest.valueToTest = new IntValue(primitives, testInteger);
                     if (testInteger != 0) testExplicitly = true;
                 } else {
                     String testString = constant.extract("stringValue", null);
@@ -55,7 +62,7 @@ public class CheckConstant {
     }
 
 
-    public static void checkConstantForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
+    public void checkConstantForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
         Value singleReturnValue = fieldAnalysis.getEffectivelyFinalValue() != null ?
                 fieldAnalysis.getEffectivelyFinalValue() : UnknownValue.NO_VALUE;
         checkConstant(messages,
@@ -64,7 +71,7 @@ public class CheckConstant {
                 new Location(fieldInfo));
     }
 
-    public static void checkConstantForMethods(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
+    public void checkConstantForMethods(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         Value singleReturnValue = methodAnalysis.getSingleReturnValue();
         checkConstant(messages,
                 singleReturnValue,
@@ -72,7 +79,7 @@ public class CheckConstant {
                 new Location(methodInfo));
     }
 
-    private static void checkConstant(Messages messages, Value singleReturnValue, List<AnnotationExpression> annotations, Location where) {
+    private void checkConstant(Messages messages, Value singleReturnValue, List<AnnotationExpression> annotations, Location where) {
 
         // NOTE: the reason we do not check @Constant in the same way is that there can be many types
         // of constants, and we have not yet provided them all in @Constant. At the same time,
@@ -99,21 +106,21 @@ public class CheckConstant {
     }
 
 
-    public static AnnotationExpression createConstantAnnotation(E2ImmuAnnotationExpressions typeContext, Value value) {
+    public AnnotationExpression createConstantAnnotation(E2ImmuAnnotationExpressions typeContext, Value value) {
         Expression test;
         Expression valueExpression;
         Expression computed = typeContext.constant.get().expressions.get().get(0);
         if (value instanceof NumericValue || value instanceof StringConstant || value instanceof BoolValue) {
-            test = new MemberValuePair("test", BooleanConstant.TRUE);
+            test = new MemberValuePair("test", new BooleanConstant(primitives, true));
             if (value instanceof NumericValue) {
                 int constant = value.toInt().value;
-                valueExpression = new MemberValuePair("intValue", new IntConstant(constant));
+                valueExpression = new MemberValuePair("intValue", new IntConstant(primitives, constant));
             } else if (value instanceof BoolValue) {
                 boolean constant = ((BoolValue) value).value;
-                valueExpression = new MemberValuePair("boolValue", new BooleanConstant(constant));
+                valueExpression = new MemberValuePair("boolValue", new BooleanConstant(primitives, constant));
             } else {
                 String constant = ((StringConstant) value).getValue();
-                valueExpression = new MemberValuePair("stringValue", new StringConstant(constant));
+                valueExpression = new MemberValuePair("stringValue", new StringConstant(primitives, constant));
             }
         } else {
             test = null;

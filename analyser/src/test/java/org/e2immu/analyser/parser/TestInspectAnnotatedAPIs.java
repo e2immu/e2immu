@@ -53,7 +53,7 @@ public class TestInspectAnnotatedAPIs {
     @Test
     public void testLoadSources() throws IOException {
         TypeContext globalTypeContext = new TypeContext();
-        E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions(globalTypeContext.typeStore);
+        E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions(globalTypeContext);
         URL url = new URL("file:src/main/resources/annotatedAPIs/java.util.annotated_api");
         Resources classPath = new Resources();
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(classPath, null, globalTypeContext, e2ImmuAnnotationExpressions);

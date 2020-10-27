@@ -18,15 +18,9 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 public class TestBooleanAndComparison extends CommonAbstractValue {
 
@@ -34,9 +28,9 @@ public class TestBooleanAndComparison extends CommonAbstractValue {
 
     @Test
     public void test1() {
-        GreaterThanZeroValue iGe0 = (GreaterThanZeroValue) GreaterThanZeroValue.greater(i, new IntValue(0), true);
-        GreaterThanZeroValue iLt0 = (GreaterThanZeroValue) GreaterThanZeroValue.less(i, new IntValue(0), false);
-        GreaterThanZeroValue jGe0 = (GreaterThanZeroValue) GreaterThanZeroValue.greater(j, new IntValue(0), true);
+        GreaterThanZeroValue iGe0 = (GreaterThanZeroValue) GreaterThanZeroValue.greater(minimalEvaluationContext, i, new IntValue(0), true);
+        GreaterThanZeroValue iLt0 = (GreaterThanZeroValue) GreaterThanZeroValue.less(minimalEvaluationContext, i, new IntValue(0), false);
+        GreaterThanZeroValue jGe0 = (GreaterThanZeroValue) GreaterThanZeroValue.greater(minimalEvaluationContext, j, new IntValue(0), true);
 
         Value iGe0_and__iLt0_or_jGe0 = new AndValue().append(iGe0, new OrValue().append(iLt0, jGe0));
         Assert.assertEquals("(i >= 0 and j >= 0)", iGe0_and__iLt0_or_jGe0.toString());

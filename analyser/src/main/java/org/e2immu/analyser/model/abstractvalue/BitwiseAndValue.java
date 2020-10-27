@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
@@ -34,24 +35,27 @@ import java.util.function.Consumer;
 public class BitwiseAndValue extends PrimitiveValue {
     public final Value lhs;
     public final Value rhs;
+    private final Primitives primitives;
 
-    public BitwiseAndValue(Value lhs, Value rhs, ObjectFlow objectFlow) {
+    public BitwiseAndValue(Primitives primitives, Value lhs, Value rhs, ObjectFlow objectFlow) {
         super(objectFlow);
         this.lhs = lhs;
         this.rhs = rhs;
+        this.primitives = primitives;
     }
 
-    public static Value bitwiseAnd(Value l, Value r, ObjectFlow objectFlow) {
+    public static Value bitwiseAnd(EvaluationContext evaluationContext, Value l, Value r, ObjectFlow objectFlow) {
         if (l instanceof NumericValue && l.toInt().value == 0) return l;
         if (r instanceof NumericValue && r.toInt().value == 0) return r;
         if (r instanceof NumericValue && r.toInt().value == 1) return l;
+        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
         if (l instanceof IntValue && r instanceof IntValue)
-            return new IntValue(l.toInt().value & r.toInt().value, objectFlow);
+            return new IntValue(primitives, l.toInt().value & r.toInt().value, objectFlow);
 
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
-        return new BitwiseAndValue(l, r, objectFlow);
+        return new BitwiseAndValue(primitives, l, r, objectFlow);
     }
 
     @Override
@@ -90,7 +94,7 @@ public class BitwiseAndValue extends PrimitiveValue {
 
     @Override
     public ParameterizedType type() {
-        return Primitives.PRIMITIVES.widestType(lhs.type(), rhs.type());
+        return primitives.widestType(lhs.type(), rhs.type());
     }
 
     @Override
