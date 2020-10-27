@@ -251,7 +251,8 @@ public class ParameterizedType {
         if (typeInfo == null || Primitives.isPrimitiveExcludingVoid(typeInfo)) {
             newTypeInfo = typeInfo;
         } else {
-            newTypeInfo = Objects.requireNonNull(localTypeContext.typeStore.get(typeInfo.fullyQualifiedName));
+            newTypeInfo = Objects.requireNonNull(localTypeContext.typeStore.get(typeInfo.fullyQualifiedName),
+                    "Cannot find "+typeInfo.fullyQualifiedName+" in typeStore");
         }
         List<ParameterizedType> newParameters = parameters.stream().map(pt -> pt.copy(localTypeContext)).collect(Collectors.toList());
         TypeParameter newTypeParameter = typeParameter == null ? null : (TypeParameter) localTypeContext.get(typeParameter.name, true);

@@ -38,8 +38,8 @@ public class ArrayInitializer implements Expression {
 
     public ArrayInitializer(Primitives primitives, @NotNull @NotModified List<Expression> expressions) {
         this.expressions = Objects.requireNonNull(expressions);
-        commonType = commonType(expressions);
         this.primitives = Objects.requireNonNull(primitives);
+        commonType = commonType(expressions);
     }
 
     @Override

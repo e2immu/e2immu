@@ -121,6 +121,10 @@ public class Input {
             globalTypeContext.typeStore.add(typeInfo);
             globalTypeContext.addToContext(typeInfo);
         }
+        for (TypeInfo typeInfo : globalTypeContext.getPrimitives().primitiveByName.values()) {
+            globalTypeContext.typeStore.add(typeInfo);
+            globalTypeContext.addToContext(typeInfo);
+        }
         int entriesAdded = classPath.addJarFromClassPath("org/e2immu/annotation");
         if (entriesAdded < 10) throw new RuntimeException("? expected at least 10 entries");
     }
