@@ -59,10 +59,10 @@ public class TestConstrainedNumericValue extends CommonAbstractValue {
     public void testGreaterThanTautologies() {
         ConstrainedNumericValue gt0 = ConstrainedNumericValue.lowerBound(minimalEvaluationContext, i, 0);
         Value gt0Ge0 = GreaterThanZeroValue.greater(minimalEvaluationContext, gt0, newInt(0), true);
-        Assert.assertSame(TRUE, gt0Ge0);
+        Assert.assertEquals(TRUE, gt0Ge0);
 
         Value gt0GtMinus1 = GreaterThanZeroValue.greater(minimalEvaluationContext, gt0, newInt(-1), true);
-        Assert.assertSame(TRUE, gt0GtMinus1);
+        Assert.assertEquals(TRUE, gt0GtMinus1);
 
         // because discrete, this changes into i,?>=0 >= 1
         Value gt0Gt0 = GreaterThanZeroValue.greater(minimalEvaluationContext, gt0, newInt(0), false);

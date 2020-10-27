@@ -581,6 +581,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     // IMMUTABLE, NOT_NULL, CONTAINER, IDENTITY, FLUENT
     // IMMUTABLE, NOT_NULL can still improve with respect to the static return type computed in methodAnalysis.getProperty()
     private AnalysisStatus propertyOfReturnStatements(VariableProperty variableProperty) {
+        if (methodInfo.isVoid() || methodInfo.isConstructor) return DONE;
         int currentValue = methodAnalysis.getProperty(variableProperty);
         if (currentValue != Level.DELAY && variableProperty != VariableProperty.IMMUTABLE && variableProperty != VariableProperty.NOT_NULL)
             return DONE; // NOT FOR ME

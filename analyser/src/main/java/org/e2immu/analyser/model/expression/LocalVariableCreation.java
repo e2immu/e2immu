@@ -115,7 +115,7 @@ public class LocalVariableCreation implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        Assignment assignment = new Assignment(evaluationContext.getAnalyserContext().getPrimitives(),
+        Assignment assignment = new Assignment(evaluationContext.getPrimitives(),
                 new VariableExpression(localVariableReference), expression);
         return assignment.evaluate(evaluationContext, forwardEvaluationInfo);
     }

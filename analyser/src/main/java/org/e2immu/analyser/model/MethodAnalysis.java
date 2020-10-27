@@ -160,16 +160,13 @@ public interface MethodAnalysis extends Analysis {
                 return getPropertyCheckOverrides(VariableProperty.NOT_NULL);
 
             case IMMUTABLE:
-                if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || Primitives.isPrimitiveExcludingVoid(returnType))
-                    throw new UnsupportedOperationException(); //we should not even be asking
-
+                assert returnType != ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR : "void method";
                 int immutableType = formalProperty(returnType);
                 int immutableDynamic = dynamicProperty(immutableType, returnType);
                 return MultiLevel.bestImmutable(immutableType, immutableDynamic);
 
             case CONTAINER:
-                if (returnType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR || Primitives.isPrimitiveExcludingVoid(returnType))
-                    throw new UnsupportedOperationException(); //we should not even be asking
+                assert returnType != ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR : "void method";
                 int container = returnType.getProperty(VariableProperty.CONTAINER);
                 if (container == Level.DELAY) return Level.DELAY;
                 return Level.best(getPropertyCheckOverrides(VariableProperty.CONTAINER), container);

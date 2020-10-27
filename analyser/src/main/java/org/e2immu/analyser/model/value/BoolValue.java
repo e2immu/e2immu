@@ -46,7 +46,7 @@ public class BoolValue extends ConstantValue implements Constant<Boolean> {
     }
 
     public static EvaluationResult of(boolean b, Location location, EvaluationContext evaluationContext, Origin origin) {
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        Primitives primitives = evaluationContext.getPrimitives();
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         ObjectFlow objectFlow = builder.createInternalObjectFlow(location, primitives.booleanParameterizedType, origin);
         return builder.setValue(new BoolValue(primitives, b, objectFlow)).build();

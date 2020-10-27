@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
@@ -11,7 +12,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Map;
 
 public class TestUnusedLocalVariableChecks extends CommonTestRunner {
     public TestUnusedLocalVariableChecks() {
@@ -111,6 +111,13 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
         }
     };
 
+    EvaluationResultVisitor evaluationResultVisitor = d -> {
+        if ("2".equals(d.statementId()) && "checkArray2".equals(d.methodInfo().name)) {
+            Assert.assertEquals(StatementAnalyser.STEP_4, d.step()); // just to make sure we're on the correct statement
+            Assert.assertEquals(2L, d.evaluationResult().getModificationStream().count());
+        }
+    };
+
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         MethodAnalysis methodAnalysis = d.methodAnalysis();
 
@@ -134,6 +141,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }

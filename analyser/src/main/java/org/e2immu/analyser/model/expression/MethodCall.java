@@ -245,7 +245,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
             ParameterizedType type = objectValue.type();
             if (type != null && type.typeInfo != null && type.typeInfo ==
-                    evaluationContext.getAnalyserContext().getPrimitives().stringTypeInfo) {
+                    evaluationContext.getPrimitives().stringTypeInfo) {
                 builder.raiseError(Message.UNNECESSARY_METHOD_CALL);
             }
         }
@@ -283,7 +283,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // eval on constant, like "abc".length()
-        Value evaluationOnConstant = computeEvaluationOnConstant(evaluationContext.getAnalyserContext().getPrimitives(),
+        Value evaluationOnConstant = computeEvaluationOnConstant(evaluationContext.getPrimitives(),
                 methodInfo, objectValue);
         if (evaluationOnConstant != null) {
             return builder.setValue(evaluationOnConstant).build();
@@ -358,7 +358,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // normal method value
-        return builder.setValue(new MethodValue(evaluationContext.getAnalyserContext().getPrimitives(),
+        return builder.setValue(new MethodValue(evaluationContext.getPrimitives(),
                 methodInfo, objectValue, parameters, objectFlowOfResult)).build();
     }
 
@@ -431,7 +431,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                      List<Value> parameters,
                                      EvaluationContext evaluationContext,
                                      Location location) {
-        if (!methodInfo.typeInfo.hasSize(evaluationContext.getAnalyserContext().getPrimitives())) return null;
+        if (!methodInfo.typeInfo.hasSize(evaluationContext.getPrimitives())) return null;
 
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
         if (modified == Level.DELAY) {
@@ -448,7 +448,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // we have an @Size annotation on the method that we're calling
         int sizeOfObject = evaluationContext.getProperty(objectValue, VariableProperty.SIZE);
 
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        Primitives primitives = evaluationContext.getPrimitives();
         // SITUATION 1: @Size(equals = 0) boolean isEmpty() { }, @Size(min = 1) boolean isNotEmpty() {}, etc.
         MethodAnalysis sizeMethodAnalysis = evaluationContext.getMethodAnalysis(methodInfo.typeInfo
                 .sizeMethod(primitives));
@@ -505,7 +505,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                          MethodAnalysis sizeMethodAnalysis, Value objectValue, int requiredSize) {
         MethodValue sizeMethod = createSizeMethodCheckForSizeCopyTrue(builder, location, sizeMethodAnalysis, objectValue, evaluationContext);
         if (Level.haveEquals(requiredSize)) {
-            Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+            Primitives primitives = evaluationContext.getPrimitives();
             ConstrainedNumericValue constrainedSizeMethod = ConstrainedNumericValue.lowerBound(evaluationContext, sizeMethod, 0);
             ObjectFlow objectFlow = builder.createInternalObjectFlow(location, primitives.booleanParameterizedType, Origin.RESULT_OF_METHOD);
             return EqualsValue.equals(evaluationContext,
@@ -525,7 +525,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                                     Value objectValue,
                                                                     EvaluationContext evaluationContext) {
         MethodValue methodValue;
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        Primitives primitives = evaluationContext.getPrimitives();
         if ((methodValue = objectValue.asInstanceOf(MethodValue.class)) != null) {
             MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodValue.methodInfo);
             if (methodAnalysis.getProperty(VariableProperty.SIZE_COPY) == Level.SIZE_COPY_TRUE) {
@@ -551,7 +551,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                              Value object) {
         if (object.getObjectFlow() != ObjectFlow.NO_FLOW) {
             builder.addAccess(false, new MethodAccess(sizeMethodAnalysis.getMethodInfo(), List.of()), object);
-            ParameterizedType intParameterizedType = evaluationContext.getAnalyserContext().getPrimitives().intParameterizedType;
+            ParameterizedType intParameterizedType = evaluationContext.getPrimitives().intParameterizedType;
             ObjectFlow source = sizeMethodAnalysis.getObjectFlow();
             ObjectFlow resultOfMethod = builder.createInternalObjectFlow(location, intParameterizedType, Origin.RESULT_OF_METHOD);
             resultOfMethod.addPrevious(source);

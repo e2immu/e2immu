@@ -140,8 +140,8 @@ public class MethodValue implements Value {
     public static int checkSize(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Value> parameters) {
         if (methodInfo == null) return Level.DELAY;
         // the method either belongs to a type that has size, or it returns a type that has size
-        if (!methodInfo.returnType().hasSize(evaluationContext.getAnalyserContext().getPrimitives()) &&
-                !methodInfo.typeInfo.hasSize(evaluationContext.getAnalyserContext().getPrimitives()))
+        if (!methodInfo.returnType().hasSize(evaluationContext.getPrimitives()) &&
+                !methodInfo.typeInfo.hasSize(evaluationContext.getPrimitives()))
             return Level.DELAY;
 
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
@@ -161,8 +161,8 @@ public class MethodValue implements Value {
     public static int checkSizeCopy(EvaluationContext evaluationContext, MethodInfo methodInfo) {
         if (methodInfo == null) return Level.DELAY;
         // the method either belongs to a type that has size, or it returns a type that has size
-        if (!methodInfo.returnType().hasSize(evaluationContext.getAnalyserContext().getPrimitives()) &&
-                !methodInfo.typeInfo.hasSize(evaluationContext.getAnalyserContext().getPrimitives()))
+        if (!methodInfo.returnType().hasSize(evaluationContext.getPrimitives()) &&
+                !methodInfo.typeInfo.hasSize(evaluationContext.getPrimitives()))
             return Level.DELAY;
 
         // we give priority to the value of the parameters, rather than that of the method

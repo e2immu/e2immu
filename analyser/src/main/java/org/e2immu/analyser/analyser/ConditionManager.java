@@ -33,7 +33,7 @@ public class ConditionManager {
     // adding a condition always adds to the state as well (testing only)
     public ConditionManager addCondition(EvaluationContext evaluationContext, Value value) {
         if (value == null || value == UnknownValue.EMPTY) return this;
-        if (value != BoolValue.createTrue(evaluationContext.getAnalyserContext().getPrimitives())) {
+        if (value != BoolValue.createTrue(evaluationContext.getPrimitives())) {
             return new ConditionManager(combineWithCondition(evaluationContext, value), combineWithState(evaluationContext, value));
         }
         return this;
@@ -69,11 +69,11 @@ public class ConditionManager {
 
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the condition
-        Value result = new AndValue(evaluationContext.getAnalyserContext().getPrimitives(), value.getObjectFlow())
+        Value result = new AndValue(evaluationContext.getPrimitives(), value.getObjectFlow())
                 .append(evaluationContext, condition, value);
         if (result.equals(condition)) {
             // constant true: adding the value has no effect at all
-            return BoolValue.createTrue(evaluationContext.getAnalyserContext().getPrimitives());
+            return BoolValue.createTrue(evaluationContext.getPrimitives());
         }
         return result;
     }
@@ -91,7 +91,7 @@ public class ConditionManager {
         if (condition == UnknownValue.EMPTY) return value;
         if (value == UnknownValue.EMPTY) return condition;
         if (isDelayed(condition) || isDelayed(value)) return UnknownValue.NO_VALUE;
-        return new AndValue(evaluationContext.getAnalyserContext().getPrimitives(), value.getObjectFlow())
+        return new AndValue(evaluationContext.getPrimitives(), value.getObjectFlow())
                 .append(evaluationContext, condition, value);
     }
 

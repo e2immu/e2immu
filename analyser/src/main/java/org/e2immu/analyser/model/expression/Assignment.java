@@ -164,7 +164,7 @@ public class Assignment implements Expression {
         Value assignedToTarget;
         if (binaryOperator != null) {
             BinaryOperator operation = new BinaryOperator(new VariableExpression(at), binaryOperator, value,
-                    BinaryOperator.precedence(evaluationContext.getAnalyserContext().getPrimitives(), binaryOperator));
+                    BinaryOperator.precedence(evaluationContext.getPrimitives(), binaryOperator));
             EvaluationResult operationResult = operation.evaluate(evaluationContext, forwardEvaluationInfo);
             builder.compose(operationResult);
 

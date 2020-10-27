@@ -34,7 +34,7 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
     }
 
     public static ConstrainedNumericValue lowerBound(EvaluationContext evaluationContext, Value value, double lowerBound) {
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        Primitives primitives = evaluationContext.getPrimitives();
         if (value instanceof ConstrainedNumericValue cnv) {
             if (cnv.lowerBound >= lowerBound) return cnv; // nothing to do!
             return new ConstrainedNumericValue(primitives, cnv.value, lowerBound, cnv.upperBound);
@@ -43,7 +43,7 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
     }
 
     public static ConstrainedNumericValue upperBound(EvaluationContext evaluationContext, Value value, double upperBound) {
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        Primitives primitives = evaluationContext.getPrimitives();
 
         if (value instanceof ConstrainedNumericValue cnv) {
             if (cnv.upperBound <= upperBound) return cnv; // nothing to do!
@@ -79,7 +79,7 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
         if (lowerBound == MIN) {
             return upperBound(evaluationContext, value, upperBound);
         }
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        Primitives primitives = evaluationContext.getPrimitives();
         if (value instanceof ConstrainedNumericValue cnv) {
             // save ourselves a new object....
             if (cnv.lowerBound >= lowerBound && cnv.upperBound <= upperBound) return value;

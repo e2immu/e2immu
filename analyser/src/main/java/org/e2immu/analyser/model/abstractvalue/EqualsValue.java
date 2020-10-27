@@ -55,7 +55,7 @@ public class EqualsValue extends PrimitiveValue {
     }
 
     public static Value equals(EvaluationContext evaluationContext, Value l, Value r, ObjectFlow objectFlow) {
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        Primitives primitives = evaluationContext.getPrimitives();
         if (l.equals(r)) return new BoolValue(primitives, true, objectFlow);
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 

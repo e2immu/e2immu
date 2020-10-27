@@ -41,7 +41,7 @@ public class StateData {
                     .map(sa -> sa.statementAnalysis.stateData.precondition.get());
 
             Value reduced = Stream.concat(fromBlocks, fromPrevious)
-                    .reduce(UnknownValue.EMPTY, (v1, v2) -> new AndValue(evaluationContext.getAnalyserContext().getPrimitives())
+                    .reduce(UnknownValue.EMPTY, (v1, v2) -> new AndValue(evaluationContext.getPrimitives())
                             .append(evaluationContext, v1, v2));
             precondition.set(reduced);
         }

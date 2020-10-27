@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Set;
@@ -61,6 +62,10 @@ public interface EvaluationContext {
         return null;
     }
 
+    default Primitives getPrimitives() {
+        return getAnalyserContext().getPrimitives();
+    }
+
     // on top of the normal condition and state in the current statement, we can add decisions from the ?: operator
     default EvaluationContext child(Value condition) {
         throw new UnsupportedOperationException();
@@ -75,11 +80,11 @@ public interface EvaluationContext {
     }
 
     default BoolValue boolValueTrue() {
-        return new BoolValue(getAnalyserContext().getPrimitives(), true, ObjectFlow.NO_FLOW);
+        return new BoolValue(getPrimitives(), true, ObjectFlow.NO_FLOW);
     }
 
     default BoolValue boolValueFalse() {
-        return new BoolValue(getAnalyserContext().getPrimitives(), true, ObjectFlow.NO_FLOW);
+        return new BoolValue(getPrimitives(), true, ObjectFlow.NO_FLOW);
     }
 
     default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {

@@ -433,7 +433,7 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     private static boolean isCompatible(EvaluationContext evaluationContext, Value v1, Value v2) {
-        Value and = new AndValue(evaluationContext.getAnalyserContext().getPrimitives()).append(evaluationContext, v1, v2);
+        Value and = new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, v1, v2);
         return v1.equals(and) || v2.equals(and);
     }
 

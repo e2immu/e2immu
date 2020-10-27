@@ -50,7 +50,7 @@ public class RemainderValue extends PrimitiveValue {
             return builder.setValue(l).build();
         }
         if (r instanceof NumericValue && r.toInt().value == 1) return builder.setValue(l).build();
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        Primitives primitives = evaluationContext.getPrimitives();
         if (l instanceof IntValue && r instanceof IntValue)
             return builder.setValue(new IntValue(primitives, l.toInt().value % r.toInt().value, objectFlow)).build();
 

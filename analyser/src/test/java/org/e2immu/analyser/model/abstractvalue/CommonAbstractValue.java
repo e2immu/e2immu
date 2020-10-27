@@ -18,20 +18,15 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.Logger;
 import org.junit.BeforeClass;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public abstract class CommonAbstractValue {
@@ -40,12 +35,52 @@ public abstract class CommonAbstractValue {
     protected static BoolValue TRUE;
     protected static BoolValue FALSE;
 
+    protected static Variable va;
+    protected static Variable vb;
+    protected static Variable vc;
+    protected static Variable vd;
+    protected static VariableValue a;
+    protected static VariableValue b;
+    protected static VariableValue c;
+    protected static VariableValue d;
+
+    protected static Variable vi;
+    protected static Variable vj;
+    protected static VariableValue i;
+    protected static VariableValue j;
+
+    protected static Variable vs;
+    protected static VariableValue s;
+
+    protected static Variable vp;
+    protected static VariableValue p;
+
     @BeforeClass
     public static void beforeClass() {
         PRIMITIVES = new Primitives();
         TRUE = new BoolValue(PRIMITIVES, true);
         FALSE = new BoolValue(PRIMITIVES, false);
         Logger.activate(Logger.LogTarget.CNF);
+
+        va = createVariable("a");
+        vb = createVariable("b");
+        vc = createVariable("c");
+        vd = createVariable("d");
+        a = new VariableValue(va);
+        b = new VariableValue(vb);
+        c = new VariableValue(vc);
+        d = new VariableValue(vd);
+
+        vi = createVariable("i");
+        vj = createVariable("j");
+        i = new VariableValue(vi);
+        j = new VariableValue(vj);
+
+        vs = createVariable("s");
+        s = new VariableValue(vs);
+
+        vp = createParameter("p");
+        p = new VariableValue(vp);
     }
 
     static Variable createVariable(String name) {
@@ -144,83 +179,12 @@ public abstract class CommonAbstractValue {
         }
 
         @Override
-        public AnalyserContext getAnalyserContext() {
-            return new AnalyserContext() {
-                @Override
-                public Configuration getConfiguration() {
-                    return null;
-                }
-
-                @Override
-                public Primitives getPrimitives() {
-                    return PRIMITIVES;
-                }
-
-                @Override
-                public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
-                    return null;
-                }
-
-                @Override
-                public PatternMatcher<StatementAnalyser> getPatternMatcher() {
-                    return null;
-                }
-
-                @Override
-                public TypeInfo getPrimaryType() {
-                    return null;
-                }
-
-                @Override
-                public Map<MethodInfo, MethodAnalyser> getMethodAnalysers() {
-                    return null;
-                }
-
-                @Override
-                public Map<FieldInfo, FieldAnalyser> getFieldAnalysers() {
-                    return null;
-                }
-
-                @Override
-                public Map<TypeInfo, TypeAnalyser> getTypeAnalysers() {
-                    return null;
-                }
-
-                @Override
-                public Map<ParameterInfo, ParameterAnalyser> getParameterAnalysers() {
-                    return null;
-                }
-
-                @Override
-                public TypeAnalysis getPrimaryTypeAnalysis() {
-                    return null;
-                }
-            };
+        public Primitives getPrimitives() {
+            return PRIMITIVES;
         }
     };
 
     protected static Value equals(Value v1, Value v2) {
         return EqualsValue.equals(minimalEvaluationContext, v1, v2, ObjectFlow.NO_FLOW);
     }
-
-    static final Variable va = createVariable("a");
-    static final Variable vb = createVariable("b");
-    static final Variable vc = createVariable("c");
-    static final Variable vd = createVariable("d");
-    static final VariableValue a = new VariableValue(va);
-    static final VariableValue b = new VariableValue(vb);
-    static final VariableValue c = new VariableValue(vc);
-    static final VariableValue d = new VariableValue(vd);
-
-    static final Variable vi = createVariable("i");
-    static final Variable vj = createVariable("j");
-    static final VariableValue i = new VariableValue(vi);
-    static final VariableValue j = new VariableValue(vj);
-
-    static final Variable vs = createVariable("s");
-    static final VariableValue s = new VariableValue(vs);
-
-    static final Variable vp = createParameter("p");
-    static final VariableValue p = new VariableValue(vp);
-
 }

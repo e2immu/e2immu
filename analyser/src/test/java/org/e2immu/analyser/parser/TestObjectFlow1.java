@@ -73,7 +73,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
 
             ObjectFlow returnFlow = d.methodAnalysis().getObjectFlow();
             Assert.assertNotNull(returnFlow);
-            Assert.assertSame(d.evaluationContext().getAnalyserContext().getPrimitives().integerTypeInfo, returnFlow.type.typeInfo);
+            Assert.assertSame(d.evaluationContext().getPrimitives().integerTypeInfo, returnFlow.type.typeInfo);
             Assert.assertSame(valueFieldOfNewKeyValue, returnFlow);
         }
     };

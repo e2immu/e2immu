@@ -104,7 +104,7 @@ public class BinaryOperator implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         // we need to handle the short-circuit operators differently
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        Primitives primitives = evaluationContext.getPrimitives();
         if (operator == primitives.orOperatorBool) {
             return shortCircuit(evaluationContext, false);
         }
@@ -235,7 +235,7 @@ public class BinaryOperator implements Expression {
     private EvaluationResult shortCircuit(EvaluationContext evaluationContext, boolean and) {
         ForwardEvaluationInfo forward = ForwardEvaluationInfo.NOT_NULL;
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        Primitives primitives = evaluationContext.getPrimitives();
 
         EvaluationResult l = lhs.evaluate(evaluationContext, forward);
         Value constant = and ? BoolValue.createFalse(primitives) : BoolValue.createTrue(primitives);
@@ -252,7 +252,7 @@ public class BinaryOperator implements Expression {
             return builder.compose(l, r).build();
         }
         ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(),
-                evaluationContext.getAnalyserContext().getPrimitives().booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
+                evaluationContext.getPrimitives().booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
         if (and) {
             builder.setValue(new AndValue(primitives, objectFlow).append(evaluationContext, l.value, r.value));
         } else {

@@ -48,7 +48,7 @@ public class BitwiseAndValue extends PrimitiveValue {
         if (l instanceof NumericValue && l.toInt().value == 0) return l;
         if (r instanceof NumericValue && r.toInt().value == 0) return r;
         if (r instanceof NumericValue && r.toInt().value == 1) return l;
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        Primitives primitives = evaluationContext.getPrimitives();
         if (l instanceof IntValue && r instanceof IntValue)
             return new IntValue(primitives, l.toInt().value & r.toInt().value, objectFlow);
 

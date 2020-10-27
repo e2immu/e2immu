@@ -114,7 +114,7 @@ public class MethodLevelData {
                 } else if (v2 == UnknownValue.EMPTY) {
                     result = v1;
                 } else {
-                    result = new AndValue(sharedState.evaluationContext.getAnalyserContext().getPrimitives())
+                    result = new AndValue(sharedState.evaluationContext.getPrimitives())
                             .append(sharedState.evaluationContext, v1, v2);
                 }
             }
@@ -486,7 +486,7 @@ public class MethodLevelData {
                     }
                 }
 
-                if (parameterInfo.parameterizedType.hasSize(sharedState.evaluationContext.getAnalyserContext().getPrimitives())) {
+                if (parameterInfo.parameterizedType.hasSize(sharedState.evaluationContext.getPrimitives())) {
                     int size = variableInfo.getProperty(VariableProperty.SIZE);
                     if (size == Level.DELAY && !haveDelay) {
                         // we could not find anything related to size, let's advertise that

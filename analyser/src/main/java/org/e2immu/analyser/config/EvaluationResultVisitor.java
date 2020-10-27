@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 public interface EvaluationResultVisitor {
     void visit(Data d);
 
-    record Data(int iteration, MethodInfo methodInfo, String statementId, EvaluationResult evaluationResult) {
+    record Data(int iteration, String step, MethodInfo methodInfo, String statementId, EvaluationResult evaluationResult) {
 
         public boolean haveSetProperty(String variableName, VariableProperty variableProperty, int value) {
             return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.SetProperty)

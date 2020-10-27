@@ -86,7 +86,7 @@ public class ArrayLengthExpression implements Expression {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(result);
 
         if (result.value instanceof ArrayValue arrayValue) {
-            Value size = new IntValue(evaluationContext.getAnalyserContext().getPrimitives(), arrayValue.values.size(), ObjectFlow.NO_FLOW);
+            Value size = new IntValue(evaluationContext.getPrimitives(), arrayValue.values.size(), ObjectFlow.NO_FLOW);
             builder.setValue(size);
         } else {
             builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE);

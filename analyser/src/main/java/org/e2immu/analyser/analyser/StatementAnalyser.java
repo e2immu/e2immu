@@ -55,6 +55,10 @@ import static org.e2immu.analyser.util.Logger.log;
 public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private static final Logger LOGGER = LoggerFactory.getLogger(StatementAnalyser.class);
     public static final String ANALYSE_METHOD_LEVEL_DATA = "analyseMethodLevelData";
+    public static final String STEP_2 = "step2"; // for(X x: xs)
+    public static final String STEP_3 = "step3"; // int i=3;
+    public static final String STEP_4 = "step4"; // main evaluation
+    public static final String STEP_9 = "step9"; // recursive
 
     public final StatementAnalysis statementAnalysis;
     private final MethodAnalyser myMethodAnalyser;
@@ -402,10 +406,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     /*
     The main loop calls the apply method with the results of an evaluation.
      */
-    private AnalysisStatus apply(EvaluationResult evaluationResult, Function<Variable, SetOnce<Value>> assignmentDestination) {
+    private AnalysisStatus apply(EvaluationResult evaluationResult, Function<Variable, SetOnce<Value>> assignmentDestination, String step) {
         // debugging...
         for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration().debugConfiguration.evaluationResultVisitors) {
-            evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.iteration,
+            evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.iteration, step,
                     myMethodAnalyser.methodInfo, statementAnalysis.index, evaluationResult));
         }
 
@@ -562,7 +566,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             }
             try {
                 EvaluationResult result = initialiser.evaluate(sharedState.evaluationContext, ForwardEvaluationInfo.DEFAULT);
-                sharedState.builder.combineAnalysisStatus(apply(result, variable -> statementAnalysis.find(analyserContext, variable).initialValue));
+                sharedState.builder.combineAnalysisStatus(apply(result,
+                        variable -> statementAnalysis.find(analyserContext, variable).initialValue, STEP_2));
 
                 Value value = result.value;
                 // initialisers size 1 means expression as statement, local variable creation
@@ -594,7 +599,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private void step3_updaters(EvaluationContext evaluationContext, Structure structure) {
         for (Expression updater : structure.updaters) {
             EvaluationResult result = updater.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-            apply(result, variable -> statementAnalysis.find(analyserContext, variable).expressionValue);
+            apply(result, variable -> statementAnalysis.find(analyserContext, variable).expressionValue, STEP_3);
         }
     }
 
@@ -604,7 +609,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
         try {
             EvaluationResult result = structure.expression.evaluate(evaluationContext, structure.forwardEvaluationInfo);
-            apply(result, variable -> statementAnalysis.find(analyserContext, variable).expressionValue);
+            apply(result, variable -> statementAnalysis.find(analyserContext, variable).expressionValue, STEP_4);
             // the evaluation system should be pretty good at always returning NO_VALUE when a NO_VALUE has been encountered
             Value value = result.value;
 
@@ -746,7 +751,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (EmptyExpression.DEFAULT_EXPRESSION == expression) {
             if (start == 1) valueForSubStatement = NegatedValue.negate(evaluationContext, value);
             else {
-                Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+                Primitives primitives = evaluationContext.getPrimitives();
                 if (conditions.isEmpty()) {
                     valueForSubStatement = BoolValue.createTrue(primitives);
                 } else {
@@ -760,7 +765,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // real expression
             EvaluationResult result = expression.evaluate(evaluationContext, forwardEvaluationInfo);
             valueForSubStatement = result.value;
-            apply(result, null);
+            apply(result, null, "STEP_9");
             conditions.add(valueForSubStatement);
         }
         return valueForSubStatement;
@@ -1083,7 +1088,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // action: if we add value == null, and nothing changes, we know it is true, we rely on value.getProperty
             // if the whole thing becomes false, we know it is false, which means we can return Level.TRUE
             Value equalsNull = EqualsValue.equals(this, NullValue.NULL_VALUE, value, ObjectFlow.NO_FLOW);
-            Value boolValueFalse = BoolValue.createFalse(getAnalyserContext().getPrimitives());
+            Value boolValueFalse = BoolValue.createFalse(getPrimitives());
             if (equalsNull.equals(boolValueFalse)) return MultiLevel.EFFECTIVELY_NOT_NULL;
             Value withCondition = conditionManager.combineWithState(this, equalsNull);
             if (withCondition.equals(boolValueFalse)) return MultiLevel.EFFECTIVELY_NOT_NULL; // we know != null

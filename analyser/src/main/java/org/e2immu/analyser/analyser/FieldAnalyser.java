@@ -369,9 +369,9 @@ public class FieldAnalyser extends AbstractAnalyser {
                         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
                         Value fieldIsNotNull = NegatedValue.negate(evaluationContext,
                                 EqualsValue.equals(evaluationContext, NullValue.NULL_VALUE, assignment, ObjectFlow.NO_FLOW));
-                        Value andValue = new AndValue(evaluationContext.getAnalyserContext().getPrimitives(), ObjectFlow.NO_FLOW)
+                        Value andValue = new AndValue(evaluationContext.getPrimitives(), ObjectFlow.NO_FLOW)
                                 .append(evaluationContext, m.methodAnalysis.precondition.get(), fieldIsNotNull);
-                        return !andValue.equals(BoolValue.createFalse(evaluationContext.getAnalyserContext().getPrimitives()));
+                        return !andValue.equals(BoolValue.createFalse(evaluationContext.getPrimitives()));
                     });
                     if (allCompatible) {
                         log(NOT_NULL, "Setting @Nullable on {}, already in precondition", fieldInfo.fullyQualifiedName());

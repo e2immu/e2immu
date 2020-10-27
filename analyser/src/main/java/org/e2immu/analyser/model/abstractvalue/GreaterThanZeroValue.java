@@ -99,7 +99,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reValue);
         return builder.setValue(GreaterThanZeroValue.greater(evaluationContext,
                 reValue.value,
-                new IntValue(evaluationContext.getAnalyserContext().getPrimitives(), 0, ObjectFlow.NO_FLOW),
+                new IntValue(evaluationContext.getPrimitives(), 0, ObjectFlow.NO_FLOW),
                 allowEquals, getObjectFlow())).build();
     }
 
@@ -116,7 +116,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
             if (sumValue.lhs instanceof NumericValue && sumValue.lhs.isDiscreteType()) {
                 // NOT (-3 + x >= 0) == NOT (x >= 3) == x < 3 == x <= 2 == 2 + -x >= 0
                 // NOT (3 + x >= 0) == NOT (x >= -3) == x < -3 == x <= -4 == -4 + -x >= 0
-                Value minusSumPlusOne = NumericValue.intOrDouble(evaluationContext.getAnalyserContext().getPrimitives(),
+                Value minusSumPlusOne = NumericValue.intOrDouble(evaluationContext.getPrimitives(),
                         -(((NumericValue) sumValue.lhs).getNumber().doubleValue() + 1.0),
                         sumValue.lhs.getObjectFlow());
                 return new GreaterThanZeroValue(booleanParameterizedType,
@@ -187,7 +187,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     }
 
     public static Value greater(EvaluationContext evaluationContext, Value l, Value r, boolean allowEquals, ObjectFlow objectFlow) {
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        Primitives primitives = evaluationContext.getPrimitives();
         if (l.equals(r) && !allowEquals) return BoolValue.createFalse(primitives);
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
@@ -201,8 +201,8 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         Value v = tautologyGreaterThan(primitives, l, r, allowEquals);
         if (v != null) return v;
 
-        ParameterizedType intParameterizedType = evaluationContext.getAnalyserContext().getPrimitives().intParameterizedType;
-        ParameterizedType booleanParameterizedType = evaluationContext.getAnalyserContext().getPrimitives().booleanParameterizedType;
+        ParameterizedType intParameterizedType = evaluationContext.getPrimitives().intParameterizedType;
+        ParameterizedType booleanParameterizedType = evaluationContext.getPrimitives().booleanParameterizedType;
 
         ObjectFlow objectFlowSum = objectFlow == null ? null : new ObjectFlow(objectFlow.location, intParameterizedType, Origin.RESULT_OF_OPERATOR);
 
@@ -244,7 +244,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     }
 
     public static Value less(EvaluationContext evaluationContext, Value l, Value r, boolean allowEquals, ObjectFlow objectFlow) {
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        Primitives primitives = evaluationContext.getPrimitives();
         if (l.equals(r) && !allowEquals) return BoolValue.createFalse(primitives);
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
@@ -255,8 +255,8 @@ public class GreaterThanZeroValue extends PrimitiveValue {
             return new BoolValue(primitives, l.toInt().value < r.toInt().value, objectFlow);
         }
 
-        ParameterizedType intParameterizedType = evaluationContext.getAnalyserContext().getPrimitives().intParameterizedType;
-        ParameterizedType booleanParameterizedType = evaluationContext.getAnalyserContext().getPrimitives().booleanParameterizedType;
+        ParameterizedType intParameterizedType = evaluationContext.getPrimitives().intParameterizedType;
+        ParameterizedType booleanParameterizedType = evaluationContext.getPrimitives().booleanParameterizedType;
 
         ObjectFlow objectFlowSum = objectFlow == null ? null : new ObjectFlow(objectFlow.location, intParameterizedType, Origin.RESULT_OF_OPERATOR);
 
@@ -324,7 +324,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         XB xb = extract(evaluationContext);
         if (!xb.lessThan && xb.x instanceof ConstrainedNumericValue cnv) {
             if (cnv.value instanceof MethodValue methodValue) {
-                if (methodValue.methodInfo.typeInfo.sizeMethod(evaluationContext.getAnalyserContext().getPrimitives())
+                if (methodValue.methodInfo.typeInfo.sizeMethod(evaluationContext.getPrimitives())
                         == methodValue.methodInfo) {
                     // I am the size method!
                     if (methodValue.object instanceof VariableValue v) {

@@ -126,7 +126,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                     if (scopeResult.value.isInstanceOf(NullValue.class)) {
                         builder.raiseError(Message.NULL_POINTER_EXCEPTION);
                     }
-                    result = new MethodValue(evaluationContext.getAnalyserContext().getPrimitives(),
+                    result = new MethodValue(evaluationContext.getPrimitives(),
                             methodInfo, scopeResult.value, List.of(), objectFlow);
                 }
             } else if (methodInfo.hasBeenDefined()) {
@@ -135,7 +135,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 if (scopeResult.value instanceof NullValue) {
                     builder.raiseError(Message.NULL_POINTER_EXCEPTION);
                 }
-                result = new MethodValue(evaluationContext.getAnalyserContext().getPrimitives(),
+                result = new MethodValue(evaluationContext.getPrimitives(),
                         methodInfo, scopeResult.value, List.of(), objectFlow);
             }
             builder.setValue(result);

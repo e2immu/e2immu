@@ -56,7 +56,7 @@ public class ConditionalValue implements Value {
 
     public static EvaluationResult conditionalValueCurrentState(EvaluationContext evaluationContext, Value conditionBeforeState, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
         Value condition = checkState(evaluationContext,
-                evaluationContext.getAnalyserContext().getPrimitives(),
+                evaluationContext.getPrimitives(),
                 evaluationContext.getConditionManager().state, conditionBeforeState);
         return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalse, objectFlow);
     }
@@ -69,7 +69,7 @@ public class ConditionalValue implements Value {
             return builder.setValue(first ? ifTrue : ifFalse).build();
         }
 
-        Value edgeCase = edgeCases(evaluationContext, evaluationContext.getAnalyserContext().getPrimitives(),
+        Value edgeCase = edgeCases(evaluationContext, evaluationContext.getPrimitives(),
                 condition, ifTrue, ifFalse);
         if (edgeCase != null) return builder.setValue(edgeCase).build();
 
@@ -114,10 +114,10 @@ public class ConditionalValue implements Value {
         EvaluationResult reTrue = ifTrue.reEvaluate(evaluationContext, translation);
         EvaluationResult reFalse = ifFalse.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reCondition, reTrue, reFalse);
-        if (reCondition.value == BoolValue.createTrue(evaluationContext.getAnalyserContext().getPrimitives())) {
+        if (reCondition.value == BoolValue.createTrue(evaluationContext.getPrimitives())) {
             return builder.setValue(reTrue.value).build();
         }
-        if (reCondition.value == BoolValue.createFalse(evaluationContext.getAnalyserContext().getPrimitives())) {
+        if (reCondition.value == BoolValue.createFalse(evaluationContext.getPrimitives())) {
             return builder.setValue(reFalse.value).build();
         }
         return builder.setValue(new ConditionalValue(reCondition.value, reTrue.value, reFalse.value, getObjectFlow())).build();

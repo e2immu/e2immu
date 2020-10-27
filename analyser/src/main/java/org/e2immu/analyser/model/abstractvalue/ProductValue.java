@@ -51,7 +51,7 @@ public class ProductValue extends PrimitiveValue {
 
     // we try to maintain a sum of products
     public static Value product(EvaluationContext evaluationContext, Value l, Value r, ObjectFlow objectFlow) {
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        Primitives primitives = evaluationContext.getPrimitives();
 
         if (l instanceof NumericValue && l.toInt().value == 0 ||
                 r instanceof NumericValue && r.toInt().value == 0) {

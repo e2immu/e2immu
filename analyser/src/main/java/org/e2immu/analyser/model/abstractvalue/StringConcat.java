@@ -48,7 +48,7 @@ public class StringConcat implements Value {
     public static Value stringConcat(EvaluationContext evaluationContext, Value l, Value r, ObjectFlow objectFlow) {
         StringValue lsv = l.asInstanceOf(StringValue.class);
         StringValue rsv = r.asInstanceOf(StringValue.class);
-        Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+        Primitives primitives = evaluationContext.getPrimitives();
 
         if (lsv != null && rsv != null) {
             return lsv.value.isEmpty() ? r : rsv.value.isEmpty() ? l : new StringValue(primitives, lsv.value + rsv.value, objectFlow);

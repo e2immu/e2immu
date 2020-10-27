@@ -68,7 +68,7 @@ public class TestBasics extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.READ));
                 Assert.assertFalse(d.properties.isSet(VariableProperty.ASSIGNED));
                 Assert.assertFalse(d.properties.isSet(VariableProperty.NOT_NULL));
-                Assert.assertEquals(new StringValue(d.evaluationContext.getAnalyserContext().getPrimitives(), "abc"), d.currentValue);
+                Assert.assertEquals(new StringValue(d.evaluationContext.getPrimitives(), "abc"), d.currentValue);
                 return;
             }
             if (d.iteration == 1 || d.iteration == 2) {

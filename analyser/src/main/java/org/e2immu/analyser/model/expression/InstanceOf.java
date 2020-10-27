@@ -79,7 +79,7 @@ public class InstanceOf implements Expression {
             return builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE).build();
         }
         if (value instanceof NullValue) {
-            return builder.setValue(new BoolValue(evaluationContext.getAnalyserContext().getPrimitives(), false)).build();
+            return builder.setValue(new BoolValue(evaluationContext.getPrimitives(), false)).build();
 
         }
         if (value instanceof CombinedValue combinedValue) {
@@ -90,12 +90,12 @@ public class InstanceOf implements Expression {
         }
         if (value instanceof VariableValue) {
             Location location = evaluationContext.getLocation(this);
-            Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+            Primitives primitives = evaluationContext.getPrimitives();
             ObjectFlow objectFlow = builder.createInternalObjectFlow(location, primitives.booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
             return builder.setValue(new InstanceOfValue(primitives, ((VariableValue) value).variable, parameterizedType, objectFlow)).build();
         }
         if (value instanceof Instance) {
-            Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+            Primitives primitives = evaluationContext.getPrimitives();
             EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(primitives, ((Instance) value).parameterizedType),
                     evaluationContext.getLocation(this), evaluationContext, Origin.RESULT_OF_OPERATOR);
             return builder.compose(er).setValue(er.value).build();
@@ -104,7 +104,7 @@ public class InstanceOf implements Expression {
             return builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE).build(); // no clue, too deep
         }
         if (value instanceof ClassValue) {
-            Primitives primitives = evaluationContext.getAnalyserContext().getPrimitives();
+            Primitives primitives = evaluationContext.getPrimitives();
             EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(primitives, ((ClassValue) value).value),
                     evaluationContext.getLocation(this), evaluationContext, Origin.RESULT_OF_OPERATOR);
             return builder.compose(er).setValue(er.value).build();

@@ -21,7 +21,6 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.CharValue;
-import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
@@ -197,20 +196,16 @@ public class TestAbstractValue extends CommonAbstractValue {
         Assert.assertEquals("2 * a", aa.toString());
         Value a0 = SumValue.sum(minimalEvaluationContext, a, newInt(0), ObjectFlow.NO_FLOW);
         Assert.assertEquals(a, a0);
-        Value aTimes0 = ProductValue.product(minimalEvaluationContext, a,
-                new IntValue(PRIMITIVES, 0, ObjectFlow.NO_FLOW), ObjectFlow.NO_FLOW);
+        Value aTimes0 = ProductValue.product(minimalEvaluationContext, a, newInt(0), ObjectFlow.NO_FLOW);
         Assert.assertEquals(newInt(0), aTimes0);
 
         Value a3a = SumValue.sum(minimalEvaluationContext, a,
                 ProductValue.product(minimalEvaluationContext, newInt(3), a, ObjectFlow.NO_FLOW),
                 ObjectFlow.NO_FLOW);
         Assert.assertEquals("4 * a", a3a.toString());
-
-        Value b2 = ProductValue.product(minimalEvaluationContext, b, newInt(2),
-                ObjectFlow.NO_FLOW);
-        Value fourB2 = ProductValue.product(minimalEvaluationContext, newInt(4),
-                b2, ObjectFlow.NO_FLOW);
-        Value b4b2 = SumValue.sum(minimalEvaluationContext, fourB2, b2, ObjectFlow.NO_FLOW);
+        Value b2 = ProductValue.product(minimalEvaluationContext, b, newInt(2), ObjectFlow.NO_FLOW);
+        Value b4 = ProductValue.product(minimalEvaluationContext, newInt(4), b, ObjectFlow.NO_FLOW);
+        Value b4b2 = SumValue.sum(minimalEvaluationContext, b4, b2, ObjectFlow.NO_FLOW);
         Assert.assertEquals("6 * b", b4b2.toString());
     }
 }

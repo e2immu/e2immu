@@ -84,7 +84,7 @@ public class UnaryOperator implements Expression {
         return new EvaluationResult.Builder(evaluationContext)
                 .compose(evaluationResult)
                 .setValue(computeValue(evaluationContext,
-                        evaluationContext.getAnalyserContext().getPrimitives(), evaluationResult))
+                        evaluationContext.getPrimitives(), evaluationResult))
                 .build();
     }
 
