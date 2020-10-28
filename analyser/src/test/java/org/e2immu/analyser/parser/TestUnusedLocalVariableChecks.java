@@ -3,10 +3,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodAnalysis;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -85,36 +82,58 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
      */
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        int read = d.properties.getOrDefault(VariableProperty.READ, Level.DELAY);
-        int assigned = d.properties.getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
 
-        if ("checkArray2".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
-            if ("integers".equals(d.variableName)) {
+        if ("checkArray2".equals(d.methodInfo.name)) {
+            int read = d.properties.getOrDefault(VariableProperty.READ, Level.DELAY);
+            int assigned = d.properties.getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
+
+            if ("0".equals(d.statementId) && "integers".equals(d.variableName)) {
                 Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned); // integers=, and integers[i]=
                 Assert.assertEquals(Level.DELAY, read);
+                Assert.assertEquals("{1,2,3}", d.currentValue.toString());
             }
-        }
-        if ("checkArray2".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
-            if ("integers".equals(d.variableName)) {
-                Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned); // integers=, NOT integers[i]=
-                Assert.assertEquals(assigned + 1, read);
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL)); // because in scope side
-            } else if ("i".equals(d.variableName)) {
-                Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned);
-                Assert.assertEquals(assigned + 1, read);
+            if ("1".equals(d.statementId) && "i".equals(d.variableName)) {
+                Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned); // integers=, and integers[i]=
+                Assert.assertEquals(Level.DELAY, read);
+                Assert.assertEquals("0", d.currentValue.toString());
+            }
+            if ("2".equals(d.statementId)) {
+                if ("integers".equals(d.variableName)) {
+                    Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned); // integers=, NOT integers[i]=
+                    Assert.assertEquals(assigned + 1, read);
+                    Assert.assertEquals("{1,2,3}", d.currentValue.toString());
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL)); // because in scope side
+                } else if ("i".equals(d.variableName)) {
+                    Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned);
+                    Assert.assertEquals(assigned + 1, read);
 
-                // the standardized name is the evaluation value of expression and index, in this particular case, both constants
-            } else if ("{1,2,3}[0]".equals(d.variableName)) {
-                Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned);
-                Assert.assertTrue(read <= assigned);
-            } else Assert.fail();
+                    // the standardized name is the evaluation value of expression and index, in this particular case, both constants
+                } else if ("{1,2,3}[0]".equals(d.variableName)) {
+                    Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned);
+                    Assert.assertTrue(read <= assigned);
+                } else Assert.fail();
+            }
         }
     };
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
-        if ("2".equals(d.statementId()) && "checkArray2".equals(d.methodInfo().name)) {
-            Assert.assertEquals(StatementAnalyser.STEP_4, d.step()); // just to make sure we're on the correct statement
-            Assert.assertEquals(2L, d.evaluationResult().getModificationStream().count());
+        if ("checkArray2".equals(d.methodInfo().name)) {
+            // int[] integers = {1, 2, 3};
+            if ("0".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_2, d.step());
+                Assert.assertEquals("{1,2,3}", d.evaluationResult().value.toString());
+                Variable integers = d.evaluationResult().valueChanges.keySet().stream().findFirst().orElseThrow();
+                Assert.assertEquals("integers", integers.fullyQualifiedName());
+                Assert.assertTrue(integers instanceof LocalVariableReference);
+                Assert.assertEquals("{1,2,3}", d.evaluationResult().valueChanges.get(integers).toString());
+            }
+            // int i=0;
+
+            // integers[i] = 3
+            if ("2".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_4, d.step()); // just to make sure we're on the correct statement
+                //Assert.assertEquals(2L, d.evaluationResult().getModificationStream().count());
+            }
         }
     };
 

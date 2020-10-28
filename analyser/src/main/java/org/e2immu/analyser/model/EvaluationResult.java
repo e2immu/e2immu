@@ -125,22 +125,37 @@ public class EvaluationResult {
         }
 
         public Builder compose(EvaluationResult... previousResults) {
-            if (previousResults != null) {
-                for (EvaluationResult evaluationResult : previousResults) {
-                    append(evaluationResult);
-                }
+            assert previousResults != null;
+            for (EvaluationResult evaluationResult : previousResults) {
+                append(false, evaluationResult);
+            }
+            return this;
+        }
+
+        public Builder composeIgnoreValue(EvaluationResult... previousResults) {
+            assert previousResults != null;
+            for (EvaluationResult evaluationResult : previousResults) {
+                append(true, evaluationResult);
             }
             return this;
         }
 
         public Builder compose(Iterable<EvaluationResult> previousResults) {
             for (EvaluationResult evaluationResult : previousResults) {
-                append(evaluationResult);
+                append(false, evaluationResult);
             }
             return this;
         }
 
-        private void append(EvaluationResult evaluationResult) {
+        private void append(boolean ignoreValue, EvaluationResult evaluationResult) {
+            if (!ignoreValue) {
+                // we propagate NO_VALUE
+                if (value == null && evaluationResult.value != null) {
+                    value = evaluationResult.value;
+                }
+                if (evaluationResult.value == NO_VALUE) value = NO_VALUE;
+            }
+
             if (!evaluationResult.modifications.isEmpty()) {
                 if (modifications == null) {
                     modifications = new LinkedList<>(evaluationResult.modifications);
@@ -154,11 +169,6 @@ public class EvaluationResult {
                 if (stateChanges == null) stateChanges = new LinkedList<>(evaluationResult.stateChanges);
                 else stateChanges.addAll(evaluationResult.stateChanges);
             }
-            if (value == null && evaluationResult.value != null) {
-                value = evaluationResult.value;
-            }
-            // we propagate NO_VALUE
-            if (evaluationResult.value == NO_VALUE) value = NO_VALUE;
             valueChanges.putAll(evaluationResult.valueChanges);
         }
 

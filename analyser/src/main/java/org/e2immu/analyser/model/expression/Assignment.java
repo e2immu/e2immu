@@ -155,7 +155,8 @@ public class Assignment implements Expression {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         EvaluationResult valueResult = value.evaluate(evaluationContext, forwardEvaluationInfo);
         EvaluationResult targetResult = target.evaluate(evaluationContext, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
-        builder.compose(targetResult, valueResult);
+        builder.compose(valueResult);
+        builder.composeIgnoreValue(targetResult);
 
         Variable at = target.assignmentTarget().orElseThrow();
         log(VARIABLE_PROPERTIES, "Assignment: {} = {}", at.fullyQualifiedName(), value);
