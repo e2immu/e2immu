@@ -578,13 +578,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
                 // TODO move to a place where *every* assignment is verified (assignment-basics)
                 // are we in a loop (somewhere) assigning to a variable that already exists outside that loop?
-                if (initialiser instanceof Assignment && initialiser.assignmentTarget().isPresent()) {
+                if (initialiser instanceof Assignment assignment) {
                     int levelLoop = statementAnalysis.stepsUpToLoop();
                     if (levelLoop >= 0) {
-                        Variable assignmentTarget = initialiser.assignmentTarget().get();
-                        int levelAssignmentTarget = statementAnalysis.levelAtWhichVariableIsDefined(analyserContext, assignmentTarget);
+                        int levelAssignmentTarget = statementAnalysis.levelAtWhichVariableIsDefined(analyserContext, assignment.variableTarget);
                         if (levelAssignmentTarget >= levelLoop) {
-                            statementAnalysis.addProperty(analyserContext, assignmentTarget, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+                            statementAnalysis.addProperty(analyserContext, assignment.variableTarget, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
                         }
                     }
                 }
@@ -765,7 +764,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // real expression
             EvaluationResult result = expression.evaluate(evaluationContext, forwardEvaluationInfo);
             valueForSubStatement = result.value;
-            apply(result, null, "STEP_9");
+            apply(result, null, STEP_9);
             conditions.add(valueForSubStatement);
         }
         return valueForSubStatement;
@@ -911,8 +910,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     boolean notAssignedInLoop = variableInfo.getProperty(VariableProperty.ASSIGNED_IN_LOOP) != Level.TRUE;
                     // TODO at some point we will do better than "notAssignedInLoop"
                     boolean useless = bestAlwaysInterrupt == InterruptsFlow.ESCAPE || notAssignedInLoop && (
-                            alwaysInterrupts && statementAnalysis.isLocalVariable(analyserContext, variableInfo) ||
-                                    variableInfo.isNotLocalCopy() && variableInfo.variable instanceof LocalVariableReference);
+                            variableInfo.variable.isLocal() && (alwaysInterrupts || variableInfo.isNotLocalCopy()));
                     if (useless) {
                         statementAnalysis.ensure(Message.newMessage(getLocation(), Message.USELESS_ASSIGNMENT, variableInfo.name));
                         if (variableInfo.isLocalCopy()) toRemove.add(variableInfo.name);
@@ -932,10 +930,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // at the end of the block, check for variables created in this block
             // READ is set in the first iteration, so there is no reason to expect delays
             statementAnalysis.variableStream().forEach(variableInfo -> {
-                if (variableInfo.isNotLocalCopy() && variableInfo.variable instanceof LocalVariableReference
+                if (variableInfo.isNotLocalCopy() && variableInfo.variable.isLocal()
                         && variableInfo.getProperty(VariableProperty.READ) < Level.READ_ASSIGN_ONCE) {
-                    LocalVariable localVariable = ((LocalVariableReference) variableInfo.variable).variable;
-                    statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNUSED_LOCAL_VARIABLE, localVariable.name));
+                    statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNUSED_LOCAL_VARIABLE, variableInfo.name));
                 }
             });
         }
@@ -1128,6 +1125,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public Set<Variable> linkedVariables(Value value) {
+            assert value != null;
             if (value instanceof VariableValue variableValue) {
                 TypeInfo typeInfo = variableValue.variable.parameterizedType().bestTypeInfo();
                 boolean notSelf = typeInfo != getCurrentType().typeInfo;
@@ -1251,21 +1249,41 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
 
-    public class AddVariable implements StatementAnalysis.StatementAnalysisModification {
+    public class MarkAssigned implements StatementAnalysis.StatementAnalysisModification {
         private final Variable variable;
 
-        public AddVariable(Variable variable) {
+        public MarkAssigned(Variable variable) {
             this.variable = variable;
         }
 
         @Override
         public void run() {
-            statementAnalysis.find(analyserContext, variable);
+            statementAnalysis.find(analyserContext, variable).markAssigned();
         }
 
         @Override
         public String toString() {
-            return "AddVariable{" +
+            return "MarkAssigned{" +
+                    "variable=" + variable +
+                    '}';
+        }
+    }
+
+    public class MarkRead implements StatementAnalysis.StatementAnalysisModification {
+        private final Variable variable;
+
+        public MarkRead(Variable variable) {
+            this.variable = variable;
+        }
+
+        @Override
+        public void run() {
+            statementAnalysis.find(analyserContext, variable).markRead();
+        }
+
+        @Override
+        public String toString() {
+            return "MarkRead{" +
                     "variable=" + variable +
                     '}';
         }

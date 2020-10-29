@@ -1097,20 +1097,21 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 .anyMatch(ann -> Primitives.isFunctionalInterfaceAnnotation(ann.typeInfo));
     }
 
-    public MethodInfo sizeMethod(Primitives primitives) {
+    public MethodInfo sizeMethod(Primitives primitives, AnalysisProvider analysisProvider) {
         MethodInfo methodInfo = typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(mi -> returnsIntOrLong(mi) && mi.methodInspection.get().parameters.isEmpty())
-                .filter(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.SIZE) > Level.FALSE)
-                .filter(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE)
+                .filter(mi -> analysisProvider.getMethodAnalysis(mi).getProperty(VariableProperty.SIZE) > Level.FALSE)
+                .filter(mi -> analysisProvider.getMethodAnalysis(mi).getProperty(VariableProperty.MODIFIED) == Level.FALSE)
                 .findFirst().orElse(null);
         if (methodInfo != null) {
             return methodInfo;
         }
-        return superTypes(primitives).stream().map(t -> t.sizeMethod(primitives)).filter(Objects::nonNull).findFirst().orElse(null);
+        return superTypes(primitives).stream().map(t -> t.sizeMethod(primitives, analysisProvider))
+                .filter(Objects::nonNull).findFirst().orElse(null);
     }
 
-    public boolean hasSize(Primitives primitives) {
-        return sizeMethod(primitives) != null;
+    public boolean hasSize(Primitives primitives, AnalysisProvider analysisProvider) {
+        return sizeMethod(primitives, analysisProvider) != null;
     }
 
     public static boolean returnsIntOrLong(MethodInfo methodInfo) {

@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
@@ -115,6 +116,9 @@ public class LocalVariableCreation implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        if (expression == EmptyExpression.EMPTY_EXPRESSION) {
+            return new EvaluationResult.Builder().setValue(UnknownValue.EMPTY).build();
+        }
         Assignment assignment = new Assignment(evaluationContext.getPrimitives(),
                 new VariableExpression(localVariableReference), expression);
         return assignment.evaluate(evaluationContext, forwardEvaluationInfo);

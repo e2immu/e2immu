@@ -17,10 +17,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.LocalVariableReference;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.IncrementalMap;
@@ -111,7 +108,7 @@ public class VariableInfo {
     public void markRead() {
         int assigned = Math.max(getProperty(VariableProperty.ASSIGNED), 0);
         int read = getProperty(VariableProperty.READ);
-        int val = Math.min(1, Math.max(read + 1, assigned + 1));
+        int val = Math.max(1, Math.max(read + 1, assigned + 1));
         setProperty(VariableProperty.READ, val);
     }
 
@@ -122,4 +119,5 @@ public class VariableInfo {
     public void setObjectFlow(ObjectFlow objectFlow) {
         this.objectFlow.set(objectFlow);
     }
+
 }

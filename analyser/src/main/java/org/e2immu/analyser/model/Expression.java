@@ -51,11 +51,6 @@ public interface Expression extends Element {
         return List.of();
     }
 
-    @NotModified
-    default Optional<Variable> assignmentTarget() {
-        throw new UnsupportedOperationException("Class is " + getClass());
-    }
-
     @Override
     default Expression translate(TranslationMap translationMap) {
         return this;

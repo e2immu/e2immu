@@ -90,12 +90,6 @@ public class FieldAccess implements Expression {
     }
 
     @Override
-    @NotNull
-    public Optional<Variable> assignmentTarget() {
-        return Optional.of(variable);
-    }
-
-    @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult evaluationResult = VariableExpression.evaluate(evaluationContext, forwardEvaluationInfo, variable);
         EvaluationResult scopeResult = expression.evaluate(evaluationContext, forwardEvaluationInfo.copyModificationEnsureNotNull());

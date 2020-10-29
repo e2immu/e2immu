@@ -120,8 +120,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 undeclaredFunctionalInterface = false;
             }
             if ((circularCall || undeclaredFunctionalInterface)) {
-                MethodLevelData methodLevelData = evaluationContext.getCurrentStatement().statementAnalysis.methodLevelData;
-                builder.add(methodLevelData.new SetCircularCallOrUndeclaredFunctionalInterface());
+                builder.addCircularCallOrUndeclaredFunctionalInterface();
             }
             alwaysModifying = circularCall || undeclaredFunctionalInterface;
         } else {
@@ -431,7 +430,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                      List<Value> parameters,
                                      EvaluationContext evaluationContext,
                                      Location location) {
-        if (!methodInfo.typeInfo.hasSize(evaluationContext.getPrimitives())) return null;
+        if (!methodInfo.typeInfo.hasSize(evaluationContext.getPrimitives(), evaluationContext.getAnalyserContext())) return null;
 
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
         if (modified == Level.DELAY) {
@@ -451,7 +450,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Primitives primitives = evaluationContext.getPrimitives();
         // SITUATION 1: @Size(equals = 0) boolean isEmpty() { }, @Size(min = 1) boolean isNotEmpty() {}, etc.
         MethodAnalysis sizeMethodAnalysis = evaluationContext.getMethodAnalysis(methodInfo.typeInfo
-                .sizeMethod(primitives));
+                .sizeMethod(primitives, evaluationContext.getAnalyserContext()));
 
         if (Primitives.isBooleanOrBoxedBoolean(methodInfo.returnType())) {
             // there is an @Size annotation on a method returning a boolean...
@@ -533,7 +532,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 TypeInfo typeInfo = methodValue.object.type().bestTypeInfo();
                 if (typeInfo == null)
                     throw new UnsupportedOperationException("Haze a @Size(copy = true) but the object type is not known?");
-                MethodInfo sizeMethodInfoOnObject = typeInfo.sizeMethod(primitives);
+                MethodInfo sizeMethodInfoOnObject = typeInfo.sizeMethod(primitives, evaluationContext.getAnalyserContext());
                 if (sizeMethodInfoOnObject == null)
                     throw new UnsupportedOperationException("Have a @Size(copy = true) but the object type has no size() method?");
                 return new MethodValue(primitives, sizeMethodInfoOnObject, methodValue.object, List.of(),

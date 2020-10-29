@@ -17,11 +17,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.StateData;
-import org.e2immu.analyser.analyser.StatementAnalyser;
-import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
@@ -113,6 +109,16 @@ public class EvaluationResult {
         private Value value;
         private final Map<Variable, Value> valueChanges = new HashMap<>();
 
+        private void addToModifications(StatementAnalysis.StatementAnalysisModification modification) {
+            if (modifications == null) modifications = new ArrayList<>();
+            modifications.add(modification);
+        }
+
+        private void addToModifications(Collection<StatementAnalysis.StatementAnalysisModification> modification) {
+            if (modifications == null) modifications = new ArrayList<>();
+            modifications.addAll(modification);
+        }
+
         // for a constant EvaluationResult
         public Builder() {
             evaluationContext = null;
@@ -157,9 +163,7 @@ public class EvaluationResult {
             }
 
             if (!evaluationResult.modifications.isEmpty()) {
-                if (modifications == null) {
-                    modifications = new LinkedList<>(evaluationResult.modifications);
-                } else modifications.addAll(evaluationResult.modifications);
+                addToModifications(evaluationResult.modifications);
             }
             if (!evaluationResult.objectFlows.isEmpty()) {
                 if (objectFlows == null) objectFlows = new LinkedList<>(evaluationResult.objectFlows);
@@ -203,25 +207,15 @@ public class EvaluationResult {
             int notNull = MultiLevel.value(evaluationContext.getProperty(value, VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
             if (notNull == MultiLevel.FALSE) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION, variable.simpleName());
-                add(statementAnalyser.new RaiseErrorMessage(message));
+                addToModifications(statementAnalyser.new RaiseErrorMessage(message));
             } else if (notNull == MultiLevel.DELAY) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
-                add(statementAnalyser.new SetProperty(variable, VariableProperty.NOT_NULL, notNullRequired));
+                addToModifications(statementAnalyser.new SetProperty(variable, VariableProperty.NOT_NULL, notNullRequired));
             }
         }
 
-        public Value createArrayVariableValue(DependentVariable dependentVariable, Location location) {
-            Value current = evaluationContext.currentValue(dependentVariable);
-            if (current != null) return current;
-            modifications.add(statementAnalyser.new AddVariable(dependentVariable));
-
-            ObjectFlow objectFlow = createInternalObjectFlow(location, dependentVariable.parameterizedType, Origin.FIELD_ACCESS);
-            return new VariableValue(dependentVariable, dependentVariable.simpleName(), objectFlow, false);
-        }
-
         public Builder markRead(Variable variable) {
-            if (modifications == null) modifications = new LinkedList<>();
-            modifications.add(statementAnalyser.new SetProperty(variable, VariableProperty.READ, Level.TRUE));
+            addToModifications(statementAnalyser.new MarkRead(variable));
             return this;
         }
 
@@ -239,11 +233,6 @@ public class EvaluationResult {
             return objectFlow;
         }
 
-        public void add(StatementAnalysis.StatementAnalysisModification modification) {
-            if (modifications == null) modifications = new LinkedList<>();
-            modifications.add(modification);
-        }
-
         public void add(StatementAnalysis.StateChange modification) {
             if (stateChanges == null) stateChanges = new LinkedList<>();
             stateChanges.add(modification);
@@ -251,18 +240,18 @@ public class EvaluationResult {
 
         public Builder raiseError(String messageString) {
             Message message = Message.newMessage(evaluationContext.getLocation(), messageString);
-            modifications.add(statementAnalyser.new RaiseErrorMessage(message));
+            addToModifications(statementAnalyser.new RaiseErrorMessage(message));
             return this;
         }
 
         public Builder raiseError(String messageString, String extra) {
             Message message = Message.newMessage(evaluationContext.getLocation(), messageString, extra);
-            modifications.add(statementAnalyser.new RaiseErrorMessage(message));
+            addToModifications(statementAnalyser.new RaiseErrorMessage(message));
             return this;
         }
 
         public Builder addMessage(Message message) {
-            modifications.add(statementAnalyser.new RaiseErrorMessage(message));
+            addToModifications(statementAnalyser.new RaiseErrorMessage(message));
             return this;
         }
 
@@ -283,7 +272,7 @@ public class EvaluationResult {
         }
 
         public void markMethodDelay(Variable variable, int methodDelay) {
-            modifications.add(statementAnalyser.new SetProperty(variable, VariableProperty.METHOD_DELAY, methodDelay));
+            addToModifications(statementAnalyser.new SetProperty(variable, VariableProperty.METHOD_DELAY, methodDelay));
         }
 
         public void markMethodCalled(Variable variable, int methodCalled) {
@@ -294,19 +283,19 @@ public class EvaluationResult {
                 v = new This(evaluationContext.getCurrentType().typeInfo);
             } else v = null;
             if (v != null) {
-                add(statementAnalyser.new SetProperty(v, VariableProperty.METHOD_CALLED, methodCalled));
+                addToModifications(statementAnalyser.new SetProperty(v, VariableProperty.METHOD_CALLED, methodCalled));
             }
         }
 
         public void markSizeRestriction(Variable variable, int size) {
-            add(statementAnalyser.new SetProperty(variable, VariableProperty.SIZE, size));
+            addToModifications(statementAnalyser.new SetProperty(variable, VariableProperty.SIZE, size));
         }
 
         public void markContentModified(Variable variable, int modified) {
             int ignoreContentModifications = evaluationContext.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
             if (ignoreContentModifications != Level.TRUE) {
                 log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.fullyQualifiedName());
-                add(statementAnalyser.new SetProperty(variable, VariableProperty.MODIFIED, modified));
+                addToModifications(statementAnalyser.new SetProperty(variable, VariableProperty.MODIFIED, modified));
             } else {
                 log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.fullyQualifiedName());
             }
@@ -319,29 +308,30 @@ public class EvaluationResult {
             int notModified1 = evaluationContext.getProperty(currentValue, VariableProperty.NOT_MODIFIED_1);
             if (notModified1 == Level.FALSE) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.MODIFICATION_NOT_ALLOWED, variable.simpleName());
-                add(statementAnalyser.new RaiseErrorMessage(message));
+                addToModifications(statementAnalyser.new RaiseErrorMessage(message));
             } else if (notModified1 == Level.DELAY) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
-                add(statementAnalyser.new SetProperty(variable, VariableProperty.NOT_MODIFIED_1, Level.TRUE));
+                addToModifications(statementAnalyser.new SetProperty(variable, VariableProperty.NOT_MODIFIED_1, Level.TRUE));
             }
         }
 
 
         public void linkVariables(Variable at, Set<Variable> linked) {
-            add(statementAnalyser.new LinkVariable(at, linked));
+            addToModifications(statementAnalyser.new LinkVariable(at, linked));
         }
 
         public void assignmentBasics(Variable at, Value resultOfExpression, boolean assignmentToNonEmptyExpression) {
             if (assignmentToNonEmptyExpression) {
                 setCurrentValue(at, resultOfExpression);
             }
+            addToModifications(statementAnalyser.new MarkAssigned(at));
         }
 
         public void merge(EvaluationContext copyForThen) {
         }
 
         public void addPropertyRestriction(Variable variable, VariableProperty property, int value) {
-            add(statementAnalyser.new SetProperty(variable, property, value));
+            addToModifications(statementAnalyser.new SetProperty(variable, property, value));
         }
 
         public void addPrecondition(Value rest) {
@@ -361,6 +351,21 @@ public class EvaluationResult {
         }
 
         public void addResultOfMethodAnalyser(AnalysisStatus analysisStatus) {
+        }
+
+        public void addErrorAssigningToFieldOutsideType(FieldInfo fieldInfo) {
+            addToModifications(evaluationContext.getCurrentStatement()
+                    .new ErrorAssigningToFieldOutsideType(fieldInfo, evaluationContext.getLocation()));
+        }
+
+        public void addParameterShouldNotBeAssignedTo(ParameterInfo parameterInfo) {
+            addToModifications(evaluationContext.getCurrentStatement()
+                    .new ParameterShouldNotBeAssignedTo(parameterInfo, evaluationContext.getLocation()));
+        }
+
+        public void addCircularCallOrUndeclaredFunctionalInterface() {
+            MethodLevelData methodLevelData = evaluationContext.getCurrentStatement().statementAnalysis.methodLevelData;
+            addToModifications(methodLevelData.new SetCircularCallOrUndeclaredFunctionalInterface());
         }
     }
 }

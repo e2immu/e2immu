@@ -239,7 +239,7 @@ public class MethodLevelData {
                 dependencies = SetUtil.immutableUnion(fieldAnalysis.getVariablesLinkedToMe(), Set.of(variable));
             } else if (variable instanceof ParameterInfo) {
                 dependencies = Set.of(variable);
-            } else if (variable instanceof LocalVariableReference) {
+            } else if (variable.isLocal()) {
                 if (!variablesLinkedToFieldsAndParameters.isSet()) {
                     log(DELAYED, "Delaying variables linked to method result, local variable's linkage not yet known");
                     return DELAYS;
@@ -486,7 +486,8 @@ public class MethodLevelData {
                     }
                 }
 
-                if (parameterInfo.parameterizedType.hasSize(sharedState.evaluationContext.getPrimitives())) {
+                if (parameterInfo.parameterizedType.hasSize(sharedState.evaluationContext.getPrimitives(),
+                        sharedState.evaluationContext.getAnalyserContext())) {
                     int size = variableInfo.getProperty(VariableProperty.SIZE);
                     if (size == Level.DELAY && !haveDelay) {
                         // we could not find anything related to size, let's advertise that

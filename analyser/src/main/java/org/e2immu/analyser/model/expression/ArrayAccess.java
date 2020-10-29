@@ -26,7 +26,8 @@ import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * We do not override variablesMarkRead(), because both the array and the index will be read in the initial
@@ -37,10 +38,32 @@ public class ArrayAccess implements Expression {
 
     public final Expression expression;
     public final Expression index;
+    public final DependentVariable variableTarget; // can be null
+    public final ParameterizedType returnType;
 
     public ArrayAccess(@NotNull Expression expression, @NotNull Expression index) {
         this.expression = Objects.requireNonNull(expression);
         this.index = Objects.requireNonNull(index);
+        this.returnType = expression.returnType().copyWithOneFewerArrays();
+        variableTarget = arrayAccessVariableTarget(expression, index, returnType);
+    }
+
+    private static DependentVariable arrayAccessVariableTarget(Expression expression, Expression index, ParameterizedType returnType) {
+        Variable arrayVariable = singleVariable(expression);
+        Variable indexVariable = singleVariable(index);
+        String name = (arrayVariable == null ? expression.expressionString(0) : arrayVariable.fullyQualifiedName())
+                + "[" + (indexVariable == null ? index.expressionString(0) : indexVariable.fullyQualifiedName()) + "]";
+        return new DependentVariable(name, returnType, indexVariable == null ? List.of() : List.of(indexVariable), arrayVariable);
+    }
+
+    private static Variable singleVariable(Expression expression) {
+        if (expression instanceof VariableExpression variableExpression) {
+            return variableExpression.variable;
+        }
+        if (expression instanceof FieldAccess fieldAccess) {
+            return fieldAccess.variable;
+        }
+        return null;
     }
 
     @Override
@@ -64,7 +87,7 @@ public class ArrayAccess implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        return expression.returnType().copyWithOneFewerArrays();
+        return returnType;
     }
 
     @Override
@@ -83,11 +106,6 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
-    public Optional<Variable> assignmentTarget() {
-        return expression.assignmentTarget();
-    }
-
-    @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult array = expression.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         EvaluationResult indexValue = index.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
@@ -101,20 +119,14 @@ public class ArrayAccess implements Expression {
             }
             builder.setValue(arrayValue.values.get(intIndex));
         } else {
-            Set<Variable> dependencies = new HashSet<>(expression.variables());
-            dependencies.addAll(index.variables());
-            Variable arrayVariable = expression instanceof VariableExpression ? ((VariableExpression) expression).variable : null;
-            Location location = evaluationContext.getLocation(this);
-            DependentVariable dependentVariable = new DependentVariable(array.value, indexValue.value, expression.returnType(), dependencies, arrayVariable);
-            Value avv = builder.createArrayVariableValue(dependentVariable, location);
-            builder.setValue(avv);
+            Value variableValue = builder.currentValue(variableTarget);
+            builder.setValue(variableValue);
 
-            if (arrayVariable != null) {
-                builder.variableOccursInNotNullContext(arrayVariable, array.value, MultiLevel.EFFECTIVELY_NOT_NULL);
+            if (variableTarget.arrayVariable != null) {
+                builder.variableOccursInNotNullContext(variableTarget.arrayVariable, array.value, MultiLevel.EFFECTIVELY_NOT_NULL);
             }
-            VariableValue vv = avv.asInstanceOf(VariableValue.class);
-            if (forwardEvaluationInfo.isNotAssignmentTarget() && vv != null) {
-                builder.markRead(vv.variable);
+            if (forwardEvaluationInfo.isNotAssignmentTarget()) {
+                builder.markRead(variableTarget);
             }
         }
 

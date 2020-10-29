@@ -19,6 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
@@ -87,7 +88,7 @@ public class TestBasics extends CommonTestRunner {
         // check that the XML annotations have been read properly, and copied into the correct place
         TypeInfo stringType = typeContext.getPrimitives().stringTypeInfo;
         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
-        Assert.assertFalse(stringType.hasSize(typeContext.getPrimitives()));
+        Assert.assertFalse(stringType.hasSize(typeContext.getPrimitives(), AnalysisProvider.DEFAULT_PROVIDER));
     };
 
     @Test

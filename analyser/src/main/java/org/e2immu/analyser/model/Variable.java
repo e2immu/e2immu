@@ -50,4 +50,6 @@ public interface Variable {
     default UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
         return parameterizedType().typesReferenced(explicit);
     }
+
+    default boolean isLocal() { return false; }
 }

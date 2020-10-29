@@ -299,7 +299,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     copyFieldPropertiesFromAnalysis(analyserContext, variableInfo, fieldReference.fieldInfo);
                 }
             }
-            if (copyFrom != null) {
+            if (copyFrom != null && copyFrom.variables.isSet(variableInfo.name)) {
                 VariableInfo previousVariableInfo = copyFrom.variables.get(variableInfo.name);
                 if (previousVariableInfo != null) {
                     variableInfo.properties.copyFrom(previousVariableInfo.properties);
@@ -585,15 +585,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return ((ParameterInfo) aboutVariable.variable).index == 0 ? Level.TRUE : Level.FALSE;
         }
         return aboutVariable.getProperty(variableProperty);
-    }
-
-    public boolean isLocalVariable(AnalyserContext analyserContext, VariableInfo variableInfo) {
-        if (variableInfo.variable instanceof LocalVariableReference) return true;
-        if (variableInfo.variable instanceof DependentVariable dependentVariable && dependentVariable.arrayVariable != null) {
-            VariableInfo avArray = find(analyserContext, dependentVariable.arrayVariable);
-            return avArray.variable instanceof LocalVariableReference;
-        }
-        return false;
     }
 
     private FieldReferenceState singleCopy(int effectivelyFinal, boolean inSyncBlock, boolean inPartOfConstruction) {

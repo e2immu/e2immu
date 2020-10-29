@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+// {1,2,3}, {a, b, {1,3,3}}, ...
 public class ArrayValue implements Value {
 
     public final Value combinedValue; // NO_VALUE when no values
@@ -59,7 +60,8 @@ public class ArrayValue implements Value {
         if (VariableProperty.SIZE == variableProperty) {
             return Level.encodeSizeEquals(values.size());
         }
-        throw new UnsupportedOperationException("No info about " + variableProperty);
+        // default is to refer to each of the components
+        return evaluationContext.getProperty(combinedValue, variableProperty);
     }
 
     @Override

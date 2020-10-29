@@ -1,10 +1,12 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -32,7 +34,8 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
 
         if ("method3".equals(d.methodInfo.name)) {
             if ("1.0.0".equals(d.statementId)) {
-                Assert.assertEquals("param.contains(a)", d.state.toString());
+                String expectState = d.iteration == 0 ? UnknownValue.NO_VALUE.toString() : "param.contains(a)";
+                Assert.assertEquals(expectState, d.state.toString());
 
                 if (d.iteration > 1) {
                     Value value = d.statementAnalysis.stateData.valueOfExpression.get();
@@ -52,23 +55,26 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
         // ERROR: Unused variable "a"
         // ERROR: useless assignment to "a" as well
         if ("UnusedLocalVariableChecks".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
-            Assert.assertEquals("a", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
-            Assert.assertEquals("a", d.haveError(Message.USELESS_ASSIGNMENT));
+            Assert.assertEquals("ERROR in M:UnusedLocalVariableChecks:1: Unused local variable: a", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
+            Assert.assertEquals("ERROR in M:UnusedLocalVariableChecks:1: Useless assignment: a", d.haveError(Message.USELESS_ASSIGNMENT));
         }
 
         if ("method1".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
             // ERROR: unused variable "s"
-            Assert.assertEquals("s", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
+            Assert.assertEquals("ERROR in M:method1:2: Unused local variable: s", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
             Assert.assertNull(d.haveError(Message.USELESS_ASSIGNMENT));
-
-            // ERROR: method should be static
-            Assert.assertEquals("s", d.haveError(Message.METHOD_SHOULD_BE_MARKED_STATIC));
         }
         if ("checkArray2".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
-            Assert.assertEquals("s", d.haveError(Message.USELESS_ASSIGNMENT));
+            Assert.assertEquals("ERROR in M:checkArray2:2: Useless assignment: integers[i]", d.haveError(Message.USELESS_ASSIGNMENT));
         }
         if ("checkForEach".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId)) {
-            Assert.assertEquals("s", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
+            Assert.assertEquals("ERROR in M:checkForEach:1.0.0: Unused local variable: loopVar", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
+        }
+        if ("someMethod".equals(d.methodInfo.name)) {
+            TransferValue tv = d.statementAnalysis.methodLevelData.returnStatementSummaries.get("0");
+            Assert.assertEquals("org.e2immu.analyser.testexample.UnusedLocalVariableChecks.someMethod(String):0:a.toLowerCase()",
+                    tv.value.get().toString());
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.getProperty(VariableProperty.NOT_NULL));
         }
     };
 
@@ -108,15 +114,30 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                     Assert.assertEquals(assigned + 1, read);
 
                     // the standardized name is the evaluation value of expression and index, in this particular case, both constants
-                } else if ("{1,2,3}[0]".equals(d.variableName)) {
+                } else if ("integers[i]".equals(d.variableName)) {
                     Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned);
                     Assert.assertTrue(read <= assigned);
-                } else Assert.fail();
+                    Assert.assertEquals("3", d.currentValue.toString());
+                } else Assert.fail("Variable named " + d.variableName);
             }
         }
     };
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
+        if ("method3".equals(d.methodInfo().name)) {
+            if ("1".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
+                Assert.assertEquals("org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method3(String):0:param.contains(a)",
+                        d.evaluationResult().value.toString());
+            }
+            if ("1.0.0".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_2, d.step());
+                String expectValueString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() :
+                        "org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method3(String):0:param.contains(a)";
+                Assert.assertEquals(expectValueString,
+                        d.evaluationResult().value.toString());
+            }
+        }
         if ("checkArray2".equals(d.methodInfo().name)) {
             // int[] integers = {1, 2, 3};
             if ("0".equals(d.statementId())) {
@@ -139,7 +160,17 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         MethodAnalysis methodAnalysis = d.methodAnalysis();
-
+        if ("someMethod".equals(d.methodInfo().name)) {
+            int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+            Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+            if (d.iteration() <= 1) {
+                // single return value is set before modified in the method analyser
+                Assert.assertNull(d.methodAnalysis().getSingleReturnValue());
+            } else {
+                Assert.assertEquals("inline someMethod on org.e2immu.analyser.testexample.UnusedLocalVariableChecks.someMethod(String):0:a.toLowerCase()",
+                        d.methodAnalysis().getSingleReturnValue().toString());
+            }
+        }
         if ("method1".equals(d.methodInfo().name)) {
             // ERROR: method should be static
             Assert.assertTrue(methodAnalysis.getComplainedAboutMissingStaticModifier());

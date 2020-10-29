@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
@@ -113,12 +114,12 @@ public class EqualsValue extends PrimitiveValue {
         return SetUtil.immutableUnion(lhs.variables(), rhs.variables());
     }
 
-    private FilterResult isIndividualSizeRestriction(boolean parametersOnly) {
+    private FilterResult isIndividualSizeRestriction(boolean parametersOnly, AnalysisProvider analysisProvider) {
         // constants always left, methods always right;
         // methods for size should be wrapped with a ConstrainedNumericValue
         if (lhs instanceof NumericValue && rhs instanceof ConstrainedNumericValue &&
                 ((ConstrainedNumericValue) rhs).value instanceof MethodValue methodValue) {
-            if (methodValue.methodInfo.typeInfo.hasSize(primitives)) {
+            if (methodValue.methodInfo.typeInfo.hasSize(primitives, analysisProvider)) {
                 int sizeOnMethod = methodValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
                 if (sizeOnMethod >= Level.TRUE && methodValue.object instanceof VariableValue variableValue) {
                     if (!parametersOnly || variableValue.variable instanceof ParameterInfo) {
@@ -132,12 +133,12 @@ public class EqualsValue extends PrimitiveValue {
 
     @Override
     public FilterResult isIndividualSizeRestrictionOnParameter(EvaluationContext evaluationContext) {
-        return isIndividualSizeRestriction(true);
+        return isIndividualSizeRestriction(true, evaluationContext.getAnalyserContext());
     }
 
     @Override
     public FilterResult isIndividualSizeRestriction(EvaluationContext evaluationContext) {
-        return isIndividualSizeRestriction(false);
+        return isIndividualSizeRestriction(false, evaluationContext.getAnalyserContext());
     }
 
     private FilterResult isIndividualNotNullClause(boolean parametersOnly) {

@@ -556,7 +556,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             VariableValue valueWithVariable;
             if ((valueWithVariable = v.asInstanceOf(VariableValue.class)) != null) {
                 Variable variable = valueWithVariable.variable;
-                if (variable instanceof LocalVariableReference) {
+                if (variable .isLocal()) {
                     // TODO make a distinction between a local variable, and a local var outside a lambda
                     applicability.set(InlineValue.Applicability.NONE);
                 } else if (variable instanceof FieldReference) {
@@ -617,7 +617,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
         if (modified == Level.FALSE) {
             if (methodInfo.isConstructor) return DONE; // non-modifying constructor would be weird anyway; not for me
-            if (methodInfo.returnType().hasSize(analyserContext.getPrimitives())) {
+            if (methodInfo.returnType().hasSize(analyserContext.getPrimitives(), analyserContext)) {
                 // non-modifying method that returns a type with @Size (like Collection, Map, ...)
                 log(SIZE, "Return type {} of method {} has a size!", methodInfo.returnType().detailedString(), methodInfo.fullyQualifiedName());
 
@@ -660,7 +660,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
         if (modified == Level.FALSE) {
             if (methodInfo.isConstructor) return DONE; // non-modifying constructor would be weird anyway
-            if (methodInfo.returnType().hasSize(analyserContext.getPrimitives())) {
+            if (methodInfo.returnType().hasSize(analyserContext.getPrimitives(), analyserContext)) {
                 // first try @Size(copy ...)
                 boolean delays = methodLevelData.returnStatementSummaries.stream().anyMatch(entry -> entry.getValue().isDelayed(VariableProperty.SIZE_COPY));
                 if (delays) {
@@ -711,7 +711,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             // very specific situation, we see if the return statement is a @Size method; if so, we propagate that info
             MethodValue methodValue;
             if ((methodValue = cnv.value.asInstanceOf(MethodValue.class)) != null) {
-                MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod(analyserContext.getPrimitives());
+                MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod(analyserContext.getPrimitives(), analyserContext);
                 if (methodValue.methodInfo == theSizeMethod && cnv.lowerBound >= 0 && cnv.upperBound == ConstrainedNumericValue.MAX) {
                     return Level.encodeSizeMin((int) cnv.lowerBound);
                 }
@@ -727,7 +727,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                         (cnvRhs = equalsValue.rhs.asInstanceOf(ConstrainedNumericValue.class)) != null) {
                     MethodValue methodValue;
                     if ((methodValue = cnvRhs.value.asInstanceOf(MethodValue.class)) != null) {
-                        MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod(analyserContext.getPrimitives());
+                        MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod(analyserContext.getPrimitives(), analyserContext);
                         if (methodValue.methodInfo == theSizeMethod) {
                             return Level.encodeSizeEquals(intValue.value);
                         }
@@ -742,7 +742,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                     if (!xb.lessThan && ((cnvXb = xb.x.asInstanceOf(ConstrainedNumericValue.class)) != null)) {
                         MethodValue methodValue;
                         if ((methodValue = cnvXb.value.asInstanceOf(MethodValue.class)) != null) {
-                            MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod(analyserContext.getPrimitives());
+                            MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod(analyserContext.getPrimitives(), analyserContext);
                             if (methodValue.methodInfo == theSizeMethod) {
                                 return Level.encodeSizeMin((int) xb.b);
                             }

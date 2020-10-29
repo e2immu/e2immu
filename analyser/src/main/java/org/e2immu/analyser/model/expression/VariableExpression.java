@@ -126,11 +126,6 @@ public class VariableExpression implements Expression {
     }
 
     @Override
-    public Optional<Variable> assignmentTarget() {
-        return Optional.of(variable);
-    }
-
-    @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return variable.sideEffect(Objects.requireNonNull(evaluationContext));
     }

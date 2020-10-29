@@ -26,7 +26,6 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
@@ -41,6 +40,8 @@ public class Assignment implements Expression {
     public final MethodInfo assignmentOperator;
     public final MethodInfo binaryOperator;
     private final Primitives primitives;
+    // see the discussion at DependentVariable
+    public final Variable variableTarget;
 
     // if null, and binary operator not null, then the primitive operator counts (i += value)
     // if true, we have ++i
@@ -62,6 +63,16 @@ public class Assignment implements Expression {
         this.prefixPrimitiveOperator = prefixPrimitiveOperator;
         binaryOperator = assignmentOperator == null ? null : BinaryOperator.fromAssignmentOperatorToNormalOperator(primitives, assignmentOperator);
         this.primitives = primitives;
+        if (target instanceof VariableExpression variableExpression) {
+            variableTarget = variableExpression.variable;
+        } else if (target instanceof FieldAccess fieldAccess) {
+            variableTarget = fieldAccess.variable;
+        } else if (target instanceof ArrayAccess arrayAccess) {
+            variableTarget = arrayAccess.variableTarget;
+        } else {
+            String name = target.expressionString(0) + "[" + value.expressionString(0) + "]";
+            variableTarget = new DependentVariable(name, target.returnType(), value.variables(), null);
+        }
     }
 
     @Override
@@ -138,11 +149,6 @@ public class Assignment implements Expression {
     }
 
     @Override
-    public Optional<Variable> assignmentTarget() {
-        return target.assignmentTarget();
-    }
-
-    @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         if (target instanceof FieldAccess) {
             return SideEffect.SIDE_EFFECT;
@@ -158,13 +164,12 @@ public class Assignment implements Expression {
         builder.compose(valueResult);
         builder.composeIgnoreValue(targetResult);
 
-        Variable at = target.assignmentTarget().orElseThrow();
-        log(VARIABLE_PROPERTIES, "Assignment: {} = {}", at.fullyQualifiedName(), value);
+        log(VARIABLE_PROPERTIES, "Assignment: {} = {}", variableTarget.fullyQualifiedName(), value);
 
         Value resultOfExpression;
         Value assignedToTarget;
         if (binaryOperator != null) {
-            BinaryOperator operation = new BinaryOperator(new VariableExpression(at), binaryOperator, value,
+            BinaryOperator operation = new BinaryOperator(new VariableExpression(variableTarget), binaryOperator, value,
                     BinaryOperator.precedence(evaluationContext.getPrimitives(), binaryOperator));
             EvaluationResult operationResult = operation.evaluate(evaluationContext, forwardEvaluationInfo);
             builder.compose(operationResult);
@@ -181,8 +186,10 @@ public class Assignment implements Expression {
             resultOfExpression = valueResult.value;
             assignedToTarget = valueResult.value;
         }
-        doAssignmentWork(builder, evaluationContext, at, assignedToTarget);
+        assert assignedToTarget != null;
+        doAssignmentWork(builder, evaluationContext, variableTarget, assignedToTarget);
 
+        assert resultOfExpression != null;
         return builder.setValue(resultOfExpression).build();
     }
 
@@ -194,16 +201,14 @@ public class Assignment implements Expression {
 
             // check illegal assignment into nested type
             if (checkIllegalAssignmentIntoNestedType(at, fieldInfo, evaluationContext.getCurrentType().typeInfo)) {
-                builder.add(evaluationContext.getCurrentStatement()
-                        .new ErrorAssigningToFieldOutsideType(fieldInfo, evaluationContext.getLocation()));
+                builder.addErrorAssigningToFieldOutsideType(fieldInfo);
             }
 
             if (resultOfExpression.getObjectFlow() != ObjectFlow.NO_FLOW) {
                 resultOfExpression.getObjectFlow().assignTo(fieldInfo);
             }
-        } else if (at instanceof ParameterInfo) {
-            builder.add(evaluationContext.getCurrentStatement()
-                    .new ParameterShouldNotBeAssignedTo((ParameterInfo) at, evaluationContext.getLocation()));
+        } else if (at instanceof ParameterInfo parameterInfo) {
+            builder.addParameterShouldNotBeAssignedTo(parameterInfo);
         }
         builder.assignmentBasics(at, resultOfExpression, this.value != EmptyExpression.EMPTY_EXPRESSION);
 

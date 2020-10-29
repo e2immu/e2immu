@@ -3,26 +3,33 @@ package org.e2immu.analyser.model;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
 
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
-// variable representing a[b] (a field within an array)
+/**
+ * variable representing a complex expression by name.
+ * we store it because w
+ * <p>
+ * array variable with known index a[0] (either as constant, or known value of variable)
+ * array variable with unknown index a[i], with dependent i
+ * <p>
+ * method(a, b)[i], with null arrayVariable, and dependent variables a, b, i
+ */
 public class DependentVariable extends VariableWithConcreteReturnType {
     public final ParameterizedType parameterizedType;
-    public final Set<Variable> dependencies;
     public final String name;
     public final Variable arrayVariable;
+    public final List<Variable> dependencies; // idea: a change to these will invalidate the variable
 
-    public DependentVariable(@NotNull Value array,
-                             @NotNull Value index,
+    public DependentVariable(String name,
                              @NotNull ParameterizedType parameterizedType,  // the formal type
-                             @NotNull1 Set<Variable> dependencies,         // all variables on which this one depends
+                             @NotNull1 List<Variable> dependencies,         // all variables on which this one depends
                              Variable arrayVariable) {     // can be null!
         super(parameterizedType);
         this.parameterizedType = parameterizedType;
-        this.dependencies = dependencies;
-        this.name = dependentVariableName(array, index);
+        this.name = name;
         this.arrayVariable = arrayVariable;
+        this.dependencies = dependencies;
     }
 
     // array access
@@ -66,5 +73,10 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return SideEffect.LOCAL;
+    }
+
+    @Override
+    public boolean isLocal() {
+        return arrayVariable != null && arrayVariable.isLocal();
     }
 }

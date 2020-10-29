@@ -324,7 +324,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         XB xb = extract(evaluationContext);
         if (!xb.lessThan && xb.x instanceof ConstrainedNumericValue cnv) {
             if (cnv.value instanceof MethodValue methodValue) {
-                if (methodValue.methodInfo.typeInfo.sizeMethod(evaluationContext.getPrimitives())
+                if (methodValue.methodInfo.typeInfo.sizeMethod(evaluationContext.getPrimitives(), evaluationContext.getAnalyserContext())
                         == methodValue.methodInfo) {
                     // I am the size method!
                     if (methodValue.object instanceof VariableValue v) {
