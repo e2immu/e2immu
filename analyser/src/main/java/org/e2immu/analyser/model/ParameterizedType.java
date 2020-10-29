@@ -25,7 +25,6 @@ import com.github.javaparser.ast.type.WildcardType;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -252,7 +251,7 @@ public class ParameterizedType {
             newTypeInfo = typeInfo;
         } else {
             newTypeInfo = Objects.requireNonNull(localTypeContext.typeStore.get(typeInfo.fullyQualifiedName),
-                    "Cannot find "+typeInfo.fullyQualifiedName+" in typeStore");
+                    "Cannot find " + typeInfo.fullyQualifiedName + " in typeStore");
         }
         List<ParameterizedType> newParameters = parameters.stream().map(pt -> pt.copy(localTypeContext)).collect(Collectors.toList());
         TypeParameter newTypeParameter = typeParameter == null ? null : (TypeParameter) localTypeContext.get(typeParameter.name, true);
@@ -600,17 +599,12 @@ public class ParameterizedType {
         return MethodTypeParameterMap.apply(typeParameterMap, this);
     }
 
-    public int getProperty(VariableProperty variableProperty) {
+    public int getProperty(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
         TypeInfo bestType = bestTypeInfo();
         if (bestType != null) {
-            return bestType.typeAnalysis.get().getProperty(variableProperty);
+            return analysisProvider.getTypeAnalysis(bestType).getProperty(variableProperty);
         }
         return variableProperty.falseValue;
-        // if (variableProperty == VariableProperty.IMMUTABLE) {
-        //     return MultiLevel.MUTABLE;
-        // }
-        // if (variableProperty == VariableProperty.MODIFIED) return isUnboundParameterType() ? Level.FALSE : Level.TRUE;
-        // return Level.FALSE;
     }
 
     public TypeInfo bestTypeInfo() {

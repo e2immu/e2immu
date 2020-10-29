@@ -313,7 +313,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private static boolean noEarlierAccess(Variable variable, StatementAnalysis previous) {
-        if (previous == null) return true;
+        if (previous == null || !previous.variables.isSet(variable.fullyQualifiedName())) return true;
         VariableInfo variableInfo = previous.variables.get(variable.fullyQualifiedName());
         if (variableInfo == null) return true;
         return variableInfo.getProperty(ASSIGNED) != Level.TRUE;
@@ -518,7 +518,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         } else if (variable instanceof This) {
             variableInfo.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         } else if (variable instanceof LocalVariableReference localVariableReference) {
-            variableInfo.setProperty(IMMUTABLE, localVariableReference.concreteReturnType.getProperty(IMMUTABLE));
+            variableInfo.setProperty(IMMUTABLE, localVariableReference.concreteReturnType.getProperty(analyserContext, IMMUTABLE));
         } // else: dependentVariable
     }
 

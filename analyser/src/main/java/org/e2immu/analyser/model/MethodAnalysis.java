@@ -161,13 +161,13 @@ public interface MethodAnalysis extends Analysis {
 
             case IMMUTABLE:
                 assert returnType != ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR : "void method";
-                int immutableType = formalProperty(returnType);
+                int immutableType = returnType.getProperty(analysisProvider, VariableProperty.IMMUTABLE);
                 int immutableDynamic = dynamicProperty(immutableType, returnType);
                 return MultiLevel.bestImmutable(immutableType, immutableDynamic);
 
             case CONTAINER:
                 assert returnType != ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR : "void method";
-                int container = returnType.getProperty(VariableProperty.CONTAINER);
+                int container = returnType.getProperty(analysisProvider, VariableProperty.CONTAINER);
                 if (container == Level.DELAY) return Level.DELAY;
                 return Level.best(getPropertyCheckOverrides(VariableProperty.CONTAINER), container);
 
@@ -179,10 +179,6 @@ public interface MethodAnalysis extends Analysis {
     private int dynamicProperty(int formalImmutableProperty, ParameterizedType returnType) {
         int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty, getObjectFlow().conditionsMetForEventual(returnType));
         return Level.best(internalGetProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
-    }
-
-    private static int formalProperty(ParameterizedType returnType) {
-        return returnType.getProperty(VariableProperty.IMMUTABLE);
     }
 
     default int valueFromOverrides(VariableProperty variableProperty) {

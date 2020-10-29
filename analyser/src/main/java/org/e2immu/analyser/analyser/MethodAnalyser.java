@@ -556,7 +556,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             VariableValue valueWithVariable;
             if ((valueWithVariable = v.asInstanceOf(VariableValue.class)) != null) {
                 Variable variable = valueWithVariable.variable;
-                if (variable .isLocal()) {
+                if (variable.isLocal()) {
                     // TODO make a distinction between a local variable, and a local var outside a lambda
                     applicability.set(InlineValue.Applicability.NONE);
                 } else if (variable instanceof FieldReference) {
@@ -987,8 +987,8 @@ public class MethodAnalyser extends AbstractAnalyser {
             return null;
         }
         if (e2ImmutableStatusOfFieldRefs == MultiLevel.EFFECTIVE) return true;
-
-        int formalE2ImmutableStatusOfReturnType = MultiLevel.value(methodInfo.returnType().getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
+        int immutable = methodInfo.returnType().getProperty(analyserContext, VariableProperty.IMMUTABLE);
+        int formalE2ImmutableStatusOfReturnType = MultiLevel.value(immutable, MultiLevel.E2IMMUTABLE);
         if (formalE2ImmutableStatusOfReturnType == MultiLevel.DELAY) {
             log(DELAYED, "Have formal return type, no idea if E2Immutable: {}", methodInfo.distinguishingName());
             return null;

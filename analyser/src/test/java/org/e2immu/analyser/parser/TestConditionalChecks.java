@@ -14,23 +14,6 @@ import java.io.IOException;
 import java.util.Map;
 
 public class TestConditionalChecks extends CommonTestRunner {
-    public TestConditionalChecks() {
-        super(false);
-    }
-
-    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("method5".equals(d.methodInfo.name) && "o".equals(d.variableName)) {
-            if ("0".equals(d.statementId)) {
-                Assert.assertFalse(d.properties.isSet(VariableProperty.NOT_NULL));
-            }
-        }
-        if ("method5".equals(d.methodInfo.name) && "conditionalChecks".equals(d.variableName)) {
-            if ("2".equals(d.statementId)) {
-                Assert.assertEquals("o", d.currentValue.toString());
-            }
-        }
-    };
-
     private static final String A1 = "org.e2immu.analyser.testexample.ConditionalChecks.method1(boolean,boolean):0:a";
     private static final String B1 = "org.e2immu.analyser.testexample.ConditionalChecks.method1(boolean,boolean):1:b";
     private static final String A3 = "org.e2immu.analyser.testexample.ConditionalChecks.method3(String,String):0:a";
@@ -39,6 +22,23 @@ public class TestConditionalChecks extends CommonTestRunner {
     private static final String THIS_GET_CLASS = "org.e2immu.analyser.testexample.ConditionalChecks.this.getClass()";
     private static final String THIS = "org.e2immu.analyser.testexample.ConditionalChecks.this";
     private static final String O5_GET_CLASS = "org.e2immu.analyser.testexample.ConditionalChecks.method5(Object):0:o.getClass()";
+
+    public TestConditionalChecks() {
+        super(false);
+    }
+
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("method5".equals(d.methodInfo.name) && O5.equals(d.variableName)) {
+            if ("0".equals(d.statementId)) {
+                Assert.assertFalse(d.properties.isSet(VariableProperty.NOT_NULL));
+            }
+        }
+        if ("method5".equals(d.methodInfo.name) && "conditionalChecks".equals(d.variableName)) {
+            if ("2".equals(d.statementId)) {
+                Assert.assertEquals(O5, d.currentValue.toString());
+            }
+        }
+    };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         FlowData.Execution inBlock = d.statementAnalysis.flowData.guaranteedToBeReachedInCurrentBlock.get();
@@ -119,7 +119,7 @@ public class TestConditionalChecks extends CommonTestRunner {
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        if (d.iteration() == 0 && "method3".equals(d.methodInfo().name)) {
+        if ("method3".equals(d.methodInfo().name)) {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(1).getProperty(VariableProperty.NOT_NULL));
         }
@@ -128,7 +128,7 @@ public class TestConditionalChecks extends CommonTestRunner {
             Assert.assertSame(UnknownValue.EMPTY, d.methodAnalysis().getPrecondition());
         }
         if ("method5".equals(d.methodInfo().name)) {
-            Assert.assertEquals(Level.DELAY, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
         }
     };
 

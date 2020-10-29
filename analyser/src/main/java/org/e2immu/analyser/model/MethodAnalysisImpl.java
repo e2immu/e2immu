@@ -304,7 +304,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         private int formalProperty() {
-            return returnType.getProperty(VariableProperty.IMMUTABLE);
+            return returnType.getProperty(analysisProvider, VariableProperty.IMMUTABLE);
         }
 
         @Override
