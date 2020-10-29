@@ -18,8 +18,12 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.statement.Structure;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
+
+import java.util.List;
 
 @E2Container
 public interface Statement extends Element {
@@ -33,4 +37,8 @@ public interface Statement extends Element {
 
     String statementString(int indent, StatementAnalysis statementAnalysis);
 
+    // IfElse and Switch statements will implement this
+    default Value addToStateAfterStatement(EvaluationContext evaluationContext, List<Value> conditions, List<Boolean> escapes) {
+        return UnknownValue.EMPTY;
+    }
 }

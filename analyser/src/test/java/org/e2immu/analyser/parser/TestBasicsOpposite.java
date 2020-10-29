@@ -108,19 +108,20 @@ public class TestBasicsOpposite extends CommonTestRunner {
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if (d.methodInfo().name.equals("setString") && "0".equals(d.statementId())) {
-            Assert.assertEquals(d.evaluationResult().toString(), 3L, d.evaluationResult().getModificationStream().count());
-            Assert.assertTrue(d.evaluationResult().toString(), d.haveSetProperty(STRING_PARAMETER, VariableProperty.READ, Level.TRUE));
-            Assert.assertTrue(d.evaluationResult().toString(), d.haveSetProperty(
-                    "org.e2immu.analyser.testexample.BasicsOpposite.this", VariableProperty.READ, Level.TRUE));
-            Assert.assertTrue(d.evaluationResult().toString(), d.haveAssignment(STRING_FIELD, STRING_PARAMETER));
+            Assert.assertEquals(d.evaluationResult().toString(), 4L, d.evaluationResult().getModificationStream().count());
+            Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(STRING_PARAMETER));
+            Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(
+                    "org.e2immu.analyser.testexample.BasicsOpposite.this"));
+            Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkAssigned(STRING_FIELD));
+            // 4th is the link
+
             // link to empty set, because String is E2Immutable
             Assert.assertTrue(d.evaluationResult().toString(), d.haveLinkVariable(STRING_FIELD, Set.of()));
-            String expectEvalString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : STRING_PARAMETER;
-            Assert.assertEquals(d.evaluationResult().toString(), expectEvalString, d.evaluationResult().value.toString());
+            Assert.assertEquals(d.evaluationResult().toString(), STRING_PARAMETER, d.evaluationResult().value.toString());
         }
-        if (d.methodInfo().name.equals("getString") && "0".equals(d.statementId())) {
+        if (d.methodInfo().name.equals("getString") && "0".equals(d.statementId()) && d.iteration() == 0) {
             Assert.assertEquals(d.evaluationResult().toString(), 1L, d.evaluationResult().getModificationStream().count());
-            Assert.assertTrue(d.evaluationResult().toString(), d.haveSetProperty(STRING_FIELD, VariableProperty.READ, Level.TRUE));
+            Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(STRING_FIELD));
         }
         if (d.methodInfo().name.equals("add") && "0".equals(d.statementId())) {
             String expectEvalString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : METHOD_VALUE_ADD;

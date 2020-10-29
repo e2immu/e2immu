@@ -126,7 +126,7 @@ public class ArrayAccess implements Expression {
                 builder.variableOccursInNotNullContext(variableTarget.arrayVariable, array.value, MultiLevel.EFFECTIVELY_NOT_NULL);
             }
             if (forwardEvaluationInfo.isNotAssignmentTarget()) {
-                builder.markRead(variableTarget);
+                builder.markRead(variableTarget, evaluationContext.getIteration());
             }
         }
 

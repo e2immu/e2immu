@@ -26,7 +26,6 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 @E2Container
 public class VariableExpression implements Expression {
@@ -69,7 +68,7 @@ public class VariableExpression implements Expression {
         Value currentValue = builder.currentValue(variable);
 
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
-            builder.markRead(variable);
+            builder.markRead(variable, evaluationContext.getIteration());
         }
 
         int notNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
@@ -97,7 +96,7 @@ public class VariableExpression implements Expression {
         }
 
         int methodDelay = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_DELAY);
-        if(methodDelay != Level.DELAY) {
+        if (methodDelay != Level.DELAY) {
             builder.markMethodDelay(variable, methodDelay);
         }
 

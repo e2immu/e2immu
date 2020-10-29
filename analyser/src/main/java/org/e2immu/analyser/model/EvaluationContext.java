@@ -84,7 +84,7 @@ public interface EvaluationContext {
     }
 
     default BoolValue boolValueFalse() {
-        return new BoolValue(getPrimitives(), true, ObjectFlow.NO_FLOW);
+        return new BoolValue(getPrimitives(), false, ObjectFlow.NO_FLOW);
     }
 
     default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {

@@ -214,8 +214,10 @@ public class EvaluationResult {
             }
         }
 
-        public Builder markRead(Variable variable) {
-            addToModifications(statementAnalyser.new MarkRead(variable));
+        public Builder markRead(Variable variable, int iteration) {
+            if (iteration == 0) {
+                addToModifications(statementAnalyser.new MarkRead(variable));
+            }
             return this;
         }
 
@@ -320,11 +322,13 @@ public class EvaluationResult {
             addToModifications(statementAnalyser.new LinkVariable(at, linked));
         }
 
-        public void assignmentBasics(Variable at, Value resultOfExpression, boolean assignmentToNonEmptyExpression) {
+        public void assignmentBasics(Variable at, Value resultOfExpression, boolean assignmentToNonEmptyExpression, int iteration) {
             if (assignmentToNonEmptyExpression) {
                 setCurrentValue(at, resultOfExpression);
             }
-            addToModifications(statementAnalyser.new MarkAssigned(at));
+            if (iteration == 0) {
+                addToModifications(statementAnalyser.new MarkAssigned(at));
+            }
         }
 
         public void merge(EvaluationContext copyForThen) {

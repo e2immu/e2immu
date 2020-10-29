@@ -310,7 +310,9 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus analyseNotNull(int iteration) {
-        assert fieldAnalysis.getProperty(VariableProperty.NOT_NULL) <= MultiLevel.DELAY;
+        int current = fieldAnalysis.getProperty(VariableProperty.NOT_NULL);
+        if (current > Level.DELAY)
+            return DONE; // some fields do not need analysis (if their type is 'int', for example)
 
         int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (isFinal == Level.DELAY) {

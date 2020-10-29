@@ -21,24 +21,26 @@ import java.util.Objects;
 
 public class InterruptsFlow {
     public static final String NO_LABEL = "";
-    public static final InterruptsFlow NO = new InterruptsFlow(0, NO_LABEL);
-    public static final InterruptsFlow RETURN = new InterruptsFlow(3, NO_LABEL);
-    public static final InterruptsFlow ESCAPE = new InterruptsFlow(4, NO_LABEL);
+    public static final InterruptsFlow NO = new InterruptsFlow("no interrupt", 0, NO_LABEL);
+    public static final InterruptsFlow RETURN = new InterruptsFlow("return", 3, NO_LABEL);
+    public static final InterruptsFlow ESCAPE = new InterruptsFlow("escape", 4, NO_LABEL);
 
     public final int level;
     public final String label;
+    public final String name;
 
-    private InterruptsFlow(int level, String label) {
+    private InterruptsFlow(String name, int level, String label) {
         this.level = level;
+        this.name = name;
         this.label = Objects.requireNonNull(label);
     }
 
     public static InterruptsFlow createBreak(String label) {
-        return new InterruptsFlow(1, label == null ? "" : label);
+        return new InterruptsFlow("break", 1, label == null ? "" : label);
     }
 
     public static InterruptsFlow createContinue(String label) {
-        return new InterruptsFlow(2, label == null ? "" : label);
+        return new InterruptsFlow("continue", 2, label == null ? "" : label);
     }
 
     InterruptsFlow best(InterruptsFlow other) {
@@ -46,9 +48,9 @@ public class InterruptsFlow {
         return this;
     }
 
-    InterruptsFlow worst(InterruptsFlow other) {
-        if (other.level < level) return other;
-        return this;
+    @Override
+    public String toString() {
+        return name + (label.equals(NO_LABEL) ? "" : ":" + label);
     }
 
     @Override

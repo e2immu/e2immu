@@ -19,7 +19,9 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
@@ -95,5 +97,25 @@ public class IfElseStatement extends StatementWithExpression {
             return List.of(expression, structure.block);
         }
         return List.of(expression, structure.block, elseBlock);
+    }
+
+    @Override
+    public Value addToStateAfterStatement(EvaluationContext evaluationContext, List<Value> conditions, List<Boolean> escapes) {
+        assert conditions.size() == escapes.size();
+        assert conditions.size() == 1 || conditions.size() == 2;
+        boolean allEscapes = escapes.stream().allMatch(b -> b);
+        if (allEscapes) {
+            if (conditions.size() == 1) {
+                // simple if, without else...
+                return NegatedValue.negate(evaluationContext, conditions.get(0));
+            } // both if and else escape...
+            return BoolValue.createFalse(evaluationContext.getPrimitives());
+        }
+        if (escapes.get(0)) {
+            // now we must have an else, which does not escape
+            return conditions.get(1);
+        }
+        // the first one does not escape, else does
+        return conditions.get(0);
     }
 }

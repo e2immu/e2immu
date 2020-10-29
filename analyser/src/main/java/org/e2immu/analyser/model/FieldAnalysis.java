@@ -74,6 +74,7 @@ public interface FieldAnalysis extends Analysis {
 
             case NOT_NULL:
                 if (Primitives.isPrimitiveExcludingVoid(fieldInfo.type)) return MultiLevel.EFFECTIVELY_NOT_NULL;
+                break;
 
             default:
         }

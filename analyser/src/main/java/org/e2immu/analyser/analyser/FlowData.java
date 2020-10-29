@@ -20,10 +20,15 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.StatementAnalysis;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.statement.*;
+import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetOnce;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.analyser.InterruptsFlow.*;
@@ -40,6 +45,7 @@ public class FlowData {
     public final SetOnce<Execution> guaranteedToBeReachedInMethod = new SetOnce<>();
 
     public final SetOnce<Map<InterruptsFlow, Execution>> interruptsFlow = new SetOnce<>();
+    public final SetOnce<Execution> blockExecution = new SetOnce<>();
 
     public Execution interruptStatus() {
         // what is the worst that can happen? ESCAPE-ALWAYS
@@ -50,6 +56,14 @@ public class FlowData {
         return interruptsFlow.get().entrySet().stream().filter(e -> e.getValue() == Execution.ALWAYS)
                 .map(Map.Entry::getKey).reduce(NO, InterruptsFlow::best);
     }
+
+    public Execution execution(boolean statementsExecutedAtLeastOnce) {
+        FlowData.Execution executionBlock = statementsExecutedAtLeastOnce ? FlowData.Execution.ALWAYS : FlowData.Execution.CONDITIONALLY;
+        // combine with guaranteed to be reached in block
+        FlowData.Execution execution = guaranteedToBeReachedInMethod.get();
+        return execution.worst(executionBlock);
+    }
+
 
     public enum Execution {
         ALWAYS(2), CONDITIONALLY(1), NEVER(0);
@@ -79,9 +93,13 @@ public class FlowData {
      *
      * @param previousStatement previous statement; null if this is the first statement in a block
      * @param blockExecution    the execution value of the block, if this is the first statement in the block; otherwise, ALWAYS
+     * @param state
      * @return true when unreachable statement
      */
-    public boolean computeGuaranteedToBeReached(StatementAnalysis previousStatement, Execution blockExecution) {
+    public boolean computeGuaranteedToBeReachedReturnUnreachable(Primitives primitives,
+                                                                 StatementAnalysis previousStatement,
+                                                                 Execution blockExecution,
+                                                                 Value state) {
         if (previousStatement == null) {
             // start of a block
             guaranteedToBeReachedInCurrentBlock.set(Execution.ALWAYS);
@@ -93,17 +111,20 @@ public class FlowData {
             guaranteedToBeReachedInMethod.set(Execution.NEVER);
             return false; // no more errors
         }
+
         Execution prev = previousStatement.flowData.guaranteedToBeReachedInCurrentBlock.get();
         // ALWAYS = always interrupted, NEVER = never interrupted, CONDITIONALLY = potentially interrupted
         Execution interrupt = previousStatement.flowData.interruptStatus().complement();
+        Execution execBasedOnState = state.equals(BoolValue.createFalse(primitives)) ? Execution.NEVER : Execution.ALWAYS;
+        Execution executionInCurrentBlock = prev.worst(interrupt).worst(execBasedOnState);
 
-        Execution executionInCurrentBlock = prev.worst(interrupt);
         guaranteedToBeReachedInCurrentBlock.set(executionInCurrentBlock);
         guaranteedToBeReachedInMethod.set(executionInCurrentBlock.worst(blockExecution));
         return executionInCurrentBlock == Execution.NEVER; // raise error when NEVER by returning true
     }
 
-    public AnalysisStatus analyse(StatementAnalyser statementAnalyser, StatementAnalysis previousStatement) {
+    public AnalysisStatus analyse(StatementAnalyser statementAnalyser, StatementAnalysis previousStatement, Execution blockExecution) {
+        this.blockExecution.set(blockExecution);
 
         Statement statement = statementAnalyser.statement();
         // without a block
@@ -113,12 +134,15 @@ public class FlowData {
         }
         if (statement instanceof ThrowStatement) {
             interruptsFlow.set(Map.of(ESCAPE, Execution.ALWAYS));
+            return DONE;
         }
         if (statement instanceof BreakStatement) {
             interruptsFlow.set(Map.of(InterruptsFlow.createBreak(((BreakStatement) statement).label), Execution.ALWAYS));
+            return DONE;
         }
         if (statement instanceof ContinueStatement) {
             interruptsFlow.set(Map.of(InterruptsFlow.createContinue(((ContinueStatement) statement).label), Execution.ALWAYS));
+            return DONE;
         }
         // in case there is no explicit return statement at the end of the method...
         // this one is probably completely irrelevant
@@ -135,6 +159,7 @@ public class FlowData {
 
         List<StatementAnalyser> lastStatementsOfSubBlocks = statementAnalyser.lastStatementsOfSubBlocks();
         for (StatementAnalyser subAnalyser : lastStatementsOfSubBlocks) {
+
             for (Map.Entry<InterruptsFlow, Execution> entry : subAnalyser.statementAnalysis.flowData.interruptsFlow.get().entrySet()) {
                 InterruptsFlow i = entry.getKey();
                 Execution e = entry.getValue();
@@ -143,6 +168,7 @@ public class FlowData {
                 if (rejectInterrupt(statement, i)) {
                     builder.merge(i, e, (a, b) -> b.best(a));
                 }
+                builder.merge(i, subAnalyser.statementAnalysis.flowData.blockExecution.get(), (a, b) -> b.worst(a));
             }
         }
         this.interruptsFlow.set(ImmutableMap.copyOf(builder));

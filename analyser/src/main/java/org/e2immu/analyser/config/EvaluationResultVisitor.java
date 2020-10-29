@@ -28,7 +28,8 @@ import java.util.stream.Collectors;
 public interface EvaluationResultVisitor {
     void visit(Data d);
 
-    record Data(int iteration, String step, MethodInfo methodInfo, String statementId, EvaluationResult evaluationResult) {
+    record Data(int iteration, String step, MethodInfo methodInfo, String statementId,
+                EvaluationResult evaluationResult) {
 
         public boolean haveSetProperty(String variableName, VariableProperty variableProperty, int value) {
             return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.SetProperty)
@@ -43,9 +44,16 @@ public interface EvaluationResultVisitor {
                             toNames.equals(lv.to.stream().map(v -> v.fullyQualifiedName()).collect(Collectors.toSet())));
         }
 
-        public boolean haveAssignment(String variableName, String valueToString) {
-            return evaluationResult().getValueChangeStream().anyMatch(e -> e.getKey().fullyQualifiedName().equals(variableName) &&
-                    e.getValue().toString().equals(valueToString));
+        public boolean haveMarkRead(String variableName) {
+            return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.MarkRead)
+                    .map(sam -> (StatementAnalyser.MarkRead) sam)
+                    .anyMatch(mr -> variableName.equals(mr.variable.fullyQualifiedName()));
+        }
+
+        public boolean haveMarkAssigned(String variableName) {
+            return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.MarkAssigned)
+                    .map(sam -> (StatementAnalyser.MarkAssigned) sam)
+                    .anyMatch(ma -> variableName.equals(ma.variable.fullyQualifiedName()));
         }
     }
 }
