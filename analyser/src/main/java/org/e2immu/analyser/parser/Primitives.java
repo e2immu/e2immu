@@ -258,9 +258,9 @@ public class Primitives {
             stringParameterizedType), stringParameterizedType);
 
     public final MethodInfo equalsOperatorObject = createOperator(objectTypeInfo, "==",
-            List.of(objectParameterizedType, objectParameterizedType), objectParameterizedType);
+            List.of(objectParameterizedType, objectParameterizedType), booleanParameterizedType);
     public final MethodInfo notEqualsOperatorObject = createOperator(objectTypeInfo, "!=",
-            List.of(objectParameterizedType, objectParameterizedType), objectParameterizedType);
+            List.of(objectParameterizedType, objectParameterizedType), booleanParameterizedType);
 
     public final Map<String, TypeInfo> primitiveByName = new HashMap<>();
     public final Map<String, TypeInfo> typeByName = new HashMap<>();
@@ -310,12 +310,12 @@ public class Primitives {
 
     public static boolean isPrimitiveExcludingVoid(TypeInfo typeInfo) {
         return isByte(typeInfo) || isShort(typeInfo) || isInt(typeInfo) || isLong(typeInfo) ||
-                isChar(typeInfo) || isFloat(typeInfo) || isDouble(typeInfo);
+                isChar(typeInfo) || isFloat(typeInfo) || isDouble(typeInfo) || isBoolean(typeInfo);
     }
 
     public static boolean isBoxedExcludingVoid(TypeInfo typeInfo) {
         return isBoxedByte(typeInfo) || isBoxedShort(typeInfo) || isInteger(typeInfo) || isBoxedLong(typeInfo)
-                || isCharacter(typeInfo) || isBoxedFloat(typeInfo) || isBoxedDouble(typeInfo);
+                || isCharacter(typeInfo) || isBoxedFloat(typeInfo) || isBoxedDouble(typeInfo) || isBoolean(typeInfo);
     }
 
     private void processEnum(TypeInfo typeInfo, List<FieldInfo> fields) {
