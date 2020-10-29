@@ -11,8 +11,13 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 public class TestUnusedLocalVariableChecks extends CommonTestRunner {
+    private static final String PARAM_3_TO_LOWER = "org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method3(String):0:param.toLowerCase()";
+
     public TestUnusedLocalVariableChecks() {
         super(true);
     }
@@ -34,7 +39,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
 
         if ("method3".equals(d.methodInfo.name)) {
             if ("1.0.0".equals(d.statementId)) {
-                String expectState = d.iteration == 0 ? UnknownValue.NO_VALUE.toString() : "param.contains(a)";
+                String expectState = "org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method3(String):0:param.contains(a)";
                 Assert.assertEquals(expectState, d.state.toString());
 
                 if (d.iteration > 1) {
@@ -44,8 +49,11 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                 }
             }
             if ("1.0.1".equals(d.statementAnalysis.index)) {
-                if (d.iteration > 1) {
+                String expectStateString = d.iteration <= 2 ? UnknownValue.NO_VALUE.toString() : "";
+                Assert.assertEquals(expectStateString, d.state.toString());
+                if (d.iteration >= 3) {
                     Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+                    mark("E1");
                 }
             }
             if ("1.0.1.0.0".equals(d.statementAnalysis.index) && d.iteration > 1) {
@@ -89,6 +97,27 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
 
+        if ("method2".equals(d.methodInfo.name) && "b".equals(d.variableName) && "0".equals(d.statementId)) {
+            String expectValue = d.iteration <= 2 ? UnknownValue.NO_VALUE.toString() :
+                    "org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method2(String):0:param.toLowerCase()";
+            Assert.assertEquals(expectValue, d.currentValue.toString());
+            if (d.iteration >= 3) {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
+                        d.currentValue.getProperty(d.evaluationContext, VariableProperty.NOT_NULL));
+            }
+        }
+        if ("method3".equals(d.methodInfo.name)) {
+            if ("b".equals(d.variableName) && d.iteration >= 2 && Set.of("0", "1").contains(d.statementId)) {
+                // this is regardless the statement id, as b is defined in the very first statement
+                Assert.assertEquals(d.toString(), PARAM_3_TO_LOWER, d.currentValue.toString());
+            }
+            if ("a".equals(d.variableName) && "1.0.0".equals(d.statementId) && d.iteration >= 2) {
+                Assert.assertEquals("xzy.toLowerCase()", d.currentValue.toString());
+            }
+        }
+        if ("checkForEach".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId) && "integers".equals(d.variableName)) {
+            Assert.assertEquals(2, d.properties.get(VariableProperty.READ));
+        }
         if ("checkArray2".equals(d.methodInfo.name)) {
             int read = d.properties.getOrDefault(VariableProperty.READ, Level.DELAY);
             int assigned = d.properties.getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
@@ -124,6 +153,15 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
     };
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
+        if ("method2".equals(d.methodInfo().name)) {
+            if ("0".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_2, d.step());
+                String expectValueString = d.iteration() <= 2 ? UnknownValue.NO_VALUE.toString() :
+                        "org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method2(String):0:param.toLowerCase()";
+                Assert.assertEquals(expectValueString,
+                        d.evaluationResult().value.toString());
+            }
+        }
         if ("method3".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
@@ -132,8 +170,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
             }
             if ("1.0.0".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_2, d.step());
-                String expectValueString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() :
-                        "org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method3(String):0:param.contains(a)";
+                String expectValueString = d.iteration() <= 1 ? UnknownValue.NO_VALUE.toString() : "xzy.toLowerCase()";
                 Assert.assertEquals(expectValueString,
                         d.evaluationResult().value.toString());
             }
@@ -170,6 +207,9 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                 Assert.assertEquals("inline someMethod on org.e2immu.analyser.testexample.UnusedLocalVariableChecks.someMethod(String):0:a.toLowerCase()",
                         d.methodAnalysis().getSingleReturnValue().toString());
             }
+            int notNull = d.methodAnalysis().getProperty(VariableProperty.NOT_NULL);
+            int expectNotNull = MultiLevel.EFFECTIVELY_NOT_NULL;
+            Assert.assertEquals(expectNotNull, notNull);
         }
         if ("method1".equals(d.methodInfo().name)) {
             // ERROR: method should be static
@@ -186,6 +226,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
+        Collections.addAll(markers, "E1");
         testClass("UnusedLocalVariableChecks", 9, 1, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -194,6 +235,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+        Assert.assertTrue(markers.isEmpty());
     }
 
 }

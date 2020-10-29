@@ -281,7 +281,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param analyserContext overview object for the analysis of this primary type
      * @param previous        the previous statement, or null if there is none (start of block)
      */
-    public void updateStatements(AnalyserContext analyserContext, MethodInfo currentMethod, StatementAnalysis previous) {
+    public void updateStatements(AnalyserContext analyserContext, MethodInfo currentMethod,
+                                 StatementAnalysis previous) {
         if (previous == null && parent == null) {
             for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().parameters) {
                 copyParameterPropertiesFromAnalysis(analyserContext, find(analyserContext, parameterInfo), parameterInfo);
@@ -305,7 +306,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     variableInfo.properties.copyFrom(previousVariableInfo.properties);
                     if (!variableInfo.initialValue.isSet()) {
                         Value value = previousVariableInfo.valueForNextStatement();
-                        variableInfo.initialValue.set(value);
+                        if (value != UnknownValue.NO_VALUE) {
+                            variableInfo.initialValue.set(value);
+                        }
                     }
                 }
             }
@@ -324,13 +327,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * <p>
      * copy current value from previous one if there was no assignment
      */
-    public void finalise(StatementAnalysis previous) {
+    public void finalise(StatementAnalysis previous, StatementAnalysis previous1Up) {
         StatementAnalysis copyValuesFrom;
         if (previous == null) {
             if (parent == null) {
                 return;
             }
-            copyValuesFrom = parent;
+            copyValuesFrom = previous1Up;
         } else {
             copyValuesFrom = previous;
         }

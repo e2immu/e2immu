@@ -17,17 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-public class ForwardAnalysisInfo {
-    public static final ForwardAnalysisInfo START_OF_METHOD =
-            new ForwardAnalysisInfo(FlowData.Execution.ALWAYS, ConditionManager.INITIAL, false);
-
-    public final FlowData.Execution execution;
-    public final ConditionManager conditionManager;
-    public final boolean inCatch;
-
-    public ForwardAnalysisInfo(FlowData.Execution execution, ConditionManager conditionManager, boolean inCatch) {
-        this.execution = execution;
-        this.inCatch = inCatch;
-        this.conditionManager = conditionManager;
-    }
+public record ForwardAnalysisInfo(FlowData.Execution execution, ConditionManager conditionManager, boolean inCatch) {
+    public static final ForwardAnalysisInfo START_OF_METHOD = new ForwardAnalysisInfo(FlowData.Execution.ALWAYS, ConditionManager.INITIAL, false);
 }

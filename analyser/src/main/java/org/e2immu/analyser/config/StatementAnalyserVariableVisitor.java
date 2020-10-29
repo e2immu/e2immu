@@ -45,6 +45,22 @@ public interface StatementAnalyserVariableVisitor {
         public int getPropertyOfCurrentValue(VariableProperty variableProperty) {
             return evaluationContext.getProperty(currentValue, variableProperty);
         }
+
+        @Override
+        public String toString() {
+            return "Data{" +
+                    "iteration=" + iteration +
+                    ", methodInfo=" + methodInfo +
+                    ", statementId='" + statementId + '\'' +
+                    ", variableName='" + variableName + '\'' +
+                    ", variable=" + variable +
+                    ", currentValue=" + currentValue +
+                    ", stateOnAssignment=" + stateOnAssignment +
+                    ", objectFlow=" + objectFlow +
+                    ", properties=" + properties +
+                    ", evaluationContext=" + evaluationContext +
+                    '}';
+        }
     }
 
     void visit(Data data);

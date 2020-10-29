@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -147,10 +148,12 @@ public abstract class CommonTestRunner {
         parser.getMessages().forEach(message -> {
             LOGGER.info(message.toString());
         });
+        LOGGER.info("Remaining markers: {}", markers);
         Assert.assertEquals("ERRORS: ", errorsToExpect, (int) parser.getMessages()
                 .filter(m -> m.severity == Message.Severity.ERROR).count());
         Assert.assertEquals("WARNINGS: ", warningsToExpect, (int) parser.getMessages()
                 .filter(m -> m.severity == Message.Severity.WARN).count());
+        Assert.assertTrue(markers.isEmpty());
         return parser.getTypeContext();
     }
 
@@ -160,4 +163,10 @@ public abstract class CommonTestRunner {
                 as, statuses.get(label))));
     }
 
+
+    protected final Set<String> markers = new HashSet<>();
+
+    protected void mark(String marker) {
+        markers.remove(marker);
+    }
 }

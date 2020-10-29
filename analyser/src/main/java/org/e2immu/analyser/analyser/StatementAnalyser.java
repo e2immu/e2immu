@@ -178,7 +178,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (analyserContext.getConfiguration().analyserConfiguration.skipTransformations) {
                     wasReplacement = false;
                 } else {
-                    EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager);
+                    EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager());
                     // first attempt at detecting a transformation
                     wasReplacement = checkForPatterns(evaluationContext);
                     statementAnalyser = statementAnalyser.followReplacements();
@@ -293,38 +293,38 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     /**
-     * @param iteration                 the iteration
-     * @param wasReplacement            boolean, to ensure that the effect of a replacement warrants continued analysis
-     * @param previousStatementAnalysis null if there was no previous statement in this block
+     * @param iteration      the iteration
+     * @param wasReplacement boolean, to ensure that the effect of a replacement warrants continued analysis
+     * @param previous       null if there was no previous statement in this block
      * @return the combination of a list of all modifications to be done to parameters, methods, and an AnalysisStatus object.
      * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
      */
     private StatementAnalyserResult analyseSingleStatement(int iteration,
                                                            boolean wasReplacement,
-                                                           StatementAnalysis previousStatementAnalysis,
+                                                           StatementAnalysis previous,
                                                            ForwardAnalysisInfo forwardAnalysisInfo) {
         if (analysisStatus == null) {
             assert localConditionManager == null : "expected null localConditionManager";
 
-            statementAnalysis.initialise(previousStatementAnalysis);
+            statementAnalysis.initialise(previous);
 
-            boolean startOfNewBlock = previousStatementAnalysis == null;
-            localConditionManager = startOfNewBlock ? forwardAnalysisInfo.conditionManager :
-                    previousStatementAnalysis.stateData.getConditionManager();
+            boolean startOfNewBlock = previous == null;
+            localConditionManager = startOfNewBlock ? forwardAnalysisInfo.conditionManager() :
+                    previous.stateData.getConditionManager();
 
             analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
-                    .add("checkUnreachableStatement", sharedState -> checkUnreachableStatement(previousStatementAnalysis,
-                            forwardAnalysisInfo.execution))
+                    .add("checkUnreachableStatement", sharedState -> checkUnreachableStatement(previous,
+                            forwardAnalysisInfo.execution()))
 
-                    .add("singleStatementAnalysisSteps", sharedState -> singleStatementAnalysisSteps(sharedState, forwardAnalysisInfo))
+                    .add("singleStatementAnalysisSteps", sharedState -> singleStatementAnalysisSteps(sharedState, previous, forwardAnalysisInfo))
                     .add("tryToFreezeDependencyGraph", sharedState -> tryToFreezeDependencyGraph())
-                    .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previousStatementAnalysis,
-                            forwardAnalysisInfo.execution))
+                    .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previous,
+                            forwardAnalysisInfo.execution()))
 
                     .add("copyPrecondition", sharedState -> statementAnalysis.stateData.copyPrecondition(this,
-                            previousStatementAnalysis, sharedState.evaluationContext))
+                            previous, sharedState.evaluationContext))
                     .add(ANALYSE_METHOD_LEVEL_DATA, sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
-                            previousStatementAnalysis == null ? null : previousStatementAnalysis.methodLevelData,
+                            previous == null ? null : previous.methodLevelData,
                             statementAnalysis.stateData))
 
                     .add("checkNotNullEscapes", this::checkNotNullEscapes)
@@ -335,11 +335,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .add("checkUnusedLocalVariables", sharedState -> checkUnusedLocalVariables())
                     .build();
         } else {
-            statementAnalysis.updateStatements(analyserContext, myMethodAnalyser.methodInfo, previousStatementAnalysis);
+            statementAnalysis.updateStatements(analyserContext, myMethodAnalyser.methodInfo, previous);
         }
 
         StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager);
+        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager());
         SharedState sharedState = new SharedState(evaluationContext, builder);
         AnalysisStatus overallStatus = analyserComponents.run(sharedState);
 
@@ -552,7 +552,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
 
-    private void step2_localVariableCreation(SharedState sharedState, Structure structure, boolean assignedInLoop) {
+    private AnalysisStatus step2_localVariableCreation(SharedState sharedState, Structure structure, boolean assignedInLoop) {
+        boolean noValue = false;
         for (Expression initialiser : structure.initialisers) {
             if (initialiser instanceof LocalVariableCreation lvc) {
                 LocalVariableReference lvr = new LocalVariableReference((lvc).localVariable, List.of());
@@ -570,6 +571,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         variable -> statementAnalysis.find(analyserContext, variable).initialValue, STEP_2));
 
                 Value value = result.value;
+                if (value == NO_VALUE) noValue = true;
                 // initialisers size 1 means expression as statement, local variable creation
                 if (structure.initialisers.size() == 1 && value != null && value != NO_VALUE &&
                         !statementAnalysis.stateData.valueOfExpression.isSet()) {
@@ -592,6 +594,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 throw rte;
             }
         }
+        return noValue ? DELAYS : DONE;
     }
 
     // for(int i=0 (step2); i<3 (step4); i++ (step3))
@@ -720,17 +723,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return false;
     }
 
-    private void step8_primaryBlock(EvaluationContext evaluationContext,
-                                    Value value,
-                                    Structure structure,
-                                    StatementAnalyser startOfFirstBlock,
-                                    StatementAnalyserResult.Builder builder) {
+    private AnalysisStatus step8_primaryBlock(EvaluationContext evaluationContext,
+                                              Value value,
+                                              Structure structure,
+                                              StatementAnalyser startOfFirstBlock,
+                                              StatementAnalyserResult.Builder builder) {
         boolean statementsExecutedAtLeastOnce = structure.statementsExecutedAtLeastOnce.test(value, evaluationContext);
         FlowData.Execution execution = statementAnalysis.flowData.execution(statementsExecutedAtLeastOnce);
 
         StatementAnalyserResult recursiveResult = startOfFirstBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
                 new ForwardAnalysisInfo(execution, localConditionManager.addCondition(evaluationContext, value), false));
         builder.add(recursiveResult);
+        return recursiveResult.analysisStatus;
     }
 
     private Value step9_evaluateSubExpression(EvaluationContext evaluationContext,
@@ -758,12 +762,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return valueForSubStatement;
     }
 
-    private void step10_evaluateSubBlock(EvaluationContext evaluationContext,
-                                         StatementAnalyserResult.Builder builder,
-                                         Structure structure,
-                                         int count,
-                                         Value value,
-                                         Value valueForSubStatement) {
+    private AnalysisStatus step10_evaluateSubBlock(EvaluationContext evaluationContext,
+                                                   StatementAnalyserResult.Builder builder,
+                                                   Structure structure,
+                                                   int count,
+                                                   Value value,
+                                                   Value valueForSubStatement) {
         boolean statementsExecutedAtLeastOnce = structure.statementsExecutedAtLeastOnce.test(value, evaluationContext);
         FlowData.Execution execution = statementAnalysis.flowData.execution(statementsExecutedAtLeastOnce);
 
@@ -772,20 +776,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         StatementAnalyserResult result = subStatementStart.analyseAllStatementsInBlock(evaluationContext.getIteration(),
                 new ForwardAnalysisInfo(execution, localConditionManager.addCondition(evaluationContext, valueForSubStatement), inCatch));
         builder.add(result);
+        return result.analysisStatus;
     }
 
-    private AnalysisStatus singleStatementAnalysisSteps(SharedState sharedState, ForwardAnalysisInfo forwardAnalysisInfo) {
+    private AnalysisStatus singleStatementAnalysisSteps(SharedState sharedState,
+                                                        StatementAnalysis previous,
+                                                        ForwardAnalysisInfo forwardAnalysisInfo) {
         Structure structure = statementAnalysis.statement.getStructure();
         EvaluationContext evaluationContext = sharedState.evaluationContext;
-        StatementAnalyserResult.Builder builder = sharedState.builder;
 
         // STEP 1: Create a local variable x for(X x: Xs) {...}, or in catch(Exception e)
         boolean assignedInLoop = statementAnalysis.statement instanceof LoopStatement;
         LocalVariableReference theLocalVariableReference = step1_localVariableInForOrCatch(structure,
-                forwardAnalysisInfo.inCatch, assignedInLoop);
+                forwardAnalysisInfo.inCatch(), assignedInLoop);
 
         // STEP 2: More local variables in try-resources, for-loop, expression as statement (normal local variables)
-        step2_localVariableCreation(sharedState, structure, assignedInLoop);
+        AnalysisStatus analysisStatus = step2_localVariableCreation(sharedState, structure, assignedInLoop);
 
 
         // STEP 3: updaters (only in the classic for statement, and the parameters of an explicit constructor invocation this(...)
@@ -795,6 +801,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         // STEP 4: evaluation of the main expression of the statement (if the statement has such a thing)
         final Value value = step4_evaluationOfMainExpression(evaluationContext, structure);
+        analysisStatus = analysisStatus.combine(value == NO_VALUE ? DELAYS : DONE);
 
         // STEP 5: not-null check on forEach (see step 1)
         step5_forEachNotNullCheck(evaluationContext, value, theLocalVariableReference);
@@ -815,9 +822,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         conditions.add(value);
         int start;
 
+        StatementAnalyserResult.Builder builder = sharedState.builder;
         if (structure.haveNonEmptyBlock()) {
             StatementAnalyser startOfFirstBlock = startOfBlocks.get(0);
-            step8_primaryBlock(evaluationContext, value, structure, startOfFirstBlock, builder);
+            AnalysisStatus status8 = step8_primaryBlock(evaluationContext, value, structure, startOfFirstBlock, builder);
+            analysisStatus = analysisStatus.combine(status8);
             start = 1;
         } else {
             start = 0;
@@ -840,7 +849,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             // PART 10: create subContext, add parameters of sub statements, execute
 
-            step10_evaluateSubBlock(evaluationContext, builder, subStatements, count, value, valueForSubStatement);
+            AnalysisStatus status10 = step10_evaluateSubBlock(evaluationContext, builder, subStatements, count, value,
+                    valueForSubStatement);
+            analysisStatus = analysisStatus.combine(status10);
         }
 
         List<StatementAnalyser> lastStatements = startOfBlocks.stream().map(StatementAnalyser::lastStatement).collect(Collectors.toList());
@@ -866,7 +877,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             statementAnalysis.stateData.conditionManager.set(localConditionManager);
         }
 
-        return value == NO_VALUE ? DELAYS : DONE;
+        return analysisStatus;
     }
 
     /**
