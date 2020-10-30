@@ -187,6 +187,7 @@ public class Assignment implements Expression {
             assignedToTarget = valueResult.value;
         }
         assert assignedToTarget != null;
+        assert assignedToTarget != EmptyExpression.EMPTY_EXPRESSION;
         doAssignmentWork(builder, evaluationContext, variableTarget, assignedToTarget);
 
         assert resultOfExpression != null;
@@ -210,8 +211,7 @@ public class Assignment implements Expression {
         } else if (at instanceof ParameterInfo parameterInfo) {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
         }
-        builder.assignmentBasics(at, resultOfExpression, this.value != EmptyExpression.EMPTY_EXPRESSION,
-                evaluationContext.getIteration());
+        builder.assignment(at, resultOfExpression, true, evaluationContext.getIteration());
 
         // connect the value to the assignment target
         if (resultOfExpression != NO_VALUE) {

@@ -19,8 +19,11 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method1".equals(d.methodInfo.name)) {
             if ("0".equals(d.statementId)) {
-                AnalysisStatus expectAnalysisStatus = d.iteration <= 1 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-                // TODO Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus);
+                Assert.assertEquals(d.toString(), AnalysisStatus.DONE, d.analysisStatus);
+            }
+            if ("1".equals(d.statementId) || "1.0.0".equals(d.statementId)) {
+                AnalysisStatus expectAnalysisStatus = d.iteration == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
+                Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus);
             }
             // ERROR: t.trim() result is not used
             if ("2".equals(d.statementId)) {
@@ -30,8 +33,8 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                 if (d.iteration >= 2) {
                     Assert.assertNotNull(d.haveError(Message.IGNORING_RESULT_OF_METHOD_CALL));
                 }
-                AnalysisStatus expectAnalysisStatus = d.iteration <= 1 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-                // TODO   Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus);
+                AnalysisStatus expectAnalysisStatus = d.iteration == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
+                Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus);
             }
         }
         // ERROR: Unused variable "a"
@@ -61,6 +64,10 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("checkForEach".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId) && "integers".equals(d.variableName)) {
             Assert.assertEquals(2, d.properties.get(VariableProperty.READ));
+        }
+        if ("method1".equals(d.methodInfo.name) && "0".equals(d.statementId) && "s".equals(d.variableName)) {
+            int assigned = d.properties.getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
+            Assert.assertEquals(Level.DELAY, assigned);
         }
         if ("checkArray2".equals(d.methodInfo.name)) {
             int read = d.properties.getOrDefault(VariableProperty.READ, Level.DELAY);

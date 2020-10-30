@@ -438,7 +438,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (!variableInfo.stateOnAssignment.isSet() && reducedState != NO_VALUE) {
                 variableInfo.stateOnAssignment.set(reducedState);
             }
-            statementAnalysis.addProperty(analyserContext, e.getKey(), VariableProperty.ASSIGNED, Level.TRUE);
         });
 
         if (evaluationResult.value == NO_VALUE) return DELAYS;

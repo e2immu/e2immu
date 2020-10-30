@@ -610,13 +610,14 @@ public class MethodAnalyser extends AbstractAnalyser {
     private AnalysisStatus computeSize(int iteration) {
         assert methodAnalysis.getProperty(VariableProperty.SIZE) == Level.DELAY;
 
+        if (methodInfo.isConstructor) return DONE; // non-modifying constructor would be weird anyway; not for me
+
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
         if (modified == Level.DELAY) {
             log(DELAYED, "Delaying @Size on {} because waiting for @Modified", methodInfo.distinguishingName());
             return DELAYS;
         }
         if (modified == Level.FALSE) {
-            if (methodInfo.isConstructor) return DONE; // non-modifying constructor would be weird anyway; not for me
             if (methodInfo.returnType().hasSize(analyserContext.getPrimitives(), analyserContext)) {
                 // non-modifying method that returns a type with @Size (like Collection, Map, ...)
                 log(SIZE, "Return type {} of method {} has a size!", methodInfo.returnType().detailedString(), methodInfo.fullyQualifiedName());
@@ -652,6 +653,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus computeSizeCopy() {
         assert methodAnalysis.getProperty(VariableProperty.SIZE_COPY) == Level.DELAY;
+        if (methodInfo.isConstructor) return DONE; // non-modifying constructor would be weird anyway
 
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
         if (modified == Level.DELAY) {
@@ -659,7 +661,6 @@ public class MethodAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
         if (modified == Level.FALSE) {
-            if (methodInfo.isConstructor) return DONE; // non-modifying constructor would be weird anyway
             if (methodInfo.returnType().hasSize(analyserContext.getPrimitives(), analyserContext)) {
                 // first try @Size(copy ...)
                 boolean delays = methodLevelData.returnStatementSummaries.stream().anyMatch(entry -> entry.getValue().isDelayed(VariableProperty.SIZE_COPY));

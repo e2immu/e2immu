@@ -322,13 +322,13 @@ public class EvaluationResult {
             addToModifications(statementAnalyser.new LinkVariable(at, linked));
         }
 
-        public void assignmentBasics(Variable at, Value resultOfExpression, boolean assignmentToNonEmptyExpression, int iteration) {
-            if (assignmentToNonEmptyExpression) {
-                setCurrentValue(at, resultOfExpression);
-            }
-            if (iteration == 0) {
+        public Builder assignment(Variable at, Value resultOfExpression, boolean assignmentToNonEmptyExpression, int iteration) {
+            setCurrentValue(at, resultOfExpression);
+
+            if (iteration == 0 && assignmentToNonEmptyExpression) {
                 addToModifications(statementAnalyser.new MarkAssigned(at));
             }
+            return this;
         }
 
         public void merge(EvaluationContext copyForThen) {
