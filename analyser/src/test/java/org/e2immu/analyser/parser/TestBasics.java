@@ -61,27 +61,27 @@ public class TestBasics extends CommonTestRunner {
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVisitor = d -> {
-        if (d.methodInfo.name.equals("getExplicitlyFinal")
-                && "0".equals(d.statementId)
-                && "org.e2immu.analyser.testexample.Basics.explicitlyFinal".equals(d.variableName)) {
-            if (d.iteration == 0) {
-                LOGGER.info("Properties after 1 iteration are {}", d.properties);
-                Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.READ));
-                Assert.assertFalse(d.properties.isSet(VariableProperty.ASSIGNED));
-                Assert.assertFalse(d.properties.isSet(VariableProperty.NOT_NULL));
-                Assert.assertEquals(new StringValue(d.evaluationContext.getPrimitives(), "abc"), d.currentValue);
+        if (d.methodInfo().name.equals("getExplicitlyFinal")
+                && "0".equals(d.statementId())
+                && "org.e2immu.analyser.testexample.Basics.explicitlyFinal".equals(d.variableName())) {
+            if (d.iteration() == 0) {
+                LOGGER.info("Properties after 1 iteration are {}", d.properties());
+                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.READ));
+                Assert.assertFalse(d.properties().isSet(VariableProperty.ASSIGNED));
+                Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL));
+                Assert.assertEquals(new StringValue(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
                 return;
             }
-            if (d.iteration == 1 || d.iteration == 2) {
-                LOGGER.info("Properties after 2 iterations are {}", d.properties);
-                Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.READ));
-                Assert.assertFalse(d.properties.isSet(VariableProperty.ASSIGNED));
-                Assert.assertFalse(d.properties.isSet(VariableProperty.NOT_NULL));
+            if (d.iteration() == 1 || d.iteration() == 2) {
+                LOGGER.info("Properties after 2 iterations are {}", d.properties());
+                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.READ));
+                Assert.assertFalse(d.properties().isSet(VariableProperty.ASSIGNED));
+                Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL));
                 return;
             }
         }
-        Assert.fail("Method name " + d.methodInfo.name + ", iteration " + d.iteration + ", variable " + d.variableName +
-                ", statement id " + d.statementId);
+        Assert.fail("Method name " + d.methodInfo().name + ", iteration " + d.iteration() + ", variable " + d.variableName() +
+                ", statement id " + d.statementId());
     };
 
     TypeContextVisitor typeContextVisitor = typeContext -> {

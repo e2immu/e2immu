@@ -68,13 +68,13 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("generateBefore".equals(d.methodInfo.name) && "0".equals(d.statementId) && "list".equals(d.variableName)) {
-            Assert.assertEquals("java.util.List.of(a, b)", d.currentValue.toString());
+        if ("generateBefore".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "list".equals(d.variableName())) {
+            Assert.assertEquals("java.util.List.of(a, b)", d.currentValue().toString());
             int notNull = d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, notNull);
         }
-        if ("setFirst".equals(d.methodInfo.name) && "ManyTs.this.ts2".equals(d.variableName)) {
-            Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.MODIFIED));
+        if ("setFirst".equals(d.methodInfo().name) && "ManyTs.this.ts2".equals(d.variableName())) {
+            Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
         }
     };
 

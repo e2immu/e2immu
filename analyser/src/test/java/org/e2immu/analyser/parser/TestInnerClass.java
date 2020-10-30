@@ -17,9 +17,9 @@ public class TestInnerClass extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("InnerClass".equals(d.methodInfo.name) && "0.0.0".equals(d.statementId) && "outerField".equals(d.variableName)) {
-            Assert.assertTrue(d.variable instanceof ParameterInfo);
-            int notNull = d.properties.getOrDefault(VariableProperty.NOT_NULL, Level.DELAY);
+        if ("InnerClass".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId()) && "outerField".equals(d.variableName())) {
+            Assert.assertTrue(d.variable() instanceof ParameterInfo);
+            int notNull = d.properties().getOrDefault(VariableProperty.NOT_NULL, Level.DELAY);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
         }
     };

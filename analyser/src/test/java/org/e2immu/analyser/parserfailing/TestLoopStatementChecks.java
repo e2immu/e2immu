@@ -47,29 +47,29 @@ public class TestLoopStatementChecks extends CommonTestRunner {
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("method3bis".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
+        if ("method3bis".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
             Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
         }
-        if ("method6".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId)) {
+        if ("method6".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
             Assert.assertNotNull(d.haveError(Message.USELESS_ASSIGNMENT));
             Assert.assertNotNull(d.haveError(Message.UNUSED_LOCAL_VARIABLE));
         }
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("method3".equals(d.methodInfo.name) && "res".equals(d.variableName)) {
-            if ("2".equals(d.statementId)) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties.get(VariableProperty.NOT_NULL)); // (1)
+        if ("method3".equals(d.methodInfo().name) && "res".equals(d.variableName())) {
+            if ("2".equals(d.statementId())) {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties().get(VariableProperty.NOT_NULL)); // (1)
             }
         }
-        if ("method1".equals(d.methodInfo.name) && "res1".equals(d.variableName)) {
-            if ("2.0.0".equals(d.statementId)) {
-                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.ASSIGNED_IN_LOOP)); // (4)
-                Assert.assertEquals(Level.TRUE, (int) d.properties.get(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED)); // (4)
-                Assert.assertTrue(d.currentValue instanceof StringValue);
+        if ("method1".equals(d.methodInfo().name) && "res1".equals(d.variableName())) {
+            if ("2.0.0".equals(d.statementId())) {
+                Assert.assertEquals(Level.TRUE, (int) d.properties().get(VariableProperty.ASSIGNED_IN_LOOP)); // (4)
+                Assert.assertEquals(Level.TRUE, (int) d.properties().get(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED)); // (4)
+                Assert.assertTrue(d.currentValue() instanceof StringValue);
             }
-            if ("3".equals(d.statementId)) {
-                Assert.assertTrue(d.currentValue instanceof VariableValue);
+            if ("3".equals(d.statementId())) {
+                Assert.assertTrue(d.currentValue() instanceof VariableValue);
             }
         }
     };

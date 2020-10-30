@@ -22,97 +22,97 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
 
-        if ("size".equals(d.methodInfo.name) && "Example2".equals(d.methodInfo.typeInfo.simpleName)) {
-            Assert.assertEquals(0, d.properties.get(VariableProperty.MODIFIED));
+        if ("size".equals(d.methodInfo().name) && "Example2".equals(d.methodInfo().typeInfo.simpleName)) {
+            Assert.assertEquals(0, d.properties().get(VariableProperty.MODIFIED));
         }
 
-        if ("add3".equals(d.methodInfo.name) && "local3".equals(d.variableName)) {
-            if ("0".equals(d.statementId)) {
-                if (d.iteration == 0) {
-                    Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
+        if ("add3".equals(d.methodInfo().name) && "local3".equals(d.variableName())) {
+            if ("0".equals(d.statementId())) {
+                if (d.iteration() == 0) {
+                    Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue());
                 } else {
-                    Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
-                    FinalFieldValue variableValue = (FinalFieldValue) d.currentValue;
+                    Assert.assertTrue(d.currentValue() instanceof FinalFieldValue);
+                    FinalFieldValue variableValue = (FinalFieldValue) d.currentValue();
                     Assert.assertTrue(variableValue.variable instanceof FieldReference);
-                    Assert.assertEquals("this.set3", d.currentValue.toString());
+                    Assert.assertEquals("this.set3", d.currentValue().toString());
                 }
             }
         }
-        if ("add4".equals(d.methodInfo.name) && "local4".equals(d.variableName)) {
-            if ("0".equals(d.statementId)) {
-                if (d.iteration == 0) {
-                    Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
+        if ("add4".equals(d.methodInfo().name) && "local4".equals(d.variableName())) {
+            if ("0".equals(d.statementId())) {
+                if (d.iteration() == 0) {
+                    Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue());
                 } else {
-                    Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
-                    FinalFieldValue variableValue = (FinalFieldValue) d.currentValue;
+                    Assert.assertTrue(d.currentValue() instanceof FinalFieldValue);
+                    FinalFieldValue variableValue = (FinalFieldValue) d.currentValue();
                     Assert.assertTrue(variableValue.variable instanceof FieldReference);
-                    Assert.assertEquals("this.set4", d.currentValue.toString());
+                    Assert.assertEquals("this.set4", d.currentValue().toString());
                 }
             }
-            if ("1".equals(d.statementId) && d.iteration > 1) {
+            if ("1".equals(d.statementId()) && d.iteration() > 1) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             }
         }
-        if ("add4".equals(d.methodInfo.name) && "Example4.this.set4".equals(d.variableName)) {
-            if ("1".equals(d.statementId)) {
-                if (d.iteration == 0) {
-                    Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue);
+        if ("add4".equals(d.methodInfo().name) && "Example4.this.set4".equals(d.variableName())) {
+            if ("1".equals(d.statementId())) {
+                if (d.iteration() == 0) {
+                    Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue());
                 } else {
-                    Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
-                    if (d.iteration > 1) {
+                    Assert.assertTrue(d.currentValue() instanceof FinalFieldValue);
+                    if (d.iteration() > 1) {
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
                     }
                 }
             }
         }
-        if ("Example4".equals(d.methodInfo.name) && "set4".equals(d.variableName) && "0".equals(d.statementId)) {
-            if (d.iteration == 3) {
-                Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.MODIFIED));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.properties.get(VariableProperty.NOT_NULL));
+        if ("Example4".equals(d.methodInfo().name) && "set4".equals(d.variableName()) && "0".equals(d.statementId())) {
+            if (d.iteration() == 3) {
+                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.properties().get(VariableProperty.NOT_NULL));
             }
         }
 
-        if ("Example5".equals(d.methodInfo.name) && "in5".equals(d.variableName) && "0".equals(d.statementId)) {
-            Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
+        if ("Example5".equals(d.methodInfo().name) && "in5".equals(d.variableName()) && "0".equals(d.statementId())) {
+            Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
         }
 
-        if ("Example5".equals(d.methodInfo.name) && "Example5.this.set5".equals(d.variableName) && "0".equals(d.statementId)) {
-            if (d.iteration == 0) {
-                Assert.assertTrue(d.currentValue instanceof Instance);
+        if ("Example5".equals(d.methodInfo().name) && "Example5.this.set5".equals(d.variableName()) && "0".equals(d.statementId())) {
+            if (d.iteration() == 0) {
+                Assert.assertTrue(d.currentValue() instanceof Instance);
             } else {
-                Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
+                Assert.assertTrue(d.currentValue() instanceof FinalFieldValue);
             }
         }
 
-        if ("add6".equals(d.methodInfo.name) && "values6".equals(d.variableName)) {
-            if (d.iteration > 1) {
-                Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
+        if ("add6".equals(d.methodInfo().name) && "values6".equals(d.variableName())) {
+            if (d.iteration() > 1) {
+                Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             }
         }
-        if ("add6".equals(d.methodInfo.name) && "example6".equals(d.variableName)) {
+        if ("add6".equals(d.methodInfo().name) && "example6".equals(d.variableName())) {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
         }
-        if ("add6".equals(d.methodInfo.name) && "example6.set6".equals(d.variableName)) {
-            Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.MODIFIED));
-            if (d.iteration > 1)
+        if ("add6".equals(d.methodInfo().name) && "example6.set6".equals(d.variableName())) {
+            Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
+            if (d.iteration() > 1)
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
         }
-        if ("Example6".equals(d.methodInfo.name) && "set6".equals(d.variableName) && "0".equals(d.statementId)) {
-            if (d.iteration == 3) {
-                Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.MODIFIED));
+        if ("Example6".equals(d.methodInfo().name) && "set6".equals(d.variableName()) && "0".equals(d.statementId())) {
+            if (d.iteration() == 3) {
+                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             }
         }
-        if ("Example6".equals(d.methodInfo.name) && "in6".equals(d.variableName) && "0".equals(d.statementId)) {
-            if (d.iteration == 0) {
-                Assert.assertFalse(d.properties.isSet(VariableProperty.MODIFIED));
+        if ("Example6".equals(d.methodInfo().name) && "in6".equals(d.variableName()) && "0".equals(d.statementId())) {
+            if (d.iteration() == 0) {
+                Assert.assertFalse(d.properties().isSet(VariableProperty.MODIFIED));
             }
         }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("add4".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
+        if ("add4".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
             Assert.assertNull(d.haveError(Message.NULL_POINTER_EXCEPTION));
         }
     };

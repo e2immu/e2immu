@@ -37,14 +37,14 @@ https://github.com/bnaudts/e2immu/issues/15
 public class TestLazy extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("get".equals(d.methodInfo.name) && "Lazy.this.supplier".equals(d.variableName)) {
-            Assert.assertFalse("Statement: " + d.statementId, d.properties.isSet(VariableProperty.ASSIGNED));
+        if ("get".equals(d.methodInfo().name) && "Lazy.this.supplier".equals(d.variableName())) {
+            Assert.assertFalse("Statement: " + d.statementId(), d.properties().isSet(VariableProperty.ASSIGNED));
         }
-        if ("get".equals(d.methodInfo.name) && "Lazy.this.t".equals(d.variableName) && d.iteration > 0) {
-            if ("2.0.0".equals(d.statementId)) {
-                Assert.assertEquals("this.supplier.get(),@NotNull", d.currentValue.toString());
+        if ("get".equals(d.methodInfo().name) && "Lazy.this.t".equals(d.variableName()) && d.iteration() > 0) {
+            if ("2.0.0".equals(d.statementId())) {
+                Assert.assertEquals("this.supplier.get(),@NotNull", d.currentValue().toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
-                Assert.assertEquals(1, d.currentValue.variables().size());
+                Assert.assertEquals(1, d.currentValue().variables().size());
             }
         }
     };
@@ -63,9 +63,9 @@ public class TestLazy extends CommonTestRunner {
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if (d.iteration > 0 && "get".equals(d.methodInfo.name)) {
-            if ("2.0.0".equals(d.statementId)) {
-                Assert.assertEquals("null == localT", d.state.toString());
+        if (d.iteration() > 0 && "get".equals(d.methodInfo().name)) {
+            if ("2.0.0".equals(d.statementId())) {
+                Assert.assertEquals("null == localT", d.state().toString());
             }
         }
     };

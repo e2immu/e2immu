@@ -41,8 +41,8 @@ public class TestEither extends CommonTestRunner {
      */
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("getLeftOrElse".equals(d.methodInfo.name) && "orElse".equals(d.variableName) && "1".equals(d.statementId)) {
-            Assert.assertEquals("orElse", d.currentValue.toString());
+        if ("getLeftOrElse".equals(d.methodInfo().name) && "orElse".equals(d.variableName()) && "1".equals(d.statementId())) {
+            Assert.assertEquals("orElse", d.currentValue().toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
         }
     };
@@ -50,12 +50,12 @@ public class TestEither extends CommonTestRunner {
     private static final String EXPRESSION = "((null == a or not (null == b)) and (not (null == a) or null == b))";
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("Either".equals(d.methodInfo.name) && "0.0.0".equals(d.statementId)) {
-            if (0 == d.iteration) {
-                Assert.assertEquals(EXPRESSION, d.condition.toString());
-            } else if (1 == d.iteration) {
-                Assert.assertEquals(EXPRESSION, d.state.toString());
-                Assert.assertEquals(EXPRESSION, d.condition.toString());
+        if ("Either".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
+            if (0 == d.iteration()) {
+                Assert.assertEquals(EXPRESSION, d.condition().toString());
+            } else if (1 == d.iteration()) {
+                Assert.assertEquals(EXPRESSION, d.state().toString());
+                Assert.assertEquals(EXPRESSION, d.condition().toString());
             }
         }
     };

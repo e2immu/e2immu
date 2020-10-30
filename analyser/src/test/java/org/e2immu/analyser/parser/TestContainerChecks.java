@@ -20,53 +20,53 @@ public class TestContainerChecks extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("setStrings1".equals(d.methodInfo.name)) {
-            if ("strings1param".equals(d.variableName) && "0".equals(d.statementId)) {
-                Assert.assertFalse(d.properties.isSet(VariableProperty.NOT_NULL));
+        if ("setStrings1".equals(d.methodInfo().name)) {
+            if ("strings1param".equals(d.variableName()) && "0".equals(d.statementId())) {
+                Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL));
             }
-            if ("strings1param".equals(d.variableName) && "1".equals(d.statementId)) {
+            if ("strings1param".equals(d.variableName()) && "1".equals(d.statementId())) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             }
-            if ("Container1.this.strings1".equals(d.variableName) && "1".equals(d.statementId)) {
+            if ("Container1.this.strings1".equals(d.variableName()) && "1".equals(d.statementId())) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             }
         }
-        if ("setStrings3".equals(d.methodInfo.name)) {
-            if ("strings3param".equals(d.variableName) && "0".equals(d.statementId)) {
-                Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
+        if ("setStrings3".equals(d.methodInfo().name)) {
+            if ("strings3param".equals(d.variableName()) && "0".equals(d.statementId())) {
+                Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
             }
         }
-        if ("Container4".equals(d.methodInfo.name)) {
-            if ("strings4Param".equals(d.variableName)) {
-                Assert.assertEquals(Level.IS_A_SIZE, d.properties.get(VariableProperty.SIZE));
+        if ("Container4".equals(d.methodInfo().name)) {
+            if ("strings4Param".equals(d.variableName())) {
+                Assert.assertEquals(Level.IS_A_SIZE, d.properties().get(VariableProperty.SIZE));
             }
-            if ("Container4.this.strings4".equals(d.variableName)) {
-                Assert.assertTrue(d.currentValue instanceof PropertyWrapper);
-                Assert.assertEquals("strings4Param,@NotNull", d.currentValue.toString());
-                //  Assert.assertEquals(Level.IS_A_SIZE, (int) d.currentValue.getPropertyOutsideContext(VariableProperty.SIZE));
-                //   Assert.assertEquals(Level.IS_A_SIZE, (int) d.properties.get(VariableProperty.SIZE));
+            if ("Container4.this.strings4".equals(d.variableName())) {
+                Assert.assertTrue(d.currentValue() instanceof PropertyWrapper);
+                Assert.assertEquals("strings4Param,@NotNull", d.currentValue().toString());
+                //  Assert.assertEquals(Level.IS_A_SIZE, (int) d.currentValue().getPropertyOutsideContext(VariableProperty.SIZE));
+                //   Assert.assertEquals(Level.IS_A_SIZE, (int) d.properties().get(VariableProperty.SIZE));
             }
         }
-        if ("addAll5".equals(d.methodInfo.name)) {
-            if ("Container5.this.list".equals(d.variableName)) {
-                Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.READ));
-                Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.METHOD_DELAY));
+        if ("addAll5".equals(d.methodInfo().name)) {
+            if ("Container5.this.list".equals(d.variableName())) {
+                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.READ));
+                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.METHOD_DELAY));
             }
         }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("add2b".equals(d.methodInfo.name) && "0.0.0".equals(d.statementId)) {
-            if (d.iteration == 0) {
-                Assert.assertSame(UnknownValue.NO_VALUE, d.condition);
+        if ("add2b".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
+            if (d.iteration() == 0) {
+                Assert.assertSame(UnknownValue.NO_VALUE, d.condition());
             } else {
-                Assert.assertEquals("not (null == this.strings2b)", d.condition.toString());
+                Assert.assertEquals("not (null == this.strings2b)", d.condition().toString());
             }
         }
         // POTENTIAL NULL POINTER EXCEPTION
-        if ("add2".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
-            if (d.iteration > 0) {
+        if ("add2".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+            if (d.iteration() > 0) {
                 Assert.assertNotNull(d.haveError(Message.NULL_POINTER_EXCEPTION));
             }
         }

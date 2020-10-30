@@ -12,31 +12,10 @@ import java.util.Map;
 
 public interface StatementAnalyserVisitor {
 
-    class Data {
-        public final int iteration;
-        public final MethodInfo methodInfo;
-        public final StatementAnalysis statementAnalysis;
-        public final String statementId;
-        public final Value condition;
-        public final Value state;
-        public final Map<String, AnalysisStatus> statusesAsMap;
-        public final EvaluationContext evaluationContext;
-        public final AnalysisStatus analysisStatus;
-
-        public Data(AnalysisStatus analysisStatus, int iteration,
+    record Data(AnalysisStatus analysisStatus, int iteration,
                     EvaluationContext evaluationContext,
                     MethodInfo methodInfo, StatementAnalysis statementAnalysis,
                     String statementId, Value condition, Value state, Map<String, AnalysisStatus> statusesAsMap) {
-            this.analysisStatus = analysisStatus;
-            this.iteration = iteration;
-            this.methodInfo = methodInfo;
-            this.statementAnalysis = statementAnalysis;
-            this.statementId = statementId;
-            this.condition = condition;
-            this.state = state;
-            this.statusesAsMap = statusesAsMap;
-            this.evaluationContext = evaluationContext;
-        }
 
         // shortcut
         public String haveError(String message) {

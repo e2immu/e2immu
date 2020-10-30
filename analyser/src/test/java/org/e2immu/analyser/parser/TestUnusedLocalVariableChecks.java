@@ -18,93 +18,93 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
     }
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("method1".equals(d.methodInfo.name)) {
-            if ("0".equals(d.statementId)) {
-                Assert.assertEquals(d.toString(), AnalysisStatus.DONE, d.analysisStatus);
+        if ("method1".equals(d.methodInfo().name)) {
+            if ("0".equals(d.statementId())) {
+                Assert.assertEquals(d.toString(), AnalysisStatus.DONE, d.analysisStatus());
             }
-            if ("1".equals(d.statementId) || "1.0.0".equals(d.statementId)) {
-                AnalysisStatus expectAnalysisStatus = d.iteration == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-                Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus);
+            if ("1".equals(d.statementId()) || "1.0.0".equals(d.statementId())) {
+                AnalysisStatus expectAnalysisStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
+                Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus());
             }
             // ERROR: t.trim() result is not used
-            if ("2".equals(d.statementId)) {
+            if ("2".equals(d.statementId())) {
                 // ERROR: unused variable "s"
                 Assert.assertEquals("ERROR in M:method1:2: Unused local variable: s", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
                 Assert.assertNull(d.haveError(Message.USELESS_ASSIGNMENT));
-                if (d.iteration >= 2) {
+                if (d.iteration() >= 2) {
                     Assert.assertNotNull(d.haveError(Message.IGNORING_RESULT_OF_METHOD_CALL));
                 }
-                AnalysisStatus expectAnalysisStatus = d.iteration == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-                Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus);
+                AnalysisStatus expectAnalysisStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
+                Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus());
             }
         }
         // ERROR: Unused variable "a"
         // ERROR: useless assignment to "a" as well
-        if ("UnusedLocalVariableChecks".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
+        if ("UnusedLocalVariableChecks".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
             Assert.assertEquals("ERROR in M:UnusedLocalVariableChecks:0: Unused local variable: a", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
             Assert.assertEquals("ERROR in M:UnusedLocalVariableChecks:0: Useless assignment: a", d.haveError(Message.USELESS_ASSIGNMENT));
 
-            Assert.assertEquals(d.toString(), AnalysisStatus.DONE, d.analysisStatus);
+            Assert.assertEquals(d.toString(), AnalysisStatus.DONE, d.analysisStatus());
         }
-        if ("checkArray".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
-            Assert.assertEquals(d.toString(), AnalysisStatus.DONE, d.analysisStatus);
+        if ("checkArray".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
+            Assert.assertEquals(d.toString(), AnalysisStatus.DONE, d.analysisStatus());
         }
-        if ("checkArray2".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
+        if ("checkArray2".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
             Assert.assertEquals("ERROR in M:checkArray2:2: Useless assignment: integers[i]", d.haveError(Message.USELESS_ASSIGNMENT));
 
-            Assert.assertEquals(d.toString(), AnalysisStatus.DONE, d.analysisStatus);
+            Assert.assertEquals(d.toString(), AnalysisStatus.DONE, d.analysisStatus());
         }
-        if ("checkForEach".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId)) {
+        if ("checkForEach".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
             Assert.assertEquals("ERROR in M:checkForEach:1.0.0: Unused local variable: loopVar", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
 
-            AnalysisStatus expectAnalysisStatus = d.iteration == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-            Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus);
+            AnalysisStatus expectAnalysisStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
+            Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus());
         }
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("checkForEach".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId) && "integers".equals(d.variableName)) {
-            Assert.assertEquals(2, d.properties.get(VariableProperty.READ));
+        if ("checkForEach".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId()) && "integers".equals(d.variableName())) {
+            Assert.assertEquals(2, d.properties().get(VariableProperty.READ));
         }
-        if ("method1".equals(d.methodInfo.name) && "s".equals(d.variableName)) {
-            if("0".equals(d.statementId)){
-                int assigned = d.properties.getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
+        if ("method1".equals(d.methodInfo().name) && "s".equals(d.variableName())) {
+            if("0".equals(d.statementId())){
+                int assigned = d.properties().getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
                 Assert.assertEquals(Level.DELAY, assigned);
             }
-            if("1.0.0".equals(d.statementId)) {
+            if("1.0.0".equals(d.statementId())) {
                // Assert.assertTrue(d.);
             }
         }
-        if ("checkArray2".equals(d.methodInfo.name)) {
-            int read = d.properties.getOrDefault(VariableProperty.READ, Level.DELAY);
-            int assigned = d.properties.getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
+        if ("checkArray2".equals(d.methodInfo().name)) {
+            int read = d.properties().getOrDefault(VariableProperty.READ, Level.DELAY);
+            int assigned = d.properties().getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
 
-            if ("0".equals(d.statementId) && "integers".equals(d.variableName)) {
+            if ("0".equals(d.statementId()) && "integers".equals(d.variableName())) {
                 Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned); // integers=, and integers[i]=
                 Assert.assertEquals(Level.DELAY, read);
-                Assert.assertEquals("{1,2,3}", d.currentValue.toString());
+                Assert.assertEquals("{1,2,3}", d.currentValue().toString());
             }
-            if ("1".equals(d.statementId) && "i".equals(d.variableName)) {
+            if ("1".equals(d.statementId()) && "i".equals(d.variableName())) {
                 Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned); // integers=, and integers[i]=
                 Assert.assertEquals(Level.DELAY, read);
-                Assert.assertEquals("0", d.currentValue.toString());
+                Assert.assertEquals("0", d.currentValue().toString());
             }
-            if ("2".equals(d.statementId)) {
-                if ("integers".equals(d.variableName)) {
+            if ("2".equals(d.statementId())) {
+                if ("integers".equals(d.variableName())) {
                     Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned); // integers=, NOT integers[i]=
                     Assert.assertEquals(assigned + 1, read);
-                    Assert.assertEquals("{1,2,3}", d.currentValue.toString());
+                    Assert.assertEquals("{1,2,3}", d.currentValue().toString());
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL)); // because in scope side
-                } else if ("i".equals(d.variableName)) {
+                } else if ("i".equals(d.variableName())) {
                     Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned);
                     Assert.assertEquals(assigned + 1, read);
 
                     // the standardized name is the evaluation value of expression and index, in this particular case, both constants
-                } else if ("integers[i]".equals(d.variableName)) {
+                } else if ("integers[i]".equals(d.variableName())) {
                     Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned);
                     Assert.assertTrue(read <= assigned);
-                    Assert.assertEquals("3", d.currentValue.toString());
-                } else Assert.fail("Variable named " + d.variableName);
+                    Assert.assertEquals("3", d.currentValue().toString());
+                } else Assert.fail("Variable named " + d.variableName());
             }
         }
     };

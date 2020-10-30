@@ -21,29 +21,29 @@ public class TestIdentityChecks extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if (d.methodInfo.name.equals("idem") && "s".equals(d.variableName)) {
-            if ("0".equals(d.statementId)) {
+        if (d.methodInfo().name.equals("idem") && "s".equals(d.variableName())) {
+            if ("0".equals(d.statementId())) {
                 // strings are @NM by definition
-                Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.READ_ASSIGN_ONCE, d.properties.get(VariableProperty.READ)); // read 1x
+                Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.READ_ASSIGN_ONCE, d.properties().get(VariableProperty.READ)); // read 1x
                 // there is an explicit @NotNull on the first parameter of debug
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
-            } else if ("1".equals(d.statementId)) {
-                Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, d.properties.get(VariableProperty.READ)); // read 2x
+            } else if ("1".equals(d.statementId())) {
+                Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, d.properties().get(VariableProperty.READ)); // read 2x
                 // there is an explicit @NotNull on the first parameter of debug
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             } else Assert.fail();
         }
-        if (d.methodInfo.name.equals("idem3") && "s".equals(d.variableName)) {
+        if (d.methodInfo().name.equals("idem3") && "s".equals(d.variableName())) {
             // there is an explicit @NotNull on the first parameter of debug
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
         }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("idem3".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId)) {
-            Value value = d.statementAnalysis.stateData.valueOfExpression.get();
+        if ("idem3".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
+            Value value = d.statementAnalysis().stateData.valueOfExpression.get();
             Assert.assertTrue(value instanceof PropertyWrapper);
             Value valueInside = ((PropertyWrapper) value).value;
             Assert.assertTrue(valueInside instanceof PropertyWrapper);

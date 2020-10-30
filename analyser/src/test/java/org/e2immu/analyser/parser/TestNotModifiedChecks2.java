@@ -15,12 +15,12 @@ public class TestNotModifiedChecks2 extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("add".equals(d.methodInfo.name) && "theSet".equals(d.variableName)) {
-            if ("1".equals(d.statementId)) {
-                Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
+        if ("add".equals(d.methodInfo().name) && "theSet".equals(d.variableName())) {
+            if ("1".equals(d.statementId())) {
+                Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
             }
-            if ("2".equals(d.statementId)) {
-                Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.MODIFIED));
+            if ("2".equals(d.statementId())) {
+                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
             }
         }
     };

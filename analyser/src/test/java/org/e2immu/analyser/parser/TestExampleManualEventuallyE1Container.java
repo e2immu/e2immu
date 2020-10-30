@@ -58,25 +58,25 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("setNegativeJ".equals(d.methodInfo.name) && "2".equals(d.statementId) && "ExampleManualEventuallyE1Container.this.j".equals(d.variableName)) {
-            Assert.assertEquals("j", d.currentValue.toString());
-            if (d.iteration > 0) {
-                Assert.assertEquals("(-this.j) >= 0", d.stateOnAssignment.toString());
+        if ("setNegativeJ".equals(d.methodInfo().name) && "2".equals(d.statementId()) && "ExampleManualEventuallyE1Container.this.j".equals(d.variableName())) {
+            Assert.assertEquals("j", d.currentValue().toString());
+            if (d.iteration() > 0) {
+                Assert.assertEquals("(-this.j) >= 0", d.variableInfo().stateOnAssignment.get().toString());
             }
         }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("setNegativeJ".equals(d.methodInfo.name)) {
-            if ("0".equals(d.statementId)) {
-                if (d.iteration <= 1) {
-                    Assert.assertEquals("(-j) >= 0", d.state.toString());
+        if ("setNegativeJ".equals(d.methodInfo().name)) {
+            if ("0".equals(d.statementId())) {
+                if (d.iteration() <= 1) {
+                    Assert.assertEquals("(-j) >= 0", d.state().toString());
                 } else {
-                    Assert.assertEquals("((-this.j) >= 0 and (-j) >= 0)", d.state.toString());
+                    Assert.assertEquals("((-this.j) >= 0 and (-j) >= 0)", d.state().toString());
                 }
             }
-            if ("1".equals(d.statementId) && d.iteration > 0) {
-                Assert.assertEquals("((-this.j) >= 0 and (-j) >= 0)", d.state.toString());
+            if ("1".equals(d.statementId()) && d.iteration() > 0) {
+                Assert.assertEquals("((-this.j) >= 0 and (-j) >= 0)", d.state().toString());
             }
         }
     };

@@ -35,11 +35,11 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("hasNext".equals(d.methodInfo.name) && "MyIteratorImpl.this.list".equals(d.variableName)) {
-            Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
+        if ("hasNext".equals(d.methodInfo().name) && "MyIteratorImpl.this.list".equals(d.variableName())) {
+            Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
         }
-        if ("iterator".equals(d.methodInfo.name) && "ExampleManualIterator1.this.list".equals(d.variableName) && d.iteration > 1) {
-            Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
+        if ("iterator".equals(d.methodInfo().name) && "ExampleManualIterator1.this.list".equals(d.variableName()) && d.iteration() > 1) {
+            Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
         }
     };
 
@@ -118,7 +118,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
 
     // TODO we allow for one error at the moment, a transfer of @Size from Collections.addAll which has not yet been implemented
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("visit".equals(d.methodInfo.name) && "0".equals(d.statementId) && d.iteration > 1) {
+        if ("visit".equals(d.methodInfo().name) && "0".equals(d.statementId()) && d.iteration() > 1) {
             Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT)); // TODO change message
         }
     };

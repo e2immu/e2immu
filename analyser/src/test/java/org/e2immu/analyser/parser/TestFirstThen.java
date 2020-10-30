@@ -35,34 +35,34 @@ import java.util.Objects;
 public class TestFirstThen extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("equals".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
-            Assert.assertEquals("(not (null == o) and this.getClass() == o.getClass() and not (this == o))", d.state.toString());
+        if ("equals".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
+            Assert.assertEquals("(not (null == o) and this.getClass() == o.getClass() and not (this == o))", d.state().toString());
         }
-        if ("set".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId)) {
-            if (d.iteration == 0) {
-                Assert.assertSame(UnknownValue.NO_VALUE, d.state); // delay
+        if ("set".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
+            if (d.iteration() == 0) {
+                Assert.assertSame(UnknownValue.NO_VALUE, d.state()); // delay
             } else {
-                Assert.assertEquals("not (null == this.first)", d.state.toString());
-                Assert.assertEquals("not (null == this.first)", d.statementAnalysis.stateData.precondition.get().toString());
+                Assert.assertEquals("not (null == this.first)", d.state().toString());
+                Assert.assertEquals("not (null == this.first)", d.statementAnalysis().stateData.precondition.get().toString());
             }
         }
-        if("set".equals(d.methodInfo.name) && d.iteration == 0 && "1.0.0".compareTo(d.statementId) <= 0) {
-            Assert.assertSame("StatementId: "+d.statementId, UnknownValue.NO_VALUE, d.state); // delay
+        if("set".equals(d.methodInfo().name) && d.iteration() == 0 && "1.0.0".compareTo(d.statementId()) <= 0) {
+            Assert.assertSame("StatementId: "+d.statementId(), UnknownValue.NO_VALUE, d.state()); // delay
         }
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("getFirst".equals(d.methodInfo.name) && "FirstThen.this.first".equals(d.variableName)) {
-            if ("0".equals(d.statementId)) {
-                Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.READ));
+        if ("getFirst".equals(d.methodInfo().name) && "FirstThen.this.first".equals(d.variableName())) {
+            if ("0".equals(d.statementId())) {
+                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.READ));
             }
-            if ("1".equals(d.statementId)) {
-                Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, d.properties.get(VariableProperty.READ));
+            if ("1".equals(d.statementId())) {
+                Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, d.properties().get(VariableProperty.READ));
             }
         }
-        if ("equals".equals(d.methodInfo.name) && "o".equals(d.variableName)) {
-            if ("2".equals(d.statementId)) {
-                Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
+        if ("equals".equals(d.methodInfo().name) && "o".equals(d.variableName())) {
+            if ("2".equals(d.statementId())) {
+                Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
             }
         }
     };

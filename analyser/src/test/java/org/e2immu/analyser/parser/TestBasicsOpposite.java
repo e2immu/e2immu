@@ -71,20 +71,20 @@ public class TestBasicsOpposite extends CommonTestRunner {
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("collection".equals(d.variableName) && "add".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
-            Assert.assertTrue("Class is " + d.currentValue.getClass(), d.currentValue instanceof VariableValue);
+        if ("collection".equals(d.variableName()) && "add".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+            Assert.assertTrue("Class is " + d.currentValue().getClass(), d.currentValue() instanceof VariableValue);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
         }
-        if (STRING_FIELD.equals(d.variableName) && "setString".equals(d.methodInfo.name)) {
+        if (STRING_FIELD.equals(d.variableName()) && "setString".equals(d.methodInfo().name)) {
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
         }
-        if (STRING_FIELD.equals(d.variableName) && "getString".equals(d.methodInfo.name)) {
+        if (STRING_FIELD.equals(d.variableName()) && "getString".equals(d.methodInfo().name)) {
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
-            int expectNotNull = d.iteration == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
-            String expertValue = d.iteration == 0 ? UnknownValue.NO_VALUE.toString() : STRING_FIELD;
-            Assert.assertEquals(expertValue, d.currentValue.toString());
+            String expertValue = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : STRING_FIELD;
+            Assert.assertEquals(expertValue, d.currentValue().toString());
         }
     };
 

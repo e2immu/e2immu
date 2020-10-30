@@ -20,12 +20,12 @@ public class TestFunctionalInterfaceModified2 extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("0".equals(d.statementId) && "acceptMyCounter1".equals(d.methodInfo.name)) {
-            if ("consumer".equals(d.variableName)) {
-                Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.MODIFIED));
+        if ("0".equals(d.statementId()) && "acceptMyCounter1".equals(d.methodInfo().name)) {
+            if ("consumer".equals(d.variableName())) {
+                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
             }
-            if ("FunctionalInterfaceModified2.this.myCounter1".equals(d.variableName)) {
-                Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.MODIFIED));
+            if ("FunctionalInterfaceModified2.this.myCounter1".equals(d.variableName())) {
+                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
             }
         }
     };

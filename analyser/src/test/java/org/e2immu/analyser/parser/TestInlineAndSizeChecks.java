@@ -18,12 +18,12 @@ public class TestInlineAndSizeChecks extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("method1".equals(d.methodInfo.name) && "1".equals(d.statementId) && "l1".equals(d.variableName) && d.iteration > 0) {
-            Assert.assertEquals("in1.length(),?>=0", d.currentValue.toString());
+        if ("method1".equals(d.methodInfo().name) && "1".equals(d.statementId()) && "l1".equals(d.variableName()) && d.iteration() > 0) {
+            Assert.assertEquals("in1.length(),?>=0", d.currentValue().toString());
         }
         // TODO for now, in2.toLowerCase().length() is not reduced to in2.length()
-        if ("method2".equals(d.methodInfo.name) && "0".equals(d.statementId) && "l2".equals(d.variableName) && d.iteration > 0) {
-            Assert.assertEquals("in2.toLowerCase().length(),?>=0", d.currentValue.toString());
+        if ("method2".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "l2".equals(d.variableName()) && d.iteration() > 0) {
+            Assert.assertEquals("in2.toLowerCase().length(),?>=0", d.currentValue().toString());
         }
     };
 

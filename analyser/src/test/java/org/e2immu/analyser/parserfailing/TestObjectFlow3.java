@@ -48,14 +48,14 @@ public class TestObjectFlow3 extends CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestObjectFlow3.class);
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("main".equals(d.methodInfo.name) && "0".equals(d.statementId) && "config".equals(d.variableName)) {
-            Assert.assertTrue(d.currentValue instanceof VariableValue);
-            ObjectFlow objectFlow = d.currentValue.getObjectFlow();
+        if ("main".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "config".equals(d.variableName())) {
+            Assert.assertTrue(d.currentValue() instanceof VariableValue);
+            ObjectFlow objectFlow = d.currentValue().getObjectFlow();
             Assert.assertSame(Origin.NEW_OBJECT_CREATION, objectFlow.getOrigin());
         }
-        if ("go".equals(d.methodInfo.name) && "Main".equals(d.methodInfo.typeInfo.simpleName) && "1".equals(d.statementId) && "inBetween".equals(d.variableName)) {
-            ObjectFlow objectFlow = d.currentValue.getObjectFlow();
-            if (d.iteration >= 100) {
+        if ("go".equals(d.methodInfo().name) && "Main".equals(d.methodInfo().typeInfo.simpleName) && "1".equals(d.statementId()) && "inBetween".equals(d.variableName())) {
+            ObjectFlow objectFlow = d.currentValue().getObjectFlow();
+            if (d.iteration() >= 100) {
                 Assert.assertEquals(1L, objectFlow.getNonModifyingAccesses().count());
                 MethodAccess methodAccess = (MethodAccess) objectFlow.getNonModifyingAccesses().findAny().orElseThrow();
                 Assert.assertEquals("go", methodAccess.methodInfo.name);

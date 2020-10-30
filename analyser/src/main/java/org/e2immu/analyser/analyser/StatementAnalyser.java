@@ -387,9 +387,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                     variableInfo.name,
                                     variableInfo.variable,
                                     variableInfo.valueForNextStatement(),
-                                    variableInfo.getStateOnAssignment(),
-                                    variableInfo.getObjectFlow(),
-                                    variableInfo.properties)));
+                                    variableInfo.properties,
+                                    variableInfo)));
         }
         for (StatementAnalyserVisitor statementAnalyserVisitor :
                 analyserContext.getConfiguration().debugConfiguration.statementAnalyserVisitors) {

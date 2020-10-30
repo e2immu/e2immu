@@ -44,67 +44,69 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("method1".equals(d.methodInfo.name)) {
-            if ("1".equals(d.statementId) && "set1".equals(d.variableName)) {
-                Assert.assertSame(Origin.NEW_OBJECT_CREATION, d.objectFlow.origin);
-                Assert.assertEquals("add", d.objectFlow.getModifyingAccess().methodInfo.name);
-                Assert.assertTrue(d.objectFlow.marks().isEmpty());
+        ObjectFlow objectFlow = d.variableInfo().objectFlow.getOrElse(null);
+        
+        if ("method1".equals(d.methodInfo().name)) {
+            if ("1".equals(d.statementId()) && "set1".equals(d.variableName())) {
+                Assert.assertSame(Origin.NEW_OBJECT_CREATION, objectFlow.origin);
+                Assert.assertEquals("add", objectFlow.getModifyingAccess().methodInfo.name);
+                Assert.assertTrue(objectFlow.marks().isEmpty());
             }
-            if ("2".equals(d.statementId) && "set1".equals(d.variableName)) {
-                Assert.assertSame(Origin.INTERNAL, d.objectFlow.origin);
-                ObjectFlow parent = d.objectFlow.getPrevious().findFirst().orElseThrow();
+            if ("2".equals(d.statementId()) && "set1".equals(d.variableName())) {
+                Assert.assertSame(Origin.INTERNAL, objectFlow.origin);
+                ObjectFlow parent = objectFlow.getPrevious().findFirst().orElseThrow();
                 Assert.assertSame(Origin.NEW_OBJECT_CREATION, parent.origin);
-                Assert.assertEquals("add", d.objectFlow.getModifyingAccess().methodInfo.name);
+                Assert.assertEquals("add", objectFlow.getModifyingAccess().methodInfo.name);
             }
-            if ("3".equals(d.statementId) && "set1".equals(d.variableName)) {
-                Assert.assertSame(Origin.INTERNAL, d.objectFlow.origin);
-                Assert.assertEquals("isFrozen", ((MethodAccess) d.objectFlow.getNonModifyingAccesses().findFirst().orElseThrow()).methodInfo.name);
+            if ("3".equals(d.statementId()) && "set1".equals(d.variableName())) {
+                Assert.assertSame(Origin.INTERNAL, objectFlow.origin);
+                Assert.assertEquals("isFrozen", ((MethodAccess) objectFlow.getNonModifyingAccesses().findFirst().orElseThrow()).methodInfo.name);
 
-                ObjectFlow parent = d.objectFlow.getPrevious().findFirst().orElseThrow();
+                ObjectFlow parent = objectFlow.getPrevious().findFirst().orElseThrow();
                 Assert.assertSame(Origin.INTERNAL, parent.origin);
                 Assert.assertEquals("add", parent.getModifyingAccess().methodInfo.name);
 
                 ObjectFlow parent2 = parent.getPrevious().findFirst().orElseThrow();
                 Assert.assertSame(Origin.NEW_OBJECT_CREATION, parent2.origin);
                 Assert.assertEquals("add", parent2.getModifyingAccess().methodInfo.name);
-                Assert.assertTrue(d.objectFlow.marks().isEmpty());
+                Assert.assertTrue(objectFlow.marks().isEmpty());
             }
-            if ("4".equals(d.statementId) && "set1".equals(d.variableName)) {
-                Assert.assertSame(Origin.INTERNAL, d.objectFlow.origin);
-                Assert.assertEquals("isFrozen", ((MethodAccess) d.objectFlow.getNonModifyingAccesses().findFirst().orElseThrow()).methodInfo.name);
-                Assert.assertEquals("freeze", d.objectFlow.getModifyingAccess().methodInfo.name);
-                Assert.assertEquals("[mark]", d.objectFlow.marks().toString());
+            if ("4".equals(d.statementId()) && "set1".equals(d.variableName())) {
+                Assert.assertSame(Origin.INTERNAL, objectFlow.origin);
+                Assert.assertEquals("isFrozen", ((MethodAccess) objectFlow.getNonModifyingAccesses().findFirst().orElseThrow()).methodInfo.name);
+                Assert.assertEquals("freeze", objectFlow.getModifyingAccess().methodInfo.name);
+                Assert.assertEquals("[mark]", objectFlow.marks().toString());
             }
-            if ("5".equals(d.statementId) && "set1".equals(d.variableName)) {
-                Assert.assertSame(Origin.INTERNAL, d.objectFlow.origin);
-                Assert.assertEquals("isFrozen", ((MethodAccess) d.objectFlow.getNonModifyingAccesses().findFirst().orElseThrow()).methodInfo.name);
-                Assert.assertNull(d.objectFlow.getModifyingAccess());
+            if ("5".equals(d.statementId()) && "set1".equals(d.variableName())) {
+                Assert.assertSame(Origin.INTERNAL, objectFlow.origin);
+                Assert.assertEquals("isFrozen", ((MethodAccess) objectFlow.getNonModifyingAccesses().findFirst().orElseThrow()).methodInfo.name);
+                Assert.assertNull(objectFlow.getModifyingAccess());
             }
-            if ("6".equals(d.statementId) && "set1".equals(d.variableName)) {
-                Assert.assertSame(Origin.INTERNAL, d.objectFlow.origin);
-                Assert.assertEquals(2L, d.objectFlow.getNonModifyingAccesses().count());
-                Assert.assertNull(d.objectFlow.getModifyingAccess());
-                Assert.assertEquals("[mark]", d.objectFlow.marks().toString());
-            }
-        }
-
-        if ("method4".equals(d.methodInfo.name) && "set4".equals(d.variableName)) {
-            if ("1".equals(d.statementId)) {
-                Assert.assertTrue(d.objectFlow.marks().isEmpty());
-            }
-            if ("4".equals(d.statementId)) {
-                Assert.assertEquals("[mark]", d.objectFlow.marks().toString());
+            if ("6".equals(d.statementId()) && "set1".equals(d.variableName())) {
+                Assert.assertSame(Origin.INTERNAL, objectFlow.origin);
+                Assert.assertEquals(2L, objectFlow.getNonModifyingAccesses().count());
+                Assert.assertNull(objectFlow.getModifyingAccess());
+                Assert.assertEquals("[mark]", objectFlow.marks().toString());
             }
         }
 
-        if ("method7".equals(d.methodInfo.name) && "set7".equals(d.variableName)) {
-            if ("0".equals(d.statementId)) {
-                Assert.assertTrue("Have " + d.objectFlow.marks(), d.objectFlow.marks().isEmpty());
+        if ("method4".equals(d.methodInfo().name) && "set4".equals(d.variableName())) {
+            if ("1".equals(d.statementId())) {
+                Assert.assertTrue(objectFlow.marks().isEmpty());
+            }
+            if ("4".equals(d.statementId())) {
+                Assert.assertEquals("[mark]", objectFlow.marks().toString());
+            }
+        }
+
+        if ("method7".equals(d.methodInfo().name) && "set7".equals(d.variableName())) {
+            if ("0".equals(d.statementId())) {
+                Assert.assertTrue("Have " + objectFlow.marks(), objectFlow.marks().isEmpty());
             }
             // now after set7.freeze():
-            if ("1".equals(d.statementId)) {
-                Assert.assertEquals("[mark]", d.objectFlow.marks().toString());
-                Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.MODIFIED));
+            if ("1".equals(d.statementId())) {
+                Assert.assertEquals("[mark]", objectFlow.marks().toString());
+                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
             }
         }
     };
@@ -131,18 +133,18 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("method2".equals(d.methodInfo.name) && "3".equals(d.statementId)) {
+        if ("method2".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
             Assert.assertNotNull(d.haveError(Message.ONLY_AFTER));
         }
-        if ("method3".equals(d.methodInfo.name) && "3".equals(d.statementId)) {
+        if ("method3".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
             Assert.assertNotNull(d.haveError(Message.ONLY_BEFORE));
         }
         // the argument to method9 should be frozen already, so we can call "stream()" but not "add()"
-        if ("method9".equals(d.methodInfo.name)) {
-            if ("0".equals(d.statementId)) {
+        if ("method9".equals(d.methodInfo().name)) {
+            if ("0".equals(d.statementId())) {
                 Assert.assertNotNull(d.haveError(Message.ONLY_AFTER));
             }
-            if ("1".equals(d.statementId)) {
+            if ("1".equals(d.statementId())) {
                 Assert.assertNotNull(d.haveError(Message.ONLY_AFTER));
             }
         }

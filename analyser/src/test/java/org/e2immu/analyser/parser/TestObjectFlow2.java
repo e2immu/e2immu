@@ -43,9 +43,10 @@ public class TestObjectFlow2 extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("of".equals(d.methodInfo.name) && "4".equals(d.statementId) && "res".equals(d.variableName)) {
-            Assert.assertSame(Origin.INTERNAL, d.objectFlow.origin);
-            ObjectFlow parent = d.objectFlow.getPrevious().findFirst().orElseThrow();
+        if ("of".equals(d.methodInfo().name) && "4".equals(d.statementId()) && "res".equals(d.variableName())) {
+            ObjectFlow objectFlow = d.variableInfo().objectFlow.get();
+            Assert.assertSame(Origin.INTERNAL, objectFlow.origin);
+            ObjectFlow parent = objectFlow.getPrevious().findFirst().orElseThrow();
             Assert.assertSame(Origin.NEW_OBJECT_CREATION, parent.origin);
         }
     };

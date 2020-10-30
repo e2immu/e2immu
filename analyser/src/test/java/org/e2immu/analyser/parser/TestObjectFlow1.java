@@ -36,12 +36,12 @@ public class TestObjectFlow1 extends CommonTestRunner {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestObjectFlow1.class);
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("KeyValue".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
-            if ("key".equals(d.variableName)) {
-                Assert.assertSame(Origin.PARAMETER, d.objectFlow.origin);
+        if ("KeyValue".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+            if ("key".equals(d.variableName())) {
+                Assert.assertSame(Origin.PARAMETER, d.variableInfo().objectFlow.get().origin);
             }
-            if ("KeyValue.this.key".equals(d.variableName)) {
-                Assert.assertSame(Origin.PARAMETER, d.objectFlow.origin);
+            if ("KeyValue.this.key".equals(d.variableName())) {
+                Assert.assertSame(Origin.PARAMETER, d.variableInfo().objectFlow.get().origin);
             }
         }
     };

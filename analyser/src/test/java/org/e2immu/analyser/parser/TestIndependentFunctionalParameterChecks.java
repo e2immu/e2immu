@@ -37,7 +37,7 @@ public class TestIndependentFunctionalParameterChecks extends CommonTestRunner {
     // the @NotNull1 on stream() is only known after the first iteration
     // it should not yet cause an error in the first.
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if("getFirst".equals(d.methodInfo.name) && d.iteration == 0) {
+        if("getFirst".equals(d.methodInfo().name) && d.iteration() == 0) {
             Assert.assertNotNull(d.haveError(Message.NULL_POINTER_EXCEPTION)); // TODO
         }
     };

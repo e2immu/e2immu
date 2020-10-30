@@ -17,29 +17,29 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("toString".equals(d.methodInfo.name) && "FinalNotNullChecks.this.input".equals(d.variableName)) {
+        if ("toString".equals(d.methodInfo().name) && "FinalNotNullChecks.this.input".equals(d.variableName())) {
             int notNull = d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL);
-            if (d.iteration == 0) {
-                Assert.assertTrue(d.currentValue instanceof UnknownValue);
+            if (d.iteration() == 0) {
+                Assert.assertTrue(d.currentValue() instanceof UnknownValue);
                 Assert.assertEquals(Level.FALSE, notNull);
-            } else if (d.iteration == 1) {
-                Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
+            } else if (d.iteration() == 1) {
+                Assert.assertTrue(d.currentValue() instanceof FinalFieldValue);
                 Assert.assertEquals(Level.DELAY, notNull);
             } else {
-                Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
+                Assert.assertTrue(d.currentValue() instanceof FinalFieldValue);
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
             }
         }
-        if ("FinalNotNullChecks".equals(d.methodInfo.name) && "param".equals(d.variableName)) {
+        if ("FinalNotNullChecks".equals(d.methodInfo().name) && "param".equals(d.variableName())) {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
-            if (d.iteration == 0) {
+            if (d.iteration() == 0) {
                 // only during the 1st iteration there is no @NotNull on the parameter, so there is a restriction
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.properties().get(VariableProperty.NOT_NULL));
             }
         }
         // the variable has the value of param, which has received a @NotNull
-        if ("FinalNotNullChecks".equals(d.methodInfo.name) && "FinalNotNullChecks.this.input".equals(d.variableName)) {
-            Assert.assertFalse(d.properties.isSet(VariableProperty.NOT_NULL));
+        if ("FinalNotNullChecks".equals(d.methodInfo().name) && "FinalNotNullChecks.this.input".equals(d.variableName())) {
+            Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL));
         }
     };
 

@@ -20,14 +20,14 @@ public class TestNotModified1Checks extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
 
         // checks the 2 errors
-        if ("useApply".equals(d.methodInfo.name) && Set.of("2", "3").contains(d.statementId)) {
+        if ("useApply".equals(d.methodInfo().name) && Set.of("2", "3").contains(d.statementId())) {
             Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT)); // TODO
         }
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if("apply".equals(d.methodInfo.name) && "consumer".equals(d.variableName)) {
-            Assert.assertEquals(Level.TRUE, d.properties.get(VariableProperty.NOT_MODIFIED_1));
+        if("apply".equals(d.methodInfo().name) && "consumer".equals(d.variableName())) {
+            Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.NOT_MODIFIED_1));
         }
     };
 

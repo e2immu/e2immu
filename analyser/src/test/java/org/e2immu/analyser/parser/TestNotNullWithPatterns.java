@@ -50,8 +50,8 @@ public class TestNotNullWithPatterns extends CommonTestRunner {
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("method7".equals(d.methodInfo.name) && "0".equals(d.statementId) && d.iteration > 1) {
-            Assert.assertEquals("null == a1?Was null...:a1", d.statementAnalysis.stateData.valueOfExpression.get().toString());
+        if ("method7".equals(d.methodInfo().name) && "0".equals(d.statementId()) && d.iteration() > 1) {
+            Assert.assertEquals("null == a1?Was null...:a1", d.statementAnalysis().stateData.valueOfExpression.get().toString());
         }
     };
 

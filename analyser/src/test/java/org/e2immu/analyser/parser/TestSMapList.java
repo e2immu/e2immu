@@ -34,23 +34,23 @@ import java.util.Map;
 public class TestSMapList extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("list".equals(d.methodInfo.name) && "list".equals(d.variableName) && "3".equals(d.statementId)) {
-            Assert.assertEquals("map.get(a)", d.currentValue.toString());
+        if ("list".equals(d.methodInfo().name) && "list".equals(d.variableName()) && "3".equals(d.statementId())) {
+            Assert.assertEquals("map.get(a)", d.currentValue().toString());
 
             // NOTE: this is in contradiction with the state, but here we test the fact that get can return null
             Assert.assertEquals(MultiLevel.NULLABLE, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
         }
-        if ("add".equals(d.methodInfo.name) && "bs".equals(d.variableName) && "3".equals(d.statementId)) {
-            Assert.assertEquals(Level.FALSE, d.properties.get(VariableProperty.MODIFIED));
+        if ("add".equals(d.methodInfo().name) && "bs".equals(d.variableName()) && "3".equals(d.statementId())) {
+            Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
         }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("3".equals(d.statementId) && "list".equals(d.methodInfo.name)) {
-            if (d.iteration == 0) {
-                Assert.assertEquals("(not (null == map.get(a)) and not (null == a))", d.state.toString());
+        if ("3".equals(d.statementId()) && "list".equals(d.methodInfo().name)) {
+            if (d.iteration() == 0) {
+                Assert.assertEquals("(not (null == map.get(a)) and not (null == a))", d.state().toString());
             } else {
-                Assert.assertEquals("not (null == map.get(a))", d.state.toString());
+                Assert.assertEquals("not (null == map.get(a))", d.state().toString());
             }
         }
     };

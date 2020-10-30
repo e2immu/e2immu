@@ -13,8 +13,8 @@ public class TestUtilityClassChecks extends CommonTestRunner {
     }
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("print".equals(d.methodInfo.name)) {
-            if ("0".equals(d.statementId)) {
+        if ("print".equals(d.methodInfo().name)) {
+            if ("0".equals(d.statementId())) {
                 Assert.assertNull(d.haveError(Message.POTENTIAL_NULL_POINTER_EXCEPTION));
             }
         }

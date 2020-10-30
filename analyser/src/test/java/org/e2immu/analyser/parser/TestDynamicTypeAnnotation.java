@@ -36,11 +36,11 @@ public class TestDynamicTypeAnnotation extends CommonTestRunner {
     }
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if (d.iteration > 0) {
-            if ("modifySetCreated".equals(d.methodInfo.name)) {
+        if (d.iteration() > 0) {
+            if ("modifySetCreated".equals(d.methodInfo().name)) {
                 Assert.assertNotNull(d.haveError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU));
             }
-            if ("modifySet1".equals(d.methodInfo.name)) {
+            if ("modifySet1".equals(d.methodInfo().name)) {
                 Assert.assertNotNull(d.haveError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU));
             }
         }

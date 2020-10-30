@@ -20,23 +20,23 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
     private static final int SIZE_EQUALS_2 = Level.encodeSizeEquals(2);
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("method1bis".equals(d.methodInfo.name) && "0".equals(d.statementId) && "set".equals(d.variableName)) {
-            Assert.assertTrue(d.currentValue instanceof MethodValue);
+        if ("method1bis".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "set".equals(d.variableName())) {
+            Assert.assertTrue(d.currentValue() instanceof MethodValue);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getPropertyOfCurrentValue(VariableProperty.IMMUTABLE));
             Assert.assertEquals(Level.TRUE, d.getPropertyOfCurrentValue(VariableProperty.CONTAINER));
-            Assert.assertTrue(d.variable instanceof LocalVariableReference);
+            Assert.assertTrue(d.variable() instanceof LocalVariableReference);
 
             // properties are on the value; in the map is the value of the type before the assignment
             // at the moment, the Set interface is not E1Immutable
-            Assert.assertEquals(MultiLevel.MUTABLE, d.properties.get(VariableProperty.IMMUTABLE));
-            Assert.assertFalse(d.properties.isSet(VariableProperty.CONTAINER));
+            Assert.assertEquals(MultiLevel.MUTABLE, d.properties().get(VariableProperty.IMMUTABLE));
+            Assert.assertFalse(d.properties().isSet(VariableProperty.CONTAINER));
         }
-        if ("method2".equals(d.methodInfo.name) && "0".equals(d.statementId) && "SimpleSizeChecks.this.intSet".equals(d.variableName)) {
-            if (d.iteration > 0) {
-                Assert.assertEquals("this.intSet", d.currentValue.toString());
-                Assert.assertTrue(d.currentValue instanceof FinalFieldValue);
+        if ("method2".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "SimpleSizeChecks.this.intSet".equals(d.variableName())) {
+            if (d.iteration() > 0) {
+                Assert.assertEquals("this.intSet", d.currentValue().toString());
+                Assert.assertTrue(d.currentValue() instanceof FinalFieldValue);
 
-                if (d.iteration > 1) {
+                if (d.iteration() > 1) {
                     Assert.assertEquals(SIZE_EQUALS_2, d.getPropertyOfCurrentValue(VariableProperty.SIZE));
                 }
             }
@@ -44,13 +44,13 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("method1".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
+        if ("method1".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
             Assert.assertNotNull(d.haveError(Message.METHOD_EVALUATES_TO_CONSTANT));
         }
-        if ("method1bis".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
+        if ("method1bis".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
             Assert.assertNotNull(d.haveError(Message.METHOD_EVALUATES_TO_CONSTANT));
         }
-        if ("method1bis".equals(d.methodInfo.name) && "2".equals(d.statementId)) {
+        if ("method1bis".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
             Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
         }
     };

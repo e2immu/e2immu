@@ -18,24 +18,24 @@ public class TestSwitchStatementChecks extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("method7".equals(d.methodInfo.name) && "3".equals(d.statementId) && "res".equals(d.variableName)) {
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.properties.get(VariableProperty.NOT_NULL));
+        if ("method7".equals(d.methodInfo().name) && "3".equals(d.statementId()) && "res".equals(d.variableName())) {
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.properties().get(VariableProperty.NOT_NULL));
         }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("method7".equals(d.methodInfo.name)) {
-            if ("2".equals(d.statementId)) {
+        if ("method7".equals(d.methodInfo().name)) {
+            if ("2".equals(d.statementId())) {
                 Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
             }
-            if ("2.2.0".equals(d.statementId)) {
+            if ("2.2.0".equals(d.statementId())) {
                 Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
             }
         }
-        if ("method3".equals(d.methodInfo.name) && "0.2.0".equals(d.statementId)) {
+        if ("method3".equals(d.methodInfo().name) && "0.2.0".equals(d.statementId())) {
             Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
         }
-        if ("method3".equals(d.methodInfo.name) && "0.2.0.0.0".equals(d.statementId)) {
+        if ("method3".equals(d.methodInfo().name) && "0.2.0.0.0".equals(d.statementId())) {
             Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
         }
     };

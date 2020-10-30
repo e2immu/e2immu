@@ -41,44 +41,44 @@ public class TestPreconditionChecks extends CommonTestRunner {
     }
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if ("setPositive1".equals(d.methodInfo.name)) {
-            if ("0.0.0".equals(d.statementId)) {
-                if (d.iteration == 0) {
-                    Assert.assertSame(UnknownValue.NO_VALUE, d.condition);
-                    Assert.assertSame(UnknownValue.NO_VALUE, d.state);
-                } else if (d.iteration == 1) {
-                    Assert.assertEquals("((-1) + (-this.i)) >= 0", d.condition.toString());
-                    Assert.assertEquals("((-1) + (-this.i)) >= 0", d.state.toString());
-                } else if (d.iteration > 1) {
-                    Assert.assertEquals("((-1) + (-this.i)) >= 0", d.condition.toString());
+        if ("setPositive1".equals(d.methodInfo().name)) {
+            if ("0.0.0".equals(d.statementId())) {
+                if (d.iteration() == 0) {
+                    Assert.assertSame(UnknownValue.NO_VALUE, d.condition());
+                    Assert.assertSame(UnknownValue.NO_VALUE, d.state());
+                } else if (d.iteration() == 1) {
+                    Assert.assertEquals("((-1) + (-this.i)) >= 0", d.condition().toString());
+                    Assert.assertEquals("((-1) + (-this.i)) >= 0", d.state().toString());
+                } else if (d.iteration() > 1) {
+                    Assert.assertEquals("((-1) + (-this.i)) >= 0", d.condition().toString());
                     // the precondition is now fed into the initial state, results in
                     // (((-1) + (-this.i)) >= 0 and this.i >= 0) which should resolve to false
-                    Assert.assertEquals("false", d.state.toString());
+                    Assert.assertEquals("false", d.state().toString());
                 }
             }
-            if ("0".equals(d.statementId)) {
-                Assert.assertSame(UnknownValue.EMPTY, d.condition);
-                if (d.iteration == 0) {
-                    Assert.assertSame(UnknownValue.NO_VALUE, d.state);
+            if ("0".equals(d.statementId())) {
+                Assert.assertSame(UnknownValue.EMPTY, d.condition());
+                if (d.iteration() == 0) {
+                    Assert.assertSame(UnknownValue.NO_VALUE, d.state());
                 } else {
-                    Assert.assertEquals("this.i >= 0", d.state.toString());
+                    Assert.assertEquals("this.i >= 0", d.state().toString());
                 }
             }
         }
-        if ("setInteger".equals(d.methodInfo.name) && "0".equals(d.statementId)) {
-            if (d.iteration == 0) {
-                Assert.assertSame(UnknownValue.NO_VALUE, d.state);
-            } else if (d.iteration == 1) {
-                Assert.assertEquals("iteration " + d.iteration, "ii >= 0", d.state.toString());
+        if ("setInteger".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+            if (d.iteration() == 0) {
+                Assert.assertSame(UnknownValue.NO_VALUE, d.state());
+            } else if (d.iteration() == 1) {
+                Assert.assertEquals("iteration " + d.iteration(), "ii >= 0", d.state().toString());
             } else {
-                Assert.assertEquals("iteration " + d.iteration, "(null == this.integer and ii >= 0)", d.state.toString());
+                Assert.assertEquals("iteration " + d.iteration(), "(null == this.integer and ii >= 0)", d.state().toString());
 
                 // set at the end of the synchronized block
-                Assert.assertEquals("ii >= 0", d.statementAnalysis.stateData.conditionManager.get().state.toString());
+                Assert.assertEquals("ii >= 0", d.statementAnalysis().stateData.conditionManager.get().state.toString());
             }
         }
-        if ("setInteger".equals(d.methodInfo.name) && "1".equals(d.statementId)) {
-            if (d.iteration > 0) {
+        if ("setInteger".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+            if (d.iteration() > 0) {
                 Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT)); // TODO
             }
         }
