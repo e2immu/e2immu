@@ -79,11 +79,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                               Statement statement,
                               StatementAnalysis parent,
                               String index,
-                              boolean inSyncBlock,
-                              boolean inPartOfConstruction) {
+                              boolean inSyncBlock) {
         this.analyserContext = Objects.requireNonNull(analyserContext);
         this.myMethodAnalyser = Objects.requireNonNull(methodAnalyser);
-        this.statementAnalysis = new StatementAnalysis(analyserContext.getPrimitives(), statement, parent, index, inSyncBlock, inPartOfConstruction);
+        this.statementAnalysis = new StatementAnalysis(analyserContext.getPrimitives(),
+                methodAnalyser.methodAnalysis, statement, parent, index, inSyncBlock);
     }
 
     public static StatementAnalyser recursivelyCreateAnalysisObjects(
@@ -93,8 +93,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             List<Statement> statements,
             String indices,
             boolean setNextAtEnd,
-            boolean inSyncBlock,
-            boolean inPartOfConstruction) {
+            boolean inSyncBlock) {
+        Objects.requireNonNull(myMethodAnalyser);
+        Objects.requireNonNull(myMethodAnalyser.methodAnalysis);
+
         int statementIndex;
         if (setNextAtEnd) {
             statementIndex = 0;
@@ -107,7 +109,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         StatementAnalyser previous = null;
         for (Statement statement : statements) {
             String iPlusSt = indices.isEmpty() ? "" + statementIndex : indices + "." + statementIndex;
-            StatementAnalyser statementAnalyser = new StatementAnalyser(analyserContext, myMethodAnalyser, statement, parent, iPlusSt, inSyncBlock, inPartOfConstruction);
+            StatementAnalyser statementAnalyser = new StatementAnalyser(analyserContext, myMethodAnalyser, statement, parent, iPlusSt, inSyncBlock);
             if (previous != null) {
                 previous.statementAnalysis.navigationData.next.set(Optional.of(statementAnalyser.statementAnalysis));
                 previous.navigationData.next.set(Optional.of(statementAnalyser));
@@ -125,7 +127,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (structure.haveStatements()) {
                 StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser,
                         statementAnalyser.statementAnalysis, structure.getStatements(),
-                        iPlusSt + "." + blockIndex, true, newInSyncBlock, inPartOfConstruction);
+                        iPlusSt + "." + blockIndex, true, newInSyncBlock);
                 blocks.add(subStatementAnalyser);
                 analysisBlocks.add(subStatementAnalyser.statementAnalysis);
                 blockIndex++;
@@ -134,7 +136,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (subStatements.haveStatements()) {
                     StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser,
                             statementAnalyser.statementAnalysis, structure.getStatements(),
-                            iPlusSt + "." + blockIndex, true, newInSyncBlock, inPartOfConstruction);
+                            iPlusSt + "." + blockIndex, true, newInSyncBlock);
                     blocks.add(subStatementAnalyser);
                     analysisBlocks.add(subStatementAnalyser.statementAnalysis);
                     blockIndex++;
@@ -239,8 +241,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     @Override
     public BiFunction<List<Statement>, String, StatementAnalyser> generator(EvaluationContext evaluationContext) {
-        return (statements, startIndex) -> recursivelyCreateAnalysisObjects(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentMethod(),
-                parent(), statements, startIndex, false, statementAnalysis.inSyncBlock, statementAnalysis.inPartOfConstruction);
+        return (statements, startIndex) -> recursivelyCreateAnalysisObjects(evaluationContext.getAnalyserContext(),
+                evaluationContext.getCurrentMethod(),
+                parent(), statements, startIndex, false, statementAnalysis.inSyncBlock);
     }
 
     private StatementAnalyser goToFirstStatementToAnalyse() {
@@ -537,7 +540,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (structure.localVariableCreation != null) {
             lvr = new LocalVariableReference(structure.localVariableCreation,
                     List.of());
-            VariableInfo variableInfo ;
+            VariableInfo variableInfo;
             if (inCatch) {
                 statementAnalysis.addProperty(analyserContext, lvr, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                 variableInfo = statementAnalysis.addProperty(analyserContext, lvr, VariableProperty.READ, Level.READ_ASSIGN_ONCE);
@@ -546,7 +549,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             } else {
                 variableInfo = statementAnalysis.find(analyserContext, lvr); // "touch" it
             }
-            if(!variableInfo.initialValue.isSet()) {
+            if (!variableInfo.initialValue.isSet()) {
                 variableInfo.initialValue.set(new VariableValue(lvr));
             }
         } else {
@@ -653,7 +656,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         } else {
             transferValue = new TransferValue();
             statementAnalysis.methodLevelData.returnStatementSummaries.put(statementId, transferValue);
-            int fluent = (((ReturnStatement) statementAnalysis.statement).fluent());
+            int fluent = (((ReturnStatement) statementAnalysis.statement).fluent(evaluationContext.getAnalyserContext()));
             transferValue.properties.put(VariableProperty.FLUENT, fluent);
         }
         if (value == NO_VALUE) return;

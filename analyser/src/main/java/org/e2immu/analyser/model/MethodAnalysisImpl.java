@@ -174,7 +174,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public final ParameterizedType returnType;
         public final MethodInfo methodInfo;
         public final SetOnce<Set<MethodAnalysis>> overrides = new SetOnce<>();
-        public final StatementAnalysis firstStatement;
+        private final SetOnce<StatementAnalysis> firstStatement = new SetOnce<>();
         public final List<ParameterAnalysis> parameterAnalyses;
         private final AnalysisProvider analysisProvider;
 
@@ -231,8 +231,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public Builder(Primitives primitives,
                        AnalysisProvider analysisProvider,
                        MethodInfo methodInfo,
-                       List<ParameterAnalysis> parameterAnalyses,
-                       StatementAnalyser firstStatementAnalyser) {
+                       List<ParameterAnalysis> parameterAnalyses) {
             super(primitives, methodInfo.hasBeenDefined(), methodInfo.name);
             this.parameterAnalyses = parameterAnalyses;
             this.methodInfo = methodInfo;
@@ -246,7 +245,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 ObjectFlow initialObjectFlow = new ObjectFlow(new Location(methodInfo), returnType, Origin.INITIAL_METHOD_FLOW);
                 objectFlow = new FirstThen<>(initialObjectFlow);
             }
-            firstStatement = firstStatementAnalyser == null ? null : firstStatementAnalyser.statementAnalysis;
         }
 
         @Override
@@ -254,7 +252,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return new MethodAnalysisImpl(isHasBeenDefined(),
                     methodInfo,
                     ImmutableSet.copyOf(overrides.getOrElse(Set.of())),
-                    firstStatement,
+                    firstStatement.getOrElse(null),
                     lastStatement.getOrElse(null),
                     parameterAnalyses,
                     getSingleReturnValue(),
@@ -270,7 +268,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         public MethodLevelData methodLevelData() {
-            return lastStatement.isSet() ? lastStatement.get().methodLevelData : firstStatement.lastStatement().methodLevelData;
+            return lastStatement.isSet() ? lastStatement.get().methodLevelData : firstStatement.get().lastStatement().methodLevelData;
         }
 
         @Override
@@ -387,7 +385,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public StatementAnalysis getFirstStatement() {
-            return null;
+            return firstStatement.getOrElse(null);
         }
 
         @Override
@@ -397,7 +395,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public StatementAnalysis getLastStatement() {
-            return null;
+            return lastStatement.getOrElse(null);
         }
 
         @Override
@@ -423,6 +421,10 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                 LOGGER.error("Cannot compute method analysis of {}", methodInfo.distinguishingName());
                 throw rte;
             }
+        }
+
+        public void setFirstStatement(StatementAnalysis firstStatement) {
+            this.firstStatement.set(firstStatement);
         }
     }
 }

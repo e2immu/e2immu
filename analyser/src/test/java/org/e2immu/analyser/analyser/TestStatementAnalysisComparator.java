@@ -59,6 +59,6 @@ public class TestStatementAnalysisComparator {
     }
 
     private StatementAnalysis newStatementAnalysis(String s) {
-        return new StatementAnalysis(primitives, emptyStatement, null, s, false, false);
+        return new StatementAnalysis(primitives, null, emptyStatement, null, s, false);
     }
 }

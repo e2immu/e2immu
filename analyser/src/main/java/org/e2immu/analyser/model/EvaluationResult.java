@@ -206,7 +206,8 @@ public class EvaluationResult {
             // if we already know that the variable is NOT @NotNull, then we'll raise an error
             int notNull = MultiLevel.value(evaluationContext.getProperty(value, VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);
             if (notNull == MultiLevel.FALSE) {
-                Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION, variable.simpleName());
+                Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
+                        "Variable: " + variable.simpleName());
                 addToModifications(statementAnalyser.new RaiseErrorMessage(message));
             } else if (notNull == MultiLevel.DELAY) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)

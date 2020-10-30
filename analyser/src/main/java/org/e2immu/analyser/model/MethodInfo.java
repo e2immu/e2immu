@@ -46,6 +46,7 @@ import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -509,6 +510,33 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return Primitives.isVoid(returnType());
     }
 
+    public boolean isCalledFromConstructors() {
+        for (MethodInfo other : typeInfo.typeInspection.getPotentiallyRun().constructors) {
+            if (other.methodResolution.get().methodsOfOwnClassReached.get().contains(this)) {
+                return true;
+            }
+        }
+        for (FieldInfo fieldInfo : typeInfo.typeInspection.getPotentiallyRun().fields) {
+            if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
+                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
+                if (fieldInitialiser.implementationOfSingleAbstractMethod == null) {
+                    // return true when the method is part of the expression
+                    AtomicBoolean found = new AtomicBoolean();
+                    fieldInitialiser.initialiser.visit(elt -> {
+                        if (elt instanceof MethodCall methodCall) {
+                            if (methodCall.methodInfo == this ||
+                                    methodCall.methodInfo.methodResolution.get().methodsOfOwnClassReached.get().contains(this)) {
+                                found.set(true);
+                            }
+                        }
+                    });
+                    return found.get();
+                }
+            }
+        }
+        return false;
+    }
+
     /**
      * Note that this computation has to contain transitive calls.
      *
@@ -555,7 +583,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 .map(parameterInfo -> parameterInfo.parameterAnalysis.get()).collect(Collectors.toList());
         assert !typeInfo.hasBeenDefined();
         MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER,
-                this, parameterAnalyses, null);
+                this, parameterAnalyses);
 
         messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(true, methodInspection.get().annotations,
                 typeContext));

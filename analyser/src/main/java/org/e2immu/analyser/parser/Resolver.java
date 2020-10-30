@@ -36,7 +36,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.e2immu.analyser.util.Logger.LogTarget.RESOLVE;
+import static org.e2immu.analyser.util.Logger.LogTarget.STATIC_METHOD_CALLS;
 import static org.e2immu.analyser.util.Logger.isLogEnabled;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -379,8 +380,7 @@ public class Resolver {
         });
         methodGraph.visit((from, toList) -> {
             if (from instanceof MethodInfo methodInfo) {
-                methodInfo.methodResolution.get().partOfConstruction.set(methodInfo.isConstructor ||
-                        methodInfo.isPrivate() && !methodInfo.isCalledFromNonPrivateMethod());
+                methodInfo.methodResolution.get().setCallStatus(methodInfo);
             }
         });
     }

@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -58,32 +59,29 @@ public class ReturnStatement extends StatementWithExpression {
             return SideEffect.STATIC_ONLY;
         }
         // at least NONE_PURE... unless the expression is tagged as "@Identity", then STATIC_ONLY is allowed
-        int identity = identityForSideEffect(expression);
+        int identity = identityForSideEffect(evaluationContext.getAnalyserContext(), expression);
         if (identity == Level.DELAY) return SideEffect.DELAYED;
         SideEffect base = identity == Level.TRUE ? SideEffect.STATIC_ONLY : SideEffect.NONE_PURE;
         return base.combine(expression.sideEffect(evaluationContext));
     }
 
-    public int fluent() {
-        if (expression instanceof VariableExpression) {
-            VariableExpression variableExpression = (VariableExpression) expression;
+    public int fluent(AnalysisProvider analysisProvider) {
+        if (expression instanceof VariableExpression variableExpression) {
             if (variableExpression.variable instanceof This) return Level.TRUE;
         }
-        if (expression instanceof MethodCall) {
-            MethodCall methodCall = (MethodCall) expression;
-            return methodCall.methodInfo.methodAnalysis.get().getProperty(VariableProperty.FLUENT);
+        if (expression instanceof MethodCall methodCall) {
+            return analysisProvider.getMethodAnalysis(methodCall.methodInfo).getProperty(VariableProperty.FLUENT);
         }
         return Level.FALSE;
     }
 
-    private static int identityForSideEffect(Expression expression) {
+    private static int identityForSideEffect(AnalysisProvider analysisProvider, Expression expression) {
         if (isFirstParameter(expression)) return Level.TRUE;
-        if (expression instanceof MethodCall) {
-            MethodCall methodCall = (MethodCall) expression;
+        if (expression instanceof MethodCall methodCall) {
             if (methodCall.parameterExpressions.size() == 0) return Level.FALSE;
-            int identity = methodCall.methodInfo.methodAnalysis.get().getProperty(VariableProperty.IDENTITY);
+            int identity = analysisProvider.getMethodAnalysis(methodCall.methodInfo).getProperty(VariableProperty.IDENTITY);
             if (identity != Level.TRUE) return identity;
-            return identityForSideEffect(methodCall.parameterExpressions.get(0));
+            return identityForSideEffect(analysisProvider, methodCall.parameterExpressions.get(0));
         }
         return Level.FALSE;
     }

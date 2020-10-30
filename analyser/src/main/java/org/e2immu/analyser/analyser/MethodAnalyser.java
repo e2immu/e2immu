@@ -92,15 +92,16 @@ public class MethodAnalyser extends AbstractAnalyser {
         parameterAnalyses = parameterAnalysers.stream().map(pa -> pa.parameterAnalysis).collect(Collectors.toUnmodifiableList());
 
         Block block = methodInspection.methodBody.get();
+        methodAnalysis = new MethodAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext,
+                methodInfo, parameterAnalyses);
+
         if (block == Block.EMPTY_BLOCK) {
             firstStatementAnalyser = null;
         } else {
             firstStatementAnalyser = StatementAnalyser.recursivelyCreateAnalysisObjects(analyserContext,
-                    this, null, block.structure.statements, "", true, false,
-                    methodInfo.methodResolution.get().partOfConstruction.get());
+                    this, null, block.structure.statements, "", true, false);
+            methodAnalysis.setFirstStatement(firstStatementAnalyser.statementAnalysis);
         }
-        methodAnalysis = new MethodAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext,
-                methodInfo, parameterAnalyses, firstStatementAnalyser);
         this.isSAM = isSAM;
 
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<>();

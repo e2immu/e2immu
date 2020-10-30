@@ -56,7 +56,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public final String index;
     public final StatementAnalysis parent;
     public final boolean inSyncBlock;
-    public final boolean inPartOfConstruction;
+    public final MethodAnalysis methodAnalysis;
 
     public final AddOnceSet<Message> messages = new AddOnceSet<>();
     public final NavigationData<StatementAnalysis> navigationData = new NavigationData<>();
@@ -71,13 +71,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public final SetOnce<Boolean> done = new SetOnce<>(); // if not done, there have been delays
 
     public StatementAnalysis(Primitives primitives,
-                             Statement statement, StatementAnalysis parent, String index, boolean inSyncBlock, boolean inPartOfConstruction) {
+                             MethodAnalysis methodAnalysis,
+                             Statement statement, StatementAnalysis parent, String index, boolean inSyncBlock) {
         super(primitives, true, index);
         this.index = super.simpleName;
         this.statement = statement;
         this.parent = parent;
         this.inSyncBlock = inSyncBlock;
-        this.inPartOfConstruction = inPartOfConstruction;
+        this.methodAnalysis = Objects.requireNonNull(methodAnalysis);
     }
 
     public String toString() {
@@ -145,18 +146,19 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     @Override
     public BiFunction<List<Statement>, String, StatementAnalysis> generator(EvaluationContext evaluationContext) {
-        return (statements, startIndex) -> recursivelyCreateAnalysisObjects(primitives, parent(), statements, startIndex, false,
-                inSyncBlock, inPartOfConstruction);
+        return (statements, startIndex) -> recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent(),
+                statements, startIndex, false, inSyncBlock);
     }
 
     public static StatementAnalysis recursivelyCreateAnalysisObjects(
             Primitives primitives,
+            MethodAnalysis methodAnalysis,
             StatementAnalysis parent,
             List<Statement> statements,
             String indices,
             boolean setNextAtEnd,
-            boolean inSyncBlock,
-            boolean inPartOfConstruction) {
+            boolean inSyncBlock) {
+        Objects.requireNonNull(methodAnalysis);
         int statementIndex;
         if (setNextAtEnd) {
             statementIndex = 0;
@@ -169,7 +171,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         StatementAnalysis previous = null;
         for (Statement statement : statements) {
             String iPlusSt = indices + "." + statementIndex;
-            StatementAnalysis statementAnalysis = new StatementAnalysis(primitives, statement, parent, iPlusSt, inSyncBlock, inPartOfConstruction);
+            StatementAnalysis statementAnalysis = new StatementAnalysis(primitives, methodAnalysis, statement, parent, iPlusSt, inSyncBlock);
             if (previous != null) {
                 previous.navigationData.next.set(Optional.of(statementAnalysis));
             }
@@ -182,15 +184,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             boolean newInSyncBlock = inSyncBlock || statement instanceof SynchronizedStatement;
             Structure structure = statement.getStructure();
             if (structure.haveStatements()) {
-                StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, parent, statements,
-                        iPlusSt + "." + blockIndex, true, newInSyncBlock, inPartOfConstruction);
+                StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent, statements,
+                        iPlusSt + "." + blockIndex, true, newInSyncBlock);
                 analysisBlocks.add(subStatementAnalysis);
                 blockIndex++;
             }
             for (Structure subStatements : structure.subStatements) {
                 if (subStatements.haveStatements()) {
-                    StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, parent, statements,
-                            iPlusSt + "." + blockIndex, true, newInSyncBlock, inPartOfConstruction);
+                    StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent, statements,
+                            iPlusSt + "." + blockIndex, true, newInSyncBlock);
                     analysisBlocks.add(subStatementAnalysis);
                     blockIndex++;
                 }
@@ -452,7 +454,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @return the initial value computed
      */
     private Value initialValueOfField(AnalyserContext analyserContext, FieldReference fieldReference) {
-        if (inPartOfConstruction) {
+        boolean inPartOfConstruction = methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction.get() ==
+                MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
+        if (inPartOfConstruction && fieldReference.scope instanceof This thisVariable
+                && !thisVariable.writeSuper && !thisVariable.explicitlyWriteType) { // ordinary this, so my field
             return ConstantValue.nullValue(analyserContext.getPrimitives(), fieldReference.fieldInfo.type.typeInfo);
         }
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);

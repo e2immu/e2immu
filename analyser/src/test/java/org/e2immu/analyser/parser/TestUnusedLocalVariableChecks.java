@@ -5,6 +5,7 @@ import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.testexample.UnusedLocalVariableChecks;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -132,6 +133,20 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
         }
     };
 
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo system = typeContext.getFullyQualified(System.class);
+        FieldInfo out = system.getFieldByName("out", true);
+        int notNull = out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL);
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
+        Assert.assertEquals(Level.TRUE, out.fieldAnalysis.get().getProperty(VariableProperty.IGNORE_MODIFICATIONS));
+
+        TypeInfo myself = typeContext.getFullyQualified(UnusedLocalVariableChecks.class);
+        MethodInfo constructor = myself.findConstructor(0);
+        Assert.assertEquals(MethodResolution.CallStatus.PART_OF_CONSTRUCTION, constructor.methodResolution.get().partOfConstruction.get());
+        MethodInfo method1 = myself.findUniqueMethod("method1", 1);
+        Assert.assertEquals(MethodResolution.CallStatus.NOT_CALLED_AT_ALL, method1.methodResolution.get().partOfConstruction.get());
+    };
+
     @Test
     public void test() throws IOException {
         testClass("UnusedLocalVariableChecks", 9, 1, new DebugConfiguration.Builder()
@@ -139,6 +154,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addTypeContextVisitor(typeContextVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
