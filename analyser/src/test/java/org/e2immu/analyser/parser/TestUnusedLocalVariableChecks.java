@@ -66,9 +66,14 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
         if ("checkForEach".equals(d.methodInfo.name) && "1.0.0".equals(d.statementId) && "integers".equals(d.variableName)) {
             Assert.assertEquals(2, d.properties.get(VariableProperty.READ));
         }
-        if ("method1".equals(d.methodInfo.name) && "0".equals(d.statementId) && "s".equals(d.variableName)) {
-            int assigned = d.properties.getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
-            Assert.assertEquals(Level.DELAY, assigned);
+        if ("method1".equals(d.methodInfo.name) && "s".equals(d.variableName)) {
+            if("0".equals(d.statementId)){
+                int assigned = d.properties.getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
+                Assert.assertEquals(Level.DELAY, assigned);
+            }
+            if("1.0.0".equals(d.statementId)) {
+               // Assert.assertTrue(d.);
+            }
         }
         if ("checkArray2".equals(d.methodInfo.name)) {
             int read = d.properties.getOrDefault(VariableProperty.READ, Level.DELAY);

@@ -457,7 +457,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         boolean inPartOfConstruction = methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction.get() ==
                 MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         if (inPartOfConstruction && fieldReference.scope instanceof This thisVariable
-                && !thisVariable.writeSuper && !thisVariable.explicitlyWriteType) { // ordinary this, so my field
+                && thisVariable.typeInfo.equals(methodAnalysis.getMethodInfo().typeInfo)) { // field that must be initialised
             return ConstantValue.nullValue(analyserContext.getPrimitives(), fieldReference.fieldInfo.type.typeInfo);
         }
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
