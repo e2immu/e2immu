@@ -111,7 +111,7 @@ public class ArrayAccess implements Expression {
         EvaluationResult indexValue = index.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(array, indexValue);
 
-        if (array.value instanceof ArrayValue arrayValue && indexValue instanceof NumericValue) {
+        if (array.value instanceof ArrayValue arrayValue && indexValue.value instanceof NumericValue) {
             // known array, known index (a[] = {1,2,3}, a[2] == 3)
             int intIndex = indexValue.value.toInt().value;
             if (intIndex < 0 || intIndex >= arrayValue.values.size()) {

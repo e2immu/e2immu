@@ -1038,13 +1038,15 @@ public class MethodAnalyser extends AbstractAnalyser {
         if (statusOfStatementAnalyser == AnalysisStatus.DELAYS) {
             StatementAnalyser lastStatement = firstStatementAnalyser.lastStatement();
             AnalyserComponents<String, StatementAnalyser.SharedState> analyserComponentsOfStatement = lastStatement.getAnalyserComponents();
-            LOGGER.warn("Analyser components of last statement {}:\n{}", lastStatement.index(),
+            LOGGER.warn("Analyser components of last statement {} of {}:\n{}", lastStatement.index(),
+                    methodInfo.fullyQualifiedName(),
                     analyserComponentsOfStatement.details());
             AnalysisStatus statusOfMethodLevelData = analyserComponentsOfStatement.getStatus(StatementAnalyser.ANALYSE_METHOD_LEVEL_DATA);
             if (statusOfMethodLevelData == AnalysisStatus.DELAYS) {
                 AnalyserComponents<String, MethodLevelData.SharedState> analyserComponentsOfMethodLevelData =
                         lastStatement.statementAnalysis.methodLevelData.analyserComponents;
-                LOGGER.warn("Analyser components of method level data of last statement {}:\n{}", lastStatement.index(),
+                LOGGER.warn("Analyser components of method level data of last statement {} of {}:\n{}", lastStatement.index(),
+                        methodInfo.fullyQualifiedName(),
                         analyserComponentsOfMethodLevelData.details());
             }
         }

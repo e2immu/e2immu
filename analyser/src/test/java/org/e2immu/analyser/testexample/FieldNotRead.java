@@ -22,21 +22,25 @@ import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.E2Container;
 
 @E2Container
-public class UnusedLocalVariableChecks {
+public class FieldNotRead {
 
-    public UnusedLocalVariableChecks() {
+    // ERROR 1: private field b is not read outside constructors
+    private boolean b;
+
+    public FieldNotRead() {
         int a = 0;
-        // ERROR: private variable a is not used, useless assignment
+        // ERROR 2+3: private variable a is not used, useless assignment
+        b = true;
     }
 
-    // ERROR: method1 should be marked static
+    // ERROR 4: method1 should be marked static
     private void method1(String t) {
         String s;
-        // ERROR: local variable s is not used
+        // ERROR 5: local variable s is not used
         if (t.length() < 19) {
             return;
         }
-        // WARNING: ignoring result of method call
+        // WARNING 1: ignoring result of method call
         t.trim();
     }
 
@@ -51,13 +55,13 @@ public class UnusedLocalVariableChecks {
         int[] integers = {1, 2, 3};
         int i = 0;
         integers[i] = 3;
-        // ERROR: assignment is not used
+        // ERROR 7: assignment is not used
     }
 
     private static void checkForEach() {
         int[] integers = {1, 2, 3};
         for (int loopVar : integers) {
-            // ERROR: loopVar is not used
+            // ERROR 8: loopVar is not used
             System.out.println("hello!");
         }
     }

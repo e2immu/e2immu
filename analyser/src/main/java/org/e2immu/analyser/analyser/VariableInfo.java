@@ -17,7 +17,9 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.IncrementalMap;
@@ -120,4 +122,7 @@ public class VariableInfo {
         this.objectFlow.set(objectFlow);
     }
 
+    public boolean haveAValue() {
+        return valueForNextStatement() != UnknownValue.NO_VALUE;
+    }
 }

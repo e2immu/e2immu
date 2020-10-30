@@ -546,21 +546,23 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
     }
 
-    public void addProperty(AnalyserContext analyserContext, Variable variable, VariableProperty variableProperty, int value) {
+    public VariableInfo addProperty(AnalyserContext analyserContext, Variable variable, VariableProperty variableProperty, int value) {
         Objects.requireNonNull(variable);
-        VariableInfo aboutVariable = find(analyserContext, variable);
-        int current = aboutVariable.getProperty(variableProperty);
+        VariableInfo variableInfo = find(analyserContext, variable);
+        int current = variableInfo.getProperty(variableProperty);
         if (current < value) {
-            aboutVariable.setProperty(variableProperty, value);
+            variableInfo.setProperty(variableProperty, value);
         }
 
-        Value currentValue = aboutVariable.valueForNextStatement();
+        Value currentValue = variableInfo.valueForNextStatement();
         VariableValue valueWithVariable;
-        if ((valueWithVariable = currentValue.asInstanceOf(VariableValue.class)) == null) return;
-        Variable other = valueWithVariable.variable;
-        if (!variable.equals(other)) {
-            addProperty(analyserContext, other, variableProperty, value);
+        if ((valueWithVariable = currentValue.asInstanceOf(VariableValue.class)) != null) {
+            Variable other = valueWithVariable.variable;
+            if (!variable.equals(other)) {
+                addProperty(analyserContext, other, variableProperty, value);
+            }
         }
+        return variableInfo;
     }
 
     /**

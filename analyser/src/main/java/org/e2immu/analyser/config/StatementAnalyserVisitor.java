@@ -21,11 +21,13 @@ public interface StatementAnalyserVisitor {
         public final Value state;
         public final Map<String, AnalysisStatus> statusesAsMap;
         public final EvaluationContext evaluationContext;
+        public final AnalysisStatus analysisStatus;
 
-        public Data(int iteration,
+        public Data(AnalysisStatus analysisStatus, int iteration,
                     EvaluationContext evaluationContext,
                     MethodInfo methodInfo, StatementAnalysis statementAnalysis,
                     String statementId, Value condition, Value state, Map<String, AnalysisStatus> statusesAsMap) {
+            this.analysisStatus = analysisStatus;
             this.iteration = iteration;
             this.methodInfo = methodInfo;
             this.statementAnalysis = statementAnalysis;
@@ -47,6 +49,21 @@ public interface StatementAnalyserVisitor {
 
         public int getProperty(Value value, VariableProperty variableProperty) {
             return evaluationContext.getProperty(value, variableProperty);
+        }
+
+        @Override
+        public String toString() {
+            return "Data{" +
+                    "iteration=" + iteration +
+                    ", methodInfo=" + methodInfo +
+                    ", statementAnalysis=" + statementAnalysis +
+                    ", statementId='" + statementId + '\'' +
+                    ", condition=" + condition +
+                    ", state=" + state +
+                    ", statusesAsMap=" + statusesAsMap +
+                    ", evaluationContext=" + evaluationContext +
+                    ", analysisStatus=" + analysisStatus +
+                    '}';
         }
     }
 

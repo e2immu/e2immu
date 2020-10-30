@@ -349,7 +349,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 .combineAnalysisStatus(wasReplacement ? PROGRESS : DONE).build();
         analysisStatus = result.analysisStatus;
 
-        visitStatementVisitors(statementAnalysis.index, sharedState);
+        visitStatementVisitors(statementAnalysis.index, analysisStatus, sharedState);
 
         log(ANALYSER, "Returning from statement {} of {} with analysis status {}", statementAnalysis.index,
                 myMethodAnalyser.methodInfo.name, analysisStatus);
@@ -363,14 +363,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             statementAnalysis.assertVariableExists(v);
 
             VariableInfo variableInfo = statementAnalysis.find(analyserContext, v);
-            if (variableInfo != null && !variableInfo.expressionValue.isSet()) haveDelays.set(true);
+            if (variableInfo != null && !variableInfo.haveAValue()) haveDelays.set(true);
         });
         if (haveDelays.get()) return DELAYS;
         statementAnalysis.dependencyGraph.freeze();
         return DONE;
     }
 
-    private void visitStatementVisitors(String statementId, SharedState sharedState) {
+    private void visitStatementVisitors(String statementId, AnalysisStatus analysisStatus, SharedState sharedState) {
         for (StatementAnalyserVariableVisitor statementAnalyserVariableVisitor :
                 analyserContext.getConfiguration().debugConfiguration.statementAnalyserVariableVisitors) {
             statementAnalysis.variables.stream()
@@ -392,6 +392,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 analyserContext.getConfiguration().debugConfiguration.statementAnalyserVisitors) {
             statementAnalyserVisitor.visit(
                     new StatementAnalyserVisitor.Data(
+                            analysisStatus,
                             sharedState.evaluationContext.getIteration(),
                             sharedState.evaluationContext,
                             myMethodAnalyser.methodInfo,
@@ -537,13 +538,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (structure.localVariableCreation != null) {
             lvr = new LocalVariableReference(structure.localVariableCreation,
                     List.of());
+            VariableInfo variableInfo ;
             if (inCatch) {
                 statementAnalysis.addProperty(analyserContext, lvr, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-                statementAnalysis.addProperty(analyserContext, lvr, VariableProperty.READ, Level.READ_ASSIGN_ONCE);
+                variableInfo = statementAnalysis.addProperty(analyserContext, lvr, VariableProperty.READ, Level.READ_ASSIGN_ONCE);
             } else if (assignedInLoop) {
-                statementAnalysis.addProperty(analyserContext, lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+                variableInfo = statementAnalysis.addProperty(analyserContext, lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
             } else {
-                statementAnalysis.find(analyserContext, lvr); // "touch" it
+                variableInfo = statementAnalysis.find(analyserContext, lvr); // "touch" it
+            }
+            if(!variableInfo.initialValue.isSet()) {
+                variableInfo.initialValue.set(new VariableValue(lvr));
             }
         } else {
             lvr = null;
