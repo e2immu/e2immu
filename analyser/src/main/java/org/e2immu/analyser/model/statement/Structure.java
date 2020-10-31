@@ -57,6 +57,7 @@ public class Structure {
     // decides if it possible at all that no block (statements, subStatements.statements) will be executed
     // this is possible in if statements without else, switch statements without default, loops that are not while(true), etc. etc.
     public final boolean noBlockMayBeExecuted;
+    public final boolean createVariablesInsideBlock;
 
     private Structure(@NotNull List<Expression> initialisers,
                       LocalVariable localVariableCreation,
@@ -67,7 +68,8 @@ public class Structure {
                       List<Statement> statements,
                       @NotNull BiPredicate<Value, EvaluationContext> statementsExecutedAtLeastOnce,
                       List<Structure> subStatements,
-                      boolean noBlockMayBeExecuted) {
+                      boolean noBlockMayBeExecuted,
+                      boolean createVariablesInsideBlock) {
         this.initialisers = Objects.requireNonNull(initialisers);
         this.localVariableCreation = localVariableCreation;
         this.expression = Objects.requireNonNull(expression);
@@ -81,6 +83,7 @@ public class Structure {
         this.subStatements = Objects.requireNonNull(subStatements);
         this.statementsExecutedAtLeastOnce = statementsExecutedAtLeastOnce;
         this.noBlockMayBeExecuted = noBlockMayBeExecuted;
+        this.createVariablesInsideBlock = createVariablesInsideBlock;
     }
 
     public List<Statement> getStatements() {
@@ -97,6 +100,7 @@ public class Structure {
         return block != null && block != Block.EMPTY_BLOCK;
     }
 
+
     public static class Builder {
         private final List<Expression> initialisers = new ArrayList<>(); // try, for   (example: int i=0; )
         private LocalVariable localVariableCreation; // forEach, catch (int i,  Exception e)
@@ -108,6 +112,12 @@ public class Structure {
         private Block block;
         private final List<Structure> subStatements = new ArrayList<>(); // catches, finally, switch entries
         private boolean noBlockMayBeExecuted = true;
+        private boolean createVariablesInsideBlock;
+
+        public Builder setCreateVariablesInsideBlock(boolean createVariablesInsideBlock) {
+            this.createVariablesInsideBlock = createVariablesInsideBlock;
+            return this;
+        }
 
         public Builder setExpression(Expression expression) {
             this.expression = expression;
@@ -170,7 +180,8 @@ public class Structure {
                     statements == null ? null : ImmutableList.copyOf(statements),
                     statementsExecutedAtLeastOnce == null ? (v, ec) -> false : statementsExecutedAtLeastOnce,
                     ImmutableList.copyOf(subStatements),
-                    noBlockMayBeExecuted);
+                    noBlockMayBeExecuted,
+                    createVariablesInsideBlock);
         }
     }
 }

@@ -21,6 +21,19 @@ package org.e2immu.analyser.testexample;
 import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.E2Container;
 
+
+/*
+ ERROR in M:UnusedLocalVariableChecks:0: Unused local variable: a
+ ERROR in M:UnusedLocalVariableChecks:0: Useless assignment: a
+ ERROR in M:method1: Method should be marked static
+ WARN in M:method1:2: Ignoring result of method call: java.lang.String.trim()
+ ERROR in M:method1:1: Condition in 'if' or 'switch' statement evaluates to constant TODO Wrong
+ ERROR in M:method1:2: Unused local variable: s
+ ERROR in M:checkArray2:2: Useless assignment: integers[i]
+ ERROR in M:checkArray2:2: Unused local variable: integers[i]       (this is debatable, but not wrong, because a/ var? b/ already error)
+ ERROR in M:checkForEach:1.0.0: Unused local variable: loopVar
+ */
+
 @E2Container
 public class UnusedLocalVariableChecks {
 

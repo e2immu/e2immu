@@ -34,7 +34,9 @@ public class TryStatement extends StatementWithStructure {
                                               Block tryBlock,
                                               List<Pair<CatchParameter, Block>> catchClauses,
                                               Block finallyBlock) {
-        Structure.Builder builder = new Structure.Builder().addInitialisers(resources)
+        Structure.Builder builder = new Structure.Builder()
+                .setCreateVariablesInsideBlock(true)
+                .addInitialisers(resources)
                 .setStatementsExecutedAtLeastOnce((v, ec) -> true)
                 .setBlock(tryBlock)
                 .setNoBlockMayBeExecuted(false); //there's always the main block

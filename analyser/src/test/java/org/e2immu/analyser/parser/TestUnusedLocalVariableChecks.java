@@ -5,13 +5,19 @@ import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.GreaterThanZeroValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.testexample.UnusedLocalVariableChecks;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Set;
 
 public class TestUnusedLocalVariableChecks extends CommonTestRunner {
+
+    private static final String T_LENGTH_GE_19 = "((-19) + org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method1(String):0:t.length(),?>=0) >= 0";
+    private static final String T_LENGTH_LT_19 = "(18 + (-org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method1(String):0:t.length(),?>=0)) >= 0";
 
     public TestUnusedLocalVariableChecks() {
         super(true);
@@ -21,10 +27,17 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
         if ("method1".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
                 Assert.assertEquals(d.toString(), AnalysisStatus.DONE, d.analysisStatus());
+                Assert.assertEquals(UnknownValue.EMPTY.toString(), d.state().toString());
             }
             if ("1".equals(d.statementId()) || "1.0.0".equals(d.statementId())) {
                 AnalysisStatus expectAnalysisStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
                 Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus());
+            }
+            if ("1".equals(d.statementId())) {
+                Assert.assertEquals(T_LENGTH_GE_19, d.state().toString());
+            }
+            if ("1.0.0".equals(d.statementId())) {
+                Assert.assertEquals(T_LENGTH_LT_19, d.state().toString());
             }
             // ERROR: t.trim() result is not used
             if ("2".equals(d.statementId())) {
@@ -36,6 +49,8 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                 }
                 AnalysisStatus expectAnalysisStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
                 Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus());
+
+                Assert.assertEquals(T_LENGTH_GE_19, d.state().toString());
             }
         }
         // ERROR: Unused variable "a"
@@ -54,6 +69,9 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
 
             Assert.assertEquals(d.toString(), AnalysisStatus.DONE, d.analysisStatus());
         }
+        if ("checkForEach".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+            Assert.assertFalse(d.statementAnalysis().variables.isSet("loopVar")); // created in 1.0.0
+        }
         if ("checkForEach".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
             Assert.assertEquals("ERROR in M:checkForEach:1.0.0: Unused local variable: loopVar", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
 
@@ -67,12 +85,15 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
             Assert.assertEquals(2, d.properties().get(VariableProperty.READ));
         }
         if ("method1".equals(d.methodInfo().name) && "s".equals(d.variableName())) {
-            if("0".equals(d.statementId())){
+            if ("0".equals(d.statementId())) {
                 int assigned = d.properties().getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
                 Assert.assertEquals(Level.DELAY, assigned);
             }
-            if("1.0.0".equals(d.statementId())) {
-               // Assert.assertTrue(d.);
+            if ("1.0.0".equals(d.statementId())) {
+                Assert.assertTrue(d.variableInfo().isLocalCopy());
+            }
+            if (Set.of("0", "1", "2").contains(d.statementId())) {
+                Assert.assertFalse(d.variableInfo().isLocalCopy());
             }
         }
         if ("checkArray2".equals(d.methodInfo().name)) {
@@ -128,6 +149,12 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                 //Assert.assertEquals(2L, d.evaluationResult().getModificationStream().count());
             }
         }
+        if ("method1".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+            Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
+            Assert.assertEquals("(18 + (-org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method1(String):0:t.length(),?>=0)) >= 0",
+                    d.evaluationResult().value.toString());
+            Assert.assertTrue(d.evaluationResult().value.isInstanceOf(GreaterThanZeroValue.class));
+        }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -154,7 +181,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("UnusedLocalVariableChecks", 9, 1, new DebugConfiguration.Builder()
+        testClass("UnusedLocalVariableChecks", 7, 1, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

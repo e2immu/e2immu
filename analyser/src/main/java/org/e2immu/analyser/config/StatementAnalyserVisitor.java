@@ -13,9 +13,10 @@ import java.util.Map;
 public interface StatementAnalyserVisitor {
 
     record Data(AnalysisStatus analysisStatus, int iteration,
-                    EvaluationContext evaluationContext,
-                    MethodInfo methodInfo, StatementAnalysis statementAnalysis,
-                    String statementId, Value condition, Value state, Map<String, AnalysisStatus> statusesAsMap) {
+                EvaluationContext evaluationContext,
+                MethodInfo methodInfo, StatementAnalysis statementAnalysis,
+                String statementId, Value condition, Value state, Map<String, AnalysisStatus> statusesAsMap,
+                boolean ignoreErrorsOnCondition) {
 
         // shortcut
         public String haveError(String message) {

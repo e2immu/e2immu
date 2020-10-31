@@ -271,8 +271,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     // executed only once per statement; we're assuming that the flowData are computed correctly
     private AnalysisStatus checkUnreachableStatement(StatementAnalysis previousStatementAnalysis, FlowData.Execution execution) {
         if (statementAnalysis.flowData.computeGuaranteedToBeReachedReturnUnreachable(statementAnalysis.primitives,
-                previousStatementAnalysis, execution,
-                localConditionManager.state) &&
+                previousStatementAnalysis, execution, localConditionManager.state) &&
                 !statementAnalysis.inErrorState(Message.UNREACHABLE_STATEMENT)) {
             statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
         }
@@ -311,15 +310,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             statementAnalysis.initialise(previous);
 
-            boolean startOfNewBlock = previous == null;
-            localConditionManager = startOfNewBlock ? forwardAnalysisInfo.conditionManager() :
-                    previous.stateData.getConditionManager();
-
             analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
                     .add("checkUnreachableStatement", sharedState -> checkUnreachableStatement(previous,
                             forwardAnalysisInfo.execution()))
 
-                    .add("singleStatementAnalysisSteps", sharedState -> singleStatementAnalysisSteps(sharedState, previous, forwardAnalysisInfo))
+                    .add("singleStatementAnalysisSteps", sharedState -> singleStatementAnalysisSteps(sharedState, forwardAnalysisInfo))
                     .add("tryToFreezeDependencyGraph", sharedState -> tryToFreezeDependencyGraph())
                     .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previous,
                             forwardAnalysisInfo.execution()))
@@ -340,6 +335,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         } else {
             statementAnalysis.updateStatements(analyserContext, myMethodAnalyser.methodInfo, previous);
         }
+        boolean startOfNewBlock = previous == null;
+        localConditionManager = startOfNewBlock ? forwardAnalysisInfo.conditionManager() :
+                previous.stateData.getConditionManager();
 
         StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager());
@@ -402,7 +400,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                             statementAnalysis.index,
                             statementAnalysis.stateData.getConditionManager().condition,
                             statementAnalysis.stateData.getConditionManager().state,
-                            analyserComponents.getStatusesAsMap()));
+                            analyserComponents.getStatusesAsMap(),
+                            ignoreErrorsOnCondition));
         }
     }
 
@@ -532,21 +531,29 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return DONE;
     }
 
+    /**
+     * Situations:     for(X x: xs) { ... } and catch(Exception e) { ... }
+     * We create the local variable not at the level of the statement, but that of the first statement in the block
+     * <p>
+     * TODO raise an error when the block is empty
+     */
+
     private LocalVariableReference step1_localVariableInForOrCatch(Structure structure,
                                                                    boolean inCatch,
                                                                    boolean assignedInLoop) {
         LocalVariableReference lvr;
         if (structure.localVariableCreation != null) {
-            lvr = new LocalVariableReference(structure.localVariableCreation,
-                    List.of());
+            lvr = new LocalVariableReference(structure.localVariableCreation, List.of());
+            StatementAnalysis firstStatementInBlock = firstStatementFirstBlock();
+
             VariableInfo variableInfo;
             if (inCatch) {
-                statementAnalysis.addProperty(analyserContext, lvr, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-                variableInfo = statementAnalysis.addProperty(analyserContext, lvr, VariableProperty.READ, Level.READ_ASSIGN_ONCE);
+                firstStatementInBlock.addProperty(analyserContext, lvr, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                variableInfo = firstStatementInBlock.addProperty(analyserContext, lvr, VariableProperty.READ, Level.READ_ASSIGN_ONCE);
             } else if (assignedInLoop) {
-                variableInfo = statementAnalysis.addProperty(analyserContext, lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+                variableInfo = firstStatementInBlock.addProperty(analyserContext, lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
             } else {
-                variableInfo = statementAnalysis.find(analyserContext, lvr); // "touch" it
+                variableInfo = firstStatementInBlock.find(analyserContext, lvr); // "touch" it
             }
             if (!variableInfo.initialValue.isSet()) {
                 variableInfo.initialValue.set(new VariableValue(lvr));
@@ -557,50 +564,64 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return lvr;
     }
 
-
-    private AnalysisStatus step2_localVariableCreation(SharedState sharedState, Structure structure, boolean assignedInLoop) {
+    /**
+     * Situations: normal variable creation:
+     * <ul>
+     * <li>String s = "xxx";
+     * <li>the first component of the classical for loop: for(int i=0; i<..., i++)
+     * <li>the variables created inside the try-with-resources
+     * </ul>
+     * <p>
+     */
+    private AnalysisStatus step2_localVariableCreation(SharedState sharedState, Structure structure,
+                                                       boolean assignedInLoop) {
         boolean noValue = false;
+        StatementAnalysis saToCreate = structure.createVariablesInsideBlock ? firstStatementFirstBlock() : statementAnalysis;
         for (Expression initialiser : structure.initialisers) {
             if (initialiser instanceof LocalVariableCreation lvc) {
                 LocalVariableReference lvr = new LocalVariableReference((lvc).localVariable, List.of());
                 // the NO_VALUE here becomes the initial (and reset) value, which should not be a problem because variables
                 // introduced here should not become "reset" to an initial value; they'll always be assigned one
                 if (assignedInLoop) {
-                    statementAnalysis.addProperty(analyserContext, lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+                    saToCreate.addProperty(analyserContext, lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
                 } else {
-                    statementAnalysis.find(analyserContext, lvr); // "touch" it
+                    saToCreate.find(analyserContext, lvr); // "touch" it
                 }
             }
             try {
                 EvaluationResult result = initialiser.evaluate(sharedState.evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 sharedState.builder.combineAnalysisStatus(apply(result,
-                        variable -> statementAnalysis.find(analyserContext, variable).initialValue, STEP_2));
+                        variable -> saToCreate.find(analyserContext, variable).initialValue, STEP_2));
 
                 Value value = result.value;
                 if (value == NO_VALUE) noValue = true;
                 // initialisers size 1 means expression as statement, local variable creation
-                if (structure.initialisers.size() == 1 && value != null && value != NO_VALUE &&
-                        !statementAnalysis.stateData.valueOfExpression.isSet()) {
-                    statementAnalysis.stateData.valueOfExpression.set(value);
+                if (structure.initialisers.size() == 1 && value != null && value != NO_VALUE && !saToCreate.stateData.valueOfExpression.isSet()) {
+                    saToCreate.stateData.valueOfExpression.set(value);
                 }
 
                 // TODO move to a place where *every* assignment is verified (assignment-basics)
                 // are we in a loop (somewhere) assigning to a variable that already exists outside that loop?
                 if (initialiser instanceof Assignment assignment) {
-                    int levelLoop = statementAnalysis.stepsUpToLoop();
+                    int levelLoop = saToCreate.stepsUpToLoop();
                     if (levelLoop >= 0) {
-                        int levelAssignmentTarget = statementAnalysis.levelAtWhichVariableIsDefined(analyserContext, assignment.variableTarget);
+                        int levelAssignmentTarget = saToCreate.levelAtWhichVariableIsDefined(analyserContext, assignment.variableTarget);
                         if (levelAssignmentTarget >= levelLoop) {
-                            statementAnalysis.addProperty(analyserContext, assignment.variableTarget, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+                            saToCreate.addProperty(analyserContext, assignment.variableTarget, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
                         }
                     }
                 }
             } catch (RuntimeException rte) {
-                LOGGER.warn("Failed to evaluate initialiser expression in statement {}", statementAnalysis.index);
+                LOGGER.warn("Failed to evaluate initialiser expression in statement {} (created in {})",
+                        statementAnalysis.index, saToCreate.index);
                 throw rte;
             }
         }
         return noValue ? DELAYS : DONE;
+    }
+
+    private StatementAnalysis firstStatementFirstBlock() {
+        return navigationData.blocks.get().get(0).statementAnalysis;
     }
 
     // for(int i=0 (step2); i<3 (step4); i++ (step3))
@@ -638,7 +659,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             ArrayValue arrayValue;
             if (((arrayValue = value.asInstanceOf(ArrayValue.class)) != null) &&
                     arrayValue.values.stream().allMatch(evaluationContext::isNotNull0)) {
-                statementAnalysis.addProperty(analyserContext, localVariableReference, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                StatementAnalysis firstStatementInBlock = firstStatementFirstBlock();
+                firstStatementInBlock.addProperty(analyserContext, localVariableReference, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
             }
         }
     }
@@ -716,6 +738,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             if (noEffect && !ignoreErrorsOnCondition && !statementAnalysis.inErrorState(Message.CONDITION_EVALUATES_TO_CONSTANT)) {
                 statementAnalysis.ensure(Message.newMessage(evaluationContext.getLocation(), Message.CONDITION_EVALUATES_TO_CONSTANT));
+                ignoreErrorsOnCondition = true; // so that we don't repeat this error
             }
             return true;
         }
@@ -786,7 +809,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private AnalysisStatus singleStatementAnalysisSteps(SharedState sharedState,
-                                                        StatementAnalysis previous,
                                                         ForwardAnalysisInfo forwardAnalysisInfo) {
         Structure structure = statementAnalysis.statement.getStructure();
         EvaluationContext evaluationContext = sharedState.evaluationContext;
