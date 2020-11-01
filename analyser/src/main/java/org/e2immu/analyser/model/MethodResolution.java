@@ -28,6 +28,10 @@ public class MethodResolution {
         NOT_CALLED_AT_ALL,
         CALLED_FROM_NON_PRIVATE_METHOD,
         NON_PRIVATE;
+
+        public boolean accessibleFromTheOutside() {
+            return this == NON_PRIVATE || this == CALLED_FROM_NON_PRIVATE_METHOD;
+        }
     }
 
     /**

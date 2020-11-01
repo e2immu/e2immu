@@ -584,7 +584,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         if (!fieldAnalysis.internalObjectFlows.isSet()) {
             log(DELAYED, "Delaying effectively final value because internal object flows not yet known, {}", fieldInfo.fullyQualifiedName());
-            return DELAYS;
+      //      return DELAYS; TODO see TestFieldNotRead, but for now waiting until we sort out internalObjectFlows
         }
         Value effectivelyFinalValue = determineEffectivelyFinalValue(values);
 
@@ -696,7 +696,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             isFinal = false;
         } else {
             int isAssignedOutsideConstructors = allMethodsAndConstructors.stream()
-                    .filter(m -> !m.methodInfo.isPrivate() || m.methodInfo.isCalledFromNonPrivateMethod())
+                    .filter(m -> m.methodInfo.methodResolution.get().partOfConstruction.get().accessibleFromTheOutside())
                     .filter(m -> m.methodLevelData().fieldSummaries.isSet(fieldInfo))
                     .mapToInt(m -> m.methodLevelData().fieldSummaries.get(fieldInfo).getProperty(VariableProperty.ASSIGNED))
                     .max().orElse(Level.DELAY);

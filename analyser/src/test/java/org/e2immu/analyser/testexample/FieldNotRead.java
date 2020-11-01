@@ -18,13 +18,14 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.Final;
 
 @E2Container
 public class FieldNotRead {
 
     // ERROR 1: private field b is not read outside constructors
+    @Final
     private boolean b;
 
     public FieldNotRead() {
@@ -33,36 +34,4 @@ public class FieldNotRead {
         b = true;
     }
 
-    // ERROR 4: method1 should be marked static
-    private void method1(String t) {
-        String s;
-        // ERROR 5: local variable s is not used
-        if (t.length() < 19) {
-            return;
-        }
-        // WARNING 1: ignoring result of method call
-        t.trim();
-    }
-
-    @Constant(intValue = 1)
-    private static int checkArray() {
-        int[] integers = {1, 2, 3};
-        int i = 0;
-        return integers[i];
-    }
-
-    private static void checkArray2() {
-        int[] integers = {1, 2, 3};
-        int i = 0;
-        integers[i] = 3;
-        // ERROR 7: assignment is not used
-    }
-
-    private static void checkForEach() {
-        int[] integers = {1, 2, 3};
-        for (int loopVar : integers) {
-            // ERROR 8: loopVar is not used
-            System.out.println("hello!");
-        }
-    }
 }

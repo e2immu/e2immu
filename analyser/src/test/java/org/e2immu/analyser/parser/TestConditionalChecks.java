@@ -110,8 +110,11 @@ public class TestConditionalChecks extends CommonTestRunner {
             // the escape mechanism does NOT kick in!
             if ("0".equals(d.statementId())) {
                 Assert.assertEquals("not (" + O5 + " == " + THIS + ")", d.state().toString());
-            }
-            if ("1".equals(d.statementId())) {
+            } else if ("0.0.0".equals(d.statementId())) {
+                Assert.assertEquals(O5 + " == " + THIS, d.state().toString());
+            } else if ("1.0.0".equals(d.statementId())) {
+                Assert.assertEquals("(not (" + O5 + " == " + THIS + ") and (null == " + O5 + " or not (" + O5_GET_CLASS + " == " + THIS_GET_CLASS + ")))", d.state().toString());
+            } else {
                 Assert.assertEquals("(not (null == " + O5 + ") and " + O5_GET_CLASS + " == " + THIS_GET_CLASS + " and not (" + O5 + " == " + THIS + "))", d.state().toString());
             }
         }

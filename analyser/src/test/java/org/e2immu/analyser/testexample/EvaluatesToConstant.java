@@ -21,8 +21,20 @@ package org.e2immu.analyser.testexample;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
-// NOTE: this one relies on String.toLowerCase() being annotated @NotNull
 
+/*
+ NOTE: this one relies on String.toLowerCase() being annotated @NotNull
+
+ ERROR in M:method2:1: Condition in 'if' or 'switch' statement evaluates to constant
+
+ ERROR in M:method3:1.0.1: Unused local variable: b
+ ERROR in M:method3:1.0.1: Useless assignment: b
+ ERROR in M:method3:1.0.1: Condition in 'if' or 'switch' statement evaluates to constant
+ ERROR in M:method3:2: Useless assignment: b
+ ERROR in M:method3:2: Unused local variable: b
+
+ The errors involving b in method3 are not really wrong
+ */
 @E2Container
 public class EvaluatesToConstant {
 
@@ -33,7 +45,7 @@ public class EvaluatesToConstant {
 
     private static String method2(String param) {
         String b = someMethod(param);
-        // ERROR 9: if statement evaluates to constant
+        // ERROR: if statement evaluates to constant
         if (b == null) {
             return "a";
         }
