@@ -61,5 +61,11 @@ public interface EvaluationResultVisitor {
                     .map(sam -> (StatementAnalyser.MarkAssigned) sam)
                     .anyMatch(ma -> variableName.equals(ma.variable.fullyQualifiedName()));
         }
+
+        public StatementAnalyser.MarkAssigned findMarkAssigned(String variableName) {
+            return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.MarkAssigned)
+                    .map(sam -> (StatementAnalyser.MarkAssigned) sam)
+                    .filter(ma -> variableName.equals(ma.variable.fullyQualifiedName())).findFirst().orElseThrow();
+        }
     }
 }

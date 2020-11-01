@@ -352,7 +352,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             statementAnalysis.assertVariableExists(v);
 
             VariableInfo variableInfo = statementAnalysis.find(analyserContext, v);
-            if (variableInfo != null && !variableInfo.haveAValue()) haveDelays.set(true);
+            if (variableInfo != null && variableInfo.hasNoValue()) haveDelays.set(true);
         });
         if (haveDelays.get()) return DELAYS;
         statementAnalysis.dependencyGraph.freeze();
@@ -1282,17 +1282,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-
     public class MarkAssigned implements StatementAnalysis.StatementAnalysisModification {
         public final Variable variable;
+        public final Value stateOnAssignment;
 
-        public MarkAssigned(Variable variable) {
+        public MarkAssigned(Variable variable, Value stateOnAssignment) {
             this.variable = variable;
+            this.stateOnAssignment = stateOnAssignment;
         }
 
         @Override
         public void run() {
-            statementAnalysis.find(analyserContext, variable).markAssigned();
+            statementAnalysis.find(analyserContext, variable).markAssigned(stateOnAssignment);
         }
 
         @Override

@@ -327,7 +327,7 @@ public class EvaluationResult {
             setCurrentValue(at, resultOfExpression);
 
             if (iteration == 0 && assignmentToNonEmptyExpression) {
-                addToModifications(statementAnalyser.new MarkAssigned(at));
+                addToModifications(statementAnalyser.new MarkAssigned(at, evaluationContext.getConditionManager().state));
             }
             return this;
         }

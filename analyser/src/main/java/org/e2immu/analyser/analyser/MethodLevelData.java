@@ -448,7 +448,7 @@ public class MethodLevelData {
 
         sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
             int methodDelay = variableInfo.getProperty(VariableProperty.METHOD_DELAY);
-            boolean haveDelay = methodDelay == Level.TRUE || !variableInfo.haveAValue();
+            boolean haveDelay = methodDelay == Level.TRUE || variableInfo.hasNoValue();
             if (haveDelay) anyDelay.set(true);
             if (variableInfo.variable instanceof FieldReference) {
                 FieldInfo fieldInfo = ((FieldReference) variableInfo.variable).fieldInfo;

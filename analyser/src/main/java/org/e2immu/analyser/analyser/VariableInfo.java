@@ -39,7 +39,7 @@ public class VariableInfo {
     public final SetOnce<Value> endValue = new SetOnce<>(); // value from step 9 (summary of sub-blocks)
 
     public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
-    public final SetOnce<Value> stateOnAssignment = new SetOnce<>(); // EMPTY when no info
+    public final SetOnce<Value> stateOnAssignment = new SetOnce<>(); // EMPTY when no info, NO_VALUE when not set
 
     public boolean isLocalCopy() {
         return localCopyOf != null;
@@ -79,6 +79,7 @@ public class VariableInfo {
         variableInfo.properties.putAll(properties);
         variableInfo.initialValue.copy(initialValue);
         variableInfo.endValue.copy(endValue);
+        variableInfo.stateOnAssignment.copy(stateOnAssignment);
         return variableInfo;
     }
 
@@ -102,9 +103,12 @@ public class VariableInfo {
         properties.put(variableProperty, value);
     }
 
-    public void markAssigned() {
+    public void markAssigned(Value stateOnAssignment) {
         int assigned = getProperty(VariableProperty.ASSIGNED);
         setProperty(VariableProperty.ASSIGNED, Math.max(1, assigned + 1));
+        if (!this.stateOnAssignment.isSet() && stateOnAssignment != UnknownValue.NO_VALUE) {
+            this.stateOnAssignment.set(stateOnAssignment);
+        }
     }
 
     public void markRead() {
@@ -122,7 +126,7 @@ public class VariableInfo {
         this.objectFlow.set(objectFlow);
     }
 
-    public boolean haveAValue() {
-        return valueForNextStatement() != UnknownValue.NO_VALUE;
+    public boolean hasNoValue() {
+        return valueForNextStatement() == UnknownValue.NO_VALUE;
     }
 }

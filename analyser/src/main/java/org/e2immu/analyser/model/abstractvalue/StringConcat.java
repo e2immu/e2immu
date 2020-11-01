@@ -18,10 +18,8 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.ConstantValue;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -65,6 +63,18 @@ public class StringConcat implements Value {
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
         return new StringConcat(l, r, primitives.stringParameterizedType, objectFlow);
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return switch (variableProperty) {
+            case CONTAINER -> Level.TRUE;
+            case IMMUTABLE -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            case NOT_NULL -> MultiLevel.EFFECTIVELY_NOT_NULL;
+            case SIZE -> Level.joinSizeRestrictions(evaluationContext.getProperty(lhs, VariableProperty.SIZE), evaluationContext.getProperty(rhs, VariableProperty.SIZE));
+            case SIZE_COPY -> Level.FALSE; // TODO
+            default -> Level.FALSE;
+        };
     }
 
     @Override

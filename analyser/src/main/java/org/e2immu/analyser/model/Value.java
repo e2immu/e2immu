@@ -112,13 +112,7 @@ public interface Value extends Comparable<Value> {
     // do NOT fall back on evaluationContext.getProperty(this, ...) because that'll be an infinite loop!
 
     default int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        if (VariableProperty.DYNAMIC_TYPE_PROPERTY.contains(variableProperty)) return variableProperty.best;
-        if (VariableProperty.NOT_NULL == variableProperty)
-            return MultiLevel.EFFECTIVELY_NOT_NULL; // constants are not null
-        if (VariableProperty.FIELD_AND_METHOD_PROPERTIES.contains(variableProperty)) return Level.DELAY;
-        if (VariableProperty.IDENTITY == variableProperty) return Level.FALSE;
-        if (VariableProperty.NOT_MODIFIED_1 == variableProperty) return Level.FALSE;
-        throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
+        throw new UnsupportedOperationException("For type " + getClass() + ", property " + variableProperty);
     }
 
     default IntValue toInt() {

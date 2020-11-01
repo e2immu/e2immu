@@ -21,7 +21,7 @@ public class TransferValue {
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
 
     // two fields related to the computation of @Mark, @Only: we like to know if there is a current
-    // conditional on the value; e.g. for field j, j > 0 when assigning this.j = j; so that we can compare with the eventuality precondition.
+    // conditional on the value; e.g. for field j, j > 0 when assigning this.j = j; so that we can compare with the eventual precondition.
     // we also need to know if this value is guaranteed to be executed (and does not sit inside an if statement, for example).
 
     public final SetOnce<Value> stateOnAssignment = new SetOnce<>();
