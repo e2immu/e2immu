@@ -20,6 +20,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -41,6 +42,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     public final boolean fieldError;
     public final Set<Variable> variablesLinkedToMe;
     public final Value effectivelyFinalValue;
+    public final Value initialValue;  // value from the initialiser
 
     private FieldAnalysisImpl(FieldInfo fieldInfo,
                               boolean isOfImplicitlyImmutableDataType,
@@ -49,6 +51,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                               boolean fieldError,
                               Set<Variable> variablesLinkedToMe,
                               Value effectivelyFinalValue,
+                              Value initialValue,
                               Map<VariableProperty, Integer> properties,
                               Map<AnnotationExpression, Boolean> annotations) {
         super(fieldInfo.hasBeenDefined(), properties, annotations);
@@ -59,6 +62,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         this.fieldError = fieldError;
         this.variablesLinkedToMe = variablesLinkedToMe;
         this.effectivelyFinalValue = effectivelyFinalValue;
+        this.initialValue = initialValue;
     }
 
     @Override
@@ -102,6 +106,11 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     }
 
     @Override
+    public Value getInitialValue() {
+        return initialValue;
+    }
+
+    @Override
     public AnnotationMode annotationMode() {
         return fieldInfo.owner.typeInspection.get().annotationMode;
     }
@@ -114,6 +123,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         public final MethodInfo sam;
         private final TypeAnalysis typeAnalysisOfOwner;
         private final AnalysisProvider analysisProvider;
+        public final SetOnce<Value> initialValue = new SetOnce<>();
 
         public Builder(Primitives primitives, AnalysisProvider analysisProvider, @NotModified FieldInfo fieldInfo, TypeAnalysis typeAnalysisOfOwner) {
             super(primitives, fieldInfo.hasBeenDefined(), fieldInfo.name);
@@ -128,6 +138,11 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     Origin.INITIAL_FIELD_FLOW);
             objectFlow = new FirstThen<>(initialObjectFlow);
             this.fieldInfo = fieldInfo;
+        }
+
+        @Override
+        public Value getInitialValue() {
+            return initialValue.getOrElse(UnknownValue.NO_VALUE);
         }
 
         @Override
@@ -208,7 +223,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     internalObjectFlows.getOrElse(Set.of()),
                     fieldError.getOrElse(false),
                     variablesLinkedToMe.getOrElse(Set.of()),
-                    effectivelyFinalValue.getOrElse(null),
+                    effectivelyFinalValue.getOrElse(UnknownValue.NO_VALUE),
+                    getInitialValue(),
                     properties.toImmutableMap(),
                     annotations.toImmutableMap());
         }

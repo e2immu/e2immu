@@ -25,6 +25,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
 
     private static final String FINAL_CHECKS = "FinalChecks";
     private static final String S1 = FinalChecks.class.getCanonicalName() + ".s1";
+    private static final String S1_P0 = FinalChecks.class.getCanonicalName() + ".FinalChecks(String,String):0:s1";
     private static final String S2 = FinalChecks.class.getCanonicalName() + ".s2";
     private static final String P4 = FinalChecks.class.getCanonicalName() + ".setS4(String):0:s4";
 
@@ -40,17 +41,10 @@ public class Test_05_FinalChecks extends CommonTestRunner {
 
         if (FINAL_CHECKS.equals(d.methodInfo().name) && d.methodInfo().methodInspection.get().parameters.size() == 2) {
             if (S1.equals(d.variableName())) {
-                if (d.iteration() == 0) {
-                    Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue());
-                } else if (d.iteration() == 1) {
-                    Assert.assertEquals(S1 + " + abc", d.currentValue().toString());
-                    Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
-                    Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL));
-                } else if (d.iteration() > 1) {
-                    Assert.assertEquals(S1 + " + abc", d.currentValue().toString());
-                    Assert.assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, MultiLevel.value(d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
-                }
+                Assert.assertEquals(S1_P0 + " + abc", d.currentValue().toString());
+                Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
+                Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL));
+                Assert.assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
             }
             if ("1".equals(d.statementId()) && S2.equals(d.variableName())) {
                 Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().stateOnAssignment.getOrElse(UnknownValue.NO_VALUE));
@@ -101,7 +95,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass(FINAL_CHECKS, 0, 0, new DebugConfiguration.Builder()
+        testClass(FINAL_CHECKS, 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)

@@ -24,11 +24,13 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
+import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.ConstantValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -73,13 +75,15 @@ public class FieldAnalyser extends AbstractAnalyser {
     private final boolean fieldCanBeWrittenFromOutsideThisType;
     private final AnalyserComponents<String, Integer> analyserComponents;
     private final CheckConstant checkConstant;
+    private final boolean haveInitialiser;
 
+    // set at initialisation time
     private List<MethodAnalyser> allMethodsAndConstructors;
     private List<MethodAnalyser> myMethodsAndConstructors;
     private TypeAnalyser myTypeAnalyser;
+
+    // part of SharedState
     private boolean fieldSummariesNotYetSet;
-    private final boolean haveInitialiser;
-    private Value initialiserValue;
 
     public FieldAnalyser(FieldInfo fieldInfo,
                          TypeInfo primaryType,
@@ -174,24 +178,21 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus evaluateInitialiser(int iteration) {
-
-        // STEP 1: THE INITIALISER
-        AnalysisStatus resultOfObjectFlow;
-
-        Value value;
         if (fieldInspection.initialiser.isSet()) {
             FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.initialiser.get();
             if (fieldInitialiser.initialiser != EmptyExpression.EMPTY_EXPRESSION) {
                 EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
                 EvaluationResult evaluationResult = fieldInitialiser.initialiser.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-                initialiserValue = evaluationResult.value;
-                resultOfObjectFlow = makeInternalObjectFlowsPermanent(evaluationResult);
-                value = evaluationResult.value;
-                log(FINAL, "Set initialiser of field {} to {}", fieldInfo.fullyQualifiedName(), value);
+                Value initialiserValue = evaluationResult.value;
+                if (initialiserValue != NO_VALUE) {
+                    fieldAnalysis.initialValue.set(initialiserValue);
+                }
+                AnalysisStatus resultOfObjectFlow = makeInternalObjectFlowsPermanent(evaluationResult);
+                log(FINAL, "Set initialiser of field {} to {}", fieldInfo.fullyQualifiedName(), evaluationResult.value);
                 return resultOfObjectFlow.combine(initialiserValue == NO_VALUE ? DELAYS : DONE);
             }
         }
-        initialiserValue = NO_VALUE; // initialiser set, but to empty expression
+        fieldAnalysis.initialValue.set(ConstantValue.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo()));
         return DONE;
     }
 
@@ -522,7 +523,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             }
         });
         if (haveInitialiser) {
-            int v = evaluationContext.getProperty(initialiserValue, property);
+            int v = evaluationContext.getProperty(fieldAnalysis.getInitialValue(), property);
             values.add(v);
         }
         int result = property == VariableProperty.SIZE ? MethodAnalyser.safeMinimumForSize(messages,
@@ -535,11 +536,11 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus analyseFinalValue() {
         List<Value> values = new LinkedList<>();
         if (haveInitialiser) {
-            if (initialiserValue == NO_VALUE) {
+            if (fieldAnalysis.getInitialValue() == NO_VALUE) {
                 log(DELAYED, "Delaying consistent value for field " + fieldInfo.fullyQualifiedName());
                 return DELAYS;
             }
-            values.add(initialiserValue);
+            values.add(fieldAnalysis.getInitialValue());
         }
         if (!(fieldInfo.isExplicitlyFinal() && haveInitialiser)) {
             if (fieldSummariesNotYetSet) return DELAYS;
@@ -584,7 +585,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         if (!fieldAnalysis.internalObjectFlows.isSet()) {
             log(DELAYED, "Delaying effectively final value because internal object flows not yet known, {}", fieldInfo.fullyQualifiedName());
-      //      return DELAYS; TODO see TestFieldNotRead, but for now waiting until we sort out internalObjectFlows
+            //      return DELAYS; TODO see TestFieldNotRead, but for now waiting until we sort out internalObjectFlows
         }
         Value effectivelyFinalValue = determineEffectivelyFinalValue(values);
 
@@ -607,7 +608,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         if (effectivelyFinalValue.isConstant()) {
             // directly adding the annotation; it will not be used for inspection
-            AnnotationExpression constantAnnotation = checkConstant.createConstantAnnotation(e2, initialiserValue);
+            AnnotationExpression constantAnnotation = checkConstant.createConstantAnnotation(e2, effectivelyFinalValue);
             fieldAnalysis.annotations.put(constantAnnotation, true);
             log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
         } else {

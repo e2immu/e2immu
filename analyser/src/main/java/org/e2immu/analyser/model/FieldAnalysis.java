@@ -85,4 +85,6 @@ public interface FieldAnalysis extends Analysis {
         return fieldInfo.owner == bestType || bestType == null ? MultiLevel.FALSE :
                 analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
     }
+
+    Value getInitialValue();
 }

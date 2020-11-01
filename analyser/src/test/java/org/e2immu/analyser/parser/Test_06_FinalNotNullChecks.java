@@ -5,19 +5,23 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.testexample.FinalNotNullChecks;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Objects;
 
-public class TestFinalNotNullChecks extends CommonTestRunner {
-    public TestFinalNotNullChecks() {
+public class Test_06_FinalNotNullChecks extends CommonTestRunner {
+    public Test_06_FinalNotNullChecks() {
         super(true);
     }
 
+    private static final String INPUT = "org.e2immu.analyser.testexample.FinalNotNullChecks.input";
+    private static final String PARAM = "org.e2immu.analyser.testexample.FinalNotNullChecks.FinalNotNullChecks(String):0:param";
+
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("toString".equals(d.methodInfo().name) && "FinalNotNullChecks.this.input".equals(d.variableName())) {
+        if ("toString".equals(d.methodInfo().name) && INPUT.equals(d.variableName())) {
             int notNull = d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL);
             if (d.iteration() == 0) {
                 Assert.assertTrue(d.currentValue() instanceof UnknownValue);
@@ -30,7 +34,7 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
             }
         }
-        if ("FinalNotNullChecks".equals(d.methodInfo().name) && "param".equals(d.variableName())) {
+        if ("FinalNotNullChecks".equals(d.methodInfo().name) && PARAM.equals(d.variableName())) {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             if (d.iteration() == 0) {
                 // only during the 1st iteration there is no @NotNull on the parameter, so there is a restriction
@@ -38,7 +42,7 @@ public class TestFinalNotNullChecks extends CommonTestRunner {
             }
         }
         // the variable has the value of param, which has received a @NotNull
-        if ("FinalNotNullChecks".equals(d.methodInfo().name) && "FinalNotNullChecks.this.input".equals(d.variableName())) {
+        if ("FinalNotNullChecks".equals(d.methodInfo().name) && INPUT.equals(d.variableName())) {
             Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL));
         }
     };

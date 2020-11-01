@@ -23,6 +23,11 @@ import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E1Immutable;
 import org.e2immu.annotation.Final;
 
+/*
+ ERROR in M:FinalChecks:0: Condition in 'if' or 'switch' statement evaluates to constant
+ ERROR in F:s5: Private field not read outside constructors
+ */
+
 @E1Immutable(type = AnnotationType.VERIFY_ABSENT)
 @Container
 public class FinalChecks {
@@ -43,7 +48,7 @@ public class FinalChecks {
     private String s5;
 
     FinalChecks(String s1, String s2) {
-        if(s5 == null) {
+        if (s5 == null) {
             s5 = "abc";
         }
         this.s2 = s2;

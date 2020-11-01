@@ -24,7 +24,6 @@ import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.model.statement.SynchronizedStatement;
-import org.e2immu.analyser.model.value.ConstantValue;
 import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -458,7 +457,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         if (inPartOfConstruction && fieldReference.scope instanceof This thisVariable
                 && thisVariable.typeInfo.equals(methodAnalysis.getMethodInfo().typeInfo)) { // field that must be initialised
-            return ConstantValue.nullValue(analyserContext.getPrimitives(), fieldReference.fieldInfo.type.typeInfo);
+            return analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();
         }
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
         int effectivelyFinal = fieldAnalysis.getProperty(FINAL);
