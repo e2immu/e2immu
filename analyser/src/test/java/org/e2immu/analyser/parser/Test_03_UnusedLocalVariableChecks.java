@@ -14,12 +14,12 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Set;
 
-public class TestUnusedLocalVariableChecks extends CommonTestRunner {
+public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
 
     private static final String T_LENGTH_GE_19 = "((-19) + org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method1(String):0:t.length(),?>=0) >= 0";
     private static final String T_LENGTH_LT_19 = "(18 + (-org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method1(String):0:t.length(),?>=0)) >= 0";
 
-    public TestUnusedLocalVariableChecks() {
+    public Test_03_UnusedLocalVariableChecks() {
         super(true);
     }
 

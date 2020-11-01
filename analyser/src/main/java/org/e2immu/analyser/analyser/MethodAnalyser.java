@@ -69,11 +69,13 @@ public class MethodAnalyser extends AbstractAnalyser {
     public final List<ParameterAnalyser> parameterAnalysers;
     public final List<ParameterAnalysis> parameterAnalyses;
     public final StatementAnalyser firstStatementAnalyser;
-    private final AnalyserComponents<String, Integer> analyserComponents;
+    private final AnalyserComponents<String, SharedState> analyserComponents;
     private final CheckConstant checkConstant;
 
     private Map<FieldInfo, FieldAnalyser> myFieldAnalysers;
-    private MethodLevelData methodLevelData;
+
+    private record SharedState(int iteration, MethodLevelData methodLevelData) {
+    }
 
     public MethodAnalyser(MethodInfo methodInfo,
                           TypeAnalyser myTypeAnalyser,
@@ -104,11 +106,12 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
         this.isSAM = isSAM;
 
-        AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<>();
+        AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<>();
         if (firstStatementAnalyser != null) {
 
-            AnalysisStatus.AnalysisResultSupplier<Integer> statementAnalyser = (iteration) -> {
-                StatementAnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(iteration, ForwardAnalysisInfo.START_OF_METHOD);
+            AnalysisStatus.AnalysisResultSupplier<SharedState> statementAnalyser = (sharedState) -> {
+                StatementAnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(sharedState.iteration,
+                        ForwardAnalysisInfo.START_OF_METHOD);
                 // apply all modifications
                 result.getModifications().forEach(Runnable::run);
                 this.messages.addAll(result.messages);
@@ -116,17 +119,17 @@ public class MethodAnalyser extends AbstractAnalyser {
             };
 
             builder.add(STATEMENT_ANALYSER, statementAnalyser)
-                    .add("obtainMostCompletePrecondition", (iteration) -> obtainMostCompletePrecondition())
-                    .add("makeInternalObjectFlowsPermanent", (iteration) -> makeInternalObjectFlowsPermanent())
-                    .add("propertiesOfReturnStatements", (iteration) -> methodInfo.isConstructor ? DONE : propertiesOfReturnStatements())
-                    .add("methodIsConstant", (iteration) -> methodInfo.isConstructor ? DONE : methodIsConstant())
+                    .add("obtainMostCompletePrecondition", this::obtainMostCompletePrecondition)
+                    .add("makeInternalObjectFlowsPermanent", this::makeInternalObjectFlowsPermanent)
+                    .add("propertiesOfReturnStatements", (sharedState) -> methodInfo.isConstructor ? DONE : propertiesOfReturnStatements(sharedState))
+                    .add("methodIsConstant", (sharedState) -> methodInfo.isConstructor ? DONE : methodIsConstant(sharedState))
                     .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
-                    .add("methodIsModified", (iteration) -> methodInfo.isConstructor ? DONE : methodIsModified())
-                    .add("computeOnlyMarkPrepWork", (iteration) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork(iteration))
-                    .add("computeOnlyMarkAnnotate", (iteration) -> methodInfo.isConstructor ? DONE : computeOnlyMarkAnnotate(iteration))
-                    .add("methodIsIndependent", (iteration) -> methodIsIndependent())
+                    .add("methodIsModified", (sharedState) -> methodInfo.isConstructor ? DONE : methodIsModified(sharedState))
+                    .add("computeOnlyMarkPrepWork", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork(sharedState))
+                    .add("computeOnlyMarkAnnotate", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkAnnotate(sharedState))
+                    .add("methodIsIndependent", this::methodIsIndependent)
                     .add("computeSize", this::computeSize)
-                    .add("computeSizeCopy", (iteration) -> computeSizeCopy());
+                    .add("computeSizeCopy", this::computeSizeCopy);
 
             for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
                 builder.add("Parameter " + parameterAnalyser.parameterInfo.name, (iteration -> parameterAnalyser.analyse()));
@@ -136,7 +139,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    public AnalyserComponents<String, Integer> getAnalyserComponents() {
+    public AnalyserComponents<String, SharedState> getAnalyserComponents() {
         return analyserComponents;
     }
 
@@ -233,10 +236,10 @@ public class MethodAnalyser extends AbstractAnalyser {
     @Override
     public AnalysisStatus analyse(int iteration) {
         log(ANALYSER, "Analysing method {}", methodInfo.fullyQualifiedName());
-        methodLevelData = methodAnalysis.methodLevelData();
+        SharedState sharedState = new SharedState(iteration, methodAnalysis.methodLevelData());
 
         try {
-            AnalysisStatus analysisStatus = analyserComponents.run(iteration);
+            AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
 
             List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration().debugConfiguration.afterMethodAnalyserVisitors;
             if (!visitors.isEmpty()) {
@@ -290,15 +293,16 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     // simply copy from last statement
-    private AnalysisStatus obtainMostCompletePrecondition() {
+    private AnalysisStatus obtainMostCompletePrecondition(SharedState sharedState) {
         assert !methodAnalysis.precondition.isSet();
-        if (!methodLevelData.combinedPrecondition.isSet()) return DELAYS;
-        methodAnalysis.precondition.set(methodLevelData.combinedPrecondition.get());
+        if (!sharedState.methodLevelData.combinedPrecondition.isSet()) return DELAYS;
+        methodAnalysis.precondition.set(sharedState.methodLevelData.combinedPrecondition.get());
         return DONE;
     }
 
-    private AnalysisStatus makeInternalObjectFlowsPermanent() {
+    private AnalysisStatus makeInternalObjectFlowsPermanent(SharedState sharedState) {
         assert !methodAnalysis.internalObjectFlows.isSet();
+        MethodLevelData methodLevelData = sharedState.methodLevelData;
 
         boolean delays = !methodLevelData.internalObjectFlows.isFrozen();
         if (delays) {
@@ -332,7 +336,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return parameterAnalyser;
     }
 
-    private AnalysisStatus computeOnlyMarkAnnotate(int iteration) {
+    private AnalysisStatus computeOnlyMarkAnnotate(SharedState sharedState) {
         assert !methodAnalysis.markAndOnly.isSet();
 
         SetOnceMap<String, Value> approvedPreconditions = myTypeAnalyser.typeAnalysis.approvedPreconditions;
@@ -357,7 +361,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         boolean mark = false;
         Boolean after = null;
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
+        EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration, ConditionManager.INITIAL);
         for (Value precondition : preconditions) {
             String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(precondition);
             if (!approvedPreconditions.isSet(markLabel)) {
@@ -426,7 +430,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private AnalysisStatus computeOnlyMarkPrepWork(int iteration) {
+    private AnalysisStatus computeOnlyMarkPrepWork(SharedState sharedState) {
         assert !methodAnalysis.preconditionForMarkAndOnly.isSet();
 
         TypeInfo typeInfo = methodInfo.typeInfo;
@@ -457,7 +461,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         // at this point, the null and size checks on parameters have been removed.
         // we still need to remove other parameter components; what remains can be used for marking/only
 
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
+        EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration, ConditionManager.INITIAL);
         Value.FilterResult filterResult = precondition.filter(evaluationContext, Value.FilterMode.ACCEPT, Value::isIndividualFieldCondition);
         if (filterResult.accepted.isEmpty()) {
             log(MARK, "No @Mark/@Only annotation in {}: found no individual field preconditions", methodInfo.distinguishingName());
@@ -472,8 +476,9 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
-    private AnalysisStatus methodIsConstant() {
+    private AnalysisStatus methodIsConstant(SharedState sharedState) {
         assert !methodAnalysis.singleReturnValue.isSet();
+        MethodLevelData methodLevelData = sharedState.methodLevelData;
         if (methodLevelData.returnStatementSummaries.isEmpty()) return DONE;
 
         boolean allReturnValuesSet = methodLevelData.returnStatementSummaries.stream().allMatch(e -> e.getValue().value.isSet());
@@ -570,18 +575,18 @@ public class MethodAnalyser extends AbstractAnalyser {
         return applicability.get();
     }
 
-    private AnalysisStatus propertiesOfReturnStatements() {
-        if (methodLevelData.returnStatementSummaries.isEmpty()) return DONE;
+    private AnalysisStatus propertiesOfReturnStatements(SharedState sharedState) {
+        if (sharedState.methodLevelData.returnStatementSummaries.isEmpty()) return DONE;
         AnalysisStatus analysisStatus = DONE;
         for (VariableProperty variableProperty : VariableProperty.RETURN_VALUE_PROPERTIES_IN_METHOD_ANALYSER) {
-            analysisStatus = analysisStatus.combine(propertyOfReturnStatements(variableProperty));
+            analysisStatus = analysisStatus.combine(propertyOfReturnStatements(sharedState.methodLevelData(), variableProperty));
         }
         return analysisStatus;
     }
 
     // IMMUTABLE, NOT_NULL, CONTAINER, IDENTITY, FLUENT
     // IMMUTABLE, NOT_NULL can still improve with respect to the static return type computed in methodAnalysis.getProperty()
-    private AnalysisStatus propertyOfReturnStatements(VariableProperty variableProperty) {
+    private AnalysisStatus propertyOfReturnStatements(MethodLevelData methodLevelData, VariableProperty variableProperty) {
         if (methodInfo.isVoid() || methodInfo.isConstructor) return DONE;
         int currentValue = methodAnalysis.getProperty(variableProperty);
         if (currentValue != Level.DELAY && variableProperty != VariableProperty.IMMUTABLE && variableProperty != VariableProperty.NOT_NULL)
@@ -608,10 +613,11 @@ public class MethodAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private AnalysisStatus computeSize(int iteration) {
+    private AnalysisStatus computeSize(SharedState sharedState) {
         assert methodAnalysis.getProperty(VariableProperty.SIZE) == Level.DELAY;
 
         if (methodInfo.isConstructor) return DONE; // non-modifying constructor would be weird anyway; not for me
+        MethodLevelData methodLevelData = sharedState.methodLevelData;
 
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
         if (modified == Level.DELAY) {
@@ -638,7 +644,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             }
 
             // non-modifying method that defines @Size (size(), isEmpty())
-            return writeSize(VariableProperty.SIZE, propagateSizeAnnotations(iteration));
+            return writeSize(VariableProperty.SIZE, propagateSizeAnnotations(sharedState));
         }
 
         // modifying method
@@ -652,7 +658,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
 
-    private AnalysisStatus computeSizeCopy() {
+    private AnalysisStatus computeSizeCopy(SharedState sharedState) {
         assert methodAnalysis.getProperty(VariableProperty.SIZE_COPY) == Level.DELAY;
         if (methodInfo.isConstructor) return DONE; // non-modifying constructor would be weird anyway
 
@@ -664,12 +670,13 @@ public class MethodAnalyser extends AbstractAnalyser {
         if (modified == Level.FALSE) {
             if (methodInfo.returnType().hasSize(analyserContext.getPrimitives(), analyserContext)) {
                 // first try @Size(copy ...)
-                boolean delays = methodLevelData.returnStatementSummaries.stream().anyMatch(entry -> entry.getValue().isDelayed(VariableProperty.SIZE_COPY));
+                boolean delays = sharedState.methodLevelData.returnStatementSummaries
+                        .stream().anyMatch(entry -> entry.getValue().isDelayed(VariableProperty.SIZE_COPY));
                 if (delays) {
                     log(DELAYED, "Return statement value not yet set for SIZE_COPY on {}", methodInfo.distinguishingName());
                     return DELAYS;
                 }
-                IntStream stream = methodLevelData.returnStatementSummaries.stream()
+                IntStream stream = sharedState.methodLevelData.returnStatementSummaries.stream()
                         .mapToInt(entry -> entry.getValue().getProperty(VariableProperty.SIZE_COPY));
                 int min = stream.min().orElse(Level.IS_A_SIZE);
                 return writeSize(VariableProperty.SIZE_COPY, min);
@@ -699,11 +706,11 @@ public class MethodAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private int propagateSizeAnnotations(int iteration) {
-        if (methodLevelData.returnStatementSummaries.size() != 1) {
+    private int propagateSizeAnnotations(SharedState sharedState) {
+        if (sharedState.methodLevelData.returnStatementSummaries.size() != 1) {
             return Level.NOT_A_SIZE; // TODO
         }
-        TransferValue tv = methodLevelData.returnStatementSummaries.stream().findFirst().orElseThrow().getValue();
+        TransferValue tv = sharedState.methodLevelData.returnStatementSummaries.stream().findFirst().orElseThrow().getValue();
         if (!tv.value.isSet()) {
             return Level.DELAY;
         }
@@ -738,7 +745,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             } else {
                 GreaterThanZeroValue gzv;
                 if ((gzv = value.asInstanceOf(GreaterThanZeroValue.class)) != null) {
-                    EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
+                    EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration, ConditionManager.INITIAL);
                     GreaterThanZeroValue.XB xb = gzv.extract(evaluationContext);
                     ConstrainedNumericValue cnvXb;
                     if (!xb.lessThan && ((cnvXb = xb.x.asInstanceOf(ConstrainedNumericValue.class)) != null)) {
@@ -768,8 +775,9 @@ public class MethodAnalyser extends AbstractAnalyser {
         return res == Integer.MAX_VALUE ? Level.DELAY : Math.max(res, Level.IS_A_SIZE);
     }
 
-    private AnalysisStatus methodIsModified() {
+    private AnalysisStatus methodIsModified(SharedState sharedState) {
         if (methodAnalysis.getProperty(VariableProperty.MODIFIED) != Level.DELAY) return DONE;
+        MethodLevelData methodLevelData = sharedState.methodLevelData;
 
         // first step, check field assignments
         boolean fieldAssignments = methodLevelData.fieldSummaries.stream()
@@ -879,8 +887,9 @@ public class MethodAnalyser extends AbstractAnalyser {
                                 mi.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.FALSE);
     }
 
-    private AnalysisStatus methodIsIndependent() {
+    private AnalysisStatus methodIsIndependent(SharedState sharedState) {
         assert methodAnalysis.getProperty(VariableProperty.INDEPENDENT) == Level.DELAY;
+        MethodLevelData methodLevelData = sharedState.methodLevelData;
 
         if (!methodInfo.isConstructor) {
             // we only compute @Independent/@Dependent on methods when the method is @NotModified

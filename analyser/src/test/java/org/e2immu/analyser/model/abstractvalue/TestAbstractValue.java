@@ -99,8 +99,8 @@ public class TestAbstractValue extends CommonAbstractValue {
     }
 
     Map<Variable, Boolean> nullClauses(Value v, Value.FilterMode filterMode) {
-        return v.filter(minimalEvaluationContext, filterMode, Value::isIndividualNotNullClause).accepted
-                .entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() instanceof NullValue));
+        return v.filter(minimalEvaluationContext, filterMode, Value::isIndividualNullOrNotNullClause).accepted
+                .entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() == NullValue.NULL_VALUE));
     }
 
     @Test

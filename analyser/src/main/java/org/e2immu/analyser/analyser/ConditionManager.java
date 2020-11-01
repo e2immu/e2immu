@@ -100,16 +100,8 @@ public class ConditionManager {
      *
      * @return individual variables that appear in a top-level disjunction as variable == null
      */
-    public Set<Variable> findIndividualNullConditions(EvaluationContext evaluationContext, boolean requireEqualsNull) {
-        if (condition == UnknownValue.EMPTY || delayedCondition()) {
-            return Set.of();
-        }
-        Map<Variable, Value> individualNullClauses = condition.filter(evaluationContext, Value.FilterMode.REJECT,
-                Value::isIndividualNotNullClauseOnParameter).accepted;
-        return individualNullClauses.entrySet()
-                .stream()
-                .filter(e -> requireEqualsNull ? e.getValue().isNull() : e.getValue().isNotNull())
-                .map(Map.Entry::getKey).collect(Collectors.toSet());
+    public Set<Variable> findIndividualNullInCondition(EvaluationContext evaluationContext, boolean requireEqualsNull) {
+        return findIndividualNull(condition, evaluationContext, Value.FilterMode.REJECT, requireEqualsNull);
     }
 
     /**
@@ -117,15 +109,24 @@ public class ConditionManager {
      *
      * @return individual variables that appear in a top-level disjunction as variable == null
      */
-    public Set<Variable> findNotNullConditionsOnVariables(EvaluationContext evaluationContext) {
-        if (condition == UnknownValue.EMPTY || delayedCondition()) {
+    public Set<Variable> findIndividualNullInState(EvaluationContext evaluationContext, boolean requireEqualsNull) {
+        return findIndividualNull(state, evaluationContext, Value.FilterMode.ACCEPT, requireEqualsNull);
+
+    }
+
+    /**
+     * Extract NOT_NULL properties from the current condition
+     *
+     * @return individual variables that appear in a top-level disjunction as variable == null
+     */
+    private static Set<Variable> findIndividualNull(Value value, EvaluationContext evaluationContext, Value.FilterMode filterMode, boolean requireEqualsNull) {
+        if (value == UnknownValue.EMPTY || isDelayed(value)) {
             return Set.of();
         }
-        Map<Variable, Value> individualNullClauses = condition.filter(evaluationContext, Value.FilterMode.REJECT,
-                Value::isIndividualNotNullClauseOnParameter).accepted;
+        Map<Variable, Value> individualNullClauses = value.filter(evaluationContext, filterMode, Value::isIndividualNullOrNotNullClause).accepted;
         return individualNullClauses.entrySet()
                 .stream()
-                .filter(e -> e.getValue().isInstanceOf(NullValue.class))
+                .filter(e -> requireEqualsNull == (e.getValue() == NullValue.NULL_VALUE))
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 
@@ -232,7 +233,7 @@ public class ConditionManager {
         }
 
         // TRUE: parameters only FALSE: preconditionSide; OR of 2 filters
-        Value.FilterResult filterResult = condition.filter(evaluationContext, Value.FilterMode.REJECT, Value::isIndividualNotNullClauseOnParameter,
+        Value.FilterResult filterResult = condition.filter(evaluationContext, Value.FilterMode.REJECT, Value::isIndividualNullOrNotNullClauseOnParameter,
                 val -> val.isIndividualSizeRestrictionOnParameter(evaluationContext)); // those parts that have nothing to do with individual clauses
         if (filterResult.rest == UnknownValue.EMPTY) {
             return builder.setValue(UnknownValue.EMPTY).build();

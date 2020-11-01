@@ -34,14 +34,14 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
-public class TestBasicsOpposite extends CommonTestRunner {
+public class Test_01_BasicsOpposite extends CommonTestRunner {
 
     public static final String STRING_PARAMETER = "org.e2immu.analyser.testexample.BasicsOpposite.setString(String):0:string";
     public static final String STRING_FIELD = "org.e2immu.analyser.testexample.BasicsOpposite.string";
     private static final String METHOD_VALUE_ADD = "org.e2immu.analyser.testexample.BasicsOpposite.add(Collection<String>):0:collection" +
             ".add(org.e2immu.analyser.testexample.BasicsOpposite.string)";
 
-    public TestBasicsOpposite() {
+    public Test_01_BasicsOpposite() {
         super(true);
     }
 

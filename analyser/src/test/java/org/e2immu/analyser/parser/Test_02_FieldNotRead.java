@@ -10,9 +10,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestFieldNotRead extends CommonTestRunner {
+public class Test_02_FieldNotRead extends CommonTestRunner {
 
-    public TestFieldNotRead() {
+    public Test_02_FieldNotRead() {
         super(true);
     }
 

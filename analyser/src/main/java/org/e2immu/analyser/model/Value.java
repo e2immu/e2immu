@@ -135,13 +135,13 @@ public interface Value extends Comparable<Value> {
         return Set.of();
     }
 
-    default FilterResult isIndividualNotNullClauseOnParameter() {
+    default FilterResult isIndividualNullOrNotNullClauseOnParameter() {
         return new FilterResult(Map.of(), this);
     }
 
     // NOTE: contrary to the SizeRestriction and the FieldCondition, this one stores not the whole equality, but
     // only the NullValue in the Map.
-    default FilterResult isIndividualNotNullClause() {
+    default FilterResult isIndividualNullOrNotNullClause() {
         return new FilterResult(Map.of(), this);
     }
 
@@ -192,6 +192,9 @@ public interface Value extends Comparable<Value> {
     }
 
     /**
+     * Filtering in the components of a value; implemented for AndValue, OrValue, NegatedValue, EqualsValue.
+     * The FilterResult contains individual clauses in a map accepted by the filter methods, and the rest of the value.
+     *
      * @param filterMode    mode for filtering
      * @param filterMethods if multiple accepted, the map contains the first result. (It should contain an AND, but see null clause)
      * @return a FilterResult object, always, if only NO_RESULT

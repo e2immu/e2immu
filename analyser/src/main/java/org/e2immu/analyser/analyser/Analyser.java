@@ -45,5 +45,5 @@ public interface Analyser {
 
     String getName();
 
-    AnalyserComponents<String, Integer> getAnalyserComponents();
+    AnalyserComponents<String, ?> getAnalyserComponents();
 }

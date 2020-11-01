@@ -154,6 +154,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     }
 
+    record PreviousAndFirst(StatementAnalyser previous, StatementAnalyser first) {
+    }
+
     /**
      * Main recursive method, which follows the navigation chain for all statements in a block. When called from the method analyser,
      * it loops over the statements of the method.
@@ -166,15 +169,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     public StatementAnalyserResult analyseAllStatementsInBlock(int iteration, ForwardAnalysisInfo forwardAnalysisInfo) {
         try {
             // skip all the statements that are already in the DONE state...
-            StatementAnalyser statementAnalyser = goToFirstStatementToAnalyse();
+            PreviousAndFirst previousAndFirst = goToFirstStatementToAnalyse();
             StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
 
-            if (statementAnalyser == null) {
+            if (previousAndFirst.first == null) {
                 // nothing left to analyse
                 return builder.setAnalysisStatus(DONE).build();
             }
 
-            StatementAnalyser previousStatement = null;
+            StatementAnalyser previousStatement = previousAndFirst.previous;
+            StatementAnalyser statementAnalyser = previousAndFirst.first;
             do {
                 boolean wasReplacement;
                 if (analyserContext.getConfiguration().analyserConfiguration.skipTransformations) {
@@ -246,13 +250,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 parent(), statements, startIndex, false, statementAnalysis.inSyncBlock);
     }
 
-    private StatementAnalyser goToFirstStatementToAnalyse() {
+    private PreviousAndFirst goToFirstStatementToAnalyse() {
         StatementAnalyser statementAnalyser = followReplacements();
+        StatementAnalyser previous = null;
         while (statementAnalyser != null && statementAnalyser.analysisStatus == DONE) {
+            previous = statementAnalyser;
             statementAnalyser = statementAnalyser.navigationData.next.get().orElse(null);
-            if (statementAnalyser != null) statementAnalyser = statementAnalyser.followReplacements();
+            if (statementAnalyser != null) {
+                statementAnalyser = statementAnalyser.followReplacements();
+            }
         }
-        return statementAnalyser;
+        return new PreviousAndFirst(previous, statementAnalyser);
     }
 
     private boolean checkForPatterns(EvaluationContext evaluationContext) {
@@ -295,7 +303,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .add("checkUnreachableStatement", sharedState -> checkUnreachableStatement(previous,
                             forwardAnalysisInfo.execution()))
 
-                    .add("singleStatementAnalysisSteps", sharedState -> singleStatementAnalysisSteps(sharedState, forwardAnalysisInfo))
+                    .add("singleStatementAnalysisSteps", sharedState -> singleStatementAnalysisSteps(sharedState, previous, forwardAnalysisInfo))
                     .add("tryToFreezeDependencyGraph", sharedState -> tryToFreezeDependencyGraph())
                     .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previous,
                             forwardAnalysisInfo.execution()))
@@ -491,7 +499,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private AnalysisStatus checkNotNullEscapes(SharedState sharedState) {
         if (isEscapeAlwaysExecutedInCurrentBlock()) {
             Set<Variable> nullVariables = statementAnalysis.stateData.getConditionManager()
-                    .findIndividualNullConditions(sharedState.evaluationContext, true);
+                    .findIndividualNullInCondition(sharedState.evaluationContext, true);
             for (Variable nullVariable : nullVariables) {
                 log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
                 ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser((ParameterInfo) nullVariable).parameterAnalysis;
@@ -810,6 +818,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private AnalysisStatus singleStatementAnalysisSteps(SharedState sharedState,
+                                                        StatementAnalysis previous,
                                                         ForwardAnalysisInfo forwardAnalysisInfo) {
         Structure structure = statementAnalysis.statement.getStructure();
         EvaluationContext evaluationContext = sharedState.evaluationContext;
@@ -884,8 +893,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         List<StatementAnalyser> lastStatements = startOfBlocks.stream().map(StatementAnalyser::lastStatement).collect(Collectors.toList());
+        statementAnalysis.copyBackLocalCopies(lastStatements, previous);
         if (!lastStatements.isEmpty()) {
-            statementAnalysis.copyBackLocalCopies(lastStatements, structure.noBlockMayBeExecuted);
 
             if (isSwitchOrIfElse) {
                 // compute the escape situation of the sub-blocks
@@ -1090,7 +1099,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         private boolean notNullAccordingToConditionManager(Variable variable) {
-            return conditionManager.findIndividualNullConditions(this, false).contains(variable);
+            Set<Variable> notNullVariablesInState = conditionManager.findIndividualNullInState(this, false);
+            if (notNullVariablesInState.contains(variable)) return true;
+            Set<Variable> notNullVariablesInCondition = conditionManager.findIndividualNullInCondition(this, false);
+            return notNullVariablesInCondition.contains(variable);
         }
 
 

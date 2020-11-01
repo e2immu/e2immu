@@ -30,6 +30,11 @@ import static org.e2immu.analyser.model.Level.TRUE;
 public class NullValue extends ConstantValue implements Constant<Object> {
     public static final NullValue NULL_VALUE = new NullValue();
 
+    // this is a bit of hack: value is returned as the result of filtering
+    // with the idea of equality == checking
+    public static final NullValue NOT_NULL_VALUE = new NullValue();
+
+
     private NullValue() {
         this(ObjectFlow.NO_FLOW);
     }

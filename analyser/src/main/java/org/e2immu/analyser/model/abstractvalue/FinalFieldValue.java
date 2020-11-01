@@ -41,6 +41,8 @@ public class FinalFieldValue implements Value {
     private final Map<VariableProperty, Integer> properties;
     private final Set<Variable> linkedVariables;
 
+    public final Value scopeValue; // use UnknownValue.EMPTY for a non-scoped final field value, the default
+
     public FinalFieldValue(Variable variable,
                            Map<VariableProperty, Integer> properties,
                            Set<Variable> linkedVariables,
@@ -50,6 +52,15 @@ public class FinalFieldValue implements Value {
         this.objectFlow = Objects.requireNonNull(objectFlow);
         this.properties = ImmutableMap.copyOf(properties);
         this.linkedVariables = ImmutableSet.copyOf(linkedVariables);
+        this.scopeValue = UnknownValue.EMPTY;
+    }
+
+    public FinalFieldValue(FinalFieldValue withoutScope, Value scopeValue) {
+        this.variable = withoutScope.variable;
+        this.objectFlow = withoutScope.objectFlow; // TODO may not be correct
+        this.properties = withoutScope.properties;
+        this.linkedVariables = withoutScope.linkedVariables;
+        this.scopeValue = scopeValue;
     }
 
     @Override
@@ -103,17 +114,22 @@ public class FinalFieldValue implements Value {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof FinalFieldValue that)) return false;
-        return variable.equals(that.variable);
+        if (o == null || getClass() != o.getClass()) return false;
+        FinalFieldValue that = (FinalFieldValue) o;
+        return variable.equals(that.variable) &&
+                scopeValue.equals(that.scopeValue);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(variable);
+        return Objects.hash(variable, scopeValue);
     }
 
     @Override
     public String toString() {
-        return variable.fullyQualifiedName();
+        if (scopeValue == UnknownValue.EMPTY) {
+            return variable.fullyQualifiedName();
+        }
+        return scopeValue.toString() + "." + variable.fullyQualifiedName();
     }
 }

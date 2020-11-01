@@ -150,9 +150,9 @@ public class EvaluateParameters {
                 // NOT_NULL
                 Map<Variable, Value> individualNullClauses = reEvaluated.filter(evaluationContext,
                         Value.FilterMode.ACCEPT,
-                        Value::isIndividualNotNullClause).accepted;
+                        Value::isIndividualNullOrNotNullClauseOnParameter).accepted;
                 for (Map.Entry<Variable, Value> nullClauseEntry : individualNullClauses.entrySet()) {
-                    if (!(nullClauseEntry.getValue().isInstanceOf(NullValue.class)) && nullClauseEntry.getKey() instanceof ParameterInfo) {
+                    if (nullClauseEntry.getValue() != NullValue.NULL_VALUE) {
                         builder.addPropertyRestriction(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                     }
                 }
@@ -173,7 +173,7 @@ public class EvaluateParameters {
                 // all the rest: preconditions
                 // TODO: also weed out conditions that are not on parameters, and not on `this`
                 Value rest = reEvaluated.filter(evaluationContext,
-                        Value.FilterMode.ACCEPT, Value::isIndividualNotNullClauseOnParameter, val ->
+                        Value.FilterMode.ACCEPT, Value::isIndividualNullOrNotNullClauseOnParameter, val ->
                                 val.isIndividualSizeRestrictionOnParameter(evaluationContext)).rest;
                 if (rest != null) {
                     builder.addPrecondition(rest);

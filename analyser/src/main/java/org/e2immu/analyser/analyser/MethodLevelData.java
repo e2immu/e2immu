@@ -32,6 +32,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
@@ -61,6 +62,12 @@ public class MethodLevelData {
     public final SetOnce<Map<Variable, Set<Variable>>> variablesLinkedToFieldsAndParameters = new SetOnce<>();
 
     public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
+
+    public void copyFrom(Stream<MethodLevelData> others) {
+        // this is perfectly safe, as each statement has its own entry in the array
+        others.forEach(mld -> returnStatementSummaries.putAll(mld.returnStatementSummaries, false));
+    }
+
 
     record SharedState(StatementAnalyserResult.Builder builder,
                        EvaluationContext evaluationContext,

@@ -141,23 +141,26 @@ public class EqualsValue extends PrimitiveValue {
         return isIndividualSizeRestriction(false, evaluationContext.getAnalyserContext());
     }
 
-    private FilterResult isIndividualNotNullClause(boolean parametersOnly) {
-        if (lhs instanceof NullValue && rhs instanceof VariableValue v) {
+    private FilterResult isIndividualNullOrNotNullClause(boolean parametersOnly) {
+        boolean lhsIsNull = lhs.isNull();
+        boolean lhsIsNotNull = lhs.isNotNull();
+        if ((lhsIsNull || lhsIsNotNull) && rhs instanceof VariableValue v) {
             if (!parametersOnly || v.variable instanceof ParameterInfo) {
-                return new FilterResult(Map.of(v.variable, lhs), UnknownValue.EMPTY);
+                Value value = lhsIsNull ? NullValue.NULL_VALUE : NullValue.NOT_NULL_VALUE;
+                return new FilterResult(Map.of(v.variable, lhs), value);
             }
         }
         return new FilterResult(Map.of(), this);
     }
 
     @Override
-    public FilterResult isIndividualNotNullClauseOnParameter() {
-        return isIndividualNotNullClause(true);
+    public FilterResult isIndividualNullOrNotNullClauseOnParameter() {
+        return isIndividualNullOrNotNullClause(true);
     }
 
     @Override
-    public FilterResult isIndividualNotNullClause() {
-        return isIndividualNotNullClause(false);
+    public FilterResult isIndividualNullOrNotNullClause() {
+        return isIndividualNullOrNotNullClause(false);
     }
 
     @Override

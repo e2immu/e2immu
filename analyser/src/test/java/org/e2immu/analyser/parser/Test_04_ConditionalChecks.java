@@ -1,10 +1,8 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.FlowData;
-import org.e2immu.analyser.analyser.InterruptsFlow;
-import org.e2immu.analyser.analyser.StatementAnalyser;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
@@ -12,8 +10,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.stream.Collectors;
 
-public class TestConditionalChecks extends CommonTestRunner {
+public class Test_04_ConditionalChecks extends CommonTestRunner {
     private static final String A1 = "org.e2immu.analyser.testexample.ConditionalChecks.method1(boolean,boolean):0:a";
     private static final String B1 = "org.e2immu.analyser.testexample.ConditionalChecks.method1(boolean,boolean):1:b";
     private static final String A3 = "org.e2immu.analyser.testexample.ConditionalChecks.method3(String,String):0:a";
@@ -24,7 +23,7 @@ public class TestConditionalChecks extends CommonTestRunner {
     private static final String O5_GET_CLASS = "org.e2immu.analyser.testexample.ConditionalChecks.method5(Object):0:o.getClass()";
     private static final String I = "org.e2immu.analyser.testexample.ConditionalChecks.i";
 
-    public TestConditionalChecks() {
+    public Test_04_ConditionalChecks() {
         super(false);
     }
 
@@ -47,6 +46,9 @@ public class TestConditionalChecks extends CommonTestRunner {
         Map<InterruptsFlow, FlowData.Execution> interruptsFlow = d.statementAnalysis().flowData.interruptsFlow.get();
 
         if ("method1".equals(d.methodInfo().name)) {
+            String allReturnStatementSummaryKeys = d.statementAnalysis().methodLevelData.returnStatementSummaries.stream()
+                    .map(Map.Entry::getKey).sorted().collect(Collectors.joining(", "));
+
             if ("0.0.0".equals(d.statementId())) {
                 Assert.assertEquals("(" + A1 + " and " + B1 + ")", d.condition().toString());
                 Assert.assertEquals("(" + A1 + " and " + B1 + ")", d.state().toString());
@@ -60,6 +62,8 @@ public class TestConditionalChecks extends CommonTestRunner {
                 Assert.assertEquals(FlowData.Execution.ALWAYS, inBlock);
                 Assert.assertEquals(FlowData.Execution.ALWAYS, inMethod);
                 Assert.assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.Execution.CONDITIONALLY), interruptsFlow);
+                Assert.assertEquals("0.0.0", allReturnStatementSummaryKeys);
+
             }
             if ("1.0.0".equals(d.statementId())) {
                 Assert.assertEquals("(not (" + A1 + ") and not (" + B1 + "))", d.condition().toString());
@@ -71,11 +75,13 @@ public class TestConditionalChecks extends CommonTestRunner {
                 Assert.assertEquals("((" + A1 + " or " + B1 + ") and (not (" + A1 + ") or not (" + B1 + ")))", d.state().toString());
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
+                Assert.assertEquals("0.0.0, 1.0.0", allReturnStatementSummaryKeys);
             }
             if ("2".equals(d.statementId())) {
                 Assert.assertEquals("(not (" + A1 + ") and " + B1 + ")", d.state().toString());
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
+                Assert.assertEquals("0.0.0, 1.0.0, 2.0.0", allReturnStatementSummaryKeys);
             }
             // constant condition
             if ("3".equals(d.statementId())) {
@@ -84,12 +90,14 @@ public class TestConditionalChecks extends CommonTestRunner {
                         d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
+                Assert.assertEquals("0.0.0, 1.0.0, 2.0.0, 3.0.0", allReturnStatementSummaryKeys);
             }
             // unreachable statement
             if ("4".equals(d.statementId())) {
                 Assert.assertEquals(FlowData.Execution.NEVER, inBlock);
                 Assert.assertEquals(FlowData.Execution.NEVER, inMethod);
                 Assert.assertNotNull(d.haveError(Message.UNREACHABLE_STATEMENT));
+                Assert.assertEquals("0.0.0, 1.0.0, 2.0.0, 3.0.0, 4", allReturnStatementSummaryKeys);
             }
         }
         if ("method3".equals(d.methodInfo().name)) {
@@ -121,6 +129,11 @@ public class TestConditionalChecks extends CommonTestRunner {
             } else {
                 Assert.assertEquals("(not (null == " + O5 + ") and " + O5_GET_CLASS + " == " + THIS_GET_CLASS + " and not (" + O5 + " == " + THIS + "))", d.state().toString());
             }
+            if ("3".equals(d.statementId())) {
+                Assert.assertEquals(d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE, d.result().analysisStatus);
+            } else {
+                Assert.assertEquals(AnalysisStatus.DONE, d.result().analysisStatus);
+            }
         }
     };
 
@@ -129,12 +142,12 @@ public class TestConditionalChecks extends CommonTestRunner {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(1).getProperty(VariableProperty.NOT_NULL));
         }
-
         if ("method1".equals(d.methodInfo().name)) {
             Assert.assertSame(UnknownValue.EMPTY, d.methodAnalysis().getPrecondition());
+            Assert.assertSame(UnknownValue.RETURN_VALUE, d.methodAnalysis().getSingleReturnValue());
         }
         if ("method5".equals(d.methodInfo().name)) {
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(Level.DELAY, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
         }
     };
 
@@ -154,17 +167,16 @@ public class TestConditionalChecks extends CommonTestRunner {
             }
             if ("3".equals(d.statementId())) {
                 // there will be two iterations, in the second one, i will not have value "NO_VALUE" anymore
-                if (d.iteration() == 0) { // TODO check that this is necessary
+                String expectValueString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : I + " == " + O5 + "." + I;
+                Assert.assertEquals(expectValueString, d.evaluationResult().value.toString());
+                if (d.iteration() == 0) {
+                    // markRead is only done in the first iteration
                     Assert.assertTrue(d.haveMarkRead("conditionalChecks"));
                     Assert.assertTrue(d.haveMarkRead(I));
                     Assert.assertTrue(d.haveMarkRead(I + "#conditionalChecks"));
-                    Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
-                    Assert.assertFalse(d.haveSetProperty("conditionalChecks", VariableProperty.NOT_NULL));
-                } else if (d.iteration() == 1) {
-                    // this should not be "true", because i != conditionalChecks.i unless i is a constant
-                    // TODO where are there no markRead's anymore ?
-                    Assert.assertEquals("", d.evaluationResult().value.toString());
-                } else Assert.fail("Iteration " + d.iteration());
+                }
+                Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
+                Assert.assertFalse(d.haveSetProperty("conditionalChecks", VariableProperty.NOT_NULL));
             }
         }
     };

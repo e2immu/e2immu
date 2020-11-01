@@ -220,8 +220,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return -1;
     }
 
-    public void copyBackLocalCopies(List<StatementAnalyser> lastStatements, boolean noBlockMayBeExecuted) {
-        // TODO implement
+    public void copyBackLocalCopies(List<StatementAnalyser> lastStatements, StatementAnalysis previous) {
+        methodLevelData.copyFrom(Stream.concat(previous == null ? Stream.empty() : Stream.of(previous.methodLevelData),
+                lastStatements.stream().map(sa -> sa.statementAnalysis.methodLevelData)));
     }
 
     public void ensure(Message newMessage) {

@@ -37,10 +37,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-public class TestBasics extends CommonTestRunner {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestBasics.class);
+public class Test_00_Basics extends CommonTestRunner {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Test_00_Basics.class);
 
-    public TestBasics() {
+    public Test_00_Basics() {
         super(false);
     }
 
