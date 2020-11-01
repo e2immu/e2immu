@@ -166,6 +166,10 @@ public interface Value extends Comparable<Value> {
         return negatedValue != null && negatedValue.value.isInstanceOf(NullValue.class);
     }
 
+    default boolean isNull() {
+        return isInstanceOf(NullValue.class);
+    }
+
     class FilterResult {
         public final Map<Variable, Value> accepted;
         public final Value rest;

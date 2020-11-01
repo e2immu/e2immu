@@ -1,18 +1,17 @@
 package org.e2immu.analyser.config;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.StatementAnalyserResult;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.StatementAnalysis;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Message;
 
 import java.util.Map;
 
 public interface StatementAnalyserVisitor {
 
-    record Data(AnalysisStatus analysisStatus, int iteration,
+    record Data(StatementAnalyserResult result,
+                int iteration,
                 EvaluationContext evaluationContext,
                 MethodInfo methodInfo, StatementAnalysis statementAnalysis,
                 String statementId, Value condition, Value state, Map<String, AnalysisStatus> statusesAsMap,
@@ -42,8 +41,13 @@ public interface StatementAnalyserVisitor {
                     ", state=" + state +
                     ", statusesAsMap=" + statusesAsMap +
                     ", evaluationContext=" + evaluationContext +
-                    ", analysisStatus=" + analysisStatus +
+                    ", result=" + result +
                     '}';
+        }
+
+        public boolean haveSetProperty(VariableProperty variableProperty, int value) {
+            return result.getModifications().anyMatch(m -> m instanceof AbstractAnalysisBuilder.SetProperty setProperty &&
+                    setProperty.value == value && setProperty.variableProperty == variableProperty);
         }
     }
 

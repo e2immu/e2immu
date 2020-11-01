@@ -100,7 +100,7 @@ public class ConditionManager {
      *
      * @return individual variables that appear in a top-level disjunction as variable == null
      */
-    public Set<Variable> findIndividualNullConditions(EvaluationContext evaluationContext) {
+    public Set<Variable> findIndividualNullConditions(EvaluationContext evaluationContext, boolean requireEqualsNull) {
         if (condition == UnknownValue.EMPTY || delayedCondition()) {
             return Set.of();
         }
@@ -108,7 +108,7 @@ public class ConditionManager {
                 Value::isIndividualNotNullClauseOnParameter).accepted;
         return individualNullClauses.entrySet()
                 .stream()
-                .filter(e -> e.getValue().isNotNull())
+                .filter(e -> requireEqualsNull ? e.getValue().isNull() : e.getValue().isNotNull())
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 

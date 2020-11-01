@@ -17,6 +17,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.AbstractAnalysisBuilder;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -26,11 +27,11 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class StatementAnalyserResult {
-    private final Stream<AbstractAnalysisBuilder.Modification> modifications;
+    private final List<AbstractAnalysisBuilder.Modification> modifications;
     public final AnalysisStatus analysisStatus;
     public final Messages messages;
 
-    private StatementAnalyserResult(AnalysisStatus analysisStatus, Stream<AbstractAnalysisBuilder.Modification> modifications,
+    private StatementAnalyserResult(AnalysisStatus analysisStatus, List<AbstractAnalysisBuilder.Modification> modifications,
                                     Messages messages) {
         this.modifications = modifications;
         this.analysisStatus = analysisStatus;
@@ -38,7 +39,7 @@ public class StatementAnalyserResult {
     }
 
     public Stream<AbstractAnalysisBuilder.Modification> getModifications() {
-        return modifications;
+        return modifications.stream();
     }
 
     public static class Builder {
@@ -50,7 +51,7 @@ public class StatementAnalyserResult {
             if (modifications == null) {
                 modifications = new LinkedList<>();
             }
-            other.modifications.forEach(modifications::add);
+            modifications.addAll(other.modifications);
             analysisStatus = analysisStatus == null ? other.analysisStatus : analysisStatus.combine(other.analysisStatus);
             messages.addAll(other.messages);
             return this;
@@ -77,7 +78,7 @@ public class StatementAnalyserResult {
 
         public StatementAnalyserResult build() {
             assert analysisStatus != null;
-            return new StatementAnalyserResult(analysisStatus, modifications == null ? Stream.empty() : modifications.stream(), messages);
+            return new StatementAnalyserResult(analysisStatus, modifications == null ? List.of() : ImmutableList.copyOf(modifications), messages);
         }
 
         public Builder addMessages(Messages messages) {

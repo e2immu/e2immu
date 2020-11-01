@@ -25,7 +25,7 @@ public class TestFieldNotRead extends CommonTestRunner {
             Assert.assertEquals("ERROR in M:FieldNotRead:1: Useless assignment: a", d.haveError(Message.USELESS_ASSIGNMENT));
 
             AnalysisStatus expectAnalysisStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-            Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus());
+            Assert.assertEquals(d.toString(), expectAnalysisStatus, d.result().analysisStatus);
         }
     };
 

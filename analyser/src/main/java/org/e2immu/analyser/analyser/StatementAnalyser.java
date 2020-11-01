@@ -317,11 +317,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             statementAnalysis.updateStatements(analyserContext, myMethodAnalyser.methodInfo, previous);
         }
         boolean startOfNewBlock = previous == null;
-        localConditionManager = startOfNewBlock ? forwardAnalysisInfo.conditionManager() :
-                previous.stateData.getConditionManager();
+        localConditionManager = startOfNewBlock ? forwardAnalysisInfo.conditionManager() : previous.stateData.getConditionManager();
 
         StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager());
+        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, localConditionManager);
         SharedState sharedState = new SharedState(evaluationContext, builder);
         AnalysisStatus overallStatus = analyserComponents.run(sharedState);
 
@@ -331,7 +330,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 .combineAnalysisStatus(wasReplacement ? PROGRESS : DONE).build();
         analysisStatus = result.analysisStatus;
 
-        visitStatementVisitors(statementAnalysis.index, analysisStatus, sharedState);
+        visitStatementVisitors(statementAnalysis.index, result, sharedState);
 
         log(ANALYSER, "Returning from statement {} of {} with analysis status {}", statementAnalysis.index,
                 myMethodAnalyser.methodInfo.name, analysisStatus);
@@ -352,7 +351,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return DONE;
     }
 
-    private void visitStatementVisitors(String statementId, AnalysisStatus analysisStatus, SharedState sharedState) {
+    private void visitStatementVisitors(String statementId, StatementAnalyserResult result, SharedState sharedState) {
         for (StatementAnalyserVariableVisitor statementAnalyserVariableVisitor :
                 analyserContext.getConfiguration().debugConfiguration.statementAnalyserVariableVisitors) {
             statementAnalysis.variables.stream()
@@ -373,7 +372,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 analyserContext.getConfiguration().debugConfiguration.statementAnalyserVisitors) {
             statementAnalyserVisitor.visit(
                     new StatementAnalyserVisitor.Data(
-                            analysisStatus,
+                            result,
                             sharedState.evaluationContext.getIteration(),
                             sharedState.evaluationContext,
                             myMethodAnalyser.methodInfo,
@@ -492,7 +491,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private AnalysisStatus checkNotNullEscapes(SharedState sharedState) {
         if (isEscapeAlwaysExecutedInCurrentBlock()) {
             Set<Variable> nullVariables = statementAnalysis.stateData.getConditionManager()
-                    .findIndividualNullConditions(sharedState.evaluationContext);
+                    .findIndividualNullConditions(sharedState.evaluationContext, true);
             for (Variable nullVariable : nullVariables) {
                 log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
                 ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser((ParameterInfo) nullVariable).parameterAnalysis;
@@ -1091,7 +1090,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         private boolean notNullAccordingToConditionManager(Variable variable) {
-            return conditionManager.findIndividualNullConditions(this).contains(variable);
+            return conditionManager.findIndividualNullConditions(this, false).contains(variable);
         }
 
 

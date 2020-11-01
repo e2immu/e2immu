@@ -24,14 +24,15 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
     }
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        AnalysisStatus analysisStatus = d.result().analysisStatus;
         if ("method1".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
-                Assert.assertEquals(d.toString(), AnalysisStatus.DONE, d.analysisStatus());
+                Assert.assertEquals(d.toString(), AnalysisStatus.DONE, analysisStatus);
                 Assert.assertEquals(UnknownValue.EMPTY.toString(), d.state().toString());
             }
             if ("1".equals(d.statementId()) || "1.0.0".equals(d.statementId())) {
                 AnalysisStatus expectAnalysisStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-                Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus());
+                Assert.assertEquals(d.toString(), expectAnalysisStatus, analysisStatus);
             }
             if ("1".equals(d.statementId())) {
                 Assert.assertEquals(T_LENGTH_GE_19, d.state().toString());
@@ -48,7 +49,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
                     Assert.assertNotNull(d.haveError(Message.IGNORING_RESULT_OF_METHOD_CALL));
                 }
                 AnalysisStatus expectAnalysisStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-                Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus());
+                Assert.assertEquals(d.toString(), expectAnalysisStatus, analysisStatus);
 
                 Assert.assertEquals(T_LENGTH_GE_19, d.state().toString());
             }
@@ -59,15 +60,15 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
             Assert.assertEquals("ERROR in M:UnusedLocalVariableChecks:0: Unused local variable: a", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
             Assert.assertEquals("ERROR in M:UnusedLocalVariableChecks:0: Useless assignment: a", d.haveError(Message.USELESS_ASSIGNMENT));
 
-            Assert.assertEquals(d.toString(), AnalysisStatus.DONE, d.analysisStatus());
+            Assert.assertEquals(d.toString(), AnalysisStatus.DONE, analysisStatus);
         }
         if ("checkArray".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-            Assert.assertEquals(d.toString(), AnalysisStatus.DONE, d.analysisStatus());
+            Assert.assertEquals(d.toString(), AnalysisStatus.DONE, analysisStatus);
         }
         if ("checkArray2".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
             Assert.assertEquals("ERROR in M:checkArray2:2: Useless assignment: integers[i]", d.haveError(Message.USELESS_ASSIGNMENT));
 
-            Assert.assertEquals(d.toString(), AnalysisStatus.DONE, d.analysisStatus());
+            Assert.assertEquals(d.toString(), AnalysisStatus.DONE, analysisStatus);
         }
         if ("checkForEach".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
             Assert.assertFalse(d.statementAnalysis().variables.isSet("loopVar")); // created in 1.0.0
@@ -76,7 +77,7 @@ public class TestUnusedLocalVariableChecks extends CommonTestRunner {
             Assert.assertEquals("ERROR in M:checkForEach:1.0.0: Unused local variable: loopVar", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
 
             AnalysisStatus expectAnalysisStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-            Assert.assertEquals(d.toString(), expectAnalysisStatus, d.analysisStatus());
+            Assert.assertEquals(d.toString(), expectAnalysisStatus, analysisStatus);
         }
     };
 

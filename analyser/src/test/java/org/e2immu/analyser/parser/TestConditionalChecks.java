@@ -101,6 +101,8 @@ public class TestConditionalChecks extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals("null == " + A3, d.condition().toString());
                     Assert.assertEquals("null == " + A3, d.state().toString());
+                    Assert.assertTrue(d.haveSetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
+
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertSame(UnknownValue.EMPTY, d.condition());
