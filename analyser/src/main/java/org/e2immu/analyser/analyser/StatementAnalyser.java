@@ -268,25 +268,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return new Location(myMethodAnalyser.methodInfo, statementAnalysis.index);
     }
 
-    // executed only once per statement; we're assuming that the flowData are computed correctly
-    private AnalysisStatus checkUnreachableStatement(StatementAnalysis previousStatementAnalysis, FlowData.Execution execution) {
-        if (statementAnalysis.flowData.computeGuaranteedToBeReachedReturnUnreachable(statementAnalysis.primitives,
-                previousStatementAnalysis, execution, localConditionManager.state) &&
-                !statementAnalysis.inErrorState(Message.UNREACHABLE_STATEMENT)) {
-            statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
-        }
-        return DONE;
-    }
-
-    private boolean isEscapeAlwaysExecutedInCurrentBlock() {
-        InterruptsFlow bestAlways = statementAnalysis.flowData.bestAlwaysInterrupt();
-        boolean escapes = bestAlways == InterruptsFlow.ESCAPE;
-        if (escapes) {
-            return statementAnalysis.flowData.guaranteedToBeReachedInCurrentBlock.get() == FlowData.Execution.ALWAYS;
-        }
-        return false;
-    }
-
     public AnalyserComponents<String, SharedState> getAnalyserComponents() {
         return analyserComponents;
     }
@@ -403,6 +384,27 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                             analyserComponents.getStatusesAsMap(),
                             ignoreErrorsOnCondition));
         }
+    }
+
+
+    // executed only once per statement; we're assuming that the flowData are computed correctly
+    private AnalysisStatus checkUnreachableStatement(StatementAnalysis previousStatementAnalysis,
+                                                     FlowData.Execution execution) {
+        if (statementAnalysis.flowData.computeGuaranteedToBeReachedReturnUnreachable(statementAnalysis.primitives,
+                previousStatementAnalysis, execution, localConditionManager.state) &&
+                !statementAnalysis.inErrorState(Message.UNREACHABLE_STATEMENT)) {
+            statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
+        }
+        return DONE;
+    }
+
+    private boolean isEscapeAlwaysExecutedInCurrentBlock() {
+        InterruptsFlow bestAlways = statementAnalysis.flowData.bestAlwaysInterrupt();
+        boolean escapes = bestAlways == InterruptsFlow.ESCAPE;
+        if (escapes) {
+            return statementAnalysis.flowData.guaranteedToBeReachedInCurrentBlock.get() == FlowData.Execution.ALWAYS;
+        }
+        return false;
     }
 
     /*
@@ -1053,7 +1055,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (value instanceof VariableValue) {
                 Variable variable = ((VariableValue) value).variable;
                 if (VariableProperty.NOT_NULL == variableProperty && notNullAccordingToConditionManager(variable)) {
-                    return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL, statementAnalysis.getProperty(analyserContext, variable, variableProperty));
+                    return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
+                            statementAnalysis.getProperty(analyserContext, variable, variableProperty));
                 }
                 if (VariableProperty.SIZE == variableProperty) {
                     Value sizeRestriction = conditionManager.individualSizeRestrictions(this).get(variable);

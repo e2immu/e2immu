@@ -19,9 +19,11 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.ValueComparator;
 import org.e2immu.analyser.model.value.IntValue;
+import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;
@@ -157,6 +159,11 @@ public interface Value extends Comparable<Value> {
 
     default FilterResult isIndividualSizeRestriction(EvaluationContext evaluationContext) {
         return new FilterResult(Map.of(), this);
+    }
+
+    default boolean isNotNull() {
+        NegatedValue negatedValue = asInstanceOf(NegatedValue.class);
+        return negatedValue != null && negatedValue.value.isInstanceOf(NullValue.class);
     }
 
     class FilterResult {

@@ -108,7 +108,7 @@ public class ConditionManager {
                 Value::isIndividualNotNullClauseOnParameter).accepted;
         return individualNullClauses.entrySet()
                 .stream()
-                .filter(e -> e.getValue().isInstanceOf(NullValue.class))
+                .filter(e -> e.getValue().isNotNull())
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 

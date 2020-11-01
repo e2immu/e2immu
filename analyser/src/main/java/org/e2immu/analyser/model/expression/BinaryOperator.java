@@ -247,9 +247,10 @@ public class BinaryOperator implements Expression {
         Value condition = and ? l.value : NegatedValue.negate(evaluationContext, l.value);
         EvaluationContext child = evaluationContext.child(condition);
         EvaluationResult r = rhs.evaluate(child, forward);
+        builder.compose(l, r);
         if (r.value == constant) {
             builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
-            return builder.compose(l, r).build();
+            return builder.build();
         }
         ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(),
                 evaluationContext.getPrimitives().booleanParameterizedType, Origin.RESULT_OF_OPERATOR);

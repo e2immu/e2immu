@@ -37,6 +37,12 @@ public interface EvaluationResultVisitor {
                     .anyMatch(sp -> variableName.equals(sp.variable.fullyQualifiedName()) && variableProperty == sp.property && value == sp.value);
         }
 
+        public boolean haveSetProperty(String variableName, VariableProperty variableProperty) {
+            return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.SetProperty)
+                    .map(sam -> (StatementAnalyser.SetProperty) sam)
+                    .anyMatch(sp -> variableName.equals(sp.variable.fullyQualifiedName()) && variableProperty == sp.property);
+        }
+
         public boolean haveLinkVariable(String fromName, Set<String> toNames) {
             return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.LinkVariable)
                     .map(sam -> (StatementAnalyser.LinkVariable) sam)

@@ -2,6 +2,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.analyser.InterruptsFlow;
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.MultiLevel;
@@ -21,6 +22,7 @@ public class TestConditionalChecks extends CommonTestRunner {
     private static final String THIS_GET_CLASS = "org.e2immu.analyser.testexample.ConditionalChecks.this.getClass()";
     private static final String THIS = "org.e2immu.analyser.testexample.ConditionalChecks.this";
     private static final String O5_GET_CLASS = "org.e2immu.analyser.testexample.ConditionalChecks.method5(Object):0:o.getClass()";
+    private static final String I = "org.e2immu.analyser.testexample.ConditionalChecks.i";
 
     public TestConditionalChecks() {
         super(false);
@@ -134,12 +136,44 @@ public class TestConditionalChecks extends CommonTestRunner {
         }
     };
 
+    EvaluationResultVisitor evaluationResultVisitor = d -> {
+        if ("method5".equals(d.methodInfo().name)) {
+            if ("1".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
+                Assert.assertEquals("(null == " + O5 + " or not (" + O5_GET_CLASS + " == " + THIS_GET_CLASS + "))", d.evaluationResult().value.toString());
+                Assert.assertTrue(d.evaluationResult().getModificationStream().count() > 0);
+                Assert.assertTrue(d.haveMarkRead(O5));
+                Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
+            }
+            if ("2".equals(d.statementId())) {
+                Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
+                Assert.assertTrue(d.haveMarkAssigned("conditionalChecks"));
+                Assert.assertEquals(O5, d.evaluationResult().value.toString());
+            }
+            if ("3".equals(d.statementId())) {
+                // there will be two iterations, in the second one, i will not have value "NO_VALUE" anymore
+                if (d.iteration() == 0) { // TODO check that this is necessary
+                    Assert.assertTrue(d.haveMarkRead("conditionalChecks"));
+                    Assert.assertTrue(d.haveMarkRead(I));
+                    Assert.assertTrue(d.haveMarkRead(I + "#conditionalChecks"));
+                    Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
+                    Assert.assertFalse(d.haveSetProperty("conditionalChecks", VariableProperty.NOT_NULL));
+                } else if (d.iteration() == 1) {
+                    // this should not be "true", because i != conditionalChecks.i unless i is a constant
+                    // TODO where are there no markRead's anymore ?
+                    Assert.assertEquals("", d.evaluationResult().value.toString());
+                } else Assert.fail("Iteration " + d.iteration());
+            }
+        }
+    };
+
     @Test
     public void test() throws IOException {
         testClass("ConditionalChecks", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 
