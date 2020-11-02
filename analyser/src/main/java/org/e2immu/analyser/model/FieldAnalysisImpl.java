@@ -223,7 +223,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     internalObjectFlows.getOrElse(Set.of()),
                     fieldError.getOrElse(false),
                     variablesLinkedToMe.getOrElse(Set.of()),
-                    effectivelyFinalValue.getOrElse(UnknownValue.NO_VALUE),
+                    getEffectivelyFinalValue(),
                     getInitialValue(),
                     properties.toImmutableMap(),
                     annotations.toImmutableMap());
