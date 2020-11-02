@@ -119,14 +119,25 @@ public class ArrayAccess implements Expression {
             }
             builder.setValue(arrayValue.values.get(intIndex));
         } else {
-            Value variableValue = builder.currentValue(variableTarget);
-            builder.setValue(variableValue);
+            // we have to make an effort to see if we can evaluate the components; maybe there's another variable to be had
+            Variable arrayVariable = variableTarget == null ? null : variableTarget.arrayVariable;
+            if (array.value instanceof VariableValue evaluatedArrayValue) {
+                arrayVariable = evaluatedArrayValue.variable;
+            }
+            String index = indexValue.value.toString();
+            String name = (arrayVariable != null ? arrayVariable.fullyQualifiedName() : array.value.toString()) + "[" + index + "]";
+            DependentVariable dependentVariable = new DependentVariable(name, returnType(),
+                    variableTarget != null ? variableTarget.dependencies : List.of(), arrayVariable);
 
-            if (variableTarget.arrayVariable != null) {
-                builder.variableOccursInNotNullContext(variableTarget.arrayVariable, array.value, MultiLevel.EFFECTIVELY_NOT_NULL);
+            if (dependentVariable.arrayVariable != null) {
+                builder.variableOccursInNotNullContext(dependentVariable.arrayVariable, array.value, MultiLevel.EFFECTIVELY_NOT_NULL);
             }
             if (forwardEvaluationInfo.isNotAssignmentTarget()) {
                 builder.markRead(variableTarget, evaluationContext.getIteration());
+                Value variableValue = builder.currentValue(dependentVariable);
+                builder.setValue(variableValue);
+            } else {
+                builder.setValue(new VariableValue(dependentVariable));
             }
         }
 

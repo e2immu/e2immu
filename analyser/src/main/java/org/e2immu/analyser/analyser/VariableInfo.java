@@ -78,7 +78,19 @@ public class VariableInfo {
         VariableInfo variableInfo = new VariableInfo(variable, isLocalCopy ? this : null, name);
         variableInfo.properties.putAll(properties);
         variableInfo.initialValue.copy(initialValue);
+        variableInfo.expressionValue.copy(expressionValue);
         variableInfo.endValue.copy(endValue);
+        variableInfo.stateOnAssignment.copy(stateOnAssignment);
+        return variableInfo;
+    }
+
+    // simply copy from the same level
+    public VariableInfo copyValueToInitial(boolean isLocalCopy) {
+        VariableInfo variableInfo = new VariableInfo(variable, isLocalCopy ? this : null, name);
+        variableInfo.properties.putAll(properties);
+        if(!variableInfo.initialValue.isSet()) {
+            variableInfo.initialValue.set(valueForNextStatement());
+        }
         variableInfo.stateOnAssignment.copy(stateOnAssignment);
         return variableInfo;
     }

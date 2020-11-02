@@ -418,11 +418,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     The main loop calls the apply method with the results of an evaluation.
      */
     private AnalysisStatus apply(EvaluationResult evaluationResult, Function<Variable, SetOnce<Value>> assignmentDestination, String step) {
-        // debugging...
-        for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration().debugConfiguration.evaluationResultVisitors) {
-            evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.iteration, step,
-                    myMethodAnalyser.methodInfo, statementAnalysis.index, evaluationResult));
-        }
+
 
         // state changes get composed into one big operation, applied, and the result is set
         // the condition is copied from the evaluation context
@@ -450,23 +446,31 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             }
         });
 
-        if (evaluationResult.value == NO_VALUE) return DELAYS;
+        AnalysisStatus status = evaluationResult.value == NO_VALUE ? DELAYS : DONE;
 
-        if (statementAnalysis.methodLevelData.internalObjectFlows.isFrozen()) {
-            return DONE;
-        }
-
-        boolean delays = false;
-        for (ObjectFlow objectFlow : evaluationResult.getObjectFlowStream().collect(Collectors.toSet())) {
-            if (objectFlow.isDelayed()) {
-                delays = true;
-            } else if (!statementAnalysis.methodLevelData.internalObjectFlows.contains(objectFlow)) {
-                statementAnalysis.methodLevelData.internalObjectFlows.add(objectFlow);
+        if (status == DONE && !statementAnalysis.methodLevelData.internalObjectFlows.isFrozen()) {
+            boolean delays = false;
+            for (ObjectFlow objectFlow : evaluationResult.getObjectFlowStream().collect(Collectors.toSet())) {
+                if (objectFlow.isDelayed()) {
+                    delays = true;
+                } else if (!statementAnalysis.methodLevelData.internalObjectFlows.contains(objectFlow)) {
+                    statementAnalysis.methodLevelData.internalObjectFlows.add(objectFlow);
+                }
+            }
+            if (delays) {
+                status = DELAYS;
+            } else {
+                statementAnalysis.methodLevelData.internalObjectFlows.freeze();
             }
         }
-        if (delays) return DELAYS;
-        statementAnalysis.methodLevelData.internalObjectFlows.freeze();
-        return DONE;
+
+        // debugging...
+        for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration().debugConfiguration.evaluationResultVisitors) {
+            evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.iteration, step,
+                    myMethodAnalyser.methodInfo, statementAnalysis.index, evaluationResult));
+        }
+
+        return status;
         // TODO check that AddOnceSet is the right data structure
     }
 

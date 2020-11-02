@@ -272,7 +272,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (previous == null && parent == null) return;
         StatementAnalysis copyFrom = previous == null ? parent : previous;
         boolean isLocalCopy = previous == null;
-        copyFrom.variableStream().forEach(variableInfo -> variables.put(variableInfo.name, variableInfo.copy(isLocalCopy)));
+        copyFrom.variableStream().forEach(variableInfo -> variables.put(variableInfo.name, variableInfo.copyValueToInitial(isLocalCopy)));
     }
 
     /**

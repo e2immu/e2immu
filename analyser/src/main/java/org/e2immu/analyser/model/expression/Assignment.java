@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.AssignExpr;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
@@ -164,12 +165,14 @@ public class Assignment implements Expression {
         builder.compose(valueResult);
         builder.composeIgnoreValue(targetResult);
 
-        log(VARIABLE_PROPERTIES, "Assignment: {} = {}", variableTarget.fullyQualifiedName(), value);
+        Variable newVariableTarget = targetResult.value instanceof VariableValue variableValue ? variableValue.variable : variableTarget;
+
+        log(VARIABLE_PROPERTIES, "Assignment: {} = {}", newVariableTarget.fullyQualifiedName(), value);
 
         Value resultOfExpression;
         Value assignedToTarget;
         if (binaryOperator != null) {
-            BinaryOperator operation = new BinaryOperator(new VariableExpression(variableTarget), binaryOperator, value,
+            BinaryOperator operation = new BinaryOperator(new VariableExpression(newVariableTarget), binaryOperator, value,
                     BinaryOperator.precedence(evaluationContext.getPrimitives(), binaryOperator));
             EvaluationResult operationResult = operation.evaluate(evaluationContext, forwardEvaluationInfo);
             builder.compose(operationResult);
@@ -188,7 +191,7 @@ public class Assignment implements Expression {
         }
         assert assignedToTarget != null;
         assert assignedToTarget != EmptyExpression.EMPTY_EXPRESSION;
-        doAssignmentWork(builder, evaluationContext, variableTarget, assignedToTarget);
+        doAssignmentWork(builder, evaluationContext, newVariableTarget, assignedToTarget);
 
         assert resultOfExpression != null;
         return builder.setValue(resultOfExpression).build();

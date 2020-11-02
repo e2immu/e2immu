@@ -127,7 +127,7 @@ public class EvaluationResult {
 
         public Builder(EvaluationContext evaluationContext) {
             this.evaluationContext = evaluationContext;
-            this.statementAnalyser = evaluationContext.getCurrentStatement();
+            this.statementAnalyser = evaluationContext.getCurrentStatement(); // can be null!
         }
 
         public Builder compose(EvaluationResult... previousResults) {
@@ -212,7 +212,7 @@ public class EvaluationResult {
         }
 
         public Builder markRead(Variable variable, int iteration) {
-            if (iteration == 0) {
+            if (iteration == 0 && statementAnalyser != null) {
                 addToModifications(statementAnalyser.new MarkRead(variable));
             }
             return this;
