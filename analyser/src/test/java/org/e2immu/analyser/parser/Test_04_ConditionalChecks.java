@@ -22,6 +22,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
     private static final String THIS = "org.e2immu.analyser.testexample.ConditionalChecks.this";
     private static final String O5_GET_CLASS = "org.e2immu.analyser.testexample.ConditionalChecks.method5(Object):0:o.getClass()";
     private static final String I = "org.e2immu.analyser.testexample.ConditionalChecks.i";
+    private static final String CC_I = "org.e2immu.analyser.testexample.ConditionalChecks.i#conditionalChecks";
 
     public Test_04_ConditionalChecks() {
         super(false);
@@ -37,6 +38,10 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
             if ("2".equals(d.statementId())) {
                 Assert.assertEquals(O5, d.currentValue().toString());
             }
+        }
+        if ("method5".equals(d.methodInfo().name) && "3".equals(d.statementId()) && CC_I.equals(d.variableName())) {
+            String expectValue = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : "";
+            Assert.assertEquals(expectValue, d.currentValue().toString());
         }
     };
 
@@ -130,7 +135,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                 Assert.assertEquals("(not (null == " + O5 + ") and " + O5_GET_CLASS + " == " + THIS_GET_CLASS + " and not (" + O5 + " == " + THIS + "))", d.state().toString());
             }
             if ("3".equals(d.statementId())) {
-                Assert.assertEquals(d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE, d.result().analysisStatus);
+                Assert.assertEquals(d.iteration() <= 1 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE, d.result().analysisStatus);
             } else {
                 Assert.assertEquals(AnalysisStatus.DONE, d.result().analysisStatus);
             }
@@ -167,13 +172,13 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
             }
             if ("3".equals(d.statementId())) {
                 // there will be two iterations, in the second one, i will not have value "NO_VALUE" anymore
-                String expectValueString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : I + " == " + O5 + "." + I;
+                String expectValueString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : I + " == " + I + "#" + O5;
                 Assert.assertEquals(expectValueString, d.evaluationResult().value.toString());
                 if (d.iteration() == 0) {
                     // markRead is only done in the first iteration
                     Assert.assertTrue(d.haveMarkRead("conditionalChecks"));
                     Assert.assertTrue(d.haveMarkRead(I));
-                    Assert.assertTrue(d.haveMarkRead(I + "#conditionalChecks"));
+                    Assert.assertTrue(d.haveMarkRead(I + "#" + O5));
                 }
                 Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
                 Assert.assertFalse(d.haveSetProperty("conditionalChecks", VariableProperty.NOT_NULL));

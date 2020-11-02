@@ -36,13 +36,13 @@ public class FieldReference extends VariableWithConcreteReturnType {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         FieldReference that = (FieldReference) o;
-        return fieldInfo.equals(that.fieldInfo);// && Objects.equals(scope, that.scope);
+        return fieldInfo.equals(that.fieldInfo) && Objects.equals(scope, that.scope);
     }
 
     @Override
-    public int hashCode() {
-        return fieldInfo.hashCode();
-        // return Objects.hash(fieldInfo, scope);
+    public int hashCode() { //
+        // return fieldInfo.hashCode();
+        return Objects.hash(fieldInfo, scope);
     }
 
     public FieldReference(FieldInfo fieldInfo, Variable scope) {

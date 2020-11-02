@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.E2Immutable;
@@ -91,7 +92,13 @@ public class FieldAccess implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult scopeResult = expression.evaluate(evaluationContext, forwardEvaluationInfo.copyModificationEnsureNotNull());
-        EvaluationResult evaluationResult = VariableExpression.evaluate(evaluationContext, forwardEvaluationInfo, variable);
+        Variable newVar;
+        if (scopeResult.value instanceof VariableValue variableValue && variable instanceof FieldReference fieldReference) {
+            newVar = new FieldReference(fieldReference.fieldInfo, variableValue.variable);
+        } else {
+            newVar = variable;
+        }
+        EvaluationResult evaluationResult = VariableExpression.evaluate(evaluationContext, forwardEvaluationInfo, newVar);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(scopeResult, evaluationResult);
 
         if (scopeResult.value instanceof NullValue) {
