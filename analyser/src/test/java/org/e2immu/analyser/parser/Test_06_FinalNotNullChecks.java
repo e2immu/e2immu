@@ -1,11 +1,13 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.MethodLevelData;
+import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.testexample.FinalNotNullChecks;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -19,18 +21,17 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
 
     private static final String INPUT = "org.e2immu.analyser.testexample.FinalNotNullChecks.input";
     private static final String PARAM = "org.e2immu.analyser.testexample.FinalNotNullChecks.FinalNotNullChecks(String):0:param";
+    private static final String PARAM_NN = PARAM + ",@NotNull";
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("toString".equals(d.methodInfo().name) && INPUT.equals(d.variableName())) {
+        if (("debug".equals(d.methodInfo().name) || "toString".equals(d.methodInfo().name)) && INPUT.equals(d.variableName())) {
             int notNull = d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL);
             if (d.iteration() == 0) {
                 Assert.assertTrue(d.currentValue() instanceof UnknownValue);
                 Assert.assertEquals(Level.FALSE, notNull);
-            } else if (d.iteration() == 1) {
-                Assert.assertTrue(d.currentValue() instanceof FinalFieldValue);
-                Assert.assertEquals(Level.DELAY, notNull);
             } else {
-                Assert.assertTrue(d.currentValue() instanceof FinalFieldValue);
+                Assert.assertTrue(d.currentValue() instanceof VariableValue);
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.FINAL));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
             }
         }
@@ -44,6 +45,31 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         // the variable has the value of param, which has received a @NotNull
         if ("FinalNotNullChecks".equals(d.methodInfo().name) && INPUT.equals(d.variableName())) {
             Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL));
+
+            Assert.assertEquals("null", d.variableInfo().initialValue.get().toString());
+            Assert.assertEquals(PARAM_NN, d.variableInfo().expressionValue.get().toString());
+            Assert.assertEquals(PARAM_NN, d.currentValue().toString());
+            Assert.assertFalse(d.variableInfo().endValue.isSet());
+        }
+    };
+
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if ("FinalNotNullChecks".equals(d.methodInfo().name)) {
+            MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
+            FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
+            int notNull = methodLevelData.fieldSummaries.get(input).value.get().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL);
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
+        }
+        if (("debug".equals(d.methodInfo().name) || "toString".equals(d.methodInfo().name))) {
+            MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
+            FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
+            Assert.assertFalse(methodLevelData.fieldSummaries.get(input).value.isSet());
+            if (d.iteration() == 0) {
+                Assert.assertEquals(AnalysisStatus.PROGRESS, d.result().analysisStatus);
+            } else {
+                int notNull = methodLevelData.fieldSummaries.get(input).getProperty(VariableProperty.NOT_NULL);
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
+            }
         }
     };
 
@@ -62,14 +88,26 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         if (d.iteration() == 0 && "input".equals(name)) {
             Assert.assertEquals(Level.DELAY, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
         }
-        if (d.iteration() >= 2 && "input".equals(name)) {
+        if (d.iteration() >= 1 && "input".equals(name)) {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+        FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
+        TransferValue tv = d.methodAnalysis().methodLevelData().fieldSummaries.get(input);
         if (d.methodInfo().name.equals("FinalNotNullChecks")) {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
+            Value inputValue = tv.value.get();
+            int notNull = inputValue.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL);
+            Assert.assertEquals(PARAM_NN, inputValue.toString());
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
+        }
+        if ((d.methodInfo().name.equals("debug") || d.methodInfo().name.equals("toString"))) {
+            Assert.assertFalse(tv.value.isSet());
+            int notNull = tv.getProperty(VariableProperty.NOT_NULL);
+            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+            Assert.assertEquals(expectNotNull, notNull);
         }
     };
 
@@ -78,6 +116,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         testClass("FinalNotNullChecks", 0, 0, new DebugConfiguration.Builder()
                 .addTypeContextVisitor(typeContextVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());

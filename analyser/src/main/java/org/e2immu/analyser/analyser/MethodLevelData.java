@@ -38,6 +38,11 @@ import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
+/**
+ * IMPORTANT:
+ * Method level data is incrementally copied from one statement to the next.
+ * The method analyser will only investigate the data from the last statement in the method!
+ */
 public class MethodLevelData {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodLevelData.class);
 
@@ -51,9 +56,28 @@ public class MethodLevelData {
     public final AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
 
     // ************** SUMMARIES
-    // in combination with the properties in the super class, this forms the knowledge about the method itself
+
+    /**
+     * In combination with the properties in the super class, this forms the knowledge about the method itself.
+     * Currently, only the READ and MODIFIED properties are of any importance.
+     */
     public final SetOnce<TransferValue> thisSummary = new SetOnce<>();
+
+    /**
+     * Information about the value, and properties, of return statements, incrementally collected
+     * across the statements. The key of the map is the statement index, so each return statement has a unique key.
+     */
     public final SetOnceMap<String, TransferValue> returnStatementSummaries = new SetOnceMap<>();
+
+    /**
+     * Information about what happens with fields in the statements.
+     * Each field that is seen in the method has a TransferValue entry.
+     * <p>
+     * Only when there is an assignment to a field (property ASSIGNED) then the assigned value is set.
+     * In this case, a number of properties are read from both the value, and the TV properties map,
+     * with the latter overriding the former. These are "context" properties, such as NOT_NULL, SIZE
+     * <p>
+     */
     public final SetOnceMap<FieldInfo, TransferValue> fieldSummaries = new SetOnceMap<>();
 
     // ************** LINKING
@@ -66,6 +90,7 @@ public class MethodLevelData {
     public void copyFrom(Stream<MethodLevelData> others) {
         // this is perfectly safe, as each statement has its own entry in the array
         others.forEach(mld -> returnStatementSummaries.putAll(mld.returnStatementSummaries, false));
+        // TODO copy the others!!!
     }
 
 
@@ -463,8 +488,8 @@ public class MethodLevelData {
                 }
 
                 // NOT_NULL (slightly different from SIZE, different type of level)
-                int notNull = variableInfo.getProperty(VariableProperty.NOT_NULL);
-                int currentNotNull = tv.properties.getOrDefault(VariableProperty.NOT_NULL, haveDelay ? Level.DELAY : MultiLevel.MUTABLE);
+                int notNull = MultiLevel.bestNotNull(haveDelay ? Level.DELAY : MultiLevel.MUTABLE, variableInfo.getProperty(VariableProperty.NOT_NULL));
+                int currentNotNull = tv.properties.getOrDefault(VariableProperty.NOT_NULL, Level.DELAY);
                 if (notNull > currentNotNull) {
                     tv.properties.put(VariableProperty.NOT_NULL, notNull);
                     changes.set(true);

@@ -24,8 +24,8 @@ import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
-import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -316,13 +316,8 @@ public class TypeAnalyser extends AbstractAnalyser {
             throw new UnsupportedOperationException("NYI");
         }
         if (variable instanceof This) {
-            Map<VariableProperty, Integer> properties = new HashMap<>();
-            properties.put(VariableProperty.MODIFIED, typeAnalysis.getProperty(VariableProperty.MODIFIED));
-            // this is prob. not correct, but is there anything else we use it for?
-            Set<Variable> linkedVariables = Set.of();
-            // this is prob. not correct, but is not used
             ObjectFlow objectFlow = new ObjectFlow(new Location(typeInfo), typeInfo.asParameterizedType(), Origin.NO_ORIGIN);
-            return new FinalFieldValue(variable, properties, linkedVariables, objectFlow);
+            return new VariableValue(variable, objectFlow);
         }
         throw new UnsupportedOperationException();
     }

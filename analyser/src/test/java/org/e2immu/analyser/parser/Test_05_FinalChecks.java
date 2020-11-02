@@ -72,14 +72,9 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         if (iteration > 0) {
             MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
             FieldInfo s1 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> "s1".equals(f.name)).findFirst().orElseThrow();
-            if ("toString".equals(methodInfo.name)) {
-                Assert.assertFalse(methodLevelData.fieldSummaries.get(s1).properties.isSet(VariableProperty.NOT_NULL));
-            }
-            if (FINAL_CHECKS.equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 1) {
-                Assert.assertFalse(methodLevelData.fieldSummaries.get(s1).properties.isSet(VariableProperty.NOT_NULL));
-            }
-            if (FINAL_CHECKS.equals(methodInfo.name) && methodInfo.methodInspection.get().parameters.size() == 2) {
-                Assert.assertFalse(methodLevelData.fieldSummaries.get(s1).properties.isSet(VariableProperty.NOT_NULL));
+            if ("toString".equals(methodInfo.name) || FINAL_CHECKS.equals(methodInfo.name)) {
+                int notNull = methodLevelData.fieldSummaries.get(s1).properties.get(VariableProperty.NOT_NULL);
+                Assert.assertEquals(MultiLevel.MUTABLE, notNull);
             }
         }
     };

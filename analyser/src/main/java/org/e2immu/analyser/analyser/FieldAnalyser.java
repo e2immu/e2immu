@@ -24,7 +24,6 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
-import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
@@ -634,12 +633,14 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
         This thisVariable = new This(fieldInfo.owner);
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-        Map<VariableProperty, Integer> properties = new HashMap<>();
+        /*
+           Map<VariableProperty, Integer> properties = new HashMap<>();
         for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
             properties.put(variableProperty, fieldAnalysis.getProperty(variableProperty));
         }
         Set<Variable> linkedVariables = fieldAnalysis.variablesLinkedToMe.isSet() ? fieldAnalysis.variablesLinkedToMe.get() : Set.of();
-        return new FinalFieldValue(fieldReference, properties, linkedVariables, combinedValue.getObjectFlow());
+         */
+        return new VariableValue(fieldReference, combinedValue.getObjectFlow());
     }
 
     private AnalysisStatus analyseLinked() {

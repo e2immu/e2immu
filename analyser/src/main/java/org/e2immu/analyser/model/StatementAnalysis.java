@@ -464,7 +464,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (effectivelyFinal == Level.DELAY) {
             return UnknownValue.NO_VALUE;
         }
-        if (effectivelyFinal == Level.TRUE) {
+        boolean variableField = effectivelyFinal == Level.FALSE;
+        if (!variableField) {
             Value efv = fieldAnalysis.getEffectivelyFinalValue();
             if (efv != null) {
                 return efv;
@@ -475,7 +476,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // foreign field, but we will never know
             return new VariableValue(fieldReference, fieldReference.fieldInfo.fullyQualifiedName(), fieldAnalysis.getObjectFlow(), false);
         }
-        return new VariableValue(fieldReference, fieldReference.fieldInfo.fullyQualifiedName(), fieldAnalysis.getObjectFlow(), true);
+        return new VariableValue(fieldReference, fieldReference.fieldInfo.fullyQualifiedName(), fieldAnalysis.getObjectFlow(), variableField);
     }
 
     private ObjectFlow createObjectFlowForNewVariable(AnalyserContext analyserContext, Variable variable) {
@@ -539,12 +540,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private void copyFieldPropertiesFromAnalysis(AnalyserContext analyserContext, VariableInfo variableInfo, FieldInfo fieldInfo) {
-        if (!fieldInfo.hasBeenDefined() || variableInfo.initialValue.isSet() &&
-                variableInfo.initialValue.get().isInstanceOf(VariableValue.class)) {
+        if (variableInfo.valueForNextStatement().isInstanceOf(VariableValue.class)) {
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
             for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
                 int value = fieldAnalysis.getProperty(variableProperty);
-                if (value == Level.DELAY) value = variableProperty.falseValue;
+               // if (value == Level.DELAY) value = variableProperty.falseValue;
                 variableInfo.setProperty(variableProperty, value);
             }
         }

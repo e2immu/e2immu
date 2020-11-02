@@ -19,7 +19,6 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.parser.Message;
@@ -91,30 +90,16 @@ public class FieldAccess implements Expression {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationResult evaluationResult = VariableExpression.evaluate(evaluationContext, forwardEvaluationInfo, variable);
         EvaluationResult scopeResult = expression.evaluate(evaluationContext, forwardEvaluationInfo.copyModificationEnsureNotNull());
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(evaluationResult, scopeResult);
+        EvaluationResult evaluationResult = VariableExpression.evaluate(evaluationContext, forwardEvaluationInfo, variable);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(scopeResult, evaluationResult);
 
-        if (scopeResult.value != UnknownValue.NO_VALUE) {
-            if (evaluationResult.value != UnknownValue.NO_VALUE) {
-                Value value;
-                FinalFieldValue finalFieldValue = evaluationResult.value.asInstanceOf(FinalFieldValue.class);
-                if (finalFieldValue != null) {
-                    value = new FinalFieldValue(finalFieldValue, scopeResult.value);
-                } else {
-                    // TODO there will be other situations, but we try to deal with FFV first
-                    value = evaluationResult.value;
-                }
-                builder.setValue(value);
-            }
-            if (scopeResult.value instanceof NullValue) {
-                builder.raiseError(Message.NULL_POINTER_EXCEPTION);
-            } else {
-                if (!evaluationContext.isNotNull0(scopeResult.value)) {
-                    builder.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Scope " + scopeResult.value);
-                }
-            }
+        if (scopeResult.value instanceof NullValue) {
+            builder.raiseError(Message.NULL_POINTER_EXCEPTION);
+        } else if (scopeResult.value != UnknownValue.NO_VALUE && !evaluationContext.isNotNull0(scopeResult.value)) {
+            builder.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Scope " + scopeResult.value);
         }
+
         return builder.build();
     }
 }

@@ -154,12 +154,8 @@ public class EvaluationResult {
         }
 
         private void append(boolean ignoreValue, EvaluationResult evaluationResult) {
-            if (!ignoreValue) {
-                // we propagate NO_VALUE
-                if (value == null && evaluationResult.value != null) {
-                    value = evaluationResult.value;
-                }
-                if (evaluationResult.value == NO_VALUE) value = NO_VALUE;
+            if (!ignoreValue && evaluationResult.value != null && (value == null || value != NO_VALUE)) {
+                value = evaluationResult.value;
             }
 
             if (!evaluationResult.modifications.isEmpty()) {

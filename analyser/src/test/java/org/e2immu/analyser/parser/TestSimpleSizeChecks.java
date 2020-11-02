@@ -4,8 +4,8 @@ import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.FinalFieldValue;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -34,7 +34,8 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
         if ("method2".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "SimpleSizeChecks.this.intSet".equals(d.variableName())) {
             if (d.iteration() > 0) {
                 Assert.assertEquals("this.intSet", d.currentValue().toString());
-                Assert.assertTrue(d.currentValue() instanceof FinalFieldValue);
+                Assert.assertTrue(d.currentValue() instanceof VariableValue);
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.FINAL));
 
                 if (d.iteration() > 1) {
                     Assert.assertEquals(SIZE_EQUALS_2, d.getPropertyOfCurrentValue(VariableProperty.SIZE));
