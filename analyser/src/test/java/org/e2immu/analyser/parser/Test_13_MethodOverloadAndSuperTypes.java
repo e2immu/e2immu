@@ -51,11 +51,11 @@ public class Test_13_MethodOverloadAndSuperTypes {
         Primitives primitives = typeContext.getPrimitives();
         TypeInfo set = typeContext.typeStore.get("java.util.Set");
         Assert.assertNotNull(set);
-        MethodInfo containsAll = set.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("containsAll")).findFirst().orElseThrow();
+        MethodInfo containsAll = set.findUniqueMethod("containsAll", 1);
         Set<MethodInfo> overloads = set.overrides(primitives, containsAll, true);
         TypeInfo collection = typeContext.typeStore.get("java.util.Collection");
         Assert.assertNotNull(collection);
-        MethodInfo containsAllInCollection = collection.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("containsAll")).findFirst().orElseThrow();
+        MethodInfo containsAllInCollection = collection.findUniqueMethod("containsAll", 1);
         Assert.assertTrue(overloads.contains(containsAllInCollection));
     }
 
@@ -80,15 +80,15 @@ public class Test_13_MethodOverloadAndSuperTypes {
 
         TypeInfo set = typeContext.typeStore.get("java.util.Set");
         Assert.assertNotNull(set);
-        MethodInfo equalsInSet = set.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("equals")).findFirst().orElseThrow();
+        MethodInfo equalsInSet = set.findUniqueMethod("equals", 1);
         Set<MethodInfo> overloads = set.overrides(primitives, equalsInSet, true);
         TypeInfo collection = typeContext.typeStore.get("java.util.Collection");
         Assert.assertNotNull(collection);
-        MethodInfo equalsInCollection = collection.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("equals")).findFirst().orElseThrow();
+        MethodInfo equalsInCollection = collection.findUniqueMethod("equals", 1);
         Assert.assertTrue(overloads.contains(equalsInCollection));
         TypeInfo object = typeContext.typeStore.get("java.lang.Object");
         Assert.assertNotNull(object);
-        MethodInfo equalsInObject = object.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("equals")).findFirst().orElseThrow();
+        MethodInfo equalsInObject = object.findUniqueMethod("equals", 1);
         Assert.assertTrue(overloads.contains(equalsInObject));
     }
 
@@ -139,7 +139,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
         List<ParameterizedType> directSuperTypesC2 = c2.directSuperTypes(primitives);
         Assert.assertEquals("[Type org.e2immu.analyser.testexample.MethodOverload.C1]", directSuperTypesC2.toString());
 
-        MethodInfo toString = c2.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("toString")).findFirst().orElseThrow();
+        MethodInfo toString = c2.findUniqueMethod("toString", 0);
         Set<MethodInfo> overloadsOfToString = c2.overrides(primitives, toString, true);
         LOGGER.info("Overloads of toString: {}", overloadsOfToString);
         Assert.assertEquals("[java.lang.Object.toString(), org.e2immu.analyser.testexample.MethodOverload.C1.toString()]",

@@ -95,7 +95,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
                     }
                     methodAnalysersBuilder.put(methodInfo, analyser);
                 } else {
-                    methodInfo.setAnalysis(MethodAnalysis.createEmpty(methodInfo));
+                    methodInfo.copyAnnotationsIntoMethodAnalysisProperties(getPrimitives(), getE2ImmuAnnotationExpressions());
                 }
             }
         });

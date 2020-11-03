@@ -569,24 +569,24 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
 
-    public Messages copyAnnotationsIntoMethodAnalysisProperties(Primitives primitives, E2ImmuAnnotationExpressions typeContext) {
+    public Messages copyAnnotationsIntoMethodAnalysisProperties(Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         Messages messages = new Messages();
 
         methodInspection.get().parameters.forEach(parameterInfo -> {
             ParameterAnalysisImpl.Builder builder = new ParameterAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER, parameterInfo);
             messages.addAll(builder.fromAnnotationsIntoProperties(true,
-                    parameterInfo.parameterInspection.get().annotations, typeContext));
+                    parameterInfo.parameterInspection.get().annotations, e2ImmuAnnotationExpressions));
             parameterInfo.setAnalysis(builder.build());
         });
 
         List<ParameterAnalysis> parameterAnalyses = methodInspection.get().parameters.stream()
                 .map(parameterInfo -> parameterInfo.parameterAnalysis.get()).collect(Collectors.toList());
-        assert !typeInfo.hasBeenDefined();
+        assert !hasBeenDefined();
         MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER,
                 this, parameterAnalyses);
 
         messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(true, methodInspection.get().annotations,
-                typeContext));
+                e2ImmuAnnotationExpressions));
         setAnalysis(methodAnalysisBuilder.build());
         return messages;
     }
