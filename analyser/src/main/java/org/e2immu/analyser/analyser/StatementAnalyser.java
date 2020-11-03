@@ -418,8 +418,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     The main loop calls the apply method with the results of an evaluation.
      */
     private AnalysisStatus apply(EvaluationResult evaluationResult, Function<Variable, SetOnce<Value>> assignmentDestination, String step) {
-
-
         // state changes get composed into one big operation, applied, and the result is set
         // the condition is copied from the evaluation context
         Function<Value, Value> composite = evaluationResult.getStateChangeStream()
@@ -586,9 +584,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      * </ul>
      * <p>
      */
-    private AnalysisStatus step2_localVariableCreation(SharedState sharedState, Structure structure,
-                                                       boolean assignedInLoop) {
-        boolean noValue = false;
+    private AnalysisStatus step2_localVariableCreation(EvaluationContext evaluationContext, Structure structure, boolean assignedInLoop) {
+        boolean haveDelays = false;
         StatementAnalysis saToCreate = structure.createVariablesInsideBlock ? firstStatementFirstBlock() : statementAnalysis;
         for (Expression initialiser : structure.initialisers) {
             if (initialiser instanceof LocalVariableCreation lvc) {
@@ -602,12 +599,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 }
             }
             try {
-                EvaluationResult result = initialiser.evaluate(sharedState.evaluationContext, ForwardEvaluationInfo.DEFAULT);
-                sharedState.builder.combineAnalysisStatus(apply(result,
-                        variable -> saToCreate.find(analyserContext, variable).initialValue, STEP_2));
+                EvaluationResult result = initialiser.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+                AnalysisStatus status = apply(result, variable -> saToCreate.find(analyserContext, variable).initialValue, STEP_2);
+                if (status == DELAYS) haveDelays = true;
 
                 Value value = result.value;
-                if (value == NO_VALUE) noValue = true;
+                if (value == NO_VALUE) haveDelays = true;
                 // initialisers size 1 means expression as statement, local variable creation
                 if (structure.initialisers.size() == 1 && value != null && value != NO_VALUE && !saToCreate.stateData.valueOfExpression.isSet()) {
                     saToCreate.stateData.valueOfExpression.set(value);
@@ -630,7 +627,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 throw rte;
             }
         }
-        return noValue ? DELAYS : DONE;
+        return haveDelays ? DELAYS : DONE;
     }
 
     private StatementAnalysis firstStatementFirstBlock() {
@@ -638,11 +635,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     // for(int i=0 (step2); i<3 (step4); i++ (step3))
-    private void step3_updaters(EvaluationContext evaluationContext, Structure structure) {
+    private AnalysisStatus step3_updaters(EvaluationContext evaluationContext, Structure structure) {
+        boolean haveDelays = false;
         for (Expression updater : structure.updaters) {
             EvaluationResult result = updater.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-            apply(result, variable -> statementAnalysis.find(analyserContext, variable).expressionValue, STEP_3);
+            AnalysisStatus status = apply(result, variable -> statementAnalysis.find(analyserContext, variable).expressionValue, STEP_3);
+            if (status == DELAYS) haveDelays = true;
         }
+        return haveDelays ? DELAYS : DONE;
     }
 
     private Value step4_evaluationOfMainExpression(EvaluationContext evaluationContext, Structure structure) {
@@ -651,15 +651,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
         try {
             EvaluationResult result = structure.expression.evaluate(evaluationContext, structure.forwardEvaluationInfo);
-            apply(result, variable -> statementAnalysis.find(analyserContext, variable).expressionValue, STEP_4);
+            AnalysisStatus status = apply(result, variable -> statementAnalysis.find(analyserContext, variable).expressionValue, STEP_4);
+            if (status == DELAYS) return NO_VALUE;
+
             // the evaluation system should be pretty good at always returning NO_VALUE when a NO_VALUE has been encountered
             Value value = result.value;
-
             if (value != NO_VALUE && !statementAnalysis.stateData.valueOfExpression.isSet()) {
                 statementAnalysis.stateData.valueOfExpression.set(value);
             }
-
-
             return value;
         } catch (RuntimeException rte) {
             LOGGER.warn("Failed to evaluate expression in statement {}", statementAnalysis.index);
@@ -799,7 +798,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // real expression
             EvaluationResult result = expression.evaluate(evaluationContext, forwardEvaluationInfo);
             valueForSubStatement = result.value;
-            apply(result, null, STEP_9);
+            AnalysisStatus status = apply(result, null, STEP_9);
+            if (status == DELAYS) {
+                return NO_VALUE;
+            }
         }
         return valueForSubStatement;
     }
@@ -833,17 +835,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 forwardAnalysisInfo.inCatch(), assignedInLoop);
 
         // STEP 2: More local variables in try-resources, for-loop, expression as statement (normal local variables)
-        AnalysisStatus analysisStatus = step2_localVariableCreation(sharedState, structure, assignedInLoop);
+        AnalysisStatus analysisStatus = step2_localVariableCreation(sharedState.evaluationContext, structure, assignedInLoop);
 
 
         // STEP 3: updaters (only in the classic for statement, and the parameters of an explicit constructor invocation this(...)
         // for now, we put these BEFORE the main evaluation + the main block. One of the two should read the value that is being updated
-        step3_updaters(evaluationContext, structure);
+        AnalysisStatus status3 = step3_updaters(evaluationContext, structure);
+        analysisStatus = analysisStatus.combine(status3);
 
 
         // STEP 4: evaluation of the main expression of the statement (if the statement has such a thing)
         final Value value = step4_evaluationOfMainExpression(evaluationContext, structure);
-        analysisStatus = analysisStatus.combine(value == NO_VALUE ? DELAYS : DONE);
+        AnalysisStatus status4 = value == NO_VALUE ? DELAYS : DONE;
+        analysisStatus = analysisStatus.combine(status4);
 
         // STEP 5: not-null check on forEach (see step 1)
         step5_forEachNotNullCheck(evaluationContext, value, theLocalVariableReference);
@@ -885,7 +889,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             Value valueForSubStatement = step9_evaluateSubExpression(evaluationContext, subStatements.expression,
                     subStatements.forwardEvaluationInfo, conditions);
-            if (valueForSubStatement != null) {
+            AnalysisStatus status9 = value == NO_VALUE ? DELAYS : DONE;
+            analysisStatus = analysisStatus.combine(status9);
+            if (valueForSubStatement != null && valueForSubStatement != NO_VALUE) {
                 conditions.add(valueForSubStatement);
             } // else "finally", empty expression (is that possible?)
 

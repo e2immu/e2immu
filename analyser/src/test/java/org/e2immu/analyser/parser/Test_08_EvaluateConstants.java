@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -8,7 +9,6 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.value.ConstantValue;
-import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
@@ -28,15 +28,21 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             Assert.assertEquals(4L, d.evaluationResult().getObjectFlowStream().count());
             ObjectFlow objectFlow = d.evaluationResult().getObjectFlowStream().findFirst().orElseThrow();
             // ee modified?
-            if (d.iteration() > 1) {
+            if (d.iteration() > 0) {
                 Assert.assertFalse(objectFlow.isDelayed());
             }
         }
     };
 
+    /*
+    Method ee() becomes @NotModified in iteration 1
+    Only then, the internal object flows of print2 can be frozen; this happens during evaluation.
+
+     */
+
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("print".equals(d.methodInfo().name)) {
-            if ("0".equals(d.statementId())) {
+            if ("0".equals(d.statementId()) && d.iteration() >= 1) {
                 Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
             }
             if ("0.0.0".equals(d.statementId())) {
@@ -53,7 +59,9 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             if ("0".equals(d.statementId())) {
                 Assert.assertNotNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                 MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
-                if (d.iteration() > 1) {
+                AnalysisStatus expectStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
+                Assert.assertSame(expectStatus, d.result().analysisStatus);
+                if (d.iteration() >= 1) {
                     Assert.assertTrue(methodLevelData.internalObjectFlows.isFrozen()); // by apply
                 }
             }
@@ -73,11 +81,11 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             Value srv = d.methodAnalysis().getSingleReturnValue();
             Assert.assertSame(UnknownValue.RETURN_VALUE, srv); // not constant, the ee() error is ignored
         }
-        if ("print2".equals(d.methodInfo().name) && d.iteration() > 1) {
+        if ("print2".equals(d.methodInfo().name) && d.iteration() > 2) {
             MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
             Assert.assertTrue(methodLevelData.internalObjectFlows.isFrozen());
             Value srv = d.methodAnalysis().getSingleReturnValue();
-           // Assert.assertTrue(srv instanceof StringValue); // inline conditional works as advertised
+            // Assert.assertTrue(srv instanceof StringValue); // inline conditional works as advertised
         }
     };
 
