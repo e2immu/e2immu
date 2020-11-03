@@ -119,7 +119,7 @@ public class MethodValue implements Value {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        boolean recursiveCall = methodInfo == evaluationContext.getCurrentMethod().methodInfo;
+        boolean recursiveCall = evaluationContext.getCurrentMethod() != null && methodInfo == evaluationContext.getCurrentMethod().methodInfo;
         if (recursiveCall) {
             return variableProperty.best;
         }

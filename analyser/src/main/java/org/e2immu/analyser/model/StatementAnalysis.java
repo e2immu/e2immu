@@ -533,11 +533,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     private void copyParameterPropertiesFromAnalysis(AnalyserContext analyserContext, VariableInfo variableInfo, ParameterInfo parameterInfo) {
         ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
-        int immutable = parameterAnalysis.getProperty(IMMUTABLE);
-        variableInfo.setProperty(IMMUTABLE, immutable == MultiLevel.DELAY ? IMMUTABLE.falseValue : immutable);
-
-        int notModified1 = parameterAnalysis.getProperty(NOT_MODIFIED_1);
-        variableInfo.setProperty(NOT_MODIFIED_1, notModified1 == Level.DELAY ? NOT_MODIFIED_1.falseValue : notModified1);
+        for (VariableProperty variableProperty : VariableProperty.FROM_PARAMETER_TO_PROPERTIES) {
+            int v = parameterAnalysis.getProperty(variableProperty);
+            variableInfo.setProperty(variableProperty, v <= MultiLevel.DELAY ? variableProperty.falseValue : v);
+        }
     }
 
     private void copyFieldPropertiesFromAnalysis(AnalyserContext analyserContext, VariableInfo variableInfo, FieldInfo fieldInfo) {

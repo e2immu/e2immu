@@ -24,9 +24,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestModifyParameterChecks extends CommonTestRunner {
+public class Test_12_ModifyParameterChecks extends CommonTestRunner {
 
-    public TestModifyParameterChecks() {
+    public Test_12_ModifyParameterChecks() {
         super(false);
     }
 

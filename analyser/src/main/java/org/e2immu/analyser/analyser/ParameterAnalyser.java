@@ -40,12 +40,13 @@ public class ParameterAnalyser {
 
     private Map<FieldInfo, FieldAnalyser> fieldAnalysers;
     private final E2ImmuAnnotationExpressions e2;
+    private final AnalysisProvider analysisProvider;
 
     public ParameterAnalyser(AnalyserContext analyserContext, ParameterInfo parameterInfo) {
         this.e2 = analyserContext.getE2ImmuAnnotationExpressions();
         this.parameterInfo = parameterInfo;
-        TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
         parameterAnalysis = new ParameterAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, parameterInfo);
+        analysisProvider = analyserContext;
     }
 
     public ParameterAnalysis getParameterAnalysis() {
@@ -82,9 +83,9 @@ public class ParameterAnalyser {
 
     private void checkWorseThanParent() {
         for (VariableProperty variableProperty : VariableProperty.CHECK_WORSE_THAN_PARENT) {
-            int valueFromOverrides = parameterInfo.owner.methodAnalysis.get().getOverrides().stream()
+            int valueFromOverrides = analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides().stream()
                     .map(ma -> ma.getMethodInfo().methodInspection.get().parameters.get(parameterInfo.index))
-                    .mapToInt(pi -> pi.parameterAnalysis.get().getProperty(variableProperty)).max().orElse(Level.DELAY);
+                    .mapToInt(pi -> analysisProvider.getParameterAnalysis(pi).getProperty(variableProperty)).max().orElse(Level.DELAY);
             int value = parameterAnalysis.getProperty(variableProperty);
             if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
                 boolean complain = variableProperty == VariableProperty.MODIFIED ? value > valueFromOverrides : value < valueFromOverrides;

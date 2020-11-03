@@ -246,7 +246,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     // TODO SIZE = min over assignments IF the field is not modified + not exposed or e2immu + max over restrictions + max of these two
 
     private AnalysisStatus analyseSize(int iteration) {
-        assert fieldAnalysis.getProperty(VariableProperty.SIZE) == Level.DELAY;
+        if (fieldAnalysis.getProperty(VariableProperty.SIZE) != Level.DELAY) return DONE;
 
         if (!fieldInfo.type.hasSize(analyserContext.getPrimitives(), analyserContext)) {
             log(SIZE, "No @Size annotation on {}, because the type has no size!", fieldInfo.fullyQualifiedName());

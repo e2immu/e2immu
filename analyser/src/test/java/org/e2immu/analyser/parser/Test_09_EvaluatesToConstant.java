@@ -15,10 +15,10 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Set;
 
-public class TestEvaluatesToConstant extends CommonTestRunner {
+public class Test_09_EvaluatesToConstant extends CommonTestRunner {
     private static final String PARAM_3_TO_LOWER = "org.e2immu.analyser.testexample.EvaluatesToConstant.method3(String):0:param.toLowerCase()";
 
-    public TestEvaluatesToConstant() {
+    public Test_09_EvaluatesToConstant() {
         super(true);
     }
 

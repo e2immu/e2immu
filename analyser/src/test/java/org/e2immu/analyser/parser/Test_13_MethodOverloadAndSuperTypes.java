@@ -35,8 +35,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class TestMethodOverloadAndSuperTypes {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestMethodOverloadAndSuperTypes.class);
+public class Test_13_MethodOverloadAndSuperTypes {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Test_13_MethodOverloadAndSuperTypes.class);
     public static final String SRC_TEST_JAVA_ORG_E2IMMU_ANALYSER = "src/test/java/org/e2immu/analyser/";
 
     @BeforeClass

@@ -34,9 +34,9 @@ import java.io.IOException;
 /*
 https://github.com/bnaudts/e2immu/issues/10
  */
-public class TestPreconditionChecks extends CommonTestRunner {
+public class Test_14_PreconditionChecks extends CommonTestRunner {
 
-    public TestPreconditionChecks() {
+    public Test_14_PreconditionChecks() {
         super(false);
     }
 

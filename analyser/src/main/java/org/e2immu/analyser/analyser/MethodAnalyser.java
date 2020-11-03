@@ -809,6 +809,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
         if (!isModified) {
             boolean localMethodsCalled = methodLevelData.thisSummary.get().getProperty(VariableProperty.METHOD_CALLED) == Level.TRUE;
+            // IMPORTANT: localMethodsCalled only works on "this"; it does not work for static methods (See IdentityChecks)
             if (localMethodsCalled) {
                 int thisModified = methodLevelData.thisSummary.get().getProperty(VariableProperty.MODIFIED);
 
