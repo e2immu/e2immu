@@ -79,10 +79,9 @@ public class TestEvaluatesToConstant extends CommonTestRunner {
             String expectValue = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() :
                     "org.e2immu.analyser.testexample.EvaluatesToConstant.method2(String):0:param.toLowerCase()";
             Assert.assertEquals(expectValue, d.currentValue().toString());
-            if (d.iteration() >= 1) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,
-                        d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL));
-            }
+            int expectNotNull = d.iteration() == 0 ? MultiLevel.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+            int notNull = d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL);
+            Assert.assertEquals(expectNotNull, notNull);
         }
         if ("method3".equals(d.methodInfo().name)) {
             if ("b".equals(d.variableName()) && d.iteration() >= 1 && Set.of("0", "1").contains(d.statementId())) {
@@ -104,6 +103,11 @@ public class TestEvaluatesToConstant extends CommonTestRunner {
                 Assert.assertEquals(expectValueString,
                         d.evaluationResult().value.toString());
             }
+            if ("1".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
+                String expectString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : "false";
+                Assert.assertEquals(expectString, d.evaluationResult().value.toString());
+            }
         }
         if ("method3".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
@@ -121,8 +125,7 @@ public class TestEvaluatesToConstant extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("someMethod".equals(d.methodInfo().name)) {
-            int expectModified = Level.FALSE;
-            Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
             if (d.iteration() == 0) {
                 // single return value is set before modified in the method analyser
                 Assert.assertNull(d.methodAnalysis().getSingleReturnValue());

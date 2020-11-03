@@ -88,8 +88,8 @@ public class VariableInfo {
     public VariableInfo copyValueToInitial(boolean isLocalCopy) {
         VariableInfo variableInfo = new VariableInfo(variable, isLocalCopy ? this : null, name);
         variableInfo.properties.putAll(properties);
-        if(!variableInfo.initialValue.isSet()) {
-            variableInfo.initialValue.set(valueForNextStatement());
+        if (!variableInfo.initialValue.isSet()) {
+            variableInfo.writeInitialValue(valueForNextStatement());
         }
         variableInfo.stateOnAssignment.copy(stateOnAssignment);
         return variableInfo;
@@ -140,5 +140,11 @@ public class VariableInfo {
 
     public boolean hasNoValue() {
         return valueForNextStatement() == UnknownValue.NO_VALUE;
+    }
+
+    public void writeInitialValue(Value value) {
+        if (value != UnknownValue.NO_VALUE) {
+            initialValue.set(value);
+        }
     }
 }

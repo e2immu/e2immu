@@ -434,7 +434,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             Variable variable = e.getKey();
             Value value = e.getValue();
             SetOnce<Value> setOnce = assignmentDestination.apply(variable);
-            if (!setOnce.isSet()) {
+            if (!setOnce.isSet() && value != NO_VALUE) {
                 log(ANALYSER, "Write value {} to variable {}", value, variable.fullyQualifiedName());
                 setOnce.set(value);
             }
@@ -567,7 +567,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 variableInfo = firstStatementInBlock.find(analyserContext, lvr); // "touch" it
             }
             if (!variableInfo.initialValue.isSet()) {
-                variableInfo.initialValue.set(new VariableValue(lvr));
+                variableInfo.writeInitialValue(new VariableValue(lvr));
             }
         } else {
             lvr = null;

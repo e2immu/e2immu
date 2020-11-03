@@ -298,7 +298,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 if (read >= Level.TRUE && noEarlierAccess(variableInfo.variable, copyFrom)) {
                     if (!variableInfo.initialValue.isSet()) {
                         Value initialValue = initialValueOfField(analyserContext, fieldReference);
-                        variableInfo.initialValue.set(initialValue);
+                        variableInfo.writeInitialValue(initialValue);
                     }
                     copyFieldPropertiesFromAnalysis(analyserContext, variableInfo, fieldReference.fieldInfo);
                 }
@@ -309,9 +309,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     variableInfo.properties.copyFrom(previousVariableInfo.properties);
                     if (!variableInfo.initialValue.isSet()) {
                         Value value = previousVariableInfo.valueForNextStatement();
-                        if (value != UnknownValue.NO_VALUE) {
-                            variableInfo.initialValue.set(value);
-                        }
+                        variableInfo.writeInitialValue(value);
                     }
                 }
             }
