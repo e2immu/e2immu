@@ -252,6 +252,9 @@ public class BinaryOperator implements Expression {
             builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return builder.build();
         }
+        if (l.value == UnknownValue.NO_VALUE || r.value == UnknownValue.NO_VALUE) {
+            return builder.setValue(UnknownValue.NO_VALUE).build();
+        }
         ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(),
                 evaluationContext.getPrimitives().booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
         if (and) {

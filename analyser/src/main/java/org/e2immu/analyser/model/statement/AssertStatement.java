@@ -12,7 +12,10 @@ public class AssertStatement extends StatementWithStructure {
     public AssertStatement(Expression check, Expression message) {
         // IMPORTANT NOTE: we're currently NOT adding message!
         // we regard it as external to the code
-        super(new Structure.Builder().setExpression(check).build());
+        super(new Structure.Builder()
+                .setExpression(check)
+                .setExpressionIsCondition(true)
+                .build());
         this.message = message;
     }
 

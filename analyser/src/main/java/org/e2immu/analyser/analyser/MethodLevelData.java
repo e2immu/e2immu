@@ -89,10 +89,19 @@ public class MethodLevelData {
 
     public void copyFrom(Stream<MethodLevelData> others) {
         // this is perfectly safe, as each statement has its own entry in the array
-        others.forEach(mld -> returnStatementSummaries.putAll(mld.returnStatementSummaries, false));
-        // TODO copy the others!!!
+        others.forEach(mld -> {
+            returnStatementSummaries.putAll(mld.returnStatementSummaries, false);
+            mld.fieldSummaries.stream().forEach(e -> {
+                FieldInfo fieldInfo = e.getKey();
+                TransferValue tv = e.getValue();
+                if (!fieldSummaries.isSet(fieldInfo)) {
+                    fieldSummaries.put(fieldInfo, tv.copy());
+                } else {
+                    fieldSummaries.get(fieldInfo).merge(tv);
+                }
+            });
+        });
     }
-
 
     record SharedState(StatementAnalyserResult.Builder builder,
                        EvaluationContext evaluationContext,

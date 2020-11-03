@@ -30,6 +30,7 @@ public class WhileStatement extends LoopStatement {
                 .setStatementsExecutedAtLeastOnce((v, ec) -> v.equals(ec.boolValueTrue()))
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setExpression(expression)
+                .setExpressionIsCondition(true)
                 .setBlock(block).build(), label);
     }
 

@@ -26,8 +26,16 @@ public class ConditionManager {
     }
 
     public ConditionManager(Value condition, Value state) {
-        this.condition = Objects.requireNonNull(condition);
-        this.state = Objects.requireNonNull(state);
+        this.condition = checkBoolean(Objects.requireNonNull(condition));
+        this.state = checkBoolean(Objects.requireNonNull(state));
+    }
+
+    private static Value checkBoolean(Value v) {
+        if (v != UnknownValue.EMPTY && v != UnknownValue.NO_VALUE
+                && (v.type() == null || !Primitives.isBooleanOrBoxedBoolean(v.type()))) {
+            throw new UnsupportedOperationException("Need a boolean value in the condition manager; got " + v);
+        }
+        return v;
     }
 
     // adding a condition always adds to the state as well (testing only)

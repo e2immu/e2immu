@@ -222,6 +222,28 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public void copyBackLocalCopies(List<StatementAnalyser> lastStatements, StatementAnalysis previous) {
         methodLevelData.copyFrom(Stream.concat(previous == null ? Stream.empty() : Stream.of(previous.methodLevelData),
                 lastStatements.stream().map(sa -> sa.statementAnalysis.methodLevelData)));
+
+        // we need to make a synthesis of the variable state of fields, local copies, etc.
+        // some blocks are guaranteed to be executed, others are only executed conditionally.
+
+        // let's implement some special cases
+        if(statement instanceof SynchronizedStatement) {
+            assert lastStatements.size() == 1;
+            StatementAnalyser src = lastStatements.get(0);
+            src.statementAnalysis.variableStream().forEach(variableInfo -> {
+                if(variableInfo.variable instanceof FieldReference fieldReference) {
+                    if(variables.isSet(fieldReference.fullyQualifiedName())) {
+                        variables.get(fieldReference.fullyQualifiedName()).merge(variableInfo);
+                    } else {
+                        variables.put(fieldReference.fullyQualifiedName(), variableInfo.copy(false));
+                    }
+                }
+            });
+
+        }
+        for(StatementAnalyser sa: lastStatements) {
+
+        }
     }
 
     public void ensure(Message newMessage) {

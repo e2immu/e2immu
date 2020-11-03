@@ -58,6 +58,7 @@ public class Structure {
     // this is possible in if statements without else, switch statements without default, loops that are not while(true), etc. etc.
     public final boolean noBlockMayBeExecuted;
     public final boolean createVariablesInsideBlock;
+    public final boolean expressionIsCondition;
 
     private Structure(@NotNull List<Expression> initialisers,
                       LocalVariable localVariableCreation,
@@ -69,7 +70,8 @@ public class Structure {
                       @NotNull BiPredicate<Value, EvaluationContext> statementsExecutedAtLeastOnce,
                       List<Structure> subStatements,
                       boolean noBlockMayBeExecuted,
-                      boolean createVariablesInsideBlock) {
+                      boolean createVariablesInsideBlock,
+                      boolean expressionIsCondition) {
         this.initialisers = Objects.requireNonNull(initialisers);
         this.localVariableCreation = localVariableCreation;
         this.expression = Objects.requireNonNull(expression);
@@ -84,6 +86,7 @@ public class Structure {
         this.statementsExecutedAtLeastOnce = statementsExecutedAtLeastOnce;
         this.noBlockMayBeExecuted = noBlockMayBeExecuted;
         this.createVariablesInsideBlock = createVariablesInsideBlock;
+        this.expressionIsCondition = expressionIsCondition;
     }
 
     public List<Statement> getStatements() {
@@ -113,6 +116,12 @@ public class Structure {
         private final List<Structure> subStatements = new ArrayList<>(); // catches, finally, switch entries
         private boolean noBlockMayBeExecuted = true;
         private boolean createVariablesInsideBlock;
+        private boolean expressionIsCondition;
+
+        public Builder setExpressionIsCondition(boolean expressionIsCondition) {
+            this.expressionIsCondition = expressionIsCondition;
+            return this;
+        }
 
         public Builder setCreateVariablesInsideBlock(boolean createVariablesInsideBlock) {
             this.createVariablesInsideBlock = createVariablesInsideBlock;
@@ -181,7 +190,8 @@ public class Structure {
                     statementsExecutedAtLeastOnce == null ? (v, ec) -> false : statementsExecutedAtLeastOnce,
                     ImmutableList.copyOf(subStatements),
                     noBlockMayBeExecuted,
-                    createVariablesInsideBlock);
+                    createVariablesInsideBlock,
+                    expressionIsCondition);
         }
     }
 }

@@ -49,4 +49,20 @@ public class TransferValue {
                 ", linkedVariables=" + linkedVariables +
                 '}';
     }
+
+    public TransferValue copy() {
+        TransferValue copy = new TransferValue();
+        copy.value.copy(value);
+        copy.properties.putAll(properties);
+        copy.stateOnAssignment.copy(stateOnAssignment);
+        copy.linkedVariables.copy(linkedVariables);
+        return copy;
+    }
+
+    public void merge(TransferValue other) {
+        value.copyIfNotSet(other.value);
+        stateOnAssignment.copyIfNotSet(other.stateOnAssignment);
+        linkedVariables.copyIfNotSet(other.linkedVariables);
+        properties.putAll(other.properties);
+    }
 }

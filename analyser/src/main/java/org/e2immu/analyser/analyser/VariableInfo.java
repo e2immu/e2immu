@@ -147,4 +147,13 @@ public class VariableInfo {
             initialValue.set(value);
         }
     }
+
+    public void merge(VariableInfo variableInfo) {
+        properties.copyFrom(variableInfo.properties);
+        if (!initialValue.isSet()) {
+            initialValue.set(variableInfo.valueForNextStatement());
+        }
+        objectFlow.copyIfNotSet(variableInfo.objectFlow);
+        stateOnAssignment.copyIfNotSet(variableInfo.stateOnAssignment);
+    }
 }

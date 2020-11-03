@@ -147,7 +147,7 @@ public class EqualsValue extends PrimitiveValue {
         if ((lhsIsNull || lhsIsNotNull) && rhs instanceof VariableValue v) {
             if (!parametersOnly || v.variable instanceof ParameterInfo) {
                 Value value = lhsIsNull ? NullValue.NULL_VALUE : NullValue.NOT_NULL_VALUE;
-                return new FilterResult(Map.of(v.variable, lhs), value);
+                return new FilterResult(Map.of(v.variable, value), UnknownValue.EMPTY);
             }
         }
         return new FilterResult(Map.of(), this);

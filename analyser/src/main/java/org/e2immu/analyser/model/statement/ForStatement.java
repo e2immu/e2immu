@@ -23,6 +23,7 @@ public class ForStatement extends LoopStatement {
                 .setCreateVariablesInsideBlock(true)
                 .addInitialisers(initialisers)
                 .setExpression(condition)
+                .setExpressionIsCondition(true)
                 .setUpdaters(updaters)
                 .setBlock(block).build(), label);
     }

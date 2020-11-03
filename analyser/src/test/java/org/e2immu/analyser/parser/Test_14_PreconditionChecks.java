@@ -18,11 +18,10 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.TransferValue;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
@@ -31,14 +30,41 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-/*
-https://github.com/bnaudts/e2immu/issues/10
- */
 public class Test_14_PreconditionChecks extends CommonTestRunner {
 
     public Test_14_PreconditionChecks() {
         super(false);
     }
+
+
+    private static final String E1 = "org.e2immu.analyser.testexample.PreconditionChecks.either(String,String):0:e1";
+    private static final String E2 = "org.e2immu.analyser.testexample.PreconditionChecks.either(String,String):1:e2";
+    private static final String II = "org.e2immu.analyser.testexample.PreconditionChecks.setInteger(int):0:ii";
+    private static final String INTEGER = "org.e2immu.analyser.testexample.PreconditionChecks.integer";
+
+    EvaluationResultVisitor evaluationResultVisitor = d -> {
+        if ("either".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+            Assert.assertEquals("(null == " + E1 + " and null == " + E2 + ")", d.evaluationResult().value.toString());
+        }
+    };
+
+    StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+        if ("setInteger".equals(d.methodInfo().name)) {
+            if (INTEGER.equals(d.variableName())) {
+                if ("0.0.1".equals(d.statementId())) {
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                }
+                if ("0.0.2".equals(d.statementId())) {
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                }
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                }
+            }
+        }
+    };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("setPositive1".equals(d.methodInfo().name)) {
@@ -57,30 +83,40 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                 }
             }
             if ("0".equals(d.statementId())) {
-                Assert.assertSame(UnknownValue.EMPTY, d.condition());
                 if (d.iteration() == 0) {
+                    Assert.assertSame(UnknownValue.NO_VALUE, d.condition()); // condition is EMPTY, but because state is NO_VALUE, not written
                     Assert.assertSame(UnknownValue.NO_VALUE, d.state());
                 } else {
+                    Assert.assertSame(UnknownValue.EMPTY, d.condition());
                     Assert.assertEquals("this.i >= 0", d.state().toString());
                 }
             }
         }
-        if ("setInteger".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-            if (d.iteration() == 0) {
-                Assert.assertSame(UnknownValue.NO_VALUE, d.state());
-            } else if (d.iteration() == 1) {
-                Assert.assertEquals("iteration " + d.iteration(), "ii >= 0", d.state().toString());
-            } else {
-                Assert.assertEquals("iteration " + d.iteration(), "(null == this.integer and ii >= 0)", d.state().toString());
+        if ("setInteger".equals(d.methodInfo().name)) {
+            FieldInfo integer = d.methodInfo().typeInfo.getFieldByName("integer", true);
+            if ("0.0.0".equals(d.statementId())) {
+                Assert.assertEquals(II + " >= 0", d.state().toString());
+            }
+            if("0.0.2".equals(d.statementId())) {
+                Assert.assertTrue(d.statementAnalysis().variables.isSet(INTEGER));
+                TransferValue tv = d.statementAnalysis().methodLevelData.fieldSummaries.get(integer);
+                Assert.assertEquals(Level.TRUE, tv.getProperty(VariableProperty.ASSIGNED));
+            }
+            if ("1".equals(d.statementId())) {
+                Assert.assertTrue(d.statementAnalysis().variables.isSet(INTEGER));
+                TransferValue tv = d.statementAnalysis().methodLevelData.fieldSummaries.get(integer);
+                Assert.assertEquals(Level.TRUE, tv.getProperty(VariableProperty.ASSIGNED));
 
-                // set at the end of the synchronized block
-                Assert.assertEquals("ii >= 0", d.statementAnalysis().stateData.conditionManager.get().state.toString());
+                if (d.iteration() > 0) {
+                    Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT)); // TODO
+                }
             }
         }
-        if ("setInteger".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-            if (d.iteration() > 0) {
-                Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT)); // TODO
-            }
+        if ("either".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+            Assert.assertEquals("(not (null == " + E1 + ") or not (null == " + E2 + "))",
+                    d.statementAnalysis().stateData.conditionManager.get().state.toString());
+            Assert.assertEquals("(not (null == " + E1 + ") or not (null == " + E2 + "))",
+                    d.statementAnalysis().stateData.precondition.get().toString());
         }
     };
 
@@ -93,7 +129,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
         }
         if ("either".equals(name)) {
             MethodAnalysis methodAnalysis = d.methodAnalysis();
-            Assert.assertEquals("(not (null == e1) or not (null == e2))", methodAnalysis.getPrecondition().toString());
+            Assert.assertEquals("(not (null == " + E1 + ") or not (null == " + E2 + "))", methodAnalysis.getPrecondition().toString());
         }
         if ("setPositive1".equals(name) && d.iteration() > 0) {
             Assert.assertEquals("this.i >= 0", d.methodAnalysis().getPrecondition().toString());
@@ -101,17 +137,20 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-        if (d.iteration() > 0 && "integer".equals(d.fieldInfo().name)) {
-            Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+        if ("integer".equals(d.fieldInfo().name)) {
+            int expectFinal = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+            Assert.assertEquals(expectFinal, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
         }
     };
 
     @Test
     public void test() throws IOException {
         testClass("PreconditionChecks", 1, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

@@ -30,6 +30,7 @@ public class DoStatement extends LoopStatement {
                 .setStatementsExecutedAtLeastOnce((v, ec) -> true)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setExpression(expression)
+                .setExpressionIsCondition(true)
                 .setBlock(block).build(), label);
     }
 

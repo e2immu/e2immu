@@ -60,6 +60,11 @@ public class AndValue extends PrimitiveValue {
     // we try to maintain a CNF
     public Value append(EvaluationContext evaluationContext, Value... values) {
 
+        // STEP 0: check that all values return boolean!
+        if (Arrays.stream(values).anyMatch(v -> v.type() == null || !Primitives.isBooleanOrBoxedBoolean(v.type()))) {
+            throw new UnsupportedOperationException("Internal error, values are " + Arrays.toString(values));
+        }
+
         // STEP 1: trivial reductions
 
         if (this.values.isEmpty() && values.length == 1 && values[0] instanceof AndValue) return values[0];

@@ -219,7 +219,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     @Override
     public StatementAnalyser lastStatement() {
-        return followReplacements().navigationData.next.get().map(StatementAnalyser::lastStatement).orElse(this);
+        return followReplacements().navigationData.next.get().map(sa -> {
+            // TODO add a check for unreachable statements, returning "this"
+            StatementAnalyser last = sa.lastStatement();
+            return last;
+        }).orElse(this);
     }
 
     @Override
@@ -308,15 +312,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previous,
                             forwardAnalysisInfo.execution()))
 
+                    .add("checkNotNullEscapes", this::checkNotNullEscapes)
+                    .add("checkSizeEscapes", this::checkSizeEscapes)
+                    .add("checkPrecondition", this::checkPrecondition)
                     .add("copyPrecondition", sharedState -> statementAnalysis.stateData.copyPrecondition(this,
                             previous, sharedState.evaluationContext))
                     .add(ANALYSE_METHOD_LEVEL_DATA, sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
                             previous == null ? null : previous.methodLevelData,
                             statementAnalysis.stateData))
 
-                    .add("checkNotNullEscapes", this::checkNotNullEscapes)
-                    .add("checkSizeEscapes", this::checkSizeEscapes)
-                    .add("checkPrecondition", this::checkPrecondition)
                     .add("checkUnusedReturnValue", sharedState -> checkUnusedReturnValue())
                     .add("checkUselessAssignments", sharedState -> checkUselessAssignments())
                     .add("checkUnusedLocalVariables", sharedState -> checkUnusedLocalVariables())
@@ -777,9 +781,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                               StatementAnalyserResult.Builder builder) {
         boolean statementsExecutedAtLeastOnce = structure.statementsExecutedAtLeastOnce.test(value, evaluationContext);
         FlowData.Execution execution = statementAnalysis.flowData.execution(statementsExecutedAtLeastOnce);
-
+        ConditionManager newLocalConditionManager = structure.expressionIsCondition ? localConditionManager.addCondition(evaluationContext, value)
+                : localConditionManager;
         StatementAnalyserResult recursiveResult = startOfFirstBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
-                new ForwardAnalysisInfo(execution, localConditionManager.addCondition(evaluationContext, value), false));
+                new ForwardAnalysisInfo(execution, newLocalConditionManager, false));
         builder.add(recursiveResult);
         return recursiveResult.analysisStatus;
     }

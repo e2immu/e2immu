@@ -42,6 +42,7 @@ public class IfElseStatement extends StatementWithExpression {
     private static Structure createCodeOrganization(Expression expression, Block ifBlock, Block elseBlock) {
         Structure.Builder builder = new Structure.Builder()
                 .setExpression(expression)
+                .setExpressionIsCondition(true)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setBlock(ifBlock)
                 .setStatementsExecutedAtLeastOnce((v, ec) -> false);
