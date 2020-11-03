@@ -578,8 +578,9 @@ public class MethodAnalyser extends AbstractAnalyser {
     private AnalysisStatus propertiesOfReturnStatements(SharedState sharedState) {
         if (sharedState.methodLevelData.returnStatementSummaries.isEmpty()) return DONE;
         AnalysisStatus analysisStatus = DONE;
-        for (VariableProperty variableProperty : VariableProperty.RETURN_VALUE_PROPERTIES_IN_METHOD_ANALYSER) {
-            analysisStatus = analysisStatus.combine(propertyOfReturnStatements(sharedState.methodLevelData(), variableProperty));
+        for (VariableProperty variableProperty : VariableProperty.READ_FROM_RETURN_VALUE_PROPERTIES) {
+            AnalysisStatus status = propertyOfReturnStatements(sharedState.methodLevelData(), variableProperty);
+            analysisStatus = analysisStatus.combine(status);
         }
         return analysisStatus;
     }
@@ -597,8 +598,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             log(DELAYED, "Return statement value not yet set");
             return DELAYS;
         }
-        IntStream stream = methodLevelData.returnStatementSummaries.stream()
-                .mapToInt(entry -> entry.getValue().getProperty(variableProperty));
+        IntStream stream = methodLevelData.returnStatementSummaries.stream().mapToInt(entry -> entry.getValue().getProperty(variableProperty));
         int value = variableProperty == VariableProperty.SIZE ?
                 safeMinimumForSize(messages, new Location(methodInfo), stream) :
                 stream.min().orElse(Level.DELAY);

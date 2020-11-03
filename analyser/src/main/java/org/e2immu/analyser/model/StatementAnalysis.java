@@ -225,7 +225,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     public void ensure(Message newMessage) {
-        messages.add(newMessage);
+        if (!messages.contains(newMessage)) {
+            messages.add(newMessage);
+        }
     }
 
     public interface StateChange extends Function<Value, Value> {

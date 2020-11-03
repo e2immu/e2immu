@@ -677,10 +677,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    private void step6_return(Value value, EvaluationContext evaluationContext) {
+    private AnalysisStatus step6_return(Value value, EvaluationContext evaluationContext) {
         if (!(statementAnalysis.statement instanceof ReturnStatement) || myMethodAnalyser.methodInfo.isVoid()
                 || myMethodAnalyser.methodInfo.isConstructor) {
-            return;
+            return DONE;
         }
         String statementId = statementAnalysis.index;
         TransferValue transferValue;
@@ -692,19 +692,20 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             int fluent = (((ReturnStatement) statementAnalysis.statement).fluent(evaluationContext.getAnalyserContext()));
             transferValue.properties.put(VariableProperty.FLUENT, fluent);
         }
-        if (value == NO_VALUE) return;
+        if (value == NO_VALUE) return DELAYS;
         if (value == null) {
             if (!transferValue.linkedVariables.isSet()) {
                 transferValue.linkedVariables.set(Set.of());
             }
             if (!transferValue.value.isSet()) transferValue.value.set(NO_VALUE);
-            return;
+            return DONE;
         }
 
+        AnalysisStatus status = DONE;
         Set<Variable> vars = evaluationContext.linkedVariables(value);
         if (vars == null) {
             log(DELAYED, "Linked variables is delayed on transfer");
-            analysisStatus = DELAYS;
+            status = DELAYS;
         } else if (!transferValue.linkedVariables.isSet()) {
             transferValue.linkedVariables.set(vars);
         }
@@ -712,27 +713,32 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // just like the VariableValue, the TransferValue has properties separately!
             transferValue.value.set(value);
         }
-        for (VariableProperty variableProperty : VariableProperty.INTO_RETURN_VALUE_SUMMARY) {
+        for (VariableProperty variableProperty : VariableProperty.WRITE_INTO_RETURN_VALUE_PROPERTIES) {
             int v = evaluationContext.getProperty(value, variableProperty);
+            int current = transferValue.getProperty(variableProperty);
+
             if (variableProperty == VariableProperty.IDENTITY && v == Level.DELAY) {
                 int methodDelay = evaluationContext.getProperty(value, VariableProperty.METHOD_DELAY);
                 if (methodDelay != Level.TRUE) {
                     v = Level.FALSE;
                 }
             }
-            if ((variableProperty == VariableProperty.SIZE_COPY || variableProperty == VariableProperty.SIZE) && v == Level.DELAY)
+            if ((variableProperty == VariableProperty.SIZE_COPY || variableProperty == VariableProperty.SIZE) && v == Level.DELAY) {
                 v = Level.FALSE; // TODO REMOVE ME at some point; this is a shortcut to start with getting the tests to green
-            int current = transferValue.getProperty(variableProperty);
+            }
+            if (variableProperty == VariableProperty.IMMUTABLE && v == Level.DELAY) {
+                v = MultiLevel.MUTABLE; // TODO remove me at some point
+            }
+
+            if (v == Level.DELAY && current == Level.DELAY) {
+                status = DELAYS;
+            }
             if (v > current) {
                 transferValue.properties.put(variableProperty, v);
             }
         }
-        int immutable = evaluationContext.getProperty(value, VariableProperty.IMMUTABLE);
-        if (immutable == Level.DELAY) immutable = MultiLevel.MUTABLE;
-        int current = transferValue.getProperty(VariableProperty.IMMUTABLE);
-        if (immutable > current) {
-            transferValue.properties.put(VariableProperty.IMMUTABLE, immutable);
-        }
+
+        return status;
     }
 
     private boolean step7_detectErrorsIfElseSwitchFor(Value value, EvaluationContext evaluationContext) {
@@ -854,7 +860,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
 
         // STEP 6: ReturnStatement, prepare parts of method level data
-        step6_return(value, evaluationContext);
+        AnalysisStatus status6 = step6_return(value, evaluationContext);
+        analysisStatus = analysisStatus.combine(status6);
 
         // STEP 7: detect some errors for some statements
         boolean isSwitchOrIfElse = step7_detectErrorsIfElseSwitchFor(value, evaluationContext);

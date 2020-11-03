@@ -128,4 +128,19 @@ public class Message {
     public String toString() {
         return severity + " in " + location + ": " + message;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Message message1 = (Message) o;
+        return message.equals(message1.message) &&
+                severity == message1.severity &&
+                location.equals(message1.location);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(message, severity, location);
+    }
 }
