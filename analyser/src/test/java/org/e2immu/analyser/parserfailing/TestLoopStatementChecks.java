@@ -1,14 +1,12 @@
 package org.e2immu.analyser.parserfailing;
 
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodAnalysis;
-import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.value.StringValue;
@@ -34,13 +32,13 @@ public class TestLoopStatementChecks extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("method3".equals(d.methodInfo().name)) {
-            TransferValue tv = d.methodAnalysis().methodLevelData().returnStatementSummaries.get("2");
+            VariableInfo tv = d.getReturnAsVariable();
             Assert.assertNotNull(tv);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.properties.get(VariableProperty.NOT_NULL)); // (2)
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL)); // (3)
         }
         if ("method3bis".equals(d.methodInfo().name)) {
-            TransferValue tv = d.methodAnalysis().methodLevelData().returnStatementSummaries.get("2");
+            VariableInfo tv = d.getReturnAsVariable();
             Assert.assertNotNull(tv);
             Assert.assertEquals(MultiLevel.NULLABLE, tv.properties.get(VariableProperty.NOT_NULL));
         }
@@ -59,13 +57,13 @@ public class TestLoopStatementChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("method3".equals(d.methodInfo().name) && "res".equals(d.variableName())) {
             if ("2".equals(d.statementId())) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, (int) d.properties().get(VariableProperty.NOT_NULL)); // (1)
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL)); // (1)
             }
         }
         if ("method1".equals(d.methodInfo().name) && "res1".equals(d.variableName())) {
             if ("2.0.0".equals(d.statementId())) {
-                Assert.assertEquals(Level.TRUE, (int) d.properties().get(VariableProperty.ASSIGNED_IN_LOOP)); // (4)
-                Assert.assertEquals(Level.TRUE, (int) d.properties().get(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED)); // (4)
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED_IN_LOOP)); // (4)
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED)); // (4)
                 Assert.assertTrue(d.currentValue() instanceof StringValue);
             }
             if ("3".equals(d.statementId())) {

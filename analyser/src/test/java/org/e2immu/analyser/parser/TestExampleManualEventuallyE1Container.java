@@ -1,7 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -17,7 +16,6 @@ import java.util.stream.Collectors;
 public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
         String name = d.methodInfo().name;
         int iteration = d.iteration();
 
@@ -35,9 +33,8 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                 Assert.assertEquals("[(-this.j) >= 0]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
 
                 FieldInfo fieldJ = d.methodInfo().typeInfo.getFieldByName("j", true);
-                TransferValue tv = methodLevelData.fieldSummaries.get(fieldJ);
-                Assert.assertNotNull(tv);
-                Value value = tv.value.get();
+                VariableInfo tv = d.getFieldAsVariable(fieldJ);
+                Value value = tv.valueForNextStatement();
                 Assert.assertEquals("j", value.toString());
                 Value state = tv.stateOnAssignment.get();
                 Assert.assertEquals("(-this.j) >= 0", state.toString());
@@ -45,11 +42,11 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
         }
         if ("getIntegers".equals(name)) {
             if (iteration > 0) {
-                TransferValue tv = methodLevelData.returnStatementSummaries.get("0");
+                VariableInfo tv =d.getReturnAsVariable();
                 Assert.assertEquals(1, tv.linkedVariables.get().size());
             }
             if (iteration > 1) {
-                Set<Variable> variables = methodLevelData.variablesLinkedToMethodResult.get();
+                Set<Variable> variables = d.getReturnAsVariable().linkedVariables.get();
                 Assert.assertEquals(1, variables.size());
                 int independent = d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT);
                 Assert.assertEquals(MultiLevel.FALSE, independent);

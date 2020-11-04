@@ -19,13 +19,14 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -62,11 +63,12 @@ public class TestEither extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("getLeftOrElse".equals(d.methodInfo().name) && d.iteration() > 0) {
-            TransferValue tv = d.methodAnalysis().methodLevelData().returnStatementSummaries.get("1");
-            Assert.assertTrue(tv.value.get() instanceof ConditionalValue);
-            ConditionalValue conditionalValue = (ConditionalValue) tv.value.get();
+            VariableInfo tv = d.getReturnAsVariable();
+            Value retVal = tv.valueForNextStatement();
+            Assert.assertTrue(retVal instanceof ConditionalValue);
+            ConditionalValue conditionalValue = (ConditionalValue) retVal;
             Assert.assertEquals("null == this.left?orElse,@NotNull:this.left", conditionalValue.toString());
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(tv.value.get(), VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(retVal, VariableProperty.NOT_NULL));
         }
         if ("Either".equals(d.methodInfo().name) && d.iteration() > 0) {
             Assert.assertEquals("((null == a or null == b) and (not (null == a) or not (null == b)))",

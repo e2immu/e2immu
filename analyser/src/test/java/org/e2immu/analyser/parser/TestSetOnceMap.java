@@ -19,8 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
@@ -45,17 +44,16 @@ public class TestSetOnceMap extends CommonTestRunner {
         String name = d.methodInfo().name;
         int iteration = d.iteration();
 
-        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
         if ("get".equals(name) && iteration > 0) {
             Value srv = d.methodAnalysis().getSingleReturnValue();
             Assert.assertEquals("inline get on this.map.get(k),@NotNull", srv.toString());
             InlineValue inlineValue = (InlineValue) srv;
             Assert.assertEquals(InlineValue.Applicability.TYPE, inlineValue.applicability);
-            TransferValue tv = methodLevelData.returnStatementSummaries.get("1");
+            VariableInfo tv = d.getReturnAsVariable();
 
             Assert.assertNotNull(tv);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.properties.get(VariableProperty.NOT_NULL));
-            Assert.assertTrue(tv.value.get() instanceof PropertyWrapper);
+            Assert.assertTrue(tv.valueForNextStatement() instanceof PropertyWrapper);
             Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(
                     d.methodAnalysis().getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
 
@@ -65,7 +63,7 @@ public class TestSetOnceMap extends CommonTestRunner {
         }
         if ("getOtherwiseNull".equals(name)) {
             if (iteration > 0) {
-                Set<Variable> linkedVariables = methodLevelData.returnStatementSummaries.get("0").linkedVariables.get();
+                Set<Variable> linkedVariables = d.getReturnAsVariable().linkedVariables.get();
                 Assert.assertEquals("0:k,map", linkedVariables.stream().map(Object::toString).collect(Collectors.joining(",")));
                 // independent, because does not return a support data type
                 int independent = d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT);
@@ -73,9 +71,8 @@ public class TestSetOnceMap extends CommonTestRunner {
             }
         }
         if ("isEmpty".equals(name)) {
-            TransferValue tv = methodLevelData.returnStatementSummaries.get("0");
-            Assert.assertNotNull(tv);
-            Assert.assertEquals("0 == this.map.size(),?>=0", tv.value.get().toString());
+            VariableInfo tv = d.getReturnAsVariable();
+            Assert.assertEquals("0 == this.map.size(),?>=0", tv.valueForNextStatement().toString());
 
             // there is no reason to have a @Size annotation on this expression
             Assert.assertEquals(Level.DELAY, tv.getProperty(VariableProperty.SIZE));
@@ -87,9 +84,7 @@ public class TestSetOnceMap extends CommonTestRunner {
             }
         }
         if ("stream".equals(name)) {
-            TransferValue tv = methodLevelData.returnStatementSummaries.get("0");
-            Assert.assertNotNull(tv);
-            Value stream = tv.value.get();
+            Value stream = d.getReturnAsVariable().valueForNextStatement();
             Assert.assertEquals("this.map.entrySet().stream()", stream.toString());
             Assert.assertEquals(Level.SIZE_COPY_TRUE, d.getProperty(stream, VariableProperty.SIZE_COPY));
         }

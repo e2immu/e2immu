@@ -2,6 +2,7 @@ package org.e2immu.analyser.config;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.StatementAnalyserResult;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Message;
@@ -16,6 +17,10 @@ public interface StatementAnalyserVisitor {
                 MethodInfo methodInfo, StatementAnalysis statementAnalysis,
                 String statementId, Value condition, Value state, Map<String, AnalysisStatus> statusesAsMap,
                 boolean ignoreErrorsOnCondition) {
+
+        public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
+            return statementAnalysis.variables.get(fieldInfo.fullyQualifiedName());
+        }
 
         // shortcut
         public String haveError(String message) {
@@ -48,6 +53,14 @@ public interface StatementAnalyserVisitor {
         public boolean haveSetProperty(VariableProperty variableProperty, int value) {
             return result.getModifications().anyMatch(m -> m instanceof AbstractAnalysisBuilder.SetProperty setProperty &&
                     setProperty.value == value && setProperty.variableProperty == variableProperty);
+        }
+
+        public VariableInfo getReturnAsVariable() {
+            return statementAnalysis.variables.get(methodInfo.fullyQualifiedName());
+        }
+
+        public VariableInfo getThisAsVariable() {
+            return statementAnalysis.variables.get(methodInfo.typeInfo.fullyQualifiedName() + ".this");
         }
     }
 

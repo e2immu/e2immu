@@ -5,12 +5,12 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.value.ConstantValue;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class Test_04_ConditionalChecks extends CommonTestRunner {
     private static final String A1 = "org.e2immu.analyser.testexample.ConditionalChecks.method1(boolean,boolean):0:a";
@@ -51,8 +51,6 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
         Map<InterruptsFlow, FlowData.Execution> interruptsFlow = d.statementAnalysis().flowData.interruptsFlow.get();
 
         if ("method1".equals(d.methodInfo().name)) {
-            String allReturnStatementSummaryKeys = d.statementAnalysis().methodLevelData.returnStatementSummaries.stream()
-                    .map(Map.Entry::getKey).sorted().collect(Collectors.joining(", "));
 
             if ("0.0.0".equals(d.statementId())) {
                 Assert.assertEquals("(" + A1 + " and " + B1 + ")", d.condition().toString());
@@ -67,8 +65,6 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                 Assert.assertEquals(FlowData.Execution.ALWAYS, inBlock);
                 Assert.assertEquals(FlowData.Execution.ALWAYS, inMethod);
                 Assert.assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.Execution.CONDITIONALLY), interruptsFlow);
-                Assert.assertEquals("0.0.0", allReturnStatementSummaryKeys);
-
             }
             if ("1.0.0".equals(d.statementId())) {
                 Assert.assertEquals("(not (" + A1 + ") and not (" + B1 + "))", d.condition().toString());
@@ -80,13 +76,11 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                 Assert.assertEquals("((" + A1 + " or " + B1 + ") and (not (" + A1 + ") or not (" + B1 + ")))", d.state().toString());
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
-                Assert.assertEquals("0.0.0, 1.0.0", allReturnStatementSummaryKeys);
             }
             if ("2".equals(d.statementId())) {
                 Assert.assertEquals("(not (" + A1 + ") and " + B1 + ")", d.state().toString());
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
-                Assert.assertEquals("0.0.0, 1.0.0, 2.0.0", allReturnStatementSummaryKeys);
             }
             // constant condition
             if ("3".equals(d.statementId())) {
@@ -95,15 +89,17 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                         d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
-                Assert.assertEquals("0.0.0, 1.0.0, 2.0.0, 3.0.0", allReturnStatementSummaryKeys);
             }
             // unreachable statement
             if ("4".equals(d.statementId())) {
                 Assert.assertEquals(FlowData.Execution.NEVER, inBlock);
                 Assert.assertEquals(FlowData.Execution.NEVER, inMethod);
                 Assert.assertNotNull(d.haveError(Message.UNREACHABLE_STATEMENT));
-                Assert.assertEquals("0.0.0, 1.0.0, 2.0.0, 3.0.0, 4", allReturnStatementSummaryKeys);
+
+                VariableInfo ret = d.getReturnAsVariable();
+                Assert.assertTrue(ret.valueForNextStatement() instanceof ConstantValue); // TODO simply here as a marker test
             }
+
         }
         if ("method3".equals(d.methodInfo().name)) {
             if (d.iteration() == 0) {

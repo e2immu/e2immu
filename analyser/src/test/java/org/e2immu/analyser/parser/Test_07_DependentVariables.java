@@ -1,7 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
@@ -65,14 +64,12 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method1".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
-            MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
-            TransferValue tv = methodLevelData.returnStatementSummaries.get("4");
-            Assert.assertEquals("56", tv.value.get().toString());
+            VariableInfo tv = d.getReturnAsVariable();
+            Assert.assertEquals("56", tv.valueForNextStatement().toString());
         }
         if ("method2".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
-            MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
-            TransferValue tv = methodLevelData.returnStatementSummaries.get("3");
-            Assert.assertEquals("12", tv.value.get().toString());
+            VariableInfo tv = d.getReturnAsVariable();
+            Assert.assertEquals("12", tv.valueForNextStatement().toString());
         }
     };
 

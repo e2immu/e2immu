@@ -1,7 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -192,12 +191,11 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         String name = d.methodInfo().name;
         MethodInfo methodInfo = d.methodInfo();
 
-        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
         if ("size".equals(name) && "Example2".equals(methodInfo.typeInfo.simpleName)) {
             if (iteration > 0) {
                 FieldInfo set2 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
                 Assert.assertEquals("set2", set2.name);
-                TransferValue tv = methodLevelData.fieldSummaries.get(set2);
+                VariableInfo tv = d.getFieldAsVariable(set2);
                 Assert.assertEquals(0, tv.properties.get(VariableProperty.MODIFIED));
             }
             if (iteration > 1) {
@@ -213,9 +211,8 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         }
         if ("add4".equals(name)) {
             if (iteration >= 1) {
-                FieldInfo set4 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> f.name.equals("set4")).findAny().orElseThrow();
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodLevelData.fieldSummaries.get(set4)
-                        .properties.get(VariableProperty.NOT_NULL));
+                FieldInfo set4 = methodInfo.typeInfo.getFieldByName("set4", true);
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getFieldAsVariable(set4).getProperty(VariableProperty.NOT_NULL));
             }
             if (iteration >= 2) {
                 Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
@@ -233,11 +230,10 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             }
         }
         if ("add6".equals(name)) {
-            FieldInfo set6 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> f.name.equals("set6")).findAny().orElseThrow();
+            FieldInfo set6 = methodInfo.typeInfo.getFieldByName("set6", true);
 
             if (iteration >= 2) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodLevelData.fieldSummaries.get(set6)
-                        .properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getFieldAsVariable(set6).getProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
             }
         }

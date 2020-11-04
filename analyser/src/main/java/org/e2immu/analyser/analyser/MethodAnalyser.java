@@ -272,7 +272,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             // we need to check if there's fields being read/assigned/
             if (absentUnlessStatic(VariableProperty.READ) &&
                     absentUnlessStatic(VariableProperty.ASSIGNED) &&
-                    (methodAnalysis.methodLevelData().thisSummary.get().properties.getOrDefault(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
+                    (getThisAsVariable().properties.getOrDefault(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
                     !methodInfo.hasOverrides(analyserContext.getPrimitives()) &&
                     !methodInfo.isDefaultImplementation) {
                 MethodResolution methodResolution = methodInfo.methodResolution.get();
@@ -288,8 +288,9 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     private boolean absentUnlessStatic(VariableProperty variableProperty) {
-        return methodLevelData().fieldSummaries.stream().allMatch(e -> e.getValue()
-                .properties.getOrDefault(variableProperty, Level.DELAY) < Level.TRUE || e.getKey().isStatic());
+        return methodAnalysis.lastStatement().variableStream()
+                .filter(vi -> vi.variable instanceof FieldReference)
+                .allMatch(vi -> vi.getProperty(variableProperty) < Level.TRUE || vi.variable.isStatic());
     }
 
     // simply copy from last statement
@@ -395,7 +396,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             } else {
                 // for the before methods, we need to check again if we were mark or only
                 mark = mark || (!after && TypeAnalyser.assignmentIncompatibleWithPrecondition(evaluationContext,
-                        precondition, methodInfo, methodLevelData()));
+                        precondition, this));
             }
         }
         if (after == null) {
@@ -479,54 +480,45 @@ public class MethodAnalyser extends AbstractAnalyser {
     private AnalysisStatus methodIsConstant(SharedState sharedState) {
         assert !methodAnalysis.singleReturnValue.isSet();
         MethodLevelData methodLevelData = sharedState.methodLevelData;
-        if (methodLevelData.returnStatementSummaries.isEmpty()) return DONE;
+        if (methodInfo.isVoid() || methodInfo.isConstructor) return DONE;
 
-        boolean allReturnValuesSet = methodLevelData.returnStatementSummaries.stream().allMatch(e -> e.getValue().value.isSet());
-        if (!allReturnValuesSet) {
+        VariableInfo variableInfo = getReturnAsVariable();
+        Value value = variableInfo.valueForNextStatement();
+        if (value == UnknownValue.NO_VALUE) {
             log(DELAYED, "Not all return values have been set yet for {}, delaying", methodInfo.distinguishingName());
             return DELAYS;
         }
-        List<TransferValue> remainingReturnStatementSummaries = methodLevelData.returnStatementSummaries.stream().map(Map.Entry::getValue).collect(Collectors.toList());
-
-        Value value = null;
         int immutable = Level.DELAY;
 
-        if (remainingReturnStatementSummaries.size() == 1) {
-            Value single = remainingReturnStatementSummaries.get(0).value.get();
-            if (!methodAnalysis.internalObjectFlows.isSet()) {
-                log(DELAYED, "Delaying single return value because internal object flows not yet known, {}", methodInfo.distinguishingName());
-                return DELAYS;
-            }
-            ObjectFlow objectFlow = single.getObjectFlow();
-            if (objectFlow != ObjectFlow.NO_FLOW && !methodAnalysis.objectFlow.isSet()) {
-                log(OBJECT_FLOW, "Set final object flow object for method {}: {}", methodInfo.distinguishingName(), objectFlow);
-                objectFlow.finalize(methodAnalysis.objectFlow.getFirst());
-                methodAnalysis.objectFlow.set(objectFlow);
-            }
-            if (single.isConstant()) {
-                value = single;
-                immutable = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
-            } else {
-                int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
-                if (modified == Level.DELAY) return DELAYS;
-                if (modified == Level.FALSE) {
-                    InlineValue.Applicability applicability = applicability(single);
-                    if (applicability != InlineValue.Applicability.NONE) {
-                        value = new InlineValue(methodInfo, single, applicability);
-                        immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
-                    }
+        if (!methodAnalysis.internalObjectFlows.isSet()) {
+            log(DELAYED, "Delaying single return value because internal object flows not yet known, {}", methodInfo.distinguishingName());
+            return DELAYS;
+        }
+        ObjectFlow objectFlow = value.getObjectFlow();
+        if (objectFlow != ObjectFlow.NO_FLOW && !methodAnalysis.objectFlow.isSet()) {
+            log(OBJECT_FLOW, "Set final object flow object for method {}: {}", methodInfo.distinguishingName(), objectFlow);
+            objectFlow.finalize(methodAnalysis.objectFlow.getFirst());
+            methodAnalysis.objectFlow.set(objectFlow);
+        }
+        if (value.isConstant()) {
+            immutable = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+        } else {
+            int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
+            if (modified == Level.DELAY) return DELAYS;
+            if (modified == Level.FALSE) {
+                InlineValue.Applicability applicability = applicability(value);
+                if (applicability != InlineValue.Applicability.NONE) {
+                    value = new InlineValue(methodInfo, value, applicability);
+                    immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
                 }
             }
         }
+
         if (!methodAnalysis.objectFlow.isSet()) {
             log(OBJECT_FLOW, "No single object flow; we keep the object that's already there, for {}", methodInfo.distinguishingName());
             methodAnalysis.objectFlow.set(methodAnalysis.objectFlow.getFirst());
         }
-        // fallback
-        if (value == null) {
-            immutable = MultiLevel.MUTABLE;
-            value = UnknownValue.RETURN_VALUE;
-        }
+
         boolean isConstant = value.isConstant();
 
         methodAnalysis.singleReturnValue.set(value);
@@ -576,7 +568,6 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus propertiesOfReturnStatements(SharedState sharedState) {
-        if (sharedState.methodLevelData.returnStatementSummaries.isEmpty()) return DONE;
         AnalysisStatus analysisStatus = DONE;
         for (VariableProperty variableProperty : VariableProperty.READ_FROM_RETURN_VALUE_PROPERTIES) {
             AnalysisStatus status = propertyOfReturnStatements(sharedState.methodLevelData(), variableProperty);
@@ -593,18 +584,9 @@ public class MethodAnalyser extends AbstractAnalyser {
         if (currentValue != Level.DELAY && variableProperty != VariableProperty.IMMUTABLE && variableProperty != VariableProperty.NOT_NULL)
             return DONE; // NOT FOR ME
 
-        boolean delays = methodLevelData.returnStatementSummaries.stream().anyMatch(entry -> entry.getValue().isDelayed(variableProperty));
-        if (delays) {
-            log(DELAYED, "Return statement value not yet set");
-            return DELAYS;
-        }
-        IntStream stream = methodLevelData.returnStatementSummaries.stream().mapToInt(entry -> entry.getValue().getProperty(variableProperty));
-        int value = variableProperty == VariableProperty.SIZE ?
-                safeMinimumForSize(messages, new Location(methodInfo), stream) :
-                stream.min().orElse(Level.DELAY);
-
+        int value = getReturnAsVariable().getProperty(variableProperty);
         if (value == Level.DELAY) {
-            log(DELAYED, "Not deciding on {} yet for method {}", variableProperty, methodInfo.distinguishingName());
+            log(DELAYED, "Return statement value not yet set");
             return DELAYS;
         }
         if (value <= currentValue) return DONE; // not improving.
@@ -629,16 +611,14 @@ public class MethodAnalyser extends AbstractAnalyser {
                 // non-modifying method that returns a type with @Size (like Collection, Map, ...)
                 log(SIZE, "Return type {} of method {} has a size!", methodInfo.returnType().detailedString(), methodInfo.fullyQualifiedName());
 
-                methodLevelData.returnStatementSummaries.stream().forEach(e -> log(DELAYED, "RSS: {} = {}", e.getKey(), e.getValue()));
+                int size = getReturnAsVariable().getProperty(VariableProperty.SIZE);
                 // then try @Size(min, equals)
-                boolean delays = methodLevelData.returnStatementSummaries.stream().anyMatch(entry -> entry.getValue().isDelayed(VariableProperty.SIZE));
-                if (delays) {
+                if (size == Level.DELAY) {
                     log(DELAYED, "Return statement value not yet set for @Size on {}", methodInfo.distinguishingName());
                     return DELAYS;
                 }
-                IntStream stream = methodLevelData.returnStatementSummaries.stream()
-                        .mapToInt(entry -> entry.getValue().getProperty(VariableProperty.SIZE));
-                return writeSize(VariableProperty.SIZE, safeMinimumForSize(messages, new Location(methodInfo), stream));
+                int value = Math.max(Level.IS_A_SIZE, size);
+                return writeSize(VariableProperty.SIZE, value);
             } else {
                 log(SIZE, "Return type {} of method {} has no size", methodInfo.returnType().detailedString(), methodInfo.fullyQualifiedName());
             }
@@ -670,15 +650,13 @@ public class MethodAnalyser extends AbstractAnalyser {
         if (modified == Level.FALSE) {
             if (methodInfo.returnType().hasSize(analyserContext.getPrimitives(), analyserContext)) {
                 // first try @Size(copy ...)
-                boolean delays = sharedState.methodLevelData.returnStatementSummaries
-                        .stream().anyMatch(entry -> entry.getValue().isDelayed(VariableProperty.SIZE_COPY));
-                if (delays) {
+                int sizeCopy = getReturnAsVariable().getProperty(VariableProperty.SIZE_COPY);
+                if (sizeCopy == Level.DELAY) {
                     log(DELAYED, "Return statement value not yet set for SIZE_COPY on {}", methodInfo.distinguishingName());
                     return DELAYS;
                 }
-                IntStream stream = sharedState.methodLevelData.returnStatementSummaries.stream()
-                        .mapToInt(entry -> entry.getValue().getProperty(VariableProperty.SIZE_COPY));
-                int min = stream.min().orElse(Level.IS_A_SIZE);
+
+                int min = Math.max(sizeCopy, Level.IS_A_SIZE);
                 return writeSize(VariableProperty.SIZE_COPY, min);
             }
             // not for me
@@ -707,16 +685,13 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     private int propagateSizeAnnotations(SharedState sharedState) {
-        if (sharedState.methodLevelData.returnStatementSummaries.size() != 1) {
-            return Level.NOT_A_SIZE; // TODO
-        }
-        TransferValue tv = sharedState.methodLevelData.returnStatementSummaries.stream().findFirst().orElseThrow().getValue();
-        if (!tv.value.isSet()) {
+        VariableInfo variableInfo = getReturnAsVariable();
+        Value returnValue = variableInfo.valueForNextStatement();
+        if (returnValue == UnknownValue.NO_VALUE) {
             return Level.DELAY;
         }
-        Value value = tv.value.get();
         ConstrainedNumericValue cnv;
-        if (Primitives.isDiscrete(methodInfo.returnType()) && ((cnv = value.asInstanceOf(ConstrainedNumericValue.class)) != null)) {
+        if (Primitives.isDiscrete(methodInfo.returnType()) && ((cnv = returnValue.asInstanceOf(ConstrainedNumericValue.class)) != null)) {
             // very specific situation, we see if the return statement is a @Size method; if so, we propagate that info
             MethodValue methodValue;
             if ((methodValue = cnv.value.asInstanceOf(MethodValue.class)) != null) {
@@ -729,7 +704,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             // very specific situation, we see if the return statement is a predicate on a @Size method; if so we propagate that info
             // size restrictions are ALWAYS int == size() or -int + size() >= 0
             EqualsValue equalsValue;
-            if ((equalsValue = value.asInstanceOf(EqualsValue.class)) != null) {
+            if ((equalsValue = returnValue.asInstanceOf(EqualsValue.class)) != null) {
                 IntValue intValue;
                 ConstrainedNumericValue cnvRhs;
                 if ((intValue = equalsValue.lhs.asInstanceOf(IntValue.class)) != null &&
@@ -744,7 +719,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                 }
             } else {
                 GreaterThanZeroValue gzv;
-                if ((gzv = value.asInstanceOf(GreaterThanZeroValue.class)) != null) {
+                if ((gzv = returnValue.asInstanceOf(GreaterThanZeroValue.class)) != null) {
                     EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration, ConditionManager.INITIAL);
                     GreaterThanZeroValue.XB xb = gzv.extract(evaluationContext);
                     ConstrainedNumericValue cnvXb;
@@ -780,9 +755,9 @@ public class MethodAnalyser extends AbstractAnalyser {
         MethodLevelData methodLevelData = sharedState.methodLevelData;
 
         // first step, check field assignments
-        boolean fieldAssignments = methodLevelData.fieldSummaries.stream()
-                .map(Map.Entry::getValue)
-                .anyMatch(tv -> tv.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE);
+        boolean fieldAssignments = methodAnalysis.lastStatement().variableStream()
+                .filter(vi -> vi.variable instanceof FieldReference)
+                .anyMatch(vi -> vi.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE);
         if (fieldAssignments) {
             log(NOT_MODIFIED, "Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
             methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);
@@ -792,26 +767,28 @@ public class MethodAnalyser extends AbstractAnalyser {
         // if there are no field assignments, there may be modifying method calls
 
         // second step, check that linking has been computed
-        if (!methodLevelData.variablesLinkedToFieldsAndParameters.isSet()) {
+        if (!methodLevelData.linksHaveBeenEstablished.isSet()) {
             log(DELAYED, "Method {}: Not deciding on @Modified yet, delaying because linking not computed",
                     methodInfo.distinguishingName());
             return DELAYS;
         }
-        boolean isModified = methodLevelData.fieldSummaries.stream().map(Map.Entry::getValue)
-                .anyMatch(tv -> tv.getProperty(VariableProperty.MODIFIED) == Level.TRUE);
+        boolean isModified = methodAnalysis.lastStatement().variableStream()
+                .filter(vi -> vi.variable instanceof FieldReference)
+                .anyMatch(vi -> vi.getProperty(VariableProperty.MODIFIED) == Level.TRUE);
         if (isModified && isLogEnabled(NOT_MODIFIED)) {
             List<String> fieldsWithContentModifications =
-                    methodLevelData.fieldSummaries.stream()
-                            .filter(e -> e.getValue().getProperty(VariableProperty.MODIFIED) == Level.TRUE)
-                            .map(e -> e.getKey().fullyQualifiedName()).collect(Collectors.toList());
+                    methodAnalysis.lastStatement().variableStream()
+                            .filter(vi -> vi.variable instanceof FieldReference)
+                            .filter(vi -> vi.getProperty(VariableProperty.MODIFIED) == Level.TRUE)
+                            .map(vi -> vi.name).collect(Collectors.toList());
             log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications: {}",
                     methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
         }
         if (!isModified) {
-            boolean localMethodsCalled = methodLevelData.thisSummary.get().getProperty(VariableProperty.METHOD_CALLED) == Level.TRUE;
+            boolean localMethodsCalled = getThisAsVariable().getProperty(VariableProperty.METHOD_CALLED) == Level.TRUE;
             // IMPORTANT: localMethodsCalled only works on "this"; it does not work for static methods (See IdentityChecks)
             if (localMethodsCalled) {
-                int thisModified = methodLevelData.thisSummary.get().getProperty(VariableProperty.MODIFIED);
+                int thisModified = getThisAsVariable().getProperty(VariableProperty.MODIFIED);
 
                 if (thisModified == Level.DELAY) {
                     log(DELAYED, "In {}: other local methods are called, but no idea if they are @NotModified yet, delaying",
@@ -870,11 +847,11 @@ public class MethodAnalyser extends AbstractAnalyser {
         Optional<MethodInfo> someOtherMethodNotYetDecided = methodInfo.typeInfo.typeInspection.getPotentiallyRun()
                 .methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(mi ->
-                        !mi.methodAnalysis.get().methodLevelData().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet() ||
-                                (!mi.methodAnalysis.get().methodLevelData().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get() &&
-                                        (mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.DELAY ||
+                        !analyserContext.getMethodAnalysis(mi).methodLevelData().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet() ||
+                                (analyserContext.getMethodAnalysis(mi).methodLevelData().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get() && (
+                                        analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.MODIFIED) == Level.DELAY ||
                                                 mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(analyserContext) == null ||
-                                                mi.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.DELAY)))
+                                                analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.INDEPENDENT) == Level.DELAY)))
                 .findFirst();
         if (someOtherMethodNotYetDecided.isPresent()) {
             log(DELAYED, "Delaying modification on method {} which calls an undeclared functional interface, because of {}",
@@ -902,7 +879,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             }
         } // else: for constructors, we assume @Modified so that rule is not that useful
 
-        if (!methodLevelData.variablesLinkedToFieldsAndParameters.isSet()) {
+        if (!methodLevelData.linksHaveBeenEstablished.isSet()) {
             log(DELAYED, "Delaying @Independent on {}, links not yet computed", methodInfo.fullyQualifiedName());
             return DELAYS;
         }
@@ -924,25 +901,29 @@ public class MethodAnalyser extends AbstractAnalyser {
             List<ParameterInfo> parameters = new ArrayList<>(methodInfo.methodInspection.get().parameters);
             parameters.removeIf(pi -> pi.parameterizedType.typeInfo == methodInfo.typeInfo);
 
-            boolean allLinkedVariablesSet = methodLevelData.fieldSummaries.stream().allMatch(e -> e.getValue().linkedVariables.isSet());
+            boolean allLinkedVariablesSet = methodAnalysis.lastStatement().variableStream()
+                    .filter(vi -> vi.variable instanceof FieldReference)
+                    .allMatch(vi -> vi.linkedVariables.isSet());
             if (!allLinkedVariablesSet) {
                 log(DELAYED, "Delaying @Independent on {}, linked variables not yet known for all field references", methodInfo.distinguishingName());
                 return DELAYS;
             }
-            boolean supportDataSet = methodLevelData.fieldSummaries.stream()
-                    .flatMap(e -> e.getValue().linkedVariables.get().stream())
+            boolean supportDataSet = methodAnalysis.lastStatement().variableStream()
+                    .filter(vi -> vi.variable instanceof FieldReference)
+                    .flatMap(vi -> vi.linkedVariables.get().stream())
                     .allMatch(v -> isImplicitlyImmutableDataTypeSet(v, analyserContext));
             if (!supportDataSet) {
                 log(DELAYED, "Delaying @Independent on {}, support data not yet known for all field references", methodInfo.distinguishingName());
                 return DELAYS;
             }
 
-            parametersIndependentOfFields = methodLevelData.fieldSummaries.stream()
-                    .peek(e -> {
-                        if (!e.getValue().linkedVariables.isSet())
-                            LOGGER.warn("Field {} has no linked variables set in {}", e.getKey().name, methodInfo.distinguishingName());
+            parametersIndependentOfFields = methodAnalysis.lastStatement().variableStream()
+                    .filter(vi -> vi.variable instanceof FieldReference)
+                    .peek(vi -> {
+                        if (!vi.linkedVariables.isSet())
+                            LOGGER.warn("Field {} has no linked variables set in {}", vi.name, methodInfo.distinguishingName());
                     })
-                    .flatMap(e -> e.getValue().linkedVariables.get().stream())
+                    .flatMap(vi -> vi.linkedVariables.get().stream())
                     .filter(v -> v instanceof ParameterInfo)
                     .map(v -> (ParameterInfo) v)
                     .peek(set -> log(LINKED_VARIABLES, "Remaining linked support variables of {} are {}", methodInfo.distinguishingName(), set))
@@ -967,13 +948,14 @@ public class MethodAnalyser extends AbstractAnalyser {
             return true;
         }
 
-        if (!methodLevelData.variablesLinkedToMethodResult.isSet()) {
+        if (!methodLevelData.linksHaveBeenEstablished.isSet()) {
             log(DELAYED, "Delaying @Independent on {}, variables linked to method result not computed",
                     methodInfo.fullyQualifiedName());
             return null;
         }
         // method does not return an implicitly immutable data type
-        Set<Variable> variables = methodLevelData.variablesLinkedToMethodResult.get();
+        VariableInfo returnVariable = getReturnAsVariable();
+        Set<Variable> variables = returnVariable.linkedVariables.get();
         boolean implicitlyImmutableSet = variables.stream().allMatch(v -> isImplicitlyImmutableDataTypeSet(v, analyserContext));
         if (!implicitlyImmutableSet) {
             log(DELAYED, "Delaying @Independent on {}, implicitly immutable status not known for all field references", methodInfo.distinguishingName());
@@ -1063,6 +1045,23 @@ public class MethodAnalyser extends AbstractAnalyser {
             }
         }
     }
+
+    public boolean haveFieldAsVariable(FieldInfo fieldInfo) {
+        return methodAnalysis.lastStatement().variables.isSet(fieldInfo.fullyQualifiedName());
+    }
+
+    public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
+        return methodAnalysis.lastStatement().variables.get(fieldInfo.fullyQualifiedName());
+    }
+
+    public VariableInfo getThisAsVariable() {
+        return methodAnalysis.lastStatement().variables.get(methodInfo.typeInfo.fullyQualifiedName + ".this");
+    }
+
+    public VariableInfo getReturnAsVariable() {
+        return methodAnalysis.lastStatement().variables.get(methodInfo.fullyQualifiedName());
+    }
+
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
 

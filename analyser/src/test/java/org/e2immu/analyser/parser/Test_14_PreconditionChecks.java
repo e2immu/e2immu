@@ -18,7 +18,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.FieldInfo;
@@ -99,12 +99,12 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
             }
             if("0.0.2".equals(d.statementId())) {
                 Assert.assertTrue(d.statementAnalysis().variables.isSet(INTEGER));
-                TransferValue tv = d.statementAnalysis().methodLevelData.fieldSummaries.get(integer);
+                VariableInfo tv = d.getFieldAsVariable(integer);
                 Assert.assertEquals(Level.TRUE, tv.getProperty(VariableProperty.ASSIGNED));
             }
             if ("1".equals(d.statementId())) {
                 Assert.assertTrue(d.statementAnalysis().variables.isSet(INTEGER));
-                TransferValue tv = d.statementAnalysis().methodLevelData.fieldSummaries.get(integer);
+                VariableInfo tv = d.getFieldAsVariable(integer);
                 Assert.assertEquals(Level.TRUE, tv.getProperty(VariableProperty.ASSIGNED));
 
                 if (d.iteration() > 0) {

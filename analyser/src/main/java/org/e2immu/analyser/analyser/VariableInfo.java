@@ -26,6 +26,7 @@ import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnce;
 
 import java.util.Objects;
+import java.util.Set;
 
 public class VariableInfo {
     public final VariableInfo localCopyOf; // can be null, when the variable is created/first used in this block
@@ -40,6 +41,8 @@ public class VariableInfo {
 
     public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
     public final SetOnce<Value> stateOnAssignment = new SetOnce<>(); // EMPTY when no info, NO_VALUE when not set
+
+    public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
 
     public boolean isLocalCopy() {
         return localCopyOf != null;
@@ -155,5 +158,10 @@ public class VariableInfo {
         }
         objectFlow.copyIfNotSet(variableInfo.objectFlow);
         stateOnAssignment.copyIfNotSet(variableInfo.stateOnAssignment);
+    }
+
+    public void ensureProperty(VariableProperty variableProperty, int value) {
+        int current = properties.getOrDefault(variableProperty, Level.DELAY);
+        if (value > current) properties.put(variableProperty, value);
     }
 }

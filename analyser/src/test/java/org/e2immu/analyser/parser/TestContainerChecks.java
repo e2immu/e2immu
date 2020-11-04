@@ -1,7 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -75,17 +74,16 @@ public class TestContainerChecks extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         String name = d.methodInfo().name;
         TypeInfo typeInfo = d.methodInfo().typeInfo;
-        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
         if ("setStrings1".equals(name)) {
             FieldInfo strings = typeInfo.getFieldByName("strings1", true);
-            TransferValue transferValue = methodLevelData.fieldSummaries.get(strings);
+            VariableInfo transferValue = d.getFieldAsVariable(strings);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, transferValue.properties.get(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.ASSIGNED));
         }
         if ("getStrings1".equals(name)) {
             FieldInfo strings = typeInfo.getFieldByName("strings1", true);
-            TransferValue transferValue = methodLevelData.fieldSummaries.get(strings);
-           // Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
+            VariableInfo transferValue = d.getFieldAsVariable(strings);
+            // Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.READ));
             Assert.assertEquals(Level.DELAY, transferValue.getProperty(VariableProperty.ASSIGNED));
         }
@@ -97,21 +95,21 @@ public class TestContainerChecks extends CommonTestRunner {
         if ("add2".equals(name) && d.iteration() >= 1) {
             FieldInfo strings = typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
             Assert.assertEquals("strings2", strings.name);
-            TransferValue transferValue = methodLevelData.fieldSummaries.get(strings);
+            VariableInfo transferValue = d.getFieldAsVariable(strings);
             Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.SIZE_NOT_EMPTY, transferValue.getProperty(VariableProperty.SIZE));
         }
         if ("add2b".equals(name)) {
             FieldInfo strings = typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
             Assert.assertEquals("strings2b", strings.name);
-            TransferValue transferValue = methodLevelData.fieldSummaries.get(strings);
+            VariableInfo transferValue = d.getFieldAsVariable(strings);
             Assert.assertEquals(Level.DELAY, transferValue.properties.get(VariableProperty.ASSIGNED));
-           // Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, transferValue.properties.get(VariableProperty.READ));
-           // Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
+            // Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, transferValue.properties.get(VariableProperty.READ));
+            // Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
         }
         if ("addAll5".equals(name)) {
             FieldInfo list = typeInfo.getFieldByName("list", true);
-            TransferValue transferValue = methodLevelData.fieldSummaries.get(list);
+            VariableInfo transferValue = d.getFieldAsVariable(list);
             Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.READ));
             if (d.iteration() > 0) {
                 Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.MODIFIED));

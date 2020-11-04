@@ -382,8 +382,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         String label = labelOfPreconditionForMarkAndOnly(precondition);
         Value inMap = tempApproved.get(label);
 
-        boolean isMark = assignmentIncompatibleWithPrecondition(evaluationContext,
-                precondition, methodAnalyser.methodInfo, methodAnalyser.methodLevelData());
+        boolean isMark = assignmentIncompatibleWithPrecondition(evaluationContext, precondition, methodAnalyser);
         if (isMark) {
             if (inMap == null) {
                 tempApproved.put(label, precondition);
@@ -402,16 +401,15 @@ public class TypeAnalyser extends AbstractAnalyser {
 
     public static boolean assignmentIncompatibleWithPrecondition(EvaluationContext evaluationContext,
                                                                  Value precondition,
-                                                                 MethodInfo methodInfo,
-                                                                 @NotModified MethodLevelData methodLevelData) {
+                                                                 MethodAnalyser methodAnalyser) {
         Set<Variable> variables = precondition.variables();
         for (Variable variable : variables) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
             // fieldSummaries are set after the first iteration
-            if (methodLevelData.fieldSummaries.isSet(fieldInfo)) {
-                TransferValue tv = methodLevelData.fieldSummaries.get(fieldInfo);
+            if (methodAnalyser.haveFieldAsVariable(fieldInfo)) {
+                VariableInfo tv = methodAnalyser.getFieldAsVariable(fieldInfo);
                 boolean assigned = tv.properties.get(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
-                log(MARK, "Field {} is assigned in {}? {}", variable.fullyQualifiedName(), methodInfo.distinguishingName(), assigned);
+                log(MARK, "Field {} is assigned in {}? {}", variable.fullyQualifiedName(), methodAnalyser.methodInfo.distinguishingName(), assigned);
 
                 if (assigned && tv.stateOnAssignment.isSet()) {
                     Value state = tv.stateOnAssignment.get();
@@ -579,22 +577,14 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
             if (!typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodAnalyser.methodInfo.returnType())) {
-                MethodLevelData methodLevelData = methodAnalyser.methodLevelData();
-                boolean notAllSet = methodLevelData.returnStatementSummaries.stream().map(Map.Entry::getValue)
-                        .anyMatch(tv -> !tv.linkedVariables.isSet());
-                if (notAllSet) {
+                VariableInfo variableInfo = methodAnalyser.getReturnAsVariable();
+                boolean delayed = !variableInfo.linkedVariables.isSet();
+                if (delayed) {
                     log(DELAYED, "Delay independence of type {}, method {}'s return statement summaries linking not known",
                             typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                     return DELAYS;
                 }
-                boolean safeMethod = methodLevelData.returnStatementSummaries.stream().map(Map.Entry::getValue)
-                        .allMatch(tv -> {
-                            Set<FieldInfo> linkedFields = tv.linkedVariables.get().stream()
-                                    .filter(v -> v instanceof FieldReference)
-                                    .map(v -> ((FieldReference) v).fieldInfo)
-                                    .collect(Collectors.toSet());
-                            return Collections.disjoint(linkedFields, fieldsLinkedToParameters);
-                        });
+                boolean safeMethod = Collections.disjoint(variableInfo.linkedVariables.get(), fieldsLinkedToParameters);
                 if (!safeMethod) {
                     log(INDEPENDENT, "Type {} cannot be @Independent, method {}'s return values link to some of the fields linked to constructors",
                             typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);

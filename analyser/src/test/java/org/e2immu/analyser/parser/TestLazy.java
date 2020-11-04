@@ -19,16 +19,16 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /*
@@ -76,8 +76,8 @@ public class TestLazy extends CommonTestRunner {
         MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
 
         if ("Lazy".equals(d.methodInfo().name)) {
-            TransferValue tv = methodLevelData.fieldSummaries.get(supplier);
-            Assert.assertTrue(tv.value.isSet());
+            VariableInfo tv = d.getFieldAsVariable(supplier);
+            Assert.assertNotSame(tv.valueForNextStatement(), UnknownValue.NO_VALUE);
 
             ParameterInfo supplierParam = d.methodInfo().methodInspection.get().parameters.get(0);
             Assert.assertEquals("supplierParam", supplierParam.name);
@@ -87,20 +87,17 @@ public class TestLazy extends CommonTestRunner {
             }
         }
         if ("get".equals(d.methodInfo().name)) {
-            TransferValue tv = methodLevelData.fieldSummaries.get(supplier);
+            VariableInfo tv = d.getFieldAsVariable(supplier);
             Assert.assertEquals(Level.DELAY, tv.properties.get(VariableProperty.ASSIGNED));
 
-            TransferValue ret1 = methodLevelData.returnStatementSummaries.get("1.0.0");
-            TransferValue ret2 = methodLevelData.returnStatementSummaries.get("2.0.1");
-            if (d.iteration() >= 1) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret1.properties.get(VariableProperty.NOT_NULL));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret2.properties.get(VariableProperty.NOT_NULL));
 
-                Assert.assertTrue(methodLevelData.variablesLinkedToFieldsAndParameters.isSet());
-                Set<Variable> linkedToT = methodLevelData.variablesLinkedToFieldsAndParameters.get()
-                        .entrySet().stream()
-                        .filter(e -> e.getKey() instanceof FieldReference && ((FieldReference) e.getKey()).fieldInfo == t)
-                        .map(Map.Entry::getValue).findFirst().orElseThrow();
+            VariableInfo ret = d.getReturnAsVariable();
+            if (d.iteration() >= 1) {
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret.properties.get(VariableProperty.NOT_NULL));
+
+                Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
+                Set<Variable> linkedToT = d.methodAnalysis().getLastStatement().variables.get(t.fullyQualifiedName())
+                        .linkedVariables.get();
                 // for now (and I believe it's correct, t will not be linked to supplier)
                 Assert.assertFalse(linkedToT.isEmpty());
             }

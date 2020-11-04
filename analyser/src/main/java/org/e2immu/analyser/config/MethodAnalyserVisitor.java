@@ -1,6 +1,7 @@
 package org.e2immu.analyser.config;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 
@@ -18,5 +19,18 @@ public interface MethodAnalyserVisitor {
         public int getProperty(Value value, VariableProperty variableProperty) {
             return evaluationContext.getProperty(value, variableProperty);
         }
+
+        public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
+            return methodAnalysis.getLastStatement().variables.get(fieldInfo.fullyQualifiedName());
+        }
+
+        public VariableInfo getReturnAsVariable() {
+            return methodAnalysis.getLastStatement().variables.get(methodInfo.fullyQualifiedName());
+        }
+
+        public VariableInfo getThisAsVariable() {
+            return methodAnalysis.getLastStatement().variables.get(methodInfo.typeInfo.fullyQualifiedName + ".this");
+        }
     }
+
 }

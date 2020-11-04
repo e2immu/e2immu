@@ -20,7 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
@@ -51,16 +51,15 @@ public class TestSetOnce extends CommonTestRunner {
 
         if ("get".equals(d.methodInfo().name)) {
             if (d.iteration() == 0) {
-                Assert.assertFalse(methodLevelData.variablesLinkedToFieldsAndParameters.isSet());
-                Assert.assertFalse(methodLevelData.variablesLinkedToMethodResult.isSet());
+                Assert.assertFalse(methodLevelData.linksHaveBeenEstablished.isSet());
             } else {
-                Assert.assertTrue(methodLevelData.variablesLinkedToFieldsAndParameters.isSet());
+                Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
 
-                TransferValue tv = methodLevelData.returnStatementSummaries.get("1");
+                VariableInfo tv = d.getReturnAsVariable();
                 Assert.assertTrue(tv.linkedVariables.isSet());
                 Assert.assertEquals(1, tv.linkedVariables.get().size());
                 if (d.iteration() > 1) {
-                    Set<Variable> set = methodLevelData.variablesLinkedToMethodResult.get();
+                    Set<Variable> set = tv.linkedVariables.get();
                     Assert.assertEquals(2, set.size());
                 }
             }

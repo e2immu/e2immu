@@ -1,6 +1,5 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
@@ -14,6 +13,8 @@ import org.junit.Test;
 import java.io.IOException;
 
 public class TestTryStatementChecks extends CommonTestRunner {
+    private static final String METHOD1_FQN = ""; // TODO
+
     public TestTryStatementChecks() {
         super(false);
     }
@@ -22,16 +23,20 @@ public class TestTryStatementChecks extends CommonTestRunner {
         if ("method3".equals(d.methodInfo().name) && "1.1.1".equals(d.statementId())) {
             Assert.assertEquals("s", d.haveError(Message.USELESS_ASSIGNMENT));
         }
+        if ("method1".equals(d.methodInfo().name)) {
+            if ("0.0.0".equals(d.statementId())) {
+                Value value0 = d.statementAnalysis().variables.get(METHOD1_FQN).valueForNextStatement();
+                Assert.assertTrue("Got " + value0.getClass(), value0 instanceof StringConcat);
+            }
+            if ("0.1.0".equals(d.statementId())) {
+                Value value1 = d.statementAnalysis().variables.get(METHOD1_FQN).valueForNextStatement();
+                Assert.assertTrue("Got " + value1.getClass(), value1 instanceof Constant);
+            }
+        }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
         if (d.iteration() == 0 && "method1".equals(d.methodInfo().name)) {
-            Assert.assertEquals(3, methodLevelData.returnStatementSummaries.size());
-            Value value0 = methodLevelData.returnStatementSummaries.get("0.0.0").value.get();
-            Assert.assertTrue("Got " + value0.getClass(), value0 instanceof StringConcat);
-            Value value1 = methodLevelData.returnStatementSummaries.get("0.1.0").value.get();
-            Assert.assertTrue("Got " + value1.getClass(), value1 instanceof Constant);
             Value srv = d.methodAnalysis().getSingleReturnValue();
             Assert.assertSame(UnknownValue.RETURN_VALUE, srv);
         }

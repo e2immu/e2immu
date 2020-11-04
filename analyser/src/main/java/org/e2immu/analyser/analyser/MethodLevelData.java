@@ -22,13 +22,15 @@ import org.e2immu.analyser.model.abstractvalue.AndValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.AddOnceSet;
+import org.e2immu.analyser.util.FlipSwitch;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
-import org.e2immu.analyser.util.SetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -46,6 +48,7 @@ import static org.e2immu.analyser.util.Logger.log;
 public class MethodLevelData {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodLevelData.class);
 
+    // part of modification status for methods dealing with SAMs
     public final SetOnce<Boolean> callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod = new SetOnce<>();
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
 
@@ -55,51 +58,12 @@ public class MethodLevelData {
     // no delays when frozen
     public final AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
 
-    // ************** SUMMARIES
-
-    /**
-     * In combination with the properties in the super class, this forms the knowledge about the method itself.
-     * Currently, only the READ and MODIFIED properties are of any importance.
-     */
-    public final SetOnce<TransferValue> thisSummary = new SetOnce<>();
-
-    /**
-     * Information about the value, and properties, of return statements, incrementally collected
-     * across the statements. The key of the map is the statement index, so each return statement has a unique key.
-     */
-    public final SetOnceMap<String, TransferValue> returnStatementSummaries = new SetOnceMap<>();
-
-    /**
-     * Information about what happens with fields in the statements.
-     * Each field that is seen in the method has a TransferValue entry.
-     * <p>
-     * Only when there is an assignment to a field (property ASSIGNED) then the assigned value is set.
-     * In this case, a number of properties are read from both the value, and the TV properties map,
-     * with the latter overriding the former. These are "context" properties, such as NOT_NULL, SIZE
-     * <p>
-     */
-    public final SetOnceMap<FieldInfo, TransferValue> fieldSummaries = new SetOnceMap<>();
-
-    // ************** LINKING
-
-    // this one is the marker that says that links have been established
-    public final SetOnce<Map<Variable, Set<Variable>>> variablesLinkedToFieldsAndParameters = new SetOnce<>();
-
-    public final SetOnce<Set<Variable>> variablesLinkedToMethodResult = new SetOnce<>();
+    // not for local processing, but so that we know in the method and field analyser that this process has been completed
+    public final FlipSwitch linksHaveBeenEstablished = new FlipSwitch();
 
     public void copyFrom(Stream<MethodLevelData> others) {
-        // this is perfectly safe, as each statement has its own entry in the array
         others.forEach(mld -> {
-            returnStatementSummaries.putAll(mld.returnStatementSummaries, false);
-            mld.fieldSummaries.stream().forEach(e -> {
-                FieldInfo fieldInfo = e.getKey();
-                TransferValue tv = e.getValue();
-                if (!fieldSummaries.isSet(fieldInfo)) {
-                    fieldSummaries.put(fieldInfo, tv.copy());
-                } else {
-                    fieldSummaries.get(fieldInfo).merge(tv);
-                }
-            });
+            // TODO
         });
     }
 
@@ -112,11 +76,8 @@ public class MethodLevelData {
     }
 
     public final AnalyserComponents<String, SharedState> analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
-            .add("copyFieldAndThisProperties", sharedState -> copyFieldAndThisProperties(sharedState.evaluationContext, sharedState.statementAnalysis))
-            .add("copyFieldAssignmentValue", sharedState -> copyFieldAssignmentValue(sharedState.statementAnalysis))
-            .add("copyContextProperties", this::copyContextProperties)
+            .add("ensureThisProperties", sharedState -> ensureThisProperties(sharedState.evaluationContext, sharedState.statementAnalysis))
             .add("establishLinks", this::establishLinks)
-            .add("updateVariablesLinkedToMethodResult", this::updateVariablesLinkedToMethodResult)
             .add("computeContentModifications", this::computeContentModifications)
             .add("combinePrecondition", this::combinePrecondition)
             .build();
@@ -200,7 +161,7 @@ public class MethodLevelData {
     */
 
     private AnalysisStatus establishLinks(SharedState sharedState) {
-        if (variablesLinkedToFieldsAndParameters.isSet()) return DONE;
+        if (linksHaveBeenEstablished.isSet()) return DONE;
         StatementAnalysis statementAnalysis = sharedState.statementAnalysis;
 
         // final fields need to have a value set; all the others act as local variables
@@ -222,7 +183,6 @@ public class MethodLevelData {
         }
 
         String logLocation = sharedState.logLocation;
-        Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters = new HashMap<>();
         statementAnalysis.dependencyGraph.visit((variable, dependencies) -> {
             Set<Variable> fieldAndParameterDependencies = new HashSet<>(statementAnalysis.dependencyGraph.dependencies(variable));
             fieldAndParameterDependencies.removeIf(v -> !(v instanceof FieldReference) && !(v instanceof ParameterInfo));
@@ -230,127 +190,66 @@ public class MethodLevelData {
                 dependencies.stream().filter(d -> d instanceof ParameterInfo).forEach(fieldAndParameterDependencies::add);
             }
             fieldAndParameterDependencies.remove(variable); // removing myself
-            variablesLinkedToFieldsAndParameters.put(variable, fieldAndParameterDependencies);
-            log(DEBUG_LINKED_VARIABLES, "Set terminals of {} in {} to [{}]", variable.fullyQualifiedName(),
-                    logLocation, Variable.fullyQualifiedName(fieldAndParameterDependencies));
 
-            if (variable instanceof FieldReference) {
-                FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
-                if (!fieldSummaries.isSet(fieldInfo)) {
-                    fieldSummaries.put(fieldInfo, new TransferValue());
-                }
-                fieldSummaries.get(fieldInfo).linkedVariables.set(fieldAndParameterDependencies);
-                log(LINKED_VARIABLES, "Decided on links of {} in {} to [{}]", variable.fullyQualifiedName(),
-                        logLocation, Variable.fullyQualifiedName(fieldAndParameterDependencies));
-            }
+            VariableInfo variableInfo = statementAnalysis.find(sharedState.evaluationContext().getAnalyserContext(), variable);
+            variableInfo.linkedVariables.set(fieldAndParameterDependencies);
+            log(LINKED_VARIABLES, "Decided on links of {} in {} to [{}]", variable.fullyQualifiedName(),
+                    logLocation, Variable.fullyQualifiedName(fieldAndParameterDependencies));
         });
         // set all the linkedVariables for fields not in the dependency graph
-        fieldSummaries.stream().filter(e -> !e.getValue().linkedVariables.isSet())
-                .forEach(e -> {
-                    e.getValue().linkedVariables.set(Set.of());
-                    log(LINKED_VARIABLES, "Clear linked variables of {} in {}", e.getKey().name, logLocation);
+        statementAnalysis.variableStream()
+                .filter(vi -> vi.variable instanceof FieldReference fieldReference && fieldReference.isThisScope())
+                .filter(vi -> !vi.linkedVariables.isSet())
+                .forEach(vi -> {
+                    vi.linkedVariables.set(Set.of());
+                    log(LINKED_VARIABLES, "Clear linked variables of {} in {}", vi.name, logLocation);
                 });
         log(LINKED_VARIABLES, "Set variablesLinkedToFieldsAndParameters to true for {}", logLocation);
-        this.variablesLinkedToFieldsAndParameters.set(variablesLinkedToFieldsAndParameters);
+        linksHaveBeenEstablished.set();
         return DONE;
     }
 
-    // only needs to be run on the last statement; not that relevant on others
-    private AnalysisStatus updateVariablesLinkedToMethodResult(SharedState sharedState) {
-        if (sharedState.evaluationContext.getCurrentMethod().methodInfo.isConstructor) return DONE;
-        if (variablesLinkedToMethodResult.isSet()) return DONE;
-
-        Set<Variable> variables = new HashSet<>();
-        boolean waitForLinkedVariables = returnStatementSummaries.stream().anyMatch(e -> !e.getValue().linkedVariables.isSet());
-        if (waitForLinkedVariables) {
-            log(DELAYED, "Not yet ready to compute linked variables of result of method {}", sharedState.logLocation);
-            return DELAYS;
-        }
-        Set<Variable> variablesInvolved = returnStatementSummaries.stream()
-                .flatMap(e -> e.getValue().linkedVariables.get().stream()).collect(Collectors.toSet());
-
-        for (Variable variable : variablesInvolved) {
-            Set<Variable> dependencies;
-            if (variable instanceof FieldReference) {
-                FieldAnalysis fieldAnalysis = sharedState.evaluationContext.getFieldAnalysis(((FieldReference) variable).fieldInfo);
-                if (fieldAnalysis.getVariablesLinkedToMe() == null) {
-                    log(DELAYED, "Dependencies of {} have not yet been established", variable.fullyQualifiedName());
-                    return DELAYS;
-                }
-                dependencies = SetUtil.immutableUnion(fieldAnalysis.getVariablesLinkedToMe(), Set.of(variable));
-            } else if (variable instanceof ParameterInfo) {
-                dependencies = Set.of(variable);
-            } else if (variable.isLocal()) {
-                if (!variablesLinkedToFieldsAndParameters.isSet()) {
-                    log(DELAYED, "Delaying variables linked to method result, local variable's linkage not yet known");
-                    return DELAYS;
-                }
-                dependencies = variablesLinkedToFieldsAndParameters.get().getOrDefault(variable, Set.of());
-            } else {
-                dependencies = Set.of();
-            }
-            log(LINKED_VARIABLES, "Dependencies of {} are [{}]", variable.fullyQualifiedName(), Variable.fullyQualifiedName(dependencies));
-            variables.addAll(dependencies);
-        }
-
-        variablesLinkedToMethodResult.set(variables);
-        // we can perfectly cast here
-        MethodAnalysisImpl.Builder methodAnalysisBuilder = (MethodAnalysisImpl.Builder)
-                sharedState.evaluationContext.getCurrentMethodAnalysis();
-        sharedState.builder.add(methodAnalysisBuilder.new SetProperty(VariableProperty.LINKED, variables.isEmpty() ? Level.FALSE : Level.TRUE));
-        log(LINKED_VARIABLES, "Set variables linked to result of {} to [{}]", sharedState.logLocation, Variable.fullyQualifiedName(variables));
-        return DONE;
-    }
-
-    private static Set<Variable> allVariablesLinkedToIncludingMyself(Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters,
-                                                                     Variable variable) {
+    private Set<Variable> allVariablesLinkedToIncludingMyself(StatementAnalysis statementAnalysis, Variable variable) {
         Set<Variable> result = new HashSet<>();
-        recursivelyAddLinkedVariables(variablesLinkedToFieldsAndParameters, variable, result);
+        recursivelyAddLinkedVariables(statementAnalysis, variable, result);
         return result;
     }
 
-    private static void recursivelyAddLinkedVariables(Map<Variable, Set<Variable>> variablesLinkedToFieldsAndParameters,
-                                                      Variable variable,
-                                                      Set<Variable> result) {
+    private void recursivelyAddLinkedVariables(StatementAnalysis statementAnalysis, Variable variable, Set<Variable> result) {
         if (result.contains(variable)) return;
         result.add(variable);
-        Set<Variable> linked = variablesLinkedToFieldsAndParameters.get(variable);
-        if (linked != null) {
-            for (Variable v : linked) recursivelyAddLinkedVariables(variablesLinkedToFieldsAndParameters, v, result);
-        }
+        VariableInfo variableInfo = statementAnalysis.variables.get(variable.fullyQualifiedName());
+        Set<Variable> linked = variableInfo.linkedVariables.get();
+        for (Variable v : linked) recursivelyAddLinkedVariables(statementAnalysis, v, result);
+
         // reverse linking
-        List<Variable> reverse = variablesLinkedToFieldsAndParameters.entrySet()
-                .stream().filter(e -> e.getValue().contains(variable)).map(Map.Entry::getKey).collect(Collectors.toList());
-        reverse.forEach(v -> recursivelyAddLinkedVariables(variablesLinkedToFieldsAndParameters, v, result));
+        List<Variable> reverse = statementAnalysis.variableStream()
+                .filter(vi -> vi.linkedVariables.get().contains(variable))
+                .map(vi -> vi.variable).collect(Collectors.toList());
+        reverse.forEach(v -> recursivelyAddLinkedVariables(statementAnalysis, v, result));
     }
 
     private AnalysisStatus computeContentModifications(SharedState sharedState) {
-        if (!variablesLinkedToFieldsAndParameters.isSet()) return DELAYS;
+        if (!linksHaveBeenEstablished.isSet()) return DELAYS;
 
         final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
         final AtomicBoolean changes = new AtomicBoolean();
 
         // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
         sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
-            Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(variablesLinkedToFieldsAndParameters.get(),
+            Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(sharedState.statementAnalysis,
                     variableInfo.variable);
             int summary = sharedState.evaluationContext.summarizeModification(linkedVariables);
             String logLocation = sharedState.logLocation;
             for (Variable linkedVariable : linkedVariables) {
                 if (linkedVariable instanceof FieldReference) {
                     FieldInfo fieldInfo = ((FieldReference) linkedVariable).fieldInfo;
-                    TransferValue tv;
-                    if (fieldSummaries.isSet(fieldInfo)) {
-                        tv = fieldSummaries.get(fieldInfo);
-                    } else {
-                        tv = new TransferValue();
-                        fieldSummaries.put(fieldInfo, tv);
-                    }
-                    int modified = tv.getProperty(VariableProperty.MODIFIED);
+                    VariableInfo vi = sharedState.statementAnalysis.variables.get(fieldInfo.fullyQualifiedName());
+                    int modified = vi.getProperty(VariableProperty.MODIFIED);
                     if (modified == Level.DELAY) {
                         // break the delay in case the variable is not even read
                         int fieldModified;
-                        if (summary == Level.DELAY && tv.getProperty(VariableProperty.READ) < Level.TRUE) {
+                        if (summary == Level.DELAY && vi.getProperty(VariableProperty.READ) < Level.TRUE) {
                             fieldModified = Level.FALSE;
                         } else fieldModified = summary;
                         if (fieldModified == Level.DELAY) {
@@ -359,7 +258,7 @@ public class MethodLevelData {
                         } else {
                             log(NOT_MODIFIED, "Mark {} " + (fieldModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
                                     linkedVariable.fullyQualifiedName(), logLocation);
-                            tv.properties.put(VariableProperty.MODIFIED, fieldModified);
+                            vi.properties.put(VariableProperty.MODIFIED, fieldModified);
                             changes.set(true);
                         }
                     }
@@ -400,154 +299,20 @@ public class MethodLevelData {
      * @param evaluationContext context
      * @return if any change happened to methodAnalysis
      */
-    private AnalysisStatus copyFieldAndThisProperties(EvaluationContext evaluationContext, StatementAnalysis statementAnalysis) {
+    private AnalysisStatus ensureThisProperties(EvaluationContext evaluationContext, StatementAnalysis statementAnalysis) {
         if (evaluationContext.getIteration() > 0) return DONE;
 
-        statementAnalysis.variableStream().forEach(variableInfo -> {
-            if (variableInfo.variable instanceof FieldReference) {
-                FieldInfo fieldInfo = ((FieldReference) variableInfo.variable).fieldInfo;
-                if (!fieldSummaries.isSet(fieldInfo)) {
-                    TransferValue tv = new TransferValue();
-                    fieldSummaries.put(fieldInfo, tv);
-                    copy(variableInfo, tv);
-                }
-            } else if (variableInfo.variable instanceof This) {
-                if (!thisSummary.isSet()) {
-                    TransferValue tv = new TransferValue();
-                    thisSummary.set(tv);
-                    copy(variableInfo, tv);
-                }
-                int methodDelay = variableInfo.getProperty(VariableProperty.METHOD_DELAY);
-                int methodCalled = variableInfo.getProperty(VariableProperty.METHOD_CALLED);
+        This thisVariable = new This(evaluationContext.getCurrentType().typeInfo);
+        VariableInfo thisVi = statementAnalysis.find(evaluationContext.getAnalyserContext(), thisVariable);
+        thisVi.ensureProperty(VariableProperty.ASSIGNED, Level.FALSE);
+        thisVi.ensureProperty(VariableProperty.READ, Level.FALSE);
+        thisVi.ensureProperty(VariableProperty.METHOD_CALLED, Level.FALSE);
 
-                if (methodDelay != Level.TRUE && methodCalled == Level.TRUE) {
-                    int modified = variableInfo.getProperty(VariableProperty.MODIFIED);
-                    TransferValue tv = thisSummary.get();
-                    tv.properties.put(VariableProperty.MODIFIED, modified);
-                }
-            }
-        });
-        // fields that are not present, do not get a mention. But thisSummary needs to be present.
-        if (!thisSummary.isSet()) {
-            TransferValue tv = new TransferValue();
-            thisSummary.set(tv);
-            tv.properties.put(VariableProperty.ASSIGNED, Level.FALSE);
-            tv.properties.put(VariableProperty.READ, Level.FALSE);
-            tv.properties.put(VariableProperty.METHOD_CALLED, Level.FALSE);
-        }
-        return DONE;
-    }
-
-    private static void copy(VariableInfo variableInfo, TransferValue transferValue) {
-        for (VariableProperty variableProperty : VariableProperty.NO_DELAY_FROM_STMT_TO_METHOD) {
-            int value = variableInfo.getProperty(variableProperty);
-            transferValue.properties.put(variableProperty, value);
-        }
-    }
-
-    private AnalysisStatus copyFieldAssignmentValue(StatementAnalysis statementAnalysis) {
-        final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
-        final AtomicBoolean changes = new AtomicBoolean();
-
-        statementAnalysis.variableStream().forEach(variableInfo -> {
-            if (variableInfo.variable instanceof FieldReference && variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE) {
-                FieldInfo fieldInfo = ((FieldReference) variableInfo.variable).fieldInfo;
-                TransferValue tv = fieldSummaries.get(fieldInfo);
-                Value value = variableInfo.valueForNextStatement();
-                if (value == UnknownValue.NO_VALUE) {
-                    analysisStatus.set(DELAYS);
-                } else if (!tv.value.isSet()) {
-                    changes.set(true);
-                    tv.value.set(value);
-                }
-                // the values of IMMUTABLE, CONTAINER, NOT_NULL, SIZE will be obtained from the value, they need not copying.
-                Value stateOnAssignment = variableInfo.getStateOnAssignment();
-                if (stateOnAssignment == UnknownValue.NO_VALUE) {
-                    analysisStatus.set(DELAYS);
-                } else if (stateOnAssignment != UnknownValue.EMPTY && !tv.stateOnAssignment.isSet()) {
-                    tv.stateOnAssignment.set(stateOnAssignment);
-                    changes.set(true);
-                }
-            }
-        });
-        return analysisStatus.get() == DELAYS ? (changes.get() ? PROGRESS : DELAYS) : DONE;
-    }
-
-    // a DELAY should only be possible for good reasons
-    // context can generally only be delayed when there is a method delay
-
-    private AnalysisStatus copyContextProperties(SharedState sharedState) {
-        final AtomicBoolean changes = new AtomicBoolean();
-        final AtomicBoolean anyDelay = new AtomicBoolean();
-
-        sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
-            int methodDelay = variableInfo.getProperty(VariableProperty.METHOD_DELAY);
-            boolean haveDelay = methodDelay == Level.TRUE || variableInfo.hasNoValue();
-            if (haveDelay) anyDelay.set(true);
-            if (variableInfo.variable instanceof FieldReference) {
-                FieldInfo fieldInfo = ((FieldReference) variableInfo.variable).fieldInfo;
-                TransferValue tv = fieldSummaries.get(fieldInfo);
-
-                // SIZE
-                int size = variableInfo.getProperty(VariableProperty.SIZE);
-                int currentSize = tv.properties.getOrDefault(VariableProperty.SIZE, haveDelay ? Level.DELAY : Level.NOT_A_SIZE);
-                if (size > currentSize) {
-                    tv.properties.put(VariableProperty.SIZE, size);
-                    changes.set(true);
-                }
-
-                // NOT_NULL (slightly different from SIZE, different type of level)
-                int notNull = MultiLevel.bestNotNull(haveDelay ? Level.DELAY : MultiLevel.MUTABLE, variableInfo.getProperty(VariableProperty.NOT_NULL));
-                int currentNotNull = tv.properties.getOrDefault(VariableProperty.NOT_NULL, Level.DELAY);
-                if (notNull > currentNotNull) {
-                    tv.properties.put(VariableProperty.NOT_NULL, notNull);
-                    changes.set(true);
-                }
-
-                int currentDelayResolved = tv.getProperty(VariableProperty.METHOD_DELAY_RESOLVED);
-                if (currentDelayResolved == Level.FALSE && !haveDelay) {
-                    log(DELAYED, "Delays on {} have now been resolved", variableInfo.variable.fullyQualifiedName());
-                    tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.TRUE);
-                }
-                if (currentDelayResolved == Level.DELAY && haveDelay) {
-                    log(DELAYED, "Marking that delays need resolving on {}", variableInfo.variable.fullyQualifiedName());
-                    tv.properties.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.FALSE);
-                }
-            } else if (variableInfo.variable instanceof ParameterInfo parameterInfo) {
-
-                int notNull = variableInfo.getProperty(VariableProperty.NOT_NULL);
-                if (notNull != Level.DELAY) {
-                    ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getParameterAnalysis(parameterInfo);
-                    int notNullInParam = parameterAnalysis.getProperty(VariableProperty.NOT_NULL);
-                    if (notNullInParam == Level.DELAY) {
-                        // we can safely cast here to the builder
-                        ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
-                        sharedState.builder.add(builder.new SetProperty(VariableProperty.NOT_NULL, notNull));
-                        changes.set(true);
-                    }
-                }
-
-                if (parameterInfo.parameterizedType.hasSize(sharedState.evaluationContext.getPrimitives(),
-                        sharedState.evaluationContext.getAnalyserContext())) {
-                    int size = variableInfo.getProperty(VariableProperty.SIZE);
-                    if (size == Level.DELAY && !haveDelay) {
-                        // we could not find anything related to size, let's advertise that
-                        ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getParameterAnalysis(parameterInfo);
-                        int sizeInParam = parameterAnalysis.getProperty(VariableProperty.SIZE);
-                        if (sizeInParam == Level.DELAY) {
-                            // we can safely cast here to the builder
-                            ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
-                            sharedState.builder.add(builder.new SetProperty(VariableProperty.SIZE, Level.IS_A_SIZE));
-                            changes.set(true);
-                        }
-                    }
-                }
-            }
-        });
-        if (!anyDelay.get() && !callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
+        if ( !callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(false);
         }
-        return anyDelay.get() ? DELAYS : changes.get() ? PROGRESS : DONE;
+
+        return DONE;
     }
 
     public class SetCircularCallOrUndeclaredFunctionalInterface implements StatementAnalysis.StatementAnalysisModification {

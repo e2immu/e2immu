@@ -78,4 +78,8 @@ public class FieldReference extends VariableWithConcreteReturnType {
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return isStatic() ? SideEffect.STATIC_ONLY : SideEffect.NONE_CONTEXT;
     }
+
+    public boolean isThisScope() {
+        return scope instanceof This thisVariable && thisVariable.typeInfo == fieldInfo.owner;
+    }
 }

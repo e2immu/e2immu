@@ -1,7 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
@@ -49,9 +48,8 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("idem2".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-            MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
             // false because static method
-            Assert.assertEquals(Level.FALSE, methodLevelData.thisSummary.get().getProperty(VariableProperty.METHOD_CALLED));
+            Assert.assertEquals(Level.FALSE, d.getThisAsVariable().getProperty(VariableProperty.METHOD_CALLED));
         }
         if ("idem3".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
             Value value = d.statementAnalysis().stateData.valueOfExpression.get();
@@ -68,10 +66,9 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         MethodAnalysis methodAnalysis = d.methodAnalysis();
-        MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
         if ("idem".equals(d.methodInfo().name)) {
 
-            TransferValue tv = methodLevelData.returnStatementSummaries.get("1");
+            VariableInfo tv = d.getReturnAsVariable();
             Assert.assertFalse(tv.properties.isSet(VariableProperty.MODIFIED));
 
             // @NotModified decided straight away, @Identity as well
@@ -88,10 +85,9 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
         if ("idem3".equals(d.methodInfo().name)) {
             Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED));
 
-            TransferValue tv1 = methodLevelData.returnStatementSummaries.get("1.0.0");
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv1.getProperty(VariableProperty.NOT_NULL));
-            TransferValue tv2 = methodLevelData.returnStatementSummaries.get("1.1.0");
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv2.getProperty(VariableProperty.NOT_NULL));
+            VariableInfo vi = d.getReturnAsVariable();
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL));
+
             // combining both, we obtain:
             //Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(VariableProperty.NOT_NULL));
         }

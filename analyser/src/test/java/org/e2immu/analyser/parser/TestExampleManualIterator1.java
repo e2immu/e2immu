@@ -1,10 +1,11 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.annotation.AnnotationMode;
 import org.junit.Assert;
 import org.junit.Test;
@@ -24,12 +25,13 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
         if ("iterator".equals(d.methodInfo().name)) {
             //  Assert.assertEquals(MultiLevel.EFFECTIVE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
-            Assert.assertTrue(methodLevelData.returnStatementSummaries.isSet("0"));
+            VariableInfo variableInfo = d.getReturnAsVariable();
+            Assert.assertNotSame(UnknownValue.NO_VALUE, variableInfo.valueForNextStatement());
         }
 
         if (Set.of("hasNext", "next").contains(d.methodInfo().name) && "MyIteratorImpl".equals(d.methodInfo().typeInfo.simpleName)) {
             if (d.iteration() > 0) {
-                Assert.assertTrue(methodLevelData.variablesLinkedToFieldsAndParameters.isSet());
+                Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
             }
         }
     };
@@ -92,18 +94,23 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         if ("list".equals(fieldInfo.name) && "ExampleManualIterator1".equals(fieldInfo.owner.simpleName)) {
             if (iteration > 0) {
                 MethodInfo constructor = fieldInfo.owner.findConstructor(1);
-                MethodLevelData methodLevelDataConstructor = constructor.methodAnalysis.get().methodLevelData();
-                TransferValue constructorTv = methodLevelDataConstructor.fieldSummaries.get(fieldInfo);
+                MethodAnalysis constructorMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(constructor);
+                VariableInfo constructorTv = constructorMa.getLastStatement().variables.get(fieldInfo.fullyQualifiedName());
+
                 Assert.assertEquals(Level.TRUE, constructorTv.properties.get(VariableProperty.READ));
                 Assert.assertEquals(Level.TRUE, constructorTv.properties.get(VariableProperty.MODIFIED));
 
                 MethodInfo visit = fieldInfo.owner.findUniqueMethod("visit", 1);
-                TransferValue visitTv = visit.methodAnalysis.get().methodLevelData().fieldSummaries.get(fieldInfo);
+                MethodAnalysis visitMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(visit);
+                VariableInfo visitTv = visitMa.getLastStatement().variables.get(fieldInfo.fullyQualifiedName());
+
                 Assert.assertEquals(Level.TRUE, visitTv.properties.get(VariableProperty.READ));
                 Assert.assertEquals(Level.FALSE, visitTv.properties.get(VariableProperty.MODIFIED));
 
                 MethodInfo iterator = fieldInfo.owner.findUniqueMethod("iterator", 0);
-                TransferValue iteratorTv = iterator.methodAnalysis.get().methodLevelData().fieldSummaries.get(fieldInfo);
+                MethodAnalysis iteratorMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(iterator);
+                VariableInfo iteratorTv = iteratorMa.getLastStatement().variables.get(fieldInfo.fullyQualifiedName());
+
                 Assert.assertEquals(Level.TRUE, iteratorTv.properties.get(VariableProperty.READ));
 
                 if (iteration > 1) {

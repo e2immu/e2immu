@@ -19,7 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -81,9 +81,9 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("setFirst".equals(d.methodInfo().name)) {
             FieldInfo ts2 = d.methodInfo().typeInfo.getFieldByName("ts2", true);
-            TransferValue tv = d.methodAnalysis().methodLevelData().fieldSummaries.get(ts2);
+            VariableInfo tv = d.getFieldAsVariable(ts2);
             if (d.iteration() > 0) {
-                Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, tv.getProperty(VariableProperty.MODIFIED));
             }
         }
     };

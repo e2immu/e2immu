@@ -48,7 +48,8 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
+import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
 import static org.e2immu.analyser.util.Logger.log;
 
 @Container(builds = StatementAnalysis.class)
@@ -312,6 +313,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previous,
                             forwardAnalysisInfo.execution()))
 
+                    .add("checkFluent", this::checkFluent)
                     .add("checkNotNullEscapes", this::checkNotNullEscapes)
                     .add("checkSizeEscapes", this::checkSizeEscapes)
                     .add("checkPrecondition", this::checkPrecondition)
@@ -473,7 +475,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         return status;
-        // TODO check that AddOnceSet is the right data structure
+        // IMPROVE check that AddOnceSet is the right data structure
     }
 
 
@@ -546,6 +548,25 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return DONE;
     }
 
+    private AnalysisStatus checkFluent(SharedState sharedState) {
+        VariableInfo variableInfo = getReturnAsVariable();
+        int fluent = variableInfo.getProperty(VariableProperty.FLUENT);
+        if (fluent != Level.DELAY) return DONE;
+        Value value = variableInfo.valueForNextStatement();
+        if (value == NO_VALUE) return DELAYS;
+        boolean isFluent = value instanceof VariableValue vv && vv.variable instanceof This thisVar && thisVar.typeInfo == myMethodAnalyser.myTypeAnalyser.typeInfo;
+        variableInfo.properties.put(VariableProperty.FLUENT, isFluent ? Level.TRUE : Level.FALSE);
+        return DONE;
+    }
+
+    private VariableInfo getReturnAsVariable() {
+        String fqn = myMethodAnalyser.methodInfo.fullyQualifiedName();
+        if (!statementAnalysis.variables.isSet(fqn)) {
+            return statementAnalysis.createVariable(analyserContext, new ReturnVariable(myMethodAnalyser.methodInfo));
+        }
+        return statementAnalysis.variables.get(fqn);
+    }
+
     /**
      * Situations:     for(X x: xs) { ... } and catch(Exception e) { ... }
      * We create the local variable not at the level of the statement, but that of the first statement in the block
@@ -614,7 +635,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     saToCreate.stateData.valueOfExpression.set(value);
                 }
 
-                // TODO move to a place where *every* assignment is verified (assignment-basics)
+                // IMPROVE move to a place where *every* assignment is verified (assignment-basics)
                 // are we in a loop (somewhere) assigning to a variable that already exists outside that loop?
                 if (initialiser instanceof Assignment assignment) {
                     int levelLoop = saToCreate.stepsUpToLoop();
@@ -686,63 +707,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 || myMethodAnalyser.methodInfo.isConstructor) {
             return DONE;
         }
-        String statementId = statementAnalysis.index;
-        TransferValue transferValue;
-        if (statementAnalysis.methodLevelData.returnStatementSummaries.isSet(statementId)) {
-            transferValue = statementAnalysis.methodLevelData.returnStatementSummaries.get(statementId);
-        } else {
-            transferValue = new TransferValue();
-            statementAnalysis.methodLevelData.returnStatementSummaries.put(statementId, transferValue);
-            int fluent = (((ReturnStatement) statementAnalysis.statement).fluent(evaluationContext.getAnalyserContext()));
-            transferValue.properties.put(VariableProperty.FLUENT, fluent);
-        }
+        if (value == null) throw new UnsupportedOperationException("??");
         if (value == NO_VALUE) return DELAYS;
-        if (value == null) {
-            if (!transferValue.linkedVariables.isSet()) {
-                transferValue.linkedVariables.set(Set.of());
-            }
-            if (!transferValue.value.isSet()) transferValue.value.set(NO_VALUE);
-            return DONE;
-        }
 
-        AnalysisStatus status = DONE;
-        Set<Variable> vars = evaluationContext.linkedVariables(value);
-        if (vars == null) {
-            log(DELAYED, "Linked variables is delayed on transfer");
-            status = DELAYS;
-        } else if (!transferValue.linkedVariables.isSet()) {
-            transferValue.linkedVariables.set(vars);
-        }
-        if (!transferValue.value.isSet()) {
-            // just like the VariableValue, the TransferValue has properties separately!
-            transferValue.value.set(value);
-        }
-        for (VariableProperty variableProperty : VariableProperty.WRITE_INTO_RETURN_VALUE_PROPERTIES) {
-            int v = evaluationContext.getProperty(value, variableProperty);
-            int current = transferValue.getProperty(variableProperty);
-
-            if (variableProperty == VariableProperty.IDENTITY && v == Level.DELAY) {
-                int methodDelay = evaluationContext.getProperty(value, VariableProperty.METHOD_DELAY);
-                if (methodDelay != Level.TRUE) {
-                    v = Level.FALSE;
-                }
-            }
-            if ((variableProperty == VariableProperty.SIZE_COPY || variableProperty == VariableProperty.SIZE) && v == Level.DELAY) {
-                v = Level.FALSE; // TODO REMOVE ME at some point; this is a shortcut to start with getting the tests to green
-            }
-            if (variableProperty == VariableProperty.IMMUTABLE && v == Level.DELAY) {
-                v = MultiLevel.MUTABLE; // TODO remove me at some point
-            }
-
-            if (v == Level.DELAY && current == Level.DELAY) {
-                status = DELAYS;
-            }
-            if (v > current) {
-                transferValue.properties.put(variableProperty, v);
-            }
-        }
-
-        return status;
+        VariableInfo variableInfo = getReturnAsVariable();
+        variableInfo.initialValue.set(value);
+        // properties need properly copying from value into "properties"
+        // TODO
+        return DONE;
     }
 
     private boolean step7_detectErrorsIfElseSwitchFor(Value value, EvaluationContext evaluationContext) {

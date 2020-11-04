@@ -1,7 +1,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.StatementAnalyser;
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
@@ -57,9 +57,9 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
         }
 
         if ("someMethod".equals(d.methodInfo().name)) {
-            TransferValue tv = d.statementAnalysis().methodLevelData.returnStatementSummaries.get("0");
+            VariableInfo tv = d.getReturnAsVariable();
             Assert.assertEquals("org.e2immu.analyser.testexample.EvaluatesToConstant.someMethod(String):0:a.toLowerCase()",
-                    tv.value.get().toString());
+                    tv.valueForNextStatement().toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.getProperty(VariableProperty.NOT_NULL));
         }
     };

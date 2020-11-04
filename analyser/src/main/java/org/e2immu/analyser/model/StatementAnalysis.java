@@ -377,7 +377,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         MULTI_COPY
     }
 
-    private VariableInfo createVariable(AnalyserContext analyserContext, Variable variable) {
+    public VariableInfo createVariable(AnalyserContext analyserContext, Variable variable) {
         String fqn = variable.fullyQualifiedName();
         VariableInfo existing = variables.getOtherwiseNull(fqn);
         if (existing != null) throw new UnsupportedOperationException();

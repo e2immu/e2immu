@@ -1,6 +1,5 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
@@ -70,10 +69,9 @@ public class Test_05_FinalChecks extends CommonTestRunner {
 
         // there is no size restriction
         if (iteration > 0) {
-            MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
             FieldInfo s1 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> "s1".equals(f.name)).findFirst().orElseThrow();
             if ("toString".equals(methodInfo.name) || FINAL_CHECKS.equals(methodInfo.name)) {
-                int notNull = methodLevelData.fieldSummaries.get(s1).properties.get(VariableProperty.NOT_NULL);
+                int notNull = d.getFieldAsVariable(s1).properties.get(VariableProperty.NOT_NULL);
                 Assert.assertEquals(MultiLevel.MUTABLE, notNull);
             }
         }

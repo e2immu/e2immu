@@ -54,7 +54,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
         }
         if ("ee".equals(d.methodInfo().name)) {
             if (d.iteration() > 0) {
-                Assert.assertTrue(methodLevelData.variablesLinkedToFieldsAndParameters.isSet());
+                Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
             }
         }
         if ("print2".equals(d.methodInfo().name)) {
@@ -68,13 +68,13 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
         }
         if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
-            TransferValue tv = methodLevelData.returnStatementSummaries.get("0");
+            VariableInfo tv = d.getReturnAsVariable();
             if (d.iteration() == 0) {
-                Assert.assertFalse(tv.value.isSet());
+                Assert.assertSame(UnknownValue.NO_VALUE, tv.valueForNextStatement());
             } else {
-                Assert.assertEquals(EFFECTIVELY_FINAL, tv.value.get().toString());
+                Assert.assertEquals(EFFECTIVELY_FINAL, tv.valueForNextStatement().toString());
                 AnalysisStatus expectStatus = d.iteration() <= 3 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-                //   Assert.assertSame(expectStatus, d.result().analysisStatus);
+                Assert.assertSame(expectStatus, d.result().analysisStatus);
                 int notNull = tv.getProperty(VariableProperty.NOT_NULL);
                 int expectNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                 Assert.assertEquals(expectNotNull, notNull);

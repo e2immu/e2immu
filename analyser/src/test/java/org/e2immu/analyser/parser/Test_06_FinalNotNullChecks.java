@@ -2,7 +2,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -57,17 +57,17 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         if ("FinalNotNullChecks".equals(d.methodInfo().name)) {
             MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
             FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
-            int notNull = methodLevelData.fieldSummaries.get(input).value.get().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL);
+            int notNull = d.getFieldAsVariable(input).valueForNextStatement().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
         }
         if (("debug".equals(d.methodInfo().name) || "toString".equals(d.methodInfo().name))) {
             MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
             FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
-            Assert.assertFalse(methodLevelData.fieldSummaries.get(input).value.isSet());
+            Assert.assertSame(UnknownValue.NO_VALUE, d.getFieldAsVariable(input).valueForNextStatement());
             if (d.iteration() == 0) {
                 Assert.assertEquals(AnalysisStatus.PROGRESS, d.result().analysisStatus);
             } else {
-                int notNull = methodLevelData.fieldSummaries.get(input).getProperty(VariableProperty.NOT_NULL);
+                int notNull = d.getFieldAsVariable(input).getProperty(VariableProperty.NOT_NULL);
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
             }
         }
@@ -95,17 +95,17 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
-        TransferValue tv = d.methodAnalysis().methodLevelData().fieldSummaries.get(input);
+        VariableInfo vi = d.getFieldAsVariable(input);
         if (d.methodInfo().name.equals("FinalNotNullChecks")) {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
-            Value inputValue = tv.value.get();
+            Value inputValue = vi.valueForNextStatement();
             int notNull = inputValue.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL);
             Assert.assertEquals(PARAM_NN, inputValue.toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
         }
         if ((d.methodInfo().name.equals("debug") || d.methodInfo().name.equals("toString"))) {
-            Assert.assertFalse(tv.value.isSet());
-            int notNull = tv.getProperty(VariableProperty.NOT_NULL);
+            Assert.assertSame(UnknownValue.NO_VALUE, vi.valueForNextStatement());
+            int notNull = vi.getProperty(VariableProperty.NOT_NULL);
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
             Assert.assertEquals(expectNotNull, notNull);
         }

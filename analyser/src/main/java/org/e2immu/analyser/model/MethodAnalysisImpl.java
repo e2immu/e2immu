@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ContractMark;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
@@ -268,7 +267,11 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         public MethodLevelData methodLevelData() {
-            return lastStatement.isSet() ? lastStatement.get().methodLevelData : firstStatement.get().lastStatement().methodLevelData;
+            return lastStatement().methodLevelData;
+        }
+
+        public StatementAnalysis lastStatement() {
+            return lastStatement.isSet() ? lastStatement.get() : firstStatement.get().lastStatement();
         }
 
         @Override

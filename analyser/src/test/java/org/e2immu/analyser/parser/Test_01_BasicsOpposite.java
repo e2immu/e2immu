@@ -89,18 +89,17 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
         FieldInfo string = d.methodInfo().typeInfo.getFieldByName("string", true);
-        int modified = methodLevelData.fieldSummaries.get(string).getProperty(VariableProperty.MODIFIED);
+        int modified = d.getFieldAsVariable(string).getProperty(VariableProperty.MODIFIED);
         if ("getString".equals(d.methodInfo().name)) {
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             Assert.assertEquals(expectNotNull, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
-            Assert.assertEquals(Level.TRUE, methodLevelData.fieldSummaries.get(string).getProperty(VariableProperty.READ));
+            Assert.assertEquals(Level.TRUE, d.getFieldAsVariable(string).getProperty(VariableProperty.READ));
             int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expectModified, modified);
         }
         if ("setString".equals(d.methodInfo().name)) {
-            Assert.assertEquals(Level.TRUE, methodLevelData.fieldSummaries.get(string).getProperty(VariableProperty.ASSIGNED));
+            Assert.assertEquals(Level.TRUE, d.getFieldAsVariable(string).getProperty(VariableProperty.ASSIGNED));
             int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expectModified, modified);
         }

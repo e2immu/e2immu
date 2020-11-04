@@ -20,7 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.TransferValue;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -46,8 +46,8 @@ public class TestFirstThen extends CommonTestRunner {
                 Assert.assertEquals("not (null == this.first)", d.statementAnalysis().stateData.precondition.get().toString());
             }
         }
-        if("set".equals(d.methodInfo().name) && d.iteration() == 0 && "1.0.0".compareTo(d.statementId()) <= 0) {
-            Assert.assertSame("StatementId: "+d.statementId(), UnknownValue.NO_VALUE, d.state()); // delay
+        if ("set".equals(d.methodInfo().name) && d.iteration() == 0 && "1.0.0".compareTo(d.statementId()) <= 0) {
+            Assert.assertSame("StatementId: " + d.statementId(), UnknownValue.NO_VALUE, d.state()); // delay
         }
     };
 
@@ -68,7 +68,6 @@ public class TestFirstThen extends CommonTestRunner {
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
         String name = d.methodInfo().name;
 
         if ("set".equals(name)) {
@@ -79,12 +78,13 @@ public class TestFirstThen extends CommonTestRunner {
             }
         }
         if ("getFirst".equals(name)) {
-            TransferValue tv = methodLevelData.fieldSummaries.stream().findAny().orElseThrow().getValue();
+            FieldInfo first = d.methodInfo().typeInfo.getFieldByName("first", true);
+            VariableInfo tv = d.getFieldAsVariable(first);
             Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, tv.properties.get(VariableProperty.READ));
         }
         if ("hashCode".equals(name)) {
-            Assert.assertEquals(2, methodLevelData.fieldSummaries.size());
-            TransferValue tv = methodLevelData.fieldSummaries.stream().findAny().orElseThrow().getValue();
+            FieldInfo first = d.methodInfo().typeInfo.getFieldByName("first", true);
+            VariableInfo tv = d.getFieldAsVariable(first);
             Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.READ));
             Assert.assertEquals(Level.DELAY, tv.properties.get(VariableProperty.METHOD_CALLED));
 
