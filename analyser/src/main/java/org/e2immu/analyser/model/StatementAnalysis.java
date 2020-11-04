@@ -38,6 +38,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -226,24 +227,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // we need to make a synthesis of the variable state of fields, local copies, etc.
         // some blocks are guaranteed to be executed, others are only executed conditionally.
 
-        // let's implement some special cases
-        if (statement instanceof SynchronizedStatement) {
-            assert lastStatements.size() == 1;
-            StatementAnalyser src = lastStatements.get(0);
-            src.statementAnalysis.variableStream().forEach(variableInfo -> {
-                if (variableInfo.variable instanceof FieldReference fieldReference) {
-                    if (variables.isSet(fieldReference.fullyQualifiedName())) {
-                        variables.get(fieldReference.fullyQualifiedName()).merge(variableInfo, false, List.of());
-                    } else {
-                        variables.put(fieldReference.fullyQualifiedName(), variableInfo.copy(false));
-                    }
-                }
-            });
-
-        }
-        for (StatementAnalyser sa : lastStatements) {
-
-        }
+        // TODO
     }
 
     public void ensure(Message newMessage) {
@@ -260,12 +244,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // nothing
     }
 
-    public interface StatementAnalysisModification extends Runnable {
+    public interface StatementAnalysisModification extends Consumer<Integer> {
         // nothing extra at the moment
     }
 
-    public void apply(StatementAnalysisModification modification) {
-        modification.run();
+    public void apply(StatementAnalysisModification modification, int minLevel) {
+        modification.accept(minLevel);
     }
 
 
@@ -299,13 +283,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public void initialise(StatementAnalysis previous) {
         if (previous == null && parent == null) return;
         StatementAnalysis copyFrom = previous == null ? parent : previous;
-        boolean isLocalCopy = previous == null;
-        copyFrom.variableStream().forEach(variableInfo -> variables.put(variableInfo.name, variableInfo.copyValueToInitial(isLocalCopy)));
+        copyFrom.variableStream().forEach(variableInfo -> variables.put(variableInfo.name,
+                new VariableInfoContainer(variableInfo)));
     }
 
     /**
      * Before iterations 1+, with fieldAnalyses non-empty only potentially for the the first statement
      * of the method.
+     * <p>
+     * TODO needs rethinking
      *
      * @param analyserContext overview object for the analysis of this primary type
      * @param previous        the previous statement, or null if there is none (start of block)
@@ -322,7 +308,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (variableInfo.variable instanceof FieldReference fieldReference) {
                 int read = variableInfo.getProperty(READ);
                 if (read >= Level.TRUE && noEarlierAccess(variableInfo.variable, copyFrom)) {
-                    if (!variableInfo.initialValue.isSet()) {
+                    if (!variableInfo.value.isSet()) {
                         Value initialValue = initialValueOfField(analyserContext, fieldReference);
                         variableInfo.writeValue(initialValue);
                     }
@@ -330,10 +316,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
             }
             if (copyFrom != null && copyFrom.variables.isSet(variableInfo.name)) {
-                VariableInfo previousVariableInfo = copyFrom.variables.get(variableInfo.name);
+                VariableInfo previousVariableInfo = copyFrom.getLatestVariableInfo(variableInfo.name);
                 if (previousVariableInfo != null) {
                     variableInfo.properties.copyFrom(previousVariableInfo.properties);
-                    if (!variableInfo.initialValue.isSet()) {
+                    if (!variableInfo.value.isSet()) {
                         Value value = previousVariableInfo.getValue();
                         variableInfo.writeValue(value);
                     }
@@ -344,7 +330,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     private static boolean noEarlierAccess(Variable variable, StatementAnalysis previous) {
         if (previous == null || !previous.variables.isSet(variable.fullyQualifiedName())) return true;
-        VariableInfo variableInfo = previous.variables.get(variable.fullyQualifiedName());
+        VariableInfo variableInfo = previous.getLatestVariableInfo(variable.fullyQualifiedName());
         if (variableInfo == null) return true;
         return variableInfo.getProperty(ASSIGNED) != Level.TRUE;
     }
@@ -365,12 +351,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             copyValuesFrom = previous;
         }
         variableStream().forEach(variableInfo -> {
-            VariableInfo viPrevious = copyValuesFrom.variables.get(variableInfo.variable.fullyQualifiedName());
+            VariableInfo viPrevious = copyValuesFrom.getLatestVariableInfo(variableInfo.variable.fullyQualifiedName());
             if (viPrevious != null) {
                 variableInfo.objectFlow.copyIfNotSet(viPrevious.objectFlow);
                 variableInfo.stateOnAssignment.copyIfNotSet(viPrevious.stateOnAssignment);
 
-                assert variableInfo.initialValue.isSet() || variableInfo.expressionValue.isSet() || variableInfo.endValue.isSet();
+                assert variableInfo.value.isSet();
             }
         });
     }
@@ -381,23 +367,24 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         MULTI_COPY
     }
 
+    // TODO needs rethinking
     public VariableInfo createVariable(AnalyserContext analyserContext, Variable variable) {
         String fqn = variable.fullyQualifiedName();
-        VariableInfo existing = variables.getOtherwiseNull(fqn);
+        VariableInfoContainer existing = variables.getOtherwiseNull(fqn);
         if (existing != null) throw new UnsupportedOperationException();
         VariableInfo vi = internalCreate(analyserContext, variable, fqn);
 
-        if (!vi.initialValue.isSet()) {
+        if (!vi.value.isSet()) {
             if (variable instanceof This) {
-                vi.initialValue.set(new VariableValue(variable, ObjectFlow.NO_FLOW));
+                vi.value.set(new VariableValue(variable, ObjectFlow.NO_FLOW));
             } else if ((variable instanceof ParameterInfo)) {
                 ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
                 VariableValue variableValue = new VariableValue(variable, objectFlow);
-                vi.initialValue.set(variableValue);
+                vi.value.set(variableValue);
             } else if (variable instanceof FieldReference fieldReference) {
                 Value initialValue = initialValueOfField(analyserContext, fieldReference);
                 if (initialValue != UnknownValue.NO_VALUE) {
-                    vi.initialValue.set(initialValue);
+                    vi.value.set(initialValue);
                 }
             }
         }
@@ -533,7 +520,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     private VariableInfo internalCreate(AnalyserContext analyserContext, Variable variable, String name) {
         VariableInfo variableInfo = new VariableInfo(variable, name);
-        variables.put(name, variableInfo);
+        //variables.put(name, variableInfo); TODO
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", name);
 
         copyPropertiesFromAnalysis(analyserContext, variable, variableInfo);
@@ -578,7 +565,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public VariableInfo addProperty(AnalyserContext analyserContext, int level, Variable variable, VariableProperty variableProperty, int value) {
         Objects.requireNonNull(variable);
-        VariableInfo variableInfo = find(analyserContext, variable);
+        VariableInfo variableInfo = findForWriting(analyserContext, variable, level);
         int current = variableInfo.getProperty(variableProperty);
         if (current < value) {
             variableInfo.setProperty(variableProperty, value);
@@ -589,7 +576,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if ((valueWithVariable = currentValue.asInstanceOf(VariableValue.class)) != null) {
             Variable other = valueWithVariable.variable;
             if (!variable.equals(other)) {
-                addProperty(analyserContext, other, variableProperty, value);
+                addProperty(analyserContext, level, other, variableProperty, value);
             }
         }
         return variableInfo;
@@ -632,9 +619,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         assert variables.isSet(variable.fullyQualifiedName());
     }
 
+    // TODO
     public VariableInfo find(@NotNull AnalyserContext analyserContext, @NotNull Variable variable) {
         String fqn = variable.fullyQualifiedName();
-        VariableInfo vi = variables.getOtherwiseNull(fqn);
+        VariableInfo vi = variables.getOtherwiseNull(fqn).current();
         if (vi != null) return vi;
         return createVariable(analyserContext, variable);
     }
@@ -643,18 +631,18 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (!variables.isSet(variableName)) return false;
         VariableInfoContainer vic = variables.get(variableName);
         VariableInfo variableInfo = vic.current();
-        if(!variableInfo.variable.isLocal()) return false;
+        if (!variableInfo.variable.isLocal()) return false;
         return parent == null || !parent.isLocalVariableAndLocalToThisBlock(variableName);
     }
 
     public VariableInfo findForWriting(@NotNull AnalyserContext analyserContext, @NotNull Variable variable, int minimumLevel) {
         String fqn = variable.fullyQualifiedName();
-        VariableInfoContainer vic = variables.getOrCreate(fqn, k -> new VariableInfoContainer());
+        VariableInfoContainer vic = variables.getOrCreate(fqn, k -> new VariableInfoContainer(null)); // TODO
         if (vic.getHighestLevel() >= minimumLevel) {
             return vic.current();
         }
         // now we need to know what to copy...
-        VariableInfo vi = vic.haveData() ? new VariableInfo() : createVariable(analyserContext, variable);
+        VariableInfo vi = vic.haveData() ? new VariableInfo(null, null) : createVariable(analyserContext, variable); // TODO
         vic.set(minimumLevel, vi);
         return vi;
     }
@@ -672,7 +660,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return vic.current();
         }
         // now we need to know what to copy...
-        VariableInfo vi = new VariableInfo(COPYFROM);
+        VariableInfo vi = null; // TODO new VariableInfo();
         vic.set(minimumLevel, vi);
         return vi;
     }
@@ -690,8 +678,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (variableInfo.variable instanceof FieldReference) return Integer.MAX_VALUE;
         int steps = 0;
         while (variableInfo != null) {
-            if (variableInfo.isNotLocalCopy()) return steps;
-            variableInfo = variableInfo.localCopyOf;
+            // if (variableInfo.isNotLocalCopy()) return steps;
+            // variableInfo = variableInfo.localCopyOf; TODO
         }
         return -1;
     }
@@ -772,6 +760,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     public Stream<VariableInfo> variableStream() {
-        return variables.stream().map(Map.Entry::getValue).filter(vi -> !vi.properties.isSet(VariableProperty.REMOVED));
+        return variables.stream().map(Map.Entry::getValue)
+                .map(VariableInfoContainer::current)
+                .filter(vi -> !vi.properties.isSet(VariableProperty.REMOVED));
     }
 }

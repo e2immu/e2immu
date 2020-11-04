@@ -95,21 +95,21 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
             if (iteration > 0) {
                 MethodInfo constructor = fieldInfo.owner.findConstructor(1);
                 MethodAnalysis constructorMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(constructor);
-                VariableInfo constructorTv = constructorMa.getLastStatement().variables.get(fieldInfo.fullyQualifiedName());
+                VariableInfo constructorTv = constructorMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
                 Assert.assertEquals(Level.TRUE, constructorTv.properties.get(VariableProperty.READ));
                 Assert.assertEquals(Level.TRUE, constructorTv.properties.get(VariableProperty.MODIFIED));
 
                 MethodInfo visit = fieldInfo.owner.findUniqueMethod("visit", 1);
                 MethodAnalysis visitMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(visit);
-                VariableInfo visitTv = visitMa.getLastStatement().variables.get(fieldInfo.fullyQualifiedName());
+                VariableInfo visitTv = visitMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
                 Assert.assertEquals(Level.TRUE, visitTv.properties.get(VariableProperty.READ));
                 Assert.assertEquals(Level.FALSE, visitTv.properties.get(VariableProperty.MODIFIED));
 
                 MethodInfo iterator = fieldInfo.owner.findUniqueMethod("iterator", 0);
                 MethodAnalysis iteratorMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(iterator);
-                VariableInfo iteratorTv = iteratorMa.getLastStatement().variables.get(fieldInfo.fullyQualifiedName());
+                VariableInfo iteratorTv = iteratorMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
                 Assert.assertEquals(Level.TRUE, iteratorTv.properties.get(VariableProperty.READ));
 

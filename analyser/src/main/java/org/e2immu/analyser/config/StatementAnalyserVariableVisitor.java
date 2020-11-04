@@ -1,6 +1,7 @@
 package org.e2immu.analyser.config;
 
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.IncrementalMap;
@@ -15,7 +16,8 @@ public interface StatementAnalyserVariableVisitor {
                 Variable variable,
                 Value currentValue,
                 IncrementalMap<VariableProperty> properties,
-                VariableInfo variableInfo) {
+                VariableInfo variableInfo,
+                VariableInfoContainer variableInfoContainer) {
 
         public int getProperty(VariableProperty variableProperty) {
             return properties.getOrDefault(variableProperty, Level.DELAY);

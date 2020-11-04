@@ -96,7 +96,7 @@ public class TestLazy extends CommonTestRunner {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret.properties.get(VariableProperty.NOT_NULL));
 
                 Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
-                Set<Variable> linkedToT = d.methodAnalysis().getLastStatement().variables.get(t.fullyQualifiedName())
+                Set<Variable> linkedToT = d.methodAnalysis().getLastStatement().getLatestVariableInfo(t.fullyQualifiedName())
                         .linkedVariables.get();
                 // for now (and I believe it's correct, t will not be linked to supplier)
                 Assert.assertFalse(linkedToT.isEmpty());

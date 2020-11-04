@@ -12,7 +12,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Set;
 
 public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
 
@@ -89,12 +88,6 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
             if ("0".equals(d.statementId())) {
                 int assigned = d.properties().getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
                 Assert.assertEquals(Level.DELAY, assigned);
-            }
-            if ("1.0.0".equals(d.statementId())) {
-                Assert.assertTrue(d.variableInfo().isLocalCopy());
-            }
-            if (Set.of("0", "1", "2").contains(d.statementId())) {
-                Assert.assertFalse(d.variableInfo().isLocalCopy());
             }
         }
         if ("checkArray2".equals(d.methodInfo().name)) {

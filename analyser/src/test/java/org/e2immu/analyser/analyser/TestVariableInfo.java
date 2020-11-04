@@ -39,7 +39,7 @@ public class TestVariableInfo {
 
     private VariableInfo makeLocalIntVar(String name) {
         return new VariableInfo(new LocalVariableReference(new LocalVariable(List.of(), name, primitives.intParameterizedType, List.of()),
-                List.of()), null, name);
+                List.of()), name);
     }
 
 }

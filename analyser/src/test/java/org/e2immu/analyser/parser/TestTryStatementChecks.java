@@ -25,11 +25,11 @@ public class TestTryStatementChecks extends CommonTestRunner {
         }
         if ("method1".equals(d.methodInfo().name)) {
             if ("0.0.0".equals(d.statementId())) {
-                Value value0 = d.statementAnalysis().variables.get(METHOD1_FQN).valueForNextStatement();
+                Value value0 = d.statementAnalysis().variables.get(METHOD1_FQN).current().getValue();
                 Assert.assertTrue("Got " + value0.getClass(), value0 instanceof StringConcat);
             }
             if ("0.1.0".equals(d.statementId())) {
-                Value value1 = d.statementAnalysis().variables.get(METHOD1_FQN).valueForNextStatement();
+                Value value1 = d.statementAnalysis().variables.get(METHOD1_FQN).current().getValue();
                 Assert.assertTrue("Got " + value1.getClass(), value1 instanceof Constant);
             }
         }

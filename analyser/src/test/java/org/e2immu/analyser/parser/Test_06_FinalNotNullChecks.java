@@ -1,9 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
@@ -46,10 +43,10 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         if ("FinalNotNullChecks".equals(d.methodInfo().name) && INPUT.equals(d.variableName())) {
             Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL));
 
-            Assert.assertEquals("null", d.variableInfo().initialValue.get().toString());
-            Assert.assertEquals(PARAM_NN, d.variableInfo().expressionValue.get().toString());
+            Assert.assertEquals("null", d.variableInfoContainer().get(VariableInfoContainer.LEVEL_0_PREVIOUS).value.get().toString());
+            Assert.assertEquals(PARAM_NN, d.variableInfoContainer().get(VariableInfoContainer.LEVEL_2_EVALUATION).toString());
             Assert.assertEquals(PARAM_NN, d.currentValue().toString());
-            Assert.assertFalse(d.variableInfo().endValue.isSet());
+            Assert.assertNull(d.variableInfoContainer().get(VariableInfoContainer.LEVEL_4_SUMMARY));
         }
     };
 
