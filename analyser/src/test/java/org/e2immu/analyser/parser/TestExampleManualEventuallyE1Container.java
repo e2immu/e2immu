@@ -34,7 +34,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
 
                 FieldInfo fieldJ = d.methodInfo().typeInfo.getFieldByName("j", true);
                 VariableInfo tv = d.getFieldAsVariable(fieldJ);
-                Value value = tv.valueForNextStatement();
+                Value value = tv.getValue();
                 Assert.assertEquals("j", value.toString());
                 Value state = tv.stateOnAssignment.get();
                 Assert.assertEquals("(-this.j) >= 0", state.toString());

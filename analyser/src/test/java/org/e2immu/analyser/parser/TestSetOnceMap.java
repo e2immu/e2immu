@@ -53,7 +53,7 @@ public class TestSetOnceMap extends CommonTestRunner {
 
             Assert.assertNotNull(tv);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.properties.get(VariableProperty.NOT_NULL));
-            Assert.assertTrue(tv.valueForNextStatement() instanceof PropertyWrapper);
+            Assert.assertTrue(tv.getValue() instanceof PropertyWrapper);
             Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(
                     d.methodAnalysis().getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
 
@@ -72,7 +72,7 @@ public class TestSetOnceMap extends CommonTestRunner {
         }
         if ("isEmpty".equals(name)) {
             VariableInfo tv = d.getReturnAsVariable();
-            Assert.assertEquals("0 == this.map.size(),?>=0", tv.valueForNextStatement().toString());
+            Assert.assertEquals("0 == this.map.size(),?>=0", tv.getValue().toString());
 
             // there is no reason to have a @Size annotation on this expression
             Assert.assertEquals(Level.DELAY, tv.getProperty(VariableProperty.SIZE));
@@ -84,7 +84,7 @@ public class TestSetOnceMap extends CommonTestRunner {
             }
         }
         if ("stream".equals(name)) {
-            Value stream = d.getReturnAsVariable().valueForNextStatement();
+            Value stream = d.getReturnAsVariable().getValue();
             Assert.assertEquals("this.map.entrySet().stream()", stream.toString());
             Assert.assertEquals(Level.SIZE_COPY_TRUE, d.getProperty(stream, VariableProperty.SIZE_COPY));
         }

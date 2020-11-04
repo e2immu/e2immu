@@ -70,9 +70,9 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
         if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
             VariableInfo tv = d.getReturnAsVariable();
             if (d.iteration() == 0) {
-                Assert.assertSame(UnknownValue.NO_VALUE, tv.valueForNextStatement());
+                Assert.assertSame(UnknownValue.NO_VALUE, tv.getValue());
             } else {
-                Assert.assertEquals(EFFECTIVELY_FINAL, tv.valueForNextStatement().toString());
+                Assert.assertEquals(EFFECTIVELY_FINAL, tv.getValue().toString());
                 AnalysisStatus expectStatus = d.iteration() <= 3 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
                 Assert.assertSame(expectStatus, d.result().analysisStatus);
                 int notNull = tv.getProperty(VariableProperty.NOT_NULL);

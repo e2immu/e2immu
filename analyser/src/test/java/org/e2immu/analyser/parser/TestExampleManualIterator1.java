@@ -26,7 +26,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         if ("iterator".equals(d.methodInfo().name)) {
             //  Assert.assertEquals(MultiLevel.EFFECTIVE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
             VariableInfo variableInfo = d.getReturnAsVariable();
-            Assert.assertNotSame(UnknownValue.NO_VALUE, variableInfo.valueForNextStatement());
+            Assert.assertNotSame(UnknownValue.NO_VALUE, variableInfo.getValue());
         }
 
         if (Set.of("hasNext", "next").contains(d.methodInfo().name) && "MyIteratorImpl".equals(d.methodInfo().typeInfo.simpleName)) {

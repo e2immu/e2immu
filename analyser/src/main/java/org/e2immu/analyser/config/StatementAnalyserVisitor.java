@@ -18,11 +18,8 @@ public interface StatementAnalyserVisitor {
                 String statementId, Value condition, Value state, Map<String, AnalysisStatus> statusesAsMap,
                 boolean ignoreErrorsOnCondition) {
 
-        public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
-            return statementAnalysis.variables.get(fieldInfo.fullyQualifiedName());
-        }
-
         // shortcut
+
         public String haveError(String message) {
             return statementAnalysis.messages.stream()
                     .filter(m -> m.message.contains(message))
@@ -30,7 +27,6 @@ public interface StatementAnalyserVisitor {
                     .findFirst()
                     .orElse(null);
         }
-
         public int getProperty(Value value, VariableProperty variableProperty) {
             return evaluationContext.getProperty(value, variableProperty);
         }
@@ -55,12 +51,16 @@ public interface StatementAnalyserVisitor {
                     setProperty.value == value && setProperty.variableProperty == variableProperty);
         }
 
+        public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
+            return statementAnalysis.getLatestVariableInfo(fieldInfo.fullyQualifiedName());
+        }
+
         public VariableInfo getReturnAsVariable() {
-            return statementAnalysis.variables.get(methodInfo.fullyQualifiedName());
+            return statementAnalysis.getLatestVariableInfo(methodInfo.fullyQualifiedName());
         }
 
         public VariableInfo getThisAsVariable() {
-            return statementAnalysis.variables.get(methodInfo.typeInfo.fullyQualifiedName() + ".this");
+            return statementAnalysis.getLatestVariableInfo(methodInfo.typeInfo.fullyQualifiedName() + ".this");
         }
     }
 

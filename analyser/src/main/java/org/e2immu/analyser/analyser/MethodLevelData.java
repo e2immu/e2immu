@@ -165,7 +165,7 @@ public class MethodLevelData {
         StatementAnalysis statementAnalysis = sharedState.statementAnalysis;
 
         // final fields need to have a value set; all the others act as local variables
-        boolean someVariablesHaveNotBeenEvaluated = statementAnalysis.variableStream().anyMatch(vi -> vi.valueForNextStatement() == UnknownValue.NO_VALUE);
+        boolean someVariablesHaveNotBeenEvaluated = statementAnalysis.variableStream().anyMatch(vi -> vi.getValue() == UnknownValue.NO_VALUE);
         if (someVariablesHaveNotBeenEvaluated) {
             log(DELAYED, "Some variables have not yet been evaluated -- delaying establishing links in {}", sharedState.logLocation);
             return DELAYS;
@@ -218,7 +218,7 @@ public class MethodLevelData {
     private void recursivelyAddLinkedVariables(StatementAnalysis statementAnalysis, Variable variable, Set<Variable> result) {
         if (result.contains(variable)) return;
         result.add(variable);
-        VariableInfo variableInfo = statementAnalysis.variables.get(variable.fullyQualifiedName());
+        VariableInfo variableInfo = statementAnalysis.getLatestVariableInfo(variable.fullyQualifiedName());
         Set<Variable> linked = variableInfo.linkedVariables.get();
         for (Variable v : linked) recursivelyAddLinkedVariables(statementAnalysis, v, result);
 
@@ -244,7 +244,7 @@ public class MethodLevelData {
             for (Variable linkedVariable : linkedVariables) {
                 if (linkedVariable instanceof FieldReference) {
                     FieldInfo fieldInfo = ((FieldReference) linkedVariable).fieldInfo;
-                    VariableInfo vi = sharedState.statementAnalysis.variables.get(fieldInfo.fullyQualifiedName());
+                    VariableInfo vi = sharedState.statementAnalysis.getLatestVariableInfo(fieldInfo.fullyQualifiedName());
                     int modified = vi.getProperty(VariableProperty.MODIFIED);
                     if (modified == Level.DELAY) {
                         // break the delay in case the variable is not even read

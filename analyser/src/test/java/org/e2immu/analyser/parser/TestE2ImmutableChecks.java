@@ -78,8 +78,8 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         if ("mingle".equals(name)) {
             VariableInfo transferValue = d.getReturnAsVariable();
             Assert.assertEquals(MultiLevel.MUTABLE, transferValue.properties.get(VariableProperty.IMMUTABLE));
-            Assert.assertEquals("input4", transferValue.valueForNextStatement().toString());
-            Assert.assertTrue(transferValue.valueForNextStatement() instanceof VariableValue);
+            Assert.assertEquals("input4", transferValue.getValue().toString());
+            Assert.assertTrue(transferValue.getValue() instanceof VariableValue);
             Assert.assertEquals(MultiLevel.MUTABLE, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
         }
 

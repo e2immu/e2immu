@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.abstractvalue;
 
+import org.e2immu.analyser.analyser.AnalyserContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
@@ -166,7 +167,15 @@ public abstract class CommonAbstractValue {
         return pi;
     }
 
+    protected final static AnalyserContext analyserContext = new AnalyserContext() {
+    };
+
     protected final static EvaluationContext minimalEvaluationContext = new EvaluationContext() {
+
+        @Override
+        public AnalyserContext getAnalyserContext() {
+            return analyserContext;
+        }
 
         @Override
         public Value currentValue(Variable variable) {

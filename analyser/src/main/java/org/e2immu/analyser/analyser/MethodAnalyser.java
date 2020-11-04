@@ -483,7 +483,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         if (methodInfo.isVoid() || methodInfo.isConstructor) return DONE;
 
         VariableInfo variableInfo = getReturnAsVariable();
-        Value value = variableInfo.valueForNextStatement();
+        Value value = variableInfo.getValue();
         if (value == UnknownValue.NO_VALUE) {
             log(DELAYED, "Not all return values have been set yet for {}, delaying", methodInfo.distinguishingName());
             return DELAYS;
@@ -686,7 +686,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     private int propagateSizeAnnotations(SharedState sharedState) {
         VariableInfo variableInfo = getReturnAsVariable();
-        Value returnValue = variableInfo.valueForNextStatement();
+        Value returnValue = variableInfo.getValue();
         if (returnValue == UnknownValue.NO_VALUE) {
             return Level.DELAY;
         }
@@ -1051,15 +1051,15 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
-        return methodAnalysis.lastStatement().variables.get(fieldInfo.fullyQualifiedName());
+        return methodAnalysis.lastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
     }
 
     public VariableInfo getThisAsVariable() {
-        return methodAnalysis.lastStatement().variables.get(methodInfo.typeInfo.fullyQualifiedName + ".this");
+        return methodAnalysis.lastStatement().getLatestVariableInfo(methodInfo.typeInfo.fullyQualifiedName + ".this");
     }
 
     public VariableInfo getReturnAsVariable() {
-        return methodAnalysis.lastStatement().variables.get(methodInfo.fullyQualifiedName());
+        return methodAnalysis.lastStatement().getLatestVariableInfo(methodInfo.fullyQualifiedName());
     }
 
 

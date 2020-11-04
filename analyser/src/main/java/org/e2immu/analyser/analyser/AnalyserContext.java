@@ -21,33 +21,55 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.pattern.PatternMatcher;
 
 import java.util.Map;
-import java.util.Objects;
 
+/**
+ * many default values are there to make testing easier
+ */
 public interface AnalyserContext extends AnalysisProvider {
-    Configuration getConfiguration();
+
+    default Configuration getConfiguration() {
+        return new Configuration.Builder().build();
+    }
 
     // gives access to primitives
-    Primitives getPrimitives();
+    default Primitives getPrimitives() {
+        return new Primitives();
+    }
 
-    E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions();
+    default E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
+        return null;
+    }
 
-    PatternMatcher<StatementAnalyser> getPatternMatcher();
+    default PatternMatcher<StatementAnalyser> getPatternMatcher() {
+        return null;
+    }
 
-    TypeInfo getPrimaryType();
+    default TypeInfo getPrimaryType() {
+        return null;
+    }
 
-    Map<MethodInfo, MethodAnalyser> getMethodAnalysers();
+    default Map<MethodInfo, MethodAnalyser> getMethodAnalysers() {
+        return null;
+    }
 
-    Map<FieldInfo, FieldAnalyser> getFieldAnalysers();
+    default Map<FieldInfo, FieldAnalyser> getFieldAnalysers() {
+        return null;
+    }
 
-    Map<TypeInfo, TypeAnalyser> getTypeAnalysers();
+    default Map<TypeInfo, TypeAnalyser> getTypeAnalysers() {
+        return null;
+    }
 
-    Map<ParameterInfo, ParameterAnalyser> getParameterAnalysers();
+    default Map<ParameterInfo, ParameterAnalyser> getParameterAnalysers() {
+        return null;
+    }
 
-    TypeAnalysis getPrimaryTypeAnalysis();
+    default TypeAnalysis getPrimaryTypeAnalysis() {
+        return null;
+    }
 
     default FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
         try {

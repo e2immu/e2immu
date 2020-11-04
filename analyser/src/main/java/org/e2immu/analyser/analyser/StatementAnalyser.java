@@ -369,7 +369,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         for (StatementAnalyserVariableVisitor statementAnalyserVariableVisitor :
                 analyserContext.getConfiguration().debugConfiguration.statementAnalyserVariableVisitors) {
             statementAnalysis.variables.stream()
-                    .map(Map.Entry::getValue)
+                    .map(e -> e.getValue().current())
                     .forEach(variableInfo -> statementAnalyserVariableVisitor.visit(
                             new StatementAnalyserVariableVisitor.Data(
                                     sharedState.evaluationContext.getIteration(),
@@ -378,7 +378,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                     statementId,
                                     variableInfo.name,
                                     variableInfo.variable,
-                                    variableInfo.valueForNextStatement(),
+                                    variableInfo.getValue(),
                                     variableInfo.properties,
                                     variableInfo)));
         }
@@ -549,22 +549,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private AnalysisStatus checkFluent(SharedState sharedState) {
-        VariableInfo variableInfo = getReturnAsVariable();
+        VariableInfo variableInfo = findReturnAsVariableForWriting();
         int fluent = variableInfo.getProperty(VariableProperty.FLUENT);
         if (fluent != Level.DELAY) return DONE;
-        Value value = variableInfo.valueForNextStatement();
+        Value value = variableInfo.getValue();
         if (value == NO_VALUE) return DELAYS;
         boolean isFluent = value instanceof VariableValue vv && vv.variable instanceof This thisVar && thisVar.typeInfo == myMethodAnalyser.myTypeAnalyser.typeInfo;
         variableInfo.properties.put(VariableProperty.FLUENT, isFluent ? Level.TRUE : Level.FALSE);
         return DONE;
     }
 
-    private VariableInfo getReturnAsVariable() {
+    private VariableInfo findReturnAsVariableForWriting() {
         String fqn = myMethodAnalyser.methodInfo.fullyQualifiedName();
-        if (!statementAnalysis.variables.isSet(fqn)) {
-            return statementAnalysis.createVariable(analyserContext, new ReturnVariable(myMethodAnalyser.methodInfo));
-        }
-        return statementAnalysis.variables.get(fqn);
+        return statementAnalysis.findForWriting(fqn, VariableInfoContainer.LEVEL_2_EVALUATION);
     }
 
     /**
@@ -581,19 +578,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (structure.localVariableCreation != null) {
             lvr = new LocalVariableReference(structure.localVariableCreation, List.of());
             StatementAnalysis firstStatementInBlock = firstStatementFirstBlock();
-
+            final int l1 = VariableInfoContainer.LEVEL_1_INITIALISER;
             VariableInfo variableInfo;
             if (inCatch) {
-                firstStatementInBlock.addProperty(analyserContext, lvr, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-                variableInfo = firstStatementInBlock.addProperty(analyserContext, lvr, VariableProperty.READ, Level.READ_ASSIGN_ONCE);
+                firstStatementInBlock.addProperty(analyserContext, l1, lvr, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                variableInfo = firstStatementInBlock.addProperty(analyserContext, l1, lvr, VariableProperty.READ, Level.READ_ASSIGN_ONCE);
             } else if (assignedInLoop) {
-                variableInfo = firstStatementInBlock.addProperty(analyserContext, lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+                variableInfo = firstStatementInBlock.addProperty(analyserContext, l1, lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
             } else {
                 variableInfo = firstStatementInBlock.find(analyserContext, lvr); // "touch" it
             }
-            if (!variableInfo.initialValue.isSet()) {
-                variableInfo.writeInitialValue(new VariableValue(lvr));
-            }
+            variableInfo.writeValue(new VariableValue(lvr));
         } else {
             lvr = null;
         }
@@ -710,8 +705,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (value == null) throw new UnsupportedOperationException("??");
         if (value == NO_VALUE) return DELAYS;
 
-        VariableInfo variableInfo = getReturnAsVariable();
-        variableInfo.initialValue.set(value);
+        VariableInfo variableInfo = findReturnAsVariableForWriting();
+        variableInfo.value.set(value);
         // properties need properly copying from value into "properties"
         // TODO
         return DONE;
@@ -932,12 +927,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 int read = variableInfo.getProperty(VariableProperty.READ);
                 if (assigned >= Level.TRUE && read <= assigned) {
                     boolean notAssignedInLoop = variableInfo.getProperty(VariableProperty.ASSIGNED_IN_LOOP) != Level.TRUE;
-                    // TODO at some point we will do better than "notAssignedInLoop"
+                    // IMPROVE at some point we will do better than "notAssignedInLoop"
+                    boolean isLocalAndLocalToThisBlock = statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name);
                     boolean useless = bestAlwaysInterrupt == InterruptsFlow.ESCAPE || notAssignedInLoop && (
-                            variableInfo.variable.isLocal() && (alwaysInterrupts || variableInfo.isNotLocalCopy()));
+                            variableInfo.variable.isLocal() && (alwaysInterrupts || isLocalAndLocalToThisBlock));
                     if (useless) {
                         statementAnalysis.ensure(Message.newMessage(getLocation(), Message.USELESS_ASSIGNMENT, variableInfo.name));
-                        if (variableInfo.isLocalCopy()) toRemove.add(variableInfo.name);
+                        if (!isLocalAndLocalToThisBlock) toRemove.add(variableInfo.name);
                     }
                 }
             });
@@ -954,7 +950,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // at the end of the block, check for variables created in this block
             // READ is set in the first iteration, so there is no reason to expect delays
             statementAnalysis.variableStream().forEach(variableInfo -> {
-                if (variableInfo.isNotLocalCopy() && variableInfo.variable.isLocal()
+                if (statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name)
                         && variableInfo.getProperty(VariableProperty.READ) < Level.READ_ASSIGN_ONCE) {
                     statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNUSED_LOCAL_VARIABLE, variableInfo.name));
                 }
@@ -1129,7 +1125,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         @Override
         public Value currentValue(Variable variable) {
             VariableInfo vi = statementAnalysis.find(analyserContext, variable);
-            return vi.valueForNextStatement();
+            return vi.getValue();
         }
 
         @Override
@@ -1188,7 +1184,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 variableInfo.setProperty(property, value);
             }
 
-            Value currentValue = variableInfo.valueForNextStatement();
+            Value currentValue = variableInfo.getValue();
             VariableValue valueWithVariable;
             if ((valueWithVariable = currentValue.asInstanceOf(VariableValue.class)) == null) return;
             Variable other = valueWithVariable.variable;

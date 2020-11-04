@@ -59,7 +59,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
         if ("someMethod".equals(d.methodInfo().name)) {
             VariableInfo tv = d.getReturnAsVariable();
             Assert.assertEquals("org.e2immu.analyser.testexample.EvaluatesToConstant.someMethod(String):0:a.toLowerCase()",
-                    tv.valueForNextStatement().toString());
+                    tv.getValue().toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.getProperty(VariableProperty.NOT_NULL));
         }
     };

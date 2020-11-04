@@ -21,15 +21,15 @@ public interface MethodAnalyserVisitor {
         }
 
         public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
-            return methodAnalysis.getLastStatement().variables.get(fieldInfo.fullyQualifiedName());
+            return methodAnalysis.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
         }
 
         public VariableInfo getReturnAsVariable() {
-            return methodAnalysis.getLastStatement().variables.get(methodInfo.fullyQualifiedName());
+            return methodAnalysis.getLastStatement().getLatestVariableInfo(methodInfo.fullyQualifiedName());
         }
 
         public VariableInfo getThisAsVariable() {
-            return methodAnalysis.getLastStatement().variables.get(methodInfo.typeInfo.fullyQualifiedName + ".this");
+            return methodAnalysis.getLastStatement().getLatestVariableInfo(methodInfo.typeInfo.fullyQualifiedName + ".this");
         }
     }
 

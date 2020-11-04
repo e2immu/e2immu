@@ -57,13 +57,13 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         if ("FinalNotNullChecks".equals(d.methodInfo().name)) {
             MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
             FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
-            int notNull = d.getFieldAsVariable(input).valueForNextStatement().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL);
+            int notNull = d.getFieldAsVariable(input).getValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
         }
         if (("debug".equals(d.methodInfo().name) || "toString".equals(d.methodInfo().name))) {
             MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
             FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
-            Assert.assertSame(UnknownValue.NO_VALUE, d.getFieldAsVariable(input).valueForNextStatement());
+            Assert.assertSame(UnknownValue.NO_VALUE, d.getFieldAsVariable(input).getValue());
             if (d.iteration() == 0) {
                 Assert.assertEquals(AnalysisStatus.PROGRESS, d.result().analysisStatus);
             } else {
@@ -98,13 +98,13 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         VariableInfo vi = d.getFieldAsVariable(input);
         if (d.methodInfo().name.equals("FinalNotNullChecks")) {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
-            Value inputValue = vi.valueForNextStatement();
+            Value inputValue = vi.getValue();
             int notNull = inputValue.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL);
             Assert.assertEquals(PARAM_NN, inputValue.toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
         }
         if ((d.methodInfo().name.equals("debug") || d.methodInfo().name.equals("toString"))) {
-            Assert.assertSame(UnknownValue.NO_VALUE, vi.valueForNextStatement());
+            Assert.assertSame(UnknownValue.NO_VALUE, vi.getValue());
             int notNull = vi.getProperty(VariableProperty.NOT_NULL);
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
             Assert.assertEquals(expectNotNull, notNull);

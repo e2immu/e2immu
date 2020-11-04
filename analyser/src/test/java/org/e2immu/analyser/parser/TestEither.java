@@ -64,7 +64,7 @@ public class TestEither extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("getLeftOrElse".equals(d.methodInfo().name) && d.iteration() > 0) {
             VariableInfo tv = d.getReturnAsVariable();
-            Value retVal = tv.valueForNextStatement();
+            Value retVal = tv.getValue();
             Assert.assertTrue(retVal instanceof ConditionalValue);
             ConditionalValue conditionalValue = (ConditionalValue) retVal;
             Assert.assertEquals("null == this.left?orElse,@NotNull:this.left", conditionalValue.toString());

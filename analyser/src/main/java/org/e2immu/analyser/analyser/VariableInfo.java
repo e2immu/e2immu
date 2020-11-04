@@ -17,55 +17,50 @@
 
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.IncrementalMap;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetOnce;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.IntBinaryOperator;
+
+import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 
 public class VariableInfo {
-    public final VariableInfo localCopyOf; // can be null, when the variable is created/first used in this block
     public final Variable variable;
+    /**
+     * Generally the variable's fully qualified name, but can be more complicated (see DependentVariable)
+     */
     public final String name;
 
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
 
-    public final SetOnce<Value> initialValue = new SetOnce<>(); // value from step 3 (initialisers)
-    public final SetOnce<Value> expressionValue = new SetOnce<>(); // value from step 4 (main evaluation)
-    public final SetOnce<Value> endValue = new SetOnce<>(); // value from step 9 (summary of sub-blocks)
+    public final SetOnce<Value> value = new SetOnce<>(); // value from step 3 (initialisers)
 
     public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
     public final SetOnce<Value> stateOnAssignment = new SetOnce<>(); // EMPTY when no info, NO_VALUE when not set
 
     public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
 
-    public boolean isLocalCopy() {
-        return localCopyOf != null;
-    }
-
-    public boolean isNotLocalCopy() {
-        return localCopyOf == null;
-    }
-
     public ObjectFlow getObjectFlow() {
         return objectFlow.getOrElse(ObjectFlow.NO_FLOW);
     }
 
-    public VariableInfo(Variable variable, VariableInfo localCopyOf, String name) {
-        this.localCopyOf = localCopyOf;
+    public VariableInfo(Variable variable, String name) {
         this.name = Objects.requireNonNull(name);
         this.variable = Objects.requireNonNull(variable);
     }
 
-    public Value valueForNextStatement() {
-        if (endValue.isSet()) return endValue.get();
-        if (expressionValue.isSet()) return expressionValue.get();
-        return initialValue.getOrElse(UnknownValue.NO_VALUE);
+    public Value getValue() {
+        return value.getOrElse(UnknownValue.NO_VALUE);
     }
 
     public Value getStateOnAssignment() {
@@ -76,40 +71,13 @@ public class VariableInfo {
         return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 
-    // simply copy from the same level
-    public VariableInfo copy(boolean isLocalCopy) {
-        VariableInfo variableInfo = new VariableInfo(variable, isLocalCopy ? this : null, name);
-        variableInfo.properties.putAll(properties);
-        variableInfo.initialValue.copy(initialValue);
-        variableInfo.expressionValue.copy(expressionValue);
-        variableInfo.endValue.copy(endValue);
-        variableInfo.stateOnAssignment.copy(stateOnAssignment);
-        return variableInfo;
-    }
-
-    // simply copy from the same level
-    public VariableInfo copyValueToInitial(boolean isLocalCopy) {
-        VariableInfo variableInfo = new VariableInfo(variable, isLocalCopy ? this : null, name);
-        variableInfo.properties.putAll(properties);
-        if (!variableInfo.initialValue.isSet()) {
-            variableInfo.writeInitialValue(valueForNextStatement());
-        }
-        variableInfo.stateOnAssignment.copy(stateOnAssignment);
-        return variableInfo;
-    }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
-        sb.append("props=").append(properties);
-        if (initialValue.isSet()) {
-            sb.append(", initialValue=").append(initialValue.get());
-        }
-        if (expressionValue.isSet()) {
-            sb.append(", expressionValue=").append(expressionValue.get());
-        }
-        if (endValue.isSet()) {
-            sb.append(", endValue=").append(endValue.get());
+        sb.append("name=").append(name).append("props=").append(properties);
+        if (value.isSet()) {
+            sb.append(", value=").append(value.get());
         }
         return sb.toString();
     }
@@ -142,26 +110,75 @@ public class VariableInfo {
     }
 
     public boolean hasNoValue() {
-        return valueForNextStatement() == UnknownValue.NO_VALUE;
+        return getValue() == UnknownValue.NO_VALUE;
     }
 
-    public void writeInitialValue(Value value) {
+    public void writeValue(Value value) {
         if (value != UnknownValue.NO_VALUE) {
-            initialValue.set(value);
+            this.value.set(value);
         }
-    }
-
-    public void merge(VariableInfo variableInfo) {
-        properties.copyFrom(variableInfo.properties);
-        if (!initialValue.isSet()) {
-            initialValue.set(variableInfo.valueForNextStatement());
-        }
-        objectFlow.copyIfNotSet(variableInfo.objectFlow);
-        stateOnAssignment.copyIfNotSet(variableInfo.stateOnAssignment);
     }
 
     public void ensureProperty(VariableProperty variableProperty, int value) {
         int current = properties.getOrDefault(variableProperty, Level.DELAY);
         if (value > current) properties.put(variableProperty, value);
     }
+
+
+    private record MergeOp(VariableProperty variableProperty, IntBinaryOperator operator, int initial) {
+    }
+
+    // it is important to note that the properties are NOT read off the value, but from the properties map
+    // this copying has to have taken place earlier; for each of the variable properties below:
+
+    private static final List<MergeOp> MERGE = List.of(
+            new MergeOp(VariableProperty.NOT_NULL, Math::min, Integer.MAX_VALUE),
+            new MergeOp(VariableProperty.SIZE, Math::min, Integer.MAX_VALUE),
+            new MergeOp(VariableProperty.IMMUTABLE, Math::min, Integer.MAX_VALUE),
+            new MergeOp(VariableProperty.CONTAINER, Math::min, Integer.MAX_VALUE),
+            new MergeOp(VariableProperty.READ, Math::max, Level.DELAY),
+            new MergeOp(VariableProperty.ASSIGNED, Math::max, Level.DELAY)
+    );
+
+    public void merge(VariableInfo existing,
+                      boolean existingValuesWillBeOverwritten,
+                      List<VariableInfo> merge) {
+
+        Value mergedValue = mergeValue(existing, existingValuesWillBeOverwritten, merge);
+        writeValue(mergedValue);
+
+        // now common properties
+
+        List<VariableInfo> list = existingValuesWillBeOverwritten ?
+                ListUtil.immutableConcat(merge, List.of(existing)) : ImmutableList.copyOf(merge);
+        for (MergeOp mergeOp : MERGE) {
+            int commonValue = Level.DELAY;
+
+            for (VariableInfo vi : list) {
+                int value = vi.properties.getOrDefault(mergeOp.variableProperty, Level.DELAY);
+                commonValue = mergeOp.operator.applyAsInt(commonValue, value);
+            }
+            if (commonValue != mergeOp.initial) {
+                setProperty(mergeOp.variableProperty, commonValue);
+            }
+        }
+    }
+
+    private Value mergeValue(VariableInfo existing,
+                             boolean existingValuesWillBeOverwritten,
+                             List<VariableInfo> merge) {
+        Value currentValue = existing.getValue();
+        if (!existingValuesWillBeOverwritten && currentValue == NO_VALUE) return NO_VALUE;
+        boolean haveANoValue = merge.stream().anyMatch(v -> !v.stateOnAssignment.isSet());
+        if (haveANoValue) return NO_VALUE;
+
+        // situation: we understand c
+        // x=i; if(c) x=a; we do NOT overwrite; result is c?a:i
+        // x=i; if(c) x=a; else x=b, overwrite; result is
+        // x=i; switch(y) case c1 -> a; case c2 -> b; default -> d; overwrite
+
+        // no need to change the value
+        return currentValue;
+    }
+
 }

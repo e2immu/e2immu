@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -102,5 +103,13 @@ public class SetOnceMap<K, V> extends Freezable {
 
     public Map<K, V> toImmutableMap() {
         return ImmutableMap.copyOf(map);
+    }
+
+    public V getOrCreate(K k, Function<K, V> generator) {
+        V v = map.get(k);
+        if (v != null) return v;
+        V vv = generator.apply(k);
+        map.put(k, vv);
+        return vv;
     }
 }

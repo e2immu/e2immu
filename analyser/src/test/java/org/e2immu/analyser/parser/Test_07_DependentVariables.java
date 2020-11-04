@@ -28,22 +28,22 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             }
             if ("2".equals(d.statementId()) && "array[0]".equals(d.variableName())) {
                 Assert.assertTrue(assigned > read);
-                Assert.assertEquals("12", d.variableInfo().valueForNextStatement().toString());
+                Assert.assertEquals("12", d.variableInfo().getValue().toString());
             }
             if ("2".equals(d.statementId()) && "array[1]".equals(d.variableName())) {
                 Assert.assertEquals("13", d.currentValue().toString());
             }
             if ("4".equals(d.statementId()) && "array[0]".equals(d.variableName())) {
                 Assert.assertTrue(assigned < read);
-                Assert.assertEquals("12", d.variableInfo().valueForNextStatement().toString());
+                Assert.assertEquals("12", d.variableInfo().getValue().toString());
             }
             if ("4".equals(d.statementId()) && "array[1]".equals(d.variableName())) {
                 Assert.assertTrue(assigned < read);
-                Assert.assertEquals("13", d.variableInfo().valueForNextStatement().toString());
+                Assert.assertEquals("13", d.variableInfo().getValue().toString());
             }
             if ("4".equals(d.statementId()) && "array[2]".equals(d.variableName())) {
                 Assert.assertTrue(assigned < read);
-                Assert.assertEquals("31", d.variableInfo().valueForNextStatement().toString());
+                Assert.assertEquals("31", d.variableInfo().getValue().toString());
             }
             if ("4".equals(d.statementId()) && "array".equals(d.variableName())) {
                 Assert.assertTrue(read > 1);
@@ -51,13 +51,13 @@ public class Test_07_DependentVariables extends CommonTestRunner {
         }
         if ("method2".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
             if ("b".equals(d.variableName())) {
-                Assert.assertEquals(A2, d.variableInfo().valueForNextStatement().toString());
+                Assert.assertEquals(A2, d.variableInfo().getValue().toString());
             }
             if ("array[b]".equals(d.variableName())) {
                 Assert.fail("This variable should not be produced");
             }
             if (("array[" + A2 + "]").equals(d.variableName())) {
-                Assert.assertEquals("12", d.variableInfo().valueForNextStatement().toString());
+                Assert.assertEquals("12", d.variableInfo().getValue().toString());
             }
         }
     };
@@ -65,11 +65,11 @@ public class Test_07_DependentVariables extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method1".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
             VariableInfo tv = d.getReturnAsVariable();
-            Assert.assertEquals("56", tv.valueForNextStatement().toString());
+            Assert.assertEquals("56", tv.getValue().toString());
         }
         if ("method2".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
             VariableInfo tv = d.getReturnAsVariable();
-            Assert.assertEquals("12", tv.valueForNextStatement().toString());
+            Assert.assertEquals("12", tv.getValue().toString());
         }
     };
 

@@ -59,7 +59,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public final AddOnceSet<Message> messages = new AddOnceSet<>();
     public final NavigationData<StatementAnalysis> navigationData = new NavigationData<>();
-    public final SetOnceMap<String, VariableInfo> variables = new SetOnceMap<>();
+    public final SetOnceMap<String, VariableInfoContainer> variables = new SetOnceMap<>();
     public final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
     public final AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
 
@@ -227,13 +227,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // some blocks are guaranteed to be executed, others are only executed conditionally.
 
         // let's implement some special cases
-        if(statement instanceof SynchronizedStatement) {
+        if (statement instanceof SynchronizedStatement) {
             assert lastStatements.size() == 1;
             StatementAnalyser src = lastStatements.get(0);
             src.statementAnalysis.variableStream().forEach(variableInfo -> {
-                if(variableInfo.variable instanceof FieldReference fieldReference) {
-                    if(variables.isSet(fieldReference.fullyQualifiedName())) {
-                        variables.get(fieldReference.fullyQualifiedName()).merge(variableInfo);
+                if (variableInfo.variable instanceof FieldReference fieldReference) {
+                    if (variables.isSet(fieldReference.fullyQualifiedName())) {
+                        variables.get(fieldReference.fullyQualifiedName()).merge(variableInfo, false, List.of());
                     } else {
                         variables.put(fieldReference.fullyQualifiedName(), variableInfo.copy(false));
                     }
@@ -241,7 +241,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             });
 
         }
-        for(StatementAnalyser sa: lastStatements) {
+        for (StatementAnalyser sa : lastStatements) {
 
         }
     }
@@ -250,6 +250,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (!messages.contains(newMessage)) {
             messages.add(newMessage);
         }
+    }
+
+    public VariableInfo getLatestVariableInfo(String fullyQualifiedName) {
+        return variables.get(fullyQualifiedName).current();
     }
 
     public interface StateChange extends Function<Value, Value> {
@@ -320,7 +324,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 if (read >= Level.TRUE && noEarlierAccess(variableInfo.variable, copyFrom)) {
                     if (!variableInfo.initialValue.isSet()) {
                         Value initialValue = initialValueOfField(analyserContext, fieldReference);
-                        variableInfo.writeInitialValue(initialValue);
+                        variableInfo.writeValue(initialValue);
                     }
                     copyFieldPropertiesFromAnalysis(analyserContext, variableInfo, fieldReference.fieldInfo);
                 }
@@ -330,8 +334,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 if (previousVariableInfo != null) {
                     variableInfo.properties.copyFrom(previousVariableInfo.properties);
                     if (!variableInfo.initialValue.isSet()) {
-                        Value value = previousVariableInfo.valueForNextStatement();
-                        variableInfo.writeInitialValue(value);
+                        Value value = previousVariableInfo.getValue();
+                        variableInfo.writeValue(value);
                     }
                 }
             }
@@ -528,7 +532,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private VariableInfo internalCreate(AnalyserContext analyserContext, Variable variable, String name) {
-        VariableInfo variableInfo = new VariableInfo(variable, null, name);
+        VariableInfo variableInfo = new VariableInfo(variable, name);
         variables.put(name, variableInfo);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", name);
 
@@ -562,7 +566,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     private void copyFieldPropertiesFromAnalysis(AnalyserContext analyserContext, VariableInfo variableInfo, FieldInfo fieldInfo) {
-        if (variableInfo.valueForNextStatement().isInstanceOf(VariableValue.class)) {
+        if (variableInfo.getValue().isInstanceOf(VariableValue.class)) {
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
             for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
                 int value = fieldAnalysis.getProperty(variableProperty);
@@ -572,7 +576,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
     }
 
-    public VariableInfo addProperty(AnalyserContext analyserContext, Variable variable, VariableProperty variableProperty, int value) {
+    public VariableInfo addProperty(AnalyserContext analyserContext, int level, Variable variable, VariableProperty variableProperty, int value) {
         Objects.requireNonNull(variable);
         VariableInfo variableInfo = find(analyserContext, variable);
         int current = variableInfo.getProperty(variableProperty);
@@ -580,7 +584,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             variableInfo.setProperty(variableProperty, value);
         }
 
-        Value currentValue = variableInfo.valueForNextStatement();
+        Value currentValue = variableInfo.getValue();
         VariableValue valueWithVariable;
         if ((valueWithVariable = currentValue.asInstanceOf(VariableValue.class)) != null) {
             Variable other = valueWithVariable.variable;
@@ -635,12 +639,50 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return createVariable(analyserContext, variable);
     }
 
+    public boolean isLocalVariableAndLocalToThisBlock(String variableName) {
+        if (!variables.isSet(variableName)) return false;
+        VariableInfoContainer vic = variables.get(variableName);
+        VariableInfo variableInfo = vic.current();
+        if(!variableInfo.variable.isLocal()) return false;
+        return parent == null || !parent.isLocalVariableAndLocalToThisBlock(variableName);
+    }
+
+    public VariableInfo findForWriting(@NotNull AnalyserContext analyserContext, @NotNull Variable variable, int minimumLevel) {
+        String fqn = variable.fullyQualifiedName();
+        VariableInfoContainer vic = variables.getOrCreate(fqn, k -> new VariableInfoContainer());
+        if (vic.getHighestLevel() >= minimumLevel) {
+            return vic.current();
+        }
+        // now we need to know what to copy...
+        VariableInfo vi = vic.haveData() ? new VariableInfo() : createVariable(analyserContext, variable);
+        vic.set(minimumLevel, vi);
+        return vi;
+    }
+
+    /**
+     * this method assumes that the variable already exists!
+     *
+     * @param variableName the variable's fully qualified name
+     * @param minimumLevel the level that we will create the variable info object in
+     * @return
+     */
+    public VariableInfo findForWriting(@NotNull String variableName, int minimumLevel) {
+        VariableInfoContainer vic = variables.get(variableName);
+        if (vic.getHighestLevel() >= minimumLevel) {
+            return vic.current();
+        }
+        // now we need to know what to copy...
+        VariableInfo vi = new VariableInfo(COPYFROM);
+        vic.set(minimumLevel, vi);
+        return vi;
+    }
+
     public boolean isDelaysInDependencyGraph() {
         return !dependencyGraph.isFrozen();
     }
 
     public void removeAllVariables(List<String> toRemove) {
-        toRemove.forEach(name -> variables.get(name).remove());
+        toRemove.forEach(name -> findForWriting(name, VariableInfoContainer.LEVEL_4_SUMMARY).remove());
     }
 
     public int levelAtWhichVariableIsDefined(AnalyserContext analyserContext, Variable assignmentTarget) {

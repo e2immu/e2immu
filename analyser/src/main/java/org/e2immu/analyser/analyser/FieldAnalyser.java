@@ -372,7 +372,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 if (linkedToVarsInPrecondition) {
                     // we now check if a not-null is compatible with the pre-condition
                     boolean allCompatible = methodsWhereFieldIsAssigned.stream().allMatch(m -> {
-                        Value assignment = m.getFieldAsVariable(fieldInfo).valueForNextStatement();
+                        Value assignment = m.getFieldAsVariable(fieldInfo).getValue();
                         // the properties of the fieldSummary are in the "properties" of TransferValue, not in the value
                         // TODO there should be a better way to do this
                         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
@@ -486,7 +486,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                         // field is not assigned to in the method
                         m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.ASSIGNED) < Level.TRUE ||
                         // if it is present, assigned to, it needs to have a value
-                        m.getFieldAsVariable(fieldInfo).valueForNextStatement() != NO_VALUE);
+                        m.getFieldAsVariable(fieldInfo).getValue() != NO_VALUE);
 
         if (!allAssignmentValuesDefined) {
             log(DELAYED, "Delaying property {} on field {}, not all assignment values defined",
@@ -524,7 +524,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         allMethodsAndConstructors.forEach(m -> {
             if (m.haveFieldAsVariable(fieldInfo)) {
                 VariableInfo tv = m.getFieldAsVariable(fieldInfo);
-                Value value = tv.valueForNextStatement();
+                Value value = tv.getValue();
                 if (value != NO_VALUE) {
                     int v = evaluationContext.getProperty(value, property);
                     values.add(v);
@@ -557,7 +557,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 if (methodAnalyser.haveFieldAsVariable(fieldInfo)) {
                     VariableInfo tv = methodAnalyser.getFieldAsVariable(fieldInfo);
                     if (tv.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) {
-                        Value value = tv.valueForNextStatement();
+                        Value value = tv.getValue();
                         if (value != NO_VALUE) {
                             values.add(value);
                         } else {

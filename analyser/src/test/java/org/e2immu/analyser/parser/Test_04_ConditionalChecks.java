@@ -97,7 +97,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                 Assert.assertNotNull(d.haveError(Message.UNREACHABLE_STATEMENT));
 
                 VariableInfo ret = d.getReturnAsVariable();
-                Assert.assertTrue(ret.valueForNextStatement() instanceof ConstantValue); // TODO simply here as a marker test
+                Assert.assertTrue(ret.getValue() instanceof ConstantValue); // TODO simply here as a marker test
             }
 
         }
