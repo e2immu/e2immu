@@ -19,6 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Map;
@@ -43,6 +44,10 @@ public interface VariableInfo {
 
     Value getValue();
 
+    default boolean valueIsSet() {
+        return getValue() != UnknownValue.NO_VALUE;
+    }
+
     /**
      * @return null when not (yet) set, or when there is no assigment (yet) on this variable
      */
@@ -51,8 +56,6 @@ public interface VariableInfo {
     int getProperty(VariableProperty variableProperty);
 
     int getProperty(VariableProperty variableProperty, int defaultValue);
-
-    boolean hasNoValue();
 
     /**
      * @return immutable copy of the properties map, for debugging mostly
@@ -65,10 +68,6 @@ public interface VariableInfo {
     VariableInfo freeze();
 
     boolean hasProperty(VariableProperty variableProperty);
-
-    default boolean valueIsSet() {
-        return getValue() != null;
-    }
 
     Stream<Map.Entry<VariableProperty, Integer>> propertyStream();
 }

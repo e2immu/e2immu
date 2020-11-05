@@ -94,6 +94,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     private VariableInfoImpl currentLevelForWriting(int level) {
         if (level <= 0 || level >= LEVELS) throw new IllegalArgumentException();
+        if(level > currentLevel) throw new IllegalArgumentException();
         VariableInfoImpl variableInfo = (VariableInfoImpl) data[currentLevel];
         if (variableInfo == null) {
             throw new IllegalArgumentException("No assignment announcement was made at level " + level);
@@ -106,7 +107,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
 
         Objects.requireNonNull(value);
-        if (value != UnknownValue.NO_VALUE) {
+        if (value == UnknownValue.NO_VALUE) {
             throw new IllegalArgumentException("Value should not be NO_VALUE");
         }
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
@@ -117,7 +118,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public void setStateOnAssignment(int level, Value state) {
         ensureNotFrozen();
         Objects.requireNonNull(state);
-        if (state != UnknownValue.NO_VALUE) {
+        if (state == UnknownValue.NO_VALUE) {
             throw new IllegalArgumentException("State should not be NO_VALUE");
         }
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
@@ -146,7 +147,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
 
         Objects.requireNonNull(value);
-        if (value != UnknownValue.NO_VALUE) {
+        if (value == UnknownValue.NO_VALUE) {
             throw new IllegalArgumentException("Value should not be NO_VALUE");
         }
         int writeLevel = findLevelForWriting(level);
@@ -159,7 +160,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
 
         Objects.requireNonNull(state);
-        if (state != UnknownValue.NO_VALUE) {
+        if (state == UnknownValue.NO_VALUE) {
             throw new IllegalArgumentException("State should not be NO_VALUE");
         }
         int writeLevel = findLevelForWriting(level);

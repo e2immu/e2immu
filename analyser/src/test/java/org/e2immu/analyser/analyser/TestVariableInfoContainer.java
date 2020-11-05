@@ -19,6 +19,8 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.value.IntValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -94,5 +96,20 @@ public class TestVariableInfoContainer extends CommonVariableInfo {
         VariableInfo vi2 = vic.current();
         Assert.assertEquals(Level.TRUE, vi2.getProperty(VariableProperty.INDEPENDENT));
 
+        // then, make an assignment
+
+        IntValue three = new IntValue(primitives, 3, ObjectFlow.NO_FLOW);
+        try {
+            vic.setValueOnAssignment(VariableInfoContainer.LEVEL_4_SUMMARY, three);
+            Assert.fail();
+        } catch (RuntimeException rte) {
+            // OK
+        }
+        Assert.assertFalse(vic.current().valueIsSet());
+
+        vic.assignment(VariableInfoContainer.LEVEL_4_SUMMARY);
+        vic.setValueOnAssignment(VariableInfoContainer.LEVEL_4_SUMMARY, three);
+        Assert.assertEquals(VariableInfoContainer.LEVEL_4_SUMMARY, vic.getCurrentLevel());
+        Assert.assertSame(three, vic.current().getValue());
     }
 }

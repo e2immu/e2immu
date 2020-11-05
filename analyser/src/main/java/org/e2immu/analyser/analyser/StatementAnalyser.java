@@ -357,7 +357,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             statementAnalysis.assertVariableExists(v);
 
             VariableInfo variableInfo = statementAnalysis.find(analyserContext, v);
-            if (variableInfo != null && variableInfo.hasNoValue()) haveDelays.set(true);
+            if (variableInfo != null && !variableInfo.valueIsSet()) haveDelays.set(true);
         });
         if (haveDelays.get()) return DELAYS;
         statementAnalysis.dependencyGraph.freeze();

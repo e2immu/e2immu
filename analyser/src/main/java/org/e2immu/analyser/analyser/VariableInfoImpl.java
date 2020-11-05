@@ -137,11 +137,6 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
-    public boolean hasNoValue() {
-        return getValue() == UnknownValue.NO_VALUE;
-    }
-
-    @Override
     public Map<VariableProperty, Integer> getProperties() {
         return properties.toImmutableMap();
     }
