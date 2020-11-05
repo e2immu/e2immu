@@ -38,10 +38,10 @@ public class TestObjectFlow1 extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("KeyValue".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
             if ("key".equals(d.variableName())) {
-                Assert.assertSame(Origin.PARAMETER, d.variableInfo().objectFlow.get().origin);
+                Assert.assertSame(Origin.PARAMETER, d.variableInfo().getObjectFlow().origin);
             }
             if ("KeyValue.this.key".equals(d.variableName())) {
-                Assert.assertSame(Origin.PARAMETER, d.variableInfo().objectFlow.get().origin);
+                Assert.assertSame(Origin.PARAMETER, d.variableInfo().getObjectFlow().origin);
             }
         }
     };

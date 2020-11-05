@@ -42,15 +42,15 @@ public class TestNullParameterChecks extends CommonTestRunner {
 
             if ("s".equals(d.variableName())) {
                 LOGGER.info("Properties of s it iteration {} are {}, value {}", d.iteration(), d.properties(), d.currentValue());
-                Assert.assertEquals(Level.READ_ASSIGN_ONCE, d.properties().get(VariableProperty.READ));
-                Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED)); //FALSE at level 1
+                Assert.assertEquals(Level.READ_ASSIGN_ONCE, d.getProperty(VariableProperty.READ));
+                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED)); //FALSE at level 1
                 return;
             }
             if ("NullParameterChecks.this.s".equals(d.variableName())) {
-                int assigned = d.properties().get(VariableProperty.ASSIGNED);
-                int read = d.properties().getOrDefault(VariableProperty.READ, Level.DELAY);
+                int assigned = d.getProperty(VariableProperty.ASSIGNED);
+                int read = d.getProperty(VariableProperty.READ);
                 Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned);
-                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED));
                 Assert.assertTrue(assigned > read);
                 return;
             }
@@ -60,11 +60,11 @@ public class TestNullParameterChecks extends CommonTestRunner {
             if ("0".equals(d.statementId())) {
                 if ("s".equals(d.variableName())) {
                     // we should know straight away (without delay) that the strip method on String is "safe"
-                    Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
-                    Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, d.properties().get(VariableProperty.READ));
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+                    Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, d.getProperty(VariableProperty.READ));
                 } else if ("NullParameterChecks.this.s".equals(d.variableName())) {
                     // we do NOT have assigned 2x here, because the if-statement blocks are not guaranteed to be executed
-                    Assert.assertEquals(Level.READ_ASSIGN_ONCE, d.properties().get(VariableProperty.ASSIGNED));
+                    Assert.assertEquals(Level.READ_ASSIGN_ONCE, d.getProperty(VariableProperty.ASSIGNED));
                 }
             }
         }

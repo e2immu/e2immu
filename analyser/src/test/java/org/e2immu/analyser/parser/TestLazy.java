@@ -20,7 +20,6 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -39,7 +38,7 @@ public class TestLazy extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("get".equals(d.methodInfo().name) && "Lazy.this.supplier".equals(d.variableName())) {
-            Assert.assertFalse("Statement: " + d.statementId(), d.properties().isSet(VariableProperty.ASSIGNED));
+            Assert.assertFalse("Statement: " + d.statementId(), d.hasProperty(VariableProperty.ASSIGNED));
         }
         if ("get".equals(d.methodInfo().name) && "Lazy.this.t".equals(d.variableName()) && d.iteration() > 0) {
             if ("2.0.0".equals(d.statementId())) {
@@ -88,17 +87,17 @@ public class TestLazy extends CommonTestRunner {
             }
         }
         if ("get".equals(d.methodInfo().name)) {
-            VariableInfoImpl tv = d.getFieldAsVariable(supplier);
-            Assert.assertEquals(Level.DELAY, tv.properties.get(VariableProperty.ASSIGNED));
+            VariableInfo tv = d.getFieldAsVariable(supplier);
+            Assert.assertEquals(Level.DELAY, tv.getProperty(VariableProperty.ASSIGNED));
 
 
-            VariableInfoImpl ret = d.getReturnAsVariable();
+            VariableInfo ret = d.getReturnAsVariable();
             if (d.iteration() >= 1) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret.getProperty(VariableProperty.NOT_NULL));
 
                 Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
                 Set<Variable> linkedToT = d.methodAnalysis().getLastStatement().getLatestVariableInfo(t.fullyQualifiedName())
-                        .linkedVariables.get();
+                        .getLinkedVariables();
                 // for now (and I believe it's correct, t will not be linked to supplier)
                 Assert.assertFalse(linkedToT.isEmpty());
             }

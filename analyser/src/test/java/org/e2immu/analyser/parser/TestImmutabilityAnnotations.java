@@ -74,7 +74,7 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, notNull);
         }
         if ("setFirst".equals(d.methodInfo().name) && "ManyTs.this.ts2".equals(d.variableName())) {
-            Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
         }
     };
 

@@ -24,6 +24,10 @@ public interface StatementAnalyserVariableVisitor {
             return properties.getOrDefault(variableProperty, Level.DELAY);
         }
 
+        public boolean hasProperty(VariableProperty variableProperty) {
+            return properties.containsKey(variableProperty);
+        }
+
         public int getPropertyOfCurrentValue(VariableProperty variableProperty) {
             return evaluationContext.getProperty(currentValue, variableProperty);
         }

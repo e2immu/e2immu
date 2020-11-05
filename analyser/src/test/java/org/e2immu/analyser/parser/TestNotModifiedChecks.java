@@ -17,7 +17,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableInfoImpl;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -35,23 +35,23 @@ public class TestNotModifiedChecks extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("addAll".equals(d.methodInfo().name) && "d".equals(d.variableName())) {
-            Assert.assertEquals(0, d.properties().get(VariableProperty.MODIFIED));
+            Assert.assertEquals(0, d.getProperty(VariableProperty.MODIFIED));
         }
         if ("addAll".equals(d.methodInfo().name) && "c".equals(d.variableName())) {
-            Assert.assertEquals(1, d.properties().get(VariableProperty.MODIFIED));
+            Assert.assertEquals(1, d.getProperty(VariableProperty.MODIFIED));
         }
         if ("addAllOnC".equals(d.methodInfo().name)) {
             if ("d".equals(d.variableName())) {
-                Assert.assertEquals(0, d.properties().get(VariableProperty.MODIFIED));
+                Assert.assertEquals(0, d.getProperty(VariableProperty.MODIFIED));
             }
             if ("d.set".equals(d.variableName())) {
-                Assert.assertEquals(0, d.properties().get(VariableProperty.MODIFIED));
+                Assert.assertEquals(0, d.getProperty(VariableProperty.MODIFIED));
             }
             if ("c.set".equals(d.variableName())) {
-                Assert.assertEquals(1, d.properties().get(VariableProperty.MODIFIED));
+                Assert.assertEquals(1, d.getProperty(VariableProperty.MODIFIED));
             }
             if ("c".equals(d.variableName())) {
-                Assert.assertEquals(1, d.properties().get(VariableProperty.MODIFIED));
+                Assert.assertEquals(1, d.getProperty(VariableProperty.MODIFIED));
             }
         }
         if ("NotModifiedChecks".equals(d.methodInfo().name) && "NotModifiedChecks.this.s2".equals(d.variableName())) {
@@ -90,7 +90,7 @@ public class TestNotModifiedChecks extends CommonTestRunner {
             }
             FieldInfo s2 = d.methodInfo().typeInfo.getFieldByName("s2", true);
             if (iteration > 1) {
-                Set<Variable> s2links = d.getFieldAsVariable(s2).linkedVariables.get();
+                Set<Variable> s2links = d.getFieldAsVariable(s2).getLinkedVariables();
                 Assert.assertEquals("[1:set2]", s2links.toString());
             }
             FieldInfo set = d.methodInfo().typeInfo.typeInspection.get().subTypes.get(0).getFieldByName("set", true);
@@ -115,8 +115,8 @@ public class TestNotModifiedChecks extends CommonTestRunner {
         }
         if ("C1".equals(name)) {
             FieldInfo fieldInfo = d.methodInfo().typeInfo.getFieldByName("set", true);
-            VariableInfoImpl tv = d.getFieldAsVariable(fieldInfo);
-            Assert.assertEquals("[0:set1]", tv.linkedVariables.get().toString());
+            VariableInfo tv = d.getFieldAsVariable(fieldInfo);
+            Assert.assertEquals("[0:set1]", tv.getLinkedVariables().toString());
         }
     };
 

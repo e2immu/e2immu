@@ -1,7 +1,6 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -22,7 +21,7 @@ public class TestContainerChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("setStrings1".equals(d.methodInfo().name)) {
             if ("strings1param".equals(d.variableName()) && "0".equals(d.statementId())) {
-                Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL));
+                Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
             }
             if ("strings1param".equals(d.variableName()) && "1".equals(d.statementId())) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
@@ -33,25 +32,25 @@ public class TestContainerChecks extends CommonTestRunner {
         }
         if ("setStrings3".equals(d.methodInfo().name)) {
             if ("strings3param".equals(d.variableName()) && "0".equals(d.statementId())) {
-                Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
             }
         }
         if ("Container4".equals(d.methodInfo().name)) {
             if ("strings4Param".equals(d.variableName())) {
-                Assert.assertEquals(Level.IS_A_SIZE, d.properties().get(VariableProperty.SIZE));
+                Assert.assertEquals(Level.IS_A_SIZE, d.getProperty(VariableProperty.SIZE));
             }
             if ("Container4.this.strings4".equals(d.variableName())) {
                 Assert.assertTrue(d.currentValue() instanceof PropertyWrapper);
                 Assert.assertEquals("strings4Param,@NotNull", d.currentValue().toString());
                 //  Assert.assertEquals(Level.IS_A_SIZE, (int) d.currentValue().getPropertyOutsideContext(VariableProperty.SIZE));
-                //   Assert.assertEquals(Level.IS_A_SIZE, (int) d.properties().get(VariableProperty.SIZE));
+                //   Assert.assertEquals(Level.IS_A_SIZE, (int) d.getProperty(VariableProperty.SIZE));
             }
         }
         if ("addAll5".equals(d.methodInfo().name)) {
             if ("Container5.this.list".equals(d.variableName())) {
-                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.READ));
-                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.METHOD_DELAY));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.METHOD_DELAY));
             }
         }
     };
@@ -77,8 +76,8 @@ public class TestContainerChecks extends CommonTestRunner {
         TypeInfo typeInfo = d.methodInfo().typeInfo;
         if ("setStrings1".equals(name)) {
             FieldInfo strings = typeInfo.getFieldByName("strings1", true);
-            VariableInfoImpl transferValue = d.getFieldAsVariable(strings);
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, transferValue.properties.get(VariableProperty.NOT_NULL));
+            VariableInfo transferValue = d.getFieldAsVariable(strings);
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, transferValue.getProperty(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.ASSIGNED));
         }
         if ("getStrings1".equals(name)) {
@@ -96,24 +95,24 @@ public class TestContainerChecks extends CommonTestRunner {
         if ("add2".equals(name) && d.iteration() >= 1) {
             FieldInfo strings = typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
             Assert.assertEquals("strings2", strings.name);
-            VariableInfoImpl transferValue = d.getFieldAsVariable(strings);
-            Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
+            VariableInfo transferValue = d.getFieldAsVariable(strings);
+            Assert.assertFalse(transferValue.hasProperty(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.SIZE_NOT_EMPTY, transferValue.getProperty(VariableProperty.SIZE));
         }
         if ("add2b".equals(name)) {
             FieldInfo strings = typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
             Assert.assertEquals("strings2b", strings.name);
-            VariableInfoImpl transferValue = d.getFieldAsVariable(strings);
-            Assert.assertEquals(Level.DELAY, transferValue.properties.get(VariableProperty.ASSIGNED));
+            VariableInfo transferValue = d.getFieldAsVariable(strings);
+            Assert.assertEquals(Level.DELAY, transferValue.getProperty(VariableProperty.ASSIGNED));
             // Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, transferValue.properties.get(VariableProperty.READ));
             // Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
         }
         if ("addAll5".equals(name)) {
             FieldInfo list = typeInfo.getFieldByName("list", true);
-            VariableInfoImpl transferValue = d.getFieldAsVariable(list);
-            Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.READ));
+            VariableInfo transferValue = d.getFieldAsVariable(list);
+            Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.READ));
             if (d.iteration() > 0) {
-                Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.MODIFIED));
             }
         }
     };

@@ -31,7 +31,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("method5".equals(d.methodInfo().name) && O5.equals(d.variableName())) {
             if ("0".equals(d.statementId())) {
-                Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL));
+                Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
             }
         }
         if ("method5".equals(d.methodInfo().name) && "conditionalChecks".equals(d.variableName())) {

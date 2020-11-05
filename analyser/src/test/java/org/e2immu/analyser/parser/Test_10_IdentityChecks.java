@@ -1,7 +1,6 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
@@ -27,16 +26,16 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
         if (d.methodInfo().name.equals("idem") && IDEM_S.equals(d.variableName())) {
             if ("0".equals(d.statementId())) {
                 // strings are @NM by definition
-                Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.properties().get(VariableProperty.IMMUTABLE));
-                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.CONTAINER));
+                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTAINER));
 
-                Assert.assertEquals(Level.READ_ASSIGN_ONCE, d.properties().get(VariableProperty.READ)); // read 1x
+                Assert.assertEquals(Level.READ_ASSIGN_ONCE, d.getProperty(VariableProperty.READ)); // read 1x
                 // there is an explicit @NotNull on the first parameter of debug
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             } else if ("1".equals(d.statementId())) {
-                Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, d.properties().get(VariableProperty.READ)); // read 2x
+                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, d.getProperty(VariableProperty.READ)); // read 2x
                 // there is an explicit @NotNull on the first parameter of debug
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             } else Assert.fail();
@@ -69,8 +68,8 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
         MethodAnalysis methodAnalysis = d.methodAnalysis();
         if ("idem".equals(d.methodInfo().name)) {
 
-            VariableInfoImpl tv = d.getReturnAsVariable();
-            Assert.assertFalse(tv.properties.isSet(VariableProperty.MODIFIED));
+            VariableInfo tv = d.getReturnAsVariable();
+            Assert.assertFalse(tv.hasProperty(VariableProperty.MODIFIED));
 
             // @NotModified decided straight away, @Identity as well
             Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED));

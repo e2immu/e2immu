@@ -19,7 +19,7 @@ public class TestSwitchStatementChecks extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("method7".equals(d.methodInfo().name) && "3".equals(d.statementId()) && "res".equals(d.variableName())) {
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.properties().get(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
         }
     };
 

@@ -2,7 +2,6 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -39,10 +38,10 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("hasNext".equals(d.methodInfo().name) && "MyIteratorImpl.this.list".equals(d.variableName())) {
-            Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
         }
         if ("iterator".equals(d.methodInfo().name) && "ExampleManualIterator1.this.list".equals(d.variableName()) && d.iteration() > 1) {
-            Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
         }
     };
 
@@ -96,26 +95,26 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
             if (iteration > 0) {
                 MethodInfo constructor = fieldInfo.owner.findConstructor(1);
                 MethodAnalysis constructorMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(constructor);
-                VariableInfoImpl constructorTv = constructorMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
+                VariableInfo constructorTv = constructorMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
-                Assert.assertEquals(Level.TRUE, constructorTv.properties.get(VariableProperty.READ));
-                Assert.assertEquals(Level.TRUE, constructorTv.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, constructorTv.getProperty(VariableProperty.READ));
+                Assert.assertEquals(Level.TRUE, constructorTv.getProperty(VariableProperty.MODIFIED));
 
                 MethodInfo visit = fieldInfo.owner.findUniqueMethod("visit", 1);
                 MethodAnalysis visitMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(visit);
-                VariableInfoImpl visitTv = visitMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
+                VariableInfo visitTv = visitMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
-                Assert.assertEquals(Level.TRUE, visitTv.properties.get(VariableProperty.READ));
-                Assert.assertEquals(Level.FALSE, visitTv.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, visitTv.getProperty(VariableProperty.READ));
+                Assert.assertEquals(Level.FALSE, visitTv.getProperty(VariableProperty.MODIFIED));
 
                 MethodInfo iterator = fieldInfo.owner.findUniqueMethod("iterator", 0);
                 MethodAnalysis iteratorMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(iterator);
-                VariableInfoImpl iteratorTv = iteratorMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
+                VariableInfo iteratorTv = iteratorMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
-                Assert.assertEquals(Level.TRUE, iteratorTv.properties.get(VariableProperty.READ));
+                Assert.assertEquals(Level.TRUE, iteratorTv.getProperty(VariableProperty.READ));
 
                 if (iteration > 1) {
-                    Assert.assertEquals(Level.FALSE, iteratorTv.properties.get(VariableProperty.MODIFIED));
+                    Assert.assertEquals(Level.FALSE, iteratorTv.getProperty(VariableProperty.MODIFIED));
 
                     // int modified = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED);
                     //    Assert.assertEquals(Level.FALSE, modified);

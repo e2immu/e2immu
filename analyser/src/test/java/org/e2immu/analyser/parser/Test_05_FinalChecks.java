@@ -31,10 +31,10 @@ public class Test_05_FinalChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVisitor = d -> {
         if (d.methodInfo().name.equals("setS4") && P4.equals(d.variableName())) {
             if ("0".equals(d.statementId())) {
-                Assert.assertFalse(d.properties().isSet(VariableProperty.MODIFIED)); // no method was called on parameter s4
-                Assert.assertEquals(1, d.properties().get(VariableProperty.READ)); // read 1x
+                Assert.assertFalse(d.hasProperty(VariableProperty.MODIFIED)); // no method was called on parameter s4
+                Assert.assertEquals(1, d.getProperty(VariableProperty.READ)); // read 1x
                 // there is an explicit @NotNull on the first parameter of debug
-                Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL)); // nothing that points to not null
+                Assert.assertFalse(d.properties().containsKey(VariableProperty.NOT_NULL)); // nothing that points to not null
             } else Assert.fail();
         }
 
@@ -42,15 +42,15 @@ public class Test_05_FinalChecks extends CommonTestRunner {
             if (S1.equals(d.variableName())) {
                 Assert.assertEquals(S1_P0 + " + abc", d.currentValue().toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
-                Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL));
+                Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
                 Assert.assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
             }
             if ("1".equals(d.statementId()) && S2.equals(d.variableName())) {
-                Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().stateOnAssignment.getOrElse(UnknownValue.NO_VALUE));
+                Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
             }
             if ("2".equals(d.statementId()) && S2.equals(d.variableName())) {
                 // stateOnAssignment has to be copied from statement 1
-                Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().stateOnAssignment.getOrElse(UnknownValue.NO_VALUE));
+                Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
             }
         }
 
@@ -71,7 +71,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         if (iteration > 0) {
             FieldInfo s1 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> "s1".equals(f.name)).findFirst().orElseThrow();
             if ("toString".equals(methodInfo.name) || FINAL_CHECKS.equals(methodInfo.name)) {
-                int notNull = d.getFieldAsVariable(s1).properties.get(VariableProperty.NOT_NULL);
+                int notNull = d.getFieldAsVariable(s1).getProperty(VariableProperty.NOT_NULL);
                 Assert.assertEquals(MultiLevel.MUTABLE, notNull);
             }
         }
@@ -81,8 +81,9 @@ public class Test_05_FinalChecks extends CommonTestRunner {
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if (FINAL_CHECKS.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
             Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
-            StatementAnalyser.MarkAssigned markAssigned = d.findMarkAssigned(S2);
-            Assert.assertSame(UnknownValue.EMPTY, markAssigned.stateOnAssignment);
+            d.findMarkAssigned(S2);
+            StatementAnalyser.SetStateOnAssignment ssa = d.findSetStateOnAssignment(S2);
+            Assert.assertSame(UnknownValue.EMPTY, ssa.state);
         }
     };
 

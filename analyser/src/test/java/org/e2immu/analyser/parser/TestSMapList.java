@@ -20,7 +20,6 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -41,7 +40,7 @@ public class TestSMapList extends CommonTestRunner {
             Assert.assertEquals(MultiLevel.NULLABLE, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
         }
         if ("add".equals(d.methodInfo().name) && "bs".equals(d.variableName()) && "3".equals(d.statementId())) {
-            Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
         }
     };
 
@@ -59,14 +58,14 @@ public class TestSMapList extends CommonTestRunner {
         String name = d.methodInfo().name;
 
         if ("list".equals(name)) {
-            VariableInfoImpl returnValue1 = d.getReturnAsVariable();
+            VariableInfo returnValue1 = d.getReturnAsVariable();
             if (d.iteration() == 0) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, returnValue1.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, returnValue1.getProperty(VariableProperty.NOT_NULL));
 
                 // the end result
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
             } else {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, returnValue1.properties.get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, returnValue1.getProperty(VariableProperty.NOT_NULL));
 
                 // the end result
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));

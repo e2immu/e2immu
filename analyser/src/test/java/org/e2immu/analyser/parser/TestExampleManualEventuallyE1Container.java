@@ -1,6 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableInfoImpl;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -33,20 +33,20 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                 Assert.assertEquals("[(-this.j) >= 0]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
 
                 FieldInfo fieldJ = d.methodInfo().typeInfo.getFieldByName("j", true);
-                VariableInfoImpl tv = d.getFieldAsVariable(fieldJ);
+                VariableInfo tv = d.getFieldAsVariable(fieldJ);
                 Value value = tv.getValue();
                 Assert.assertEquals("j", value.toString());
-                Value state = tv.stateOnAssignment.get();
+                Value state = tv.getStateOnAssignment();
                 Assert.assertEquals("(-this.j) >= 0", state.toString());
             }
         }
         if ("getIntegers".equals(name)) {
             if (iteration > 0) {
-                VariableInfoImpl tv =d.getReturnAsVariable();
-                Assert.assertEquals(1, tv.linkedVariables.get().size());
+                VariableInfo tv =d.getReturnAsVariable();
+                Assert.assertEquals(1, tv.getLinkedVariables().size());
             }
             if (iteration > 1) {
-                Set<Variable> variables = d.getReturnAsVariable().linkedVariables.get();
+                Set<Variable> variables = d.getReturnAsVariable().getLinkedVariables();
                 Assert.assertEquals(1, variables.size());
                 int independent = d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT);
                 Assert.assertEquals(MultiLevel.FALSE, independent);
@@ -58,7 +58,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
         if ("setNegativeJ".equals(d.methodInfo().name) && "2".equals(d.statementId()) && "ExampleManualEventuallyE1Container.this.j".equals(d.variableName())) {
             Assert.assertEquals("j", d.currentValue().toString());
             if (d.iteration() > 0) {
-                Assert.assertEquals("(-this.j) >= 0", d.variableInfo().stateOnAssignment.get().toString());
+                Assert.assertEquals("(-this.j) >= 0", d.variableInfo().getStateOnAssignment().toString());
             }
         }
     };

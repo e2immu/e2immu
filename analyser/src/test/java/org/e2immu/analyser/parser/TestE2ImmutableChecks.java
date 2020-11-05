@@ -18,7 +18,7 @@
 package org.e2immu.analyser.parser;
 
 import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.analyser.VariableInfoImpl;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -41,13 +41,13 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("isAbc".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "E2Container1.this.value1".equals(d.variableName())) {
-            Assert.assertFalse("At iteration " + d.iteration(), d.properties().isSet(VariableProperty.NOT_NULL));
+            Assert.assertFalse("At iteration " + d.iteration(), d.hasProperty(VariableProperty.NOT_NULL));
         }
         if ("input4".equals(d.variableName()) && "1".equals(d.statementId()) && "mingle".equals(d.methodInfo().name)) {
             Assert.assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
         }
         if ("input4".equals(d.variableName()) && "0".equals(d.statementId()) && "mingle".equals(d.methodInfo().name)) {
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL,  d.getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
         }
     };
 
@@ -57,8 +57,8 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
 
         if ("isAbc".equals(name) && iteration > 0) {
             FieldInfo value1 = d.methodInfo().typeInfo.getFieldByName("value1", true);
-            VariableInfoImpl transferValue = d.getFieldAsVariable(value1);
-            Assert.assertTrue("Got: " + transferValue.linkedVariables.get(), transferValue.linkedVariables.get().isEmpty());
+            VariableInfo transferValue = d.getFieldAsVariable(value1);
+            Assert.assertTrue("Got: " + transferValue.getLinkedVariables(), transferValue.getLinkedVariables().isEmpty());
         }
         if ("E2Container1".equals(name) && iteration > 1) {
             ParameterInfo value = d.methodInfo().methodInspection.get().parameters.get(0);
@@ -68,28 +68,28 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         if ("E2Container2".equals(name) && 2 == d.methodInfo().methodInspection.get().parameters.size()) {
             if (iteration > 2) {
                 FieldInfo parent2 = d.methodInfo().typeInfo.getFieldByName("parent2", true);
-                VariableInfoImpl transferValue = d.getFieldAsVariable(parent2);
-                Assert.assertEquals("[0:parent2Param]", transferValue.linkedVariables.get().toString());
+                VariableInfo transferValue = d.getFieldAsVariable(parent2);
+                Assert.assertEquals("[0:parent2Param]", transferValue.getLinkedVariables().toString());
                 // NOTE: we allow the linking to take place, but ignore its presence in independent computation
             }
         }
 
         // no decision about immutable of "mingle" is ever made
         if ("mingle".equals(name)) {
-            VariableInfoImpl transferValue = d.getReturnAsVariable();
-            Assert.assertEquals(MultiLevel.MUTABLE, transferValue.properties.get(VariableProperty.IMMUTABLE));
+            VariableInfo transferValue = d.getReturnAsVariable();
+            Assert.assertEquals(MultiLevel.MUTABLE, transferValue.getProperty(VariableProperty.IMMUTABLE));
             Assert.assertEquals("input4", transferValue.getValue().toString());
             Assert.assertTrue(transferValue.getValue() instanceof VariableValue);
             Assert.assertEquals(MultiLevel.MUTABLE, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
         }
 
         if ("getSet3".equals(name)) {
-            VariableInfoImpl tv = d.getReturnAsVariable();
+            VariableInfo tv = d.getReturnAsVariable();
             if (iteration > 0) {
                 int immutable = tv.getProperty(VariableProperty.IMMUTABLE);
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, immutable);
                 // ImmutableSet.copyOf returns an L2 immutable type, so there cannot be any linking!
-                Assert.assertEquals("[]", tv.linkedVariables.get().toString());
+                Assert.assertEquals("[]", tv.getLinkedVariables().toString());
             }
         }
 
@@ -98,12 +98,12 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
                 int independent = d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT);
                 Assert.assertEquals(MultiLevel.EFFECTIVE, independent);
             }
-            VariableInfoImpl tv = d.getReturnAsVariable();
+            VariableInfo tv = d.getReturnAsVariable();
             if (iteration > 0) {
                 int immutable = tv.getProperty(VariableProperty.IMMUTABLE);
                 Assert.assertEquals(MultiLevel.FALSE, immutable);
                 // ImmutableSet.copyOf returns an L2 immutable type, so there cannot be any linking!
-                Assert.assertEquals("[map4]", tv.linkedVariables.get().toString());
+                Assert.assertEquals("[map4]", tv.getLinkedVariables().toString());
             }
         }
 

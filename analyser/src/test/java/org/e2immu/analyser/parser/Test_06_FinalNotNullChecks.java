@@ -36,14 +36,14 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             if (d.iteration() == 0) {
                 // only during the 1st iteration there is no @NotNull on the parameter, so there is a restriction
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.properties().get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
             }
         }
         // the variable has the value of param, which has received a @NotNull
         if ("FinalNotNullChecks".equals(d.methodInfo().name) && INPUT.equals(d.variableName())) {
-            Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL));
+            Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
 
-            Assert.assertEquals("null", d.variableInfoContainer().get(VariableInfoContainer.LEVEL_0_PREVIOUS).value.get().toString());
+            Assert.assertEquals("null", d.variableInfoContainer().get(VariableInfoContainer.LEVEL_0_PREVIOUS).getValue().toString());
             Assert.assertEquals(PARAM_NN, d.variableInfoContainer().get(VariableInfoContainer.LEVEL_2_EVALUATION).toString());
             Assert.assertEquals(PARAM_NN, d.currentValue().toString());
             Assert.assertNull(d.variableInfoContainer().get(VariableInfoContainer.LEVEL_4_SUMMARY));
@@ -52,13 +52,11 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("FinalNotNullChecks".equals(d.methodInfo().name)) {
-            MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
             FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
             int notNull = d.getFieldAsVariable(input).getValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
         }
         if (("debug".equals(d.methodInfo().name) || "toString".equals(d.methodInfo().name))) {
-            MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
             FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
             Assert.assertSame(UnknownValue.NO_VALUE, d.getFieldAsVariable(input).getValue());
             if (d.iteration() == 0) {

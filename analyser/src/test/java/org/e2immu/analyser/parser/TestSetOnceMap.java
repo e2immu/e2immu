@@ -20,7 +20,6 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
@@ -50,10 +49,10 @@ public class TestSetOnceMap extends CommonTestRunner {
             Assert.assertEquals("inline get on this.map.get(k),@NotNull", srv.toString());
             InlineValue inlineValue = (InlineValue) srv;
             Assert.assertEquals(InlineValue.Applicability.TYPE, inlineValue.applicability);
-            VariableInfoImpl tv = d.getReturnAsVariable();
+            VariableInfo tv = d.getReturnAsVariable();
 
             Assert.assertNotNull(tv);
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.properties.get(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.getProperty(VariableProperty.NOT_NULL));
             Assert.assertTrue(tv.getValue() instanceof PropertyWrapper);
             Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(
                     d.methodAnalysis().getProperty(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
@@ -64,7 +63,7 @@ public class TestSetOnceMap extends CommonTestRunner {
         }
         if ("getOtherwiseNull".equals(name)) {
             if (iteration > 0) {
-                Set<Variable> linkedVariables = d.getReturnAsVariable().linkedVariables.get();
+                Set<Variable> linkedVariables = d.getReturnAsVariable().getLinkedVariables();
                 Assert.assertEquals("0:k,map", linkedVariables.stream().map(Object::toString).collect(Collectors.joining(",")));
                 // independent, because does not return a support data type
                 int independent = d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT);

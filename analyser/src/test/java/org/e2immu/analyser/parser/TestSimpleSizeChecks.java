@@ -1,6 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableInfoImpl;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -28,8 +28,8 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
 
             // properties are on the value; in the map is the value of the type before the assignment
             // at the moment, the Set interface is not E1Immutable
-            Assert.assertEquals(MultiLevel.MUTABLE, d.properties().get(VariableProperty.IMMUTABLE));
-            Assert.assertFalse(d.properties().isSet(VariableProperty.CONTAINER));
+            Assert.assertEquals(MultiLevel.MUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
+            Assert.assertFalse(d.hasProperty(VariableProperty.CONTAINER));
         }
         if ("method2".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "SimpleSizeChecks.this.intSet".equals(d.variableName())) {
             if (d.iteration() > 0) {
@@ -61,15 +61,15 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         MethodAnalysis methodAnalysis = d.methodAnalysis();
         if ("method1".equals(d.methodInfo().name)) {
-            VariableInfoImpl tv = d.getReturnAsVariable();
+            VariableInfo tv = d.getReturnAsVariable();
             Assert.assertNotNull(tv);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, tv.getProperty(VariableProperty.NOT_NULL));
-            Assert.assertEquals(SIZE_EQUALS_1, tv.properties.get(VariableProperty.SIZE)); // (1)
+            Assert.assertEquals(SIZE_EQUALS_1, tv.getProperty(VariableProperty.SIZE)); // (1)
             Assert.assertEquals(SIZE_EQUALS_1, methodAnalysis.getProperty(VariableProperty.SIZE));
 
             // immutable gets copied into transfer value, but container does not (not a dynamic property)
             Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, tv.getProperty(VariableProperty.IMMUTABLE));
-            Assert.assertFalse(tv.properties.isSet(VariableProperty.CONTAINER));
+            Assert.assertFalse(tv.hasProperty(VariableProperty.CONTAINER));
 
             // then from the transfer value it goes onto the method
             Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, methodAnalysis.getProperty(VariableProperty.IMMUTABLE));

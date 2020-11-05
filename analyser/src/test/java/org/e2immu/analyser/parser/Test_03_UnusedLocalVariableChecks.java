@@ -82,7 +82,7 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("checkForEach".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId()) && "integers".equals(d.variableName())) {
-            Assert.assertEquals(2, d.properties().get(VariableProperty.READ));
+            Assert.assertEquals(2, d.getProperty(VariableProperty.READ));
         }
         if ("method1".equals(d.methodInfo().name) && "s".equals(d.variableName())) {
             if ("0".equals(d.statementId())) {

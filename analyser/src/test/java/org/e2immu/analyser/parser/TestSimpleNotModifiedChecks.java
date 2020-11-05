@@ -1,6 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableInfoImpl;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -22,7 +22,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
 
         if ("size".equals(d.methodInfo().name) && "Example2".equals(d.methodInfo().typeInfo.simpleName)) {
-            Assert.assertEquals(0, d.properties().get(VariableProperty.MODIFIED));
+            Assert.assertEquals(0, d.getProperty(VariableProperty.MODIFIED));
         }
 
         if ("add3".equals(d.methodInfo().name) && "local3".equals(d.variableName())) {
@@ -69,13 +69,13 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         }
         if ("Example4".equals(d.methodInfo().name) && "set4".equals(d.variableName()) && "0".equals(d.statementId())) {
             if (d.iteration() == 3) {
-                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.properties().get(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
             }
         }
 
         if ("Example5".equals(d.methodInfo().name) && "in5".equals(d.variableName()) && "0".equals(d.statementId())) {
-            Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
         }
 
         if ("Example5".equals(d.methodInfo().name) && "Example5.this.set5".equals(d.variableName()) && "0".equals(d.statementId())) {
@@ -89,7 +89,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
 
         if ("add6".equals(d.methodInfo().name) && "values6".equals(d.variableName())) {
             if (d.iteration() > 1) {
-                Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             }
         }
@@ -97,19 +97,19 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
         }
         if ("add6".equals(d.methodInfo().name) && "example6.set6".equals(d.variableName())) {
-            Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
             if (d.iteration() > 1)
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
         }
         if ("Example6".equals(d.methodInfo().name) && "set6".equals(d.variableName()) && "0".equals(d.statementId())) {
             if (d.iteration() == 3) {
-                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             }
         }
         if ("Example6".equals(d.methodInfo().name) && "in6".equals(d.variableName()) && "0".equals(d.statementId())) {
             if (d.iteration() == 0) {
-                Assert.assertFalse(d.properties().isSet(VariableProperty.MODIFIED));
+                Assert.assertFalse(d.hasProperty(VariableProperty.MODIFIED));
             }
         }
     };
@@ -195,8 +195,8 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             if (iteration > 0) {
                 FieldInfo set2 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
                 Assert.assertEquals("set2", set2.name);
-                VariableInfoImpl tv = d.getFieldAsVariable(set2);
-                Assert.assertEquals(0, tv.properties.get(VariableProperty.MODIFIED));
+                VariableInfo tv = d.getFieldAsVariable(set2);
+                Assert.assertEquals(0, tv.getProperty(VariableProperty.MODIFIED));
             }
             if (iteration > 1) {
                 Assert.assertEquals(0, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));

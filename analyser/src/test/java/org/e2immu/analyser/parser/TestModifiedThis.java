@@ -19,19 +19,19 @@ public class TestModifiedThis extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("clear".equals(d.methodInfo().name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName) && "ParentClass.this.set".equals(d.variableName())) {
-            Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
         }
         if ("clearAndLog".equals(d.methodInfo().name) && "ParentClass".equals(d.methodInfo().typeInfo.simpleName) && "0".equals(d.statementId())) {
             Assert.assertEquals("ParentClass.this", d.variableName());
-            Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
         }
         if ("clearAndLog".equals(d.methodInfo().name) && "ChildClass".equals(d.methodInfo().typeInfo.simpleName) && "0".equals(d.statementId())) {
             Assert.assertEquals("ChildClass.super", d.variableName());
-            if (d.iteration() > 0) Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
+            if (d.iteration() > 0) Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
         }
         if ("clear".equals(d.methodInfo().name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
             Assert.assertEquals("ChildClass.super", d.variableName());
-            if (d.iteration() > 0) Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
+            if (d.iteration() > 0) Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
         }
     };
 
@@ -55,7 +55,7 @@ public class TestModifiedThis extends CommonTestRunner {
         }
         if ("clear".equals(name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
             if (d.iteration() > 0) {
-                Assert.assertEquals(Level.TRUE, d.getThisAsVariable().properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, d.getThisAsVariable().getProperty(VariableProperty.MODIFIED));
            //     Assert.assertEquals(Level.TRUE, methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
             }
         }

@@ -66,17 +66,17 @@ public class Test_00_Basics extends CommonTestRunner {
                 && "org.e2immu.analyser.testexample.Basics.explicitlyFinal".equals(d.variableName())) {
             if (d.iteration() == 0) {
                 LOGGER.info("Properties after 1 iteration are {}", d.properties());
-                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.READ));
-                Assert.assertFalse(d.properties().isSet(VariableProperty.ASSIGNED));
-                Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                Assert.assertFalse(d.hasProperty(VariableProperty.ASSIGNED));
+                Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(new StringValue(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
                 return;
             }
             if (d.iteration() == 1 || d.iteration() == 2) {
                 LOGGER.info("Properties after 2 iterations are {}", d.properties());
-                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.READ));
-                Assert.assertFalse(d.properties().isSet(VariableProperty.ASSIGNED));
-                Assert.assertFalse(d.properties().isSet(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                Assert.assertFalse(d.hasProperty(VariableProperty.ASSIGNED));
+                Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
                 return;
             }
         }

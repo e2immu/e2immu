@@ -44,7 +44,7 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        ObjectFlow objectFlow = d.variableInfo().objectFlow.getOrElse(null);
+        ObjectFlow objectFlow = d.variableInfo().getObjectFlow();
         
         if ("method1".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId()) && "set1".equals(d.variableName())) {
@@ -106,7 +106,7 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
             // now after set7.freeze():
             if ("1".equals(d.statementId())) {
                 Assert.assertEquals("[mark]", objectFlow.marks().toString());
-                Assert.assertEquals(Level.TRUE, d.properties().get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
             }
         }
     };

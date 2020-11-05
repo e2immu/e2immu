@@ -1,6 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableInfoImpl;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
@@ -22,7 +22,7 @@ public class TestFunctionalInterfaceModified4 extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("visit3".equals(d.methodInfo().name) && "FunctionalInterfaceModified4.this.ts".equals(d.variableName())) {
-            Assert.assertEquals(Level.FALSE, d.properties().get(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
             // if(d.iteration>0) Assert.assertEquals(Level.FALSE, (int) d.properties().get(VariableProperty.METHOD_DELAY));
         }
     };
@@ -47,10 +47,10 @@ public class TestFunctionalInterfaceModified4 extends CommonTestRunner {
                 Assert.assertEquals(Level.FALSE, modified);
             }
             FieldInfo ts = d.methodInfo().typeInfo.getFieldByName("ts", true);
-            VariableInfoImpl tv = d.getFieldAsVariable(ts);
-            Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.READ));
+            VariableInfo tv = d.getFieldAsVariable(ts);
+            Assert.assertEquals(Level.TRUE, tv.getProperty(VariableProperty.READ));
             if (iteration > 1) {
-                Assert.assertEquals(Level.FALSE, tv.properties.get(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, tv.getProperty(VariableProperty.MODIFIED));
             }
             MethodInfo doTheVisiting = d.methodInfo().typeInfo.findUniqueMethod("doTheVisiting", 2);
             Assert.assertTrue(d.methodAnalysis().methodLevelData().copyModificationStatusFrom.isSet(doTheVisiting));

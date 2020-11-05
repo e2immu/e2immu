@@ -67,5 +67,11 @@ public interface EvaluationResultVisitor {
                     .map(sam -> (StatementAnalyser.MarkAssigned) sam)
                     .filter(ma -> variableName.equals(ma.variable.fullyQualifiedName())).findFirst().orElseThrow();
         }
+
+        public StatementAnalyser.SetStateOnAssignment findSetStateOnAssignment(String variableName) {
+            return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.SetStateOnAssignment)
+                    .map(sam -> (StatementAnalyser.SetStateOnAssignment) sam)
+                    .filter(ssa -> variableName.equals(ssa.variable.fullyQualifiedName())).findFirst().orElseThrow();
+        }
     }
 }

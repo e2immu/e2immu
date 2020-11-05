@@ -63,4 +63,6 @@ public interface VariableInfo {
      * @return an immutable copy, or the same object frozen
      */
     VariableInfo freeze();
+
+    boolean hasProperty(VariableProperty variableProperty);
 }
