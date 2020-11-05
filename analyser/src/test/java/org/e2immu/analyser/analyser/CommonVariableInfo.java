@@ -17,9 +17,10 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.LocalVariable;
-import org.e2immu.analyser.model.LocalVariableReference;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.value.IntValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
@@ -32,4 +33,43 @@ public abstract class CommonVariableInfo {
         return new LocalVariableReference(new LocalVariable(List.of(), name, primitives.intParameterizedType, List.of()),
                 List.of());
     }
+    protected Variable makeLocalBooleanVar(String name) {
+        return new LocalVariableReference(new LocalVariable(List.of(), name, primitives.booleanParameterizedType, List.of()),
+                List.of());
+    }
+
+    protected final IntValue three = new IntValue(primitives, 3, ObjectFlow.NO_FLOW);
+    protected final IntValue four = new IntValue(primitives, 4, ObjectFlow.NO_FLOW);
+
+    protected final AnalyserContext analyserContext = new AnalyserContext() {
+    };
+
+    protected final EvaluationContext minimalEvaluationContext = new EvaluationContext() {
+
+        @Override
+        public AnalyserContext getAnalyserContext() {
+            return analyserContext;
+        }
+
+        @Override
+        public Value currentValue(Variable variable) {
+            return new VariableValue(variable);
+        }
+
+        @Override
+        public boolean isNotNull0(Value value) {
+            return false; // no opinion
+        }
+
+        @Override
+        public Primitives getPrimitives() {
+            return primitives;
+        }
+
+        @Override
+        public ConditionManager getConditionManager() {
+            return ConditionManager.INITIAL;
+        }
+    };
+
 }

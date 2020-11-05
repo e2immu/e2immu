@@ -18,10 +18,11 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
+import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.ListUtil;
@@ -172,19 +173,20 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(VariableProperty.ASSIGNED, Math::max, Level.DELAY)
     );
 
-    public void merge(VariableInfo existing,
+    public void merge(EvaluationContext evaluationContext,
+                      VariableInfo existing,
                       boolean existingValuesWillBeOverwritten,
                       List<VariableInfo> merge) {
 
-        Value mergedValue = mergeValue(existing, existingValuesWillBeOverwritten, merge);
+        Value mergedValue = mergeValue(evaluationContext, existing, existingValuesWillBeOverwritten, merge);
         writeValue(mergedValue);
 
         // now common properties
 
-        List<VariableInfo> list = existingValuesWillBeOverwritten ?
-                ListUtil.immutableConcat(merge, List.of(existing)) : ImmutableList.copyOf(merge);
+        List<VariableInfo> list = existingValuesWillBeOverwritten ? ImmutableList.copyOf(merge) :
+                ListUtil.immutableConcat(merge, List.of(existing));
         for (MergeOp mergeOp : MERGE) {
-            int commonValue = Level.DELAY;
+            int commonValue = mergeOp.initial;
 
             for (VariableInfo vi : list) {
                 int value = vi.getProperty(mergeOp.variableProperty);
@@ -196,7 +198,8 @@ class VariableInfoImpl implements VariableInfo {
         }
     }
 
-    private Value mergeValue(VariableInfo existing,
+    private Value mergeValue(EvaluationContext evaluationContext,
+                             VariableInfo existing,
                              boolean existingValuesWillBeOverwritten,
                              List<VariableInfo> merge) {
         Value currentValue = existing.getValue();
@@ -204,13 +207,94 @@ class VariableInfoImpl implements VariableInfo {
         boolean haveANoValue = merge.stream().anyMatch(v -> v.getStateOnAssignment() == null);
         if (haveANoValue) return NO_VALUE;
 
-        // situation: we understand c
-        // x=i; if(c) x=a; we do NOT overwrite; result is c?a:i
-        // x=i; if(c) x=a; else x=b, overwrite; result is
-        // x=i; switch(y) case c1 -> a; case c2 -> b; default -> d; overwrite
+        if (merge.isEmpty()) {
+            if (existingValuesWillBeOverwritten) throw new UnsupportedOperationException();
+            return currentValue;
+        }
 
-        // no need to change the value
-        return currentValue;
+        if (merge.size() == 1) {
+            if (existingValuesWillBeOverwritten) return merge.get(0).getValue();
+            Value result = oneNotOverwritten(evaluationContext, currentValue, merge.get(0));
+            if (result != null) return result;
+        }
+
+        if (merge.size() == 2) {
+            Value result = existingValuesWillBeOverwritten ? twoOverwritten(evaluationContext, merge.get(0), merge.get(1))
+                    : two(evaluationContext, currentValue, merge.get(0), merge.get(1));
+            if (result != null) return result;
+        }
+
+        boolean noneEmpty = merge.stream().noneMatch(vi -> vi.getStateOnAssignment() == UnknownValue.EMPTY);
+        if (noneEmpty) {
+            Variable variable = allInvolveConstantsEqualToAVariable(merge);
+            if (variable != null) {
+                return inlineSwitch(existingValuesWillBeOverwritten, currentValue, variable, merge);
+            }
+        }
+
+        // no clue
+        return new VariableValue(variable);
     }
 
+    private Value inlineSwitch(boolean existingValuesWillBeOverwritten, Value currentValue, Variable variable, List<VariableInfo> merge) {
+
+        // fail
+        return new VariableValue(variable);
+    }
+
+    private Variable allInvolveConstantsEqualToAVariable(List<VariableInfo> merge) {
+
+        return null; // fail
+    }
+
+
+    private Value oneNotOverwritten(EvaluationContext evaluationContext, Value a, VariableInfo vi) {
+        Value b = vi.getValue();
+        Value x = vi.getStateOnAssignment();
+
+        // int c = a; if(x) c = b;  --> c = x?b:a
+        if (x != UnknownValue.EMPTY) {
+            return safe(ConditionalValue.conditionalValueCurrentState(evaluationContext, x, b, a, ObjectFlow.NO_FLOW));
+        }
+
+        return new VariableValue(variable);
+    }
+
+    private Value two(EvaluationContext evaluationContext, Value x, VariableInfo vi1, VariableInfo vi2) {
+        Value s1 = vi1.getStateOnAssignment();
+        Value s2 = vi2.getStateOnAssignment();
+
+        // silly situation, twice the same condition
+        // int c = ex; if(s1) c = a; if(s1) c =b;
+        if (s1.equals(s2) && s1 != UnknownValue.EMPTY) {
+            return safe(ConditionalValue.conditionalValueCurrentState(evaluationContext, s1, vi2.getValue(), x, ObjectFlow.NO_FLOW));
+        }
+        // int c = x; if(s1) c = a; if(s2) c = b; --> s1?a:(s2?b:x)
+        if (s1 != UnknownValue.EMPTY && s2 != UnknownValue.EMPTY) {
+            Value s2bx = safe(ConditionalValue.conditionalValueCurrentState(evaluationContext, s2, vi2.getValue(), x, ObjectFlow.NO_FLOW));
+            return safe(ConditionalValue.conditionalValueCurrentState(evaluationContext, s1, vi1.getValue(), s2bx, ObjectFlow.NO_FLOW));
+        }
+        return new VariableValue(variable);
+    }
+
+    private Value twoOverwritten(EvaluationContext evaluationContext, VariableInfo vi1, VariableInfo vi2) {
+        Value s1 = vi1.getStateOnAssignment();
+        Value s2 = vi2.getStateOnAssignment();
+
+        if (s1 != UnknownValue.EMPTY && s2 != UnknownValue.EMPTY) {
+            // int c; if(s1) c = a; else c = b;
+            if (NegatedValue.negate(evaluationContext, s1).equals(s2)) {
+                return safe(ConditionalValue.conditionalValueCurrentState(evaluationContext, s1, vi1.getValue(), vi2.getValue(), ObjectFlow.NO_FLOW));
+            } else throw new UnsupportedOperationException("? impossible situation");
+        }
+        return new VariableValue(variable);
+    }
+
+    private Value safe(EvaluationResult result) {
+        if (result.getModificationStream().anyMatch(m -> m instanceof StatementAnalyser.RaiseErrorMessage)) {
+            // something gone wrong, retreat
+            return new VariableValue(variable);
+        }
+        return result.value;
+    }
 }
