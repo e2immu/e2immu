@@ -59,6 +59,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         return currentLevel;
     }
 
+    private VariableInfoImpl getAndCast(int level) {
+        return (VariableInfoImpl) data[level];
+    }
+
     @Override
     public void freeze() {
         for (int i = 0; i < data.length; i++) {
@@ -145,8 +149,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         if (value != UnknownValue.NO_VALUE) {
             throw new IllegalArgumentException("Value should not be NO_VALUE");
         }
-        VariableInfoImpl variableInfo = findForWriting(level);
+        int writeLevel = findLevelForWriting(level);
+        VariableInfoImpl variableInfo = getAndCast(writeLevel);
         variableInfo.value.set(value);
+        liftCurrentLevel(writeLevel);
     }
 
     private void internalSetStateOnAssignment(int level, Value state) {
@@ -156,27 +162,28 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         if (state != UnknownValue.NO_VALUE) {
             throw new IllegalArgumentException("State should not be NO_VALUE");
         }
-        VariableInfoImpl variableInfo = findForWriting(level);
+        int writeLevel = findLevelForWriting(level);
+        VariableInfoImpl variableInfo = getAndCast(writeLevel);
         variableInfo.stateOnAssignment.set(state);
+        liftCurrentLevel(writeLevel);
     }
 
-    private VariableInfoImpl findForWriting(int level) {
+    private int findLevelForWriting(int level) {
         if (level <= 0 || level >= LEVELS) throw new IllegalArgumentException();
 
         int levelToWrite = level;
-        VariableInfoImpl variableInfo = null;
-        while (levelToWrite >= 0 && (variableInfo = (VariableInfoImpl) data[levelToWrite]) == null) {
+        while (levelToWrite >= 0 && data[levelToWrite] == null) {
             levelToWrite--;
         }
         if (levelToWrite < 0) throw new UnsupportedOperationException("Should not be possible");
         if (levelToWrite == 0) {
             // need to make a new copy at given level, copying from 0
             assert data[0] != null;
-            variableInfo = new VariableInfoImpl((VariableInfoImpl) data[0]);
+            VariableInfo variableInfo = new VariableInfoImpl((VariableInfoImpl) data[0]);
             levelToWrite = level;
             data[levelToWrite] = variableInfo;
         }
-        return variableInfo;
+        return levelToWrite;
     }
 
     @Override
@@ -184,36 +191,50 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
         Objects.requireNonNull(variableProperty);
 
-        VariableInfoImpl variableInfo = findForWriting(level);
-        variableInfo.setProperty(variableProperty, value);
+        int writeLevel = findLevelForWriting(level);
+        VariableInfoImpl variableInfo = getAndCast(writeLevel);
+        if (variableInfo.setProperty(variableProperty, value)) {
+            liftCurrentLevel(writeLevel);
+        }
+    }
+
+    private void liftCurrentLevel(int level) {
+        if (currentLevel < level) currentLevel = level;
     }
 
     @Override
     public void markRead(int level) {
         ensureNotFrozen();
-        VariableInfoImpl variableInfo = findForWriting(level);
+        int writeLevel = findLevelForWriting(level);
+        VariableInfoImpl variableInfo = getAndCast(writeLevel);
         // this could be the current level, but can be lower as well; because we're doing this only in the 1st iteration
         // there should be no problems with overwriting
         int assigned = Math.max(variableInfo.getProperty(VariableProperty.ASSIGNED), 0);
         int read = variableInfo.getProperty(VariableProperty.READ);
         int val = Math.max(1, Math.max(read + 1, assigned + 1));
-        variableInfo.setProperty(VariableProperty.READ, val);
+        if (variableInfo.setProperty(VariableProperty.READ, val)) {
+            liftCurrentLevel(writeLevel);
+        }
     }
 
     @Override
     public void setLinkedVariables(int level, Set<Variable> variables) {
         ensureNotFrozen();
         Objects.requireNonNull(variables);
-        VariableInfoImpl variableInfo = findForWriting(level);
+        int writeLevel = findLevelForWriting(level);
+        VariableInfoImpl variableInfo = getAndCast(writeLevel);
         variableInfo.linkedVariables.set(variables);
+        liftCurrentLevel(writeLevel);
     }
 
     @Override
     public void setObjectFlow(int level, ObjectFlow objectFlow) {
         ensureNotFrozen();
         Objects.requireNonNull(objectFlow);
-        VariableInfoImpl variableInfo = findForWriting(level);
+        int writeLevel = findLevelForWriting(level);
+        VariableInfoImpl variableInfo = getAndCast(writeLevel);
         variableInfo.objectFlow.set(objectFlow);
+        liftCurrentLevel(writeLevel);
     }
 
     @Override

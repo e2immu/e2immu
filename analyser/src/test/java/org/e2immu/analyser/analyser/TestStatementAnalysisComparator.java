@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.MethodAnalysis;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.StatementAnalysis;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -59,6 +61,7 @@ public class TestStatementAnalysisComparator {
     }
 
     private StatementAnalysis newStatementAnalysis(String s) {
-        return new StatementAnalysis(primitives, null, emptyStatement, null, s, false);
+        MethodInfo operator = primitives.lessOperatorInt;
+        return new StatementAnalysis(primitives, MethodAnalysis.createEmpty(operator), emptyStatement, null, s, false);
     }
 }

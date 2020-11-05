@@ -121,12 +121,15 @@ class VariableInfoImpl implements VariableInfo {
         return sb.toString();
     }
 
-    public void setProperty(VariableProperty variableProperty, int value) {
-        properties.put(variableProperty, value);
+    public boolean setProperty(VariableProperty variableProperty, int value) {
+        Integer prev = properties.put(variableProperty, value);
+        return prev == null || prev < value;
     }
 
-    public void remove() {
-        properties.put(VariableProperty.REMOVED, Level.TRUE);
+    public boolean remove() {
+        Integer prev = properties.put(VariableProperty.REMOVED, Level.TRUE);
+        return prev == null || prev < Level.TRUE;
+
     }
 
     public void setObjectFlow(ObjectFlow objectFlow) {
@@ -158,12 +161,6 @@ class VariableInfoImpl implements VariableInfo {
             this.value.set(value);
         }
     }
-
-    public void ensureProperty(VariableProperty variableProperty, int value) {
-        int current = properties.getOrDefault(variableProperty, Level.DELAY);
-        if (value > current) properties.put(variableProperty, value);
-    }
-
 
     private record MergeOp(VariableProperty variableProperty, IntBinaryOperator operator, int initial) {
     }

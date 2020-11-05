@@ -17,21 +17,19 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.MultiLevel;
-import org.junit.Test;
+import org.e2immu.analyser.model.LocalVariable;
+import org.e2immu.analyser.model.LocalVariableReference;
+import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
 
-public class TestVariableInfo extends CommonVariableInfo {
+public abstract class CommonVariableInfo {
 
-    @Test
-    public void test1PureOverwrite() {
-        VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
-        viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-        VariableInfo viB = new VariableInfoImpl(makeLocalIntVar("b"));
+    protected final Primitives primitives = new Primitives();
 
-        viA.merge(viB, true, List.of());
+    protected Variable makeLocalIntVar(String name) {
+        return new LocalVariableReference(new LocalVariable(List.of(), name, primitives.intParameterizedType, List.of()),
+                List.of());
     }
-
-
 }
