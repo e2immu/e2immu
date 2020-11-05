@@ -1,6 +1,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
@@ -68,7 +69,7 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
         MethodAnalysis methodAnalysis = d.methodAnalysis();
         if ("idem".equals(d.methodInfo().name)) {
 
-            VariableInfo tv = d.getReturnAsVariable();
+            VariableInfoImpl tv = d.getReturnAsVariable();
             Assert.assertFalse(tv.properties.isSet(VariableProperty.MODIFIED));
 
             // @NotModified decided straight away, @Identity as well

@@ -20,6 +20,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -87,11 +88,11 @@ public class TestLazy extends CommonTestRunner {
             }
         }
         if ("get".equals(d.methodInfo().name)) {
-            VariableInfo tv = d.getFieldAsVariable(supplier);
+            VariableInfoImpl tv = d.getFieldAsVariable(supplier);
             Assert.assertEquals(Level.DELAY, tv.properties.get(VariableProperty.ASSIGNED));
 
 
-            VariableInfo ret = d.getReturnAsVariable();
+            VariableInfoImpl ret = d.getReturnAsVariable();
             if (d.iteration() >= 1) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret.properties.get(VariableProperty.NOT_NULL));
 

@@ -1,6 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -61,7 +61,7 @@ public class TestSimpleSizeChecks extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         MethodAnalysis methodAnalysis = d.methodAnalysis();
         if ("method1".equals(d.methodInfo().name)) {
-            VariableInfo tv = d.getReturnAsVariable();
+            VariableInfoImpl tv = d.getReturnAsVariable();
             Assert.assertNotNull(tv);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, tv.getProperty(VariableProperty.NOT_NULL));
             Assert.assertEquals(SIZE_EQUALS_1, tv.properties.get(VariableProperty.SIZE)); // (1)

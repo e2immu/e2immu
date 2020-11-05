@@ -19,8 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -79,12 +78,12 @@ public class TestFirstThen extends CommonTestRunner {
         }
         if ("getFirst".equals(name)) {
             FieldInfo first = d.methodInfo().typeInfo.getFieldByName("first", true);
-            VariableInfo tv = d.getFieldAsVariable(first);
+            VariableInfoImpl tv = d.getFieldAsVariable(first);
             Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, tv.properties.get(VariableProperty.READ));
         }
         if ("hashCode".equals(name)) {
             FieldInfo first = d.methodInfo().typeInfo.getFieldByName("first", true);
-            VariableInfo tv = d.getFieldAsVariable(first);
+            VariableInfoImpl tv = d.getFieldAsVariable(first);
             Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.READ));
             Assert.assertEquals(Level.DELAY, tv.properties.get(VariableProperty.METHOD_CALLED));
 

@@ -1,6 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -33,7 +33,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                 Assert.assertEquals("[(-this.j) >= 0]", d.methodAnalysis().getPreconditionForMarkAndOnly().toString());
 
                 FieldInfo fieldJ = d.methodInfo().typeInfo.getFieldByName("j", true);
-                VariableInfo tv = d.getFieldAsVariable(fieldJ);
+                VariableInfoImpl tv = d.getFieldAsVariable(fieldJ);
                 Value value = tv.getValue();
                 Assert.assertEquals("j", value.toString());
                 Value state = tv.stateOnAssignment.get();
@@ -42,7 +42,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
         }
         if ("getIntegers".equals(name)) {
             if (iteration > 0) {
-                VariableInfo tv =d.getReturnAsVariable();
+                VariableInfoImpl tv =d.getReturnAsVariable();
                 Assert.assertEquals(1, tv.linkedVariables.get().size());
             }
             if (iteration > 1) {

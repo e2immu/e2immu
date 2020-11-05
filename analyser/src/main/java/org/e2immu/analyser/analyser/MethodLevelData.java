@@ -47,6 +47,7 @@ import static org.e2immu.analyser.util.Logger.log;
  */
 public class MethodLevelData {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodLevelData.class);
+    public static final int VIC_LEVEL = VariableInfoContainer.LEVEL_4_SUMMARY;
 
     // part of modification status for methods dealing with SAMs
     public final SetOnce<Boolean> callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod = new SetOnce<>();
@@ -191,18 +192,19 @@ public class MethodLevelData {
             }
             fieldAndParameterDependencies.remove(variable); // removing myself
 
-            VariableInfo variableInfo = statementAnalysis.find(sharedState.evaluationContext().getAnalyserContext(), variable);
-            variableInfo.linkedVariables.set(fieldAndParameterDependencies);
+            VariableInfoContainer vic = statementAnalysis.findForWriting(variable.fullyQualifiedName());
+            vic.setLinkedVariables(VIC_LEVEL, fieldAndParameterDependencies);
             log(LINKED_VARIABLES, "Decided on links of {} in {} to [{}]", variable.fullyQualifiedName(),
                     logLocation, Variable.fullyQualifiedName(fieldAndParameterDependencies));
         });
         // set all the linkedVariables for fields not in the dependency graph
         statementAnalysis.variableStream()
-                .filter(vi -> vi.variable instanceof FieldReference fieldReference && fieldReference.isThisScope())
-                .filter(vi -> !vi.linkedVariables.isSet())
+                .filter(vi -> vi.variable() instanceof FieldReference fieldReference && fieldReference.isThisScope())
+                .filter(vi -> vi.getLinkedVariables() == null)
                 .forEach(vi -> {
-                    vi.linkedVariables.set(Set.of());
-                    log(LINKED_VARIABLES, "Clear linked variables of {} in {}", vi.name, logLocation);
+                    VariableInfoContainer vic = statementAnalysis.findForWriting(vi.name());
+                    vic.setLinkedVariables(VIC_LEVEL, Set.of());
+                    log(LINKED_VARIABLES, "Clear linked variables of {} in {}", vi.name(), logLocation);
                 });
         log(LINKED_VARIABLES, "Set variablesLinkedToFieldsAndParameters to true for {}", logLocation);
         linksHaveBeenEstablished.set();
@@ -219,13 +221,13 @@ public class MethodLevelData {
         if (result.contains(variable)) return;
         result.add(variable);
         VariableInfo variableInfo = statementAnalysis.getLatestVariableInfo(variable.fullyQualifiedName());
-        Set<Variable> linked = variableInfo.linkedVariables.get();
+        Set<Variable> linked = variableInfo.getLinkedVariables();
         for (Variable v : linked) recursivelyAddLinkedVariables(statementAnalysis, v, result);
 
         // reverse linking
         List<Variable> reverse = statementAnalysis.variableStream()
-                .filter(vi -> vi.linkedVariables.get().contains(variable))
-                .map(vi -> vi.variable).collect(Collectors.toList());
+                .filter(vi -> vi.getLinkedVariables().contains(variable))
+                .map(VariableInfo::variable).collect(Collectors.toList());
         reverse.forEach(v -> recursivelyAddLinkedVariables(statementAnalysis, v, result));
     }
 
@@ -238,7 +240,7 @@ public class MethodLevelData {
         // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
         sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
             Set<Variable> linkedVariables = allVariablesLinkedToIncludingMyself(sharedState.statementAnalysis,
-                    variableInfo.variable);
+                    variableInfo.variable());
             int summary = sharedState.evaluationContext.summarizeModification(linkedVariables);
             String logLocation = sharedState.logLocation;
             for (Variable linkedVariable : linkedVariables) {
@@ -258,7 +260,8 @@ public class MethodLevelData {
                         } else {
                             log(NOT_MODIFIED, "Mark {} " + (fieldModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
                                     linkedVariable.fullyQualifiedName(), logLocation);
-                            vi.properties.put(VariableProperty.MODIFIED, fieldModified);
+                            VariableInfoContainer vic = sharedState.statementAnalysis.findForWriting(vi.name());
+                            vic.setProperty(VIC_LEVEL, VariableProperty.MODIFIED, fieldModified);
                             changes.set(true);
                         }
                     }
@@ -302,13 +305,12 @@ public class MethodLevelData {
     private AnalysisStatus ensureThisProperties(EvaluationContext evaluationContext, StatementAnalysis statementAnalysis) {
         if (evaluationContext.getIteration() > 0) return DONE;
 
-        This thisVariable = new This(evaluationContext.getCurrentType().typeInfo);
-        VariableInfo thisVi = statementAnalysis.find(evaluationContext.getAnalyserContext(), thisVariable);
-        thisVi.ensureProperty(VariableProperty.ASSIGNED, Level.FALSE);
-        thisVi.ensureProperty(VariableProperty.READ, Level.FALSE);
-        thisVi.ensureProperty(VariableProperty.METHOD_CALLED, Level.FALSE);
+        VariableInfoContainer thisVi = statementAnalysis.findForWriting(evaluationContext.getCurrentType().typeInfo.fullyQualifiedName + ".this");
+        thisVi.setProperty(VIC_LEVEL, VariableProperty.ASSIGNED, Level.FALSE);
+        thisVi.setProperty(VIC_LEVEL, VariableProperty.READ, Level.FALSE);
+        thisVi.setProperty(VIC_LEVEL, VariableProperty.METHOD_CALLED, Level.FALSE);
 
-        if ( !callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
+        if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(false);
         }
 

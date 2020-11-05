@@ -20,6 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
@@ -49,7 +50,7 @@ public class TestSetOnceMap extends CommonTestRunner {
             Assert.assertEquals("inline get on this.map.get(k),@NotNull", srv.toString());
             InlineValue inlineValue = (InlineValue) srv;
             Assert.assertEquals(InlineValue.Applicability.TYPE, inlineValue.applicability);
-            VariableInfo tv = d.getReturnAsVariable();
+            VariableInfoImpl tv = d.getReturnAsVariable();
 
             Assert.assertNotNull(tv);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.properties.get(VariableProperty.NOT_NULL));

@@ -408,17 +408,14 @@ public class TypeAnalyser extends AbstractAnalyser {
             // fieldSummaries are set after the first iteration
             if (methodAnalyser.haveFieldAsVariable(fieldInfo)) {
                 VariableInfo tv = methodAnalyser.getFieldAsVariable(fieldInfo);
-                boolean assigned = tv.properties.get(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
+                boolean assigned = tv.getProperty(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
                 log(MARK, "Field {} is assigned in {}? {}", variable.fullyQualifiedName(), methodAnalyser.methodInfo.distinguishingName(), assigned);
 
-                if (assigned && tv.stateOnAssignment.isSet()) {
-                    Value state = tv.stateOnAssignment.get();
-                    if (isCompatible(evaluationContext, state, precondition)) {
-                        log(MARK, "We checked, and found the state {} compatible with the precondition {}", state, precondition);
-                        return false;
-                    }
+                Value state = tv.getStateOnAssignment();
+                if (assigned && state != null && isCompatible(evaluationContext, state, precondition)) {
+                    log(MARK, "We checked, and found the state {} compatible with the precondition {}", state, precondition);
+                    return false;
                 }
-
                 return assigned;
             }
         }
@@ -578,13 +575,12 @@ public class TypeAnalyser extends AbstractAnalyser {
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
             if (!typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodAnalyser.methodInfo.returnType())) {
                 VariableInfo variableInfo = methodAnalyser.getReturnAsVariable();
-                boolean delayed = !variableInfo.linkedVariables.isSet();
-                if (delayed) {
+                if (variableInfo.getLinkedVariables() == null) {
                     log(DELAYED, "Delay independence of type {}, method {}'s return statement summaries linking not known",
                             typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                     return DELAYS;
                 }
-                boolean safeMethod = Collections.disjoint(variableInfo.linkedVariables.get(), fieldsLinkedToParameters);
+                boolean safeMethod = Collections.disjoint(variableInfo.getLinkedVariables(), fieldsLinkedToParameters);
                 if (!safeMethod) {
                     log(INDEPENDENT, "Type {} cannot be @Independent, method {}'s return values link to some of the fields linked to constructors",
                             typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);

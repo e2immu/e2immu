@@ -2,6 +2,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -95,21 +96,21 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
             if (iteration > 0) {
                 MethodInfo constructor = fieldInfo.owner.findConstructor(1);
                 MethodAnalysis constructorMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(constructor);
-                VariableInfo constructorTv = constructorMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
+                VariableInfoImpl constructorTv = constructorMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
                 Assert.assertEquals(Level.TRUE, constructorTv.properties.get(VariableProperty.READ));
                 Assert.assertEquals(Level.TRUE, constructorTv.properties.get(VariableProperty.MODIFIED));
 
                 MethodInfo visit = fieldInfo.owner.findUniqueMethod("visit", 1);
                 MethodAnalysis visitMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(visit);
-                VariableInfo visitTv = visitMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
+                VariableInfoImpl visitTv = visitMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
                 Assert.assertEquals(Level.TRUE, visitTv.properties.get(VariableProperty.READ));
                 Assert.assertEquals(Level.FALSE, visitTv.properties.get(VariableProperty.MODIFIED));
 
                 MethodInfo iterator = fieldInfo.owner.findUniqueMethod("iterator", 0);
                 MethodAnalysis iteratorMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(iterator);
-                VariableInfo iteratorTv = iteratorMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
+                VariableInfoImpl iteratorTv = iteratorMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
                 Assert.assertEquals(Level.TRUE, iteratorTv.properties.get(VariableProperty.READ));
 

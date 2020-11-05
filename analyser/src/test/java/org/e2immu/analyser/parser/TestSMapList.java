@@ -20,6 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -58,7 +59,7 @@ public class TestSMapList extends CommonTestRunner {
         String name = d.methodInfo().name;
 
         if ("list".equals(name)) {
-            VariableInfo returnValue1 = d.getReturnAsVariable();
+            VariableInfoImpl returnValue1 = d.getReturnAsVariable();
             if (d.iteration() == 0) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, returnValue1.properties.get(VariableProperty.NOT_NULL));
 

@@ -30,15 +30,15 @@ public class TestVariableInfo {
 
     @Test
     public void test1PureOverwrite() {
-        VariableInfo viA = makeLocalIntVar("a");
+        VariableInfoImpl viA = makeLocalIntVar("a");
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         VariableInfo viB = makeLocalIntVar("b");
 
         viA.merge(viB, true, List.of());
     }
 
-    private VariableInfo makeLocalIntVar(String name) {
-        return new VariableInfo(new LocalVariableReference(new LocalVariable(List.of(), name, primitives.intParameterizedType, List.of()),
+    private VariableInfoImpl makeLocalIntVar(String name) {
+        return new VariableInfoImpl(new LocalVariableReference(new LocalVariable(List.of(), name, primitives.intParameterizedType, List.of()),
                 List.of()), name);
     }
 

@@ -20,7 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
@@ -55,7 +55,7 @@ public class TestSetOnce extends CommonTestRunner {
             } else {
                 Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
 
-                VariableInfo tv = d.getReturnAsVariable();
+                VariableInfoImpl tv = d.getReturnAsVariable();
                 Assert.assertTrue(tv.linkedVariables.isSet());
                 Assert.assertEquals(1, tv.linkedVariables.get().size());
                 if (d.iteration() > 1) {

@@ -1,6 +1,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -76,7 +77,7 @@ public class TestContainerChecks extends CommonTestRunner {
         TypeInfo typeInfo = d.methodInfo().typeInfo;
         if ("setStrings1".equals(name)) {
             FieldInfo strings = typeInfo.getFieldByName("strings1", true);
-            VariableInfo transferValue = d.getFieldAsVariable(strings);
+            VariableInfoImpl transferValue = d.getFieldAsVariable(strings);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, transferValue.properties.get(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.TRUE, transferValue.getProperty(VariableProperty.ASSIGNED));
         }
@@ -95,21 +96,21 @@ public class TestContainerChecks extends CommonTestRunner {
         if ("add2".equals(name) && d.iteration() >= 1) {
             FieldInfo strings = typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
             Assert.assertEquals("strings2", strings.name);
-            VariableInfo transferValue = d.getFieldAsVariable(strings);
+            VariableInfoImpl transferValue = d.getFieldAsVariable(strings);
             Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.SIZE_NOT_EMPTY, transferValue.getProperty(VariableProperty.SIZE));
         }
         if ("add2b".equals(name)) {
             FieldInfo strings = typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
             Assert.assertEquals("strings2b", strings.name);
-            VariableInfo transferValue = d.getFieldAsVariable(strings);
+            VariableInfoImpl transferValue = d.getFieldAsVariable(strings);
             Assert.assertEquals(Level.DELAY, transferValue.properties.get(VariableProperty.ASSIGNED));
             // Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, transferValue.properties.get(VariableProperty.READ));
             // Assert.assertFalse(transferValue.properties.isSet(VariableProperty.NOT_NULL));
         }
         if ("addAll5".equals(name)) {
             FieldInfo list = typeInfo.getFieldByName("list", true);
-            VariableInfo transferValue = d.getFieldAsVariable(list);
+            VariableInfoImpl transferValue = d.getFieldAsVariable(list);
             Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.READ));
             if (d.iteration() > 0) {
                 Assert.assertEquals(Level.TRUE, transferValue.properties.get(VariableProperty.MODIFIED));

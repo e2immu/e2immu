@@ -121,7 +121,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             builder.add(STATEMENT_ANALYSER, statementAnalyser)
                     .add("obtainMostCompletePrecondition", this::obtainMostCompletePrecondition)
                     .add("makeInternalObjectFlowsPermanent", this::makeInternalObjectFlowsPermanent)
-                    .add("propertiesOfReturnStatements", (sharedState) -> methodInfo.isConstructor ? DONE : propertiesOfReturnStatements(sharedState))
+                    .add("propertiesOfReturnStatements", (sharedState) -> methodInfo.isConstructor ? DONE : propertiesOfReturnStatements())
                     .add("methodIsConstant", (sharedState) -> methodInfo.isConstructor ? DONE : methodIsConstant(sharedState))
                     .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                     .add("methodIsModified", (sharedState) -> methodInfo.isConstructor ? DONE : methodIsModified(sharedState))
@@ -272,7 +272,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             // we need to check if there's fields being read/assigned/
             if (absentUnlessStatic(VariableProperty.READ) &&
                     absentUnlessStatic(VariableProperty.ASSIGNED) &&
-                    (getThisAsVariable().properties.getOrDefault(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
+                    (getThisAsVariable().getProperty(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
                     !methodInfo.hasOverrides(analyserContext.getPrimitives()) &&
                     !methodInfo.isDefaultImplementation) {
                 MethodResolution methodResolution = methodInfo.methodResolution.get();
@@ -289,8 +289,8 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     private boolean absentUnlessStatic(VariableProperty variableProperty) {
         return methodAnalysis.lastStatement().variableStream()
-                .filter(vi -> vi.variable instanceof FieldReference)
-                .allMatch(vi -> vi.getProperty(variableProperty) < Level.TRUE || vi.variable.isStatic());
+                .filter(vi -> vi.variable() instanceof FieldReference)
+                .allMatch(vi -> vi.getProperty(variableProperty) < Level.TRUE || vi.variable().isStatic());
     }
 
     // simply copy from last statement
@@ -567,10 +567,10 @@ public class MethodAnalyser extends AbstractAnalyser {
         return applicability.get();
     }
 
-    private AnalysisStatus propertiesOfReturnStatements(SharedState sharedState) {
+    private AnalysisStatus propertiesOfReturnStatements() {
         AnalysisStatus analysisStatus = DONE;
         for (VariableProperty variableProperty : VariableProperty.READ_FROM_RETURN_VALUE_PROPERTIES) {
-            AnalysisStatus status = propertyOfReturnStatements(sharedState.methodLevelData(), variableProperty);
+            AnalysisStatus status = propertyOfReturnStatements(variableProperty);
             analysisStatus = analysisStatus.combine(status);
         }
         return analysisStatus;
@@ -578,7 +578,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     // IMMUTABLE, NOT_NULL, CONTAINER, IDENTITY, FLUENT
     // IMMUTABLE, NOT_NULL can still improve with respect to the static return type computed in methodAnalysis.getProperty()
-    private AnalysisStatus propertyOfReturnStatements(MethodLevelData methodLevelData, VariableProperty variableProperty) {
+    private AnalysisStatus propertyOfReturnStatements(VariableProperty variableProperty) {
         if (methodInfo.isVoid() || methodInfo.isConstructor) return DONE;
         int currentValue = methodAnalysis.getProperty(variableProperty);
         if (currentValue != Level.DELAY && variableProperty != VariableProperty.IMMUTABLE && variableProperty != VariableProperty.NOT_NULL)
@@ -756,7 +756,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         // first step, check field assignments
         boolean fieldAssignments = methodAnalysis.lastStatement().variableStream()
-                .filter(vi -> vi.variable instanceof FieldReference)
+                .filter(vi -> vi.variable() instanceof FieldReference)
                 .anyMatch(vi -> vi.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE);
         if (fieldAssignments) {
             log(NOT_MODIFIED, "Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
@@ -773,14 +773,14 @@ public class MethodAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
         boolean isModified = methodAnalysis.lastStatement().variableStream()
-                .filter(vi -> vi.variable instanceof FieldReference)
+                .filter(vi -> vi.variable() instanceof FieldReference)
                 .anyMatch(vi -> vi.getProperty(VariableProperty.MODIFIED) == Level.TRUE);
         if (isModified && isLogEnabled(NOT_MODIFIED)) {
             List<String> fieldsWithContentModifications =
                     methodAnalysis.lastStatement().variableStream()
-                            .filter(vi -> vi.variable instanceof FieldReference)
+                            .filter(vi -> vi.variable() instanceof FieldReference)
                             .filter(vi -> vi.getProperty(VariableProperty.MODIFIED) == Level.TRUE)
-                            .map(vi -> vi.name).collect(Collectors.toList());
+                            .map(VariableInfo::name).collect(Collectors.toList());
             log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications: {}",
                     methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
         }
@@ -902,15 +902,15 @@ public class MethodAnalyser extends AbstractAnalyser {
             parameters.removeIf(pi -> pi.parameterizedType.typeInfo == methodInfo.typeInfo);
 
             boolean allLinkedVariablesSet = methodAnalysis.lastStatement().variableStream()
-                    .filter(vi -> vi.variable instanceof FieldReference)
-                    .allMatch(vi -> vi.linkedVariables.isSet());
+                    .filter(vi -> vi.variable() instanceof FieldReference)
+                    .allMatch(vi -> vi.getLinkedVariables() != null);
             if (!allLinkedVariablesSet) {
                 log(DELAYED, "Delaying @Independent on {}, linked variables not yet known for all field references", methodInfo.distinguishingName());
                 return DELAYS;
             }
             boolean supportDataSet = methodAnalysis.lastStatement().variableStream()
-                    .filter(vi -> vi.variable instanceof FieldReference)
-                    .flatMap(vi -> vi.linkedVariables.get().stream())
+                    .filter(vi -> vi.variable() instanceof FieldReference)
+                    .flatMap(vi -> vi.getLinkedVariables().stream())
                     .allMatch(v -> isImplicitlyImmutableDataTypeSet(v, analyserContext));
             if (!supportDataSet) {
                 log(DELAYED, "Delaying @Independent on {}, support data not yet known for all field references", methodInfo.distinguishingName());
@@ -918,12 +918,12 @@ public class MethodAnalyser extends AbstractAnalyser {
             }
 
             parametersIndependentOfFields = methodAnalysis.lastStatement().variableStream()
-                    .filter(vi -> vi.variable instanceof FieldReference)
+                    .filter(vi -> vi.variable() instanceof FieldReference)
                     .peek(vi -> {
-                        if (!vi.linkedVariables.isSet())
-                            LOGGER.warn("Field {} has no linked variables set in {}", vi.name, methodInfo.distinguishingName());
+                        if (vi.getLinkedVariables() == null)
+                            LOGGER.warn("Field {} has no linked variables set in {}", vi.name(), methodInfo.distinguishingName());
                     })
-                    .flatMap(vi -> vi.linkedVariables.get().stream())
+                    .flatMap(vi -> vi.getLinkedVariables().stream())
                     .filter(v -> v instanceof ParameterInfo)
                     .map(v -> (ParameterInfo) v)
                     .peek(set -> log(LINKED_VARIABLES, "Remaining linked support variables of {} are {}", methodInfo.distinguishingName(), set))
@@ -955,7 +955,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
         // method does not return an implicitly immutable data type
         VariableInfo returnVariable = getReturnAsVariable();
-        Set<Variable> variables = returnVariable.linkedVariables.get();
+        Set<Variable> variables = returnVariable.getLinkedVariables();
         boolean implicitlyImmutableSet = variables.stream().allMatch(v -> isImplicitlyImmutableDataTypeSet(v, analyserContext));
         if (!implicitlyImmutableSet) {
             log(DELAYED, "Delaying @Independent on {}, implicitly immutable status not known for all field references", methodInfo.distinguishingName());
@@ -1061,7 +1061,6 @@ public class MethodAnalyser extends AbstractAnalyser {
     public VariableInfo getReturnAsVariable() {
         return methodAnalysis.lastStatement().getLatestVariableInfo(methodInfo.fullyQualifiedName());
     }
-
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
 

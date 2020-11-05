@@ -1,6 +1,6 @@
 package org.e2immu.analyser.parserfailing;
 
-import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
@@ -32,13 +32,13 @@ public class TestLoopStatementChecks extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("method3".equals(d.methodInfo().name)) {
-            VariableInfo tv = d.getReturnAsVariable();
+            VariableInfoImpl tv = d.getReturnAsVariable();
             Assert.assertNotNull(tv);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.properties.get(VariableProperty.NOT_NULL)); // (2)
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL)); // (3)
         }
         if ("method3bis".equals(d.methodInfo().name)) {
-            VariableInfo tv = d.getReturnAsVariable();
+            VariableInfoImpl tv = d.getReturnAsVariable();
             Assert.assertNotNull(tv);
             Assert.assertEquals(MultiLevel.NULLABLE, tv.properties.get(VariableProperty.NOT_NULL));
         }

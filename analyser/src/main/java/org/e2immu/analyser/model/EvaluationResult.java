@@ -323,7 +323,11 @@ public class EvaluationResult {
             setCurrentValue(at, resultOfExpression);
 
             if (iteration == 0 && assignmentToNonEmptyExpression) {
-                addToModifications(statementAnalyser.new MarkAssigned(at, evaluationContext.getConditionManager().state));
+                addToModifications(statementAnalyser.new MarkAssigned(at));
+                Value state = evaluationContext.getConditionManager().state;
+                if (state != NO_VALUE) {
+                    addToModifications(statementAnalyser.new SetStateOnAssignment(at, state));
+                }
             }
             return this;
         }

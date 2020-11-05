@@ -1,6 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
@@ -47,7 +47,7 @@ public class TestFunctionalInterfaceModified4 extends CommonTestRunner {
                 Assert.assertEquals(Level.FALSE, modified);
             }
             FieldInfo ts = d.methodInfo().typeInfo.getFieldByName("ts", true);
-            VariableInfo tv = d.getFieldAsVariable(ts);
+            VariableInfoImpl tv = d.getFieldAsVariable(ts);
             Assert.assertEquals(Level.TRUE, tv.properties.get(VariableProperty.READ));
             if (iteration > 1) {
                 Assert.assertEquals(Level.FALSE, tv.properties.get(VariableProperty.MODIFIED));

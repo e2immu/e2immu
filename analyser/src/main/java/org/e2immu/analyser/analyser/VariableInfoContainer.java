@@ -17,7 +17,12 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.util.Freezable;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.annotation.NotNull;
+
+import java.util.Set;
 
 /**
  * Container to store different versions of a VariableInfo object, one or more of this list:
@@ -34,43 +39,73 @@ import org.e2immu.analyser.util.Freezable;
  * <p>
  * Can only be created in increasing levels! Will be frozen as soon as the statement analyser goes AnalysisStatus == DONE.
  */
-public class VariableInfoContainer extends Freezable {
-    public static final int LEVELS = 5;
-    public static final int LEVEL_0_PREVIOUS = 0;
-    public static final int LEVEL_1_INITIALISER = 1;
-    public static final int LEVEL_2_EVALUATION = 2;
-    public static final int LEVEL_3_UPDATER = 3;
-    public static final int LEVEL_4_SUMMARY = 4;
+public interface VariableInfoContainer {
+    int LEVEL_0_PREVIOUS = 0;
+    int LEVEL_1_INITIALISER = 1;
+    int LEVEL_2_EVALUATION = 2;
+    int LEVEL_3_UPDATER = 3;
+    int LEVEL_4_SUMMARY = 4;
 
-    private final VariableInfo[] data = new VariableInfo[LEVELS];
-    private int highestLevel = -1;
+    /**
+     * General method for obtaining the "most relevant" <code>VariableInfo</code> object describing the state
+     * of the variable after executing this statement.
+     *
+     * @return a VariableInfo object, always. There would not have been a <code>VariableInfoContainer</code> if there
+     * was not at least one <code>VariableInfo</code> object.
+     */
+    @NotNull
+    VariableInfo current();
 
-    public VariableInfoContainer(VariableInfo previous) {
-        if (previous != null) {
-            set(LEVEL_0_PREVIOUS, previous);
-        }
-    }
+    /**
+     * Mostly for debugging: inspect VariableInfo at a given level
+     *
+     * @param level the level
+     * @return null  when there's no object at this level
+     */
+    VariableInfo get(int level);
 
-    public boolean haveData() {
-        return highestLevel >= 0;
-    }
+    /**
+     * Mostly for debugging
+     *
+     * @return the highest level for which there is <code>VariableInfo</code> data written.
+     */
+    int getCurrentLevel();
 
-    public int getHighestLevel() {
-        return highestLevel;
-    }
+    /**
+     * Prepares for an assignment, which must increase the current level.
+     * Important to note that an assignment is split in multiple methods (markAssigned, setValue, assigned) because
+     * not all data may be available in the same iteration.
+     *
+     * @param level the level at which the assignment takes place (1, 2, 3, 4, cannot be 0)
+     */
+    void assignment(int level);
 
-    public VariableInfo current() {
-        if (highestLevel == -1) throw new UnsupportedOperationException("No VariableInfo object set yet");
-        return data[highestLevel];
-    }
+    // explicit freezing (DONE at the end of statement analyser): forbid any future writing
+    void freeze();
 
-    public VariableInfo get(int level) {
-        return data[level];
-    }
+    // writing operations
 
-    public void set(int level, VariableInfo variableInfo) {
-        if (level <= highestLevel) throw new UnsupportedOperationException();
-        data[level] = variableInfo;
-        highestLevel = level;
-    }
+    void setValue(int level, Value value);
+
+    void setStateOnAssignment(int level, Value state);
+
+    void setProperty(int level, VariableProperty variableProperty, int value);
+
+    void setLinkedVariables(int level, Set<Variable> variables);
+
+    void setObjectFlow(int level, ObjectFlow objectFlow);
+
+    /**
+     * should only happen in the first iteration, because it increases the property's value based on previous values
+     *
+     * @param level the exact level at which an assignment was announced
+     */
+    void markAssigned(int level);
+
+    /**
+     * should only happen in the first iteration, because it increases the property's value based on that of ASSIGNED
+     *
+     * @param level the level at which the variable is being read
+     */
+    void markRead(int level);
 }

@@ -17,7 +17,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -115,7 +115,7 @@ public class TestNotModifiedChecks extends CommonTestRunner {
         }
         if ("C1".equals(name)) {
             FieldInfo fieldInfo = d.methodInfo().typeInfo.getFieldByName("set", true);
-            VariableInfo tv = d.getFieldAsVariable(fieldInfo);
+            VariableInfoImpl tv = d.getFieldAsVariable(fieldInfo);
             Assert.assertEquals("[0:set1]", tv.linkedVariables.get().toString());
         }
     };

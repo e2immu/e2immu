@@ -4,7 +4,8 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.util.IncrementalMap;
+
+import java.util.Map;
 
 public interface StatementAnalyserVariableVisitor {
 
@@ -15,7 +16,7 @@ public interface StatementAnalyserVariableVisitor {
                 String variableName,
                 Variable variable,
                 Value currentValue,
-                IncrementalMap<VariableProperty> properties,
+                Map<VariableProperty, Integer> properties,
                 VariableInfo variableInfo,
                 VariableInfoContainer variableInfoContainer) {
 

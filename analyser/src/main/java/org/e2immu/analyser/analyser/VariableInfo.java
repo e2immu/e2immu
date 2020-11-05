@@ -17,168 +17,50 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.util.IncrementalMap;
-import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.SetOnce;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Set;
-import java.util.function.IntBinaryOperator;
 
-import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
+public interface VariableInfo {
+    String name();
 
-public class VariableInfo {
-    public final Variable variable;
+    Variable variable();
+
     /**
-     * Generally the variable's fully qualified name, but can be more complicated (see DependentVariable)
+     * @return null when not yet set
      */
-    public final String name;
+    Set<Variable> getLinkedVariables();
 
-    public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
-
-    public final SetOnce<Value> value = new SetOnce<>(); // value from step 3 (initialisers)
-
-    public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
-    public final SetOnce<Value> stateOnAssignment = new SetOnce<>(); // EMPTY when no info, NO_VALUE when not set
-
-    public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
-
-    public ObjectFlow getObjectFlow() {
-        return objectFlow.getOrElse(ObjectFlow.NO_FLOW);
+    default boolean linkedVariablesIsSet() {
+        return getLinkedVariables() != null;
     }
 
-    public VariableInfo(Variable variable, String name) {
-        this.name = Objects.requireNonNull(name);
-        this.variable = Objects.requireNonNull(variable);
-    }
+    ObjectFlow getObjectFlow();
 
-    public Value getValue() {
-        return value.getOrElse(UnknownValue.NO_VALUE);
-    }
+    Value getValue();
 
-    public Value getStateOnAssignment() {
-        return stateOnAssignment.getOrElse(UnknownValue.NO_VALUE);
-    }
+    /**
+     * @return null when not (yet) set, or when there is no assigment (yet) on this variable
+     */
+    Value getStateOnAssignment();
 
-    public int getProperty(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, Level.DELAY);
-    }
+    int getProperty(VariableProperty variableProperty);
 
+    int getProperty(VariableProperty variableProperty, int defaultValue);
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder();
-        sb.append("name=").append(name).append("props=").append(properties);
-        if (value.isSet()) {
-            sb.append(", value=").append(value.get());
-        }
-        return sb.toString();
-    }
+    boolean hasNoValue();
 
-    public void setProperty(VariableProperty variableProperty, int value) {
-        properties.put(variableProperty, value);
-    }
+    /**
+     * @return immutable copy of the properties map, for debugging mostly
+     */
+    Map<VariableProperty, Integer> getProperties();
 
-    public void markAssigned(Value stateOnAssignment) {
-        int assigned = getProperty(VariableProperty.ASSIGNED);
-        setProperty(VariableProperty.ASSIGNED, Math.max(1, assigned + 1));
-        if (!this.stateOnAssignment.isSet() && stateOnAssignment != UnknownValue.NO_VALUE) {
-            this.stateOnAssignment.set(stateOnAssignment);
-        }
-    }
-
-    public void markRead() {
-        int assigned = Math.max(getProperty(VariableProperty.ASSIGNED), 0);
-        int read = getProperty(VariableProperty.READ);
-        int val = Math.max(1, Math.max(read + 1, assigned + 1));
-        setProperty(VariableProperty.READ, val);
-    }
-
-    public void remove() {
-        properties.put(VariableProperty.REMOVED, Level.TRUE);
-    }
-
-    public void setObjectFlow(ObjectFlow objectFlow) {
-        this.objectFlow.set(objectFlow);
-    }
-
-    public boolean hasNoValue() {
-        return getValue() == UnknownValue.NO_VALUE;
-    }
-
-    public void writeValue(Value value) {
-        if (value != UnknownValue.NO_VALUE) {
-            this.value.set(value);
-        }
-    }
-
-    public void ensureProperty(VariableProperty variableProperty, int value) {
-        int current = properties.getOrDefault(variableProperty, Level.DELAY);
-        if (value > current) properties.put(variableProperty, value);
-    }
-
-
-    private record MergeOp(VariableProperty variableProperty, IntBinaryOperator operator, int initial) {
-    }
-
-    // it is important to note that the properties are NOT read off the value, but from the properties map
-    // this copying has to have taken place earlier; for each of the variable properties below:
-
-    private static final List<MergeOp> MERGE = List.of(
-            new MergeOp(VariableProperty.NOT_NULL, Math::min, Integer.MAX_VALUE),
-            new MergeOp(VariableProperty.SIZE, Math::min, Integer.MAX_VALUE),
-            new MergeOp(VariableProperty.IMMUTABLE, Math::min, Integer.MAX_VALUE),
-            new MergeOp(VariableProperty.CONTAINER, Math::min, Integer.MAX_VALUE),
-            new MergeOp(VariableProperty.READ, Math::max, Level.DELAY),
-            new MergeOp(VariableProperty.ASSIGNED, Math::max, Level.DELAY)
-    );
-
-    public void merge(VariableInfo existing,
-                      boolean existingValuesWillBeOverwritten,
-                      List<VariableInfo> merge) {
-
-        Value mergedValue = mergeValue(existing, existingValuesWillBeOverwritten, merge);
-        writeValue(mergedValue);
-
-        // now common properties
-
-        List<VariableInfo> list = existingValuesWillBeOverwritten ?
-                ListUtil.immutableConcat(merge, List.of(existing)) : ImmutableList.copyOf(merge);
-        for (MergeOp mergeOp : MERGE) {
-            int commonValue = Level.DELAY;
-
-            for (VariableInfo vi : list) {
-                int value = vi.properties.getOrDefault(mergeOp.variableProperty, Level.DELAY);
-                commonValue = mergeOp.operator.applyAsInt(commonValue, value);
-            }
-            if (commonValue != mergeOp.initial) {
-                setProperty(mergeOp.variableProperty, commonValue);
-            }
-        }
-    }
-
-    private Value mergeValue(VariableInfo existing,
-                             boolean existingValuesWillBeOverwritten,
-                             List<VariableInfo> merge) {
-        Value currentValue = existing.getValue();
-        if (!existingValuesWillBeOverwritten && currentValue == NO_VALUE) return NO_VALUE;
-        boolean haveANoValue = merge.stream().anyMatch(v -> !v.stateOnAssignment.isSet());
-        if (haveANoValue) return NO_VALUE;
-
-        // situation: we understand c
-        // x=i; if(c) x=a; we do NOT overwrite; result is c?a:i
-        // x=i; if(c) x=a; else x=b, overwrite; result is
-        // x=i; switch(y) case c1 -> a; case c2 -> b; default -> d; overwrite
-
-        // no need to change the value
-        return currentValue;
-    }
-
+    /**
+     *
+     * @return an immutable copy, or the same object frozen
+     */
+    VariableInfo freeze();
 }

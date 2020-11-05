@@ -401,7 +401,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private static Set<Variable> safeLinkedVariables(VariableInfo variableInfo) {
-        return variableInfo.linkedVariables.isSet() ? variableInfo.linkedVariables.get() : Set.of();
+        return variableInfo.getLinkedVariables() != null ? variableInfo.getLinkedVariables() : Set.of();
     }
 
     private List<MethodAnalyser> methodsWhereFieldIsAssigned() {
@@ -420,7 +420,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 int readInMethods = allMethodsAndConstructors.stream()
                         .filter(m -> !(m.methodInfo.isConstructor && m.methodInfo.typeInfo == fieldInfo.owner)) // not my own constructors
                         .filter(m -> m.haveFieldAsVariable(fieldInfo)) // field seen
-                        .mapToInt(m -> m.getFieldAsVariable(fieldInfo).properties.getOrDefault(VariableProperty.READ, Level.FALSE))
+                        .mapToInt(m -> m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.READ, Level.FALSE))
                         .max().orElse(Level.FALSE);
                 if (readInMethods == Level.DELAY) {
                     log(DELAYED, "Not yet ready to decide on read outside constructors");
@@ -661,7 +661,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .allMatch(m ->
                         m.methodLevelData().linksHaveBeenEstablished.isSet() && (
                                 !m.haveFieldAsVariable(fieldInfo) ||
-                                        m.getFieldAsVariable(fieldInfo).linkedVariables.isSet()));
+                                        m.getFieldAsVariable(fieldInfo).linkedVariablesIsSet()));
         if (!allDefined) {
             if (Logger.isLogEnabled(DELAYED)) {
                 log(DELAYED, "VariablesLinkedToFieldsAndParameters not yet set for methods: [{}]",
@@ -672,7 +672,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                         allMethodsAndConstructors.stream()
                                 .filter(m -> m.methodLevelData().linksHaveBeenEstablished.isSet())
                                 .filter(m -> m.haveFieldAsVariable(fieldInfo) &&
-                                        !m.getFieldAsVariable(fieldInfo).linkedVariables.isSet())
+                                        !m.getFieldAsVariable(fieldInfo).linkedVariablesIsSet())
                                 .map(m -> m.methodInfo.name).collect(Collectors.joining(", ")));
             }
             return DELAYS;
@@ -681,8 +681,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         Set<Variable> links = new HashSet<>();
         allMethodsAndConstructors.stream()
                 .filter(m -> m.haveFieldAsVariable(fieldInfo))
-                .filter(m -> m.getFieldAsVariable(fieldInfo).linkedVariables.isSet())
-                .forEach(m -> links.addAll(m.getFieldAsVariable(fieldInfo).linkedVariables.get()));
+                .filter(m -> m.getFieldAsVariable(fieldInfo).linkedVariablesIsSet())
+                .forEach(m -> links.addAll(m.getFieldAsVariable(fieldInfo).getLinkedVariables()));
         fieldAnalysis.variablesLinkedToMe.set(ImmutableSet.copyOf(links));
         log(LINKED_VARIABLES, "FA: Set links of {} to [{}]", fieldInfo.fullyQualifiedName(), Variable.fullyQualifiedName(links));
 
