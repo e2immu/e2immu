@@ -69,15 +69,24 @@ public class ConditionalValue implements Value {
             return builder.setValue(first ? ifTrue : ifFalse).build();
         }
 
-        Value edgeCase = edgeCases(evaluationContext, evaluationContext.getPrimitives(),
-                condition, ifTrue, ifFalse);
+        // not x ? a: b --> x ? b: a
+        NegatedValue negatedCondition;
+        if ((negatedCondition = condition.asInstanceOf(NegatedValue.class)) != null) {
+            return conditionalValueConditionResolved(evaluationContext, negatedCondition.value, ifFalse, ifTrue, objectFlow);
+        }
+
+        ConditionalValue secondCv;
+        // x ? (x? a: b): c == x ? a : c
+        if ((secondCv = ifTrue.asInstanceOf(ConditionalValue.class)) != null && secondCv.condition.equals(condition)) {
+            return conditionalValueConditionResolved(evaluationContext, condition, secondCv.ifTrue, ifFalse, objectFlow);
+        }
+
+        Value edgeCase = edgeCases(evaluationContext, evaluationContext.getPrimitives(), condition, ifTrue, ifFalse);
         if (edgeCase != null) return builder.setValue(edgeCase).build();
 
         // standardization... we swap!
         // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form
-        if (condition instanceof NegatedValue) {
-            return builder.setValue(new ConditionalValue(((NegatedValue) condition).value, ifFalse, ifTrue, objectFlow)).build();
-        }
+
         return builder.setValue(new ConditionalValue(condition, ifTrue, ifFalse, objectFlow)).build();
         // TODO more advanced! if a "large" part of ifTrue or ifFalse appears in condition, we should create a temp variable
     }
@@ -100,11 +109,7 @@ public class ConditionalValue implements Value {
         if (condition.equals(ifTrue) && condition.equals(NegatedValue.negate(evaluationContext, ifFalse))) {
             return BoolValue.createTrue(primitives);
         }
-        // !a ? a : !a == !a == a ? !a : a
-        Value notIfTrue = NegatedValue.negate(evaluationContext, ifTrue);
-        if (condition.equals(notIfTrue) && condition.equals(ifFalse)) {
-            return BoolValue.createFalse(primitives);
-        }
+        // !a ? a : !a == !a == a ? !a : a --> will not happen, as we've already swapped
         return null;
     }
 
@@ -114,10 +119,10 @@ public class ConditionalValue implements Value {
         EvaluationResult reTrue = ifTrue.reEvaluate(evaluationContext, translation);
         EvaluationResult reFalse = ifFalse.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reCondition, reTrue, reFalse);
-        if (reCondition.value == BoolValue.createTrue(evaluationContext.getPrimitives())) {
+        if (reCondition.value.equals(BoolValue.createTrue(evaluationContext.getPrimitives()))) {
             return builder.setValue(reTrue.value).build();
         }
-        if (reCondition.value == BoolValue.createFalse(evaluationContext.getPrimitives())) {
+        if (reCondition.value.equals(BoolValue.createFalse(evaluationContext.getPrimitives()))) {
             return builder.setValue(reFalse.value).build();
         }
         return builder.setValue(new ConditionalValue(reCondition.value, reTrue.value, reFalse.value, getObjectFlow())).build();

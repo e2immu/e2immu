@@ -164,6 +164,10 @@ public interface Value extends Comparable<Value> {
         return isInstanceOf(NullValue.class);
     }
 
+    default boolean isComputeProperties() {
+        return this != UnknownValue.RETURN_VALUE;
+    }
+
     class FilterResult {
         public final Map<Variable, Value> accepted;
         public final Value rest;

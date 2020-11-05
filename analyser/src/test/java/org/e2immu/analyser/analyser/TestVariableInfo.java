@@ -17,21 +17,28 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.abstractvalue.*;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.util.Logger;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.List;
 
 public class TestVariableInfo extends CommonVariableInfo {
 
+    @BeforeClass
+    public static void beforeClass() {
+        Logger.activate();
+    }
+
     @Test
     public void testNoneNoOverwrite() {
-
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.value.set(four);
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
@@ -52,8 +59,8 @@ public class TestVariableInfo extends CommonVariableInfo {
         VariableInfoImpl overwritten = new VariableInfoImpl(viB.variable);
         try {
             overwritten.merge(minimalEvaluationContext, viB, true, List.of());
-            Assert.fail();;
-        } catch(UnsupportedOperationException e) {
+            Assert.fail();
+        } catch (UnsupportedOperationException e) {
             // OK
         }
     }
@@ -114,6 +121,122 @@ public class TestVariableInfo extends CommonVariableInfo {
         Assert.assertEquals("x?4:3", res.toString());
         Assert.assertEquals(MultiLevel.MUTABLE, viC.getProperty(VariableProperty.NOT_NULL));
     }
+
+
+    @Test
+    public void testOneIfXThenReturn() {
+        Variable retVar = makeReturnVariable();
+        VariableInfoImpl ret = new VariableInfoImpl(retVar);
+        ret.value.set(UnknownValue.RETURN_VALUE); // uni
+
+        VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
+        Value x = new VariableValue(viX.variable);
+        viX.value.set(x);
+
+        VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
+        viB.value.set(four);
+        viB.stateOnAssignment.set(x);
+        viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+
+        // situation:
+        // if(x) return b;
+
+        VariableInfoImpl ret2 = new VariableInfoImpl(retVar);
+        ret2.merge(minimalEvaluationContext, ret, false, List.of(viB));
+
+        Value res = ret2.getValue();
+        Assert.assertEquals("x?4:<return value>", res.toString());
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret2.getProperty(VariableProperty.NOT_NULL));
+
+        // OK let's continue
+
+        // situation:
+        // if(x) return b;
+        // return a;  (which has state added: not (x))
+
+        VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
+        viA.value.set(three);
+        viA.stateOnAssignment.set(NegatedValue.negate(minimalEvaluationContext, x));
+        viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+
+        VariableInfoImpl ret3 = new VariableInfoImpl(retVar);
+        ret3.merge(minimalEvaluationContext, ret2, false, List.of(viA));
+        Assert.assertEquals("x?4:3", ret3.getValue().toString());
+
+        // TODO how can we fix this??
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret3.getProperty(VariableProperty.NOT_NULL));
+    }
+
+
+    @Test
+    public void testOneIfXThenReturnIfYThenReturn() {
+        Variable retVar = makeReturnVariable();
+        VariableInfoImpl ret = new VariableInfoImpl(retVar);
+        ret.value.set(UnknownValue.RETURN_VALUE); // uni
+
+        VariableInfoImpl viX = new VariableInfoImpl(makeLocalIntVar("x"));
+        Value x = new VariableValue(viX.variable);
+        viX.value.set(x);
+
+        VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
+        viB.value.set(four);
+        Value xEquals3 = EqualsValue.equals(minimalEvaluationContext, x, three, ObjectFlow.NO_FLOW);
+        viB.stateOnAssignment.set(xEquals3);
+        viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+
+        // situation:
+        // if(x==3) return b;
+
+        VariableInfoImpl ret2 = new VariableInfoImpl(retVar);
+        ret2.merge(minimalEvaluationContext, ret, false, List.of(viB));
+
+        Value res = ret2.getValue();
+        Assert.assertEquals("3 == x?4:<return value>", res.toString());
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret2.getProperty(VariableProperty.NOT_NULL));
+
+        // OK let's continue, bun with another if in between
+
+        // situation:
+        // if(x==3) return b;
+        // if(x==4) return a;
+
+        VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
+        viA.value.set(three);
+        Value xEquals4 = new AndValue(minimalEvaluationContext.getPrimitives()).append(minimalEvaluationContext,
+                NegatedValue.negate(minimalEvaluationContext, xEquals3),
+                EqualsValue.equals(minimalEvaluationContext, x, four, ObjectFlow.NO_FLOW));
+        Assert.assertEquals("4 == x", xEquals4.toString());
+        viA.stateOnAssignment.set(xEquals4);
+        viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+
+        VariableInfoImpl ret3 = new VariableInfoImpl(retVar);
+        ret3.merge(minimalEvaluationContext, ret2, false, List.of(viA));
+        Assert.assertEquals("4 == x?3:3 == x?4:<return value>", ret3.getValue().toString());
+
+        // situation:
+        // if(x==3) return b;
+        // if(x==4) return a;
+        // return c;  (which has state added: not (x))
+
+        VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
+        viC.value.set(two);
+        Value combinedState =
+                new AndValue(minimalEvaluationContext.getPrimitives()).append(minimalEvaluationContext,
+                        NegatedValue.negate(minimalEvaluationContext, xEquals3),
+                        NegatedValue.negate(minimalEvaluationContext, xEquals4));
+        viC.stateOnAssignment.set(combinedState);
+        viC.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+
+        VariableInfoImpl ret4 = new VariableInfoImpl(retVar);
+        ret4.merge(minimalEvaluationContext, ret3, false, List.of(viC));
+
+        // IMPROVE actually the value should be 4 == x?3:3 == x?4:2
+        Assert.assertEquals("(not (3 == x) and not (4 == x))?2:4 == x?3:3 == x?4:<return value>", ret4.getValue().toString());
+
+        // TODO how can we fix this??
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret4.getProperty(VariableProperty.NOT_NULL));
+    }
+
 
     @Test
     public void testOneCisAIfUnclearThenB() {

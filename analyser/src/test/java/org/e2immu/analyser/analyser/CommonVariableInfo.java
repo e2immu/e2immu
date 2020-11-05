@@ -38,6 +38,10 @@ public abstract class CommonVariableInfo {
                 List.of());
     }
 
+    protected Variable makeReturnVariable() {
+        return new ReturnVariable(primitives.orOperatorBool);
+    }
+    protected final IntValue two = new IntValue(primitives, 2, ObjectFlow.NO_FLOW);
     protected final IntValue three = new IntValue(primitives, 3, ObjectFlow.NO_FLOW);
     protected final IntValue four = new IntValue(primitives, 4, ObjectFlow.NO_FLOW);
 

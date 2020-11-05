@@ -122,7 +122,7 @@ public interface EvaluationContext {
     }
 
     default int getProperty(Value value, VariableProperty variableProperty) {
-        throw new UnsupportedOperationException();
+        return value.getProperty(this, variableProperty); // will work in many cases
     }
 
     default int getProperty(Variable variable, VariableProperty variableProperty) {

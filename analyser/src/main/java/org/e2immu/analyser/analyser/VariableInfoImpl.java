@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
@@ -25,7 +24,6 @@ import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.IncrementalMap;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetOnce;
 
 import java.util.List;
@@ -183,14 +181,20 @@ class VariableInfoImpl implements VariableInfo {
 
         // now common properties
 
-        List<VariableInfo> list = existingValuesWillBeOverwritten ? ImmutableList.copyOf(merge) :
-                ListUtil.immutableConcat(merge, List.of(existing));
+        VariableInfo[] list = merge
+                .stream().filter(vi -> vi.getValue().isComputeProperties())
+                .toArray(n -> new VariableInfo[n + 1]);
+        if (!existingValuesWillBeOverwritten && existing.getValue().isComputeProperties()) {
+            list[list.length - 1] = existing;
+        }
         for (MergeOp mergeOp : MERGE) {
             int commonValue = mergeOp.initial;
 
             for (VariableInfo vi : list) {
-                int value = vi.getProperty(mergeOp.variableProperty);
-                commonValue = mergeOp.operator.applyAsInt(commonValue, value);
+                if (vi != null) {
+                    int value = vi.getProperty(mergeOp.variableProperty);
+                    commonValue = mergeOp.operator.applyAsInt(commonValue, value);
+                }
             }
             if (commonValue != mergeOp.initial) {
                 setProperty(mergeOp.variableProperty, commonValue);
