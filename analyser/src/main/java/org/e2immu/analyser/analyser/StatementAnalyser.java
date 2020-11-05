@@ -442,7 +442,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             vic.assignment(level);
             if (value != NO_VALUE) {
                 log(ANALYSER, "Write value {} to variable {}", value, variable.fullyQualifiedName());
-                vic.setValue(level, value);
+                vic.setValueOnAssignment(level, value);
             }
             if (reducedState != NO_VALUE) {
                 vic.setStateOnAssignment(level, reducedState);
@@ -593,7 +593,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             } else if (assignedInLoop) {
                 firstStatementInBlock.addProperty(analyserContext, l1, lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
             }
-            vic.setValue(l1, new VariableValue(lvr));
+            vic.setValueOnAssignment(l1, new VariableValue(lvr));
         } else {
             lvr = null;
         }
@@ -642,7 +642,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (initialiser instanceof Assignment assignment) {
                     int levelLoop = saToCreate.stepsUpToLoop();
                     if (levelLoop >= 0) {
-                        int levelAssignmentTarget = saToCreate.levelAtWhichVariableIsDefined(analyserContext, assignment.variableTarget);
+                        int levelAssignmentTarget = saToCreate.levelAtWhichVariableIsDefined(assignment.variableTarget);
                         if (levelAssignmentTarget >= levelLoop) {
                             saToCreate.addProperty(analyserContext, VariableInfoContainer.LEVEL_1_INITIALISER,
                                     assignment.variableTarget, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
@@ -668,7 +668,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         boolean haveDelays = false;
         for (Expression updater : structure.updaters) {
             EvaluationResult result = updater.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-            AnalysisStatus status = apply(result, statementAnalysis, VariableInfoContainer.LEVEL_3_UPDATER, STEP_3);
+            AnalysisStatus status = apply(result, statementAnalysis, VariableInfoContainer.LEVEL_2_UPDATER, STEP_3);
             if (status == DELAYS) haveDelays = true;
         }
         return haveDelays ? DELAYS : DONE;
@@ -680,7 +680,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
         try {
             EvaluationResult result = structure.expression.evaluate(evaluationContext, structure.forwardEvaluationInfo);
-            AnalysisStatus status = apply(result, statementAnalysis, VariableInfoContainer.LEVEL_2_EVALUATION, STEP_4);
+            AnalysisStatus status = apply(result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_4);
             if (status == DELAYS) return NO_VALUE;
 
             // the evaluation system should be pretty good at always returning NO_VALUE when a NO_VALUE has been encountered
@@ -701,7 +701,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (((arrayValue = value.asInstanceOf(ArrayValue.class)) != null) &&
                     arrayValue.values.stream().allMatch(evaluationContext::isNotNull0)) {
                 StatementAnalysis firstStatementInBlock = firstStatementFirstBlock();
-                firstStatementInBlock.addProperty(analyserContext, VariableInfoContainer.LEVEL_2_EVALUATION,
+                firstStatementInBlock.addProperty(analyserContext, VariableInfoContainer.LEVEL_3_EVALUATION,
                         localVariableReference, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
             }
         }
@@ -716,7 +716,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (value == NO_VALUE) return DELAYS;
 
         VariableInfoContainer variableInfo = findReturnAsVariableForWriting();
-        variableInfo.setValue(VariableInfoContainer.LEVEL_2_EVALUATION, value);
+        variableInfo.setValueOnAssignment(VariableInfoContainer.LEVEL_3_EVALUATION, value);
         // properties need properly copying from value into "properties"
         // TODO
         return DONE;
@@ -787,7 +787,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             EvaluationResult result = expression.evaluate(evaluationContext, forwardEvaluationInfo);
             valueForSubStatement = result.value;
             // there cannot be any assignment in these sub-expressions, nor variables, ...
-            AnalysisStatus status = apply(result, statementAnalysis, VariableInfoContainer.LEVEL_2_EVALUATION, STEP_9);
+            AnalysisStatus status = apply(result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_9);
             if (status == DELAYS) {
                 return NO_VALUE;
             }

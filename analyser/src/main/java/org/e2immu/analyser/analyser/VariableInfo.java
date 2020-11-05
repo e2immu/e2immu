@@ -23,6 +23,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public interface VariableInfo {
     String name();
@@ -59,10 +60,15 @@ public interface VariableInfo {
     Map<VariableProperty, Integer> getProperties();
 
     /**
-     *
      * @return an immutable copy, or the same object frozen
      */
     VariableInfo freeze();
 
     boolean hasProperty(VariableProperty variableProperty);
+
+    default boolean valueIsSet() {
+        return getValue() != null;
+    }
+
+    Stream<Map.Entry<VariableProperty, Integer>> propertyStream();
 }

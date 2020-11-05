@@ -38,10 +38,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         currentLevel = LEVEL_0_PREVIOUS;
     }
 
-    public VariableInfoContainerImpl(Variable variable, String name) {
+    public VariableInfoContainerImpl(Variable variable) {
         Objects.requireNonNull(variable);
-        Objects.requireNonNull(name);
-        data[LEVEL_1_INITIALISER] = new VariableInfoImpl(variable, name);
+        data[LEVEL_1_INITIALISER] = new VariableInfoImpl(variable);
         currentLevel = LEVEL_1_INITIALISER;
     }
 
@@ -84,7 +83,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
         int assigned = data[currentLevel].getProperty(VariableProperty.ASSIGNED);
         currentLevel = level;
-        VariableInfoImpl variableInfo = new VariableInfoImpl(data[0].variable(), data[0].name());
+        VariableInfoImpl variableInfo = new VariableInfoImpl(data[0].variable());
         data[currentLevel] = variableInfo;
         variableInfo.setProperty(VariableProperty.ASSIGNED, assigned);
     }
@@ -99,7 +98,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void setValue(int level, Value value) {
+    public void setValueOnAssignment(int level, Value value) {
         ensureNotFrozen();
 
         Objects.requireNonNull(value);
@@ -131,7 +130,35 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         variableInfo.setProperty(VariableProperty.ASSIGNED, Math.max(1, assigned + 1));
     }
 
+
     /* ******************************* modifying methods unrelated to assignment ************************************ */
+
+    @Override
+    public void setInitialValueFromAnalyser(Value value) {
+        internalSetValue(LEVEL_1_INITIALISER, value);
+    }
+
+    private void internalSetValue(int level, Value value) {
+        ensureNotFrozen();
+
+        Objects.requireNonNull(value);
+        if (value != UnknownValue.NO_VALUE) {
+            throw new IllegalArgumentException("Value should not be NO_VALUE");
+        }
+        VariableInfoImpl variableInfo = findForWriting(level);
+        variableInfo.value.set(value);
+    }
+
+    private void internalSetStateOnAssignment(int level, Value state) {
+        ensureNotFrozen();
+
+        Objects.requireNonNull(state);
+        if (state != UnknownValue.NO_VALUE) {
+            throw new IllegalArgumentException("State should not be NO_VALUE");
+        }
+        VariableInfoImpl variableInfo = findForWriting(level);
+        variableInfo.stateOnAssignment.set(state);
+    }
 
     private VariableInfoImpl findForWriting(int level) {
         if (level <= 0 || level >= LEVELS) throw new IllegalArgumentException();
@@ -187,5 +214,25 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(objectFlow);
         VariableInfoImpl variableInfo = findForWriting(level);
         variableInfo.objectFlow.set(objectFlow);
+    }
+
+    @Override
+    public void copy(int level, VariableInfo previousVariableInfo) {
+        previousVariableInfo.propertyStream().forEach(e -> {
+            setProperty(level, e.getKey(), e.getValue());
+        });
+
+        if (previousVariableInfo.valueIsSet()) {
+            internalSetValue(level, previousVariableInfo.getValue());
+        }
+        if (previousVariableInfo.getStateOnAssignment() != null) {
+            internalSetStateOnAssignment(level, previousVariableInfo.getStateOnAssignment());
+        }
+        if (previousVariableInfo.linkedVariablesIsSet()) {
+            setLinkedVariables(level, previousVariableInfo.getLinkedVariables());
+        }
+        if (previousVariableInfo.getObjectFlow() != null) {
+            setObjectFlow(level, previousVariableInfo.getObjectFlow());
+        }
     }
 }

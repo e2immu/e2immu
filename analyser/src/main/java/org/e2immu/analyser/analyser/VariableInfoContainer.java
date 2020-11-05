@@ -42,8 +42,8 @@ import java.util.Set;
 public interface VariableInfoContainer {
     int LEVEL_0_PREVIOUS = 0;
     int LEVEL_1_INITIALISER = 1;
-    int LEVEL_2_EVALUATION = 2;
-    int LEVEL_3_UPDATER = 3;
+    int LEVEL_2_UPDATER = 2; // IMPROVE at some point, we want updating to take place after evaluation
+    int LEVEL_3_EVALUATION = 3;
     int LEVEL_4_SUMMARY = 4;
 
     /**
@@ -83,15 +83,32 @@ public interface VariableInfoContainer {
     // explicit freezing (DONE at the end of statement analyser): forbid any future writing
     void freeze();
 
-    // writing operations
 
-    void setValue(int level, Value value);
+    // writing operations
+    void setValueOnAssignment(int level, Value value);
 
     void setStateOnAssignment(int level, Value state);
+
+    /**
+     * Typically in the 1st iteration for effectively final fields, this method
+     * is called when the field's final value has been established.
+     *
+     * @param initialValue the value coming from the field analyser
+     */
+    void setInitialValueFromAnalyser(Value initialValue);
 
     void setProperty(int level, VariableProperty variableProperty, int value);
 
     void setLinkedVariables(int level, Set<Variable> variables);
+
+    /**
+     * aggregation method that copies value, properties, state, object flow, and linked variables
+     * using the 'setXX' methods.
+     *
+     * @param level                the level to write to
+     * @param previousVariableInfo the source to copy from
+     */
+    void copy(int level, VariableInfo previousVariableInfo);
 
     void setObjectFlow(int level, ObjectFlow objectFlow);
 

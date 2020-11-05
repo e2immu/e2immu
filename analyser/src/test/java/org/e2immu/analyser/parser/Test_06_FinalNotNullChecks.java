@@ -44,7 +44,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
             Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
 
             Assert.assertEquals("null", d.variableInfoContainer().get(VariableInfoContainer.LEVEL_0_PREVIOUS).getValue().toString());
-            Assert.assertEquals(PARAM_NN, d.variableInfoContainer().get(VariableInfoContainer.LEVEL_2_EVALUATION).toString());
+            Assert.assertEquals(PARAM_NN, d.variableInfoContainer().get(VariableInfoContainer.LEVEL_3_EVALUATION).toString());
             Assert.assertEquals(PARAM_NN, d.currentValue().toString());
             Assert.assertNull(d.variableInfoContainer().get(VariableInfoContainer.LEVEL_4_SUMMARY));
         }

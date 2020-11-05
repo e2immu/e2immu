@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.IntBinaryOperator;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 
@@ -50,9 +51,9 @@ class VariableInfoImpl implements VariableInfo {
     public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
     public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
 
-    VariableInfoImpl(Variable variable, String name) {
-        this.name = Objects.requireNonNull(name);
+    VariableInfoImpl(Variable variable) {
         this.variable = Objects.requireNonNull(variable);
+        this.name = variable.fullyQualifiedName();
     }
 
     VariableInfoImpl(VariableInfoImpl previous) {
@@ -63,6 +64,11 @@ class VariableInfoImpl implements VariableInfo {
         this.stateOnAssignment.copy(previous.stateOnAssignment);
         this.linkedVariables.copy(previous.linkedVariables);
         this.objectFlow.copy(previous.objectFlow);
+    }
+
+    @Override
+    public Stream<Map.Entry<VariableProperty, Integer>> propertyStream() {
+        return properties.stream();
     }
 
     @Override
