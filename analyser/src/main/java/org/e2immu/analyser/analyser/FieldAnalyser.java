@@ -551,13 +551,14 @@ public class FieldAnalyser extends AbstractAnalyser {
             }
             values.add(fieldAnalysis.getInitialValue());
         }
+        // collect all the other values, bail out when delays
         if (!(fieldInfo.isExplicitlyFinal() && haveInitialiser)) {
             if (fieldSummariesNotYetSet) return DELAYS;
             for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
                 if (methodAnalyser.haveFieldAsVariable(fieldInfo)) {
-                    VariableInfo tv = methodAnalyser.getFieldAsVariable(fieldInfo);
-                    if (tv.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) {
-                        Value value = tv.getValue();
+                    VariableInfo vi = methodAnalyser.getFieldAsVariable(fieldInfo);
+                    if (vi.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) {
+                        Value value = vi.getValue();
                         if (value != NO_VALUE) {
                             values.add(value);
                         } else {
@@ -570,10 +571,9 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         // field linked to parameter
-
         if (values.size() == 1) {
-            VariableValue variableValue = values.get(0).asInstanceOf(VariableValue.class);
-            if (variableValue != null) {
+            VariableValue variableValue;
+            if ((variableValue = values.get(0).asInstanceOf(VariableValue.class)) != null) {
                 if (variableValue.variable instanceof ParameterInfo parameterInfo) {
                     ParameterAnalyser parameterAnalyser = analyserContext.getParameterAnalysers().get(parameterInfo);
                     if (parameterAnalyser.parameterAnalysis.assignedToField.isSet()) {

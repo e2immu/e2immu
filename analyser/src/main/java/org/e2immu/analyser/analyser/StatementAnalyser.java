@@ -708,14 +708,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private AnalysisStatus step6_return(Value value, EvaluationContext evaluationContext) {
-        if (!(statementAnalysis.statement instanceof ReturnStatement) || myMethodAnalyser.methodInfo.isVoid()
-                || myMethodAnalyser.methodInfo.isConstructor) {
+        if (!(statementAnalysis.statement instanceof ReturnStatement) || myMethodAnalyser.methodInfo.noReturnValue()) {
             return DONE;
         }
         if (value == null) throw new UnsupportedOperationException("??");
         if (value == NO_VALUE) return DELAYS;
 
         VariableInfoContainer variableInfo = findReturnAsVariableForWriting();
+        variableInfo.assignment(VariableInfoContainer.LEVEL_3_EVALUATION);
         variableInfo.setValueOnAssignment(VariableInfoContainer.LEVEL_3_EVALUATION, value);
         // properties need properly copying from value into "properties"
         // TODO
@@ -893,7 +893,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         List<StatementAnalyser> lastStatements = startOfBlocks.stream().map(StatementAnalyser::lastStatement).collect(Collectors.toList());
-        statementAnalysis.copyBackLocalCopies(lastStatements, previous);
+        statementAnalysis.copyBackLocalCopies(evaluationContext, lastStatements, previous);
         if (!lastStatements.isEmpty()) {
 
             if (isSwitchOrIfElse) {
@@ -1075,23 +1075,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 }
                 return statementAnalysis.getProperty(analyserContext, variable, variableProperty);
             }
-            /*
-            // the following situation occurs when the state contains, e.g., not (null == map.get(a)),
-            // and we need to evaluate the NOT_NULL property in the return transfer value in StatementAnalyser
-            // See TestSMapList; also, same situation, we may have a conditional value, and the condition will decide...
-            // TODO smells like dedicated code
-            if (!(value.isInstanceOf(ConstantValue.class)) && conditionManager.haveNonEmptyState() && !conditionManager.inErrorState()) {
-                if (VariableProperty.NOT_NULL == variableProperty) {
-                    if(value instanceof VariableValue variableValue) {
-                        if(notNullAccordingToConditionManager(variableValue.variable)) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                    }
-                    int notNull = notNullAccordingToConditionManager(value);
-                    if (notNull != Level.DELAY) return notNull;
-                }
-                // TODO add SIZE support?
-            }
 
-             */
             // redirect to Value.getProperty()
             // this is the only usage of this method; all other evaluation of a Value in an evaluation context
             // must go via the current method
@@ -1104,28 +1088,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (notNullVariablesInState.contains(variable)) return true;
             Set<Variable> notNullVariablesInCondition = conditionManager.findIndividualNullInCondition(this, false);
             return notNullVariablesInCondition.contains(variable);
-        }
-
-
-        /**
-         * Conversion from state to notNull numeric property value, combined with the existing state
-         *
-         * @param value any non-constant, non-variable value, to be combined with the current state
-         * @return the numeric VariableProperty.NOT_NULL value
-         */
-        private int notNullAccordingToConditionManager(Value value) {
-            if (conditionManager.state == UnknownValue.EMPTY || ConditionManager.isDelayed(conditionManager.state))
-                return Level.DELAY;
-
-            // action: if we add value == null, and nothing changes, we know it is true, we rely on value.getProperty
-            // if the whole thing becomes false, we know it is false, which means we can return Level.TRUE
-            Value equalsNull = EqualsValue.equals(this, NullValue.NULL_VALUE, value, ObjectFlow.NO_FLOW);
-            Value boolValueFalse = BoolValue.createFalse(getPrimitives());
-            if (equalsNull.equals(boolValueFalse)) return MultiLevel.EFFECTIVELY_NOT_NULL;
-            Value withCondition = conditionManager.combineWithState(this, equalsNull);
-            if (withCondition.equals(boolValueFalse)) return MultiLevel.EFFECTIVELY_NOT_NULL; // we know != null
-            if (withCondition.equals(equalsNull)) return MultiLevel.NULLABLE; // we know == null was already there
-            return Level.DELAY;
         }
 
         @Override

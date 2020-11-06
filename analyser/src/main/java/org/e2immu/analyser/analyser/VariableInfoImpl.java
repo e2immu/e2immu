@@ -175,7 +175,6 @@ class VariableInfoImpl implements VariableInfo {
                       VariableInfo existing,
                       boolean existingValuesWillBeOverwritten,
                       List<VariableInfo> merge) {
-
         Value mergedValue = mergeValue(evaluationContext, existing, existingValuesWillBeOverwritten, merge);
         writeValue(mergedValue);
 

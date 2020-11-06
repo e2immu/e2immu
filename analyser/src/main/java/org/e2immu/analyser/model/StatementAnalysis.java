@@ -220,16 +220,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return -1;
     }
 
-    public void copyBackLocalCopies(List<StatementAnalyser> lastStatements, StatementAnalysis previous) {
-        methodLevelData.copyFrom(Stream.concat(previous == null ? Stream.empty() : Stream.of(previous.methodLevelData),
-                lastStatements.stream().map(sa -> sa.statementAnalysis.methodLevelData)));
-
-        // we need to make a synthesis of the variable state of fields, local copies, etc.
-        // some blocks are guaranteed to be executed, others are only executed conditionally.
-
-        // TODO we write to LEVEL_4_SUMMARY
-    }
-
     public void ensure(Message newMessage) {
         if (!messages.contains(newMessage)) {
             messages.add(newMessage);
@@ -292,7 +282,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param previous the previous statement, or null if there is none (start of block)
      */
     public void initialise(StatementAnalysis previous) {
-        if (previous == null && parent == null) return;
+        if (previous == null && parent == null) {
+            // at the beginning of the method
+            if (methodAnalysis.getMethodInfo().hasReturnValue()) {
+                Variable retVar = new ReturnVariable(methodAnalysis.getMethodInfo());
+                VariableInfoContainer vic = new VariableInfoContainerImpl(retVar);
+                vic.setInitialValueFromAnalyser(UnknownValue.RETURN_VALUE);
+                variables.put(retVar.fullyQualifiedName(), vic);
+            }
+            return;
+        }
         StatementAnalysis copyFrom = previous == null ? parent : previous;
         copyFrom.variableStream().forEach(variableInfo -> variables.put(variableInfo.name(),
                 new VariableInfoContainerImpl(variableInfo)));
@@ -339,6 +338,29 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
         });
     }
+
+
+    public void copyBackLocalCopies(EvaluationContext evaluationContext, List<StatementAnalyser> lastStatements, StatementAnalysis previous) {
+        methodLevelData.copyFrom(Stream.concat(previous == null ? Stream.empty() : Stream.of(previous.methodLevelData),
+                lastStatements.stream().map(sa -> sa.statementAnalysis.methodLevelData)));
+
+        // we need to make a synthesis of the variable state of fields, local copies, etc.
+        // some blocks are guaranteed to be executed, others are only executed conditionally.
+
+        if (!lastStatements.isEmpty()) {
+            variables.stream().forEach(e -> {
+                String fqn = e.getKey();
+                VariableInfoContainer vic = e.getValue();
+
+                VariableInfo previousVi = vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
+                List<VariableInfo> toMerge = lastStatements.stream().map(sa -> sa.statementAnalysis.variables.get(fqn).current())
+                        .collect(Collectors.toList());
+                boolean overwrite = !statement.getStructure().noBlockMayBeExecuted;
+                vic.merge(VariableInfoContainer.LEVEL_4_SUMMARY, evaluationContext, previousVi, overwrite, toMerge);
+            });
+        }
+    }
+
 
     private static boolean noEarlierAccess(Variable variable, StatementAnalysis previous) {
         if (previous == null || !previous.variables.isSet(variable.fullyQualifiedName())) return true;

@@ -651,4 +651,12 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public boolean isTestMethod() {
         return hasTestAnnotation("org.junit.Test").isPresent();
     }
+
+    public boolean noReturnValue() {
+        return isVoid() || isConstructor;
+    }
+
+    public boolean hasReturnValue() {
+        return !noReturnValue();
+    }
 }

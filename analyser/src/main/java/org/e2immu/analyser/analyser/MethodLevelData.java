@@ -222,11 +222,12 @@ public class MethodLevelData {
         result.add(variable);
         VariableInfo variableInfo = statementAnalysis.getLatestVariableInfo(variable.fullyQualifiedName());
         Set<Variable> linked = variableInfo.getLinkedVariables();
-        for (Variable v : linked) recursivelyAddLinkedVariables(statementAnalysis, v, result);
-
+        if (linked != null) {
+            for (Variable v : linked) recursivelyAddLinkedVariables(statementAnalysis, v, result);
+        }
         // reverse linking
         List<Variable> reverse = statementAnalysis.variableStream()
-                .filter(vi -> vi.getLinkedVariables().contains(variable))
+                .filter(vi -> vi.getLinkedVariables() != null && vi.getLinkedVariables().contains(variable))
                 .map(VariableInfo::variable).collect(Collectors.toList());
         reverse.forEach(v -> recursivelyAddLinkedVariables(statementAnalysis, v, result));
     }
@@ -305,7 +306,8 @@ public class MethodLevelData {
     private AnalysisStatus ensureThisProperties(EvaluationContext evaluationContext, StatementAnalysis statementAnalysis) {
         if (evaluationContext.getIteration() > 0) return DONE;
 
-        VariableInfoContainer thisVi = statementAnalysis.findForWriting(evaluationContext.getCurrentType().typeInfo.fullyQualifiedName + ".this");
+        VariableInfoContainer thisVi = statementAnalysis.findForWriting(evaluationContext.getAnalyserContext(),
+                new This(evaluationContext.getCurrentType().typeInfo));
         thisVi.setProperty(VIC_LEVEL, VariableProperty.ASSIGNED, Level.FALSE);
         thisVi.setProperty(VIC_LEVEL, VariableProperty.READ, Level.FALSE);
         thisVi.setProperty(VIC_LEVEL, VariableProperty.METHOD_CALLED, Level.FALSE);

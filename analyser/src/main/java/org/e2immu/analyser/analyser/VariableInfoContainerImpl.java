@@ -17,12 +17,14 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Freezable;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -42,6 +44,18 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(variable);
         data[LEVEL_1_INITIALISER] = new VariableInfoImpl(variable);
         currentLevel = LEVEL_1_INITIALISER;
+    }
+
+    @Override
+    public VariableInfo best(int maxLevel) {
+        VariableInfo vi = null;
+        int level = maxLevel;
+        while (level >= 0 && (vi = data[level]) == null) {
+            level--;
+        }
+        if (level == -1) throw new UnsupportedOperationException("Was nothing at level " + level + " or lower");
+        assert vi != null;
+        return vi;
     }
 
     @Override
@@ -86,15 +100,15 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             throw new UnsupportedOperationException("In the first iteration, an assignment should start a new level");
         }
         int assigned = data[currentLevel].getProperty(VariableProperty.ASSIGNED);
+        VariableInfoImpl variableInfo = new VariableInfoImpl(data[currentLevel].variable());
         currentLevel = level;
-        VariableInfoImpl variableInfo = new VariableInfoImpl(data[0].variable());
         data[currentLevel] = variableInfo;
         variableInfo.setProperty(VariableProperty.ASSIGNED, assigned);
     }
 
     private VariableInfoImpl currentLevelForWriting(int level) {
         if (level <= 0 || level >= LEVELS) throw new IllegalArgumentException();
-        if(level > currentLevel) throw new IllegalArgumentException();
+        if (level > currentLevel) throw new IllegalArgumentException();
         VariableInfoImpl variableInfo = (VariableInfoImpl) data[currentLevel];
         if (variableInfo == null) {
             throw new IllegalArgumentException("No assignment announcement was made at level " + level);
@@ -256,5 +270,19 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         if (previousVariableInfo.getObjectFlow() != null) {
             setObjectFlow(level, previousVariableInfo.getObjectFlow());
         }
+    }
+
+    @Override
+    public void merge(int level,
+                      EvaluationContext evaluationContext,
+                      VariableInfo existing,
+                      boolean existingValuesWillBeOverwritten,
+                      List<VariableInfo> merge) {
+        Objects.requireNonNull(merge);
+        Objects.requireNonNull(evaluationContext);
+
+        assignment(level);
+        VariableInfoImpl vi = getAndCast(currentLevel);
+        vi.merge(evaluationContext, existing, existingValuesWillBeOverwritten, merge);
     }
 }

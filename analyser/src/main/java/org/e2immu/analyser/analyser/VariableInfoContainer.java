@@ -17,11 +17,13 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -57,12 +59,18 @@ public interface VariableInfoContainer {
     VariableInfo current();
 
     /**
-     * Mostly for debugging: inspect VariableInfo at a given level
+     * Return the value at the exact level, for debugging purposes.
      *
      * @param level the level
      * @return null  when there's no object at this level
      */
     VariableInfo get(int level);
+
+    /**
+     * @param level max level
+     * @return the value at the level, or below.
+     */
+    VariableInfo best(int level);
 
     /**
      * Mostly for debugging
@@ -125,4 +133,9 @@ public interface VariableInfoContainer {
      * @param level the level at which the variable is being read
      */
     void markRead(int level);
+
+    void merge(int level, EvaluationContext evaluationContext,
+               VariableInfo existing,
+               boolean existingValuesWillBeOverwritten,
+               List<VariableInfo> merge);
 }

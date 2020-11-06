@@ -121,15 +121,15 @@ public class MethodAnalyser extends AbstractAnalyser {
             builder.add(STATEMENT_ANALYSER, statementAnalyser)
                     .add("obtainMostCompletePrecondition", this::obtainMostCompletePrecondition)
                     .add("makeInternalObjectFlowsPermanent", this::makeInternalObjectFlowsPermanent)
-                    .add("propertiesOfReturnStatements", (sharedState) -> methodInfo.isConstructor ? DONE : propertiesOfReturnStatements())
-                    .add("methodIsConstant", (sharedState) -> methodInfo.isConstructor ? DONE : methodIsConstant(sharedState))
+                    .add("transferPropertyOfReturnStatements", (sharedState) -> methodInfo.noReturnValue() ? DONE : transferPropertiesOfReturnStatements())
+                    .add("methodIsConstant", (sharedState) -> methodInfo.noReturnValue() ? DONE : methodIsConstant())
                     .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                     .add("methodIsModified", (sharedState) -> methodInfo.isConstructor ? DONE : methodIsModified(sharedState))
                     .add("computeOnlyMarkPrepWork", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork(sharedState))
                     .add("computeOnlyMarkAnnotate", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkAnnotate(sharedState))
                     .add("methodIsIndependent", this::methodIsIndependent)
-                    .add("computeSize", this::computeSize)
-                    .add("computeSizeCopy", this::computeSizeCopy);
+                    .add("computeSize", (sharedState) -> methodInfo.isConstructor ? DONE : computeSize(sharedState))
+                    .add("computeSizeCopy", (sharedState) -> methodInfo.isConstructor ? DONE : computeSizeCopy());
 
             for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
                 builder.add("Parameter " + parameterAnalyser.parameterInfo.name, (iteration -> parameterAnalyser.analyse()));
@@ -477,10 +477,8 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
-    private AnalysisStatus methodIsConstant(SharedState sharedState) {
+    private AnalysisStatus methodIsConstant() {
         assert !methodAnalysis.singleReturnValue.isSet();
-        MethodLevelData methodLevelData = sharedState.methodLevelData;
-        if (methodInfo.isVoid() || methodInfo.isConstructor) return DONE;
 
         VariableInfo variableInfo = getReturnAsVariable();
         Value value = variableInfo.getValue();
@@ -488,7 +486,6 @@ public class MethodAnalyser extends AbstractAnalyser {
             log(DELAYED, "Not all return values have been set yet for {}, delaying", methodInfo.distinguishingName());
             return DELAYS;
         }
-        int immutable = Level.DELAY;
 
         if (!methodAnalysis.internalObjectFlows.isSet()) {
             log(DELAYED, "Delaying single return value because internal object flows not yet known, {}", methodInfo.distinguishingName());
@@ -500,6 +497,8 @@ public class MethodAnalyser extends AbstractAnalyser {
             objectFlow.finalize(methodAnalysis.objectFlow.getFirst());
             methodAnalysis.objectFlow.set(objectFlow);
         }
+
+        int immutable = Level.DELAY;
         if (value.isConstant()) {
             immutable = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
         } else {
@@ -512,11 +511,6 @@ public class MethodAnalyser extends AbstractAnalyser {
                     immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
                 }
             }
-        }
-
-        if (!methodAnalysis.objectFlow.isSet()) {
-            log(OBJECT_FLOW, "No single object flow; we keep the object that's already there, for {}", methodInfo.distinguishingName());
-            methodAnalysis.objectFlow.set(methodAnalysis.objectFlow.getFirst());
         }
 
         boolean isConstant = value.isConstant();
@@ -567,10 +561,10 @@ public class MethodAnalyser extends AbstractAnalyser {
         return applicability.get();
     }
 
-    private AnalysisStatus propertiesOfReturnStatements() {
+    private AnalysisStatus transferPropertiesOfReturnStatements() {
         AnalysisStatus analysisStatus = DONE;
         for (VariableProperty variableProperty : VariableProperty.READ_FROM_RETURN_VALUE_PROPERTIES) {
-            AnalysisStatus status = propertyOfReturnStatements(variableProperty);
+            AnalysisStatus status = transferPropertyOfReturnStatements(variableProperty);
             analysisStatus = analysisStatus.combine(status);
         }
         return analysisStatus;
@@ -578,15 +572,14 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     // IMMUTABLE, NOT_NULL, CONTAINER, IDENTITY, FLUENT
     // IMMUTABLE, NOT_NULL can still improve with respect to the static return type computed in methodAnalysis.getProperty()
-    private AnalysisStatus propertyOfReturnStatements(VariableProperty variableProperty) {
-        if (methodInfo.isVoid() || methodInfo.isConstructor) return DONE;
+    private AnalysisStatus transferPropertyOfReturnStatements(VariableProperty variableProperty) {
         int currentValue = methodAnalysis.getProperty(variableProperty);
         if (currentValue != Level.DELAY && variableProperty != VariableProperty.IMMUTABLE && variableProperty != VariableProperty.NOT_NULL)
             return DONE; // NOT FOR ME
 
         int value = getReturnAsVariable().getProperty(variableProperty);
         if (value == Level.DELAY) {
-            log(DELAYED, "Return statement value not yet set");
+            log(DELAYED, "Return statement value not yet set in transferPropertyOfReturnStatements, property "+variableProperty);
             return DELAYS;
         }
         if (value <= currentValue) return DONE; // not improving.
@@ -597,10 +590,6 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus computeSize(SharedState sharedState) {
         assert methodAnalysis.getProperty(VariableProperty.SIZE) == Level.DELAY;
-
-        if (methodInfo.isConstructor) return DONE; // non-modifying constructor would be weird anyway; not for me
-        MethodLevelData methodLevelData = sharedState.methodLevelData;
-
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
         if (modified == Level.DELAY) {
             log(DELAYED, "Delaying @Size on {} because waiting for @Modified", methodInfo.distinguishingName());
@@ -638,9 +627,8 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
 
-    private AnalysisStatus computeSizeCopy(SharedState sharedState) {
+    private AnalysisStatus computeSizeCopy() {
         assert methodAnalysis.getProperty(VariableProperty.SIZE_COPY) == Level.DELAY;
-        if (methodInfo.isConstructor) return DONE; // non-modifying constructor would be weird anyway
 
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
         if (modified == Level.DELAY) {
@@ -941,7 +929,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     private Boolean independenceStatusOfReturnType(MethodInfo methodInfo, MethodLevelData methodLevelData) {
-        if (methodInfo.isConstructor || methodInfo.isVoid()) return true;
+        if (methodInfo.noReturnValue()) return true;
         TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(methodInfo.typeInfo);
         if (typeAnalysis.getImplicitlyImmutableDataTypes() != null &&
                 typeAnalysis.getImplicitlyImmutableDataTypes().contains(methodInfo.returnType())) {
@@ -956,7 +944,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         // method does not return an implicitly immutable data type
         VariableInfo returnVariable = getReturnAsVariable();
         Set<Variable> variables = returnVariable.getLinkedVariables();
-        boolean implicitlyImmutableSet = variables.stream().allMatch(v -> isImplicitlyImmutableDataTypeSet(v, analyserContext));
+        boolean implicitlyImmutableSet = variables != null && variables.stream().allMatch(v -> isImplicitlyImmutableDataTypeSet(v, analyserContext));
         if (!implicitlyImmutableSet) {
             log(DELAYED, "Delaying @Independent on {}, implicitly immutable status not known for all field references", methodInfo.distinguishingName());
             return null;
