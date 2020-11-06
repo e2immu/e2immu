@@ -199,7 +199,8 @@ public class MethodLevelData {
         });
         // set all the linkedVariables for fields not in the dependency graph
         statementAnalysis.variableStream()
-                .filter(vi -> vi.variable() instanceof FieldReference fieldReference && fieldReference.isThisScope())
+                .filter(vi -> vi.variable() instanceof FieldReference fieldReference && fieldReference.isThisScope() ||
+                        vi.variable() instanceof ReturnVariable)
                 .filter(vi -> vi.getLinkedVariables() == null)
                 .forEach(vi -> {
                     VariableInfoContainer vic = statementAnalysis.findForWriting(vi.name());
@@ -296,9 +297,7 @@ public class MethodLevelData {
 
 
     /**
-     * Goal is to copy properties from the evaluation context into fieldSummarized, both for fields AND for `this`.
-     * There cannot be a delay here.
-     * Fields that are not mentioned in the evaluation context should not be present in the fieldSummaries.
+     * Finish odds and ends
      *
      * @param evaluationContext context
      * @return if any change happened to methodAnalysis
@@ -309,8 +308,8 @@ public class MethodLevelData {
         VariableInfoContainer thisVi = statementAnalysis.findForWriting(evaluationContext.getAnalyserContext(),
                 new This(evaluationContext.getCurrentType().typeInfo));
         thisVi.setProperty(VIC_LEVEL, VariableProperty.ASSIGNED, Level.FALSE);
-        thisVi.setProperty(VIC_LEVEL, VariableProperty.READ, Level.FALSE);
-        thisVi.setProperty(VIC_LEVEL, VariableProperty.METHOD_CALLED, Level.FALSE);
+        thisVi.ensureProperty(VIC_LEVEL, VariableProperty.READ, Level.FALSE);
+        thisVi.ensureProperty(VIC_LEVEL, VariableProperty.METHOD_CALLED, Level.FALSE);
 
         if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(false);

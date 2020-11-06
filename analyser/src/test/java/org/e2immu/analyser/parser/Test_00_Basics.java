@@ -64,30 +64,21 @@ public class Test_00_Basics extends CommonTestRunner {
         if (d.methodInfo().name.equals("getExplicitlyFinal")
                 && "0".equals(d.statementId())) {
             if ("org.e2immu.analyser.testexample.Basics.explicitlyFinal".equals(d.variableName())) {
-                if (d.iteration() == 0) {
-                    LOGGER.info("Properties after 1 iteration are {}", d.properties());
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
-                    Assert.assertFalse(d.hasProperty(VariableProperty.ASSIGNED));
-                    Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
-                    Assert.assertEquals(new StringValue(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
-                    return;
-                }
-                if (d.iteration() == 1 || d.iteration() == 2) {
-                    LOGGER.info("Properties after 2 iterations are {}", d.properties());
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
-                    Assert.assertFalse(d.hasProperty(VariableProperty.ASSIGNED));
-                    Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
-                    return;
-                }
+                Assert.assertFalse(d.hasProperty(VariableProperty.ASSIGNED));
+                Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                Assert.assertEquals(new StringValue(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
+                return;
             }
             if ("org.e2immu.analyser.testexample.Basics.this".equals(d.variableName())) {
-                //Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ)); //
                 return;
             }
             // the return value
             Assert.assertEquals("org.e2immu.analyser.testexample.Basics.getExplicitlyFinal()", d.variableName());
             Assert.assertEquals("abc", d.currentValue().toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+            Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
             return;
         }
         Assert.fail("Method name " + d.methodInfo().name + ", iteration " + d.iteration() + ", variable " + d.variableName() +

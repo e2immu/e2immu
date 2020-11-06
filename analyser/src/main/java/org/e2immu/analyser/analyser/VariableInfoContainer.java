@@ -26,7 +26,6 @@ import org.e2immu.annotation.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * Container to store different versions of a VariableInfo object, one or more of this list:
@@ -109,6 +108,13 @@ public interface VariableInfoContainer {
 
     void setProperty(int level, VariableProperty variableProperty, int value);
 
+    default void ensureProperty(int level, VariableProperty variableProperty, int value) {
+        int current = best(level).getProperty(variableProperty);
+        if (value > current) {
+            setProperty(level, variableProperty, value);
+        }
+    }
+
     void setLinkedVariables(int level, Set<Variable> variables);
 
     /**
@@ -140,4 +146,5 @@ public interface VariableInfoContainer {
                VariableInfo existing,
                boolean existingValuesWillBeOverwritten,
                List<VariableInfo> merge);
+
 }

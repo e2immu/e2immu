@@ -214,6 +214,12 @@ public class EvaluationResult {
         public Builder markRead(Variable variable, int iteration) {
             if (iteration == 0 && statementAnalyser != null) {
                 addToModifications(statementAnalyser.new MarkRead(variable));
+
+                // we do this because this. is often implicit
+                // when explicit, there may be two MarkRead modifications, which should not bother us too much??
+                if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof This) {
+                    addToModifications(statementAnalyser.new MarkRead(fieldReference.scope));
+                }
             }
             return this;
         }

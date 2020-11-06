@@ -122,8 +122,8 @@ public enum VariableProperty {
 
     public static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(SIZE, NOT_NULL, MODIFIED);
 
-    public static final Set<VariableProperty> FROM_PARAMETER_TO_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
 
-    public static final Set<VariableProperty> VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, SIZE_COPY);
+    public static final Set<VariableProperty> FROM_PARAMETER_TO_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_MODIFIED_1, IDENTITY);
+    public static final Set<VariableProperty> VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, SIZE_COPY, IDENTITY);
 
 }
