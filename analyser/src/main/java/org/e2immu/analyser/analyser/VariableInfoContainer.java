@@ -24,7 +24,9 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Container to store different versions of a VariableInfo object, one or more of this list:
@@ -93,7 +95,7 @@ public interface VariableInfoContainer {
 
 
     // writing operations
-    void setValueOnAssignment(int level, Value value);
+    void setValueOnAssignment(int level, Value value, Map<VariableProperty, Integer> propertiesToSet);
 
     void setStateOnAssignment(int level, Value state);
 
@@ -103,7 +105,7 @@ public interface VariableInfoContainer {
      *
      * @param initialValue the value coming from the field analyser
      */
-    void setInitialValueFromAnalyser(Value initialValue);
+    void setInitialValueFromAnalyser(Value initialValue, Map<VariableProperty, Integer> propertiesToSet);
 
     void setProperty(int level, VariableProperty variableProperty, int value);
 

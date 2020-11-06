@@ -124,5 +124,6 @@ public enum VariableProperty {
 
     public static final Set<VariableProperty> FROM_PARAMETER_TO_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
 
+    public static final Set<VariableProperty> VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, SIZE_COPY);
 
 }

@@ -25,6 +25,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Freezable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -117,7 +118,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void setValueOnAssignment(int level, Value value) {
+    public void setValueOnAssignment(int level, Value value, Map<VariableProperty, Integer> propertiesToSet) {
         ensureNotFrozen();
 
         Objects.requireNonNull(value);
@@ -126,6 +127,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
         variableInfo.value.set(value);
+        propertiesToSet.forEach(variableInfo::setProperty);
     }
 
     @Override
@@ -153,8 +155,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     /* ******************************* modifying methods unrelated to assignment ************************************ */
 
     @Override
-    public void setInitialValueFromAnalyser(Value value) {
+    public void setInitialValueFromAnalyser(Value value, Map<VariableProperty, Integer> propertiesToSet) {
         internalSetValue(LEVEL_1_INITIALISER, value);
+        propertiesToSet.forEach((vp, i) -> setProperty(LEVEL_1_INITIALISER, vp, i));
     }
 
     private void internalSetValue(int level, Value value) {

@@ -25,7 +25,9 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -155,5 +157,9 @@ public interface EvaluationContext {
 
     default Set<Variable> linkedVariables(Value value) {
         return value.linkedVariables(this);
+    }
+
+    default Map<VariableProperty, Integer> getValueProperties(Value value) {
+        return VariableProperty.VALUE_PROPERTIES.stream().collect(Collectors.toMap(vp -> vp, vp -> value.getProperty(this, vp)));
     }
 }

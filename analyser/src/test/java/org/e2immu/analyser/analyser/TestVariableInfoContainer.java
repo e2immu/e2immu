@@ -24,6 +24,8 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Map;
+
 public class TestVariableInfoContainer extends CommonVariableInfo {
 
     @Test
@@ -100,7 +102,7 @@ public class TestVariableInfoContainer extends CommonVariableInfo {
 
         IntValue three = new IntValue(primitives, 3, ObjectFlow.NO_FLOW);
         try {
-            vic.setValueOnAssignment(VariableInfoContainer.LEVEL_4_SUMMARY, three);
+            vic.setValueOnAssignment(VariableInfoContainer.LEVEL_4_SUMMARY, three, Map.of());
             Assert.fail();
         } catch (RuntimeException rte) {
             // OK
@@ -108,8 +110,10 @@ public class TestVariableInfoContainer extends CommonVariableInfo {
         Assert.assertFalse(vic.current().valueIsSet());
 
         vic.assignment(VariableInfoContainer.LEVEL_4_SUMMARY);
-        vic.setValueOnAssignment(VariableInfoContainer.LEVEL_4_SUMMARY, three);
+        vic.setValueOnAssignment(VariableInfoContainer.LEVEL_4_SUMMARY, three, Map.of(VariableProperty.SIZE, Level.TRUE));
         Assert.assertEquals(VariableInfoContainer.LEVEL_4_SUMMARY, vic.getCurrentLevel());
         Assert.assertSame(three, vic.current().getValue());
+
+        Assert.assertEquals(Level.TRUE, vic.current().getProperty(VariableProperty.SIZE));
     }
 }

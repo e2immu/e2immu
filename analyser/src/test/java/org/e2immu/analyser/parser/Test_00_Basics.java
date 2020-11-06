@@ -87,6 +87,7 @@ public class Test_00_Basics extends CommonTestRunner {
             // the return value
             Assert.assertEquals("org.e2immu.analyser.testexample.Basics.getExplicitlyFinal()", d.variableName());
             Assert.assertEquals("abc", d.currentValue().toString());
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
             return;
         }
         Assert.fail("Method name " + d.methodInfo().name + ", iteration " + d.iteration() + ", variable " + d.variableName() +
