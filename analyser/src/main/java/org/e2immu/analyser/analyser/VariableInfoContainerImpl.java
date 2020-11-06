@@ -138,7 +138,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             throw new IllegalArgumentException("State should not be NO_VALUE");
         }
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        variableInfo.stateOnAssignment.set(state);
+        if (!variableInfo.stateOnAssignment.isSet() || !state.equals(variableInfo.stateOnAssignment.get())) {
+            variableInfo.stateOnAssignment.set(state);
+        }
     }
 
     @Override
@@ -182,8 +184,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
         int writeLevel = findLevelForWriting(level);
         VariableInfoImpl variableInfo = getAndCast(writeLevel);
-        variableInfo.stateOnAssignment.set(state);
-        liftCurrentLevel(writeLevel);
+        if (!variableInfo.stateOnAssignment.isSet() || !state.equals(variableInfo.stateOnAssignment.get())) {
+            variableInfo.stateOnAssignment.set(state);
+            liftCurrentLevel(writeLevel);
+        }
     }
 
     private int findLevelForWriting(int level) {

@@ -19,7 +19,10 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.FieldAnalyser;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
@@ -38,6 +41,7 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
 
     public static final String STRING_PARAMETER = "org.e2immu.analyser.testexample.BasicsOpposite.setString(String):0:string";
     public static final String STRING_FIELD = "org.e2immu.analyser.testexample.BasicsOpposite.string";
+    public static final String THIS = "org.e2immu.analyser.testexample.BasicsOpposite.this";
     private static final String METHOD_VALUE_ADD = "org.e2immu.analyser.testexample.BasicsOpposite.add(Collection<String>):0:collection" +
             ".add(org.e2immu.analyser.testexample.BasicsOpposite.string)";
 
@@ -79,6 +83,9 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
         if (STRING_FIELD.equals(d.variableName()) && "setString".equals(d.methodInfo().name)) {
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
         }
+        if (THIS.equals(d.variableName()) && "getString".equals(d.methodInfo().name)) {
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+        }
         if (STRING_FIELD.equals(d.variableName()) && "getString".equals(d.methodInfo().name)) {
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
@@ -109,8 +116,7 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
         if (d.methodInfo().name.equals("setString") && "0".equals(d.statementId())) {
             Assert.assertEquals(d.evaluationResult().toString(), 4L, d.evaluationResult().getModificationStream().count());
             Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(STRING_PARAMETER));
-            Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(
-                    "org.e2immu.analyser.testexample.BasicsOpposite.this"));
+            Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(THIS));
             Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkAssigned(STRING_FIELD));
             // 4th is the link
 
@@ -119,8 +125,9 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
             Assert.assertEquals(d.evaluationResult().toString(), STRING_PARAMETER, d.evaluationResult().value.toString());
         }
         if (d.methodInfo().name.equals("getString") && "0".equals(d.statementId()) && d.iteration() == 0) {
-            Assert.assertEquals(d.evaluationResult().toString(), 1L, d.evaluationResult().getModificationStream().count());
+            Assert.assertEquals(d.evaluationResult().toString(), 2L, d.evaluationResult().getModificationStream().count());
             Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(STRING_FIELD));
+            Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(THIS));
         }
         if (d.methodInfo().name.equals("add") && "0".equals(d.statementId())) {
             String expectEvalString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : METHOD_VALUE_ADD;

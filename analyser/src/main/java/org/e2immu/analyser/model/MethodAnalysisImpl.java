@@ -398,7 +398,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public StatementAnalysis getLastStatement() {
-            return lastStatement.getOrElse(null);
+            if(!lastStatement.isSet()) {
+                StatementAnalysis last = firstStatement.get().lastStatement();
+                lastStatement.set(last);
+                return last;
+            }
+            return lastStatement.get();
         }
 
         @Override

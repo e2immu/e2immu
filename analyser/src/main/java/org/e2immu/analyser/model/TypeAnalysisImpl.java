@@ -52,7 +52,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     @Override
     public int getProperty(VariableProperty variableProperty) {
-        return internalGetProperty(variableProperty);
+        return getTypeProperty(variableProperty);
     }
 
     @Override
@@ -91,6 +91,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public Builder(Primitives primitives, TypeInfo typeInfo) {
             super(primitives, typeInfo.hasBeenDefined(), typeInfo.simpleName);
             this.typeInfo = typeInfo;
+        }
+
+        @Override
+        public int getProperty(VariableProperty variableProperty) {
+            return getTypeProperty(variableProperty);
         }
 
         @Override

@@ -18,13 +18,13 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static org.e2immu.analyser.util.Logger.log;
 
 public interface TypeAnalysis extends Analysis {
 
@@ -48,4 +48,9 @@ public interface TypeAnalysis extends Analysis {
      * @return null when not yet set
      */
     Set<ParameterizedType> getImplicitlyImmutableDataTypes();
+
+    default int getTypeProperty(VariableProperty variableProperty) {
+        if (variableProperty == VariableProperty.NOT_NULL) return MultiLevel.EFFECTIVELY_NOT_NULL;
+        return internalGetProperty(variableProperty);
+    }
 }

@@ -334,11 +334,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 int read = variableInfo.getProperty(READ);
                 if (read >= Level.TRUE && noEarlierAccess(variableInfo.variable(), copyFrom)) {
                     // this is the first statement in the method where this field occurs
+                    Map<VariableProperty, Integer> map = propertyMap(analyserContext, fieldReference.fieldInfo);
                     if (!variableInfo.valueIsSet()) {
                         Value initialValue = initialValueOfField(analyserContext, fieldReference);
-                        vic.setInitialValueFromAnalyser(initialValue, propertyMap(analyserContext, fieldReference.fieldInfo));
+                        vic.setInitialValueFromAnalyser(initialValue, map);
+                    } else {
+                        map.forEach((k, v) -> vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, k, v));
                     }
-                    copyFieldPropertiesFromAnalysis(analyserContext, vic, fieldReference.fieldInfo);
                 }
             }
         });
@@ -363,7 +365,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     List<VariableInfo> toMerge = lastStatements.stream().map(sa -> sa.statementAnalysis.variables.get(fqn).current())
                             .collect(Collectors.toList());
                     boolean overwrite = !statement.getStructure().noBlockMayBeExecuted;
-                    VariableInfo previousVi = vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
+                    VariableInfo previousVi = vic.best(VariableInfoContainer.LEVEL_3_EVALUATION);
                     vic.merge(VariableInfoContainer.LEVEL_4_SUMMARY, evaluationContext, previousVi, overwrite, toMerge);
                 }
             });
@@ -399,10 +401,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
 
         if (variable instanceof This) {
-            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(methodAnalysis.getMethodInfo().typeInfo);
-            Map<VariableProperty, Integer> map = VariableProperty.FROM_PARAMETER_TO_PROPERTIES.stream()
-                    .collect(Collectors.toUnmodifiableMap(vp -> vp, typeAnalysis::getProperty));
-            vic.setInitialValueFromAnalyser(new VariableValue(variable, ObjectFlow.NO_FLOW), map);
+            vic.setInitialValueFromAnalyser(new VariableValue(variable, ObjectFlow.NO_FLOW),
+                    propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo));
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
             VariableValue variableValue = new VariableValue(variable, objectFlow);
@@ -419,7 +419,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     private Map<VariableProperty, Integer> propertyMap(AnalyserContext analyserContext, WithInspectionAndAnalysis object) {
         Function<VariableProperty, Integer> f;
-        if (object instanceof ParameterInfo parameterInfo) {
+        if (object instanceof TypeInfo typeInfo) {
+            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(typeInfo);
+            f = typeAnalysis::getProperty;
+        } else if (object instanceof ParameterInfo parameterInfo) {
             ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
             f = parameterAnalysis::getProperty;
         } else if (object instanceof FieldInfo fieldInfo) {
@@ -554,17 +557,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return objectFlow;
         }
         return ObjectFlow.NO_FLOW; // will be assigned to soon enough
-    }
-
-    private void copyFieldPropertiesFromAnalysis(AnalyserContext analyserContext, VariableInfoContainer vic, FieldInfo fieldInfo) {
-        if (vic.current().getValue().isInstanceOf(VariableValue.class)) {
-            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
-            for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
-                int value = fieldAnalysis.getProperty(variableProperty);
-                // if (value == Level.DELAY) value = variableProperty.falseValue;
-                vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, variableProperty, value);
-            }
-        }
     }
 
     public void addProperty(AnalyserContext analyserContext, int level, Variable variable, VariableProperty variableProperty, int value) {

@@ -160,6 +160,6 @@ public interface EvaluationContext {
     }
 
     default Map<VariableProperty, Integer> getValueProperties(Value value) {
-        return VariableProperty.VALUE_PROPERTIES.stream().collect(Collectors.toMap(vp -> vp, vp -> value.getProperty(this, vp)));
+        return VariableProperty.VALUE_PROPERTIES.stream().collect(Collectors.toMap(vp -> vp, vp -> getProperty(value, vp)));
     }
 }
