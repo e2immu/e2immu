@@ -299,7 +299,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (analysisStatus == null) {
                 assert localConditionManager == null : "expected null localConditionManager";
 
-                statementAnalysis.initialise(previous);
+                statementAnalysis.initialise(analyserContext, previous);
 
                 analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
                         .add("checkUnreachableStatement", sharedState -> checkUnreachableStatement(previous,

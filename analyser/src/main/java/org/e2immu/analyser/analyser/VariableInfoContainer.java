@@ -143,7 +143,6 @@ public interface VariableInfoContainer {
     void markRead(int level);
 
     void merge(int level, EvaluationContext evaluationContext,
-               VariableInfo existing,
                boolean existingValuesWillBeOverwritten,
                List<VariableInfo> merge);
 

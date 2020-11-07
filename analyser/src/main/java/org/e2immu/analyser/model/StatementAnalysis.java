@@ -270,16 +270,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     /**
      * Before iteration 0, all statements: create what was already present higher up
      *
-     * @param previous the previous statement, or null if there is none (start of block)
+     * @param analyserContext overview object for the analysis of this primary type
+     * @param previous        the previous statement, or null if there is none (start of block)
      */
-    public void initialise(StatementAnalysis previous) {
+    public void initialise(AnalyserContext analyserContext, StatementAnalysis previous) {
         if (previous == null && parent == null) {
             // at the beginning of the method
             if (methodAnalysis.getMethodInfo().hasReturnValue()) {
                 Variable retVar = new ReturnVariable(methodAnalysis.getMethodInfo());
-                VariableInfoContainer vic = new VariableInfoContainerImpl(retVar);
-                vic.setInitialValueFromAnalyser(UnknownValue.RETURN_VALUE, Map.of());
-                variables.put(retVar.fullyQualifiedName(), vic);
+                VariableInfoContainer vic = createVariable(analyserContext, retVar);
+                READ_FROM_RETURN_VALUE_PROPERTIES.forEach(vp -> vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, vp, vp.falseValue));
             }
             return;
         }
@@ -356,8 +356,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     List<VariableInfo> toMerge = lastStatements.stream().map(sa -> sa.statementAnalysis.variables.get(fqn).current())
                             .collect(Collectors.toList());
                     boolean overwrite = !statement.getStructure().noBlockMayBeExecuted;
-                    VariableInfo previousVi = vic.best(VariableInfoContainer.LEVEL_3_EVALUATION);
-                    vic.merge(VariableInfoContainer.LEVEL_4_SUMMARY, evaluationContext, previousVi, overwrite, toMerge);
+                    vic.merge(VariableInfoContainer.LEVEL_4_SUMMARY, evaluationContext, overwrite, toMerge);
                 }
             });
         }
@@ -378,6 +377,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     /**
+     * This is (and must remain) the only place which creates a {@link VariableInfoContainerImpl} and adds it to the <code>variables</code>
+     * map.
+     *
      * @param analyserContext needed for obtaining properties of analysers, when the variable represents a field or parameter
      * @param variable        the variable
      * @return the container of the new variable
@@ -390,8 +392,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         variables.put(variable.fullyQualifiedName(), vic);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", variable.fullyQualifiedName());
 
-
-        if (variable instanceof This) {
+        if (variable instanceof ReturnVariable) {
+            vic.setInitialValueFromAnalyser(UnknownValue.RETURN_VALUE, Map.of());
+        } else if (variable instanceof This) {
             vic.setInitialValueFromAnalyser(new VariableValue(variable, ObjectFlow.NO_FLOW),
                     propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo));
         } else if ((variable instanceof ParameterInfo parameterInfo)) {

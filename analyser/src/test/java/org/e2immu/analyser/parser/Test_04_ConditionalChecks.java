@@ -133,7 +133,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
             if ("3".equals(d.statementId())) {
                 Assert.assertEquals(d.iteration() <= 1 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE, d.result().analysisStatus);
             } else {
-                Assert.assertEquals(AnalysisStatus.DONE, d.result().analysisStatus);
+                Assert.assertEquals("Statement " + d.statementId() + " it " + d.iteration(), AnalysisStatus.DONE, d.result().analysisStatus);
             }
         }
     };
@@ -145,7 +145,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
         }
         if ("method1".equals(d.methodInfo().name)) {
             Assert.assertSame(UnknownValue.EMPTY, d.methodAnalysis().getPrecondition());
-            Assert.assertSame(UnknownValue.RETURN_VALUE, d.methodAnalysis().getSingleReturnValue());
+            Assert.assertEquals("5", d.methodAnalysis().getSingleReturnValue().toString());
         }
         if ("method5".equals(d.methodInfo().name)) {
             Assert.assertEquals(Level.DELAY, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
@@ -154,6 +154,14 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("method5".equals(d.methodInfo().name)) {
+            if("0".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
+                Assert.assertEquals(O5 + " == " + THIS, d.evaluationResult().value.toString());
+            }
+            if("0.0.0".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
+                Assert.assertEquals("true", d.evaluationResult().value.toString());
+            }
             if ("1".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
                 Assert.assertEquals("(null == " + O5 + " or not (" + O5_GET_CLASS + " == " + THIS_GET_CLASS + "))", d.evaluationResult().value.toString());

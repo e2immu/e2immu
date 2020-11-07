@@ -286,14 +286,17 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public void merge(int level,
                       EvaluationContext evaluationContext,
-                      VariableInfo existing,
                       boolean existingValuesWillBeOverwritten,
                       List<VariableInfo> merge) {
         Objects.requireNonNull(merge);
         Objects.requireNonNull(evaluationContext);
 
-        assignment(level);
-        VariableInfoImpl vi = getAndCast(currentLevel);
-        vi.merge(evaluationContext, existing, existingValuesWillBeOverwritten, merge);
+        VariableInfoImpl existing = (VariableInfoImpl) best(level - 1);
+        VariableInfoImpl merged = existing.merge(evaluationContext, (VariableInfoImpl) data[level], existingValuesWillBeOverwritten, merge);
+        if (merged != existing) {
+            data[level] = merged;
+            currentLevel = level;
+        }
+        merged.mergeProperties(existingValuesWillBeOverwritten, existing, merge);
     }
 }

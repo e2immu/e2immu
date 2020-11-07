@@ -171,20 +171,43 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(VariableProperty.ASSIGNED, Math::max, Level.DELAY)
     );
 
-    public void merge(EvaluationContext evaluationContext,
-                      VariableInfo existing,
-                      boolean existingValuesWillBeOverwritten,
-                      List<VariableInfo> merge) {
-        Value mergedValue = mergeValue(evaluationContext, existing, existingValuesWillBeOverwritten, merge);
-        writeValue(mergedValue);
+    /**
+     * This method has to decide whether a new variableInfo object should be created.
+     * <p>
+     * As soon as there is a need for overwriting the value or the state, either the provided newObject must be used
+     * (where we assume we can write) or a completely new object must be returned. This new object then starts as a copy
+     * of this object.
+     */
+    public VariableInfoImpl merge(EvaluationContext evaluationContext,
+                                  VariableInfoImpl newObject,
+                                  boolean existingValuesWillBeOverwritten,
+                                  List<VariableInfo> merge) {
+        Value mergedValue = mergeValue(evaluationContext, existingValuesWillBeOverwritten, merge);
+        Value currentValue = getValue();
+        if (mergedValue == NO_VALUE || currentValue.equals(mergedValue))
+            return newObject == null ? this : newObject; // no need to create
+        if (newObject == null) {
+            if (!value.isSet()) {
+                value.set(mergedValue);
+                return this;
+            }
+            VariableInfoImpl newVi = new VariableInfoImpl(variable);
+            //if (!existingValuesWillBeOverwritten) newVi.properties.putAll(properties);
+            newVi.value.set(mergedValue);
+            return newVi;
+        }
+        if (!newObject.value.isSet() || !newObject.value.get().equals(mergedValue)) {
+            newObject.value.set(mergedValue); // will cause severe problems if the value already there is different :-)
+        }
+        return newObject;
+    }
 
-        // now common properties
-
+    public void mergeProperties(boolean existingValuesWillBeOverwritten, VariableInfo previous, List<VariableInfo> merge) {
         VariableInfo[] list = merge
                 .stream().filter(vi -> vi.getValue().isComputeProperties())
                 .toArray(n -> new VariableInfo[n + 1]);
-        if (!existingValuesWillBeOverwritten && existing.getValue().isComputeProperties()) {
-            list[list.length - 1] = existing;
+        if (!existingValuesWillBeOverwritten && getValue().isComputeProperties()) {
+            list[list.length - 1] = previous;
         }
         for (MergeOp mergeOp : MERGE) {
             int commonValue = mergeOp.initial;
@@ -202,12 +225,11 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     private Value mergeValue(EvaluationContext evaluationContext,
-                             VariableInfo existing,
                              boolean existingValuesWillBeOverwritten,
                              List<VariableInfo> merge) {
-        Value currentValue = existing.getValue();
+        Value currentValue = getValue();
         if (!existingValuesWillBeOverwritten && currentValue == NO_VALUE) return NO_VALUE;
-        boolean haveANoValue = merge.stream().anyMatch(v -> v.getStateOnAssignment() == null);
+        boolean haveANoValue = merge.stream().anyMatch(v -> !v.stateOnAssignmentIsSet());
         if (haveANoValue) return NO_VALUE;
 
         if (merge.isEmpty()) {
