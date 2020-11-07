@@ -131,7 +131,8 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                 Assert.assertEquals("(not (null == " + O5 + ") and " + O5_GET_CLASS + " == " + THIS_GET_CLASS + " and not (" + O5 + " == " + THIS + "))", d.state().toString());
             }
             if ("3".equals(d.statementId())) {
-                Assert.assertEquals(d.iteration() <= 1 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE, d.result().analysisStatus);
+                AnalysisStatus expectStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
+                Assert.assertEquals(d.toString(), expectStatus, d.result().analysisStatus);
             } else {
                 Assert.assertEquals("Statement " + d.statementId() + " it " + d.iteration(), AnalysisStatus.DONE, d.result().analysisStatus);
             }
@@ -154,11 +155,11 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("method5".equals(d.methodInfo().name)) {
-            if("0".equals(d.statementId())) {
+            if ("0".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
                 Assert.assertEquals(O5 + " == " + THIS, d.evaluationResult().value.toString());
             }
-            if("0.0.0".equals(d.statementId())) {
+            if ("0.0.0".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
                 Assert.assertEquals("true", d.evaluationResult().value.toString());
             }

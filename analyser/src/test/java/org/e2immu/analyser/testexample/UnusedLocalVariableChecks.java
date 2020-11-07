@@ -74,4 +74,13 @@ public class UnusedLocalVariableChecks {
             System.out.println("hello!");
         }
     }
+
+    public static int method5(boolean x) {
+        int a;
+        if(x) {
+            a = 5;
+        }
+        a = 6;
+        return a;
+    }
 }

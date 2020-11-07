@@ -735,13 +735,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return DONE;
         }
         if (value == null) throw new UnsupportedOperationException("??");
-        if (value == NO_VALUE) return DELAYS;
 
         VariableInfoContainer variableInfo = findReturnAsVariableForWriting();
         variableInfo.assignment(VariableInfoContainer.LEVEL_3_EVALUATION);
         Map<VariableProperty, Integer> propertiesToSet = evaluationContext.getValueProperties(value);
         variableInfo.setValueOnAssignment(VariableInfoContainer.LEVEL_3_EVALUATION, value, propertiesToSet);
-        return DONE;
+        return value == NO_VALUE ? DELAYS: DONE;
     }
 
     private boolean step7_detectErrorsIfElseSwitchFor(Value value, EvaluationContext evaluationContext) {

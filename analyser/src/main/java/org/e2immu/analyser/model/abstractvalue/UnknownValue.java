@@ -63,7 +63,7 @@ public class UnknownValue implements Value {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return Level.FALSE;
+        return this == NO_VALUE ? Level.DELAY : Level.FALSE;
     }
 
     @Override

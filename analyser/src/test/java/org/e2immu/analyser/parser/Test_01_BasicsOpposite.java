@@ -41,6 +41,7 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
     public static final String THIS = "org.e2immu.analyser.testexample.BasicsOpposite.this";
     private static final String METHOD_VALUE_ADD = "org.e2immu.analyser.testexample.BasicsOpposite.add(Collection<String>):0:collection" +
             ".add(org.e2immu.analyser.testexample.BasicsOpposite.string)";
+    private static final String RETURN_GET_STRING = "org.e2immu.analyser.testexample.BasicsOpposite.getString()";
 
     public Test_01_BasicsOpposite() {
         super(true);
@@ -89,6 +90,10 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
             Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
             String expertValue = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : STRING_FIELD;
             Assert.assertEquals(expertValue, d.currentValue().toString());
+        }
+        if (RETURN_GET_STRING.equals(d.variableName())) {
+            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+            Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
         }
     };
 

@@ -576,6 +576,11 @@ public class TypeAnalyser extends AbstractAnalyser {
             if (methodAnalyser.methodInfo.hasReturnValue() &&
                     !typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodAnalyser.methodInfo.returnType())) {
                 VariableInfo variableInfo = methodAnalyser.getReturnAsVariable();
+                if (variableInfo == null) {
+                    log(DELAYED, "Delay independence of type {}, method {}'s return statement not known",
+                            typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
+                    return DELAYS;
+                }
                 if (variableInfo.getLinkedVariables() == null) {
                     log(DELAYED, "Delay independence of type {}, method {}'s return statement summaries linking not known",
                             typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);

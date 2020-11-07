@@ -177,8 +177,8 @@ public class TestVariableInfo extends CommonVariableInfo {
         Assert.assertEquals("x?4:3", ret3.getValue().toString());
 
         ret3.mergeProperties(false, ret2, List.of(viA));
-       // FIXME Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret3.getProperty(VariableProperty.NOT_NULL));
-        // this is a bit of a problem!!
+        Assert.assertEquals(MultiLevel.MUTABLE, ret3.getProperty(VariableProperty.NOT_NULL));
+        // but this is not the correct, final value, but correction takes place in VariableInfoContainer
     }
 
 
@@ -187,6 +187,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         Variable retVar = makeReturnVariable();
         VariableInfoImpl ret = new VariableInfoImpl(retVar);
         ret.value.set(UnknownValue.RETURN_VALUE); // uni
+        ret.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalIntVar("x"));
         Value x = new VariableValue(viX.variable);
@@ -201,12 +202,12 @@ public class TestVariableInfo extends CommonVariableInfo {
         // situation:
         // if(x==3) return b;
 
-        VariableInfoImpl ret2 = new VariableInfoImpl(retVar);
-        ret2.merge(minimalEvaluationContext, ret, false, List.of(viB));
+        VariableInfoImpl ret2 = ret.merge(minimalEvaluationContext, null, false, List.of(viB));
+        Assert.assertNotSame(ret2, ret);
+        Assert.assertEquals("3 == x?4:<return value>", ret2.getValue().toString());
 
-        Value res = ret2.getValue();
-        Assert.assertEquals("3 == x?4:<return value>", res.toString());
-        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret2.getProperty(VariableProperty.NOT_NULL));
+        ret2.mergeProperties(false, ret, List.of(viB));
+        Assert.assertEquals(MultiLevel.MUTABLE, ret2.getProperty(VariableProperty.NOT_NULL));
 
         // OK let's continue, bun with another if in between
 
@@ -223,9 +224,11 @@ public class TestVariableInfo extends CommonVariableInfo {
         viA.stateOnAssignment.set(xEquals4);
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
-        VariableInfoImpl ret3 = new VariableInfoImpl(retVar);
-        ret3.merge(minimalEvaluationContext, ret2, false, List.of(viA));
+        VariableInfoImpl ret3 = ret2.merge(minimalEvaluationContext, null, false, List.of(viA));
+        Assert.assertNotSame(ret3, ret2);
         Assert.assertEquals("4 == x?3:3 == x?4:<return value>", ret3.getValue().toString());
+        ret3.mergeProperties(false, ret2, List.of(viA));
+        Assert.assertEquals(MultiLevel.MUTABLE, ret3.getProperty(VariableProperty.NOT_NULL));
 
         // situation:
         // if(x==3) return b;
@@ -241,13 +244,14 @@ public class TestVariableInfo extends CommonVariableInfo {
         viC.stateOnAssignment.set(combinedState);
         viC.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
-        VariableInfoImpl ret4 = new VariableInfoImpl(retVar);
-        ret4.merge(minimalEvaluationContext, ret3, false, List.of(viC));
-
+        VariableInfoImpl ret4 = ret3.merge(minimalEvaluationContext, null, false, List.of(viC));
+        Assert.assertNotSame(ret3, ret4);
         // IMPROVE actually the value should be 4 == x?3:3 == x?4:2
         Assert.assertEquals("(not (3 == x) and not (4 == x))?2:4 == x?3:3 == x?4:<return value>", ret4.getValue().toString());
 
-        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret4.getProperty(VariableProperty.NOT_NULL));
+        ret4.mergeProperties(false, ret3, List.of(viC));
+        Assert.assertEquals(MultiLevel.MUTABLE, ret4.getProperty(VariableProperty.NOT_NULL));
+        // NOTE: but this is not the correct, final value, but correction takes place in VariableInfoContainer
     }
 
 
@@ -268,12 +272,12 @@ public class TestVariableInfo extends CommonVariableInfo {
         // int c = a;
         // if(some obscure condition) c = b;
 
-        VariableInfoImpl viC = new VariableInfoImpl(viA);
+        VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
+        viC.value.set(new VariableValue(viA.variable));
+        viC.stateOnAssignment.set(UnknownValue.EMPTY);
         VariableInfoImpl viC2 = viC.merge(minimalEvaluationContext, null, false, List.of(viB));
-        Assert.assertNotSame(viC, viC2);
-
-        Value res = viC2.getValue();
-        Assert.assertEquals("c", res.toString());
+        Assert.assertNotSame(viA, viC2);
+        Assert.assertEquals("c", viC2.getValue().toString());
 
         viC2.mergeProperties(false, viA, List.of(viB));
         Assert.assertEquals(MultiLevel.MUTABLE, viC2.getProperty(VariableProperty.NOT_NULL));
@@ -303,9 +307,9 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
         viC.merge(minimalEvaluationContext, viC, true, List.of(viA, viB));
+        Assert.assertEquals("x?3:4", viC.getValue().toString());
 
-        Value res = viC.getValue();
-        Assert.assertEquals("x?3:4", res.toString());
+        viC.mergeProperties(true, null, List.of(viA, viB));
         Assert.assertEquals(MultiLevel.MUTABLE, viC.getProperty(VariableProperty.NOT_NULL));
     }
 
@@ -332,10 +336,13 @@ public class TestVariableInfo extends CommonVariableInfo {
         // if(x) c = a; else c = b;
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
-        viC.merge(minimalEvaluationContext, viC, true, List.of(viA, viB));
+        VariableInfoImpl viC2 = viC.merge(minimalEvaluationContext, viC, true, List.of(viA, viB));
+        Assert.assertSame(viC2, viC);
 
         Value res = viC.getValue();
         Assert.assertEquals("3", res.toString());
+
+        viC.mergeProperties(true, null, List.of(viA, viB));
         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, viC.getProperty(VariableProperty.NOT_NULL));
     }
 }

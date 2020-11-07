@@ -236,7 +236,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     @NotNull
     public VariableInfo getLatestVariableInfo(String variableName) {
         if (!variables.isSet(variableName)) {
-            throw new IllegalArgumentException("Variable " + variableName + " does not exist");
+            return null; // statements will not have been analysed yet?
         }
         return variables.get(variableName).current();
     }
@@ -351,9 +351,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 VariableInfoContainer vic = e.getValue();
 
                 boolean someChange = lastStatements.stream()
-                        .anyMatch(sa -> sa.statementAnalysis.variables.get(fqn).getCurrentLevel() > VariableInfoContainer.LEVEL_0_PREVIOUS);
+                        .anyMatch(sa -> sa.statementAnalysis.variables.isSet(fqn) && // possibly not set if field, parameter
+                                sa.statementAnalysis.variables.get(fqn).getCurrentLevel() > VariableInfoContainer.LEVEL_0_PREVIOUS);
                 if (someChange) {
-                    List<VariableInfo> toMerge = lastStatements.stream().map(sa -> sa.statementAnalysis.variables.get(fqn).current())
+                    List<VariableInfo> toMerge = lastStatements.stream()
+                            .filter(sa -> sa.statementAnalysis.variables.isSet(fqn))
+                            .map(sa -> sa.statementAnalysis.variables.get(fqn).current())
                             .collect(Collectors.toList());
                     boolean overwrite = !statement.getStructure().noBlockMayBeExecuted;
                     vic.merge(VariableInfoContainer.LEVEL_4_SUMMARY, evaluationContext, overwrite, toMerge);

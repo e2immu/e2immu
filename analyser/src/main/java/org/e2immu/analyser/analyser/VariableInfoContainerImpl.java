@@ -20,6 +20,8 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.abstractvalue.AndValue;
+import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Freezable;
@@ -120,13 +122,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public void setValueOnAssignment(int level, Value value, Map<VariableProperty, Integer> propertiesToSet) {
         ensureNotFrozen();
-
         Objects.requireNonNull(value);
-        if (value == UnknownValue.NO_VALUE) {
-            throw new IllegalArgumentException("Value should not be NO_VALUE");
-        }
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        variableInfo.value.set(value);
+        if (value != UnknownValue.NO_VALUE) {
+            variableInfo.value.set(value);
+        }
         propertiesToSet.forEach(variableInfo::setProperty);
     }
 
@@ -134,11 +134,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public void setStateOnAssignment(int level, Value state) {
         ensureNotFrozen();
         Objects.requireNonNull(state);
-        if (state == UnknownValue.NO_VALUE) {
-            throw new IllegalArgumentException("State should not be NO_VALUE");
-        }
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        if (!variableInfo.stateOnAssignment.isSet() || !state.equals(variableInfo.stateOnAssignment.get())) {
+        if (state != UnknownValue.NO_VALUE && (!variableInfo.stateOnAssignment.isSet() || !state.equals(variableInfo.stateOnAssignment.get()))) {
             variableInfo.stateOnAssignment.set(state);
         }
     }
@@ -259,8 +256,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(objectFlow);
         int writeLevel = findLevelForWriting(level);
         VariableInfoImpl variableInfo = getAndCast(writeLevel);
-        variableInfo.objectFlow.set(objectFlow);
-        liftCurrentLevel(writeLevel);
+        if (!variableInfo.objectFlow.isSet() || !variableInfo.objectFlow.get().equals(objectFlow)) {
+            variableInfo.objectFlow.set(objectFlow);
+            liftCurrentLevel(writeLevel);
+        }
     }
 
     @Override
@@ -297,6 +296,33 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             data[level] = merged;
             currentLevel = level;
         }
-        merged.mergeProperties(existingValuesWillBeOverwritten, existing, merge);
+        Value mergedValue = merged.getValue();
+
+        /*
+         the following condition explicitly catches a situation with merging return value objects:
+
+         if(x) return a;
+         return b;
+
+         The first statement produces a return value of retVal1 = x?a:<return value>
+         After the first statement, the state is !x. The assignment to the return value takes this into account,
+         The second statement should be read as: if(!x) retVal2 = b, or retVal2 = !x?b:<return value>
+         Merging the two gives the correct result, but <return value> keeps lingering, which has a nefarious effect on properties.
+         */
+        if (mergedValue != UnknownValue.NO_VALUE && !existingValuesWillBeOverwritten &&
+                notExistingStateEqualsAndMergeStates(evaluationContext, existing, merge)) {
+            VariableProperty.VALUE_PROPERTIES.forEach(vp -> merged.setProperty(vp, mergedValue.getProperty(evaluationContext, vp)));
+        } else {
+            merged.mergeProperties(existingValuesWillBeOverwritten, existing, merge);
+        }
+    }
+
+    private static boolean notExistingStateEqualsAndMergeStates(EvaluationContext evaluationContext, VariableInfo oneSide, List<VariableInfo> merge) {
+        if (!oneSide.stateOnAssignmentIsSet()) return false;
+        if (!merge.stream().allMatch(VariableInfo::stateOnAssignmentIsSet)) return false;
+        Value notOne = NegatedValue.negate(evaluationContext, oneSide.getStateOnAssignment());
+        Value andOtherSide = new AndValue(evaluationContext.getPrimitives()).append(evaluationContext,
+                merge.stream().map(VariableInfo::getStateOnAssignment).toArray(Value[]::new));
+        return notOne.equals(andOtherSide);
     }
 }

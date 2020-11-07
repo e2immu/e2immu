@@ -124,6 +124,11 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
                 } else Assert.fail("Variable named " + d.variableName());
             }
         }
+        if ("method5".equals(d.methodInfo().name) && "a".equals(d.variableName())) {
+            if ("2".equals(d.statementId())) {
+                Assert.assertEquals("6", d.currentValue().toString());
+            }
+        }
     };
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
