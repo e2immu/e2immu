@@ -171,8 +171,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
         int writeLevel = findLevelForWriting(level);
         VariableInfoImpl variableInfo = getAndCast(writeLevel);
-        variableInfo.value.set(value);
-        liftCurrentLevel(writeLevel);
+        if (!variableInfo.value.isSet() || !value.equals(variableInfo.value.get())) {
+            variableInfo.value.set(value);
+            liftCurrentLevel(writeLevel);
+        }
     }
 
     private void internalSetStateOnAssignment(int level, Value state) {
@@ -245,8 +247,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(variables);
         int writeLevel = findLevelForWriting(level);
         VariableInfoImpl variableInfo = getAndCast(writeLevel);
-        variableInfo.linkedVariables.set(variables);
-        liftCurrentLevel(writeLevel);
+        if (!variableInfo.linkedVariables.isSet() || !variableInfo.linkedVariables.get().equals(variables)) {
+            variableInfo.linkedVariables.set(variables);
+            liftCurrentLevel(writeLevel);
+        }
     }
 
     @Override
@@ -268,7 +272,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         if (previousVariableInfo.valueIsSet()) {
             internalSetValue(level, previousVariableInfo.getValue());
         }
-        if (previousVariableInfo.getStateOnAssignment() != null) {
+        if (previousVariableInfo.stateOnAssignmentIsSet()) {
             internalSetStateOnAssignment(level, previousVariableInfo.getStateOnAssignment());
         }
         if (previousVariableInfo.linkedVariablesIsSet()) {

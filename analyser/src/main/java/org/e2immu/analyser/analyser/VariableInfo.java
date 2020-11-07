@@ -70,4 +70,8 @@ public interface VariableInfo {
     boolean hasProperty(VariableProperty variableProperty);
 
     Stream<Map.Entry<VariableProperty, Integer>> propertyStream();
+
+    default boolean stateOnAssignmentIsSet() {
+        return getStateOnAssignment() != UnknownValue.NO_VALUE;
+    }
 }
