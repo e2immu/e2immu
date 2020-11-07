@@ -235,8 +235,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     @NotNull
     public VariableInfo getLatestVariableInfo(String variableName) {
-        if (!variables.isSet(variableName))
+        if (!variables.isSet(variableName)) {
             throw new IllegalArgumentException("Variable " + variableName + " does not exist");
+        }
         return variables.get(variableName).current();
     }
 

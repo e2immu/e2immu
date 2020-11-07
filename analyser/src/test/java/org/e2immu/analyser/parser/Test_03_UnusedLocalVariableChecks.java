@@ -18,6 +18,8 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
     private static final String T_LENGTH_GE_19 = "((-19) + org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method1(String):0:t.length(),?>=0) >= 0";
     private static final String T_LENGTH_LT_19 = "(18 + (-org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method1(String):0:t.length(),?>=0)) >= 0";
 
+    private static final String THIS = "org.e2immu.analyser.testexample.UnusedLocalVariableChecks.this";
+
     public Test_03_UnusedLocalVariableChecks() {
         super(true);
     }
@@ -30,8 +32,7 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
                 Assert.assertEquals(UnknownValue.EMPTY.toString(), d.state().toString());
             }
             if ("1".equals(d.statementId()) || "1.0.0".equals(d.statementId())) {
-                AnalysisStatus expectAnalysisStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-                Assert.assertEquals(d.toString(), expectAnalysisStatus, analysisStatus);
+               Assert.assertEquals(d.toString(), AnalysisStatus.DONE, analysisStatus);
             }
             if ("1".equals(d.statementId())) {
                 Assert.assertEquals(T_LENGTH_GE_19, d.state().toString());
@@ -47,8 +48,7 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
                 if (d.iteration() >= 2) {
                     Assert.assertNotNull(d.haveError(Message.IGNORING_RESULT_OF_METHOD_CALL));
                 }
-                AnalysisStatus expectAnalysisStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-                Assert.assertEquals(d.toString(), expectAnalysisStatus, analysisStatus);
+                Assert.assertEquals(d.toString(), AnalysisStatus.DONE, analysisStatus);
 
                 Assert.assertEquals(T_LENGTH_GE_19, d.state().toString());
             }
@@ -76,7 +76,7 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
             Assert.assertEquals("ERROR in M:checkForEach:1.0.0: Unused local variable: loopVar", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
 
             AnalysisStatus expectAnalysisStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-         //   Assert.assertEquals(d.toString(), expectAnalysisStatus, analysisStatus);
+            //   Assert.assertEquals(d.toString(), expectAnalysisStatus, analysisStatus);
         }
     };
 
@@ -119,6 +119,8 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
                     Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned);
                     Assert.assertTrue(read <= assigned);
                     Assert.assertEquals("3", d.currentValue().toString());
+                } else if (THIS.equals(d.variableName())) {
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.READ));
                 } else Assert.fail("Variable named " + d.variableName());
             }
         }

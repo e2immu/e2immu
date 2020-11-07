@@ -320,7 +320,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                 previous == null ? null : previous.methodLevelData,
                                 statementAnalysis.stateData))
 
-                        .add("checkUnusedReturnValue", sharedState -> checkUnusedReturnValue())
+                        .add("checkUnusedReturnValue", sharedState -> checkUnusedReturnValueOfMethodCall())
                         .add("checkUselessAssignments", sharedState -> checkUselessAssignments())
                         .add("checkUnusedLocalVariables", sharedState -> checkUnusedLocalVariables())
                         .build();
@@ -444,7 +444,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         evaluationResult.getValueChangeStream().forEach(e -> {
             Variable variable = e.getKey();
             Value value = e.getValue();
-            VariableInfoContainer vic = statementAnalysis.findForWriting(variable.fullyQualifiedName());
+            VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, variable);
             vic.assignment(level);
             if (value != NO_VALUE) {
                 log(ANALYSER, "Write value {} to variable {}", value, variable.fullyQualifiedName());
@@ -559,8 +559,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return DONE;
     }
 
+    /**
+     * only at the end of the method, since we need to have guarantee that myMethodAnalyser.getReturnAsVariable() will produce
+     * a sensible value
+     *
+     * @param sharedState context
+     * @return analysis status
+     */
     private AnalysisStatus checkFluent(SharedState sharedState) {
         if (myMethodAnalyser.methodInfo.noReturnValue()) return DONE;
+        if (isNotLastStatement()) return DONE;
 
         VariableInfo variableInfo = myMethodAnalyser.getReturnAsVariable();
         int fluent = variableInfo.getProperty(VariableProperty.FLUENT);
@@ -572,6 +580,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         boolean isFluent = value instanceof VariableValue vv && vv.variable instanceof This thisVar && thisVar.typeInfo == myMethodAnalyser.myTypeAnalyser.typeInfo;
         vic.setProperty(VariableInfoContainer.LEVEL_4_SUMMARY, VariableProperty.FLUENT, isFluent ? Level.TRUE : Level.FALSE);
         return DONE;
+    }
+
+    private boolean isNotLastStatement() {
+        // first clause: we're in a block; second: there is a following statement
+        return statementAnalysis.parent != null || navigationData.next.get().isPresent();
     }
 
     private VariableInfoContainer findReturnAsVariableForWriting() {
@@ -982,7 +995,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     /*
      * Can be delayed
      */
-    private AnalysisStatus checkUnusedReturnValue() {
+    private AnalysisStatus checkUnusedReturnValueOfMethodCall() {
         if (statementAnalysis.statement instanceof ExpressionAsStatement eas && eas.expression instanceof MethodCall) {
             MethodCall methodCall = (MethodCall) (((ExpressionAsStatement) statementAnalysis.statement).expression);
             if (Primitives.isVoid(methodCall.methodInfo.returnType())) return DONE;
