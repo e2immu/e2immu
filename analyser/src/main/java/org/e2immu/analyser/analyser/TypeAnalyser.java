@@ -573,7 +573,8 @@ public class TypeAnalyser extends AbstractAnalyser {
         // RULE 3
 
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
-            if (!typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodAnalyser.methodInfo.returnType())) {
+            if (methodAnalyser.methodInfo.hasReturnValue() &&
+                    !typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodAnalyser.methodInfo.returnType())) {
                 VariableInfo variableInfo = methodAnalyser.getReturnAsVariable();
                 if (variableInfo.getLinkedVariables() == null) {
                     log(DELAYED, "Delay independence of type {}, method {}'s return statement summaries linking not known",

@@ -33,14 +33,14 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class EvaluationResult {
 
-    private final List<StatementAnalysis.StatementAnalysisModification> modifications;
+    private final List<StatementAnalyser.StatementAnalysisModification> modifications;
     private final List<StatementAnalysis.StateChange> stateChanges;
     private final List<ObjectFlow> objectFlows;
     public final Value value;
     public final int iteration;
     public final Map<Variable, Value> valueChanges;
 
-    public Stream<StatementAnalysis.StatementAnalysisModification> getModificationStream() {
+    public Stream<StatementAnalyser.StatementAnalysisModification> getModificationStream() {
         return modifications.stream();
     }
 
@@ -71,7 +71,7 @@ public class EvaluationResult {
 
     private EvaluationResult(int iteration,
                              Value value,
-                             List<StatementAnalysis.StatementAnalysisModification> modifications,
+                             List<StatementAnalyser.StatementAnalysisModification> modifications,
                              List<StatementAnalysis.StateChange> stateChanges,
                              List<ObjectFlow> objectFlows,
                              Map<Variable, Value> valueChanges) {
@@ -103,18 +103,18 @@ public class EvaluationResult {
     public static class Builder {
         private final EvaluationContext evaluationContext;
         private final StatementAnalyser statementAnalyser;
-        private List<StatementAnalysis.StatementAnalysisModification> modifications;
+        private List<StatementAnalyser.StatementAnalysisModification> modifications;
         private List<StatementAnalysis.StateChange> stateChanges;
         private List<ObjectFlow> objectFlows;
         private Value value;
         private final Map<Variable, Value> valueChanges = new HashMap<>();
 
-        private void addToModifications(StatementAnalysis.StatementAnalysisModification modification) {
+        private void addToModifications(StatementAnalyser.StatementAnalysisModification modification) {
             if (modifications == null) modifications = new ArrayList<>();
             modifications.add(modification);
         }
 
-        private void addToModifications(Collection<StatementAnalysis.StatementAnalysisModification> modification) {
+        private void addToModifications(Collection<StatementAnalyser.StatementAnalysisModification> modification) {
             if (modifications == null) modifications = new ArrayList<>();
             modifications.addAll(modification);
         }

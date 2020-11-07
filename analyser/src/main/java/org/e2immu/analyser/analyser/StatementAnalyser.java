@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -294,56 +295,61 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                                            boolean wasReplacement,
                                                            StatementAnalysis previous,
                                                            ForwardAnalysisInfo forwardAnalysisInfo) {
-        if (analysisStatus == null) {
-            assert localConditionManager == null : "expected null localConditionManager";
+        try {
+            if (analysisStatus == null) {
+                assert localConditionManager == null : "expected null localConditionManager";
 
-            statementAnalysis.initialise(previous);
+                statementAnalysis.initialise(previous);
 
-            analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
-                    .add("checkUnreachableStatement", sharedState -> checkUnreachableStatement(previous,
-                            forwardAnalysisInfo.execution()))
+                analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
+                        .add("checkUnreachableStatement", sharedState -> checkUnreachableStatement(previous,
+                                forwardAnalysisInfo.execution()))
 
-                    .add("singleStatementAnalysisSteps", sharedState -> singleStatementAnalysisSteps(sharedState, previous, forwardAnalysisInfo))
-                    .add("tryToFreezeDependencyGraph", sharedState -> tryToFreezeDependencyGraph())
-                    .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previous,
-                            forwardAnalysisInfo.execution()))
+                        .add("singleStatementAnalysisSteps", sharedState -> singleStatementAnalysisSteps(sharedState, previous, forwardAnalysisInfo))
+                        .add("tryToFreezeDependencyGraph", sharedState -> tryToFreezeDependencyGraph())
+                        .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previous,
+                                forwardAnalysisInfo.execution()))
 
-                    .add("checkFluent", this::checkFluent)
-                    .add("checkNotNullEscapes", this::checkNotNullEscapes)
-                    .add("checkSizeEscapes", this::checkSizeEscapes)
-                    .add("checkPrecondition", this::checkPrecondition)
-                    .add("copyPrecondition", sharedState -> statementAnalysis.stateData.copyPrecondition(this,
-                            previous, sharedState.evaluationContext))
-                    .add(ANALYSE_METHOD_LEVEL_DATA, sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
-                            previous == null ? null : previous.methodLevelData,
-                            statementAnalysis.stateData))
+                        .add("checkFluent", this::checkFluent)
+                        .add("checkNotNullEscapes", this::checkNotNullEscapes)
+                        .add("checkSizeEscapes", this::checkSizeEscapes)
+                        .add("checkPrecondition", this::checkPrecondition)
+                        .add("copyPrecondition", sharedState -> statementAnalysis.stateData.copyPrecondition(this,
+                                previous, sharedState.evaluationContext))
+                        .add(ANALYSE_METHOD_LEVEL_DATA, sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
+                                previous == null ? null : previous.methodLevelData,
+                                statementAnalysis.stateData))
 
-                    .add("checkUnusedReturnValue", sharedState -> checkUnusedReturnValue())
-                    .add("checkUselessAssignments", sharedState -> checkUselessAssignments())
-                    .add("checkUnusedLocalVariables", sharedState -> checkUnusedLocalVariables())
-                    .build();
-        } else {
-            statementAnalysis.updateStatements(analyserContext, myMethodAnalyser.methodInfo, previous);
+                        .add("checkUnusedReturnValue", sharedState -> checkUnusedReturnValue())
+                        .add("checkUselessAssignments", sharedState -> checkUselessAssignments())
+                        .add("checkUnusedLocalVariables", sharedState -> checkUnusedLocalVariables())
+                        .build();
+            } else {
+                statementAnalysis.updateStatements(analyserContext, myMethodAnalyser.methodInfo, previous);
+            }
+            boolean startOfNewBlock = previous == null;
+            localConditionManager = startOfNewBlock ? forwardAnalysisInfo.conditionManager() : previous.stateData.getConditionManager();
+
+            StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
+            EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, localConditionManager);
+            SharedState sharedState = new SharedState(evaluationContext, builder);
+            AnalysisStatus overallStatus = analyserComponents.run(sharedState);
+
+            StatementAnalyserResult result = sharedState.builder()
+                    .addMessages(statementAnalysis.messages.stream())
+                    .setAnalysisStatus(overallStatus)
+                    .combineAnalysisStatus(wasReplacement ? PROGRESS : DONE).build();
+            analysisStatus = result.analysisStatus;
+
+            visitStatementVisitors(statementAnalysis.index, result, sharedState);
+
+            log(ANALYSER, "Returning from statement {} of {} with analysis status {}", statementAnalysis.index,
+                    myMethodAnalyser.methodInfo.name, analysisStatus);
+            return result;
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Caught exception while analysing statement {} of {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName());
+            throw rte;
         }
-        boolean startOfNewBlock = previous == null;
-        localConditionManager = startOfNewBlock ? forwardAnalysisInfo.conditionManager() : previous.stateData.getConditionManager();
-
-        StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, localConditionManager);
-        SharedState sharedState = new SharedState(evaluationContext, builder);
-        AnalysisStatus overallStatus = analyserComponents.run(sharedState);
-
-        StatementAnalyserResult result = sharedState.builder()
-                .addMessages(statementAnalysis.messages.stream())
-                .setAnalysisStatus(overallStatus)
-                .combineAnalysisStatus(wasReplacement ? PROGRESS : DONE).build();
-        analysisStatus = result.analysisStatus;
-
-        visitStatementVisitors(statementAnalysis.index, result, sharedState);
-
-        log(ANALYSER, "Returning from statement {} of {} with analysis status {}", statementAnalysis.index,
-                myMethodAnalyser.methodInfo.name, analysisStatus);
-        return result;
     }
 
     private AnalysisStatus tryToFreezeDependencyGraph() {
@@ -419,7 +425,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     /*
     The main loop calls the apply method with the results of an evaluation.
      */
-    private AnalysisStatus apply(EvaluationContext evaluationContext,
+    private AnalysisStatus apply(SharedState sharedState,
                                  EvaluationResult evaluationResult,
                                  StatementAnalysis statementAnalysis,
                                  int level,
@@ -442,7 +448,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             vic.assignment(level);
             if (value != NO_VALUE) {
                 log(ANALYSER, "Write value {} to variable {}", value, variable.fullyQualifiedName());
-                Map<VariableProperty, Integer> propertiesToSet = evaluationContext.getValueProperties(value);
+                Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(value);
                 vic.setValueOnAssignment(level, value, propertiesToSet);
             }
             if (reducedState != NO_VALUE) {
@@ -451,7 +457,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         });
 
         // then all modifications get applied
-        evaluationResult.getModificationStream().forEach(mod -> mod.accept(level));
+        evaluationResult.getModificationStream().forEach(mod -> mod.accept(new ModificationData(sharedState.builder, level)));
 
         AnalysisStatus status = evaluationResult.value == NO_VALUE ? DELAYS : DONE;
 
@@ -554,6 +560,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private AnalysisStatus checkFluent(SharedState sharedState) {
+        if (myMethodAnalyser.methodInfo.noReturnValue()) return DONE;
+
         VariableInfo variableInfo = myMethodAnalyser.getReturnAsVariable();
         int fluent = variableInfo.getProperty(VariableProperty.FLUENT);
         if (fluent != Level.DELAY) return DONE;
@@ -613,7 +621,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      * <p>
      * Note that steps 1 and 2 are mutually exclusive, both can use LEVEL_1_INITIALISER
      */
-    private AnalysisStatus step2_localVariableCreation(EvaluationContext evaluationContext, Structure structure, boolean assignedInLoop) {
+    private AnalysisStatus step2_localVariableCreation(SharedState sharedState, Structure structure, boolean assignedInLoop) {
         boolean haveDelays = false;
         StatementAnalysis saToCreate = structure.createVariablesInsideBlock ? firstStatementFirstBlock() : statementAnalysis;
         for (Expression initialiser : structure.initialisers) {
@@ -628,8 +636,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 }
             }
             try {
-                EvaluationResult result = initialiser.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-                AnalysisStatus status = apply(evaluationContext, result, saToCreate, VariableInfoContainer.LEVEL_1_INITIALISER, STEP_2);
+                EvaluationResult result = initialiser.evaluate(sharedState.evaluationContext, ForwardEvaluationInfo.DEFAULT);
+                AnalysisStatus status = apply(sharedState, result, saToCreate, VariableInfoContainer.LEVEL_1_INITIALISER, STEP_2);
                 if (status == DELAYS) haveDelays = true;
 
                 Value value = result.value;
@@ -666,23 +674,23 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     // for(int i=0 (step2); i<3 (step4); i++ (step3))
     // TODO check if we really still must do this in the beginning rather than the end?
-    private AnalysisStatus step3_updaters(EvaluationContext evaluationContext, Structure structure) {
+    private AnalysisStatus step3_updaters(SharedState sharedState, Structure structure) {
         boolean haveDelays = false;
         for (Expression updater : structure.updaters) {
-            EvaluationResult result = updater.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-            AnalysisStatus status = apply(evaluationContext, result, statementAnalysis, VariableInfoContainer.LEVEL_2_UPDATER, STEP_3);
+            EvaluationResult result = updater.evaluate(sharedState.evaluationContext, ForwardEvaluationInfo.DEFAULT);
+            AnalysisStatus status = apply(sharedState, result, statementAnalysis, VariableInfoContainer.LEVEL_2_UPDATER, STEP_3);
             if (status == DELAYS) haveDelays = true;
         }
         return haveDelays ? DELAYS : DONE;
     }
 
-    private Value step4_evaluationOfMainExpression(EvaluationContext evaluationContext, Structure structure) {
+    private Value step4_evaluationOfMainExpression(SharedState sharedState, Structure structure) {
         if (structure.expression == EmptyExpression.EMPTY_EXPRESSION) {
             return null;
         }
         try {
-            EvaluationResult result = structure.expression.evaluate(evaluationContext, structure.forwardEvaluationInfo);
-            AnalysisStatus status = apply(evaluationContext, result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_4);
+            EvaluationResult result = structure.expression.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo);
+            AnalysisStatus status = apply(sharedState, result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_4);
             if (status == DELAYS) return NO_VALUE;
 
             // the evaluation system should be pretty good at always returning NO_VALUE when a NO_VALUE has been encountered
@@ -767,11 +775,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return recursiveResult.analysisStatus;
     }
 
-    private Value step9_evaluateSubExpression(EvaluationContext evaluationContext,
+    private Value step9_evaluateSubExpression(SharedState sharedState,
                                               Expression expression,
                                               ForwardEvaluationInfo forwardEvaluationInfo,
                                               List<Value> conditions) {
-
+        EvaluationContext evaluationContext = sharedState.evaluationContext;
         Value valueForSubStatement;
         if (EmptyExpression.DEFAULT_EXPRESSION == expression) { // else, default:
             Primitives primitives = evaluationContext.getPrimitives();
@@ -788,7 +796,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             EvaluationResult result = expression.evaluate(evaluationContext, forwardEvaluationInfo);
             valueForSubStatement = result.value;
             // there cannot be any assignment in these sub-expressions, nor variables, ...
-            AnalysisStatus status = apply(evaluationContext, result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_9);
+            AnalysisStatus status = apply(sharedState, result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_9);
             if (status == DELAYS) {
                 return NO_VALUE;
             }
@@ -825,17 +833,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 forwardAnalysisInfo.inCatch(), assignedInLoop);
 
         // STEP 2: More local variables in try-resources, for-loop, expression as statement (normal local variables)
-        AnalysisStatus analysisStatus = step2_localVariableCreation(sharedState.evaluationContext, structure, assignedInLoop);
+        AnalysisStatus analysisStatus = step2_localVariableCreation(sharedState, structure, assignedInLoop);
 
 
         // STEP 3: updaters (only in the classic for statement, and the parameters of an explicit constructor invocation this(...)
         // for now, we put these BEFORE the main evaluation + the main block. One of the two should read the value that is being updated
-        AnalysisStatus status3 = step3_updaters(evaluationContext, structure);
+        AnalysisStatus status3 = step3_updaters(sharedState, structure);
         analysisStatus = analysisStatus.combine(status3);
 
 
         // STEP 4: evaluation of the main expression of the statement (if the statement has such a thing)
-        final Value value = step4_evaluationOfMainExpression(evaluationContext, structure);
+        final Value value = step4_evaluationOfMainExpression(sharedState, structure);
         AnalysisStatus status4 = value == NO_VALUE ? DELAYS : DONE;
         analysisStatus = analysisStatus.combine(status4);
 
@@ -878,7 +886,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // (only real evaluation for Java 14 conditionals in switch)
             // valueForSubStatement will become the new condition
 
-            Value valueForSubStatement = step9_evaluateSubExpression(evaluationContext, subStatements.expression,
+            Value valueForSubStatement = step9_evaluateSubExpression(sharedState, subStatements.expression,
                     subStatements.forwardEvaluationInfo, conditions);
             AnalysisStatus status9 = value == NO_VALUE ? DELAYS : DONE;
             analysisStatus = analysisStatus.combine(status9);
@@ -1139,7 +1147,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    public class SetProperty implements StatementAnalysis.StatementAnalysisModification {
+
+    public record ModificationData(StatementAnalyserResult.Builder builder, int level) {
+    }
+
+    public interface StatementAnalysisModification extends Consumer<ModificationData> {
+        // nothing extra at the moment
+    }
+
+    public class SetProperty implements StatementAnalysisModification {
         public final Variable variable;
         public final VariableProperty property;
         public final int value;
@@ -1151,22 +1167,25 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public void accept(Integer minLevel) {
-            statementAnalysis.addProperty(analyserContext, minLevel, variable, property, value);
+        public void accept(ModificationData modificationData) {
+            statementAnalysis.addProperty(analyserContext, modificationData.level, variable, property, value);
+
+            // some properties need propagation directly to parameters
+            if (property == VariableProperty.NOT_NULL && variable instanceof ParameterInfo parameterInfo) {
+                log(VARIABLE_PROPERTIES, "Propagating not-null value of {} to {}", value, variable.fullyQualifiedName());
+                ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
+                modificationData.builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
+            }
         }
 
         @Override
         public String toString() {
-            return "SetProperty{" +
-                    "variable=" + variable +
-                    ", property=" + property +
-                    ", value=" + value +
-                    '}';
+            return "SetProperty{variable=" + variable + ", property=" + property + ", value=" + value + '}';
         }
     }
 
 
-    public class RaiseErrorMessage implements StatementAnalysis.StatementAnalysisModification {
+    public class RaiseErrorMessage implements StatementAnalysisModification {
         private final Message message;
 
         public RaiseErrorMessage(Message message) {
@@ -1174,20 +1193,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public void accept(Integer minLevel) {
+        public void accept(ModificationData modificationData) {
             statementAnalysis.ensure(message);
         }
 
         @Override
         public String toString() {
-            return "RaiseErrorMessage{" +
-                    "message=" + message +
-                    '}';
+            return "RaiseErrorMessage{message=" + message + '}';
         }
     }
 
 
-    public class ErrorAssigningToFieldOutsideType implements StatementAnalysis.StatementAnalysisModification {
+    public class ErrorAssigningToFieldOutsideType implements StatementAnalysisModification {
         private final FieldInfo fieldInfo;
         private final Location location;
 
@@ -1197,20 +1214,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public void accept(Integer minLevel) {
+        public void accept(ModificationData modificationData) {
             statementAnalysis.ensure(Message.newMessage(location, Message.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
         }
 
         @Override
         public String toString() {
-            return "ErrorAssigningToFieldOutsideType{" +
-                    "fieldInfo=" + fieldInfo +
-                    ", location=" + location +
-                    '}';
+            return "ErrorAssigningToFieldOutsideType{fieldInfo=" + fieldInfo + ", location=" + location + '}';
         }
     }
 
-    public class ParameterShouldNotBeAssignedTo implements StatementAnalysis.StatementAnalysisModification {
+    public class ParameterShouldNotBeAssignedTo implements StatementAnalysisModification {
         private final ParameterInfo parameterInfo;
         private final Location location;
 
@@ -1220,21 +1234,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public void accept(Integer minLevel) {
+        public void accept(ModificationData modificationData) {
             statementAnalysis.ensure(Message.newMessage(location, Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO,
                     parameterInfo.fullyQualifiedName()));
         }
 
         @Override
         public String toString() {
-            return "ParameterShouldNotBeAssignedTo{" +
-                    "parameterInfo=" + parameterInfo +
-                    ", location=" + location +
-                    '}';
+            return "ParameterShouldNotBeAssignedTo{parameterInfo=" + parameterInfo + ", location=" + location + '}';
         }
     }
 
-    public class MarkAssigned implements StatementAnalysis.StatementAnalysisModification {
+    public class MarkAssigned implements StatementAnalysisModification {
         public final Variable variable;
 
         public MarkAssigned(Variable variable) {
@@ -1242,20 +1253,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public void accept(Integer minLevel) {
-            statementAnalysis.findForWriting(analyserContext, variable).markAssigned(minLevel);
+        public void accept(ModificationData modificationData) {
+            statementAnalysis.findForWriting(analyserContext, variable).markAssigned(modificationData.level);
         }
 
         @Override
         public String toString() {
-            return "MarkAssigned{" +
-                    "variable=" + variable +
-                    '}';
+            return "MarkAssigned{variable=" + variable + '}';
         }
     }
 
 
-    public class SetStateOnAssignment implements StatementAnalysis.StatementAnalysisModification {
+    public class SetStateOnAssignment implements StatementAnalysisModification {
         public final Variable variable;
         public final Value state;
 
@@ -1268,20 +1277,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public void accept(Integer minLevel) {
-            statementAnalysis.findForWriting(analyserContext, variable).setStateOnAssignment(minLevel, state);
+        public void accept(ModificationData modificationData) {
+            statementAnalysis.findForWriting(analyserContext, variable).setStateOnAssignment(modificationData.level, state);
         }
 
         @Override
         public String toString() {
-            return "MarkAssigned{" +
-                    "variable=" + variable +
-                    '}';
+            return "SetStateOnAssignment{variable=" + variable + ", state=" + state + '}';
         }
     }
 
 
-    public class MarkRead implements StatementAnalysis.StatementAnalysisModification {
+    public class MarkRead implements StatementAnalysisModification {
         public final Variable variable;
 
         public MarkRead(Variable variable) {
@@ -1289,19 +1296,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public void accept(Integer minLevel) {
-            statementAnalysis.findForWriting(analyserContext, variable).markRead(minLevel);
+        public void accept(ModificationData modificationData) {
+            statementAnalysis.findForWriting(analyserContext, variable).markRead(modificationData.level);
         }
 
         @Override
         public String toString() {
-            return "MarkRead{" +
-                    "variable=" + variable +
-                    '}';
+            return "MarkRead{variable=" + variable + '}';
         }
     }
 
-    public class LinkVariable implements StatementAnalysis.StatementAnalysisModification {
+    public class LinkVariable implements StatementAnalysisModification {
         public final Variable variable;
         public final List<Variable> to;
 
@@ -1311,7 +1316,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public void accept(Integer minLevel) {
+        public void accept(ModificationData modificationData) {
             statementAnalysis.assertVariableExists(variable);
             to.forEach(statementAnalysis::assertVariableExists);
             if (!statementAnalysis.dependencyGraph.isFrozen()) {
@@ -1321,10 +1326,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public String toString() {
-            return "LinkVariable{" +
-                    "variable=" + variable +
-                    ", to=" + to +
-                    '}';
+            return "LinkVariable{variable=" + variable + ", to=" + to + '}';
         }
     }
 

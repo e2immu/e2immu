@@ -38,7 +38,6 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -244,15 +243,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public interface StateChange extends Function<Value, Value> {
         // nothing
     }
-
-    public interface StatementAnalysisModification extends Consumer<Integer> {
-        // nothing extra at the moment
-    }
-
-    public void apply(StatementAnalysisModification modification, int minLevel) {
-        modification.accept(minLevel);
-    }
-
 
     @Override
     public AnnotationMode annotationMode() {

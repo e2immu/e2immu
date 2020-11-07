@@ -318,9 +318,9 @@ public class MethodLevelData {
         return DONE;
     }
 
-    public class SetCircularCallOrUndeclaredFunctionalInterface implements StatementAnalysis.StatementAnalysisModification {
+    public class SetCircularCallOrUndeclaredFunctionalInterface implements StatementAnalyser.StatementAnalysisModification {
         @Override
-        public void accept(Integer minLevel) {
+        public void accept(StatementAnalyser.ModificationData modificationData) {
             if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
                 callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(true);
             }

@@ -24,10 +24,7 @@ import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.FieldAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.junit.Assert;
@@ -110,15 +107,19 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
             int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expectModified, modified);
         }
+        if ("add".equals(d.methodInfo().name)) {
+            ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, parameterAnalysis.getProperty(VariableProperty.NOT_NULL));
+        }
     };
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if (d.methodInfo().name.equals("setString") && "0".equals(d.statementId())) {
-            Assert.assertEquals(d.evaluationResult().toString(), 4L, d.evaluationResult().getModificationStream().count());
+            Assert.assertEquals(d.evaluationResult().toString(), 5L, d.evaluationResult().getModificationStream().count());
             Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(STRING_PARAMETER));
             Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(THIS));
             Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkAssigned(STRING_FIELD));
-            // 4th is the link
+            // 4th is the link, 5th the set state on assignment
 
             // link to empty set, because String is E2Immutable
             Assert.assertTrue(d.evaluationResult().toString(), d.haveLinkVariable(STRING_FIELD, Set.of()));

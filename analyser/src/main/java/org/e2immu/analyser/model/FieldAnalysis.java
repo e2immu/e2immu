@@ -54,6 +54,10 @@ public interface FieldAnalysis extends Analysis {
                                  TypeInfo bestType,
                                  VariableProperty variableProperty) {
         switch (variableProperty) {
+            case SIZE_COPY:
+            case IDENTITY:
+                return Level.FALSE;
+
             case FINAL:
                 int immutableOwner = analysisProvider.getTypeAnalysis(fieldInfo.owner).getProperty(VariableProperty.IMMUTABLE);
                 if (MultiLevel.isEffectivelyE1Immutable(immutableOwner)) return Level.TRUE;

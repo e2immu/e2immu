@@ -38,10 +38,6 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     public final FieldInfo assignedToField;
     public final boolean copiedFromFieldToParameters;
 
-    // associated with the parameter is a list of other parameter indices it exposes
-    // this list is only filled in when the EXPOSED property is Level.TRUE.
-    public final SetOnceMap<Integer, Boolean> exposed = new SetOnceMap<>();
-
     private ParameterAnalysisImpl(ParameterInfo parameterInfo,
                                   Map<VariableProperty, Integer> properties,
                                   Map<AnnotationExpression, Boolean> annotations,
@@ -95,10 +91,6 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         // initial flow object, used to collect call-outs
         // at the end of the method analysis replaced by a "final" flow object
         public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
-
-        // associated with the parameter is a list of other parameter indices it exposes
-        // this list is only filled in when the EXPOSED property is Level.TRUE.
-        public final SetOnceMap<Integer, Boolean> exposed = new SetOnceMap<>();
 
         public Builder(Primitives primitives, AnalysisProvider analysisProvider, ParameterInfo parameterInfo) {
             super(primitives, parameterInfo.hasBeenDefined(), parameterInfo.simpleName());

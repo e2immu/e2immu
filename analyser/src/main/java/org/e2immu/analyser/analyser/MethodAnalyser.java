@@ -128,8 +128,8 @@ public class MethodAnalyser extends AbstractAnalyser {
                     .add("computeOnlyMarkPrepWork", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork(sharedState))
                     .add("computeOnlyMarkAnnotate", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkAnnotate(sharedState))
                     .add("methodIsIndependent", this::methodIsIndependent)
-                    .add("computeSize", (sharedState) -> methodInfo.isConstructor ? DONE : computeSize(sharedState))
-                    .add("computeSizeCopy", (sharedState) -> methodInfo.isConstructor ? DONE : computeSizeCopy());
+                    .add("computeSize", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeSize(sharedState))
+                    .add("computeSizeCopy", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeSizeCopy());
 
             for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
                 builder.add("Parameter " + parameterAnalyser.parameterInfo.name, (iteration -> parameterAnalyser.analyse()));
