@@ -69,10 +69,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private ConditionManager localConditionManager;
     private AnalysisStatus analysisStatus;
     private AnalyserComponents<String, SharedState> analyserComponents;
-    // if true, we should ignore errors on the condition in the next iterations
-    // if(x == null) throw ... causes x to become @NotNull; in the next iteration, x==null cannot happen,
-    // which would cause an error; it is this error that is eliminated
-    private boolean ignoreErrorsOnCondition;
 
     private StatementAnalyser(AnalyserContext analyserContext,
                               MethodAnalyser methodAnalyser,
@@ -396,8 +392,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                             statementAnalysis.index,
                             statementAnalysis.stateData.getConditionManager().condition,
                             statementAnalysis.stateData.getConditionManager().state,
-                            analyserComponents.getStatusesAsMap(),
-                            ignoreErrorsOnCondition));
+                            analyserComponents.getStatusesAsMap()));
         }
     }
 
@@ -502,11 +497,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     log(VARIABLE_PROPERTIES, "Escape with precondition {}", precondition);
 
                     statementAnalysis.stateData.precondition.set(precondition);
-
-                    if (!ignoreErrorsOnCondition) {
-                        log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
-                        ignoreErrorsOnCondition = true;
-                    }
+                    disableErrorsOnIfStatement();
                 }
             }
         }
@@ -525,10 +516,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 // as a context property, at the highest level (AFTER summary, but we're simply increasing)
                 statementAnalysis.addProperty(analyserContext, VariableInfoContainer.LEVEL_4_SUMMARY,
                         nullVariable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-                if (!ignoreErrorsOnCondition) {
-                    log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
-                    ignoreErrorsOnCondition = true;
-                }
+                disableErrorsOnIfStatement();
             }
         }
         return DONE;
@@ -549,14 +537,28 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
                     statementAnalysis.addProperty(analyserContext, VariableInfoContainer.LEVEL_4_SUMMARY,
                             parameterInfo, VariableProperty.SIZE, sizeRestriction);
-                    if (!ignoreErrorsOnCondition) {
-                        log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
-                        ignoreErrorsOnCondition = true;
-                    }
+                    disableErrorsOnIfStatement();
                 }
             }
         }
         return DONE;
+    }
+
+    /*
+    Method to help avoiding errors in the following situation:
+
+    if(parameter == null) throw new NullPointerException();
+
+    This will cause a @NotNull on the parameter, which in turn renders parameter == null equal to "false", which causes errors.
+    The switch avoids raising this error
+
+    IMPROVE: check that the parent is the if-statement (there could be garbage in-between)
+     */
+    private void disableErrorsOnIfStatement() {
+        if (!statementAnalysis.parent.stateData.statementContributesToPrecondition.isSet()) {
+            log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
+            statementAnalysis.parent.stateData.statementContributesToPrecondition.set();
+        }
     }
 
     /**
@@ -740,7 +742,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         variableInfo.assignment(VariableInfoContainer.LEVEL_3_EVALUATION);
         Map<VariableProperty, Integer> propertiesToSet = evaluationContext.getValueProperties(value);
         variableInfo.setValueOnAssignment(VariableInfoContainer.LEVEL_3_EVALUATION, value, propertiesToSet);
-        return value == NO_VALUE ? DELAYS: DONE;
+        return value == NO_VALUE ? DELAYS : DONE;
     }
 
     private boolean step7_detectErrorsIfElseSwitchFor(Value value, EvaluationContext evaluationContext) {
@@ -756,9 +758,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     (combinedWithCondition.equals(previousConditional) || combinedWithState.isConstant())
                     || combinedWithCondition.isConstant();
 
-            if (noEffect && !ignoreErrorsOnCondition && !statementAnalysis.inErrorState(Message.CONDITION_EVALUATES_TO_CONSTANT)) {
+            if (noEffect && !statementAnalysis.stateData.statementContributesToPrecondition.isSet()) {
                 statementAnalysis.ensure(Message.newMessage(evaluationContext.getLocation(), Message.CONDITION_EVALUATES_TO_CONSTANT));
-                ignoreErrorsOnCondition = true; // so that we don't repeat this error
             }
             return true;
         }

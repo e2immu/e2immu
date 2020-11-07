@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.util.FlipSwitch;
 import org.e2immu.analyser.util.SetOnce;
 
 import java.util.stream.Stream;
@@ -33,6 +34,7 @@ public class StateData {
     public final SetOnce<Value> precondition = new SetOnce<>(); // set on statements of depth 1, ie., 0, 1, 2,..., not 0.0.0, 1.0.0
     public final SetOnce<ConditionManager> conditionManager = new SetOnce<>(); // the state as it is after evaluating the statement
     public final SetOnce<Value> valueOfExpression = new SetOnce<>();
+    public final FlipSwitch statementContributesToPrecondition = new FlipSwitch();
 
     public AnalysisStatus copyPrecondition(StatementAnalyser statementAnalyser, StatementAnalysis previous, EvaluationContext evaluationContext) {
         if (!precondition.isSet()) {

@@ -15,8 +15,7 @@ public interface StatementAnalyserVisitor {
                 int iteration,
                 EvaluationContext evaluationContext,
                 MethodInfo methodInfo, StatementAnalysis statementAnalysis,
-                String statementId, Value condition, Value state, Map<String, AnalysisStatus> statusesAsMap,
-                boolean ignoreErrorsOnCondition) {
+                String statementId, Value condition, Value state, Map<String, AnalysisStatus> statusesAsMap) {
 
         // shortcut
 
