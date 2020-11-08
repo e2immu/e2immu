@@ -25,8 +25,8 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.FirstThen;
+import org.e2immu.analyser.util.FlipSwitch;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
 import java.util.Map;
@@ -37,18 +37,21 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     public final ObjectFlow objectFlow;
     public final FieldInfo assignedToField;
     public final boolean copiedFromFieldToParameters;
+    public final boolean isAssignedToAField;
 
     private ParameterAnalysisImpl(ParameterInfo parameterInfo,
                                   Map<VariableProperty, Integer> properties,
                                   Map<AnnotationExpression, Boolean> annotations,
                                   ObjectFlow objectFlow,
                                   FieldInfo assignedToField,
-                                  boolean copiedFromFieldToParameters) {
+                                  boolean copiedFromFieldToParameters,
+                                  boolean isAssignedToAField) {
         super(parameterInfo.hasBeenDefined(), properties, annotations);
         this.parameterInfo = parameterInfo;
         this.objectFlow = objectFlow;
         this.assignedToField = assignedToField;
         this.copiedFromFieldToParameters = copiedFromFieldToParameters;
+        this.isAssignedToAField = isAssignedToAField;
     }
 
     @Override
@@ -59,6 +62,11 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
     @Override
     public boolean isCopiedFromFieldToParameters() {
         return copiedFromFieldToParameters;
+    }
+
+    @Override
+    public Boolean getIsAssignedToAField() {
+        return isAssignedToAField;
     }
 
     @Override
@@ -84,7 +92,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
         private final ParameterInfo parameterInfo;
         public final SetOnce<FieldInfo> assignedToField = new SetOnce<>();
-        public final SetOnce<Boolean> copiedFromFieldToParameters = new SetOnce<>();
+        public final SetOnce<Boolean> isAssignedToAField = new SetOnce<>();
+        public final FlipSwitch copiedFromFieldToParameters = new FlipSwitch();
         public final Location location;
         private final AnalysisProvider analysisProvider;
 
@@ -134,14 +143,20 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
         @Override
         public boolean isCopiedFromFieldToParameters() {
-            return copiedFromFieldToParameters.getOrElse(false);
+            return copiedFromFieldToParameters.isSet();
+        }
+
+        @Override
+        public Boolean getIsAssignedToAField() {
+            return isAssignedToAField.getOrElse(null);
         }
 
         @Override
         public Analysis build() {
             return new ParameterAnalysisImpl(parameterInfo,
                     properties.toImmutableMap(),
-                    annotations.toImmutableMap(), getObjectFlow(), getAssignedToField(), isCopiedFromFieldToParameters());
+                    annotations.toImmutableMap(), getObjectFlow(), getAssignedToField(), isCopiedFromFieldToParameters(),
+                    isAssignedToAField.getOrElse(false));
         }
 
         @Override

@@ -25,6 +25,8 @@ import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Freezable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -32,6 +34,8 @@ import java.util.Objects;
 import java.util.Set;
 
 public class VariableInfoContainerImpl extends Freezable implements VariableInfoContainer {
+    private final static Logger LOGGER = LoggerFactory.getLogger(VariableInfoContainerImpl.class);
+
     public static final int LEVELS = 5;
 
     private final VariableInfo[] data = new VariableInfo[LEVELS];
@@ -214,8 +218,15 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
         int writeLevel = findLevelForWriting(level);
         VariableInfoImpl variableInfo = getAndCast(writeLevel);
-        if (variableInfo.setProperty(variableProperty, value)) {
-            liftCurrentLevel(writeLevel);
+        try {
+            if (variableInfo.setProperty(variableProperty, value)) {
+                liftCurrentLevel(writeLevel);
+            }
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Caught exception while setting variable property " + variableProperty +
+                    " of " + variableInfo.name + " to " + value + " at level " + writeLevel + "; current level " + currentLevel +
+                    "; previous value " + variableInfo.getProperty(variableProperty));
+            throw rte;
         }
     }
 

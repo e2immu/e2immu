@@ -570,26 +570,9 @@ public class FieldAnalyser extends AbstractAnalyser {
             }
         }
 
-        // field linked to parameter
-        if (values.size() == 1) {
-            VariableValue variableValue;
-            if ((variableValue = values.get(0).asInstanceOf(VariableValue.class)) != null) {
-                if (variableValue.variable instanceof ParameterInfo parameterInfo) {
-                    ParameterAnalyser parameterAnalyser = analyserContext.getParameterAnalysers().get(parameterInfo);
-                    if (parameterAnalyser.parameterAnalysis.assignedToField.isSet()) {
-                        parameterAnalyser.parameterAnalysis.assignedToField.set(fieldInfo);
-                        log(CONSTANT, "Field {} has been assigned to parameter {}", fieldInfo.name, parameterInfo.fullyQualifiedName());
-                    }
-                } else {
-                    log(CONSTANT, "Field {} is assignment linked to another field? what would be the purpose?", fieldInfo.fullyQualifiedName());
-                }
-            }
-        }
-
-        // we could have checked this at the start, but then we'd miss the potential assignment between parameter and field
-
-        if (fieldAnalysis.getProperty(VariableProperty.FINAL) != Level.TRUE || fieldAnalysis.effectivelyFinalValue.isSet())
+        if (fieldAnalysis.getProperty(VariableProperty.FINAL) != Level.TRUE || fieldAnalysis.effectivelyFinalValue.isSet()) {
             return DONE;
+        }
 
         // compute and set the combined value
 

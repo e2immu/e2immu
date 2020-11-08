@@ -451,7 +451,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
         boolean allReady = myMethodAndConstructorAnalysersExcludingSAMs.stream().allMatch(
                 methodAnalyser -> methodAnalyser.getParameterAnalysers().stream().allMatch(parameterAnalyser ->
-                        parameterAnalyser.getParameterAnalysis().getAssignedToField() == null ||
+                        parameterAnalyser.getParameterAnalysis().getIsAssignedToAField() == Boolean.FALSE ||
                                 parameterAnalyser.parameterAnalysis.copiedFromFieldToParameters.isSet()));
         if (!allReady) {
             log(DELAYED, "Delaying container, variables linked to fields and params not yet set");

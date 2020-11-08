@@ -1,6 +1,8 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.EvaluationResultVisitor;
@@ -21,12 +23,12 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         super(false);
     }
 
-
     private static final String FINAL_CHECKS = "FinalChecks";
     private static final String S1 = FinalChecks.class.getCanonicalName() + ".s1";
     private static final String S1_P0 = FinalChecks.class.getCanonicalName() + ".FinalChecks(String,String):0:s1";
     private static final String S2 = FinalChecks.class.getCanonicalName() + ".s2";
     private static final String P4 = FinalChecks.class.getCanonicalName() + ".setS4(String):0:s4";
+    private static final String S5 = FinalChecks.class.getCanonicalName() + ".s5";
 
     StatementAnalyserVariableVisitor statementAnalyserVisitor = d -> {
         if (d.methodInfo().name.equals("setS4") && P4.equals(d.variableName())) {
@@ -34,7 +36,8 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                 Assert.assertFalse(d.hasProperty(VariableProperty.MODIFIED)); // no method was called on parameter s4
                 Assert.assertEquals(1, d.getProperty(VariableProperty.READ)); // read 1x
                 // there is an explicit @NotNull on the first parameter of debug
-                Assert.assertFalse(d.properties().containsKey(VariableProperty.NOT_NULL)); // nothing that points to not null
+                int expectNotNull = MultiLevel.NULLABLE;
+                Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL)); // nothing that points to not null
             } else Assert.fail();
         }
 
@@ -42,7 +45,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
             if (S1.equals(d.variableName())) {
                 Assert.assertEquals(S1_P0 + " + abc", d.currentValue().toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
-                Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL)); // nothing that points to not null
                 Assert.assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
             }
             if ("1".equals(d.statementId()) && S2.equals(d.variableName())) {
@@ -51,6 +54,21 @@ public class Test_05_FinalChecks extends CommonTestRunner {
             if ("2".equals(d.statementId()) && S2.equals(d.variableName())) {
                 // stateOnAssignment has to be copied from statement 1
                 Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
+            }
+            if(S5.equals(d.variableName())) {
+                if("0".equals(d.statementId())) {
+                    VariableInfo vi1 = d.variableInfoContainer().best(VariableInfoContainer.LEVEL_1_INITIALISER);
+                    Assert.assertEquals(Level.DELAY, vi1.getProperty(VariableProperty.IMMUTABLE));
+                    VariableInfo vi4 = d.variableInfoContainer().best(VariableInfoContainer.LEVEL_4_SUMMARY);
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, vi4.getProperty(VariableProperty.IMMUTABLE));
+                }
+                if ("0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("abc", d.currentValue().toString());
+                    VariableInfo vi1 = d.variableInfoContainer().best(VariableInfoContainer.LEVEL_1_INITIALISER);
+                    Assert.assertEquals(Level.DELAY, vi1.getProperty(VariableProperty.IMMUTABLE));
+                    VariableInfo vi3 = d.variableInfoContainer().best(VariableInfoContainer.LEVEL_3_EVALUATION);
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, vi3.getProperty(VariableProperty.IMMUTABLE));
+                }
             }
         }
 
@@ -62,9 +80,10 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         int iteration = d.iteration();
         MethodInfo methodInfo = d.methodInfo();
 
-        if ("setS4".equals(methodInfo.name) && iteration >= 1) {
+        if ("setS4".equals(methodInfo.name)) {
             // @NotModified decided straight away, @Identity as well
             Assert.assertEquals(Level.FALSE, d.parameterAnalyses().get(0).getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(MultiLevel.NULLABLE, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
         }
 
         // there is no size restriction
@@ -94,13 +113,5 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
-    }
-
-    @Test
-    public void test2() {
-        String s1 = null;
-        String s2 = null;
-        String s3 = s1 + s2;
-        Assert.assertEquals("nullnull", s3);
     }
 }

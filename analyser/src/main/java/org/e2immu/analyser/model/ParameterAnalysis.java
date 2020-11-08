@@ -49,6 +49,10 @@ public interface ParameterAnalysis extends Analysis {
         return false;
     }
 
+    default Boolean getIsAssignedToAField() {
+        return null;
+    }
+
     // the reason the following methods sit here, is that they are shared by ParameterAnalysisImpl and ParameterAnalysisImpl.Builder
 
     default int getParameterPropertyCheckOverrides(AnalysisProvider analysisProvider,
@@ -123,10 +127,13 @@ public interface ParameterAnalysis extends Analysis {
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                 if (bestType != null && Primitives.isPrimitiveExcludingVoid(bestType))
                     return MultiLevel.EFFECTIVELY_NOT_NULL;
-                return getParameterPropertyCheckOverrides(AnalysisProvider.DEFAULT_PROVIDER, parameterInfo, variableProperty);
+                return MultiLevel.bestNotNull(MultiLevel.NULLABLE,
+                        getParameterPropertyCheckOverrides(AnalysisProvider.DEFAULT_PROVIDER, parameterInfo, variableProperty));
             }
 
+            case SIZE_COPY:
             case SIZE:
+                // TODO will need improvement
                 return getParameterPropertyCheckOverrides(AnalysisProvider.DEFAULT_PROVIDER, parameterInfo, variableProperty);
 
             case NOT_MODIFIED_1:

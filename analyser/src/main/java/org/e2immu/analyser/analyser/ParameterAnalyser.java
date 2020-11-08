@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -29,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
+import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.SIZE;
 import static org.e2immu.analyser.util.Logger.log;
@@ -114,41 +117,70 @@ public class ParameterAnalyser {
     }
 
     /**
-     * The goal is to ensure that NOT_NULL and SIZE are not unnecessarily delayed. NOT_MODIFIED will be set by the link computer
-     * as soon as possible.
+     * Copy properties from an effectively final field  (FINAL=Level.TRUE) to the parameter that is is assigned to.
+     * Does not apply to variable fields.
      *
-     * @return true if changes were made
      */
     public AnalysisStatus analyse() {
         boolean changed = false;
-        boolean delays = false;
-        // TODO we need to make a distinction between the field, and whether it has been assigned or not
-        if (parameterAnalysis.assignedToField.isSet() && !parameterAnalysis.copiedFromFieldToParameters.isSet()) {
-            FieldInfo fieldInfo = parameterAnalysis.assignedToField.get();
-            FieldAnalysis fieldAnalysis = fieldAnalysers.get(fieldInfo).fieldAnalysis;
-            for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PARAMETER) {
-                int inField = fieldAnalysis.getProperty(variableProperty);
-                if (inField != Level.DELAY) {
-                    int inParameter = parameterAnalysis.getProperty(variableProperty);
-                    if (inField > inParameter && verifySizeNotModified(variableProperty)) {
-                        log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
-                                fieldInfo.fullyQualifiedName(), parameterInfo.fullyQualifiedName(), variableProperty);
-                        parameterAnalysis.setProperty(variableProperty, inField);
+        if (!parameterAnalysis.isAssignedToAField.isSet()) {
+            boolean delays = false;
+            // find a field that's linked to me; bail out when not all field's values are set.
+            for (FieldInfo fieldInfo : parameterInfo.owner.typeInfo.typeInspection.get().fields) {
+                FieldAnalysis fieldAnalysis = analysisProvider.getFieldAnalysis(fieldInfo);
+                int effFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+                if (effFinal == Level.DELAY) {
+                    delays = true;
+                } else if (effFinal == Level.TRUE) {
+                    Value effectivelyFinal = fieldAnalysis.getEffectivelyFinalValue();
+                    if (effectivelyFinal == null) return DELAYS;
+                    VariableValue variableValue;
+                    if ((variableValue = effectivelyFinal.asInstanceOf(VariableValue.class)) != null
+                            && variableValue.variable == parameterInfo) {
+                        // we have a hit
+                        parameterAnalysis.assignedToField.set(fieldInfo);
                         changed = true;
                     }
-                } else {
-                    log(ANALYSER, "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
-                    delays = true;
                 }
             }
-            if (!delays) {
-                log(ANALYSER, "No delays anymore on copying from field to parameter");
-                parameterAnalysis.copiedFromFieldToParameters.set(true);
-                changed = true;
+            if (!changed && delays) return DELAYS;
+            parameterAnalysis.isAssignedToAField.set(parameterAnalysis.assignedToField.isSet());
+        }
+
+        boolean delays = false;
+        // the copiedFromFieldToParameters field is necessary to know  in the type analyser
+        // when the copying has finished without delays
+        if (!parameterAnalysis.copiedFromFieldToParameters.isSet()) {
+            if(parameterAnalysis.assignedToField.isSet() ) {
+                FieldInfo fieldInfo = parameterAnalysis.assignedToField.get();
+                FieldAnalysis fieldAnalysis = fieldAnalysers.get(fieldInfo).fieldAnalysis;
+                for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PARAMETER) {
+                    int inField = fieldAnalysis.getProperty(variableProperty);
+                    if (inField != Level.DELAY) {
+                        int inParameter = parameterAnalysis.getProperty(variableProperty);
+                        if (inField > inParameter && verifySizeNotModified(variableProperty)) {
+                            log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
+                                    fieldInfo.fullyQualifiedName(), parameterInfo.fullyQualifiedName(), variableProperty);
+                            parameterAnalysis.setProperty(variableProperty, inField);
+                            changed = true;
+                        }
+                    } else {
+                        log(ANALYSER, "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
+                        delays = true;
+                    }
+                }
+                if (!delays) {
+                    log(ANALYSER, "No delays anymore on copying from field to parameter");
+                    parameterAnalysis.copiedFromFieldToParameters.set();
+                    changed = true;
+                }
+            } else {
+                // not assigned to a field... so we set minimal values
+                // FIXME parameterAnalysis.ensureProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
             }
         }
 
-        return delays ? (changed ? AnalysisStatus.PROGRESS : AnalysisStatus.DELAYS) : AnalysisStatus.DONE;
+        return delays ? (changed ? AnalysisStatus.PROGRESS : AnalysisStatus.DELAYS) : DONE;
     }
 
     /**
