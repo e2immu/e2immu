@@ -9,7 +9,6 @@ import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TryStatement extends StatementWithStructure {
@@ -38,8 +37,7 @@ public class TryStatement extends StatementWithStructure {
                 .setCreateVariablesInsideBlock(true)
                 .addInitialisers(resources)
                 .setStatementsExecutedAtLeastOnce((v, ec) -> true)
-                .setBlock(tryBlock)
-                .setNoBlockMayBeExecuted(false); //there's always the main block
+                .setBlock(tryBlock); //there's always the main block
         for (Pair<CatchParameter, Block> pair : catchClauses) {
             builder.addSubStatement(new Structure.Builder().setLocalVariableCreation(pair.k.localVariable)
                     .setStatementsExecutedAtLeastOnce((v, ec) -> false)

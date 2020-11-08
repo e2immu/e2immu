@@ -21,8 +21,6 @@ public class SwitchStatement extends StatementWithExpression {
                 .setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL);
         switchEntries.forEach(se -> builder.addSubStatement(se.getStructure()).setStatementsExecutedAtLeastOnce((v, ec) -> false));
-        boolean haveNoDefault = switchEntries.stream().allMatch(SwitchEntry::isNotDefault);
-        builder.setNoBlockMayBeExecuted(haveNoDefault);
         return builder.build();
     }
 

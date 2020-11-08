@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.ValueComparator;
+import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -166,6 +167,16 @@ public interface Value extends Comparable<Value> {
 
     default boolean isComputeProperties() {
         return this != UnknownValue.RETURN_VALUE;
+    }
+
+    default boolean isBoolValueTrue() {
+        BoolValue boolValue;
+        return ((boolValue = this.asInstanceOf(BoolValue.class)) != null) && boolValue.value;
+    }
+
+    default boolean isBoolValueFalse() {
+        BoolValue boolValue;
+        return ((boolValue = this.asInstanceOf(BoolValue.class)) != null) && !boolValue.value;
     }
 
     class FilterResult {

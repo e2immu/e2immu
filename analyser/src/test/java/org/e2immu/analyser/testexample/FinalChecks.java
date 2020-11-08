@@ -50,6 +50,13 @@ public class FinalChecks {
     FinalChecks(String s1, String s2) {
         if (s5 == null) {
             s5 = "abc";
+        } else {
+            // ensure this statement is ignored!!
+            s5 = null;
+        }
+        if (s5 == null) {
+            // ensure that this statement is ignored!
+            throw new UnsupportedOperationException();
         }
         this.s2 = s2;
         this.s1 = s1 + s3;

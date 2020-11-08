@@ -41,6 +41,7 @@ import static org.e2immu.analyser.analyser.InterruptsFlow.*;
  */
 public class FlowData {
 
+    // meant for statements following a
     public final SetOnce<Execution> guaranteedToBeReachedInCurrentBlock = new SetOnce<>();
     public final SetOnce<Execution> guaranteedToBeReachedInMethod = new SetOnce<>();
 
@@ -62,6 +63,11 @@ public class FlowData {
         // combine with guaranteed to be reached in block
         FlowData.Execution execution = guaranteedToBeReachedInMethod.get();
         return execution.worst(executionBlock);
+    }
+
+    public void setGuaranteedToBeReached(Execution execution) {
+        guaranteedToBeReachedInCurrentBlock.set(execution);
+        guaranteedToBeReachedInMethod.set(execution);
     }
 
 
@@ -100,6 +106,10 @@ public class FlowData {
                                                                  StatementAnalysis previousStatement,
                                                                  Execution blockExecution,
                                                                  Value state) {
+        if(guaranteedToBeReachedInMethod.isSet()) {
+            return false; // already done!
+        }
+
         if (previousStatement == null) {
             // start of a block
             guaranteedToBeReachedInCurrentBlock.set(Execution.ALWAYS);

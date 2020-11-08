@@ -134,10 +134,10 @@ public class ConditionalValue implements Value {
         EvaluationResult reTrue = ifTrue.reEvaluate(evaluationContext, translation);
         EvaluationResult reFalse = ifFalse.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reCondition, reTrue, reFalse);
-        if (reCondition.value.equals(BoolValue.createTrue(evaluationContext.getPrimitives()))) {
+        if (reCondition.value.isBoolValueTrue()) {
             return builder.setValue(reTrue.value).build();
         }
-        if (reCondition.value.equals(BoolValue.createFalse(evaluationContext.getPrimitives()))) {
+        if (reCondition.value.isBoolValueFalse()) {
             return builder.setValue(reFalse.value).build();
         }
         return builder.setValue(new ConditionalValue(reCondition.value, reTrue.value, reFalse.value, getObjectFlow())).build();

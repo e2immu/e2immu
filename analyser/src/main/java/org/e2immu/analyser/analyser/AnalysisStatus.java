@@ -23,6 +23,8 @@ public enum AnalysisStatus {
     PROGRESS(0), // changes, but not yet fully done
     DELAYS(1), // no changes, due to delays
     DONE(2),
+
+    SKIPPED(3) // used for unreachable code
     ;
 
     private final int pos;

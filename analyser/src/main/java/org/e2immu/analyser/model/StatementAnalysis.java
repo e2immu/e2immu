@@ -338,31 +338,31 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
 
-    public void copyBackLocalCopies(EvaluationContext evaluationContext, List<StatementAnalyser> lastStatements, StatementAnalysis previous) {
+    public void copyBackLocalCopies(EvaluationContext evaluationContext,
+                                    List<StatementAnalyser> lastStatements,
+                                    boolean atLeastOneBlockExecuted,
+                                    StatementAnalysis previous) {
         methodLevelData.copyFrom(Stream.concat(previous == null ? Stream.empty() : Stream.of(previous.methodLevelData),
                 lastStatements.stream().map(sa -> sa.statementAnalysis.methodLevelData)));
 
         // we need to make a synthesis of the variable state of fields, local copies, etc.
         // some blocks are guaranteed to be executed, others are only executed conditionally.
 
-        if (!lastStatements.isEmpty()) {
-            variables.stream().forEach(e -> {
-                String fqn = e.getKey();
-                VariableInfoContainer vic = e.getValue();
+        variables.stream().forEach(e -> {
+            String fqn = e.getKey();
+            VariableInfoContainer vic = e.getValue();
 
-                boolean someChange = lastStatements.stream()
-                        .anyMatch(sa -> sa.statementAnalysis.variables.isSet(fqn) && // possibly not set if field, parameter
-                                sa.statementAnalysis.variables.get(fqn).getCurrentLevel() > VariableInfoContainer.LEVEL_0_PREVIOUS);
-                if (someChange) {
-                    List<VariableInfo> toMerge = lastStatements.stream()
-                            .filter(sa -> sa.statementAnalysis.variables.isSet(fqn))
-                            .map(sa -> sa.statementAnalysis.variables.get(fqn).current())
-                            .collect(Collectors.toList());
-                    boolean overwrite = !statement.getStructure().noBlockMayBeExecuted;
-                    vic.merge(VariableInfoContainer.LEVEL_4_SUMMARY, evaluationContext, overwrite, toMerge);
-                }
-            });
-        }
+            boolean someChange = lastStatements.stream()
+                    .anyMatch(sa -> sa.statementAnalysis.variables.isSet(fqn) && // possibly not set if field, parameter
+                            sa.statementAnalysis.variables.get(fqn).getCurrentLevel() > VariableInfoContainer.LEVEL_0_PREVIOUS);
+            if (someChange) {
+                List<VariableInfo> toMerge = lastStatements.stream()
+                        .filter(sa -> sa.statementAnalysis.variables.isSet(fqn))
+                        .map(sa -> sa.statementAnalysis.variables.get(fqn).current())
+                        .collect(Collectors.toList());
+                vic.merge(VariableInfoContainer.LEVEL_4_SUMMARY, evaluationContext, atLeastOneBlockExecuted, toMerge);
+            }
+        });
     }
 
 

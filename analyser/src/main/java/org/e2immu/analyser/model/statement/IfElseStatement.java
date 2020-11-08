@@ -50,8 +50,7 @@ public class IfElseStatement extends StatementWithExpression {
             builder.addSubStatement(new Structure.Builder().setExpression(EmptyExpression.DEFAULT_EXPRESSION)
                     .setStatementsExecutedAtLeastOnce((v, ec) -> false)
                     .setBlock(elseBlock)
-                    .build())
-                    .setNoBlockMayBeExecuted(false); // either the if or the else block, but one shall be executed
+                    .build());
         }
         return builder.build();
     }

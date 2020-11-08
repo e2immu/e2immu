@@ -31,7 +31,6 @@ public class SynchronizedStatement extends StatementWithExpression {
                 .setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setStatementsExecutedAtLeastOnce((v, ec) -> true)
-                .setNoBlockMayBeExecuted(false)
                 .setBlock(block).build(), expression);
     }
 

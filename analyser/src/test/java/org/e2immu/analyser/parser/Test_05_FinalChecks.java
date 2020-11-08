@@ -48,10 +48,10 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL)); // nothing that points to not null
                 Assert.assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
             }
-            if ("1".equals(d.statementId()) && S2.equals(d.variableName())) {
+            if ("2".equals(d.statementId()) && S2.equals(d.variableName())) {
                 Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
             }
-            if ("2".equals(d.statementId()) && S2.equals(d.variableName())) {
+            if ("3".equals(d.statementId()) && S2.equals(d.variableName())) {
                 // stateOnAssignment has to be copied from statement 1
                 Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
             }
@@ -98,7 +98,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
 
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
-        if (FINAL_CHECKS.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+        if (FINAL_CHECKS.equals(d.methodInfo().name) && "2".equals(d.statementId())) {
             Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
             d.findMarkAssigned(S2);
             StatementAnalyser.SetStateOnAssignment ssa = d.findSetStateOnAssignment(S2);
