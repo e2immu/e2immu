@@ -5,7 +5,6 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.value.ConstantValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -78,13 +77,15 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
             }
             if ("2".equals(d.statementId())) {
+                Assert.assertEquals("(" + A1 + " and not (" + B1 + "))", d.statementAnalysis().stateData.valueOfExpression.get().toString());
                 Assert.assertEquals("(not (" + A1 + ") and " + B1 + ")", d.state().toString());
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
             }
             // constant condition
             if ("3".equals(d.statementId())) {
-                Assert.assertEquals(d.evaluationContext().boolValueFalse(), d.state());
+                Assert.assertEquals("true", d.statementAnalysis().stateData.valueOfExpression.get().toString());
+                Assert.assertEquals("false", d.state().toString()); // after the statement...
                 Assert.assertEquals("ERROR in M:method1:3: Condition in 'if' or 'switch' statement evaluates to constant",
                         d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
@@ -97,7 +98,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                 Assert.assertNotNull(d.haveError(Message.UNREACHABLE_STATEMENT));
 
                 VariableInfo ret = d.getReturnAsVariable();
-                Assert.assertTrue(ret.getValue() instanceof ConstantValue); // TODO simply here as a marker test
+                Assert.assertNull(ret); // unreachable statement, no data have even been copied!
             }
 
         }

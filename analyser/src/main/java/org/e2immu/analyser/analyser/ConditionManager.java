@@ -41,17 +41,15 @@ public class ConditionManager {
     // adding a condition always adds to the state as well (testing only)
     public ConditionManager addCondition(EvaluationContext evaluationContext, Value value) {
         if (value == null || value == UnknownValue.EMPTY) return this;
-        if (!value.isBoolValueTrue()) {
-            return new ConditionManager(combineWithCondition(evaluationContext, value), combineWithState(evaluationContext, value));
-        }
-        return this;
+        if (value.isBoolValueTrue()) return this;
+        if (value.isBoolValueFalse()) return new ConditionManager(value, value);
+        return new ConditionManager(combineWithCondition(evaluationContext, value), combineWithState(evaluationContext, value));
     }
 
     public ConditionManager addToState(EvaluationContext evaluationContext, Value value) {
-        if (!(value.isInstanceOf(BoolValue.class))) {
-            return new ConditionManager(condition, combineWithState(evaluationContext, value));
-        }
-        return this;
+        if (value.isBoolValueTrue()) return this;
+        if (value.isBoolValueFalse()) return new ConditionManager(value, value);
+        return new ConditionManager(condition, combineWithState(evaluationContext, value));
     }
 
     /**
