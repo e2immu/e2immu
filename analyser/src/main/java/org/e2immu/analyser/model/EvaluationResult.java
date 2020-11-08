@@ -196,8 +196,18 @@ public class EvaluationResult {
         }
 
         public void variableOccursInNotNullContext(Variable variable, Value value, int notNullRequired) {
-            if (value == NO_VALUE) return; // not yet
+            if (value == NO_VALUE) {
+                if (variable instanceof ParameterInfo) {
+                    // we will mark this, so that the parameter analyser knows that it should wait
+                    addToModifications(statementAnalyser.new SetProperty(variable, VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.FALSE));
+                }
+                return; // not yet
+            }
             if (variable instanceof This) return; // nothing to be done here
+            if (variable instanceof ParameterInfo) {
+                // the opposite of the previous one
+                addToModifications(statementAnalyser.new SetProperty(variable, VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.TRUE));
+            }
 
             // if we already know that the variable is NOT @NotNull, then we'll raise an error
             int notNull = MultiLevel.value(evaluationContext.getProperty(value, VariableProperty.NOT_NULL), MultiLevel.NOT_NULL);

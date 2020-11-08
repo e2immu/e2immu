@@ -24,7 +24,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("print2".equals(d.methodInfo().name)) {
-            Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
+            Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
             Assert.assertTrue(d.evaluationResult().value.isInstanceOf(ConstantValue.class));
             Assert.assertEquals("b", d.evaluationResult().value.toString());
             Assert.assertEquals(4L, d.evaluationResult().getObjectFlowStream().count());

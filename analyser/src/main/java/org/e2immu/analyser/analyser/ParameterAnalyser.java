@@ -119,7 +119,6 @@ public class ParameterAnalyser {
     /**
      * Copy properties from an effectively final field  (FINAL=Level.TRUE) to the parameter that is is assigned to.
      * Does not apply to variable fields.
-     *
      */
     public AnalysisStatus analyse() {
         boolean changed = false;
@@ -151,7 +150,7 @@ public class ParameterAnalyser {
         // the copiedFromFieldToParameters field is necessary to know  in the type analyser
         // when the copying has finished without delays
         if (!parameterAnalysis.copiedFromFieldToParameters.isSet()) {
-            if(parameterAnalysis.assignedToField.isSet() ) {
+            if (parameterAnalysis.assignedToField.isSet()) {
                 FieldInfo fieldInfo = parameterAnalysis.assignedToField.get();
                 FieldAnalysis fieldAnalysis = fieldAnalysers.get(fieldInfo).fieldAnalysis;
                 for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PARAMETER) {
@@ -175,8 +174,13 @@ public class ParameterAnalyser {
                     changed = true;
                 }
             } else {
-                // not assigned to a field... so we set minimal values
-                // FIXME parameterAnalysis.ensureProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
+                VariableInfo vi = analysisProvider.getMethodAnalysis(parameterInfo.owner).getLastStatement().findOrNull(parameterInfo);
+                if (vi != null) {
+                    int notNullDelayResolved = vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED);
+                    if (notNullDelayResolved != Level.FALSE && parameterAnalysis.getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
+                        parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
+                    }
+                }
             }
         }
 

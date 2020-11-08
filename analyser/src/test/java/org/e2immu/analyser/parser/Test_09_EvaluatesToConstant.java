@@ -97,26 +97,26 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("method2".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_2, d.step());
+                Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
                 String expectValueString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() :
                         "org.e2immu.analyser.testexample.EvaluatesToConstant.method2(String):0:param.toLowerCase()";
                 Assert.assertEquals(expectValueString,
                         d.evaluationResult().value.toString());
             }
             if ("1".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 String expectString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : "false";
                 Assert.assertEquals(expectString, d.evaluationResult().value.toString());
             }
         }
         if ("method3".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals("org.e2immu.analyser.testexample.EvaluatesToConstant.method3(String):0:param.contains(a)",
                         d.evaluationResult().value.toString());
             }
             if ("1.0.0".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_2, d.step());
+                Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
                 String expectValueString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : "xzy.toLowerCase()";
                 Assert.assertEquals(expectValueString, d.evaluationResult().value.toString());
             }

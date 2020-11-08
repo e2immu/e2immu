@@ -17,7 +17,7 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
 
     private static final String T_LENGTH_GE_19 = "((-19) + org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method1(String):0:t.length(),?>=0) >= 0";
     private static final String T_LENGTH_LT_19 = "(18 + (-org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method1(String):0:t.length(),?>=0)) >= 0";
-
+    private static final String X = "org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method5(boolean):0:x";
     private static final String THIS = "org.e2immu.analyser.testexample.UnusedLocalVariableChecks.this";
 
     public Test_03_UnusedLocalVariableChecks() {
@@ -125,6 +125,10 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
             }
         }
         if ("method5".equals(d.methodInfo().name) && "a".equals(d.variableName())) {
+            if("1.0.0".equals(d.statementId())) {
+                Assert.assertEquals("5", d.currentValue().toString());
+                Assert.assertEquals(X, d.variableInfo().getStateOnAssignment().toString());
+            }
             if ("2".equals(d.statementId())) {
                 Assert.assertEquals("6", d.currentValue().toString());
             }
@@ -135,7 +139,7 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
         if ("checkArray2".equals(d.methodInfo().name)) {
             // int[] integers = {1, 2, 3};
             if ("0".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_2, d.step());
+                Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
                 Assert.assertEquals("{1,2,3}", d.evaluationResult().value.toString());
                 Variable integers = d.evaluationResult().valueChanges.keySet().stream().findFirst().orElseThrow();
                 Assert.assertEquals("integers", integers.fullyQualifiedName());
@@ -146,12 +150,12 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
 
             // integers[i] = 3
             if ("2".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_4, d.step()); // just to make sure we're on the correct statement
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step()); // just to make sure we're on the correct statement
                 //Assert.assertEquals(2L, d.evaluationResult().getModificationStream().count());
             }
         }
         if ("method1".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-            Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
+            Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
             Assert.assertEquals("(18 + (-org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method1(String):0:t.length(),?>=0)) >= 0",
                     d.evaluationResult().value.toString());
             Assert.assertTrue(d.evaluationResult().value.isInstanceOf(GreaterThanZeroValue.class));

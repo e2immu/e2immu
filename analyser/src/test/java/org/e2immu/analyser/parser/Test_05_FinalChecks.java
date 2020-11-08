@@ -99,7 +99,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if (FINAL_CHECKS.equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-            Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
+            Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
             d.findMarkAssigned(S2);
             StatementAnalyser.SetStateOnAssignment ssa = d.findSetStateOnAssignment(S2);
             Assert.assertSame(UnknownValue.EMPTY, ssa.state);

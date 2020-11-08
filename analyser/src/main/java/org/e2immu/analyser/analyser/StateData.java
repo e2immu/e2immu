@@ -55,6 +55,10 @@ public class StateData {
         return conditionManager.getOrElse(ConditionManager.DELAYED);
     }
 
+    public Value getValueOfExpression() {
+        return valueOfExpression.getOrElse(UnknownValue.NO_VALUE);
+    }
+
     public static class RemoveVariableFromState implements StatementAnalysis.StateChange {
         private final Variable variable;
         private final EvaluationContext evaluationContext;

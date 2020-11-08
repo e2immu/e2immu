@@ -33,7 +33,6 @@ public abstract class PrimitiveValue implements Value {
                 return MultiLevel.EFFECTIVELY_NOT_NULL;
             case SIZE:
             case SIZE_COPY:
-                return Level.DELAY;
             case MODIFIED:
             case IDENTITY:
             case METHOD_DELAY:

@@ -36,10 +36,11 @@ import java.util.Set;
 
 public class Test_01_BasicsOpposite extends CommonTestRunner {
 
-    public static final String STRING_PARAMETER = "org.e2immu.analyser.testexample.BasicsOpposite.setString(String):0:string";
-    public static final String STRING_FIELD = "org.e2immu.analyser.testexample.BasicsOpposite.string";
-    public static final String THIS = "org.e2immu.analyser.testexample.BasicsOpposite.this";
-    private static final String METHOD_VALUE_ADD = "org.e2immu.analyser.testexample.BasicsOpposite.add(Collection<String>):0:collection" +
+    private static final String STRING_PARAMETER = "org.e2immu.analyser.testexample.BasicsOpposite.setString(String):0:string";
+    private static final String STRING_FIELD = "org.e2immu.analyser.testexample.BasicsOpposite.string";
+    private static final String THIS = "org.e2immu.analyser.testexample.BasicsOpposite.this";
+    private static final String COLLECTION = "org.e2immu.analyser.testexample.BasicsOpposite.add(Collection<String>):0:collection";
+    private static final String METHOD_VALUE_ADD = COLLECTION +
             ".add(org.e2immu.analyser.testexample.BasicsOpposite.string)";
     private static final String RETURN_GET_STRING = "org.e2immu.analyser.testexample.BasicsOpposite.getString()";
 
@@ -73,7 +74,7 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("collection".equals(d.variableName()) && "add".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+        if (COLLECTION.equals(d.variableName()) && "add".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
             Assert.assertTrue("Class is " + d.currentValue().getClass(), d.currentValue() instanceof VariableValue);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
@@ -92,8 +93,7 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
             Assert.assertEquals(expertValue, d.currentValue().toString());
         }
         if (RETURN_GET_STRING.equals(d.variableName())) {
-            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-            Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL));
         }
     };
 
@@ -101,8 +101,7 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
         FieldInfo string = d.methodInfo().typeInfo.getFieldByName("string", true);
         int modified = d.getFieldAsVariable(string).getProperty(VariableProperty.MODIFIED);
         if ("getString".equals(d.methodInfo().name)) {
-            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-            Assert.assertEquals(expectNotNull, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.NULLABLE, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.TRUE, d.getFieldAsVariable(string).getProperty(VariableProperty.READ));
             int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(expectModified, modified);

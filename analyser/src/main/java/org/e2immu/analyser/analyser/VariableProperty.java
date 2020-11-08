@@ -46,6 +46,10 @@ public enum VariableProperty {
     // continuation of METHOD_DELAY from variable properties into field summaries
     METHOD_DELAY_RESOLVED("method delay"),
 
+    // purpose: goes to false when a parameter occurs in a not_null context, but there is a delay
+    // goes to true when that delay has been resolved
+    NOT_NULL_DELAYS_RESOLVED("notnull delay"),
+
     // removed after detection of "not used"
     REMOVED("removed"),
 

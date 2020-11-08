@@ -324,7 +324,17 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 notExistingStateEqualsAndMergeStates(evaluationContext, existing, merge)) {
             VariableProperty.VALUE_PROPERTIES.forEach(vp -> merged.setProperty(vp, mergedValue.getProperty(evaluationContext, vp)));
         } else {
-            merged.mergeProperties(existingValuesWillBeOverwritten, existing, merge);
+            try {
+                merged.mergeProperties(existingValuesWillBeOverwritten, existing, merge);
+            } catch (RuntimeException rte) {
+                LOGGER.warn("Caught exception while merging overwrite? {} variable: {}",
+                        existingValuesWillBeOverwritten, current().variable().fullyQualifiedName());
+                LOGGER.warn("Properties at different levels: ");
+                for (int i = 0; i < data.length; i++) {
+                    LOGGER.warn("level {}: {}", i, data[i]);
+                }
+                throw rte;
+            }
         }
     }
 

@@ -127,13 +127,11 @@ public interface ParameterAnalysis extends Analysis {
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                 if (bestType != null && Primitives.isPrimitiveExcludingVoid(bestType))
                     return MultiLevel.EFFECTIVELY_NOT_NULL;
-                return MultiLevel.bestNotNull(MultiLevel.NULLABLE,
-                        getParameterPropertyCheckOverrides(AnalysisProvider.DEFAULT_PROVIDER, parameterInfo, variableProperty));
+                return getParameterPropertyCheckOverrides(AnalysisProvider.DEFAULT_PROVIDER, parameterInfo, variableProperty);
             }
 
             case SIZE_COPY:
             case SIZE:
-                // TODO will need improvement
                 return getParameterPropertyCheckOverrides(AnalysisProvider.DEFAULT_PROVIDER, parameterInfo, variableProperty);
 
             case NOT_MODIFIED_1:

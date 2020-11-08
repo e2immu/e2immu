@@ -158,15 +158,15 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("method5".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals(O5 + " == " + THIS, d.evaluationResult().value.toString());
             }
             if ("0.0.0".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals("true", d.evaluationResult().value.toString());
             }
             if ("1".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_4, d.step());
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals("(null == " + O5 + " or not (" + O5_GET_CLASS + " == " + THIS_GET_CLASS + "))", d.evaluationResult().value.toString());
                 Assert.assertTrue(d.evaluationResult().getModificationStream().count() > 0);
                 Assert.assertTrue(d.haveMarkRead(O5));
