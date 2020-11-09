@@ -172,6 +172,8 @@ class VariableInfoImpl implements VariableInfo {
     );
 
     /**
+     * Merge the value of this object with the values of a list of other variables.
+     *
      * This method has to decide whether a new variableInfo object should be created.
      * <p>
      * As soon as there is a need for overwriting the value or the state, either the provided newObject must be used
@@ -265,13 +267,13 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     private Value inlineSwitch(boolean existingValuesWillBeOverwritten, Value currentValue, Variable variable, List<VariableInfo> merge) {
-
+        // TODO
         // fail
         return new VariableValue(variable);
     }
 
     private Variable allInvolveConstantsEqualToAVariable(List<VariableInfo> merge) {
-
+        // TODO
         return null; // fail
     }
 

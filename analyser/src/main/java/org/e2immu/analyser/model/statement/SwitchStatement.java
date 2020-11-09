@@ -51,9 +51,4 @@ public class SwitchStatement extends StatementWithExpression {
     public List<? extends Element> subElements() {
         return ListUtil.immutableConcat(List.of(expression), switchEntries);
     }
-
-    @Override
-    public Value addToStateAfterStatement(EvaluationContext evaluationContext, List<Value> conditions, List<Boolean> escapes) {
-        throw new UnsupportedOperationException("NYI");
-    }
 }

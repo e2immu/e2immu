@@ -36,9 +36,4 @@ public interface Statement extends Element {
     }
 
     String statementString(int indent, StatementAnalysis statementAnalysis);
-
-    // IfElse and Switch statements will implement this
-    default Value addToStateAfterStatement(EvaluationContext evaluationContext, List<Value> conditions, List<Boolean> escapes) {
-        return UnknownValue.EMPTY;
-    }
 }

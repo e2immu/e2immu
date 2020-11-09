@@ -595,11 +595,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    private boolean isNotLastStatement() {
-        // first clause: we're in a block; second: there is a following statement
-        return statementAnalysis.parent != null || lastStatement() != this;
-    }
-
     private VariableInfoContainer findReturnAsVariableForWriting() {
         String fqn = myMethodAnalyser.methodInfo.fullyQualifiedName();
         return statementAnalysis.findForWriting(fqn);
@@ -795,7 +790,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             List<Optional<StatementAnalysis>> blocks = statementAnalysis.navigationData.blocks.get();
             if (statementAnalysis.statement instanceof IfElseStatement) {
                 blocks.get(0).ifPresent(firstStatement ->
-                        firstStatement.flowData.setGuaranteedToBeReached(constant.isBoolValueTrue() ? FlowData.Execution.ALWAYS : NEVER));
+                        firstStatement.flowData.setGuaranteedToBeReached(constant.isBoolValueTrue() ? ALWAYS : NEVER));
+                if (blocks.size() == 2) {
+                    blocks.get(1).ifPresent(firstStatement ->
+                            firstStatement.flowData.setGuaranteedToBeReached(constant.isBoolValueTrue() ? NEVER : ALWAYS));
+                }
             } // else switch in sub-statements
             return constant;
         }
@@ -817,16 +816,24 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private record ExecutionOfBlock(FlowData.Execution execution, StatementAnalyser startOfBlock,
-                                    ConditionManager conditionManager, Value condition, boolean inCatch) {
+                                    ConditionManager conditionManager, Value condition, boolean isDefault,
+                                    boolean inCatch) {
+        public boolean escapesAlways() {
+            return execution != NEVER && startOfBlock != null && startOfBlock.statementAnalysis.flowData.interruptStatus() == ALWAYS;
+        }
+
+        public boolean alwaysExecuted() {
+            return execution == ALWAYS && startOfBlock != null;
+        }
     }
 
     private AnalysisStatus step4_haveSubBlocks(SharedState sharedState, List<Optional<StatementAnalyser>> startOfBlocks) {
         EvaluationContext evaluationContext = sharedState.evaluationContext;
 
         List<ExecutionOfBlock> executions = step4a_determineExecution(sharedState, startOfBlocks);
-        List<StatementAnalyser> blocksExecuted = new ArrayList<>(executions.size());
         AnalysisStatus analysisStatus = DONE;
 
+        int blocksExecuted = 0;
         for (ExecutionOfBlock executionOfBlock : executions) {
             if (executionOfBlock.execution != NEVER && executionOfBlock.startOfBlock != null) {
 
@@ -834,28 +841,65 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         new ForwardAnalysisInfo(executionOfBlock.execution, executionOfBlock.conditionManager, executionOfBlock.inCatch));
                 sharedState.builder.add(result);
                 analysisStatus = analysisStatus.combine(result.analysisStatus);
-                blocksExecuted.add(executionOfBlock.startOfBlock);
+                blocksExecuted++;
             }
         }
 
-        if (!blocksExecuted.isEmpty()) {
-            List<StatementAnalyser> lastStatements = blocksExecuted.stream().map(StatementAnalyser::lastStatement).collect(Collectors.toList());
+        if (blocksExecuted > 0) {
+            boolean atLeastOneBlockExecuted = atLeastOneBlockExecuted(executions);
+
+            List<StatementAnalyser> lastStatements = executions.stream().map(ExecutionOfBlock::startOfBlock).collect(Collectors.toList());
             statementAnalysis.copyBackLocalCopies(evaluationContext, lastStatements, atLeastOneBlockExecuted, sharedState.previous);
 
-            if (statementAnalysis.statement instanceof IfElseStatement || statementAnalysis.statement instanceof SwitchStatement) {
-                // compute the escape situation of the sub-blocks
-                List<Boolean> escapes = lastStatements.stream()
-                        .map(sa -> sa.statementAnalysis.flowData.interruptStatus() == FlowData.Execution.ALWAYS)
-                        .collect(Collectors.toList());
-                Value addToStateAfterStatement = statementAnalysis.statement.addToStateAfterStatement(evaluationContext, conditions, escapes);
-                if (addToStateAfterStatement != UnknownValue.EMPTY) {
-                    localConditionManager = localConditionManager.addToState(evaluationContext, addToStateAfterStatement);
-                    log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", addToStateAfterStatement);
-                }
+            // compute the escape situation of the sub-blocks
+            Value addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
+            if (addToStateAfterStatement != UnknownValue.EMPTY) {
+                localConditionManager = localConditionManager.addToState(evaluationContext, addToStateAfterStatement);
+                log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", addToStateAfterStatement);
             }
+
         }
 
         return analysisStatus;
+    }
+
+    private boolean atLeastOneBlockExecuted(List<ExecutionOfBlock> list) {
+        if (list.stream().anyMatch(ExecutionOfBlock::alwaysExecuted)) return true;
+        // we have a default, and all conditions have code, and are possible
+        return list.stream().anyMatch(e -> e.isDefault && e.startOfBlock != null) &&
+                list.stream().allMatch(e -> e.execution == CONDITIONALLY && e.startOfBlock != null);
+    }
+
+    private Value addToStateAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {
+        if (statementAnalysis.statement instanceof IfElseStatement) {
+            ExecutionOfBlock e0 = list.get(0);
+            if (list.size() == 1) {
+                if (e0.escapesAlways()) {
+                    return NegatedValue.negate(evaluationContext, list.get(0).condition);
+                }
+                return UnknownValue.EMPTY;
+            }
+            if (list.size() == 2) {
+                ExecutionOfBlock e1 = list.get(1);
+                boolean escape1 = e1.escapesAlways();
+                if (e0.escapesAlways()) {
+                    if (escape1) {
+                        // both if and else escape
+                        return BoolValue.createFalse(evaluationContext.getPrimitives());
+                    }
+                    // if escapes
+                    return list.get(1).condition;
+                }
+                if (escape1) {
+                    // else escapes
+                    return list.get(0).condition;
+                }
+                return UnknownValue.EMPTY;
+            }
+            throw new UnsupportedOperationException("Impossible, if {} else {} has 2 blocks maximum.");
+        }
+        return UnknownValue.EMPTY;
+        // TODO: implement code for switch
     }
 
 
@@ -874,14 +918,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         ConditionManager cm = firstBlockExecution == NEVER ? null : structure.expressionIsCondition ?
                 localConditionManager.addCondition(evaluationContext, value) : localConditionManager;
-        executions.add(new ExecutionOfBlock(firstBlockExecution, startOfBlocks.get(0).orElse(null), cm, value, false));
+        executions.add(new ExecutionOfBlock(firstBlockExecution, startOfBlocks.get(0).orElse(null), cm, value, false, false));
 
         for (int count = 1; count < startOfBlocks.size(); count++) {
-            Structure subStatements = structure.subStatements.get(count);
+            Structure subStatements = structure.subStatements.get(count - 1);
             Value conditionForSubStatement;
 
+            boolean isDefault = false;
             FlowData.Execution statementsExecution = subStatements.statementExecution.apply(value, evaluationContext);
             if (statementsExecution == DEFAULT) {
+                isDefault = true;
                 conditionForSubStatement = defaultCondition(evaluationContext, executions);
                 if (conditionForSubStatement.isBoolValueFalse()) statementsExecution = NEVER;
                 else if (conditionForSubStatement.isBoolValueTrue()) statementsExecution = ALWAYS;
@@ -899,7 +945,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             ConditionManager subCm = execution == NEVER ? null : localConditionManager.addCondition(evaluationContext, conditionForSubStatement);
             boolean inCatch = subStatements.localVariableCreation != null;
-            executions.add(new ExecutionOfBlock(execution, startOfBlocks.get(count).orElse(null), subCm, conditionForSubStatement, inCatch));
+            executions.add(new ExecutionOfBlock(execution, startOfBlocks.get(count).orElse(null), subCm, conditionForSubStatement, isDefault, inCatch));
         }
 
         return executions;
@@ -997,6 +1043,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return navigationData.blocks.get().stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
+                .filter(sa -> !sa.statementAnalysis.flowData.isUnreachable())
                 .map(StatementAnalyser::lastStatement)
                 .collect(Collectors.toList());
     }
