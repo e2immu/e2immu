@@ -55,7 +55,6 @@ public interface FieldAnalysis extends Analysis {
                                  VariableProperty variableProperty) {
         switch (variableProperty) {
             case SIZE_COPY:
-            case IDENTITY:
                 return Level.FALSE;
 
             case FINAL:

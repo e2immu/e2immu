@@ -31,6 +31,8 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
     private static final String I = "org.e2immu.analyser.testexample.ConditionalChecks.i";
     private static final String CC_I = "org.e2immu.analyser.testexample.ConditionalChecks.i#" + O5;
 
+    private static final String RETURN_5_VALUE = I + " == " + CC_I;
+
     public Test_04_ConditionalChecks() {
         super(false);
     }
@@ -49,12 +51,12 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
             }
             if ("3".equals(d.statementId())) {
                 if (CC_I.equals(d.variableName())) {
-                    String expectValue = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : ""; // FIXME "" won't be correct
+                    String expectValue = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : CC_I; // that's the variable value
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
                 if (RETURN5.equals(d.variableName())) {
-                    Assert.assertEquals("(not (" + O5 + " == " + THIS + ") and (null == " + O5 + " or not (" + O5_GET_CLASS + " == " + THIS_GET_CLASS + ")))?false:" +
-                            O5 + " == " + THIS + "?true:<return value>", d.currentValue().toString());
+                    String expectValue = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : RETURN_5_VALUE;
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
                     Assert.assertEquals(VariableInfoContainer.LEVEL_3_EVALUATION, d.variableInfoContainer().getCurrentLevel());
                 }
             }
@@ -228,7 +230,8 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
             Assert.assertEquals(RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
         }
         if ("method5".equals(d.methodInfo().name)) {
-            Assert.assertEquals(Level.DELAY, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
+            int expect = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+            Assert.assertEquals(expect, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
         }
     };
 

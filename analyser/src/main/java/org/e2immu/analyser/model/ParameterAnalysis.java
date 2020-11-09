@@ -140,9 +140,6 @@ public interface ParameterAnalysis extends Analysis {
                 }
                 break;
 
-            case IDENTITY:
-                return parameterInfo.index == 0 ? Level.TRUE : Level.FALSE;
-
             default:
         }
         return internalGetProperty(variableProperty);

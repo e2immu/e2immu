@@ -144,7 +144,6 @@ public class Instance implements Value {
                 return MethodValue.checkSizeCopy(evaluationContext, constructor);
 
             case MODIFIED:
-            case IDENTITY:
             case NOT_MODIFIED_1:
             case METHOD_DELAY:
                 return Level.FALSE;

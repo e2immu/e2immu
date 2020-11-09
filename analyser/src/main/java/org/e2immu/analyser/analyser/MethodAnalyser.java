@@ -533,8 +533,16 @@ public class MethodAnalyser extends AbstractAnalyser {
             methodAnalysis.annotations.put(e2.constant.get(), false);
         }
         methodAnalysis.setProperty(VariableProperty.CONSTANT, isConstant);
+        log(CONSTANT, "Mark method {} as @Constant? {}", methodInfo.fullyQualifiedName(), isConstant);
 
-        log(CONSTANT, "Mark method {} as " + (isConstant ? "" : "NOT ") + "@Constant", methodInfo.fullyQualifiedName());
+        boolean isFluent = value instanceof VariableValue vv && vv.variable instanceof This thisVar && thisVar.typeInfo == myTypeAnalyser.typeInfo;
+        methodAnalysis.setProperty(VariableProperty.FLUENT, isFluent);
+        log(FLUENT, "Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
+
+        boolean isIdentity = value instanceof ParameterInfo parameterInfo && parameterInfo.index == 0 && parameterInfo.owner == methodInfo;
+        methodAnalysis.setProperty(VariableProperty.IDENTITY, isIdentity);
+        log(FLUENT, "Mark method {} as @Identity? {}", methodInfo.fullyQualifiedName(), isIdentity);
+
         return DONE;
     }
 
@@ -578,7 +586,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return analysisStatus;
     }
 
-    // IMMUTABLE, NOT_NULL, CONTAINER, IDENTITY, FLUENT
+    // IMMUTABLE, NOT_NULL, CONTAINER
     // IMMUTABLE, NOT_NULL can still improve with respect to the static return type computed in methodAnalysis.getProperty()
     private AnalysisStatus transferPropertyOfReturnStatements(VariableProperty variableProperty) {
         int currentValue = methodAnalysis.getProperty(variableProperty);

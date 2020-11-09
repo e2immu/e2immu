@@ -319,7 +319,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previous,
                                 forwardAnalysisInfo.execution()))
 
-                        .add("checkFluent", this::checkFluent)
                         .add("checkNotNullEscapes", this::checkNotNullEscapes)
                         .add("checkSizeEscapes", this::checkSizeEscapes)
                         .add("checkPrecondition", this::checkPrecondition)
@@ -591,32 +590,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    /**
-     * only at the end of the method, since we need to have guarantee that myMethodAnalyser.getReturnAsVariable() will produce
-     * a sensible value
-     *
-     * @param sharedState context
-     * @return analysis status
-     */
-    private AnalysisStatus checkFluent(SharedState sharedState) {
-        if (myMethodAnalyser.methodInfo.noReturnValue()) return DONE;
-        if (isNotLastStatement()) return DONE;
-
-        VariableInfo variableInfo = myMethodAnalyser.getReturnAsVariable();
-        int fluent = variableInfo.getProperty(VariableProperty.FLUENT);
-        if (fluent != Level.DELAY) return DONE;
-        Value value = variableInfo.getValue();
-        if (value == NO_VALUE) return DELAYS;
-
-        VariableInfoContainer vic = findReturnAsVariableForWriting();
-        boolean isFluent = value instanceof VariableValue vv && vv.variable instanceof This thisVar && thisVar.typeInfo == myMethodAnalyser.myTypeAnalyser.typeInfo;
-        vic.setProperty(VariableInfoContainer.LEVEL_4_SUMMARY, VariableProperty.FLUENT, isFluent ? Level.TRUE : Level.FALSE);
-        return DONE;
-    }
-
     private boolean isNotLastStatement() {
         // first clause: we're in a block; second: there is a following statement
-        return statementAnalysis.parent != null || navigationData.next.get().isPresent();
+        return statementAnalysis.parent != null || lastStatement() != this;
     }
 
     private VariableInfoContainer findReturnAsVariableForWriting() {
@@ -732,7 +708,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             EvaluationResult result = structure.expression.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo);
             AnalysisStatus status = apply(sharedState, result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_3);
             if (status == DELAYS) {
-                // FIXME should we not create a new value if the "old value" is NOT delay??
+                if (statementAnalysis.statement instanceof ReturnStatement) {
+                    // we still need to ensure that there is a level 3 present, because a 4 could be written in this iteration,
+                    // and in the next one 3 needs to exist
+                    VariableInfoContainer variableInfo = findReturnAsVariableForWriting();
+                    variableInfo.assignment(VariableInfoContainer.LEVEL_3_EVALUATION);
+                    // all the rest in the new variableInfo object stays on DELAY
+                }
                 return DELAYS;
             }
 

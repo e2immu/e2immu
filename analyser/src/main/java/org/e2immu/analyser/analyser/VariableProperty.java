@@ -108,26 +108,13 @@ public enum VariableProperty {
         throw new UnsupportedOperationException();
     }
 
-    public final static Set<VariableProperty> NO_DELAY_FROM_STMT_TO_METHOD = Set.of(READ, ASSIGNED, METHOD_CALLED);
-
     public final static Set<VariableProperty> FORWARD_PROPERTIES_ON_PARAMETERS = Set.of(NOT_NULL, MODIFIED, NOT_MODIFIED_1); // TODO add SIZE
     public final static Set<VariableProperty> FROM_FIELD_TO_PARAMETER = Set.of(NOT_NULL, MODIFIED, SIZE);
-
     public final static Set<VariableProperty> PROPERTIES_IN_METHOD_RESULT_WRAPPER = Set.of(NOT_NULL, SIZE, IMMUTABLE);
-
-    public final static Set<VariableProperty> FROM_FIELD_TO_PROPERTIES = Set.of(FINAL, IMMUTABLE, CONTAINER, NOT_NULL, SIZE, IGNORE_MODIFICATIONS);
-
-    public final static Set<VariableProperty> WRITE_INTO_RETURN_VALUE_PROPERTIES =
-            Set.of(IMMUTABLE, CONTAINER, NOT_NULL, IDENTITY, FLUENT, SIZE, SIZE_COPY);
-    public final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES =
-            Set.of(IMMUTABLE, CONTAINER, NOT_NULL, IDENTITY, FLUENT);
-
+    public final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL);
     public final static Set<VariableProperty> METHOD_PROPERTIES_IN_INLINE_SAM = Set.of(MODIFIED, INDEPENDENT);
-
     public static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(SIZE, NOT_NULL, MODIFIED);
-
-    public static final Set<VariableProperty> FROM_THIS_TO_PROPERTIES = Set.of(NOT_NULL, IMMUTABLE, CONTAINER);
-    public static final Set<VariableProperty> FROM_PARAMETER_TO_PROPERTIES = Set.of(NOT_NULL, SIZE, SIZE_COPY, IMMUTABLE, CONTAINER, NOT_MODIFIED_1, IDENTITY);
-    public static final Set<VariableProperty> VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, SIZE_COPY, IDENTITY);
+    public static final Set<VariableProperty> FROM_PARAMETER_TO_PROPERTIES = Set.of(NOT_NULL, SIZE, SIZE_COPY, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
+    public static final Set<VariableProperty> VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, SIZE_COPY);
 
 }
