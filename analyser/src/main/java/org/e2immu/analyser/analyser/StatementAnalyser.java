@@ -368,7 +368,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         } else {
             statementAnalysis.updateStatements(analyserContext, myMethodAnalyser.methodInfo, sharedState.previous);
         }
-        return DONE;
+        return RUN_AGAIN;
     }
 
     private AnalysisStatus tryToFreezeDependencyGraph() {

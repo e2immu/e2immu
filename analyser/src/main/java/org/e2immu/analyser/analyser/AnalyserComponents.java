@@ -81,9 +81,11 @@ public class AnalyserComponents<T, S> {
                     break; // out of the for loop!
                 }
                 state[i] = afterExec;
-                if (afterExec == PROGRESS) changes = true;
-                if (afterExec != DONE) allDone = false;
-                if (afterExec != initialState) changes = true;
+                if (afterExec != RUN_AGAIN) {
+                    if (afterExec == PROGRESS) changes = true;
+                    if (afterExec != DONE) allDone = false;
+                    if (afterExec != initialState) changes = true;
+                }
             }
             i++;
         }

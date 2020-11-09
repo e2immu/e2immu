@@ -23,6 +23,8 @@ public enum AnalysisStatus {
     PROGRESS(0), // changes, but not yet fully done
     DELAYS(1), // no changes, due to delays
     DONE(2), // done this one
+
+    RUN_AGAIN(3), // this one is run every time, unless DONE_ALL overrides (does not cause changes, nor delays)
     DONE_ALL(3), // done this one, don't do any of the others
 
     SKIPPED(4) // used for unreachable code, but never in the AnalyserComponents
