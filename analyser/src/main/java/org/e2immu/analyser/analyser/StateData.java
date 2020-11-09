@@ -39,7 +39,7 @@ public class StateData {
     public AnalysisStatus copyPrecondition(StatementAnalyser statementAnalyser, StatementAnalysis previous, EvaluationContext evaluationContext) {
         if (!precondition.isSet()) {
             Stream<Value> fromPrevious = Stream.of(previous == null ? UnknownValue.EMPTY : previous.stateData.precondition.get());
-            Stream<Value> fromBlocks = statementAnalyser.lastStatementsOfSubBlocks().stream()
+            Stream<Value> fromBlocks = statementAnalyser.lastStatementsOfNonEmptySubBlocks().stream()
                     .map(sa -> sa.statementAnalysis.stateData.precondition.get());
 
             Value reduced = Stream.concat(fromBlocks, fromPrevious)

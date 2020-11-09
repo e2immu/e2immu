@@ -116,8 +116,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (first == null) first = statementAnalyser;
 
             int blockIndex = 0;
-            List<StatementAnalyser> blocks = new ArrayList<>();
-            List<StatementAnalysis> analysisBlocks = new ArrayList<>();
+            List<Optional<StatementAnalyser>> blocks = new ArrayList<>();
+            List<Optional<StatementAnalysis>> analysisBlocks = new ArrayList<>();
 
             Structure structure = statement.getStructure();
             boolean newInSyncBlock = inSyncBlock || statement instanceof SynchronizedStatement;
@@ -126,19 +126,24 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser,
                         statementAnalyser.statementAnalysis, structure.getStatements(),
                         iPlusSt + "." + blockIndex, true, newInSyncBlock);
-                blocks.add(subStatementAnalyser);
-                analysisBlocks.add(subStatementAnalyser.statementAnalysis);
-                blockIndex++;
+                blocks.add(Optional.of(subStatementAnalyser));
+                analysisBlocks.add(Optional.of(subStatementAnalyser.statementAnalysis));
+            } else {
+                analysisBlocks.add(Optional.empty());
             }
+            blockIndex++;
             for (Structure subStatements : structure.subStatements) {
                 if (subStatements.haveStatements()) {
                     StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser,
                             statementAnalyser.statementAnalysis, structure.getStatements(),
                             iPlusSt + "." + blockIndex, true, newInSyncBlock);
-                    blocks.add(subStatementAnalyser);
-                    analysisBlocks.add(subStatementAnalyser.statementAnalysis);
-                    blockIndex++;
+                    blocks.add(Optional.of(subStatementAnalyser));
+                    analysisBlocks.add(Optional.of(subStatementAnalyser.statementAnalysis));
+                } else {
+                    blocks.add(Optional.empty());
+                    analysisBlocks.add(Optional.empty());
                 }
+                blockIndex++;
             }
             statementAnalyser.statementAnalysis.navigationData.blocks.set(ImmutableList.copyOf(analysisBlocks));
             statementAnalyser.navigationData.blocks.set(ImmutableList.copyOf(blocks));
@@ -680,7 +685,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private StatementAnalysis firstStatementFirstBlock() {
-        return navigationData.blocks.get().get(0).statementAnalysis;
+        return navigationData.blocks.get().get(0).map(sa -> sa.statementAnalysis).orElseThrow();
     }
 
     // for(int i=0 (step2); i<3 (step4); i++ (step3))
@@ -766,7 +771,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (size == Level.SIZE_EMPTY && !statementAnalysis.inErrorState(Message.EMPTY_LOOP)) {
             statementAnalysis.ensure(Message.newMessage(sharedState.evaluationContext.getLocation(), Message.EMPTY_LOOP));
             // ensure that the loop is not evaluated
-            statementAnalysis.navigationData.blocks.get().get(0).flowData.setGuaranteedToBeReached(NEVER);
+            Optional<StatementAnalysis> firstStatement = statementAnalysis.navigationData.blocks.get().get(0);
+            firstStatement.ifPresent(analysis -> analysis.flowData.setGuaranteedToBeReached(NEVER));
         }
     }
 
@@ -786,158 +792,49 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             Value constant = combinedWithCondition.equals(previousConditional) ? BoolValue.createTrue(analyserContext.getPrimitives())
                     : combinedWithState.isConstant() ? combinedWithState : combinedWithCondition;
-            List<StatementAnalysis> blocks = statementAnalysis.navigationData.blocks.get();
+            List<Optional<StatementAnalysis>> blocks = statementAnalysis.navigationData.blocks.get();
             if (statementAnalysis.statement instanceof IfElseStatement) {
-                blocks.get(0).flowData.setGuaranteedToBeReached(constant.isBoolValueTrue() ? FlowData.Execution.ALWAYS : NEVER);
+                blocks.get(0).ifPresent(firstStatement ->
+                        firstStatement.flowData.setGuaranteedToBeReached(constant.isBoolValueTrue() ? FlowData.Execution.ALWAYS : NEVER));
             } // else switch in sub-statements
             return constant;
         }
         return value;
     }
 
-    private AnalysisStatus step4b_primaryBlock(EvaluationContext evaluationContext,
-                                               Value value,
-                                               Structure structure,
-                                               StatementAnalyser startOfFirstBlock,
-                                               StatementAnalyserResult.Builder builder) {
-        StatementAnalyserResult recursiveResult = startOfFirstBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
-                new ForwardAnalysisInfo(execution, newLocalConditionManager, false));
-        builder.add(recursiveResult);
-        return recursiveResult.analysisStatus;
-    }
-
-    private Value step4c_evaluateSubExpression(SharedState sharedState,
-                                               Expression expression,
-                                               ForwardEvaluationInfo forwardEvaluationInfo,
-                                               List<Value> conditions) {
-        EvaluationContext evaluationContext = sharedState.evaluationContext;
-        Value valueForSubStatement;
-        if (EmptyExpression.DEFAULT_EXPRESSION == expression) { // else, default:
-            Primitives primitives = evaluationContext.getPrimitives();
-            if (conditions.isEmpty()) {
-                valueForSubStatement = BoolValue.createTrue(primitives);
-            } else {
-                Value[] negated = conditions.stream().map(c -> NegatedValue.negate(evaluationContext, c)).toArray(Value[]::new);
-                valueForSubStatement = new AndValue(primitives, ObjectFlow.NO_FLOW).append(evaluationContext, negated);
-            }
-        } else if (EmptyExpression.FINALLY_EXPRESSION == expression || EmptyExpression.EMPTY_EXPRESSION == expression) {
-            valueForSubStatement = null;
-        } else {
-            // real expression (case in switch)
-            EvaluationResult result = expression.evaluate(evaluationContext, forwardEvaluationInfo);
-            valueForSubStatement = result.value;
-            // there cannot be any assignment in these sub-expressions, nor variables, ...
-            AnalysisStatus status = apply(sharedState, result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_4);
-            if (status == DELAYS) {
-                return NO_VALUE;
-            }
-        }
-        return valueForSubStatement;
-    }
-
-    private AnalysisStatus step4d_evaluateSubBlock(EvaluationContext evaluationContext,
-                                                   StatementAnalyserResult.Builder builder,
-                                                   Structure structure,
-                                                   StatementAnalyser startOfBlock,
-                                                   Value value,
-                                                   Value valueForSubStatement) {
-        boolean statementsExecutedAtLeastOnce = structure.statementsExecutedAtLeastOnce.test(value, evaluationContext);
-        FlowData.Execution execution = statementAnalysis.flowData.execution(statementsExecutedAtLeastOnce);
-        if (execution == NEVER) return SKIPPED;
-
-        boolean inCatch = structure.localVariableCreation != null;
-        StatementAnalyserResult result = startOfBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
-                new ForwardAnalysisInfo(execution, localConditionManager.addCondition(evaluationContext, valueForSubStatement), inCatch));
-        builder.add(result);
-        return result.analysisStatus;
-    }
-
     private AnalysisStatus step4_subBlocks(SharedState sharedState) {
-        List<StatementAnalyser> startOfBlocks = navigationData.blocks.get();
+        List<Optional<StatementAnalyser>> startOfBlocks = navigationData.blocks.get();
         AnalysisStatus analysisStatus;
         if (!startOfBlocks.isEmpty()) {
-            analysisStatus = step4_nonEmptySubBlocks(sharedState, startOfBlocks);
+            analysisStatus = step4_haveSubBlocks(sharedState, startOfBlocks);
         } else {
             analysisStatus = DONE;
         }
-
         if (localConditionManager.notInDelayedState() && !statementAnalysis.stateData.conditionManager.isSet()) {
             statementAnalysis.stateData.conditionManager.set(localConditionManager);
         }
-
         return analysisStatus;
     }
 
     private record ExecutionOfBlock(FlowData.Execution execution, StatementAnalyser startOfBlock,
-                                    ConditionManager conditionManager, Value condition) {
+                                    ConditionManager conditionManager, Value condition, boolean inCatch) {
     }
 
-    private AnalysisStatus step4_nonEmptySubBlocks(SharedState sharedState, List<StatementAnalyser> startOfBlocks) {
-        Value value = statementAnalysis.stateData.getValueOfExpression();
-        Structure structure = statementAnalysis.statement.getStructure();
+    private AnalysisStatus step4_haveSubBlocks(SharedState sharedState, List<Optional<StatementAnalyser>> startOfBlocks) {
         EvaluationContext evaluationContext = sharedState.evaluationContext;
 
         List<ExecutionOfBlock> executions = step4a_determineExecution(sharedState, startOfBlocks);
-
-        // STEP 8: the primary block, if it's there
-        // the primary block has an expression in case of "if", "while", and "synchronized"
-        // in the first two cases, we'll treat the expression as a condition
-
-        boolean atLeastOneBlockExecuted = false; // FIXME
-        List<StatementAnalyser> blocksExecuted = new ArrayList<>(navigationData.blocks.get().size());
-        List<Value> conditions = new ArrayList<>();
-        conditions.add(value);
-        int start;
-
+        List<StatementAnalyser> blocksExecuted = new ArrayList<>(executions.size());
         AnalysisStatus analysisStatus = DONE;
-        StatementAnalyserResult.Builder builder = sharedState.builder;
-        if (structure.haveNonEmptyBlock()) {
-            StatementAnalyser startOfFirstBlock = startOfBlocks.get(0);
-            AnalysisStatus status4b = step4b_primaryBlock(evaluationContext, value, structure, startOfFirstBlock, builder);
-            if (status4b != SKIPPED) {
-                analysisStatus = analysisStatus.combine(status4b);
-                blocksExecuted.add(startOfFirstBlock);
-            }
-            start = 1;
-        } else {
-            start = 0;
-        }
 
-        // PART 8: other conditions, including the else, switch entries, catch clauses
+        for (ExecutionOfBlock executionOfBlock : executions) {
+            if (executionOfBlock.execution != NEVER && executionOfBlock.startOfBlock != null) {
 
-        for (int count = start; count < startOfBlocks.size(); count++) {
-            Structure subStatements = structure.subStatements.get(count - start);
-
-            // PART 9: evaluate the sub-expression; this can be done in the current evaluation context
-            // (only real evaluation for Java 14 conditionals in switch)
-            // valueForSubStatement will become the new condition
-
-            Value valueForSubStatement = step4c_evaluateSubExpression(sharedState, subStatements.expression,
-                    subStatements.forwardEvaluationInfo, conditions);
-            AnalysisStatus status4c = value == NO_VALUE ? DELAYS : DONE;
-            analysisStatus = analysisStatus.combine(status4c);
-            if (valueForSubStatement != null && valueForSubStatement != NO_VALUE) {
-                conditions.add(valueForSubStatement);
-            } // else "finally", empty expression (is that possible?)
-
-            StatementAnalyser startOfBlock = navigationData.blocks.get().get(count);
-            if (valueForSubStatement == null || valueForSubStatement.isBoolValueTrue()) {
-                startOfBlock.statementAnalysis.flowData.setGuaranteedToBeReached(FlowData.Execution.ALWAYS);
-                atLeastOneBlockExecuted = true;
-            } else if (valueForSubStatement.isBoolValueFalse()) {
-                startOfBlock.statementAnalysis.flowData.setGuaranteedToBeReached(NEVER);
-            } else if (EmptyExpression.DEFAULT_EXPRESSION == subStatements.expression) {
-                // there is a default present
-                atLeastOneBlockExecuted = true;
-            }
-
-            // PART 10: create subContext, add parameters of sub statements, execute
-
-            AnalysisStatus status4d = step4d_evaluateSubBlock(evaluationContext, builder, subStatements, startOfBlock, value,
-                    valueForSubStatement);
-            if (status4d != SKIPPED) {
-                blocksExecuted.add(startOfBlock);
-                analysisStatus = analysisStatus.combine(status4d);
+                StatementAnalyserResult result = executionOfBlock.startOfBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
+                        new ForwardAnalysisInfo(executionOfBlock.execution, executionOfBlock.conditionManager, executionOfBlock.inCatch));
+                sharedState.builder.add(result);
+                analysisStatus = analysisStatus.combine(result.analysisStatus);
+                blocksExecuted.add(executionOfBlock.startOfBlock);
             }
         }
 
@@ -962,7 +859,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
 
-    private List<ExecutionOfBlock> step4a_determineExecution(SharedState sharedState, List<StatementAnalyser> startOfBlocks) {
+    private List<ExecutionOfBlock> step4a_determineExecution(SharedState sharedState, List<Optional<StatementAnalyser>> startOfBlocks) {
         List<ExecutionOfBlock> executions = new ArrayList<>(startOfBlocks.size());
 
         Value value = statementAnalysis.stateData.getValueOfExpression();
@@ -971,25 +868,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         // main block
 
-        int start;
-        if (structure.haveNonEmptyBlock()) {
-            // some loops are never executed, and we can see that
-            FlowData.Execution statementsExecution = structure.statementExecution.apply(value, evaluationContext);
-            FlowData.Execution execution = statementAnalysis.flowData.execution(statementsExecution);
-            if (execution == NEVER) {
-                executions.add(new ExecutionOfBlock(NEVER, null, null, value));
-            } else {
-                ConditionManager newLocalConditionManager = structure.expressionIsCondition ? localConditionManager.addCondition(evaluationContext, value)
-                        : localConditionManager;
-                executions.add(new ExecutionOfBlock(execution, startOfBlocks.get(0), newLocalConditionManager, value));
-            }
-            start = 1;
-        } else {
-            executions.add(new ExecutionOfBlock(NEVER, null, null, value));
-            start = 0;
-        }
-        for (int count = start; count < startOfBlocks.size(); count++) {
-            Structure subStatements = structure.subStatements.get(count - start);
+        // some loops are never executed, and we can see that
+        FlowData.Execution firstBlockStatementsExecution = structure.statementExecution.apply(value, evaluationContext);
+        FlowData.Execution firstBlockExecution = statementAnalysis.flowData.execution(firstBlockStatementsExecution);
+
+        ConditionManager cm = firstBlockExecution == NEVER ? null : structure.expressionIsCondition ?
+                localConditionManager.addCondition(evaluationContext, value) : localConditionManager;
+        executions.add(new ExecutionOfBlock(firstBlockExecution, startOfBlocks.get(0).orElse(null), cm, value, false));
+
+        for (int count = 1; count < startOfBlocks.size(); count++) {
+            Structure subStatements = structure.subStatements.get(count);
             Value conditionForSubStatement;
 
             FlowData.Execution statementsExecution = subStatements.statementExecution.apply(value, evaluationContext);
@@ -1009,8 +897,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             FlowData.Execution execution = statementAnalysis.flowData.execution(statementsExecution);
 
-            ConditionManager newLocalConditionManager = localConditionManager.addCondition(evaluationContext, conditionForSubStatement);
-            executions.add(new ExecutionOfBlock(execution, startOfBlocks.get(count), newLocalConditionManager, conditionForSubStatement));
+            ConditionManager subCm = execution == NEVER ? null : localConditionManager.addCondition(evaluationContext, conditionForSubStatement);
+            boolean inCatch = subStatements.localVariableCreation != null;
+            executions.add(new ExecutionOfBlock(execution, startOfBlocks.get(count).orElse(null), subCm, conditionForSubStatement, inCatch));
         }
 
         return executions;
@@ -1024,27 +913,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
         Value[] negated = previousConditions.stream().map(c -> NegatedValue.negate(evaluationContext, c)).toArray(Value[]::new);
         return new AndValue(primitives, ObjectFlow.NO_FLOW).append(evaluationContext, negated);
-    }
-
-
-    private Value conditionForSubStatement(SharedState sharedState, List<ExecutionOfBlock> executions,
-                                           Expression expression, ForwardEvaluationInfo forwardEvaluationInfo) {
-        EvaluationContext evaluationContext = sharedState.evaluationContext;
-        if (EmptyExpression.DEFAULT_EXPRESSION == expression) { // else, default:
-
-
-        }
-        if (EmptyExpression.FINALLY_EXPRESSION == expression || EmptyExpression.EMPTY_EXPRESSION == expression) {
-            return null;
-        }
-        // real expression (case in switch)
-        EvaluationResult result = expression.evaluate(evaluationContext, forwardEvaluationInfo);
-        // there cannot be any assignment in these sub-expressions, nor variables, ...
-        AnalysisStatus status = apply(sharedState, result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_4);
-        if (status == DELAYS) {
-            throw new UnsupportedOperationException();
-        }
-        return result.value;
     }
 
     /**
@@ -1125,10 +993,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return methodAnalyser != null ? methodAnalyser.methodAnalysis : methodInfo.methodAnalysis.get();
     }
 
-    public List<StatementAnalyser> lastStatementsOfSubBlocks() {
-        return navigationData.blocks.get().stream().map(StatementAnalyser::lastStatement).collect(Collectors.toList());
+    public List<StatementAnalyser> lastStatementsOfNonEmptySubBlocks() {
+        return navigationData.blocks.get().stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(StatementAnalyser::lastStatement)
+                .collect(Collectors.toList());
     }
-
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 

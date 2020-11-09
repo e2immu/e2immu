@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 public class NavigationData<T> {
-    public SetOnce<List<T>> blocks = new SetOnce<>();
+    public SetOnce<List<Optional<T>>> blocks = new SetOnce<>();
     public SetOnce<Optional<T>> next = new SetOnce<>();
     public final SetOnce<T> replacement = new SetOnce<>();
 

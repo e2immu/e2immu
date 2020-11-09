@@ -106,8 +106,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     private StatementAnalysis startOfBlock(int i) {
         if (!navigationData.blocks.isSet()) return null;
-        List<StatementAnalysis> list = navigationData.blocks.get();
-        return i >= list.size() ? null : list.get(i);
+        List<Optional<StatementAnalysis>> list = navigationData.blocks.get();
+        return i >= list.size() ? null : list.get(i).orElse(null);
     }
 
     @Override
@@ -186,23 +186,27 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (first == null) first = statementAnalysis;
 
             int blockIndex = 0;
-            List<StatementAnalysis> analysisBlocks = new ArrayList<>();
+            List<Optional<StatementAnalysis>> analysisBlocks = new ArrayList<>();
 
             boolean newInSyncBlock = inSyncBlock || statement instanceof SynchronizedStatement;
             Structure structure = statement.getStructure();
             if (structure.haveStatements()) {
                 StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent, statements,
                         iPlusSt + "." + blockIndex, true, newInSyncBlock);
-                analysisBlocks.add(subStatementAnalysis);
-                blockIndex++;
+                analysisBlocks.add(Optional.of(subStatementAnalysis));
+            } else {
+                analysisBlocks.add(Optional.empty());
             }
+            blockIndex++;
             for (Structure subStatements : structure.subStatements) {
                 if (subStatements.haveStatements()) {
                     StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent, statements,
                             iPlusSt + "." + blockIndex, true, newInSyncBlock);
-                    analysisBlocks.add(subStatementAnalysis);
-                    blockIndex++;
+                    analysisBlocks.add(Optional.of(subStatementAnalysis));
+                } else {
+                    analysisBlocks.add(Optional.empty());
                 }
+                blockIndex++;
             }
             statementAnalysis.navigationData.blocks.set(ImmutableList.copyOf(analysisBlocks));
             ++statementIndex;

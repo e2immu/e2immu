@@ -173,7 +173,7 @@ public class FlowData {
         Map<InterruptsFlow, Execution> builder = new HashMap<>(previousStatement == null ? Map.of() :
                 previousStatement.flowData.interruptsFlow.get());
 
-        List<StatementAnalyser> lastStatementsOfSubBlocks = statementAnalyser.lastStatementsOfSubBlocks();
+        List<StatementAnalyser> lastStatementsOfSubBlocks = statementAnalyser.lastStatementsOfNonEmptySubBlocks();
         for (StatementAnalyser subAnalyser : lastStatementsOfSubBlocks) {
 
             for (Map.Entry<InterruptsFlow, Execution> entry : subAnalyser.statementAnalysis.flowData.interruptsFlow.get().entrySet()) {
