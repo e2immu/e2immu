@@ -44,9 +44,10 @@ public class FlowData {
     // meant for statements following a
     public final SetOnce<Execution> guaranteedToBeReachedInCurrentBlock = new SetOnce<>();
     public final SetOnce<Execution> guaranteedToBeReachedInMethod = new SetOnce<>();
-
-    public final SetOnce<Map<InterruptsFlow, Execution>> interruptsFlow = new SetOnce<>();
+    // execution of the block
     public final SetOnce<Execution> blockExecution = new SetOnce<>();
+    // are there any statements in sub-blocks that interrupt the flow?
+    public final SetOnce<Map<InterruptsFlow, Execution>> interruptsFlow = new SetOnce<>();
 
     public Execution interruptStatus() {
         // what is the worst that can happen? ESCAPE-ALWAYS
@@ -68,6 +69,10 @@ public class FlowData {
     public void setGuaranteedToBeReached(Execution execution) {
         guaranteedToBeReachedInCurrentBlock.set(execution);
         guaranteedToBeReachedInMethod.set(execution);
+    }
+
+    public boolean isUnreachable() {
+        return guaranteedToBeReachedInMethod.isSet() && guaranteedToBeReachedInMethod.get() == Execution.NEVER;
     }
 
 

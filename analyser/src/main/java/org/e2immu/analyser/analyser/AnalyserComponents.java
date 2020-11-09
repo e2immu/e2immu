@@ -64,6 +64,7 @@ public class AnalyserComponents<T, S> {
     // progress, done -> done
     // done  -> done
 
+    // all done -> mark done for this and all subsequent steps, don't execute them
 
     public AnalysisStatus run(S s) {
         int i = 0;
@@ -73,6 +74,12 @@ public class AnalyserComponents<T, S> {
             AnalysisStatus initialState = state[i];
             if (initialState != DONE) {
                 AnalysisStatus afterExec = supplier.apply(s);
+                if (afterExec == DONE_ALL) {
+                    while (i < state.length) {
+                        state[i++] = DONE;
+                    }
+                    break; // out of the for loop!
+                }
                 state[i] = afterExec;
                 if (afterExec == PROGRESS) changes = true;
                 if (afterExec != DONE) allDone = false;

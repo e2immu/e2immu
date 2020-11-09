@@ -12,8 +12,9 @@ import java.io.IOException;
 import java.util.Map;
 
 public class Test_04_ConditionalChecks extends CommonTestRunner {
-    private static final String A1 = "org.e2immu.analyser.testexample.ConditionalChecks.method1(boolean,boolean):0:a";
-    private static final String B1 = "org.e2immu.analyser.testexample.ConditionalChecks.method1(boolean,boolean):1:b";
+    private static final String RETURN1 = "org.e2immu.analyser.testexample.ConditionalChecks.method1(boolean,boolean)";
+    private static final String A1 = RETURN1 + ":0:a";
+    private static final String B1 = RETURN1 + ":1:b";
     private static final String A3 = "org.e2immu.analyser.testexample.ConditionalChecks.method3(String,String):0:a";
     private static final String B3 = "org.e2immu.analyser.testexample.ConditionalChecks.method3(String,String):1:b";
     private static final String O5 = "org.e2immu.analyser.testexample.ConditionalChecks.method5(Object):0:o";
@@ -42,12 +43,16 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
             String expectValue = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : "";
             Assert.assertEquals(expectValue, d.currentValue().toString());
         }
+        // after if(a&&b) return 1
+        if (RETURN1.equals(d.variableName()) && "0".equals(d.statementId())) {
+            Assert.assertEquals("", d.currentValue().toString());
+        }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         FlowData.Execution inBlock = d.statementAnalysis().flowData.guaranteedToBeReachedInCurrentBlock.get();
         FlowData.Execution inMethod = d.statementAnalysis().flowData.guaranteedToBeReachedInMethod.get();
-        Map<InterruptsFlow, FlowData.Execution> interruptsFlow = d.statementAnalysis().flowData.interruptsFlow.get();
+        Map<InterruptsFlow, FlowData.Execution> interruptsFlow = d.statementAnalysis().flowData.interruptsFlow.getOrElse(null);
 
         if ("method1".equals(d.methodInfo().name)) {
 
@@ -64,6 +69,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                 Assert.assertEquals(FlowData.Execution.ALWAYS, inBlock);
                 Assert.assertEquals(FlowData.Execution.ALWAYS, inMethod);
                 Assert.assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.Execution.CONDITIONALLY), interruptsFlow);
+                Assert.assertEquals(UnknownValue.EMPTY.toString(), d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
             }
             if ("1.0.0".equals(d.statementId())) {
                 Assert.assertEquals("(not (" + A1 + ") and not (" + B1 + "))", d.condition().toString());
@@ -75,6 +81,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                 Assert.assertEquals("((" + A1 + " or " + B1 + ") and (not (" + A1 + ") or not (" + B1 + ")))", d.state().toString());
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
+                Assert.assertEquals(UnknownValue.EMPTY.toString(), d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
             }
             if ("2".equals(d.statementId())) {
                 Assert.assertEquals("(" + A1 + " and not (" + B1 + "))", d.statementAnalysis().stateData.valueOfExpression.get().toString());
@@ -90,15 +97,22 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                         d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
+                Assert.assertEquals(UnknownValue.EMPTY.toString(), d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
             }
             // unreachable statement
             if ("4".equals(d.statementId())) {
                 Assert.assertEquals(FlowData.Execution.NEVER, inBlock);
                 Assert.assertEquals(FlowData.Execution.NEVER, inMethod);
                 Assert.assertNotNull(d.haveError(Message.UNREACHABLE_STATEMENT));
-
+                Assert.assertFalse(d.statementAnalysis().methodLevelData.combinedPrecondition.isSet());
+            }
+            if ("5".equals(d.statementId())) {
+                Assert.assertEquals(FlowData.Execution.NEVER, inBlock);
+                Assert.assertEquals(FlowData.Execution.NEVER, inMethod);
+                Assert.assertNull(d.haveError(Message.UNREACHABLE_STATEMENT));
                 VariableInfo ret = d.getReturnAsVariable();
                 Assert.assertNull(ret); // unreachable statement, no data have even been copied!
+                Assert.assertFalse(d.statementAnalysis().methodLevelData.combinedPrecondition.isSet());
             }
 
         }

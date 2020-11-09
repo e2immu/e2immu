@@ -79,7 +79,7 @@ public interface MethodAnalysis extends Analysis {
      * @return null when the method is not defined (has no statements)
      */
     default StatementAnalysis getLastStatement() {
-        return null;
+        throw new UnsupportedOperationException(); // needs an implementation!
     }
 
     // the value here (size will be one)
@@ -129,7 +129,8 @@ public interface MethodAnalysis extends Analysis {
 
     default MethodLevelData methodLevelData() {
         StatementAnalysis last = getLastStatement();
-        return last != null ? last.methodLevelData : getFirstStatement().lastStatement().methodLevelData;
+        if (last == null) return null; // there is no last statement --> there are no statements
+        return last.methodLevelData;
     }
 
     default int getMethodProperty(AnalysisProvider analysisProvider, MethodInfo methodInfo, VariableProperty variableProperty) {

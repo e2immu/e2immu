@@ -22,9 +22,10 @@ import java.util.function.Function;
 public enum AnalysisStatus {
     PROGRESS(0), // changes, but not yet fully done
     DELAYS(1), // no changes, due to delays
-    DONE(2),
+    DONE(2), // done this one
+    DONE_ALL(3), // done this one, don't do any of the others
 
-    SKIPPED(3) // used for unreachable code
+    SKIPPED(4) // used for unreachable code, but never in the AnalyserComponents
     ;
 
     private final int pos;

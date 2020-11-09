@@ -21,7 +21,6 @@ package org.e2immu.analyser.model;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ContractMark;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
@@ -193,11 +192,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
 
-        // replacements
-
-        // set when all replacements have been done
-        public final SetOnce<StatementAnalysis> lastStatement = new SetOnce<>();
-
         // ************** PRECONDITION
 
         public final SetOnce<Value> precondition = new SetOnce<>();
@@ -252,7 +246,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     methodInfo,
                     ImmutableSet.copyOf(overrides.getOrElse(Set.of())),
                     firstStatement.getOrElse(null),
-                    lastStatement.getOrElse(null),
+                    getLastStatement(),
                     parameterAnalyses,
                     getSingleReturnValue(),
                     getObjectFlow(),
@@ -264,14 +258,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     precondition.getOrElse(UnknownValue.EMPTY),
                     properties.toImmutableMap(),
                     annotations.toImmutableMap());
-        }
-
-        public MethodLevelData methodLevelData() {
-            return lastStatement().methodLevelData;
-        }
-
-        public StatementAnalysis lastStatement() {
-            return lastStatement.isSet() ? lastStatement.get() : firstStatement.get().lastStatement();
         }
 
         @Override
@@ -398,12 +384,9 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public StatementAnalysis getLastStatement() {
-            if(!lastStatement.isSet()) {
-                StatementAnalysis last = firstStatement.get().lastStatement();
-                lastStatement.set(last);
-                return last;
-            }
-            return lastStatement.get();
+            // we're not "caching" it during analysis; it may change (?) over iterations
+            StatementAnalysis first = firstStatement.getOrElse(null);
+            return first == null ? null : first.lastStatement();
         }
 
         @Override

@@ -46,6 +46,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
+import static org.e2immu.analyser.analyser.FlowData.Execution.NEVER;
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
@@ -214,10 +215,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return this;
     }
 
+    // note that there is a clone of this in statementAnalysis
     @Override
     public StatementAnalyser lastStatement() {
-        // TODO add a check for unreachable statements, returning "this"
-        return followReplacements().navigationData.next.get().map(StatementAnalyser::lastStatement).orElse(this);
+        if (statementAnalysis.flowData.isUnreachable()) {
+            throw new UnsupportedOperationException("The first statement can never be unreachable");
+        }
+        return followReplacements().navigationData.next.get().map(statementAnalyser -> {
+            if (statementAnalyser.statementAnalysis.flowData.isUnreachable()) {
+                return this;
+            }
+            return statementAnalyser.lastStatement();
+        }).orElse(this);
     }
 
     @Override
@@ -296,13 +305,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         try {
             if (analysisStatus == null) {
                 assert localConditionManager == null : "expected null localConditionManager";
-
-                statementAnalysis.initialise(analyserContext, previous);
+                assert analyserComponents == null : "expected null analyser components";
 
                 analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
                         .add("checkUnreachableStatement", sharedState -> checkUnreachableStatement(previous,
                                 forwardAnalysisInfo.execution()))
-
+                        .add("initialiseOrUpdateVariables", this::initialiseOrUpdateVariables)
                         .add("step1_initialisation", this::step1_initialisation)
                         .add("step2_updaters", this::step2_updaters)
                         .add("step3_evaluationOfMainExpression", this::step3_evaluationOfMainExpression)
@@ -325,9 +333,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         .add("checkUselessAssignments", sharedState -> checkUselessAssignments())
                         .add("checkUnusedLocalVariables", sharedState -> checkUnusedLocalVariables())
                         .build();
-            } else {
-                statementAnalysis.updateStatements(analyserContext, myMethodAnalyser.methodInfo, previous);
             }
+
+
             boolean startOfNewBlock = previous == null;
             localConditionManager = startOfNewBlock ? forwardAnalysisInfo.conditionManager() : previous.stateData.getConditionManager();
 
@@ -351,6 +359,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             LOGGER.warn("Caught exception while analysing statement {} of {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName());
             throw rte;
         }
+    }
+
+    // in a separate task, so that it can be skipped when the statement is unreachable
+    private AnalysisStatus initialiseOrUpdateVariables(SharedState sharedState) {
+        if (sharedState.evaluationContext.getIteration() == 0) {
+            statementAnalysis.initialise(analyserContext, sharedState.previous);
+        } else {
+            statementAnalysis.updateStatements(analyserContext, myMethodAnalyser.methodInfo, sharedState.previous);
+        }
+        return DONE;
     }
 
     private AnalysisStatus tryToFreezeDependencyGraph() {
@@ -403,12 +421,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
 
     // executed only once per statement; we're assuming that the flowData are computed correctly
-    private AnalysisStatus checkUnreachableStatement(StatementAnalysis previousStatementAnalysis,
+    private AnalysisStatus checkUnreachableStatement(StatementAnalysis previous,
                                                      FlowData.Execution execution) {
+        // if the previous statement was not reachable, we won't reach this one either
+        if (previous != null && previous.flowData.guaranteedToBeReachedInMethod.isSet() &&
+                previous.flowData.guaranteedToBeReachedInMethod.get() == NEVER) {
+            statementAnalysis.flowData.setGuaranteedToBeReached(NEVER);
+            return DONE_ALL;
+        }
         if (statementAnalysis.flowData.computeGuaranteedToBeReachedReturnUnreachable(statementAnalysis.primitives,
-                previousStatementAnalysis, execution, localConditionManager.state) &&
+                previous, execution, localConditionManager.state) &&
                 !statementAnalysis.inErrorState(Message.UNREACHABLE_STATEMENT)) {
             statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
+            return DONE_ALL; // means: don't run any of the other steps!!
         }
         return DONE;
     }
@@ -755,7 +780,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (size == Level.SIZE_EMPTY && !statementAnalysis.inErrorState(Message.EMPTY_LOOP)) {
             statementAnalysis.ensure(Message.newMessage(sharedState.evaluationContext.getLocation(), Message.EMPTY_LOOP));
             // ensure that the loop is not evaluated
-            statementAnalysis.navigationData.blocks.get().get(0).flowData.setGuaranteedToBeReached(FlowData.Execution.NEVER);
+            statementAnalysis.navigationData.blocks.get().get(0).flowData.setGuaranteedToBeReached(NEVER);
         }
     }
 
@@ -777,7 +802,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     : combinedWithState.isConstant() ? combinedWithState : combinedWithCondition;
             List<StatementAnalysis> blocks = statementAnalysis.navigationData.blocks.get();
             if (statementAnalysis.statement instanceof IfElseStatement) {
-                blocks.get(0).flowData.setGuaranteedToBeReached(constant.isBoolValueTrue() ? FlowData.Execution.ALWAYS : FlowData.Execution.NEVER);
+                blocks.get(0).flowData.setGuaranteedToBeReached(constant.isBoolValueTrue() ? FlowData.Execution.ALWAYS : NEVER);
             } // else switch in sub-statements
             return constant;
         }
@@ -791,7 +816,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                                StatementAnalyserResult.Builder builder) {
         boolean statementsExecutedAtLeastOnce = structure.statementsExecutedAtLeastOnce.test(value, evaluationContext);
         FlowData.Execution execution = statementAnalysis.flowData.execution(statementsExecutedAtLeastOnce);
-        if (execution == FlowData.Execution.NEVER) return SKIPPED;
+        if (execution == NEVER) return SKIPPED;
         ConditionManager newLocalConditionManager = structure.expressionIsCondition ? localConditionManager.addCondition(evaluationContext, value)
                 : localConditionManager;
         StatementAnalyserResult recursiveResult = startOfFirstBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
@@ -837,7 +862,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                                    Value valueForSubStatement) {
         boolean statementsExecutedAtLeastOnce = structure.statementsExecutedAtLeastOnce.test(value, evaluationContext);
         FlowData.Execution execution = statementAnalysis.flowData.execution(statementsExecutedAtLeastOnce);
-        if (execution == FlowData.Execution.NEVER) return SKIPPED;
+        if (execution == NEVER) return SKIPPED;
 
         boolean inCatch = structure.localVariableCreation != null;
         StatementAnalyserResult result = startOfBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
@@ -848,13 +873,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     private AnalysisStatus step4_subBlocks(SharedState sharedState) {
         List<StatementAnalyser> startOfBlocks = navigationData.blocks.get();
-        AnalysisStatus analysisStatus ;
+        AnalysisStatus analysisStatus;
         if (!startOfBlocks.isEmpty()) {
             analysisStatus = step4_nonEmptySubBlocks(sharedState, startOfBlocks);
         } else {
             analysisStatus = DONE;
         }
-        
+
         if (localConditionManager.notInDelayedState() && !statementAnalysis.stateData.conditionManager.isSet()) {
             statementAnalysis.stateData.conditionManager.set(localConditionManager);
         }
@@ -914,7 +939,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 startOfBlock.statementAnalysis.flowData.setGuaranteedToBeReached(FlowData.Execution.ALWAYS);
                 atLeastOneBlockExecuted = true;
             } else if (valueForSubStatement.isBoolValueFalse()) {
-                startOfBlock.statementAnalysis.flowData.setGuaranteedToBeReached(FlowData.Execution.NEVER);
+                startOfBlock.statementAnalysis.flowData.setGuaranteedToBeReached(NEVER);
             } else if (EmptyExpression.DEFAULT_EXPRESSION == subStatements.expression) {
                 // there is a default present
                 atLeastOneBlockExecuted = true;

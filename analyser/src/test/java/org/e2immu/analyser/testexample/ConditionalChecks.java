@@ -10,7 +10,8 @@ public class ConditionalChecks {
         if (!a && !b) return 2;
         if (a && !b) return 3;
         if (!a && b) return 4; // ERROR: conditional evaluates to constant
-        return 5; // ERROR: unreachable statement
+        int c = 0; // ERROR: unreachable statement
+        return 5;//  unreachable statement, but no error anymore
     }
 
     // first way of ensuring that both a and b are not null

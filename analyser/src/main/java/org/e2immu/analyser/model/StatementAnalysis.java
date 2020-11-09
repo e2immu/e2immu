@@ -130,7 +130,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     @Override
     public StatementAnalysis lastStatement() {
-        return followReplacements().navigationData.next.get().map(StatementAnalysis::lastStatement).orElse(this);
+        if (flowData.isUnreachable()) {
+            throw new UnsupportedOperationException("The first statement can never be unreachable");
+        }
+        return followReplacements().navigationData.next.get().map(statementAnalysis -> {
+            if (statementAnalysis.flowData.isUnreachable()) {
+                return this;
+            }
+            return statementAnalysis.lastStatement();
+        }).orElse(this);
     }
 
     @Override

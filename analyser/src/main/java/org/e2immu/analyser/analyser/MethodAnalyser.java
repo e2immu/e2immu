@@ -74,7 +74,11 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     private Map<FieldInfo, FieldAnalyser> myFieldAnalysers;
 
-    private record SharedState(int iteration, MethodLevelData methodLevelData) {
+    /*
+    Note that MethodLevelData is not part of the shared state, as the "lastStatement", where it resides,
+    is only computed in the first step of the analyser components.
+     */
+    private record SharedState(int iteration) {
     }
 
     public MethodAnalyser(MethodInfo methodInfo,
@@ -236,7 +240,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     @Override
     public AnalysisStatus analyse(int iteration) {
         log(ANALYSER, "Analysing method {}", methodInfo.fullyQualifiedName());
-        SharedState sharedState = new SharedState(iteration, methodAnalysis.methodLevelData());
+        SharedState sharedState = new SharedState(iteration);
 
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
@@ -288,7 +292,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     private boolean absentUnlessStatic(VariableProperty variableProperty) {
-        return methodAnalysis.lastStatement().variableStream()
+        return methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference)
                 .allMatch(vi -> vi.getProperty(variableProperty) < Level.TRUE || vi.variable().isStatic());
     }
@@ -296,14 +300,15 @@ public class MethodAnalyser extends AbstractAnalyser {
     // simply copy from last statement
     private AnalysisStatus obtainMostCompletePrecondition(SharedState sharedState) {
         assert !methodAnalysis.precondition.isSet();
-        if (!sharedState.methodLevelData.combinedPrecondition.isSet()) return DELAYS;
-        methodAnalysis.precondition.set(sharedState.methodLevelData.combinedPrecondition.get());
+        MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
+        if (!methodLevelData.combinedPrecondition.isSet()) return DELAYS;
+        methodAnalysis.precondition.set(methodLevelData.combinedPrecondition.get());
         return DONE;
     }
 
     private AnalysisStatus makeInternalObjectFlowsPermanent(SharedState sharedState) {
         assert !methodAnalysis.internalObjectFlows.isSet();
-        MethodLevelData methodLevelData = sharedState.methodLevelData;
+        MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
 
         boolean delays = !methodLevelData.internalObjectFlows.isFrozen();
         if (delays) {
@@ -579,7 +584,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         int value = getReturnAsVariable().getProperty(variableProperty);
         if (value == Level.DELAY) {
-            log(DELAYED, "Return statement value not yet set in transferPropertyOfReturnStatements, property "+variableProperty);
+            log(DELAYED, "Return statement value not yet set in transferPropertyOfReturnStatements, property " + variableProperty);
             return DELAYS;
         }
         if (value <= currentValue) return DONE; // not improving.
@@ -740,10 +745,10 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus methodIsModified(SharedState sharedState) {
         if (methodAnalysis.getProperty(VariableProperty.MODIFIED) != Level.DELAY) return DONE;
-        MethodLevelData methodLevelData = sharedState.methodLevelData;
+        MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
 
         // first step, check field assignments
-        boolean fieldAssignments = methodAnalysis.lastStatement().variableStream()
+        boolean fieldAssignments = methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference)
                 .anyMatch(vi -> vi.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE);
         if (fieldAssignments) {
@@ -760,12 +765,12 @@ public class MethodAnalyser extends AbstractAnalyser {
                     methodInfo.distinguishingName());
             return DELAYS;
         }
-        boolean isModified = methodAnalysis.lastStatement().variableStream()
+        boolean isModified = methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference)
                 .anyMatch(vi -> vi.getProperty(VariableProperty.MODIFIED) == Level.TRUE);
         if (isModified && isLogEnabled(NOT_MODIFIED)) {
             List<String> fieldsWithContentModifications =
-                    methodAnalysis.lastStatement().variableStream()
+                    methodAnalysis.getLastStatement().variableStream()
                             .filter(vi -> vi.variable() instanceof FieldReference)
                             .filter(vi -> vi.getProperty(VariableProperty.MODIFIED) == Level.TRUE)
                             .map(VariableInfo::name).collect(Collectors.toList());
@@ -855,7 +860,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus methodIsIndependent(SharedState sharedState) {
         assert methodAnalysis.getProperty(VariableProperty.INDEPENDENT) == Level.DELAY;
-        MethodLevelData methodLevelData = sharedState.methodLevelData;
+        MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
 
         if (!methodInfo.isConstructor) {
             // we only compute @Independent/@Dependent on methods when the method is @NotModified
@@ -889,14 +894,14 @@ public class MethodAnalyser extends AbstractAnalyser {
             List<ParameterInfo> parameters = new ArrayList<>(methodInfo.methodInspection.get().parameters);
             parameters.removeIf(pi -> pi.parameterizedType.typeInfo == methodInfo.typeInfo);
 
-            boolean allLinkedVariablesSet = methodAnalysis.lastStatement().variableStream()
+            boolean allLinkedVariablesSet = methodAnalysis.getLastStatement().variableStream()
                     .filter(vi -> vi.variable() instanceof FieldReference)
                     .allMatch(vi -> vi.getLinkedVariables() != null);
             if (!allLinkedVariablesSet) {
                 log(DELAYED, "Delaying @Independent on {}, linked variables not yet known for all field references", methodInfo.distinguishingName());
                 return DELAYS;
             }
-            boolean supportDataSet = methodAnalysis.lastStatement().variableStream()
+            boolean supportDataSet = methodAnalysis.getLastStatement().variableStream()
                     .filter(vi -> vi.variable() instanceof FieldReference)
                     .flatMap(vi -> vi.getLinkedVariables().stream())
                     .allMatch(v -> isImplicitlyImmutableDataTypeSet(v, analyserContext));
@@ -905,7 +910,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                 return DELAYS;
             }
 
-            parametersIndependentOfFields = methodAnalysis.lastStatement().variableStream()
+            parametersIndependentOfFields = methodAnalysis.getLastStatement().variableStream()
                     .filter(vi -> vi.variable() instanceof FieldReference)
                     .peek(vi -> {
                         if (vi.getLinkedVariables() == null)
@@ -1035,19 +1040,19 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     public boolean haveFieldAsVariable(FieldInfo fieldInfo) {
-        return methodAnalysis.lastStatement().variables.isSet(fieldInfo.fullyQualifiedName());
+        return methodAnalysis.getLastStatement().variables.isSet(fieldInfo.fullyQualifiedName());
     }
 
     public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
-        return methodAnalysis.lastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
+        return methodAnalysis.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
     }
 
     public VariableInfo getThisAsVariable() {
-        return methodAnalysis.lastStatement().getLatestVariableInfo(methodInfo.typeInfo.fullyQualifiedName + ".this");
+        return methodAnalysis.getLastStatement().getLatestVariableInfo(methodInfo.typeInfo.fullyQualifiedName + ".this");
     }
 
     public VariableInfo getReturnAsVariable() {
-        return methodAnalysis.lastStatement().getLatestVariableInfo(methodInfo.fullyQualifiedName());
+        return methodAnalysis.getLastStatement().getLatestVariableInfo(methodInfo.fullyQualifiedName());
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
