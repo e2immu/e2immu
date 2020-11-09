@@ -744,7 +744,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 VariableInfoContainer variableInfo = findReturnAsVariableForWriting();
                 variableInfo.assignment(VariableInfoContainer.LEVEL_3_EVALUATION);
                 Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(value);
-                variableInfo.setValueOnAssignment(VariableInfoContainer.LEVEL_3_EVALUATION, value, propertiesToSet);
+                variableInfo.setValueAndStateOnAssignment(VariableInfoContainer.LEVEL_3_EVALUATION, value,
+                        localConditionManager.state, propertiesToSet);
             }
             if (statementAnalysis.statement instanceof IfElseStatement || statementAnalysis.statement instanceof SwitchStatement) {
                 value = step3_IfElse_Switch(sharedState.evaluationContext, value);

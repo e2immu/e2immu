@@ -15,6 +15,10 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
     private static final String RETURN1 = "org.e2immu.analyser.testexample.ConditionalChecks.method1(boolean,boolean)";
     private static final String A1 = RETURN1 + ":0:a";
     private static final String B1 = RETURN1 + ":1:b";
+
+    private static final String RETURN_1_VALUE = "(not (" + A1 + ") and " + B1 + ")?4:(" + A1 + " and not (" + B1 + "))?3:" +
+            "(not (" + A1 + ") and not (" + B1 + "))?2:(" + A1 + " and " + B1 + ")?1:<return value>";
+
     private static final String A3 = "org.e2immu.analyser.testexample.ConditionalChecks.method3(String,String):0:a";
     private static final String B3 = "org.e2immu.analyser.testexample.ConditionalChecks.method3(String,String):1:b";
     private static final String O5 = "org.e2immu.analyser.testexample.ConditionalChecks.method5(Object):0:o";
@@ -43,9 +47,44 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
             String expectValue = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : "";
             Assert.assertEquals(expectValue, d.currentValue().toString());
         }
-        // after if(a&&b) return 1
-        if (RETURN1.equals(d.variableName()) && "0".equals(d.statementId())) {
-            Assert.assertEquals("", d.currentValue().toString());
+
+        if (RETURN1.equals(d.variableName())) {
+            // return 1;
+            if ("0.0.0".equals(d.statementId())) {
+                Assert.assertEquals("1", d.currentValue().toString());
+                Assert.assertEquals("(" + A1 + " and " + B1 + ")", d.variableInfo().getStateOnAssignment().toString());
+            }
+            // after if(a&&b) return 1
+            if ("0".equals(d.statementId())) {
+                Assert.assertEquals("(" + A1 + " and " + B1 + ")?1:<return value>", d.currentValue().toString());
+                Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
+            }
+            if ("1.0.0".equals(d.statementId())) {
+                Assert.assertEquals("2", d.currentValue().toString());
+                Assert.assertEquals("(not (" + A1 + ") and not (" + B1 + "))", d.variableInfo().getStateOnAssignment().toString());
+            }
+            // after if (!a && !b) return 2;
+            if ("1".equals(d.statementId())) {
+                Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
+                // we do NOT expect a regression to the ReturnVariable
+                Assert.assertEquals("(not (" + A1 + ") and not (" + B1 + "))?2:(" + A1 + " and " + B1 + ")?1:<return value>",
+                        d.currentValue().toString());
+            }
+            if ("2".equals(d.statementId())) {
+                Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
+                // we do NOT expect a regression to the ReturnVariable
+                Assert.assertEquals("(" + A1 + " and not (" + B1 + "))?3:" +
+                                "(not (" + A1 + ") and not (" + B1 + "))?2:(" + A1 + " and " + B1 + ")?1:<return value>",
+                        d.currentValue().toString());
+            }
+            if ("3".equals(d.statementId())) {
+                Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
+                // we do NOT expect a regression to the ReturnVariable
+                Assert.assertEquals(RETURN_1_VALUE, d.currentValue().toString());
+            }
+            if ("4".equals(d.statementId())) {
+                Assert.fail("not reached!");
+            }
         }
     };
 
@@ -163,7 +202,8 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
         }
         if ("method1".equals(d.methodInfo().name)) {
             Assert.assertSame(UnknownValue.EMPTY, d.methodAnalysis().getPrecondition());
-            Assert.assertEquals("5", d.methodAnalysis().getSingleReturnValue().toString());
+            Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
         }
         if ("method5".equals(d.methodInfo().name)) {
             Assert.assertEquals(Level.DELAY, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));

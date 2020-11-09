@@ -194,6 +194,7 @@ class VariableInfoImpl implements VariableInfo {
             VariableInfoImpl newVi = new VariableInfoImpl(variable);
             //if (!existingValuesWillBeOverwritten) newVi.properties.putAll(properties);
             newVi.value.set(mergedValue);
+            newVi.stateOnAssignment.copy(stateOnAssignment);
             return newVi;
         }
         if (!newObject.value.isSet() || !newObject.value.get().equals(mergedValue)) {
@@ -279,7 +280,7 @@ class VariableInfoImpl implements VariableInfo {
 
         // int c = a; if(x) c = b;  --> c = x?b:a
         if (x != UnknownValue.EMPTY) {
-            return safe(ConditionalValue.conditionalValueCurrentState(evaluationContext, x, b, a, ObjectFlow.NO_FLOW));
+            return safe(ConditionalValue.conditionalValueConditionResolved(evaluationContext, x, b, a, ObjectFlow.NO_FLOW));
         }
 
         return new VariableValue(variable);
@@ -292,12 +293,12 @@ class VariableInfoImpl implements VariableInfo {
         // silly situation, twice the same condition
         // int c = ex; if(s1) c = a; if(s1) c =b;
         if (s1.equals(s2) && s1 != UnknownValue.EMPTY) {
-            return safe(ConditionalValue.conditionalValueCurrentState(evaluationContext, s1, vi2.getValue(), x, ObjectFlow.NO_FLOW));
+            return safe(ConditionalValue.conditionalValueConditionResolved(evaluationContext, s1, vi2.getValue(), x, ObjectFlow.NO_FLOW));
         }
         // int c = x; if(s1) c = a; if(s2) c = b; --> s1?a:(s2?b:x)
         if (s1 != UnknownValue.EMPTY && s2 != UnknownValue.EMPTY) {
-            Value s2bx = safe(ConditionalValue.conditionalValueCurrentState(evaluationContext, s2, vi2.getValue(), x, ObjectFlow.NO_FLOW));
-            return safe(ConditionalValue.conditionalValueCurrentState(evaluationContext, s1, vi1.getValue(), s2bx, ObjectFlow.NO_FLOW));
+            Value s2bx = safe(ConditionalValue.conditionalValueConditionResolved(evaluationContext, s2, vi2.getValue(), x, ObjectFlow.NO_FLOW));
+            return safe(ConditionalValue.conditionalValueConditionResolved(evaluationContext, s1, vi1.getValue(), s2bx, ObjectFlow.NO_FLOW));
         }
         return new VariableValue(variable);
     }
@@ -309,7 +310,7 @@ class VariableInfoImpl implements VariableInfo {
         if (s1 != UnknownValue.EMPTY && s2 != UnknownValue.EMPTY) {
             // int c; if(s1) c = a; else c = b;
             if (NegatedValue.negate(evaluationContext, s1).equals(s2)) {
-                return safe(ConditionalValue.conditionalValueCurrentState(evaluationContext, s1, vi1.getValue(), vi2.getValue(), ObjectFlow.NO_FLOW));
+                return safe(ConditionalValue.conditionalValueConditionResolved(evaluationContext, s1, vi1.getValue(), vi2.getValue(), ObjectFlow.NO_FLOW));
             } else throw new UnsupportedOperationException("? impossible situation");
         }
         return new VariableValue(variable);

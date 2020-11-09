@@ -287,6 +287,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (methodAnalysis.getMethodInfo().hasReturnValue()) {
                 Variable retVar = new ReturnVariable(methodAnalysis.getMethodInfo());
                 VariableInfoContainer vic = createVariable(analyserContext, retVar);
+                vic.setStateOnAssignment(VariableInfoContainer.LEVEL_1_INITIALISER, UnknownValue.EMPTY);
                 READ_FROM_RETURN_VALUE_PROPERTIES.forEach(vp -> vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, vp, vp.falseValue));
             }
             return;

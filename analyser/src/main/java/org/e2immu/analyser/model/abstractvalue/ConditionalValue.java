@@ -76,7 +76,7 @@ public class ConditionalValue implements Value {
         return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalse, objectFlow);
     }
 
-    private static EvaluationResult conditionalValueConditionResolved(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
+    public static EvaluationResult conditionalValueConditionResolved(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         if (condition instanceof BoolValue) {
             boolean first = ((BoolValue) condition).value;

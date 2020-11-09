@@ -135,6 +135,21 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
+    public void setValueAndStateOnAssignment(int level, Value value, Value state, Map<VariableProperty, Integer> propertiesToSet) {
+        ensureNotFrozen();
+        Objects.requireNonNull(value);
+        VariableInfoImpl variableInfo = currentLevelForWriting(level);
+        if (value != UnknownValue.NO_VALUE) {
+            variableInfo.value.set(value);
+        }
+        if (state != UnknownValue.NO_VALUE) {
+            variableInfo.stateOnAssignment.set(state);
+        }
+        propertiesToSet.forEach(variableInfo::setProperty);
+    }
+
+
+    @Override
     public void setStateOnAssignment(int level, Value state) {
         ensureNotFrozen();
         Objects.requireNonNull(state);

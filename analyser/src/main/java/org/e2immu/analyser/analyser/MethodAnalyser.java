@@ -126,9 +126,9 @@ public class MethodAnalyser extends AbstractAnalyser {
                     .add("obtainMostCompletePrecondition", this::obtainMostCompletePrecondition)
                     .add("makeInternalObjectFlowsPermanent", this::makeInternalObjectFlowsPermanent)
                     .add("transferPropertyOfReturnStatements", (sharedState) -> methodInfo.noReturnValue() ? DONE : transferPropertiesOfReturnStatements())
-                    .add("methodIsConstant", (sharedState) -> methodInfo.noReturnValue() ? DONE : methodIsConstant())
+                    .add("computeModified", (sharedState) -> methodInfo.isConstructor ? DONE : computeModified(sharedState))
+                    .add("computeReturnValue", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue())
                     .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
-                    .add("methodIsModified", (sharedState) -> methodInfo.isConstructor ? DONE : methodIsModified(sharedState))
                     .add("computeOnlyMarkPrepWork", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork(sharedState))
                     .add("computeOnlyMarkAnnotate", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkAnnotate(sharedState))
                     .add("methodIsIndependent", this::methodIsIndependent)
@@ -482,7 +482,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     // singleReturnValue is associated with @Constant; to be able to grab the actual Value object
     // but we cannot assign this value too early: first, there should be no evaluation anymore with NO_VALUES in them
-    private AnalysisStatus methodIsConstant() {
+    private AnalysisStatus computeReturnValue() {
         assert !methodAnalysis.singleReturnValue.isSet();
 
         VariableInfo variableInfo = getReturnAsVariable();
@@ -508,7 +508,10 @@ public class MethodAnalyser extends AbstractAnalyser {
             immutable = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
         } else {
             int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
-            if (modified == Level.DELAY) return DELAYS;
+            if (modified == Level.DELAY) {
+                log(DELAYED, "Delaying return value of {}, waiting for MODIFIED (we may try to inline!)", methodInfo.distinguishingName());
+                return DELAYS;
+            }
             if (modified == Level.FALSE) {
                 InlineValue.Applicability applicability = applicability(value);
                 if (applicability != InlineValue.Applicability.NONE) {
@@ -743,7 +746,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return res == Integer.MAX_VALUE ? Level.DELAY : Math.max(res, Level.IS_A_SIZE);
     }
 
-    private AnalysisStatus methodIsModified(SharedState sharedState) {
+    private AnalysisStatus computeModified(SharedState sharedState) {
         if (methodAnalysis.getProperty(VariableProperty.MODIFIED) != Level.DELAY) return DONE;
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
 

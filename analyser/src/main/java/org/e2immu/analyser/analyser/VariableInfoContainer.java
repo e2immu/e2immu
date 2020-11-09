@@ -96,6 +96,9 @@ public interface VariableInfoContainer {
     // writing operations
     void setValueOnAssignment(int level, Value value, Map<VariableProperty, Integer> propertiesToSet);
 
+    void setValueAndStateOnAssignment(int level, Value value, Value state, Map<VariableProperty, Integer> propertiesToSet);
+
+
     void setStateOnAssignment(int level, Value state);
 
     /**
