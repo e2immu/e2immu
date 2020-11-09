@@ -24,6 +24,9 @@ public class Test_05_FinalChecks extends CommonTestRunner {
     }
 
     private static final String FINAL_CHECKS = "FinalChecks";
+    // there are 2 constructors, with different parameter lists
+    private static final String FINAL_CHECKS_FQN = "org.e2immu.analyser.testexample.FinalChecks.FinalChecks(String,String)";
+
     private static final String S1 = FinalChecks.class.getCanonicalName() + ".s1";
     private static final String S1_P0 = FinalChecks.class.getCanonicalName() + ".FinalChecks(String,String):0:s1";
     private static final String S2 = FinalChecks.class.getCanonicalName() + ".s2";
@@ -36,7 +39,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                 Assert.assertFalse(d.hasProperty(VariableProperty.MODIFIED)); // no method was called on parameter s4
                 Assert.assertEquals(1, d.getProperty(VariableProperty.READ)); // read 1x
                 // there is an explicit @NotNull on the first parameter of debug
-                int expectNotNull = MultiLevel.NULLABLE;
+                int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL)); // nothing that points to not null
             } else Assert.fail();
         }
@@ -55,8 +58,8 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                 // stateOnAssignment has to be copied from statement 1
                 Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
             }
-            if(S5.equals(d.variableName())) {
-                if("0".equals(d.statementId())) {
+            if (S5.equals(d.variableName())) {
+                if ("0".equals(d.statementId())) {
                     VariableInfo vi1 = d.variableInfoContainer().best(VariableInfoContainer.LEVEL_1_INITIALISER);
                     Assert.assertEquals(Level.DELAY, vi1.getProperty(VariableProperty.IMMUTABLE));
                     VariableInfo vi4 = d.variableInfoContainer().best(VariableInfoContainer.LEVEL_4_SUMMARY);
@@ -83,13 +86,14 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         if ("setS4".equals(methodInfo.name)) {
             // @NotModified decided straight away, @Identity as well
             Assert.assertEquals(Level.FALSE, d.parameterAnalyses().get(0).getProperty(VariableProperty.MODIFIED));
-            Assert.assertEquals(MultiLevel.NULLABLE, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
+            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+            Assert.assertEquals(expectNotNull, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
         }
 
         // there is no size restriction
         if (iteration > 0) {
             FieldInfo s1 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> "s1".equals(f.name)).findFirst().orElseThrow();
-            if ("toString".equals(methodInfo.name) || FINAL_CHECKS.equals(methodInfo.name)) {
+            if ("toString".equals(methodInfo.name) || FINAL_CHECKS_FQN.equals(methodInfo.fullyQualifiedName())) {
                 int notNull = d.getFieldAsVariable(s1).getProperty(VariableProperty.NOT_NULL);
                 Assert.assertEquals(MultiLevel.MUTABLE, notNull);
             }
@@ -98,7 +102,11 @@ public class Test_05_FinalChecks extends CommonTestRunner {
 
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
-        if (FINAL_CHECKS.equals(d.methodInfo().name) && "2".equals(d.statementId())) {
+        if (FINAL_CHECKS_FQN.equals(d.methodInfo().fullyQualifiedName()) && "0".equals(d.statementId())) {
+            Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+            Assert.assertEquals("true", d.evaluationResult().value.toString());
+        }
+        if (FINAL_CHECKS_FQN.equals(d.methodInfo().fullyQualifiedName()) && "2".equals(d.statementId())) {
             Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
             d.findMarkAssigned(S2);
             StatementAnalyser.SetStateOnAssignment ssa = d.findSetStateOnAssignment(S2);

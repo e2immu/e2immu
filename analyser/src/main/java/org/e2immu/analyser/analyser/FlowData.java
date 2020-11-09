@@ -59,11 +59,10 @@ public class FlowData {
                 .map(Map.Entry::getKey).reduce(NO, InterruptsFlow::best);
     }
 
-    public Execution execution(boolean statementsExecutedAtLeastOnce) {
-        FlowData.Execution executionBlock = statementsExecutedAtLeastOnce ? FlowData.Execution.ALWAYS : FlowData.Execution.CONDITIONALLY;
+    public Execution execution(Execution statementsExecution) {
         // combine with guaranteed to be reached in block
         FlowData.Execution execution = guaranteedToBeReachedInMethod.get();
-        return execution.worst(executionBlock);
+        return execution.worst(statementsExecution);
     }
 
     public void setGuaranteedToBeReached(Execution execution) {
@@ -77,6 +76,8 @@ public class FlowData {
 
 
     public enum Execution {
+        DEFAULT(3), // only local data transfer from SwitchEntry or IfElseStatement
+
         ALWAYS(2), CONDITIONALLY(1), NEVER(0);
         final int level;
 

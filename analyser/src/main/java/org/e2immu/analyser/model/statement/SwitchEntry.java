@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -92,6 +93,12 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
     public boolean isNotDefault() {
         return !labels.isEmpty();
+    }
+
+    public FlowData.Execution statementExecution(Value value, EvaluationContext evaluationContext) {
+        if (switchVariableAsExpression == EmptyExpression.DEFAULT_EXPRESSION) return FlowData.Execution.DEFAULT;
+        EvaluationResult result = switchVariableAsExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+        return result.value.equals(value) ? FlowData.Execution.ALWAYS : value.isConstant() ? FlowData.Execution.NEVER : FlowData.Execution.CONDITIONALLY;
     }
 
     //****************************************************************************************************************

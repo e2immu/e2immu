@@ -18,12 +18,11 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-
-import java.util.Set;
 
 public class ForEachStatement extends LoopStatement {
     public ForEachStatement(String label,
@@ -31,7 +30,12 @@ public class ForEachStatement extends LoopStatement {
                             Expression expression,
                             Block block) {
         super(new Structure.Builder()
-                .setStatementsExecutedAtLeastOnce((v, evaluationContext) -> evaluationContext.getProperty(v, VariableProperty.SIZE) >= Level.SIZE_NOT_EMPTY)
+                .setStatementExecution((v, evaluationContext) -> {
+                    int size = evaluationContext.getProperty(v, VariableProperty.SIZE);
+                    if (size == Level.SIZE_EMPTY) return FlowData.Execution.NEVER;
+                    if (size >= Level.SIZE_NOT_EMPTY) return FlowData.Execution.ALWAYS;
+                    return FlowData.Execution.CONDITIONALLY; // no idea
+                })
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setLocalVariableCreation(localVariable)
                 .setExpression(expression)

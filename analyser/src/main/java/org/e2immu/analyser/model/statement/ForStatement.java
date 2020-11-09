@@ -19,7 +19,7 @@ public class ForStatement extends LoopStatement {
      */
     public ForStatement(String label, List<Expression> initialisers, Expression condition, List<Expression> updaters, Block block) {
         super(new Structure.Builder()
-                .setStatementsExecutedAtLeastOnce((v, ec) -> false)
+                .setStatementExecution(StatementExecution.CONDITIONALLY)
                 .setCreateVariablesInsideBlock(true)
                 .addInitialisers(initialisers)
                 .setExpression(condition)

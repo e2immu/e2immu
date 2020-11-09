@@ -30,7 +30,7 @@ public class SynchronizedStatement extends StatementWithExpression {
         super(new Structure.Builder()
                 .setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
-                .setStatementsExecutedAtLeastOnce((v, ec) -> true)
+                .setStatementExecution(StatementExecution.ALWAYS)
                 .setBlock(block).build(), expression);
     }
 

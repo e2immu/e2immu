@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.StringUtil;
 
@@ -27,7 +28,11 @@ public class WhileStatement extends LoopStatement {
                           Expression expression,
                           Block block) {
         super(new Structure.Builder()
-                .setStatementsExecutedAtLeastOnce((v, ec) -> v.equals(ec.boolValueTrue()))
+                .setStatementExecution((v, ec) -> {
+                    if (v.isBoolValueFalse()) return FlowData.Execution.NEVER;
+                    if (v.isBoolValueTrue()) return FlowData.Execution.ALWAYS;
+                    return FlowData.Execution.CONDITIONALLY;
+                })
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setExpression(expression)
                 .setExpressionIsCondition(true)

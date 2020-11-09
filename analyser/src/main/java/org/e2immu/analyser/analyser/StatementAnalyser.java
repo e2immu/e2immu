@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
-import static org.e2immu.analyser.analyser.FlowData.Execution.NEVER;
+import static org.e2immu.analyser.analyser.FlowData.Execution.*;
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
@@ -800,11 +800,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                                Structure structure,
                                                StatementAnalyser startOfFirstBlock,
                                                StatementAnalyserResult.Builder builder) {
-        boolean statementsExecutedAtLeastOnce = structure.statementsExecutedAtLeastOnce.test(value, evaluationContext);
-        FlowData.Execution execution = statementAnalysis.flowData.execution(statementsExecutedAtLeastOnce);
-        if (execution == NEVER) return SKIPPED;
-        ConditionManager newLocalConditionManager = structure.expressionIsCondition ? localConditionManager.addCondition(evaluationContext, value)
-                : localConditionManager;
         StatementAnalyserResult recursiveResult = startOfFirstBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
                 new ForwardAnalysisInfo(execution, newLocalConditionManager, false));
         builder.add(recursiveResult);
@@ -873,11 +868,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return analysisStatus;
     }
 
+    private record ExecutionOfBlock(FlowData.Execution execution, StatementAnalyser startOfBlock,
+                                    ConditionManager conditionManager, Value condition) {
+    }
+
     private AnalysisStatus step4_nonEmptySubBlocks(SharedState sharedState, List<StatementAnalyser> startOfBlocks) {
         Value value = statementAnalysis.stateData.getValueOfExpression();
         Structure structure = statementAnalysis.statement.getStructure();
         EvaluationContext evaluationContext = sharedState.evaluationContext;
 
+        List<ExecutionOfBlock> executions = step4a_determineExecution(sharedState, startOfBlocks);
 
         // STEP 8: the primary block, if it's there
         // the primary block has an expression in case of "if", "while", and "synchronized"
@@ -961,6 +961,91 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return analysisStatus;
     }
 
+
+    private List<ExecutionOfBlock> step4a_determineExecution(SharedState sharedState, List<StatementAnalyser> startOfBlocks) {
+        List<ExecutionOfBlock> executions = new ArrayList<>(startOfBlocks.size());
+
+        Value value = statementAnalysis.stateData.getValueOfExpression();
+        Structure structure = statementAnalysis.statement.getStructure();
+        EvaluationContext evaluationContext = sharedState.evaluationContext;
+
+        // main block
+
+        int start;
+        if (structure.haveNonEmptyBlock()) {
+            // some loops are never executed, and we can see that
+            FlowData.Execution statementsExecution = structure.statementExecution.apply(value, evaluationContext);
+            FlowData.Execution execution = statementAnalysis.flowData.execution(statementsExecution);
+            if (execution == NEVER) {
+                executions.add(new ExecutionOfBlock(NEVER, null, null, value));
+            } else {
+                ConditionManager newLocalConditionManager = structure.expressionIsCondition ? localConditionManager.addCondition(evaluationContext, value)
+                        : localConditionManager;
+                executions.add(new ExecutionOfBlock(execution, startOfBlocks.get(0), newLocalConditionManager, value));
+            }
+            start = 1;
+        } else {
+            executions.add(new ExecutionOfBlock(NEVER, null, null, value));
+            start = 0;
+        }
+        for (int count = start; count < startOfBlocks.size(); count++) {
+            Structure subStatements = structure.subStatements.get(count - start);
+            Value conditionForSubStatement;
+
+            FlowData.Execution statementsExecution = subStatements.statementExecution.apply(value, evaluationContext);
+            if (statementsExecution == DEFAULT) {
+                conditionForSubStatement = defaultCondition(evaluationContext, executions);
+                if (conditionForSubStatement.isBoolValueFalse()) statementsExecution = NEVER;
+                else if (conditionForSubStatement.isBoolValueTrue()) statementsExecution = ALWAYS;
+                else statementsExecution = CONDITIONALLY;
+            } else if (statementsExecution == ALWAYS) {
+                conditionForSubStatement = BoolValue.createTrue(statementAnalysis.primitives);
+            } else if (statementsExecution == NEVER) {
+                conditionForSubStatement = null; // will not be executed anyway
+            } else if (statement() instanceof SwitchEntry switchEntry) {
+                Value constant = switchEntry.switchVariableAsExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT).value;
+                conditionForSubStatement = EqualsValue.equals(evaluationContext, value, constant, ObjectFlow.NO_FLOW);
+            } else throw new UnsupportedOperationException();
+
+            FlowData.Execution execution = statementAnalysis.flowData.execution(statementsExecution);
+
+            ConditionManager newLocalConditionManager = localConditionManager.addCondition(evaluationContext, conditionForSubStatement);
+            executions.add(new ExecutionOfBlock(execution, startOfBlocks.get(count), newLocalConditionManager, conditionForSubStatement));
+        }
+
+        return executions;
+    }
+
+    private Value defaultCondition(EvaluationContext evaluationContext, List<ExecutionOfBlock> executions) {
+        Primitives primitives = evaluationContext.getPrimitives();
+        List<Value> previousConditions = executions.stream().map(e -> e.condition).collect(Collectors.toList());
+        if (previousConditions.isEmpty()) {
+            return BoolValue.createTrue(primitives);
+        }
+        Value[] negated = previousConditions.stream().map(c -> NegatedValue.negate(evaluationContext, c)).toArray(Value[]::new);
+        return new AndValue(primitives, ObjectFlow.NO_FLOW).append(evaluationContext, negated);
+    }
+
+
+    private Value conditionForSubStatement(SharedState sharedState, List<ExecutionOfBlock> executions,
+                                           Expression expression, ForwardEvaluationInfo forwardEvaluationInfo) {
+        EvaluationContext evaluationContext = sharedState.evaluationContext;
+        if (EmptyExpression.DEFAULT_EXPRESSION == expression) { // else, default:
+
+
+        }
+        if (EmptyExpression.FINALLY_EXPRESSION == expression || EmptyExpression.EMPTY_EXPRESSION == expression) {
+            return null;
+        }
+        // real expression (case in switch)
+        EvaluationResult result = expression.evaluate(evaluationContext, forwardEvaluationInfo);
+        // there cannot be any assignment in these sub-expressions, nor variables, ...
+        AnalysisStatus status = apply(sharedState, result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_4);
+        if (status == DELAYS) {
+            throw new UnsupportedOperationException();
+        }
+        return result.value;
+    }
 
     /**
      * We recognize the following situations, looping over the local variables:

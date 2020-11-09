@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -45,14 +46,20 @@ public class IfElseStatement extends StatementWithExpression {
                 .setExpressionIsCondition(true)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setBlock(ifBlock)
-                .setStatementsExecutedAtLeastOnce((v, ec) -> false);
+                .setStatementExecution((v, ec) -> standardExecution(v));
         if (elseBlock != Block.EMPTY_BLOCK) {
             builder.addSubStatement(new Structure.Builder().setExpression(EmptyExpression.DEFAULT_EXPRESSION)
-                    .setStatementsExecutedAtLeastOnce((v, ec) -> false)
+                    .setStatementExecution(StatementExecution.DEFAULT)
                     .setBlock(elseBlock)
                     .build());
         }
         return builder.build();
+    }
+
+    private static FlowData.Execution standardExecution(Value v) {
+        if (v.isBoolValueTrue()) return FlowData.Execution.ALWAYS;
+        if (v.isBoolValueFalse()) return FlowData.Execution.NEVER;
+        return FlowData.Execution.CONDITIONALLY;
     }
 
     @Override

@@ -20,7 +20,7 @@ public class SwitchStatement extends StatementWithExpression {
         Structure.Builder builder = new Structure.Builder()
                 .setExpression(expression)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL);
-        switchEntries.forEach(se -> builder.addSubStatement(se.getStructure()).setStatementsExecutedAtLeastOnce((v, ec) -> false));
+        switchEntries.forEach(se -> builder.addSubStatement(se.getStructure()).setStatementExecution(se::statementExecution));
         return builder.build();
     }
 
