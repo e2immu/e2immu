@@ -50,7 +50,7 @@ public class IncrementalMap<K> extends Freezable {
         // can go from -1 to 1, not from 1 to -1; can go from 1 to 2, from -1 to -2
         if (current != null && !accept.test(current, v))
             throw new UnsupportedOperationException("Not incremental? had " + current + ", now " + v + "; key " + k);
-       return map.put(k, v);
+        return map.put(k, v);
     }
 
     @Only(before = "freeze")
@@ -111,9 +111,6 @@ public class IncrementalMap<K> extends Freezable {
 
     @Override
     public String toString() {
-        return "IncrementalMap{" +
-                "map=" + map +
-                ", accept=" + accept +
-                '}';
+        return "IncrementalMap{map=" + map + '}';
     }
 }

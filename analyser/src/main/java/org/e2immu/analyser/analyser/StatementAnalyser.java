@@ -731,7 +731,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         try {
             EvaluationResult result = structure.expression.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo);
             AnalysisStatus status = apply(sharedState, result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_3);
-            if (status == DELAYS) return DELAYS;
+            if (status == DELAYS) {
+                // FIXME should we not create a new value if the "old value" is NOT delay??
+                return DELAYS;
+            }
 
             // the evaluation system should be pretty good at always returning NO_VALUE when a NO_VALUE has been encountered
             Value value = result.value;

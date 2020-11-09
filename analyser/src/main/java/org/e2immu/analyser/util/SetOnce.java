@@ -35,7 +35,7 @@ public class SetOnce<T> {
         if (t == null) throw new NullPointerException("Null not allowed");
         synchronized (this) {
             if (this.t != null) {
-                throw new UnsupportedOperationException("Already set");
+                throw new UnsupportedOperationException("Already set: have "+this.t+", try to set "+t);
             }
             this.t = t;
         }

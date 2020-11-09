@@ -19,35 +19,46 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
     private static final String RETURN_1_VALUE = "(not (" + A1 + ") and " + B1 + ")?4:(" + A1 + " and not (" + B1 + "))?3:" +
             "(not (" + A1 + ") and not (" + B1 + "))?2:(" + A1 + " and " + B1 + ")?1:<return value>";
 
-    private static final String A3 = "org.e2immu.analyser.testexample.ConditionalChecks.method3(String,String):0:a";
+    private static final String RETURN3 = "org.e2immu.analyser.testexample.ConditionalChecks.method3(String,String)";
+    private static final String A3 = RETURN3 + ":0:a";
     private static final String B3 = "org.e2immu.analyser.testexample.ConditionalChecks.method3(String,String):1:b";
-    private static final String O5 = "org.e2immu.analyser.testexample.ConditionalChecks.method5(Object):0:o";
+
+    private static final String RETURN5 = "org.e2immu.analyser.testexample.ConditionalChecks.method5(Object)";
+    private static final String O5 = RETURN5 + ":0:o";
     private static final String THIS_GET_CLASS = "org.e2immu.analyser.testexample.ConditionalChecks.this.getClass()";
     private static final String THIS = "org.e2immu.analyser.testexample.ConditionalChecks.this";
     private static final String O5_GET_CLASS = "org.e2immu.analyser.testexample.ConditionalChecks.method5(Object):0:o.getClass()";
     private static final String I = "org.e2immu.analyser.testexample.ConditionalChecks.i";
-    private static final String CC_I = "org.e2immu.analyser.testexample.ConditionalChecks.i#conditionalChecks";
+    private static final String CC_I = "org.e2immu.analyser.testexample.ConditionalChecks.i#" + O5;
 
     public Test_04_ConditionalChecks() {
         super(false);
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("method5".equals(d.methodInfo().name) && O5.equals(d.variableName())) {
-            if ("0".equals(d.statementId())) {
-                Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
+        if ("method5".equals(d.methodInfo().name)) {
+            if (O5.equals(d.variableName())) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
+                }
+            }
+            if ("conditionalChecks".equals(d.variableName())) {
+                if ("2".equals(d.statementId())) {
+                    Assert.assertEquals(O5, d.currentValue().toString());
+                }
+            }
+            if ("3".equals(d.statementId())) {
+                if (CC_I.equals(d.variableName())) {
+                    String expectValue = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : ""; // FIXME "" won't be correct
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                }
+                if (RETURN5.equals(d.variableName())) {
+                    Assert.assertEquals("(not (" + O5 + " == " + THIS + ") and (null == " + O5 + " or not (" + O5_GET_CLASS + " == " + THIS_GET_CLASS + ")))?false:" +
+                            O5 + " == " + THIS + "?true:<return value>", d.currentValue().toString());
+                    Assert.assertEquals(VariableInfoContainer.LEVEL_3_EVALUATION, d.variableInfoContainer().getCurrentLevel());
+                }
             }
         }
-        if ("method5".equals(d.methodInfo().name) && "conditionalChecks".equals(d.variableName())) {
-            if ("2".equals(d.statementId())) {
-                Assert.assertEquals(O5, d.currentValue().toString());
-            }
-        }
-        if ("method5".equals(d.methodInfo().name) && "3".equals(d.statementId()) && CC_I.equals(d.variableName())) {
-            String expectValue = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : "";
-            Assert.assertEquals(expectValue, d.currentValue().toString());
-        }
-
         if (RETURN1.equals(d.variableName())) {
             // return 1;
             if ("0.0.0".equals(d.statementId())) {
@@ -84,6 +95,17 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
             }
             if ("4".equals(d.statementId())) {
                 Assert.fail("not reached!");
+            }
+        }
+        if (RETURN3.equals(d.variableName())) {
+            if ("0".equals(d.statementId())) {
+                Assert.assertEquals("<return value>", d.currentValue().toString());
+            }
+            if ("1".equals(d.statementId())) {
+                Assert.assertEquals("<return value>", d.currentValue().toString());
+            }
+            if ("2".equals(d.statementId())) {
+                Assert.assertEquals(A3 + " + " + B3, d.currentValue().toString());
             }
         }
     };

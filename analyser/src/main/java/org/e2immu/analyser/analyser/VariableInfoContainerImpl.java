@@ -104,7 +104,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 // the data is already there
                 return;
             }
-            throw new UnsupportedOperationException("In the first iteration, an assignment should start a new level");
+            throw new UnsupportedOperationException("In the first iteration, an assignment should start a new level for " +
+                    current().variable().fullyQualifiedName());
         }
         int assigned = data[currentLevel].getProperty(VariableProperty.ASSIGNED);
         VariableInfoImpl variableInfo = new VariableInfoImpl(data[currentLevel].variable());
@@ -231,17 +232,20 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
         Objects.requireNonNull(variableProperty);
 
-        int writeLevel = findLevelForWriting(level);
-        VariableInfoImpl variableInfo = getAndCast(writeLevel);
-        try {
-            if (variableInfo.setProperty(variableProperty, value)) {
-                liftCurrentLevel(writeLevel);
+        int valueAtReadLevel = best(level).getProperty(variableProperty);
+        if (valueAtReadLevel != value) {
+            int writeLevel = findLevelForWriting(level);
+            VariableInfoImpl variableInfo = getAndCast(writeLevel);
+            try {
+                if (variableInfo.setProperty(variableProperty, value)) {
+                    liftCurrentLevel(writeLevel);
+                }
+            } catch (RuntimeException rte) {
+                LOGGER.warn("Caught exception while setting variable property " + variableProperty +
+                        " of " + variableInfo.name + " to " + value + " at level " + writeLevel + "; current level " + currentLevel +
+                        "; previous value " + variableInfo.getProperty(variableProperty));
+                throw rte;
             }
-        } catch (RuntimeException rte) {
-            LOGGER.warn("Caught exception while setting variable property " + variableProperty +
-                    " of " + variableInfo.name + " to " + value + " at level " + writeLevel + "; current level " + currentLevel +
-                    "; previous value " + variableInfo.getProperty(variableProperty));
-            throw rte;
         }
     }
 
@@ -354,9 +358,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     private static boolean notExistingStateEqualsAndMergeStates(EvaluationContext evaluationContext, VariableInfo oneSide, List<VariableInfo> merge) {
-        if (!oneSide.stateOnAssignmentIsSet()) return false;
-        if (!merge.stream().allMatch(VariableInfo::stateOnAssignmentIsSet)) return false;
+        if (!oneSide.stateOnAssignmentIsSet() || oneSide.getStateOnAssignment() == UnknownValue.EMPTY) return false;
+        if (merge.stream().anyMatch(vi -> !vi.stateOnAssignmentIsSet() || vi.getStateOnAssignment() == UnknownValue.EMPTY))
+            return false;
+
         Value notOne = NegatedValue.negate(evaluationContext, oneSide.getStateOnAssignment());
+
         Value andOtherSide = new AndValue(evaluationContext.getPrimitives()).append(evaluationContext,
                 merge.stream().map(VariableInfo::getStateOnAssignment).toArray(Value[]::new));
         return notOne.equals(andOtherSide);
