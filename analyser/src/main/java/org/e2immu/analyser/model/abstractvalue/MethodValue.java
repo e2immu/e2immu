@@ -140,8 +140,8 @@ public class MethodValue implements Value {
     public static int checkSize(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Value> parameters) {
         if (methodInfo == null) return Level.DELAY;
         // the method either belongs to a type that has size, or it returns a type that has size
-        if (!methodInfo.returnType().hasSize(evaluationContext.getPrimitives(), evaluationContext.getAnalyserContext()) &&
-                !methodInfo.typeInfo.hasSize(evaluationContext.getPrimitives(), evaluationContext.getAnalyserContext()))
+        if (!methodInfo.returnType().hasSize(evaluationContext.getAnalyserContext()) &&
+                !methodInfo.typeInfo.hasSize(evaluationContext.getAnalyserContext()))
             return Level.DELAY;
 
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
@@ -161,9 +161,9 @@ public class MethodValue implements Value {
     public static int checkSizeCopy(EvaluationContext evaluationContext, MethodInfo methodInfo) {
         if (methodInfo == null) return Level.DELAY;
         // the method either belongs to a type that has size, or it returns a type that has size
-        if (!methodInfo.returnType().hasSize(evaluationContext.getPrimitives(), evaluationContext.getAnalyserContext()) &&
-                !methodInfo.typeInfo.hasSize(evaluationContext.getPrimitives(), evaluationContext.getAnalyserContext()))
-            return Level.DELAY;
+        if (!methodInfo.returnType().hasSize(evaluationContext.getAnalyserContext()) &&
+                !methodInfo.typeInfo.hasSize(evaluationContext.getAnalyserContext()))
+            return Level.FALSE; // TODO check
 
         // we give priority to the value of the parameters, rather than that of the method
         for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {

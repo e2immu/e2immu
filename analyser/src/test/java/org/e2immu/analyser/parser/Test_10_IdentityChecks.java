@@ -1,26 +1,27 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodAnalysis;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Set;
 
 public class Test_10_IdentityChecks extends CommonTestRunner {
     public Test_10_IdentityChecks() {
         super(true);
     }
 
-    private static final String IDEM_S = "org.e2immu.analyser.testexample.IdentityChecks.idem(String):0:s";
-    private static final String IDEM3_S = "org.e2immu.analyser.testexample.IdentityChecks.idem3(String):0:s";
+    private static final String IDEM = "org.e2immu.analyser.testexample.IdentityChecks.idem(String)";
+    private static final String IDEM_S = IDEM + ":0:s";
+    private static final String IDEM3 = "org.e2immu.analyser.testexample.IdentityChecks.idem3(String)";
+    private static final String IDEM3_S = IDEM3 + ":0:s";
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if (d.methodInfo().name.equals("idem") && IDEM_S.equals(d.variableName())) {
@@ -44,6 +45,16 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
             // there is an explicit @NotNull on the first parameter of debug
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
         }
+        if (IDEM.equals(d.variableName()) && "1".equals(d.statementId())) {
+            int expectSize = Level.IS_A_SIZE;
+            Assert.assertEquals(expectSize, d.getProperty(VariableProperty.SIZE));
+        }
+        if (IDEM3.equals(d.variableName()) && Set.of("1.0.0", "1.1.0", "1").contains(d.statementId())) {
+            int expectSize = Level.IS_A_SIZE;
+            Assert.assertEquals(expectSize, d.getProperty(VariableProperty.SIZE));
+            int expectSizeCopy = Level.FALSE;
+            Assert.assertEquals(expectSizeCopy, d.getProperty(VariableProperty.SIZE_COPY));
+        }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
@@ -66,6 +77,7 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         MethodAnalysis methodAnalysis = d.methodAnalysis();
+
         if ("idem".equals(d.methodInfo().name)) {
 
             VariableInfo tv = d.getReturnAsVariable();
@@ -80,9 +92,12 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
             // we do not need an extra iteration to find out about the modification status of idem,
             // because idem is processed before idem2
             Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
         }
 
         if ("idem3".equals(d.methodInfo().name)) {
+            Assert.assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
+
             Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED));
 
             VariableInfo vi = d.getReturnAsVariable();
@@ -92,8 +107,14 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
             //Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(VariableProperty.NOT_NULL));
         }
         if ("idem4".equals(d.methodInfo().name)) {
+            Assert.assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
             Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED));
         }
+    };
+
+    TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeInfo stringTypeInfo = typeContext.getFullyQualified(String.class);
+        Assert.assertTrue(stringTypeInfo.hasSize(AnalysisProvider.DEFAULT_PROVIDER));
     };
 
     @Test
@@ -102,6 +123,7 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addTypeContextVisitor(typeContextVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }

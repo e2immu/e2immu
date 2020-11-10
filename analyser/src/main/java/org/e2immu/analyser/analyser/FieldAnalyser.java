@@ -248,7 +248,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus analyseSize(int iteration) {
         if (fieldAnalysis.getProperty(VariableProperty.SIZE) != Level.DELAY) return DONE;
 
-        if (!fieldInfo.type.hasSize(analyserContext.getPrimitives(), analyserContext)) {
+        if (!fieldInfo.type.hasSize(analyserContext)) {
             log(SIZE, "No @Size annotation on {}, because the type has no size!", fieldInfo.fullyQualifiedName());
             fieldAnalysis.setProperty(VariableProperty.SIZE, Level.FALSE); // in the case of size, FALSE there cannot be size
             return DONE;

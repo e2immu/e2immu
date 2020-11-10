@@ -63,13 +63,10 @@ public class Test_13_MethodOverloadAndSuperTypes {
     public void testThrowable() throws IOException {
         Parser parser = new Parser();
         TypeContext typeContext = parser.getTypeContext();
-        Primitives primitives = typeContext.getPrimitives();
         TypeInfo throwable = typeContext.typeStore.get("java.lang.Throwable");
         Assert.assertNotNull(throwable);
-        List<TypeInfo> superTypes = throwable.superTypes(primitives);
-        TypeInfo object = typeContext.typeStore.get("java.lang.Object");
-        Assert.assertNotNull(object);
-        Assert.assertTrue(superTypes.contains(object));
+        List<TypeInfo> superTypes = throwable.superTypesExcludingJavaLangObject();
+        Assert.assertTrue(superTypes.isEmpty());
     }
 
     @Test
@@ -115,8 +112,8 @@ public class Test_13_MethodOverloadAndSuperTypes {
         // method: C1.method(int)
         TypeInfo c1 = methodOverload.typeInspection.getPotentiallyRun().subTypes.stream().filter(t -> t.simpleName.equals("C1")).findFirst().orElseThrow();
 
-        List<TypeInfo> superTypesC1 = c1.superTypes(primitives);
-        Assert.assertEquals("[java.lang.Object, org.e2immu.analyser.testexample.MethodOverload.I1]", superTypesC1.toString());
+        List<TypeInfo> superTypesC1 = c1.superTypesExcludingJavaLangObject();
+        Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.I1]", superTypesC1.toString());
         List<ParameterizedType> directSuperTypesC1 = c1.directSuperTypes(primitives);
         Assert.assertEquals("[Type java.lang.Object, Type org.e2immu.analyser.testexample.MethodOverload.I1]", directSuperTypesC1.toString());
 
@@ -134,8 +131,8 @@ public class Test_13_MethodOverloadAndSuperTypes {
         LOGGER.info("Distinguishing names of C2 methods: " +
                 c2.typeInspection.getPotentiallyRun().methods.stream().map(MethodInfo::distinguishingName).collect(Collectors.joining(", ")));
 
-        List<TypeInfo> superTypesC2 = c2.superTypes(primitives);
-        Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.C1, java.lang.Object, org.e2immu.analyser.testexample.MethodOverload.I1]", superTypesC2.toString());
+        List<TypeInfo> superTypesC2 = c2.superTypesExcludingJavaLangObject();
+        Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.C1, org.e2immu.analyser.testexample.MethodOverload.I1]", superTypesC2.toString());
         List<ParameterizedType> directSuperTypesC2 = c2.directSuperTypes(primitives);
         Assert.assertEquals("[Type org.e2immu.analyser.testexample.MethodOverload.C1]", directSuperTypesC2.toString());
 

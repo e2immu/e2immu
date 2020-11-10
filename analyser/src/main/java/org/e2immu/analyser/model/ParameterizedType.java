@@ -625,9 +625,9 @@ public class ParameterizedType {
         return false;
     }
 
-    public boolean hasSize(Primitives primitives, AnalysisProvider analysisProvider) {
+    public boolean hasSize(AnalysisProvider analysisProvider) {
         TypeInfo bestType = bestTypeInfo();
-        return bestType != null && bestType.hasSize(primitives, analysisProvider);
+        return bestType != null && bestType.hasSize(analysisProvider);
     }
 
     /**

@@ -503,6 +503,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             methodAnalysis.objectFlow.set(objectFlow);
         }
 
+        Value valueBeforeInlining = value;
         int immutable = Level.DELAY;
         if (value.isConstant()) {
             immutable = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
@@ -535,13 +536,22 @@ public class MethodAnalyser extends AbstractAnalyser {
         methodAnalysis.setProperty(VariableProperty.CONSTANT, isConstant);
         log(CONSTANT, "Mark method {} as @Constant? {}", methodInfo.fullyQualifiedName(), isConstant);
 
-        boolean isFluent = value instanceof VariableValue vv && vv.variable instanceof This thisVar && thisVar.typeInfo == myTypeAnalyser.typeInfo;
+        boolean isFluent = valueBeforeInlining instanceof VariableValue vv &&
+                vv.variable instanceof This thisVar &&
+                thisVar.typeInfo == myTypeAnalyser.typeInfo;
         methodAnalysis.setProperty(VariableProperty.FLUENT, isFluent);
         log(FLUENT, "Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
 
-        boolean isIdentity = value instanceof ParameterInfo parameterInfo && parameterInfo.index == 0 && parameterInfo.owner == methodInfo;
+        VariableValue vv;
+        MethodValue mv;
+        boolean isIdentity = ((vv = valueBeforeInlining.asInstanceOf(VariableValue.class)) != null) &&
+                vv.variable instanceof ParameterInfo parameterInfo &&
+                parameterInfo.index == 0 &&
+                parameterInfo.owner == methodInfo ||
+                ((mv = valueBeforeInlining.asInstanceOf(MethodValue.class)) != null) &&
+                        analyserContext.getMethodAnalysis(mv.methodInfo).getProperty(VariableProperty.IDENTITY) == Level.TRUE;
         methodAnalysis.setProperty(VariableProperty.IDENTITY, isIdentity);
-        log(FLUENT, "Mark method {} as @Identity? {}", methodInfo.fullyQualifiedName(), isIdentity);
+        log(IDENTITY, "Mark method {} as @Identity? {}", methodInfo.fullyQualifiedName(), isIdentity);
 
         return DONE;
     }
@@ -613,7 +623,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
         if (modified == Level.FALSE) {
-            if (methodInfo.returnType().hasSize(analyserContext.getPrimitives(), analyserContext)) {
+            if (methodInfo.returnType().hasSize(analyserContext)) {
                 // non-modifying method that returns a type with @Size (like Collection, Map, ...)
                 log(SIZE, "Return type {} of method {} has a size!", methodInfo.returnType().detailedString(), methodInfo.fullyQualifiedName());
 
@@ -653,7 +663,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
         if (modified == Level.FALSE) {
-            if (methodInfo.returnType().hasSize(analyserContext.getPrimitives(), analyserContext)) {
+            if (methodInfo.returnType().hasSize(analyserContext)) {
                 // first try @Size(copy ...)
                 int sizeCopy = getReturnAsVariable().getProperty(VariableProperty.SIZE_COPY);
                 if (sizeCopy == Level.DELAY) {
@@ -700,7 +710,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             // very specific situation, we see if the return statement is a @Size method; if so, we propagate that info
             MethodValue methodValue;
             if ((methodValue = cnv.value.asInstanceOf(MethodValue.class)) != null) {
-                MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod(analyserContext.getPrimitives(), analyserContext);
+                MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod(analyserContext);
                 if (methodValue.methodInfo == theSizeMethod && cnv.lowerBound >= 0 && cnv.upperBound == ConstrainedNumericValue.MAX) {
                     return Level.encodeSizeMin((int) cnv.lowerBound);
                 }
@@ -716,7 +726,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                         (cnvRhs = equalsValue.rhs.asInstanceOf(ConstrainedNumericValue.class)) != null) {
                     MethodValue methodValue;
                     if ((methodValue = cnvRhs.value.asInstanceOf(MethodValue.class)) != null) {
-                        MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod(analyserContext.getPrimitives(), analyserContext);
+                        MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod(analyserContext);
                         if (methodValue.methodInfo == theSizeMethod) {
                             return Level.encodeSizeEquals(intValue.value);
                         }
@@ -731,7 +741,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                     if (!xb.lessThan && ((cnvXb = xb.x.asInstanceOf(ConstrainedNumericValue.class)) != null)) {
                         MethodValue methodValue;
                         if ((methodValue = cnvXb.value.asInstanceOf(MethodValue.class)) != null) {
-                            MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod(analyserContext.getPrimitives(), analyserContext);
+                            MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod(analyserContext);
                             if (methodValue.methodInfo == theSizeMethod) {
                                 return Level.encodeSizeMin((int) xb.b);
                             }

@@ -840,28 +840,23 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return list;
     }
 
-    public List<TypeInfo> superTypes(Primitives primitives) {
+    public List<TypeInfo> superTypesExcludingJavaLangObject() {
         if (Primitives.isJavaLangObject(this)) return List.of();
         if (typeInspection.getPotentiallyRun().superTypes.isSet())
             return typeInspection.getPotentiallyRun().superTypes.get();
         List<TypeInfo> list = new ArrayList<>();
         ParameterizedType parentPt = typeInspection.getPotentiallyRun().parentClass;
         TypeInfo parent;
-        boolean parentIsJLO = parentPt == ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT;
-        if (parentIsJLO) {
-            parent = primitives.objectTypeInfo;
-            if (typeInspection.getPotentiallyRun().isClass()) {
-                list.add(parent);
-            }
-        } else {
+        boolean parentIsNotJLO = parentPt != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT;
+        if (parentIsNotJLO) {
             parent = Objects.requireNonNull(parentPt.typeInfo);
             list.add(parent);
-            list.addAll(parent.superTypes(primitives));
+            list.addAll(parent.superTypesExcludingJavaLangObject());
         }
 
         typeInspection.getPotentiallyRun().interfacesImplemented.forEach(i -> {
             list.add(i.typeInfo);
-            list.addAll(i.typeInfo.superTypes(primitives));
+            list.addAll(i.typeInfo.superTypesExcludingJavaLangObject());
         });
         List<TypeInfo> immutable = ImmutableList.copyOf(list);
         typeInspection.getPotentiallyRun().superTypes.set(immutable);
@@ -1097,7 +1092,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 .anyMatch(ann -> Primitives.isFunctionalInterfaceAnnotation(ann.typeInfo));
     }
 
-    public MethodInfo sizeMethod(Primitives primitives, AnalysisProvider analysisProvider) {
+    // TODO there may be delays?
+
+    public MethodInfo sizeMethod(AnalysisProvider analysisProvider) {
         MethodInfo methodInfo = typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(mi -> returnsIntOrLong(mi) && mi.methodInspection.get().parameters.isEmpty())
                 .filter(mi -> analysisProvider.getMethodAnalysis(mi).getProperty(VariableProperty.SIZE) > Level.FALSE)
@@ -1106,12 +1103,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (methodInfo != null) {
             return methodInfo;
         }
-        return superTypes(primitives).stream().map(t -> t.sizeMethod(primitives, analysisProvider))
+        // we can afford to exclude JLO because it does NOT have a @Size method
+        return superTypesExcludingJavaLangObject().stream().map(t -> t.sizeMethod(analysisProvider))
                 .filter(Objects::nonNull).findFirst().orElse(null);
     }
 
-    public boolean hasSize(Primitives primitives, AnalysisProvider analysisProvider) {
-        return sizeMethod(primitives, analysisProvider) != null;
+    // TODO there may be delays
+    public boolean hasSize(AnalysisProvider analysisProvider) {
+        return sizeMethod(analysisProvider) != null;
     }
 
     public static boolean returnsIntOrLong(MethodInfo methodInfo) {

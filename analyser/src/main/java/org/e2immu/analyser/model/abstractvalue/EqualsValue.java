@@ -119,7 +119,7 @@ public class EqualsValue extends PrimitiveValue {
         // methods for size should be wrapped with a ConstrainedNumericValue
         if (lhs instanceof NumericValue && rhs instanceof ConstrainedNumericValue &&
                 ((ConstrainedNumericValue) rhs).value instanceof MethodValue methodValue) {
-            if (methodValue.methodInfo.typeInfo.hasSize(primitives, analysisProvider)) {
+            if (methodValue.methodInfo.typeInfo.hasSize(analysisProvider)) {
                 int sizeOnMethod = methodValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.SIZE);
                 if (sizeOnMethod >= Level.TRUE && methodValue.object instanceof VariableValue variableValue) {
                     if (!parametersOnly || variableValue.variable instanceof ParameterInfo) {
