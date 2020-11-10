@@ -316,7 +316,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().parameters) {
                 VariableInfoContainer vic = findForWriting(analyserContext, parameterInfo);
                 ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
-                for (VariableProperty variableProperty : FROM_PARAMETER_TO_PROPERTIES) {
+                for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
                     int value = parameterAnalysis.getProperty(variableProperty);
                     vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, variableProperty, value);
                 }
@@ -443,7 +443,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldInfo);
             f = fieldAnalysis::getProperty;
         } else throw new UnsupportedOperationException();
-        return VariableProperty.FROM_PARAMETER_TO_PROPERTIES.stream()
+        return VariableProperty.FROM_ANALYSER_TO_PROPERTIES.stream()
                 .collect(Collectors.toUnmodifiableMap(vp -> vp, f));
     }
 
