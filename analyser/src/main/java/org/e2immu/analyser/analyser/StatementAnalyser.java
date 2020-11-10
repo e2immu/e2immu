@@ -789,13 +789,29 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     : combinedWithState.isConstant() ? combinedWithState : combinedWithCondition;
             List<Optional<StatementAnalysis>> blocks = statementAnalysis.navigationData.blocks.get();
             if (statementAnalysis.statement instanceof IfElseStatement) {
-                blocks.get(0).ifPresent(firstStatement ->
-                        firstStatement.flowData.setGuaranteedToBeReached(constant.isBoolValueTrue() ? ALWAYS : NEVER));
+                blocks.get(0).ifPresent(firstStatement -> {
+                    boolean isTrue = constant.isBoolValueTrue();
+                    if (!isTrue) {
+                        // important: we register the error on the IfElse rather than the first statement in the block, because that one
+                        // really is excluded from all analysis
+                        statementAnalysis.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo, firstStatement.index),
+                                Message.UNREACHABLE_STATEMENT));
+                    }
+                    firstStatement.flowData.setGuaranteedToBeReached(isTrue ? ALWAYS : NEVER);
+                });
                 if (blocks.size() == 2) {
-                    blocks.get(1).ifPresent(firstStatement ->
-                            firstStatement.flowData.setGuaranteedToBeReached(constant.isBoolValueTrue() ? NEVER : ALWAYS));
+                    blocks.get(1).ifPresent(firstStatement -> {
+                        boolean isTrue = constant.isBoolValueTrue();
+                        if (isTrue) {
+                            // important: we register the error on the IfElse rather than the first statement in the block, because that one
+                            // really is excluded from all analysis
+                            statementAnalysis.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo, firstStatement.index),
+                                    Message.UNREACHABLE_STATEMENT));
+                        }
+                        firstStatement.flowData.setGuaranteedToBeReached(isTrue ? NEVER : ALWAYS);
+                    });
                 }
-            } // else switch in sub-statements
+            } // else TODO switch in sub-statements
             return constant;
         }
         return value;

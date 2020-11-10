@@ -26,9 +26,9 @@ import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.*;
+import org.e2immu.analyser.model.abstractvalue.CombinedValue;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.ConstantValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -643,12 +643,14 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus analyseLinked() {
         assert !fieldAnalysis.variablesLinkedToMe.isSet();
+        if (fieldSummariesNotYetSet) return DELAYS;
 
         boolean allDefined = allMethodsAndConstructors.stream()
                 .allMatch(m ->
                         m.methodLevelData().linksHaveBeenEstablished.isSet() && (
                                 !m.haveFieldAsVariable(fieldInfo) ||
-                                        m.getFieldAsVariable(fieldInfo).linkedVariablesIsSet()));
+                                        m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.ASSIGNED) < Level.TRUE ||
+                                                m.getFieldAsVariable(fieldInfo).linkedVariablesIsSet()));
         if (!allDefined) {
             if (Logger.isLogEnabled(DELAYED)) {
                 log(DELAYED, "Evaluating {}, linksHaveBeenEstablished not yet set for methods: [{}]",
@@ -660,6 +662,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                         allMethodsAndConstructors.stream()
                                 .filter(m -> m.methodLevelData().linksHaveBeenEstablished.isSet())
                                 .filter(m -> m.haveFieldAsVariable(fieldInfo) &&
+                                        m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.ASSIGNED) >= Level.TRUE &&
                                         !m.getFieldAsVariable(fieldInfo).linkedVariablesIsSet())
                                 .map(m -> m.methodInfo.name).collect(Collectors.joining(", ")));
             }

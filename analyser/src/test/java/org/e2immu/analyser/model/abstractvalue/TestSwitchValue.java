@@ -53,7 +53,8 @@ public class TestSwitchValue extends CommonAbstractValue {
         Assert.assertEquals("[case 0->b, case 1,2,3,4->a, default->c]", cleanedUp.toString());
 
         Value value = SwitchValue.switchValue(minimalEvaluationContext, i, entries, ObjectFlow.NO_FLOW).value;
-        Assert.assertEquals(newString("switch(i){case 0->b; case 1,2,3,4->a; default->c}"), value);
+        Assert.assertTrue(value instanceof SwitchValue);
+        Assert.assertEquals("switch(i){case 0->b; case 1,2,3,4->a; default->c}", value.toString());
     }
 
     @Test

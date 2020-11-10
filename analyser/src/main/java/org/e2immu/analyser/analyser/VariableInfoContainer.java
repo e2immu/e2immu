@@ -120,6 +120,8 @@ public interface VariableInfoContainer {
 
     void setLinkedVariables(int level, Set<Variable> variables);
 
+    void setLinkedVariablesFromAnalyser(Set<Variable> variables);
+
     /**
      * aggregation method that copies value, properties, state, object flow, and linked variables
      * using the 'setXX' methods.

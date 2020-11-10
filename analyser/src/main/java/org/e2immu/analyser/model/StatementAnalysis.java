@@ -321,7 +321,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
         }
         StatementAnalysis copyFrom = previous == null ? parent : previous;
-        int bestLevel = previous == null ? VariableInfoContainer.LEVEL_1_INITIALISER:  // parent
+        int bestLevel = previous == null ? VariableInfoContainer.LEVEL_1_INITIALISER :  // parent
                 VariableInfoContainer.LEVEL_4_SUMMARY; // previous statement
 
         variableStream().forEach(variableInfo -> {
@@ -346,6 +346,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         vic.setInitialValueFromAnalyser(initialValue, map);
                     } else {
                         map.forEach((k, v) -> vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, k, v));
+                    }
+                    if (!variableInfo.linkedVariablesIsSet()) {
+                        FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+                        if (fieldAnalysis.getVariablesLinkedToMe() != null) {
+                            vic.setLinkedVariables(VariableInfoContainer.LEVEL_1_INITIALISER, fieldAnalysis.getVariablesLinkedToMe());
+                        }
                     }
                 }
             }
@@ -423,6 +429,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             Value initialValue = initialValueOfField(analyserContext, fieldReference);
             if (initialValue != UnknownValue.NO_VALUE) {
                 vic.setInitialValueFromAnalyser(initialValue, propertyMap(analyserContext, fieldReference.fieldInfo));
+            }
+            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+            if (fieldAnalysis.getVariablesLinkedToMe() != null) {
+                vic.setLinkedVariablesFromAnalyser(fieldAnalysis.getVariablesLinkedToMe());
             }
         }
 

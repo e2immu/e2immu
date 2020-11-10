@@ -158,7 +158,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass(FINAL_CHECKS, 3, 0, new DebugConfiguration.Builder()
+        testClass(FINAL_CHECKS, 5, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

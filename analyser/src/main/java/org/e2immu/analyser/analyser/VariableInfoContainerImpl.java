@@ -174,6 +174,22 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     /* ******************************* modifying methods unrelated to assignment ************************************ */
 
     @Override
+    public void setLinkedVariablesFromAnalyser(Set<Variable> variables) {
+        internalSetLinkedVariables(LEVEL_1_INITIALISER, variables);
+    }
+
+    private void internalSetLinkedVariables(int level, Set<Variable> variables) {
+        ensureNotFrozen();
+        Objects.requireNonNull(variables);
+        int writeLevel = findLevelForWriting(level);
+        VariableInfoImpl variableInfo = getAndCast(writeLevel);
+        if (!variableInfo.linkedVariables.isSet() || !variables.equals(variableInfo.linkedVariables.get())) {
+            variableInfo.linkedVariables.set(variables);
+            liftCurrentLevel(writeLevel);
+        }
+    }
+
+    @Override
     public void setInitialValueFromAnalyser(Value value, Map<VariableProperty, Integer> propertiesToSet) {
         internalSetValue(LEVEL_1_INITIALISER, value);
         propertiesToSet.forEach((vp, i) -> setProperty(LEVEL_1_INITIALISER, vp, i));
@@ -305,7 +321,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             internalSetStateOnAssignment(level, previousVariableInfo.getStateOnAssignment());
         }
         if (previousVariableInfo.linkedVariablesIsSet()) {
-            setLinkedVariables(level, previousVariableInfo.getLinkedVariables());
+            internalSetLinkedVariables(level, previousVariableInfo.getLinkedVariables());
         }
         if (previousVariableInfo.getObjectFlow() != null) {
             setObjectFlow(level, previousVariableInfo.getObjectFlow());

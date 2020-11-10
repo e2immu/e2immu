@@ -5,6 +5,7 @@ import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.FieldReference;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.Value;
@@ -65,6 +66,11 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
         }
         if ("ee".equals(d.methodInfo().name)) {
+            // just says: return e; (e is a field, constant false (rather than linked to c and c, I'd say)
+            if (d.iteration() > 0) {
+                Assert.assertTrue(d.statementAnalysis().variableStream().filter(vi -> vi.variable() instanceof FieldReference)
+                        .allMatch(VariableInfo::linkedVariablesIsSet));
+            }
             Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
         }
         if ("print2".equals(d.methodInfo().name)) {
@@ -135,6 +141,13 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
             } else {
                 Assert.assertEquals(EFFECTIVELY_FINAL, d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            }
+        }
+        if ("e".equals(d.fieldInfo().name)) {
+            if (d.iteration() <= 1) {
+                Assert.assertNull(d.fieldAnalysis().getVariablesLinkedToMe());
+            } else {
+                Assert.assertTrue(d.fieldAnalysis().getVariablesLinkedToMe().isEmpty());
             }
         }
     };
