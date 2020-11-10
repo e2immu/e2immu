@@ -18,9 +18,8 @@
 
 package org.e2immu.analyser.model.value;
 
-import org.e2immu.analyser.model.Constant;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -38,6 +37,17 @@ public class StringValue extends ConstantValue implements Constant<String> {
         super(objectFlow);
         this.value = Objects.requireNonNull(value);
         this.stringParameterizedType = primitives.stringParameterizedType;
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        if (VariableProperty.SIZE == variableProperty) {
+            return Level.encodeSizeEquals(value.length());
+        }
+        if (VariableProperty.SIZE_COPY == variableProperty) {
+            return Level.FALSE;
+        }
+        return super.getProperty(evaluationContext, variableProperty);
     }
 
     @Override

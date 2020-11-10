@@ -8,7 +8,6 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -16,7 +15,12 @@ import java.io.IOException;
 import java.util.Set;
 
 public class Test_09_EvaluatesToConstant extends CommonTestRunner {
+    private static final String METHOD2 = "org.e2immu.analyser.testexample.EvaluatesToConstant.method2(String)";
+    private static final String PARAM_2_TO_LOWER = "org.e2immu.analyser.testexample.EvaluatesToConstant.method2(String):0:param.toLowerCase()";
     private static final String PARAM_3_TO_LOWER = "org.e2immu.analyser.testexample.EvaluatesToConstant.method3(String):0:param.toLowerCase()";
+    public static final String PARAM_3_CONTAINS = "org.e2immu.analyser.testexample.EvaluatesToConstant.method3(String):0:param.contains(a)";
+    public static final String XZY_TO_LOWER_CASE = "xzy.toLowerCase()";
+    public static final String PARAM_SOME_TO_LOWER_CASE = "org.e2immu.analyser.testexample.EvaluatesToConstant.someMethod(String):0:a.toLowerCase()";
 
     public Test_09_EvaluatesToConstant() {
         super(true);
@@ -34,19 +38,16 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
 
         if ("method3".equals(d.methodInfo().name)) {
             if ("1.0.0".equals(d.statementId())) {
-                String expectState = "org.e2immu.analyser.testexample.EvaluatesToConstant.method3(String):0:param.contains(a)";
-                Assert.assertEquals(expectState, d.state().toString());
+                Assert.assertEquals(PARAM_3_CONTAINS, d.state().toString());
 
                 if (d.iteration() >= 1) {
                     Value value = d.statementAnalysis().stateData.valueOfExpression.get();
-                    Assert.assertEquals("xzy.toLowerCase()", value.toString());
+                    Assert.assertEquals(XZY_TO_LOWER_CASE, value.toString());
                     Assert.assertTrue("Is " + value.getClass(), value instanceof MethodValue);
                 }
             }
             if ("1.0.1".equals(d.statementAnalysis().index)) {
-                String expectStateString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() :
-                        "org.e2immu.analyser.testexample.EvaluatesToConstant.method3(String):0:param.contains(a)";
-                Assert.assertEquals(expectStateString, d.state().toString());
+                Assert.assertEquals(PARAM_3_CONTAINS, d.state().toString());
                 if (d.iteration() >= 1) {
                     Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
                 }
@@ -58,30 +59,17 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
 
         if ("someMethod".equals(d.methodInfo().name)) {
             VariableInfo tv = d.getReturnAsVariable();
-            Assert.assertEquals("org.e2immu.analyser.testexample.EvaluatesToConstant.someMethod(String):0:a.toLowerCase()",
-                    tv.getValue().toString());
+            Assert.assertEquals(PARAM_SOME_TO_LOWER_CASE, tv.getValue().toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, tv.getProperty(VariableProperty.NOT_NULL));
         }
     };
 
-    /*
-     private static void checkArray2() {
-        int[] integers = {1, 2, 3};
-        int i = 0;
-        integers[i] = 3;
-        // ERROR: assignment is not used
-    }
-     */
-
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
 
         if ("method2".equals(d.methodInfo().name) && "b".equals(d.variableName()) && "0".equals(d.statementId())) {
-            String expectValue = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() :
-                    "org.e2immu.analyser.testexample.EvaluatesToConstant.method2(String):0:param.toLowerCase()";
-            Assert.assertEquals(expectValue, d.currentValue().toString());
-            int expectNotNull = d.iteration() == 0 ? MultiLevel.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+            Assert.assertEquals(PARAM_2_TO_LOWER, d.currentValue().toString());
             int notNull = d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL);
-            Assert.assertEquals(expectNotNull, notNull);
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
         }
         if ("method3".equals(d.methodInfo().name)) {
             if ("b".equals(d.variableName()) && d.iteration() >= 1 && Set.of("0", "1").contains(d.statementId())) {
@@ -89,8 +77,13 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 Assert.assertEquals(d.toString(), PARAM_3_TO_LOWER, d.currentValue().toString());
             }
             if ("a".equals(d.variableName()) && "1.0.0".equals(d.statementId()) && d.iteration() >= 1) {
-                Assert.assertEquals("xzy.toLowerCase()", d.currentValue().toString());
+                Assert.assertEquals(XZY_TO_LOWER_CASE, d.currentValue().toString());
             }
+
+        }
+        if (METHOD2.equals(d.variableName()) && "2".equals(d.statementId())) {
+            int size = d.getProperty(VariableProperty.SIZE);
+            Assert.assertEquals(Level.encodeSizeEquals(1), size);
         }
     };
 
@@ -98,27 +91,21 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
         if ("method2".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
-                String expectValueString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() :
-                        "org.e2immu.analyser.testexample.EvaluatesToConstant.method2(String):0:param.toLowerCase()";
-                Assert.assertEquals(expectValueString,
-                        d.evaluationResult().value.toString());
+                Assert.assertEquals(PARAM_2_TO_LOWER, d.evaluationResult().value.toString());
             }
             if ("1".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                String expectString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : "false";
-                Assert.assertEquals(expectString, d.evaluationResult().value.toString());
+                Assert.assertEquals("false", d.evaluationResult().value.toString());
             }
         }
         if ("method3".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                Assert.assertEquals("org.e2immu.analyser.testexample.EvaluatesToConstant.method3(String):0:param.contains(a)",
-                        d.evaluationResult().value.toString());
+                Assert.assertEquals(PARAM_3_CONTAINS, d.evaluationResult().value.toString());
             }
             if ("1.0.0".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
-                String expectValueString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : "xzy.toLowerCase()";
-                Assert.assertEquals(expectValueString, d.evaluationResult().value.toString());
+                Assert.assertEquals(XZY_TO_LOWER_CASE, d.evaluationResult().value.toString());
             }
         }
     };
@@ -126,13 +113,9 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("someMethod".equals(d.methodInfo().name)) {
             Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
-            if (d.iteration() == 0) {
-                // single return value is set before modified in the method analyser
-                Assert.assertNull(d.methodAnalysis().getSingleReturnValue());
-            } else {
-                Assert.assertEquals("inline someMethod on org.e2immu.analyser.testexample.EvaluatesToConstant.someMethod(String):0:a.toLowerCase()",
-                        d.methodAnalysis().getSingleReturnValue().toString());
-            }
+            Assert.assertEquals("inline someMethod on " + PARAM_SOME_TO_LOWER_CASE,
+                    d.methodAnalysis().getSingleReturnValue().toString());
+
             int notNull = d.methodAnalysis().getProperty(VariableProperty.NOT_NULL);
             int expectNotNull = MultiLevel.EFFECTIVELY_NOT_NULL;
             Assert.assertEquals(expectNotNull, notNull);
