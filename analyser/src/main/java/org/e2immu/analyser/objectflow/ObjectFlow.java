@@ -199,7 +199,9 @@ public class ObjectFlow {
     private boolean delayed;
 
     public void delay() {
-        this.delayed = true;
+        if (origin != Origin.LITERAL) {
+            this.delayed = true;
+        } // a literal cannot be delayed
     }
 
     public boolean isDelayed() {
@@ -298,8 +300,8 @@ public class ObjectFlow {
 
     // for testing
     public boolean containsPrevious(ObjectFlow objectFlow) {
-        for(ObjectFlow inPrev: previous) {
-            if(inPrev.equals(objectFlow)) return true;
+        for (ObjectFlow inPrev : previous) {
+            if (inPrev.equals(objectFlow)) return true;
         }
         return false;
         //return previous.contains(objectFlow);

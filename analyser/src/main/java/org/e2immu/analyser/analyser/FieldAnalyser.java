@@ -647,7 +647,8 @@ public class FieldAnalyser extends AbstractAnalyser {
                                         m.getFieldAsVariable(fieldInfo).linkedVariablesIsSet()));
         if (!allDefined) {
             if (Logger.isLogEnabled(DELAYED)) {
-                log(DELAYED, "VariablesLinkedToFieldsAndParameters not yet set for methods: [{}]",
+                log(DELAYED, "Evaluating {}, linksHaveBeenEstablished not yet set for methods: [{}]",
+                        fieldInfo.fullyQualifiedName(),
                         allMethodsAndConstructors.stream()
                                 .filter(m -> !m.methodLevelData().linksHaveBeenEstablished.isSet())
                                 .map(m -> m.methodInfo.name).collect(Collectors.joining(", ")));

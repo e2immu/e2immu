@@ -14,6 +14,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
+import static org.e2immu.analyser.analyser.AnalysisStatus.PROGRESS;
+
 public class Test_08_EvaluateConstants extends CommonTestRunner {
 
     private static final String EFFECTIVELY_FINAL = "org.e2immu.analyser.testexample.EvaluateConstants.effectivelyFinal";
@@ -23,6 +26,10 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
     }
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
+        if ("print".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+            Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+            Assert.assertEquals("false", d.evaluationResult().value.toString());
+        }
         if ("print2".equals(d.methodInfo().name)) {
             Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
             Assert.assertTrue(d.evaluationResult().value.isInstanceOf(ConstantValue.class));
@@ -50,6 +57,9 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
             if ("0.0.0".equals(d.statementId())) {
                 Assert.assertNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+                if (d.iteration() >= 1) {
+                    Assert.assertTrue(d.statementAnalysis().flowData.isUnreachable());
+                }
             }
         }
         if ("ee".equals(d.methodInfo().name)) {
@@ -60,7 +70,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
         if ("print2".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
                 Assert.assertNotNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
-                AnalysisStatus expectStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
+                AnalysisStatus expectStatus = d.iteration() == 0 ? PROGRESS : DONE;
                 Assert.assertSame(expectStatus, d.result().analysisStatus);
                 if (d.iteration() >= 1) {
                     Assert.assertTrue(methodLevelData.internalObjectFlows.isFrozen()); // by apply
@@ -68,16 +78,15 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
         }
         if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
-            VariableInfo tv = d.getReturnAsVariable();
+            VariableInfo vi = d.getReturnAsVariable();
+            int expectNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+            Assert.assertEquals(expectNotNull, vi.getProperty(VariableProperty.NOT_NULL));
+
             if (d.iteration() == 0) {
-                Assert.assertSame(UnknownValue.NO_VALUE, tv.getValue());
+                Assert.assertSame(UnknownValue.NO_VALUE, vi.getValue());
             } else {
-                Assert.assertEquals(EFFECTIVELY_FINAL, tv.getValue().toString());
-                AnalysisStatus expectStatus = d.iteration() <= 3 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-                Assert.assertSame(expectStatus, d.result().analysisStatus);
-                int notNull = tv.getProperty(VariableProperty.NOT_NULL);
-                int expectNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                Assert.assertEquals(expectNotNull, notNull);
+                Assert.assertEquals(EFFECTIVELY_FINAL, vi.getValue().toString());
+                Assert.assertSame(DONE, d.result().analysisStatus);
             }
         }
     };
@@ -93,13 +102,26 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
         }
         if ("print".equals(d.methodInfo().name)) {
             Value srv = d.methodAnalysis().getSingleReturnValue();
-            Assert.assertSame(UnknownValue.RETURN_VALUE, srv); // not constant, the ee() error is ignored
+            Assert.assertEquals("b", srv.toString());
         }
         if ("print2".equals(d.methodInfo().name) && d.iteration() > 2) {
             MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
             Assert.assertTrue(methodLevelData.internalObjectFlows.isFrozen());
             Value srv = d.methodAnalysis().getSingleReturnValue();
             Assert.assertTrue(srv instanceof StringValue); // inline conditional works as advertised
+        }
+        if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
+            Value srv = d.methodAnalysis().getSingleReturnValue();
+            if (d.iteration() == 0) {
+                Assert.assertNull(srv);
+            } else {
+                // TODO not sure this is so valuable (should we have an inline here??)
+                Assert.assertEquals("inline getEffectivelyFinal on org.e2immu.analyser.testexample.EvaluateConstants.effectivelyFinal",
+                        srv.toString());
+                if (d.iteration() > 2) {
+                 // FIXME   Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+                }
+            }
         }
     };
 
@@ -111,6 +133,12 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             int notNull = d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL);
             int expectNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
             Assert.assertEquals(expectNotNull, notNull);
+
+            if (d.iteration() == 0) {
+                Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+            } else {
+                Assert.assertEquals(EFFECTIVELY_FINAL, d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            }
         }
     };
 

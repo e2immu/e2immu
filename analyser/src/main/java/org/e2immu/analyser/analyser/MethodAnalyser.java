@@ -593,7 +593,8 @@ public class MethodAnalyser extends AbstractAnalyser {
         if (currentValue != Level.DELAY && variableProperty != VariableProperty.IMMUTABLE && variableProperty != VariableProperty.NOT_NULL)
             return DONE; // NOT FOR ME
 
-        int value = getReturnAsVariable().getProperty(variableProperty);
+        VariableInfo vi = getReturnAsVariable();
+        int value = vi.getProperty(variableProperty);
         if (value == Level.DELAY) {
             log(DELAYED, "Return statement value not yet set in transferPropertyOfReturnStatements, property " + variableProperty);
             return DELAYS;

@@ -26,11 +26,14 @@ import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 
 public class EvaluateParameters {
 
@@ -106,6 +109,8 @@ public class EvaluateParameters {
                 ObjectFlow source = parameterValue.getObjectFlow();
                 int modified = map.getOrDefault(VariableProperty.MODIFIED, Level.DELAY);
                 if (modified == Level.DELAY) {
+                    Logger.log(DELAYED, "Delaying flow access registration because modification status of {} not known",
+                            methodInfo.fullyQualifiedName());
                     source.delay();
                 } else {
                     ParameterAnalysis parameterAnalysis = evaluationContext.getParameterAnalysis(parameterInfo);

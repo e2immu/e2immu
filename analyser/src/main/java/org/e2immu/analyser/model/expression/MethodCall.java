@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
@@ -160,7 +159,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         ObjectFlow objectFlow = objectValue.getObjectFlow();
         if (objectFlow != ObjectFlow.NO_FLOW) {
             if (modified == Level.DELAY) {
-                Logger.log(DELAYED, "Delaying flow access registration");
+                Logger.log(DELAYED, "Delaying flow access registration because modification status of {} not known",
+                        methodInfo.fullyQualifiedName());
                 objectFlow.delay();
             } else {
                 List<ObjectFlow> flowsOfArguments = parameterValues.stream().map(Value::getObjectFlow).collect(Collectors.toList());
@@ -430,7 +430,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                      List<Value> parameters,
                                      EvaluationContext evaluationContext,
                                      Location location) {
-        if (!methodInfo.typeInfo.hasSize(evaluationContext.getPrimitives(), evaluationContext.getAnalyserContext())) return null;
+        if (!methodInfo.typeInfo.hasSize(evaluationContext.getPrimitives(), evaluationContext.getAnalyserContext()))
+            return null;
 
         int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
         if (modified == Level.DELAY) {
