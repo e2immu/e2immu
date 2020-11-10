@@ -18,13 +18,11 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.AnnotationType;
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E1Immutable;
-import org.e2immu.annotation.Final;
+import org.e2immu.annotation.*;
 
 /*
  ERROR in M:FinalChecks:0: Condition in 'if' or 'switch' statement evaluates to constant
+ ERROR in M:FinalChecks:1: Condition in 'if' or 'switch' statement evaluates to constant
  ERROR in F:s5: Private field not read outside constructors
  */
 
@@ -67,10 +65,13 @@ public class FinalChecks {
     }
 
     @Override
+    @NotNull
+    @NotModified
     public String toString() {
         return s1 + " " + s2 + " " + s3 + " " + s4;
     }
 
+    @Modified
     public void setS4(String s4) {
         this.s4 = s4;
     }

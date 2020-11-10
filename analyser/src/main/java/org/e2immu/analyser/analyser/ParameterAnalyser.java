@@ -132,17 +132,22 @@ public class ParameterAnalyser {
                     delays = true;
                 } else if (effFinal == Level.TRUE) {
                     Value effectivelyFinal = fieldAnalysis.getEffectivelyFinalValue();
-                    if (effectivelyFinal == null) return DELAYS;
-                    VariableValue variableValue;
-                    if ((variableValue = effectivelyFinal.asInstanceOf(VariableValue.class)) != null
-                            && variableValue.variable == parameterInfo) {
-                        // we have a hit
-                        parameterAnalysis.assignedToField.set(fieldInfo);
-                        changed = true;
+                    if (effectivelyFinal == null) {
+                        delays = true;
+                    } else {
+                        VariableValue variableValue;
+                        if ((variableValue = effectivelyFinal.asInstanceOf(VariableValue.class)) != null
+                                && variableValue.variable == parameterInfo) {
+                            // we have a hit
+                            parameterAnalysis.assignedToField.set(fieldInfo);
+                            changed = true;
+                        }
                     }
                 }
             }
-            if (!changed && delays) return DELAYS;
+            if (!changed && delays) {
+                return DELAYS;
+            }
             parameterAnalysis.isAssignedToAField.set(parameterAnalysis.assignedToField.isSet());
         }
 
@@ -173,7 +178,8 @@ public class ParameterAnalyser {
                     parameterAnalysis.copiedFromFieldToParameters.set();
                     changed = true;
                 }
-            } else {
+            } else if (parameterAnalysis.isAssignedToAField.isSet()) {
+                // not assigned to a field, and we're sure.
                 VariableInfo vi = analysisProvider.getMethodAnalysis(parameterInfo.owner).getLastStatement().findOrNull(parameterInfo);
                 if (vi != null) {
                     int notNullDelayResolved = vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED);

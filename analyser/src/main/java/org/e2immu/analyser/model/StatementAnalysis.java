@@ -323,12 +323,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
         }
         StatementAnalysis copyFrom = previous == null ? parent : previous;
+        int bestLevel = previous == null ? VariableInfoContainer.LEVEL_1_INITIALISER:  // parent
+                VariableInfoContainer.LEVEL_4_SUMMARY; // previous statement
+
         variableStream().forEach(variableInfo -> {
             VariableInfoContainer vic = findForWriting(variableInfo.name()); // will be present!
 
             // for all variables present higher up
             if (copyFrom != null && copyFrom.variables.isSet(variableInfo.name())) {
-                VariableInfo previousVariableInfo = copyFrom.getLatestVariableInfo(variableInfo.name());
+                // it is important that we copy from the same level when copying from the parent! (and not use getLatestVariableInfo)
+                VariableInfo previousVariableInfo = copyFrom.variables.get(variableInfo.name()).best(bestLevel);
                 if (previousVariableInfo != null) {
                     vic.copy(VariableInfoContainer.LEVEL_1_INITIALISER, previousVariableInfo);
                 }
