@@ -352,9 +352,11 @@ public class FieldAnalyser extends AbstractAnalyser {
 
 
         // this bit of code deals with a very specific situation, see SetOnce; it is a precursor to an Eventually not-null implementation
-
+        /*
+        should this be isFinal == FALSE? TODO
         if (isFinal == Level.TRUE && MultiLevel.value(finalNotNullValue, MultiLevel.NOT_NULL) == MultiLevel.EFFECTIVE) {
-            List<MethodAnalyser> methodsWhereFieldIsAssigned = methodsWhereFieldIsAssigned();
+            List<MethodAnalyser> methodsWhereFieldIsAssigned = methodsWhereFieldIsAssigned(); // TODO this should exclude constructors!
+
             if (methodsWhereFieldIsAssigned.size() > 0 && !haveInitialiser) {
 
                 boolean linkingAndPreconditionsComputed = methodsWhereFieldIsAssigned.stream()
@@ -396,6 +398,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         } else {
             log(NOT_NULL_DEBUG, "Non-final, therefore not checking preconditions on methods for {}", fieldInfo.fullyQualifiedName());
         }
+
+         */
         fieldAnalysis.setProperty(VariableProperty.NOT_NULL, finalNotNullValue);
         return DONE;
     }

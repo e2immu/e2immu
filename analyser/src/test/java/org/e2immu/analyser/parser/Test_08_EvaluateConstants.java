@@ -76,8 +76,8 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
         }
         if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
             VariableInfo vi = d.getReturnAsVariable();
-
-            Assert.assertEquals(Level.DELAY, vi.getProperty(VariableProperty.NOT_NULL));
+            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+            Assert.assertEquals(expectNotNull, vi.getProperty(VariableProperty.NOT_NULL));
             if (d.iteration() == 0) {
                 Assert.assertSame(UnknownValue.NO_VALUE, vi.getValue());
             } else if (d.iteration() == 1) {
@@ -97,7 +97,6 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             Value srv = d.methodAnalysis().getSingleReturnValue();
             Assert.assertEquals("false", srv.toString());
             int modified = d.methodAnalysis().getProperty(VariableProperty.MODIFIED);
-            //int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
             Assert.assertEquals(Level.FALSE, modified);
         }
         if ("print".equals(d.methodInfo().name)) {
@@ -122,6 +121,24 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
         }
     };
+    /*
+
+    It 0:
+    - field analyser delay
+
+    It 1:
+    - field analyser FINAL on effectivelyFinal
+    - it waits with NOT NULL because the linksHaveBeenEstablished has not yet been set by the statement analyser
+    - the statement analyser sets linksHaveBeenEstablished in the constructor
+    - the statement analyser has DONE (it has a value and the links have been set)
+    - the method analyser should read NN from the return value
+
+    It 2:
+    - field analyser sets NOT NULL
+    - statement analyser SKIPPED because done, where it should set the NN on the return value
+    - the method analyser is stuck: it has no knowledge about the return value's NN status
+
+     */
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("effectivelyFinal".equals(d.fieldInfo().name)) {
