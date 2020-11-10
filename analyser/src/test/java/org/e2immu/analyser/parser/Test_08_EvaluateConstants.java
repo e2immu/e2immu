@@ -1,6 +1,9 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.MethodLevelData;
+import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
@@ -15,7 +18,6 @@ import org.junit.Test;
 import java.io.IOException;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.analyser.AnalysisStatus.PROGRESS;
 
 public class Test_08_EvaluateConstants extends CommonTestRunner {
 
@@ -63,31 +65,29 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
         }
         if ("ee".equals(d.methodInfo().name)) {
-            if (d.iteration() > 0) {
-                Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
-            }
+            Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
         }
         if ("print2".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
                 Assert.assertNotNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
-                AnalysisStatus expectStatus = d.iteration() == 0 ? PROGRESS : DONE;
-                Assert.assertSame(expectStatus, d.result().analysisStatus);
-                if (d.iteration() >= 1) {
-                    Assert.assertTrue(methodLevelData.internalObjectFlows.isFrozen()); // by apply
-                }
+                Assert.assertSame(DONE, d.result().analysisStatus);
+                Assert.assertTrue(methodLevelData.internalObjectFlows.isFrozen()); // by apply
             }
         }
         if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
             VariableInfo vi = d.getReturnAsVariable();
-            int expectNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-            Assert.assertEquals(expectNotNull, vi.getProperty(VariableProperty.NOT_NULL));
 
+            Assert.assertEquals(Level.DELAY, vi.getProperty(VariableProperty.NOT_NULL));
             if (d.iteration() == 0) {
                 Assert.assertSame(UnknownValue.NO_VALUE, vi.getValue());
-            } else {
+            } else if (d.iteration() == 1) {
                 Assert.assertEquals(EFFECTIVELY_FINAL, vi.getValue().toString());
                 Assert.assertSame(DONE, d.result().analysisStatus);
-            }
+            } else Assert.fail();
+        }
+        if ("EvaluateConstants".equals(d.methodInfo().name)) {
+            boolean expected = d.statementId().compareTo("1") < 0 || d.iteration() != 0;
+            Assert.assertEquals(d.toString(), expected, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
         }
     };
 
@@ -97,8 +97,8 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             Value srv = d.methodAnalysis().getSingleReturnValue();
             Assert.assertEquals("false", srv.toString());
             int modified = d.methodAnalysis().getProperty(VariableProperty.MODIFIED);
-            int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-            Assert.assertEquals(expectModified, modified);
+            //int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+            Assert.assertEquals(Level.FALSE, modified);
         }
         if ("print".equals(d.methodInfo().name)) {
             Value srv = d.methodAnalysis().getSingleReturnValue();
@@ -118,9 +118,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 // TODO not sure this is so valuable (should we have an inline here??)
                 Assert.assertEquals("inline getEffectivelyFinal on org.e2immu.analyser.testexample.EvaluateConstants.effectivelyFinal",
                         srv.toString());
-                if (d.iteration() > 2) {
-                 // FIXME   Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
-                }
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
             }
         }
     };
@@ -131,7 +129,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             int expectFinal = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
             Assert.assertEquals(expectFinal, effectivelyFinal);
             int notNull = d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL);
-            int expectNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
             Assert.assertEquals(expectNotNull, notNull);
 
             if (d.iteration() == 0) {

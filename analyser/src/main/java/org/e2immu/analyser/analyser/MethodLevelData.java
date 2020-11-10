@@ -176,8 +176,12 @@ public class MethodLevelData {
             return DELAYS;
         }
         EvaluationContext evaluationContext = sharedState.evaluationContext;
-        boolean allFieldsFinalDetermined = evaluationContext.getCurrentMethod().methodInfo.typeInfo.typeInspection.getPotentiallyRun()
-                .fields.stream().allMatch(fieldInfo -> evaluationContext.getFieldAnalysis(fieldInfo).getProperty(VariableProperty.FINAL) != Level.DELAY);
+        // for now, we'll only look at the fields that we've seen so far. There may be a good reason to look at all of them,
+        // but until I can remember which it was, we go back to all seen so far
+        boolean allFieldsFinalDetermined = statementAnalysis.variableStream()
+                .filter(vi -> vi.variable() instanceof FieldReference fieldReference && fieldReference.isThisScope())
+                .map(vi -> ((FieldReference) (vi.variable())).fieldInfo)
+                .allMatch(fieldInfo -> evaluationContext.getFieldAnalysis(fieldInfo).getProperty(VariableProperty.FINAL) != Level.DELAY);
         if (!allFieldsFinalDetermined) {
             log(DELAYED, "Delay, we don't know about final values for some fields in {}", sharedState.logLocation);
             return DELAYS;
