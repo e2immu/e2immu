@@ -246,7 +246,7 @@ public class Primitives {
     public final MethodInfo unaryMinusOperatorInt = createOperator(intTypeInfo, "-", List.of(intParameterizedType), intParameterizedType);
 
     public static boolean isUnaryMinusOperatorInt(MethodInfo operator) {
-        return "int.-".equals(operator.fullyQualifiedName()) && operator.methodInspection.get().parameters.size() == 1;
+        return "int.-(int)".equals(operator.fullyQualifiedName()) && operator.methodInspection.get().parameters.size() == 1;
     }
 
     public final MethodInfo bitWiseNotOperatorInt = createOperator(intTypeInfo, "~", List.of(intParameterizedType), intParameterizedType);
