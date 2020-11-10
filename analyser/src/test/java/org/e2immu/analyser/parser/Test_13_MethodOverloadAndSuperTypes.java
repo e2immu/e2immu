@@ -66,7 +66,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
         TypeInfo throwable = typeContext.typeStore.get("java.lang.Throwable");
         Assert.assertNotNull(throwable);
         List<TypeInfo> superTypes = throwable.superTypesExcludingJavaLangObject();
-        Assert.assertTrue(superTypes.isEmpty());
+        Assert.assertEquals("[java.io.Serializable]", superTypes.toString());
     }
 
     @Test

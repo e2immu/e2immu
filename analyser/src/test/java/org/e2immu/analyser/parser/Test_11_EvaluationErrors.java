@@ -13,21 +13,6 @@ public class Test_11_EvaluationErrors extends CommonTestRunner {
         super(false);
     }
 
-    /*
-     public static int testDivisionByZero() {
-        int i=0;
-        int j = 23 / i;
-        return j;
-    }
-
-    public static int testDeadCode() {
-        int i=1;
-        if(i != 1) {
-            return 2;
-        }
-        return 3;
-    }
-     */
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("testDivisionByZero".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
@@ -40,18 +25,18 @@ public class Test_11_EvaluationErrors extends CommonTestRunner {
         if ("testDeadCode".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
                 Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
-                Assert.assertNull(d.haveError(Message.UNREACHABLE_STATEMENT));
+                Assert.assertNotNull(d.haveError(Message.UNREACHABLE_STATEMENT)); // copied up
             }
             // this one does not render a dead-code error, because its parent already has an error raised
             if ("1.0.0".equals(d.statementId())) {
-       //         Assert.assertNotNull(d.haveError(Message.UNREACHABLE_STATEMENT)); TODO we should implement this!
+               Assert.assertNotNull(d.haveError(Message.UNREACHABLE_STATEMENT));
             }
         }
     };
 
     @Test
     public void test() throws IOException {
-        testClass("EvaluationErrors", 2, 0, new DebugConfiguration.Builder()
+        testClass("EvaluationErrors", 3, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
