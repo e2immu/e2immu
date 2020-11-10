@@ -898,8 +898,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             }
             throw new UnsupportedOperationException("Impossible, if {} else {} has 2 blocks maximum.");
         }
+        // a switch statement has no primary block, only subStructures, one per SwitchEntry
+
+        // make an And of NOTs for all those conditions where the switch entry escapes
+        if (statementAnalysis.statement instanceof SwitchStatement) {
+            Value[] components = list.stream().filter(ExecutionOfBlock::escapesAlways).map(e -> e.condition).toArray(Value[]::new);
+            if (components.length == 0) return UnknownValue.EMPTY;
+            return new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, components);
+        }
+        // TODO SwitchExpressions?
         return UnknownValue.EMPTY;
-        // TODO: implement code for switch
     }
 
 

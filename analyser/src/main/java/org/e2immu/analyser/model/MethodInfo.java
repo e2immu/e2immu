@@ -155,7 +155,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         addAnnotations(builder, amd.getAnnotations(), expressionContext);
         addModifiers(builder, amd.getModifiers());
         Expression expression = expressionContext.parseExpression(amd.getDefaultValue());
-        Block body = new Block.BlockBuilder().addStatement(new ReturnStatement(expression)).build();
+        Block body = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expression)).build();
         builder.setBlock(body);
         ParameterizedType returnType = ParameterizedType.from(expressionContext.typeContext, amd.getType());
         builder.setReturnType(returnType);

@@ -987,7 +987,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (methodInfo.isVoid()) {
             statement = new ExpressionAsStatement(newReturnExpression);
         } else {
-            statement = new ReturnStatement(newReturnExpression);
+            statement = new ReturnStatement(false, newReturnExpression);
         }
         Block block = new Block.BlockBuilder().addStatement(statement).build();
 

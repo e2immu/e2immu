@@ -163,7 +163,9 @@ public class ExpressionContext {
 
             org.e2immu.analyser.model.Statement newStatement;
             if (statement.isReturnStmt()) {
-                newStatement = new ReturnStatement(parseExpression(((ReturnStmt) statement).getExpression()));
+                newStatement = new ReturnStatement(false, parseExpression(((ReturnStmt) statement).getExpression()));
+            } else if(statement.isYieldStmt()) {
+                newStatement = new ReturnStatement(true, parseExpression(((ReturnStmt) statement).getExpression()));
             } else if (statement.isExpressionStmt()) {
                 Expression expression = parseExpression(((ExpressionStmt) statement).getExpression());
                 newStatement = new ExpressionAsStatement(expression);
@@ -237,7 +239,7 @@ public class ExpressionContext {
         return new SwitchStatement(selector, entries);
     }
 
-    private static TypeInfo selectorIsEnumType(@NotNull Expression selector) {
+    public static TypeInfo selectorIsEnumType(@NotNull Expression selector) {
         TypeInfo typeInfo = selector.returnType().typeInfo;
         if (typeInfo != null && typeInfo.typeInspection.getPotentiallyRun().typeNature == TypeNature.ENUM) {
             return typeInfo;
@@ -245,7 +247,7 @@ public class ExpressionContext {
         return null;
     }
 
-    private SwitchEntry switchEntry(Expression switchVariableAsExpression, @NotNull com.github.javaparser.ast.stmt.SwitchEntry switchEntry) {
+    public SwitchEntry switchEntry(Expression switchVariableAsExpression, @NotNull com.github.javaparser.ast.stmt.SwitchEntry switchEntry) {
         List<Expression> labels = switchEntry.getLabels().stream().map(this::parseExpression).collect(Collectors.toList());
         switch (switchEntry.getType()) {
             case EXPRESSION, THROWS_STATEMENT, STATEMENT_GROUP -> {
@@ -554,6 +556,9 @@ public class ExpressionContext {
             }
             if (expression.isLambdaExpr()) {
                 return ParseLambdaExpr.parse(this, expression.asLambdaExpr(), singleAbstractMethod);
+            }
+            if(expression.isSwitchExpr()) {
+                return ParseSwitchExpr.parse(this, expression.asSwitchExpr());
             }
             if (expression.isArrayCreationExpr()) {
                 return ParseArrayCreationExpr.parse(this, expression.asArrayCreationExpr());

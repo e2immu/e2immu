@@ -30,16 +30,19 @@ import java.util.List;
 
 public class ReturnStatement extends StatementWithExpression {
 
-    public ReturnStatement(Expression expression) {
+    public boolean isYield;
+
+    public ReturnStatement(boolean isYield, Expression expression) {
         super(new Structure.Builder().setExpression(expression).setForwardEvaluationInfo(ForwardEvaluationInfo.DEFAULT).build(),
                 expression);
+        this.isYield = isYield;
     }
 
     @Override
     public String statementString(int indent, StatementAnalysis statementAnalysis) {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
-        sb.append("return");
+        sb.append(isYield ? "yield" : "return");
         if (expression != EmptyExpression.EMPTY_EXPRESSION) {
             sb.append(" ");
             sb.append(expression.expressionString(indent));
@@ -50,7 +53,7 @@ public class ReturnStatement extends StatementWithExpression {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ReturnStatement(translationMap.translateExpression(expression));
+        return new ReturnStatement(isYield, translationMap.translateExpression(expression));
     }
 
     @Override
@@ -63,16 +66,6 @@ public class ReturnStatement extends StatementWithExpression {
         if (identity == Level.DELAY) return SideEffect.DELAYED;
         SideEffect base = identity == Level.TRUE ? SideEffect.STATIC_ONLY : SideEffect.NONE_PURE;
         return base.combine(expression.sideEffect(evaluationContext));
-    }
-
-    public int fluent(AnalysisProvider analysisProvider) {
-        if (expression instanceof VariableExpression variableExpression) {
-            if (variableExpression.variable instanceof This) return Level.TRUE;
-        }
-        if (expression instanceof MethodCall methodCall) {
-            return analysisProvider.getMethodAnalysis(methodCall.methodInfo).getProperty(VariableProperty.FLUENT);
-        }
-        return Level.FALSE;
     }
 
     private static int identityForSideEffect(AnalysisProvider analysisProvider, Expression expression) {

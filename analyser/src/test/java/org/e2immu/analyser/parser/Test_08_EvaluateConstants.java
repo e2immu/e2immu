@@ -121,24 +121,6 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
         }
     };
-    /*
-
-    It 0:
-    - field analyser delay
-
-    It 1:
-    - field analyser FINAL on effectivelyFinal
-    - it waits with NOT NULL because the linksHaveBeenEstablished has not yet been set by the statement analyser
-    - the statement analyser sets linksHaveBeenEstablished in the constructor
-    - the statement analyser has DONE (it has a value and the links have been set)
-    - the method analyser should read NN from the return value
-
-    It 2:
-    - field analyser sets NOT NULL
-    - statement analyser SKIPPED because done, where it should set the NN on the return value
-    - the method analyser is stuck: it has no knowledge about the return value's NN status
-
-     */
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("effectivelyFinal".equals(d.fieldInfo().name)) {
@@ -165,12 +147,6 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
-
-        // second time, run with replacement
-
-        // TODO replacements are not implemented a t m
-        //testClass("EvaluateConstants", 2, 0, new DebugConfiguration.Builder()
-        //       .build());
     }
 
 }

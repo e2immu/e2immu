@@ -304,8 +304,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     /**
      * Before iterations 1+, with fieldAnalyses non-empty only potentially for the the first statement
      * of the method.
-     * <p>
-     * TODO needs rethinking
      *
      * @param analyserContext overview object for the analysis of this primary type
      * @param previous        the previous statement, or null if there is none (start of block)

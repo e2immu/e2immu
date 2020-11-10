@@ -19,9 +19,11 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.analyser.AnalyserContext;
+import org.e2immu.analyser.analyser.ConditionManager;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
+import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Logger;
@@ -141,7 +143,9 @@ public abstract class CommonAbstractValue {
     protected static Value newInt(int i) {
         return new IntValue(PRIMITIVES, i, ObjectFlow.NO_FLOW);
     }
-
+    protected static Value newString(String s) {
+        return new StringValue(PRIMITIVES, s, ObjectFlow.NO_FLOW);
+    }
 
     static ParameterInfo createParameter(String name) {
         assert PRIMITIVES != null;
@@ -171,6 +175,10 @@ public abstract class CommonAbstractValue {
     };
 
     protected final static EvaluationContext minimalEvaluationContext = new EvaluationContext() {
+        @Override
+        public ConditionManager getConditionManager() {
+            return ConditionManager.INITIAL;
+        }
 
         @Override
         public AnalyserContext getAnalyserContext() {

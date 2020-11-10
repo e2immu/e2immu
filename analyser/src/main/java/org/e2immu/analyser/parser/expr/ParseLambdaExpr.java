@@ -20,7 +20,6 @@ package org.e2immu.analyser.parser.expr;
 
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.LambdaExpr;
-import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.UnevaluatedLambdaExpression;
@@ -94,7 +93,7 @@ public class ParseLambdaExpr {
                 return partiallyParse(lambdaExpr);
             }
             inferredReturnType = expr.returnType();
-            block = new Block.BlockBuilder().addStatement(new ReturnStatement(expr)).build();
+            block = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expr)).build();
         } else {
             block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());
             inferredReturnType = block.mostSpecificReturnType(expressionContext.typeContext.getPrimitives());

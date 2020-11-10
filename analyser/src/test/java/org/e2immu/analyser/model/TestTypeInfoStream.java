@@ -178,7 +178,7 @@ public class TestTypeInfoStream {
                 .addAnnotation(AnnotationExpression.fromAnalyserExpressions(testEquivalent, List.of(new StringConstant(primitives, "hello"))))
                 .setBlock(
                         new Block.BlockBuilder().addStatement(
-                                new ReturnStatement(
+                                new ReturnStatement(false,
                                         new BinaryOperator(
                                                 new VariableExpression(x), primitives.plusOperatorInt, new VariableExpression(y), BinaryOperator.ADDITIVE_PRECEDENCE
                                         ))

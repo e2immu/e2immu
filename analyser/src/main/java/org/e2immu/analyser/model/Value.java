@@ -68,6 +68,7 @@ public interface Value extends Comparable<Value> {
     int ORDER_TYPE = 68;
     int ORDER_NO_VALUE = 69;
     int ORDER_CONDITIONAL = 70;
+    int ORDER_SWITCH = 71;
 
     // boolean operations
     int ORDER_INSTANCE_OF = 81;
