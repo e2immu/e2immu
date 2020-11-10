@@ -542,14 +542,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         methodAnalysis.setProperty(VariableProperty.FLUENT, isFluent);
         log(FLUENT, "Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
 
-        VariableValue vv;
-        MethodValue mv;
-        boolean isIdentity = ((vv = valueBeforeInlining.asInstanceOf(VariableValue.class)) != null) &&
-                vv.variable instanceof ParameterInfo parameterInfo &&
-                parameterInfo.index == 0 &&
-                parameterInfo.owner == methodInfo ||
-                ((mv = valueBeforeInlining.asInstanceOf(MethodValue.class)) != null) &&
-                        analyserContext.getMethodAnalysis(mv.methodInfo).getProperty(VariableProperty.IDENTITY) == Level.TRUE;
+        boolean isIdentity = variableInfo.getProperty(VariableProperty.IDENTITY) == Level.TRUE;
         methodAnalysis.setProperty(VariableProperty.IDENTITY, isIdentity);
         log(IDENTITY, "Mark method {} as @Identity? {}", methodInfo.fullyQualifiedName(), isIdentity);
 

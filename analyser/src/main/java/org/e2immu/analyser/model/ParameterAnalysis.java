@@ -81,6 +81,9 @@ public interface ParameterAnalysis extends Analysis {
                                      ObjectFlow objectFlow,
                                      VariableProperty variableProperty) {
         switch (variableProperty) {
+            case IDENTITY:
+                return parameterInfo.index == 0 ? Level.TRUE : Level.FALSE;
+
             case MODIFIED: {
                 // if the parameter is level 2 immutable, it cannot be modified
                 Boolean e2immu = parameterInfo.parameterizedType.isAtLeastEventuallyE2Immutable(analysisProvider);

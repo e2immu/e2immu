@@ -168,6 +168,7 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(VariableProperty.SIZE_COPY, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.IMMUTABLE, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.CONTAINER, Math::min, Integer.MAX_VALUE),
+            new MergeOp(VariableProperty.IDENTITY, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.READ, Math::max, Level.DELAY),
             new MergeOp(VariableProperty.ASSIGNED, Math::max, Level.DELAY)
     );

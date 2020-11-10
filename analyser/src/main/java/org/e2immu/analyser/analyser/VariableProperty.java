@@ -114,7 +114,7 @@ public enum VariableProperty {
     public final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL);
     public final static Set<VariableProperty> METHOD_PROPERTIES_IN_INLINE_SAM = Set.of(MODIFIED, INDEPENDENT);
     public static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(SIZE, NOT_NULL, MODIFIED);
-    public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES = Set.of(FINAL, NOT_NULL, SIZE, SIZE_COPY, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
-    public static final Set<VariableProperty> VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL, SIZE, SIZE_COPY);
+    public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES = Set.of(IDENTITY, FINAL, NOT_NULL, SIZE, SIZE_COPY, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);
+    public static final Set<VariableProperty> VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL, SIZE, SIZE_COPY);
 
 }
