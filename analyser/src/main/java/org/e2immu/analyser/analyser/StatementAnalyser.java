@@ -475,11 +475,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         evaluationResult.getValueChangeStream().forEach(e -> {
             Variable variable = e.getKey();
             EvaluationResult.ValueChangeData valueChangeData = e.getValue();
-            VariableInfo vi = statementAnalysis.find(analyserContext, variable);
-            int read = vi.getProperty(VariableProperty.READ);
-            int assigned = vi.getProperty(VariableProperty.ASSIGNED);
 
             VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, variable);
+            VariableInfo vi = vic.best(level);
+            int read = vi.getProperty(VariableProperty.READ);
+            int assigned = vi.getProperty(VariableProperty.ASSIGNED);
+            /*
+            // get READ and ASSIGNED from the level below the assignment, if it exists
+
+            int bestLevel = vic.bestLevel(level - 1);
+            VariableInfo vi = bestLevel < 0 ? null : vic.get(bestLevel);
+            int read = vi == null ? Level.DELAY : vi.getProperty(VariableProperty.READ);
+            int assigned = vi == null ? Level.DELAY : vi.getProperty(VariableProperty.ASSIGNED);
+*/
             vic.assignment(level);
             Value value = valueChangeData.value();
             if (value != NO_VALUE) {

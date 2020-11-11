@@ -20,6 +20,8 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ContractMark;
+import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -128,27 +130,38 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     protected void doSize(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        List<Expression> parameters = new ArrayList<>(3);
 
+        // collect annotations
         // size copy
         int sizeCopy = getProperty(VariableProperty.SIZE_COPY);
         if (sizeCopy == Level.SIZE_COPY_MIN_TRUE) {
-            annotations.put(sizeAnnotationTrue(e2ImmuAnnotationExpressions, "copyMin"), true);
-            return;
-        }
-        if (sizeCopy == Level.SIZE_COPY_TRUE) {
-            annotations.put(sizeAnnotationTrue(e2ImmuAnnotationExpressions, "copy"), true);
-            return;
+            parameters.add(new MemberValuePair("copyMin", new BooleanConstant(primitives, true)));
+        } else if (sizeCopy == Level.SIZE_COPY_TRUE) {
+            parameters.add(new MemberValuePair("copy", new BooleanConstant(primitives, true)));
         }
 
         // size
         int size = getProperty(VariableProperty.SIZE);
         if (size >= Level.IS_A_SIZE) {
             if (Level.haveEquals(size)) {
-                annotations.put(sizeAnnotation(e2ImmuAnnotationExpressions, "equals", Level.decodeSizeEquals(size)), true);
+                parameters.add(new MemberValuePair("equals", new IntConstant(primitives, Level.decodeSizeEquals(size))));
             } else {
-                annotations.put(sizeAnnotation(e2ImmuAnnotationExpressions, "min", Level.decodeSizeMin(size)), true);
+                parameters.add(new MemberValuePair("min", new IntConstant(primitives, Level.decodeSizeMin(size))));
             }
         }
+
+        // size out
+        int sizeOut = getProperty(VariableProperty.SIZE_OUT);
+        if (sizeOut >= Level.IS_A_SIZE) { // implies parameter is modifying
+            if (Level.haveEquals(sizeOut)) {
+                parameters.add(new MemberValuePair("outEquals", new IntConstant(primitives, Level.decodeSizeEquals(sizeOut))));
+            } else {
+                parameters.add(new MemberValuePair("outMin", new IntConstant(primitives, Level.decodeSizeMin(sizeOut))));
+            }
+        }
+        AnnotationExpression ae = AnnotationExpression.fromAnalyserExpressions(e2ImmuAnnotationExpressions.size.get().typeInfo, parameters);
+        annotations.put(ae, true);
     }
 
     protected void doImmutableContainer(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int immutable, boolean betterThanFormal) {
@@ -194,14 +207,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         AnnotationExpression ae = AnnotationExpression.fromAnalyserExpressions(e2ImmuAnnotationExpressions.independent.get().typeInfo,
                 List.of(new MemberValuePair("after", new StringConstant(primitives, mark))));
         annotations.put(ae, true);
-    }
-
-    private AnnotationExpression sizeAnnotationTrue(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, String parameter) {
-        return e2ImmuAnnotationExpressions.size.get().copyWith(primitives, parameter, true);
-    }
-
-    private AnnotationExpression sizeAnnotation(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, String parameter, int value) {
-        return e2ImmuAnnotationExpressions.size.get().copyWith(primitives, parameter, value);
     }
 
     public Messages fromAnnotationsIntoProperties(boolean acceptVerify,
@@ -279,8 +284,9 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.notModified1.get().typeInfo == t) {
                     properties.put(VariableProperty.NOT_MODIFIED_1, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.size.get().typeInfo == t) {
-                    properties.put(VariableProperty.SIZE, extractSizeMin(messages, annotationExpression));
+                    properties.put(VariableProperty.SIZE, extractSizeMin("min", "equals", messages, annotationExpression));
                     properties.put(VariableProperty.SIZE_COPY, extractSizeCopy(annotationExpression));
+                    properties.put(VariableProperty.SIZE_OUT, extractSizeMin("outMin", "outEquals", messages, annotationExpression));
                 } else if (e2ImmuAnnotationExpressions.precondition.get().typeInfo == t) {
                     //String value = annotationExpression.extract("value", "");
                     throw new UnsupportedOperationException("Not yet implemented");
@@ -332,18 +338,13 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
      * @param annotationExpression the annotation
      * @return encoded value
      */
-    public int extractSizeMin(Messages messages, AnnotationExpression annotationExpression) {
-        Integer min = annotationExpression.extract("min", -1);
+    public int extractSizeMin(String minString, String equalsString, Messages messages, AnnotationExpression annotationExpression) {
+        Integer min = annotationExpression.extract(minString, -1);
         if (min >= 0) {
             // min = 0 is FALSE; min = 1 means FALSE at level 1 (value 2), min = 2 means FALSE at level 2 (value 4)
             return Level.encodeSizeMin(min);
         }
-        Boolean copy = annotationExpression.extract("copy", false);
-        if (copy) return Level.DELAY;
-        Boolean copyMin = annotationExpression.extract("copyMin", false);
-        if (copyMin) return Level.DELAY;
-
-        Integer equals = annotationExpression.extract("equals", -1);
+        Integer equals = annotationExpression.extract(equalsString, -1);
         if (equals >= 0) {
             // equals 0 means TRUE at level 0, equals 1 means TRUE at level 1 (value 3)
 

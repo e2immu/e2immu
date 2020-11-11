@@ -54,6 +54,15 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
+    public int bestLevel(int start) {
+        int level = start;
+        while (level >= 0 && data[level] == null) {
+            level--;
+        }
+        return level;
+    }
+
+    @Override
     public VariableInfo best(int maxLevel) {
         VariableInfo vi = null;
         int level = maxLevel;

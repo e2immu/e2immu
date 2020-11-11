@@ -73,6 +73,8 @@ public interface VariableInfoContainer {
      */
     VariableInfo best(int level);
 
+    int bestLevel(int level);
+
     /**
      * Mostly for debugging
      *
