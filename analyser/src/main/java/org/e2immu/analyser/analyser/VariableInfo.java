@@ -48,6 +48,12 @@ public interface VariableInfo {
         return getValue() != UnknownValue.NO_VALUE;
     }
 
+    Set<Variable> getSizeCopyVariables();
+
+    default boolean sizeCopyVariablesIsSet() {
+        return getSizeCopyVariables() != null;
+    }
+
     /**
      * @return null when not (yet) set, or when there is no assigment (yet) on this variable
      */

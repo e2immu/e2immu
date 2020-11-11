@@ -340,7 +340,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             doNotNull(e2ImmuAnnotationExpressions);
 
             // @Size
-            doSize(e2ImmuAnnotationExpressions);
+            doSize(e2ImmuAnnotationExpressions, false);
 
             // dynamic type annotations for functional interface types: @NotModified1
             doNotModified1(e2ImmuAnnotationExpressions);

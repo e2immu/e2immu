@@ -269,7 +269,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             doNotNull(e2ImmuAnnotationExpressions);
 
             // @Size
-            doSize(e2ImmuAnnotationExpressions);
+            doSize(e2ImmuAnnotationExpressions, false);
 
             // dynamic type annotations: @E1Immutable, @E1Container, @E2Immutable, @E2Container
             int typeImmutable = typeImmutable();

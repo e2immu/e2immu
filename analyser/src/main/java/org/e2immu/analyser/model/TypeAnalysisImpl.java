@@ -28,6 +28,7 @@ import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
@@ -36,18 +37,34 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     private final Set<ObjectFlow> objectFlows;
     private final Map<String, Value> approvedPreconditions;
     private final Set<ParameterizedType> implicitlyImmutableDataTypes;
+    private final FieldInfo fieldHoldingSize;
+    private final Map<Variable, Boolean> sizeCopyVariables;
 
     private TypeAnalysisImpl(TypeInfo typeInfo,
                              Map<VariableProperty, Integer> properties,
                              Map<AnnotationExpression, Boolean> annotations,
                              Set<ObjectFlow> objectFlows,
                              Map<String, Value> approvedPreconditions,
-                             Set<ParameterizedType> implicitlyImmutableDataTypes) {
+                             Set<ParameterizedType> implicitlyImmutableDataTypes,
+                             FieldInfo fieldHoldingSize,
+                             Map<Variable, Boolean> sizeCopyVariables) {
         super(typeInfo.hasBeenDefined(), properties, annotations);
         this.typeInfo = typeInfo;
         this.approvedPreconditions = approvedPreconditions;
         this.objectFlows = objectFlows;
         this.implicitlyImmutableDataTypes = implicitlyImmutableDataTypes;
+        this.fieldHoldingSize = fieldHoldingSize;
+        this.sizeCopyVariables = sizeCopyVariables;
+    }
+
+    @Override
+    public Optional<FieldInfo> getFieldHoldingSize() {
+        return Optional.ofNullable(fieldHoldingSize);
+    }
+
+    @Override
+    public Map<Variable, Boolean> getSizeCopyVariables() {
+        return sizeCopyVariables;
     }
 
     @Override
@@ -88,9 +105,22 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public final SetOnceMap<String, Value> approvedPreconditions = new SetOnceMap<>();
         public final SetOnce<Set<ParameterizedType>> implicitlyImmutableDataTypes = new SetOnce<>();
 
+        public final SetOnce<Optional<FieldInfo>> fieldHoldingSize = new SetOnce<>();
+        public final SetOnce<Map<Variable, Boolean>> sizeCopyVariables = new SetOnce<>();
+
         public Builder(Primitives primitives, TypeInfo typeInfo) {
             super(primitives, typeInfo.hasBeenDefined(), typeInfo.simpleName);
             this.typeInfo = typeInfo;
+        }
+
+        @Override
+        public Optional<FieldInfo> getFieldHoldingSize() {
+            return fieldHoldingSize.getOrElse(null);
+        }
+
+        @Override
+        public Map<Variable, Boolean> getSizeCopyVariables() {
+            return sizeCopyVariables.getOrElse(null);
         }
 
         @Override
@@ -162,7 +192,9 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     annotations.toImmutableMap(),
                     constantObjectFlows.toImmutableSet(),
                     approvedPreconditions.toImmutableMap(),
-                    implicitlyImmutableDataTypes.isSet() ? implicitlyImmutableDataTypes.get() : Set.of());
+                    implicitlyImmutableDataTypes.isSet() ? implicitlyImmutableDataTypes.get() : Set.of(),
+                    fieldHoldingSize.isSet() ? fieldHoldingSize.get().orElse(null) : null,
+                    getSizeCopyVariables());
         }
     }
 }

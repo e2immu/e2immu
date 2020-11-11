@@ -129,7 +129,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         annotations.put(e2ImmuAnnotationExpressions.notModified1.get(), getProperty(VariableProperty.NOT_MODIFIED_1) == Level.TRUE);
     }
 
-    protected void doSize(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    protected void doSize(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, boolean isParameter) {
         List<Expression> parameters = new ArrayList<>(3);
 
         // collect annotations
@@ -141,27 +141,26 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             parameters.add(new MemberValuePair("copy", new BooleanConstant(primitives, true)));
         }
 
-        // size
-        int size = getProperty(VariableProperty.SIZE);
-        if (size >= Level.IS_A_SIZE) {
-            if (Level.haveEquals(size)) {
-                parameters.add(new MemberValuePair("equals", new IntConstant(primitives, Level.decodeSizeEquals(size))));
-            } else {
-                parameters.add(new MemberValuePair("min", new IntConstant(primitives, Level.decodeSizeMin(size))));
-            }
+        if (isParameter) {
+            addSize("min", "equals", parameters, VariableProperty.SIZE_RESTRICTION);
+            addSize("outMin", "outEquals", parameters, VariableProperty.SIZE_OUT);
+        } else {
+            addSize("min", "equals", parameters, VariableProperty.SIZE);
         }
 
-        // size out
-        int sizeOut = getProperty(VariableProperty.SIZE_OUT);
-        if (sizeOut >= Level.IS_A_SIZE) { // implies parameter is modifying
-            if (Level.haveEquals(sizeOut)) {
-                parameters.add(new MemberValuePair("outEquals", new IntConstant(primitives, Level.decodeSizeEquals(sizeOut))));
-            } else {
-                parameters.add(new MemberValuePair("outMin", new IntConstant(primitives, Level.decodeSizeMin(sizeOut))));
-            }
-        }
         AnnotationExpression ae = AnnotationExpression.fromAnalyserExpressions(e2ImmuAnnotationExpressions.size.get().typeInfo, parameters);
         annotations.put(ae, true);
+    }
+
+    private void addSize(String min, String equals, List<Expression> parameters, VariableProperty property) {
+        int size = getProperty(property);
+        if (size >= Level.IS_A_SIZE) {
+            if (Level.haveEquals(size)) {
+                parameters.add(new MemberValuePair(equals, new IntConstant(primitives, Level.decodeSizeEquals(size))));
+            } else {
+                parameters.add(new MemberValuePair(min, new IntConstant(primitives, Level.decodeSizeMin(size))));
+            }
+        }
     }
 
     protected void doImmutableContainer(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int immutable, boolean betterThanFormal) {
@@ -209,9 +208,11 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         annotations.put(ae, true);
     }
 
-    public Messages fromAnnotationsIntoProperties(boolean acceptVerify,
-                                                  List<AnnotationExpression> annotations,
-                                                  E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    public Messages fromAnnotationsIntoProperties(
+            boolean isParameter,
+            boolean acceptVerify,
+            List<AnnotationExpression> annotations,
+            E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         int immutable = -1;
         int notNull = -1;
         boolean container = false;
@@ -284,9 +285,21 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.notModified1.get().typeInfo == t) {
                     properties.put(VariableProperty.NOT_MODIFIED_1, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.size.get().typeInfo == t) {
-                    properties.put(VariableProperty.SIZE, extractSizeMin("min", "equals", messages, annotationExpression));
-                    properties.put(VariableProperty.SIZE_COPY, extractSizeCopy(annotationExpression));
-                    properties.put(VariableProperty.SIZE_OUT, extractSizeMin("outMin", "outEquals", messages, annotationExpression));
+                    int sizeMinEq = extractSizeMin("min", "equals", annotationExpression);
+                    int sizeOutMinEq = extractSizeMin("outMin", "outEquals", annotationExpression);
+                    int sizeCopy = extractSizeCopy(annotationExpression);
+                    if (sizeCopy == Level.DELAY && sizeMinEq == Level.DELAY && sizeOutMinEq == Level.DELAY) {
+                        messages.add(Message.newMessage(location(), Message.SIZE_NEED_PARAMETER));
+                    } else {
+                        if (isParameter) {
+                            properties.put(VariableProperty.SIZE_RESTRICTION, sizeMinEq);
+                        }
+                        properties.put(VariableProperty.SIZE, sizeMinEq);
+                        properties.put(VariableProperty.SIZE_COPY, sizeCopy);
+                        if (isParameter) {
+                            properties.put(VariableProperty.SIZE_OUT, sizeOutMinEq);
+                        }
+                    }
                 } else if (e2ImmuAnnotationExpressions.precondition.get().typeInfo == t) {
                     //String value = annotationExpression.extract("value", "");
                     throw new UnsupportedOperationException("Not yet implemented");
@@ -338,7 +351,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
      * @param annotationExpression the annotation
      * @return encoded value
      */
-    public int extractSizeMin(String minString, String equalsString, Messages messages, AnnotationExpression annotationExpression) {
+    public int extractSizeMin(String minString, String equalsString, AnnotationExpression annotationExpression) {
         Integer min = annotationExpression.extract(minString, -1);
         if (min >= 0) {
             // min = 0 is FALSE; min = 1 means FALSE at level 1 (value 2), min = 2 means FALSE at level 2 (value 4)
@@ -351,8 +364,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             // @Size is the default
             return Level.encodeSizeEquals(equals);
         }
-        // ignore! raise warning
-        messages.add(Message.newMessage(location(), Message.SIZE_NEED_PARAMETER));
         return Level.DELAY;
     }
 

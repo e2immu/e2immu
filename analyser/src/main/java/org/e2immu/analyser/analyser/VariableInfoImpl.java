@@ -49,6 +49,7 @@ class VariableInfoImpl implements VariableInfo {
 
     public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
     public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
+    public final SetOnce<Set<Variable>> sizeCopyVariables = new SetOnce<>();
 
     VariableInfoImpl(Variable variable) {
         this.variable = Objects.requireNonNull(variable);
@@ -62,6 +63,7 @@ class VariableInfoImpl implements VariableInfo {
         this.value.copy(previous.value);
         this.stateOnAssignment.copy(previous.stateOnAssignment);
         this.linkedVariables.copy(previous.linkedVariables);
+        this.sizeCopyVariables.copy(previous.sizeCopyVariables);
         this.objectFlow.copy(previous.objectFlow);
     }
 
@@ -83,6 +85,11 @@ class VariableInfoImpl implements VariableInfo {
     @Override
     public Set<Variable> getLinkedVariables() {
         return linkedVariables.getOrElse(null);
+    }
+
+    @Override
+    public Set<Variable> getSizeCopyVariables() {
+        return sizeCopyVariables.getOrElse(null);
     }
 
     @Override
@@ -166,6 +173,8 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(VariableProperty.NOT_NULL, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.SIZE, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.SIZE_COPY, Math::min, Integer.MAX_VALUE),
+            new MergeOp(VariableProperty.SIZE_RESTRICTION, Math::max, Level.DELAY),
+            new MergeOp(VariableProperty.SIZE_OUT, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.IMMUTABLE, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.CONTAINER, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.IDENTITY, Math::min, Integer.MAX_VALUE),

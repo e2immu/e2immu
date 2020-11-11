@@ -178,7 +178,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         FieldAnalysisImpl.Builder fieldAnalysisBuilder = new FieldAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER,
                 this, owner.typeAnalysis.get());
         Messages messages = new Messages();
-        messages.addAll(fieldAnalysisBuilder.fromAnnotationsIntoProperties(true, fieldInspection.get().annotations,
+        messages.addAll(fieldAnalysisBuilder.fromAnnotationsIntoProperties(false, true, fieldInspection.get().annotations,
                 typeContext));
 
         // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.

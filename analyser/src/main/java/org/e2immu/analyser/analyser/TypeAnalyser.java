@@ -110,7 +110,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
         analyserComponents = builder.build();
 
-        messages.addAll(typeAnalysis.fromAnnotationsIntoProperties(typeInfo.isInterface(), typeInspection.annotations,
+        messages.addAll(typeAnalysis.fromAnnotationsIntoProperties(false, typeInfo.isInterface(), typeInspection.annotations,
                 analyserContext.getE2ImmuAnnotationExpressions()));
     }
 

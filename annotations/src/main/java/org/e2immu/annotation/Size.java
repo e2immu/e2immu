@@ -30,9 +30,9 @@ import java.lang.annotation.Target;
  * On methods, we distinguish between:
  * non-modifying: @Size describes the return value
  * modifying or constructor: @Size describes the object, regardless the return value
- * The presence of a @Size annotation on the method is mutually exclusive with the presence of a @Size(copy =)
- * annotation on a parameter of the method. The @Size(copy=true) copies the size characteristics of the argument
- * into the return value (non-modifying method) or the object (modifying method, constructor).
+ * The presence of a @Size annotation on the method is mutually exclusive with the presence of @Size(copy =)
+ * annotations on parameters of the method. The @Size(copy=true) annotations copy the size characteristics of the argument
+ * into the return value (non-modifying method) or the object (modifying method, constructor) in an additive way.
  *
  * <p>
  * On non-modifying methods returning int or long without parameters marked @Size(copy=):
@@ -63,6 +63,9 @@ import java.lang.annotation.Target;
  * Important: All three annotations can technically occur at the same time.
  * However, only one parameter can have a copy=true or copyMin=true; and this is exclusive with an annotation on the method
  * or constructor.
+ * <p>
+ * This obviously does not cover all combinations possible... we could imagine a copyOut, copyOutMin from the object, or
+ * even from another parameter.
  */
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})

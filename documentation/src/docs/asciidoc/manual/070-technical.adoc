@@ -262,3 +262,22 @@ The results need to be known to the evaluation context.
 . sub-blocks, recursive calls; merge back by calling `lift`
 . determine state after this statement
 . finally, make the results of the evaluation(s) permanent by calling `finalise`
+
+==== Computation of @Size
+
+The type analyser holds `fieldHoldingSize`, and a link to the variables that determine the size: `sizeCopyVariables`.
+It computes the former by looking at the return value of the <<size-annotation>> marker method.
+It determines the latter by going over the constructors collecting `sizeVariables` linked to the `fieldHoldingSize`.
+
+The statement analyser holds multiple properties for each variable:
+
+. `SIZE`, which holds the current size of a @Size-able object;
+. `SIZE_RESTRICTION`, which will end up on a parameter
+. `SIZE_OUT`, which also ends up on a parameter
+. `SIZE_COPY`, determined by the fact that the parameter ends up in the type's `variablesDeterminingSizeCopy`.
+
+The field analyser holds `SIZE` but is not concerned with size restrictions or output-size.
+
+The method analyser sets `SIZE_COPY`  when the single return value has non-empty `sizeCopyVariables`, copied from the `VariableInfo` object.
+It sets `SIZE` from the `SIZE` property of the single return value.
+

@@ -574,7 +574,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
         methodInspection.get().parameters.forEach(parameterInfo -> {
             ParameterAnalysisImpl.Builder builder = new ParameterAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER, parameterInfo);
-            messages.addAll(builder.fromAnnotationsIntoProperties(true,
+            messages.addAll(builder.fromAnnotationsIntoProperties(true,true,
                     parameterInfo.parameterInspection.get().annotations, e2ImmuAnnotationExpressions));
             parameterInfo.setAnalysis(builder.build());
         });
@@ -585,7 +585,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER,
                 this, parameterAnalyses);
 
-        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(true, methodInspection.get().annotations,
+        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(false,true, methodInspection.get().annotations,
                 e2ImmuAnnotationExpressions));
         setAnalysis(methodAnalysisBuilder.build());
         return messages;
