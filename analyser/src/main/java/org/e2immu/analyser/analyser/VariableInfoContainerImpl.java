@@ -160,17 +160,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
     }
 
-    @Override
-    public void markAssigned(int level) {
-        ensureNotFrozen();
-
-        VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        // possible previous value was copied in assignment()
-        int assigned = variableInfo.getProperty(VariableProperty.ASSIGNED);
-        variableInfo.setProperty(VariableProperty.ASSIGNED, Math.max(1, assigned + 1));
-    }
-
-
     /* ******************************* modifying methods unrelated to assignment ************************************ */
 
     @Override

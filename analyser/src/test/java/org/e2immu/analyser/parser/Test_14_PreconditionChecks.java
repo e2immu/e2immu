@@ -36,11 +36,11 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
         super(false);
     }
 
-
-    private static final String E1 = "org.e2immu.analyser.testexample.PreconditionChecks.either(String,String):0:e1";
-    private static final String E2 = "org.e2immu.analyser.testexample.PreconditionChecks.either(String,String):1:e2";
-    private static final String II = "org.e2immu.analyser.testexample.PreconditionChecks.setInteger(int):0:ii";
-    private static final String INTEGER = "org.e2immu.analyser.testexample.PreconditionChecks.integer";
+    private static final String TYPE = "org.e2immu.analyser.testexample.PreconditionChecks";
+    private static final String E1 = TYPE + ".either(String,String):0:e1";
+    private static final String E2 = TYPE + ".either(String,String):1:e2";
+    private static final String II = TYPE + ".setInteger(int):0:ii";
+    private static final String INTEGER = TYPE + ".integer";
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("either".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
@@ -97,7 +97,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
             if ("0.0.0".equals(d.statementId())) {
                 Assert.assertEquals(II + " >= 0", d.state().toString());
             }
-            if("0.0.2".equals(d.statementId())) {
+            if ("0.0.2".equals(d.statementId())) {
                 Assert.assertTrue(d.statementAnalysis().variables.isSet(INTEGER));
                 VariableInfo tv = d.getFieldAsVariable(integer);
                 Assert.assertEquals(Level.TRUE, tv.getProperty(VariableProperty.ASSIGNED));

@@ -17,7 +17,10 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.MethodLevelData;
+import org.e2immu.analyser.analyser.StateData;
+import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
@@ -38,7 +41,7 @@ public class EvaluationResult {
     private final List<ObjectFlow> objectFlows;
     public final Value value;
     public final int iteration;
-    public final Map<Variable, Value> valueChanges;
+    public final Map<Variable, ValueChangeData> valueChanges;
 
     public Stream<StatementAnalyser.StatementAnalysisModification> getModificationStream() {
         return modifications.stream();
@@ -52,7 +55,7 @@ public class EvaluationResult {
         return stateChanges.stream();
     }
 
-    public Stream<Map.Entry<Variable, Value>> getValueChangeStream() {
+    public Stream<Map.Entry<Variable, ValueChangeData>> getValueChangeStream() {
         return valueChanges.entrySet().stream();
     }
 
@@ -74,7 +77,7 @@ public class EvaluationResult {
                              List<StatementAnalyser.StatementAnalysisModification> modifications,
                              List<StatementAnalysis.StateChange> stateChanges,
                              List<ObjectFlow> objectFlows,
-                             Map<Variable, Value> valueChanges) {
+                             Map<Variable, ValueChangeData> valueChanges) {
         this.modifications = modifications;
         this.stateChanges = stateChanges;
         this.objectFlows = objectFlows;
@@ -99,6 +102,13 @@ public class EvaluationResult {
         return evaluationContext.isNotNull0(value);
     }
 
+    /**
+     * Any of the three can be used independently: possibly we want to mark assignment, but still have NO_VALUE for the value.
+     * The stateOnAssignment can also still be NO_VALUE while the value is known, and vice versa.
+     */
+    public record ValueChangeData(Value value, Value stateOnAssignment, boolean markAssignment) {
+    }
+
     // lazy creation of lists
     public static class Builder {
         private final EvaluationContext evaluationContext;
@@ -107,7 +117,7 @@ public class EvaluationResult {
         private List<StatementAnalysis.StateChange> stateChanges;
         private List<ObjectFlow> objectFlows;
         private Value value;
-        private final Map<Variable, Value> valueChanges = new HashMap<>();
+        private final Map<Variable, ValueChangeData> valueChanges = new HashMap<>();
 
         private void addToModifications(StatementAnalyser.StatementAnalysisModification modification) {
             if (modifications == null) modifications = new ArrayList<>();
@@ -248,7 +258,7 @@ public class EvaluationResult {
             return objectFlow;
         }
 
-        public void add(StatementAnalysis.StateChange modification) {
+        private void add(StatementAnalysis.StateChange modification) {
             if (stateChanges == null) stateChanges = new LinkedList<>();
             stateChanges.add(modification);
         }
@@ -259,10 +269,9 @@ public class EvaluationResult {
             return this;
         }
 
-        public Builder raiseError(String messageString, String extra) {
+        public void raiseError(String messageString, String extra) {
             Message message = Message.newMessage(evaluationContext.getLocation(), messageString, extra);
             addToModifications(statementAnalyser.new RaiseErrorMessage(message));
-            return this;
         }
 
         public Builder addMessage(Message message) {
@@ -271,18 +280,12 @@ public class EvaluationResult {
         }
 
         public Value currentValue(Variable variable) {
-            Value currentValue = valueChanges.get(variable);
-            if (currentValue == null) return evaluationContext.currentValue(variable);
-            return currentValue;
+            ValueChangeData currentValue = valueChanges.get(variable);
+            if (currentValue == null || currentValue.value == NO_VALUE) return evaluationContext.currentValue(variable);
+            return currentValue.value;
         }
 
-        private void setCurrentValue(Variable variable, Value value) {
-            if (value != NO_VALUE) {
-                valueChanges.put(variable, value);
-            }
-        }
-
-        public Stream<Map.Entry<Variable, Value>> getCurrentValuesStream() {
+        public Stream<Map.Entry<Variable, ValueChangeData>> getCurrentValuesStream() {
             return valueChanges.entrySet().stream();
         }
 
@@ -335,43 +338,32 @@ public class EvaluationResult {
             addToModifications(statementAnalyser.new LinkVariable(at, linked));
         }
 
-        public Builder assignment(Variable at, Value resultOfExpression, boolean assignmentToNonEmptyExpression, int iteration) {
-            setCurrentValue(at, resultOfExpression);
-
-            if (iteration == 0 && assignmentToNonEmptyExpression) {
-                addToModifications(statementAnalyser.new MarkAssigned(at));
-                Value state = evaluationContext.getConditionManager().state;
-                if (state != NO_VALUE) {
-                    addToModifications(statementAnalyser.new SetStateOnAssignment(at, state));
-                }
-            }
+        public Builder assignment(Variable assignmentTarget, Value resultOfExpression, boolean assignmentToNonEmptyExpression, int iteration) {
+            ValueChangeData valueChangeData = new ValueChangeData(resultOfExpression, evaluationContext.getConditionManager().state,
+                    iteration == 0 && assignmentToNonEmptyExpression);
+            valueChanges.put(assignmentTarget, valueChangeData);
             return this;
         }
 
-        public void merge(EvaluationContext copyForThen) {
-        }
-
-        public void addPropertyRestriction(Variable variable, VariableProperty property, int value) {
+        // Used in transformation of parameter lists
+        public void setProperty(Variable variable, VariableProperty property, int value) {
             addToModifications(statementAnalyser.new SetProperty(variable, property, value));
         }
 
         public void addPrecondition(Value rest) {
+            // TODO inheritance of preconditions
         }
 
         public void addCallOut(boolean b, ObjectFlow destination, Value parameterValue) {
-        }
-
-        public void addProperty(Variable variable, VariableProperty size, int newSize) {
+            // TODO part of object flow
         }
 
         public void addAccess(boolean b, MethodAccess methodAccess, Value object) {
+            // TODO part of object flow
         }
 
         public void modifyingMethodAccess(Variable variable) {
             add(new StateData.RemoveVariableFromState(evaluationContext, variable));
-        }
-
-        public void addResultOfMethodAnalyser(AnalysisStatus analysisStatus) {
         }
 
         public void addErrorAssigningToFieldOutsideType(FieldInfo fieldInfo) {

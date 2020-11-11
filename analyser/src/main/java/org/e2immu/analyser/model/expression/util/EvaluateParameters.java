@@ -135,7 +135,7 @@ public class EvaluateParameters {
                 scopeObject != null &&
                 methodInfo.typeInfo.isFunctionalInterface() &&
                 (scopeVariable = scopeObject.asInstanceOf(VariableValue.class)) != null) {
-            builder.addPropertyRestriction(scopeVariable.variable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL);
+            builder.setProperty(scopeVariable.variable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL);
         }
 
 
@@ -158,7 +158,7 @@ public class EvaluateParameters {
                         Value::isIndividualNullOrNotNullClauseOnParameter).accepted;
                 for (Map.Entry<Variable, Value> nullClauseEntry : individualNullClauses.entrySet()) {
                     if (nullClauseEntry.getValue() != NullValue.NULL_VALUE) {
-                        builder.addPropertyRestriction(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                        builder.setProperty(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                     }
                 }
 
@@ -170,7 +170,7 @@ public class EvaluateParameters {
                     if (sizeRestriction.getKey() instanceof ParameterInfo) {
                         int v = sizeRestriction.getValue().encodedSizeRestriction(evaluationContext);
                         if (v > Level.NOT_A_SIZE) {
-                            builder.addPropertyRestriction(sizeRestriction.getKey(), VariableProperty.SIZE, v);
+                            builder.setProperty(sizeRestriction.getKey(), VariableProperty.SIZE, v);
                         }
                     }
                 }

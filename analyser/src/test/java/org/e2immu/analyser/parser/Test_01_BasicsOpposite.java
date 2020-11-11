@@ -121,10 +121,11 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if (d.methodInfo().name.equals("setString") && "0".equals(d.statementId())) {
-            Assert.assertEquals(d.evaluationResult().toString(), 5L, d.evaluationResult().getModificationStream().count());
+            Assert.assertEquals(d.evaluationResult().toString(), 3L, d.evaluationResult().getModificationStream().count());
             Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(STRING_PARAMETER));
             Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(THIS));
-            Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkAssigned(STRING_FIELD));
+            Assert.assertTrue(d.evaluationResult().toString(), d.haveValueChange(STRING_FIELD));
+
             // 4th is the link, 5th the set state on assignment
 
             // link to empty set, because String is E2Immutable

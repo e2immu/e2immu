@@ -72,12 +72,10 @@ public class InlineConditionalOperator implements Expression {
         EvaluationContext copyForThen = evaluationContext.child(conditionResult.value);
         EvaluationResult ifTrueResult = ifTrue.evaluate(copyForThen, forwardEvaluationInfo);
         builder.compose(ifTrueResult);
-        builder.merge(copyForThen);
 
         EvaluationContext copyForElse = evaluationContext.child(NegatedValue.negate(evaluationContext, conditionResult.value));
         EvaluationResult ifFalseResult = ifFalse.evaluate(copyForElse, forwardEvaluationInfo);
         builder.compose(ifFalseResult);
-        builder.merge(copyForElse);
 
         // TODO ObjectFlow
         EvaluationResult cv = ConditionalValue.conditionalValueCurrentState(evaluationContext,

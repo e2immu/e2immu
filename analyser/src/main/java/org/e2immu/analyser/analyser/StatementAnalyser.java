@@ -461,6 +461,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                  String step) {
         // state changes get composed into one big operation, applied, and the result is set
         // the condition is copied from the evaluation context
+        // CURRENTLY only used for removing variables from the state when a modifying operation has been run on them
+        // Tested by: TODO find out which test
         Function<Value, Value> composite = evaluationResult.getStateChangeStream()
                 .reduce(v -> v, (f1, f2) -> v -> f2.apply(f1.apply(v)));
         Value reducedState = composite.apply(localConditionManager.state);
@@ -472,16 +474,27 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         evaluationResult.getValueChangeStream().forEach(e -> {
             Variable variable = e.getKey();
-            Value value = e.getValue();
+            EvaluationResult.ValueChangeData valueChangeData = e.getValue();
+            VariableInfo vi = statementAnalysis.find(analyserContext, variable);
+            int read = vi.getProperty(VariableProperty.READ);
+            int assigned = vi.getProperty(VariableProperty.ASSIGNED);
+
             VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, variable);
             vic.assignment(level);
+            Value value = valueChangeData.value();
             if (value != NO_VALUE) {
                 log(ANALYSER, "Write value {} to variable {}", value, variable.fullyQualifiedName());
                 Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(value);
                 vic.setValueOnAssignment(level, value, propertiesToSet);
             }
-            if (reducedState != NO_VALUE) {
-                vic.setStateOnAssignment(level, reducedState);
+            if (valueChangeData.markAssignment()) {
+                vic.setProperty(level, VariableProperty.ASSIGNED, Math.max(Level.TRUE, assigned + 1));
+            }
+            // simply copy the READ value; nothing has changed here
+            vic.setProperty(level, VariableProperty.READ, read);
+            Value stateOnAssignment = valueChangeData.stateOnAssignment();
+            if (stateOnAssignment != NO_VALUE) {
+                vic.setStateOnAssignment(level, stateOnAssignment);
             }
         });
 
@@ -516,6 +529,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         // IMPROVE check that AddOnceSet is the right data structure
     }
 
+    private void markAssigned(Map<VariableProperty, Integer> properties) {
+        int assigned = properties.getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
+        int newAssigned = Math.max(Level.TRUE, assigned + 1); // at least 1, but must go up
+        properties.put(VariableProperty.ASSIGNED, newAssigned);
+    }
 
     // whatever that has not been picked up by the notNull and the size escapes
     // + preconditions by calling other methods with preconditions!
@@ -1306,49 +1324,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return "ParameterShouldNotBeAssignedTo{parameterInfo=" + parameterInfo + ", location=" + location + '}';
         }
     }
-
-    public class MarkAssigned implements StatementAnalysisModification {
-        public final Variable variable;
-
-        public MarkAssigned(Variable variable) {
-            this.variable = variable;
-        }
-
-        @Override
-        public void accept(ModificationData modificationData) {
-            statementAnalysis.findForWriting(analyserContext, variable).markAssigned(modificationData.level);
-        }
-
-        @Override
-        public String toString() {
-            return "MarkAssigned{variable=" + variable + '}';
-        }
-    }
-
-
-    public class SetStateOnAssignment implements StatementAnalysisModification {
-        public final Variable variable;
-        public final Value state;
-
-        public SetStateOnAssignment(Variable variable, Value state) {
-            Objects.requireNonNull(variable);
-            Objects.requireNonNull(state);
-            if (state == NO_VALUE) throw new IllegalArgumentException();
-            this.variable = variable;
-            this.state = state;
-        }
-
-        @Override
-        public void accept(ModificationData modificationData) {
-            statementAnalysis.findForWriting(analyserContext, variable).setStateOnAssignment(modificationData.level, state);
-        }
-
-        @Override
-        public String toString() {
-            return "SetStateOnAssignment{variable=" + variable + ", state=" + state + '}';
-        }
-    }
-
 
     public class MarkRead implements StatementAnalysisModification {
         public final Variable variable;

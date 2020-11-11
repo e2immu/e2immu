@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.EvaluationResult;
 import org.e2immu.analyser.model.MethodInfo;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -56,22 +57,13 @@ public interface EvaluationResultVisitor {
                     .anyMatch(mr -> variableName.equals(mr.variable.fullyQualifiedName()));
         }
 
-        public boolean haveMarkAssigned(String variableName) {
-            return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.MarkAssigned)
-                    .map(sam -> (StatementAnalyser.MarkAssigned) sam)
-                    .anyMatch(ma -> variableName.equals(ma.variable.fullyQualifiedName()));
+        public boolean haveValueChange(String variableName) {
+            return evaluationResult().getValueChangeStream().anyMatch(e -> e.getKey().fullyQualifiedName().equals(variableName));
         }
 
-        public StatementAnalyser.MarkAssigned findMarkAssigned(String variableName) {
-            return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.MarkAssigned)
-                    .map(sam -> (StatementAnalyser.MarkAssigned) sam)
-                    .filter(ma -> variableName.equals(ma.variable.fullyQualifiedName())).findFirst().orElseThrow();
-        }
-
-        public StatementAnalyser.SetStateOnAssignment findSetStateOnAssignment(String variableName) {
-            return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.SetStateOnAssignment)
-                    .map(sam -> (StatementAnalyser.SetStateOnAssignment) sam)
-                    .filter(ssa -> variableName.equals(ssa.variable.fullyQualifiedName())).findFirst().orElseThrow();
+        public EvaluationResult.ValueChangeData findValueChange(String variableName) {
+            return evaluationResult().getValueChangeStream().filter(e -> e.getKey().fullyQualifiedName().equals(variableName))
+                    .map(Map.Entry::getValue).findFirst().orElseThrow();
         }
     }
 }

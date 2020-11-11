@@ -144,7 +144,7 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
                 Variable integers = d.evaluationResult().valueChanges.keySet().stream().findFirst().orElseThrow();
                 Assert.assertEquals("integers", integers.fullyQualifiedName());
                 Assert.assertTrue(integers instanceof LocalVariableReference);
-                Assert.assertEquals("{1,2,3}", d.evaluationResult().valueChanges.get(integers).toString());
+                Assert.assertEquals("{1,2,3}", d.evaluationResult().valueChanges.get(integers).value().toString());
             }
             // int i=0;
 

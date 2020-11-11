@@ -134,13 +134,6 @@ public interface VariableInfoContainer {
     void setObjectFlow(int level, ObjectFlow objectFlow);
 
     /**
-     * should only happen in the first iteration, because it increases the property's value based on previous values
-     *
-     * @param level the exact level at which an assignment was announced
-     */
-    void markAssigned(int level);
-
-    /**
      * should only happen in the first iteration, because it increases the property's value based on that of ASSIGNED
      *
      * @param level the level at which the variable is being read

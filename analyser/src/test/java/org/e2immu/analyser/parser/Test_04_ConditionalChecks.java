@@ -32,6 +32,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
     private static final String CC_I = "org.e2immu.analyser.testexample.ConditionalChecks.i#" + O5;
 
     private static final String RETURN_5_VALUE = I + " == " + CC_I;
+    public static final String CONDITIONAL_CHECKS = "conditionalChecks";
 
     public Test_04_ConditionalChecks() {
         super(false);
@@ -44,7 +45,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                     Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
                 }
             }
-            if ("conditionalChecks".equals(d.variableName())) {
+            if (CONDITIONAL_CHECKS.equals(d.variableName())) {
                 if ("2".equals(d.statementId())) {
                     Assert.assertEquals(O5, d.currentValue().toString());
                 }
@@ -254,7 +255,8 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
             }
             if ("2".equals(d.statementId())) {
                 Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
-                Assert.assertTrue(d.haveMarkAssigned("conditionalChecks"));
+                Assert.assertTrue(d.haveValueChange(CONDITIONAL_CHECKS));
+                Assert.assertEquals(O5, d.findValueChange(CONDITIONAL_CHECKS).value().toString());
                 Assert.assertEquals(O5, d.evaluationResult().value.toString());
             }
             if ("3".equals(d.statementId())) {
@@ -263,12 +265,12 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                 Assert.assertEquals(expectValueString, d.evaluationResult().value.toString());
                 if (d.iteration() == 0) {
                     // markRead is only done in the first iteration
-                    Assert.assertTrue(d.haveMarkRead("conditionalChecks"));
+                    Assert.assertTrue(d.haveMarkRead(CONDITIONAL_CHECKS));
                     Assert.assertTrue(d.haveMarkRead(I));
                     Assert.assertTrue(d.haveMarkRead(I + "#" + O5));
                 }
                 Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
-                Assert.assertFalse(d.haveSetProperty("conditionalChecks", VariableProperty.NOT_NULL));
+                Assert.assertFalse(d.haveSetProperty(CONDITIONAL_CHECKS, VariableProperty.NOT_NULL));
             }
         }
     };

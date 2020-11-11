@@ -581,7 +581,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int currentSize = evaluationContext.getProperty(objectValue, VariableProperty.SIZE);
         VariableValue variableValue;
         if (newSize > currentSize && (variableValue = objectValue.asInstanceOf(VariableValue.class)) != null) {
-            builder.addProperty(variableValue.variable, VariableProperty.SIZE, newSize);
+            builder.markSizeRestriction(variableValue.variable, newSize);
             log(SIZE, "Upgrade @Size of {} to {} because of method call {}", variableValue.variable.fullyQualifiedName(), newSize,
                     methodInfo.distinguishingName());
         } else {

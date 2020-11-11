@@ -5,10 +5,7 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.StringConcat;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.testexample.FinalChecks;
@@ -150,9 +147,8 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         }
         if (FINAL_CHECKS_FQN.equals(d.methodInfo().fullyQualifiedName()) && "2".equals(d.statementId())) {
             Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-            d.findMarkAssigned(S2);
-            StatementAnalyser.SetStateOnAssignment ssa = d.findSetStateOnAssignment(S2);
-            Assert.assertSame(UnknownValue.EMPTY, ssa.state);
+            EvaluationResult.ValueChangeData valueChangeData = d.findValueChange(S2);
+            Assert.assertSame(UnknownValue.EMPTY, valueChangeData.stateOnAssignment());
         }
     };
 
