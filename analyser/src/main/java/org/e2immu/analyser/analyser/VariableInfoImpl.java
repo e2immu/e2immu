@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.annotation.SizeCopy;
 
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,7 @@ class VariableInfoImpl implements VariableInfo {
 
     public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
     public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
-    public final SetOnce<Set<Variable>> sizeCopyVariables = new SetOnce<>();
+    public final SetOnce<Map<Variable, SizeCopy>> sizeCopyVariables = new SetOnce<>();
 
     VariableInfoImpl(Variable variable) {
         this.variable = Objects.requireNonNull(variable);
@@ -88,7 +89,7 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
-    public Set<Variable> getSizeCopyVariables() {
+    public Map<Variable, SizeCopy> getSizeCopyVariables() {
         return sizeCopyVariables.getOrElse(null);
     }
 

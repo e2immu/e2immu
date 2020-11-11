@@ -24,14 +24,15 @@ import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.SizeCopy;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
-import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
-import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
+import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class Assignment implements Expression {
@@ -192,7 +193,6 @@ public class Assignment implements Expression {
         assert assignedToTarget != null;
         assert assignedToTarget != EmptyExpression.EMPTY_EXPRESSION;
         doAssignmentWork(builder, evaluationContext, newVariableTarget, assignedToTarget);
-
         assert resultOfExpression != null;
         return builder.setValue(resultOfExpression).build();
     }
@@ -222,6 +222,9 @@ public class Assignment implements Expression {
             log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.fullyQualifiedName(),
                     Variable.fullyQualifiedName(linked), Variable.fullyQualifiedName(linked));
             builder.linkVariables(at, linked);
+            Map<Variable, SizeCopy> sizeCopyMap = evaluationContext.sizeCopyVariables(resultOfExpression);
+            log(SIZE, "In assignment, size copy of {} is {}", at, sizeCopyMap);
+            builder.sizeCopyMap(at, sizeCopyMap);
         }
     }
 

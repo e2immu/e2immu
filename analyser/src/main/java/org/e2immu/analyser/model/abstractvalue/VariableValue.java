@@ -89,6 +89,7 @@ public class VariableValue implements Value {
 
     @Override
     public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
+        // is intercepted by the evaluation context
         throw new UnsupportedOperationException();
     }
 

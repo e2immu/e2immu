@@ -490,8 +490,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return mi.parameters.get(mi.parameters.size() - 1).parameterInspection.get().varArgs;
     }
 
-    public boolean hasOverrides(Primitives primitives) {
-        return !typeInfo.overrides(primitives, this, true).isEmpty();
+    public boolean isNotOverridingAnyOtherMethod(Primitives primitives) {
+        return typeInfo.overrides(primitives, this, true).isEmpty();
     }
 
 

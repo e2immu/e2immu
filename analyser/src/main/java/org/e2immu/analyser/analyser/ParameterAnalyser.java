@@ -178,13 +178,26 @@ public class ParameterAnalyser {
                     parameterAnalysis.copiedFromFieldToParameters.set();
                     changed = true;
                 }
-            } else if (parameterAnalysis.isAssignedToAField.isSet()) {
-                // not assigned to a field, and we're sure.
+            } else {
                 VariableInfo vi = analysisProvider.getMethodAnalysis(parameterInfo.owner).getLastStatement().findOrNull(parameterInfo);
                 if (vi != null) {
-                    int notNullDelayResolved = vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED);
-                    if (notNullDelayResolved != Level.FALSE && parameterAnalysis.getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
-                        parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
+                    if (parameterAnalysis.isAssignedToAField.isSet()) { // not assigned to a field, we're sure
+                        int notNullDelayResolved = vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED);
+                        if (notNullDelayResolved != Level.FALSE && parameterAnalysis.getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
+                            parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
+                        }
+                    }
+
+                    int read = vi.getProperty(VariableProperty.READ);
+                    int assigned = vi.getProperty(VariableProperty.ASSIGNED);
+                    if (read == Level.DELAY && assigned == Level.DELAY) {
+                        throw new UnsupportedOperationException("How possible? we haven't seen it, still it has been created");
+                    }
+                } else {
+                    // unused parameter... let's ensure we don't block things
+                    parameterAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
+                    if (parameterInfo.owner.isNotOverridingAnyOtherMethod(parameterAnalysis.primitives)) {
+                        messages.add(Message.newMessage(new Location(parameterInfo.owner), Message.UNUSED_PARAMETER, parameterInfo.simpleName()));
                     }
                 }
             }

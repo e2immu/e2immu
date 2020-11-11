@@ -23,17 +23,16 @@ import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
-import org.e2immu.analyser.model.expression.Assignment;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.LocalVariableCreation;
-import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.Container;
+import org.e2immu.annotation.SizeCopy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -320,7 +319,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         .add("step2_updaters", this::step2_updaters)
                         .add("step3_evaluationOfMainExpression", this::step3_evaluationOfMainExpression)
                         .add("step4_subBlocks", this::step4_subBlocks)
-                        .add("tryToFreezeDependencyGraph", sharedState -> tryToFreezeDependencyGraph())
                         .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previous,
                                 forwardAnalysisInfo.execution()))
 
@@ -373,20 +371,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             statementAnalysis.updateStatements(analyserContext, myMethodAnalyser.methodInfo, sharedState.previous);
         }
         return RUN_AGAIN;
-    }
-
-    private AnalysisStatus tryToFreezeDependencyGraph() {
-        if (statementAnalysis.dependencyGraph.isFrozen()) return DONE;
-        AtomicBoolean haveDelays = new AtomicBoolean();
-        statementAnalysis.dependencyGraph.visit((v, list) -> {
-            statementAnalysis.assertVariableExists(v);
-
-            VariableInfo variableInfo = statementAnalysis.find(analyserContext, v);
-            if (variableInfo != null && !variableInfo.valueIsSet()) haveDelays.set(true);
-        });
-        if (haveDelays.get()) return DELAYS;
-        statementAnalysis.dependencyGraph.freeze();
-        return DONE;
     }
 
     private void visitStatementVisitors(String statementId, StatementAnalyserResult result, SharedState sharedState) {
@@ -506,10 +490,32 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             }
         });
 
+        AnalysisStatus status = evaluationResult.value == NO_VALUE ? DELAYS : DONE;
+
+        if (evaluationResult.linkedVariablesDelay()) {
+            status = DELAYS;
+        } else {
+            evaluationResult.getLinkedVariablesStream().forEach(e -> {
+                Variable variable = e.getKey();
+                VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, variable);
+                log(ANALYSER, "Set linked variables of {} to {}", variable, e.getValue());
+                vic.setLinkedVariables(level, e.getValue());
+            });
+        }
+        if (evaluationResult.sizeCopyVariablesDelay()) {
+            status = DELAYS;
+        } else {
+            evaluationResult.getSizeCopyVariablesStream().forEach(e -> {
+                Variable variable = e.getKey();
+                VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, variable);
+                log(ANALYSER, "Set size copy map of {} to {}", variable, e.getValue());
+                vic.setSizeCopyVariables(level, e.getValue());
+            });
+        }
+
         // then all modifications get applied
         evaluationResult.getModificationStream().forEach(mod -> mod.accept(new ModificationData(sharedState.builder, level)));
 
-        AnalysisStatus status = evaluationResult.value == NO_VALUE ? DELAYS : DONE;
 
         if (status == DONE && !statementAnalysis.methodLevelData.internalObjectFlows.isFrozen()) {
             boolean delays = false;
@@ -731,7 +737,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return DONE;
         }
         try {
-            EvaluationResult result = structure.expression.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo);
+            Expression expression;
+            if (statementAnalysis.statement instanceof ReturnStatement) {
+                VariableExpression returnVariable = new VariableExpression(new ReturnVariable(myMethodAnalyser.methodInfo));
+                expression = new Assignment(statementAnalysis.primitives, returnVariable, structure.expression);
+            } else {
+                expression = structure.expression;
+            }
+            EvaluationResult result = expression.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo);
             AnalysisStatus status = apply(sharedState, result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_3);
             if (status == DELAYS) {
                 if (statementAnalysis.statement instanceof ReturnStatement) {
@@ -746,27 +759,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             // the evaluation system should be pretty good at always returning NO_VALUE when a NO_VALUE has been encountered
             Value value = result.value;
-
+            boolean delays = value == NO_VALUE;
 
             if (statementAnalysis.statement instanceof ForEachStatement) {
                 step3_ForEach(sharedState, value);
             }
-            if (statementAnalysis.statement instanceof ReturnStatement && myMethodAnalyser.methodInfo.hasReturnValue()) {
-                VariableInfoContainer variableInfo = findReturnAsVariableForWriting();
-                variableInfo.assignment(VariableInfoContainer.LEVEL_3_EVALUATION);
-                Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(value);
-                variableInfo.setValueAndStateOnAssignment(VariableInfoContainer.LEVEL_3_EVALUATION, value,
-                        localConditionManager.state, propertiesToSet);
-            }
             if (statementAnalysis.statement instanceof IfElseStatement || statementAnalysis.statement instanceof SwitchStatement) {
                 value = step3_IfElse_Switch(sharedState.evaluationContext, value);
             }
-
             if (value != NO_VALUE) {
                 statementAnalysis.stateData.valueOfExpression.set(value);
             }
 
-            return value == NO_VALUE ? DELAYS : DONE;
+            return delays ? DELAYS : DONE;
         } catch (RuntimeException rte) {
             LOGGER.warn("Failed to evaluate main expression (step 3) in statement {}", statementAnalysis.index);
             throw rte;
@@ -1221,18 +1226,43 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         public Set<Variable> linkedVariables(Value value) {
             assert value != null;
             if (value instanceof VariableValue variableValue) {
-                TypeInfo typeInfo = variableValue.variable.parameterizedType().bestTypeInfo();
-                boolean notSelf = typeInfo != getCurrentType().typeInfo;
-                if (notSelf) {
-                    VariableInfo variableInfo = statementAnalysis.find(analyserContext, variableValue.variable);
-                    int immutable = variableInfo.getProperty(VariableProperty.IMMUTABLE);
-                    if (immutable == MultiLevel.DELAY) return null;
-                    if (MultiLevel.isE2Immutable(immutable)) return Set.of();
-                }
-                return Set.of(variableValue.variable);
+                return linkedVariables(variableValue.variable);
             }
             return value.linkedVariables(this);
         }
+
+        @Override
+        public Set<Variable> linkedVariables(Variable variable) {
+            TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
+            boolean notSelf = typeInfo != getCurrentType().typeInfo;
+            if (notSelf) {
+                VariableInfo variableInfo = statementAnalysis.find(analyserContext, variable);
+                int immutable = variableInfo.getProperty(VariableProperty.IMMUTABLE);
+                if (immutable == MultiLevel.DELAY) return null;
+                if (MultiLevel.isE2Immutable(immutable)) return Set.of();
+            }
+            VariableInfo variableInfo = statementAnalysis.find(analyserContext, variable);
+            // we've encountered the variable before
+            if (variableInfo.linkedVariablesIsSet()) {
+                return SetUtil.immutableUnion(variableInfo.getLinkedVariables(), Set.of(variable));
+            }
+            return null; // delay
+        }
+
+        @Override
+        public Map<Variable, SizeCopy> sizeCopyVariables(Value value) {
+            if (value instanceof VariableValue variableValue) {
+                return sizeCopyVariables(variableValue.variable);
+            }
+            return value.sizeCopyVariables(this);
+        }
+
+        public Map<Variable, SizeCopy> sizeCopyVariables(Variable variable) {
+            VariableInfo variableInfo = statementAnalysis.find(analyserContext, variable);
+            return variableInfo.getSizeCopyVariables(); // or null, which will cause a delay
+            // FIXME we'll need real code
+        }
+
     }
 
 
@@ -1348,30 +1378,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         @Override
         public String toString() {
             return "MarkRead{variable=" + variable + '}';
-        }
-    }
-
-    public class LinkVariable implements StatementAnalysisModification {
-        public final Variable variable;
-        public final List<Variable> to;
-
-        public LinkVariable(Variable variable, Set<Variable> to) {
-            this.variable = variable;
-            this.to = ImmutableList.copyOf(to);
-        }
-
-        @Override
-        public void accept(ModificationData modificationData) {
-            statementAnalysis.assertVariableExists(variable);
-            to.forEach(statementAnalysis::assertVariableExists);
-            if (!statementAnalysis.dependencyGraph.isFrozen()) {
-                statementAnalysis.dependencyGraph.addNode(variable, to);
-            }
-        }
-
-        @Override
-        public String toString() {
-            return "LinkVariable{variable=" + variable + ", to=" + to + '}';
         }
     }
 

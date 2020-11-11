@@ -81,7 +81,7 @@ public class InstanceOfValue extends PrimitiveValue {
 
     @Override
     public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
-        return Set.of(variable);
+        return evaluationContext.linkedVariables(variable);
     }
 
     @Override

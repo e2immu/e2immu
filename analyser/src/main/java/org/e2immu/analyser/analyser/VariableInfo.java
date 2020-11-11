@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.annotation.SizeCopy;
 
 import java.util.Map;
 import java.util.Set;
@@ -48,7 +49,7 @@ public interface VariableInfo {
         return getValue() != UnknownValue.NO_VALUE;
     }
 
-    Set<Variable> getSizeCopyVariables();
+    Map<Variable, SizeCopy> getSizeCopyVariables();
 
     default boolean sizeCopyVariablesIsSet() {
         return getSizeCopyVariables() != null;

@@ -45,10 +45,9 @@ public interface EvaluationResultVisitor {
         }
 
         public boolean haveLinkVariable(String fromName, Set<String> toNames) {
-            return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.LinkVariable)
-                    .map(sam -> (StatementAnalyser.LinkVariable) sam)
-                    .anyMatch(lv -> fromName.equals(lv.variable.fullyQualifiedName()) &&
-                            toNames.equals(lv.to.stream().map(v -> v.fullyQualifiedName()).collect(Collectors.toSet())));
+            return evaluationResult().getLinkedVariablesStream()
+                    .anyMatch(e -> fromName.equals(e.getKey().fullyQualifiedName()) &&
+                            toNames.equals(e.getValue().stream().map(v -> v.fullyQualifiedName()).collect(Collectors.toSet())));
         }
 
         public boolean haveMarkRead(String variableName) {

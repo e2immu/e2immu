@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
+import org.e2immu.annotation.SizeCopy;
 
 import java.util.Map;
 import java.util.Set;
@@ -79,14 +80,6 @@ public interface EvaluationContext {
 
     default AnalyserContext getAnalyserContext() {
         throw new UnsupportedOperationException();
-    }
-
-    default BoolValue boolValueTrue() {
-        return new BoolValue(getPrimitives(), true, ObjectFlow.NO_FLOW);
-    }
-
-    default BoolValue boolValueFalse() {
-        return new BoolValue(getPrimitives(), false, ObjectFlow.NO_FLOW);
     }
 
     default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
@@ -157,6 +150,14 @@ public interface EvaluationContext {
 
     default Set<Variable> linkedVariables(Value value) {
         return value.linkedVariables(this);
+    }
+
+    default Set<Variable> linkedVariables(Variable variable) {
+        return Set.of();
+    }
+
+    default Map<Variable, SizeCopy> sizeCopyVariables(Value value) {
+        return value.sizeCopyVariables(this);
     }
 
     default Map<VariableProperty, Integer> getValueProperties(Value value) {

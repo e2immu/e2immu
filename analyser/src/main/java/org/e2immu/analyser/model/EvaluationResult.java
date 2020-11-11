@@ -25,6 +25,8 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.util.SetUtil;
+import org.e2immu.annotation.SizeCopy;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -36,12 +38,25 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class EvaluationResult {
 
+    // mostly to set properties and raise errors
     private final List<StatementAnalyser.StatementAnalysisModification> modifications;
+
+    // remove variables from the state
     private final List<StatementAnalysis.StateChange> stateChanges;
+
+    // all object flows created
     private final List<ObjectFlow> objectFlows;
     public final Value value;
     public final int iteration;
+
+    // a map of value changes, which can be overwritten; only the last one holds
     public final Map<Variable, ValueChangeData> valueChanges;
+
+    // a map of variable linking, which is also cumulative
+    public final Map<Variable, Set<Variable>> linkedVariables;
+
+    // a map of sizeCopy variables, which follows a similar trajectory to linkedVariables
+    public final Map<Variable, Map<Variable, SizeCopy>> sizeCopyVariables;
 
     public Stream<StatementAnalyser.StatementAnalysisModification> getModificationStream() {
         return modifications.stream();
@@ -59,24 +74,33 @@ public class EvaluationResult {
         return valueChanges.entrySet().stream();
     }
 
+    public Stream<Map.Entry<Variable, Set<Variable>>> getLinkedVariablesStream() {
+        return linkedVariables.entrySet().stream();
+    }
+
+    public boolean linkedVariablesDelay() {
+        return linkedVariables == null;
+    }
+
+    public Stream<Map.Entry<Variable, Map<Variable, SizeCopy>>> getSizeCopyVariablesStream() {
+        return sizeCopyVariables.entrySet().stream();
+    }
+
+    public boolean sizeCopyVariablesDelay() {
+        return sizeCopyVariables == null;
+    }
+
     public Value getValue() {
         return value;
     }
-    // messages
-
-    // properties to be added
-
-    // create local variables
-
-    // link variables
-
-    // mark a variable read
 
     private EvaluationResult(int iteration,
                              Value value,
                              List<StatementAnalyser.StatementAnalysisModification> modifications,
                              List<StatementAnalysis.StateChange> stateChanges,
                              List<ObjectFlow> objectFlows,
+                             Map<Variable, Set<Variable>> linkedVariables,
+                             Map<Variable, Map<Variable, SizeCopy>> sizeCopyVariables,
                              Map<Variable, ValueChangeData> valueChanges) {
         this.modifications = modifications;
         this.stateChanges = stateChanges;
@@ -84,6 +108,8 @@ public class EvaluationResult {
         this.value = value;
         this.iteration = iteration;
         this.valueChanges = valueChanges;
+        this.linkedVariables = linkedVariables;
+        this.sizeCopyVariables = sizeCopyVariables;
     }
 
     @Override
@@ -94,6 +120,9 @@ public class EvaluationResult {
                 ", objectFlows=" + objectFlows +
                 ", value=" + value +
                 ", iteration=" + iteration +
+                ", valueChanges=" + valueChanges +
+                ", linkedVariables=" + linkedVariables +
+                ", sizeCopyVariables=" + sizeCopyVariables +
                 '}';
     }
 
@@ -118,6 +147,10 @@ public class EvaluationResult {
         private List<ObjectFlow> objectFlows;
         private Value value;
         private final Map<Variable, ValueChangeData> valueChanges = new HashMap<>();
+        private final Map<Variable, Set<Variable>> linkedVariables = new HashMap<>();
+        private final Map<Variable, Map<Variable, SizeCopy>> sizeCopyVariables = new HashMap<>();
+        private boolean linkedVariablesDelay;
+        private boolean sizeCopyVariablesDelay;
 
         private void addToModifications(StatementAnalyser.StatementAnalysisModification modification) {
             if (modifications == null) modifications = new ArrayList<>();
@@ -180,6 +213,22 @@ public class EvaluationResult {
                 else stateChanges.addAll(evaluationResult.stateChanges);
             }
             valueChanges.putAll(evaluationResult.valueChanges);
+            for (Map.Entry<Variable, Set<Variable>> entry : evaluationResult.linkedVariables.entrySet()) {
+                Set<Variable> set = linkedVariables.get(entry.getKey());
+                if (set == null) {
+                    linkedVariables.put(entry.getKey(), entry.getValue());
+                } else {
+                    set.addAll(entry.getValue());
+                }
+            }
+            for (Map.Entry<Variable, Map<Variable, SizeCopy>> entry : evaluationResult.sizeCopyVariables.entrySet()) {
+                Map<Variable, SizeCopy> map = sizeCopyVariables.get(entry.getKey());
+                if (map == null) {
+                    sizeCopyVariables.put(entry.getKey(), entry.getValue());
+                } else {
+                    map.putAll(entry.getValue()); // IMPROVE we're ignoring the values here
+                }
+            }
         }
 
         // also sets result of expression, but cannot overwrite NO_VALUE
@@ -200,8 +249,13 @@ public class EvaluationResult {
         }
 
         public EvaluationResult build() {
-            return new EvaluationResult(getIteration(), value, modifications == null ? List.of() : modifications,
-                    stateChanges == null ? List.of() : stateChanges, objectFlows == null ? List.of() : objectFlows,
+            return new EvaluationResult(getIteration(),
+                    value,
+                    modifications == null ? List.of() : modifications,
+                    stateChanges == null ? List.of() : stateChanges,
+                    objectFlows == null ? List.of() : objectFlows,
+                    linkedVariablesDelay ? null : linkedVariables,
+                    sizeCopyVariablesDelay ? null : sizeCopyVariables,
                     valueChanges);
         }
 
@@ -333,9 +387,12 @@ public class EvaluationResult {
             }
         }
 
-
         public void linkVariables(Variable at, Set<Variable> linked) {
-            addToModifications(statementAnalyser.new LinkVariable(at, linked));
+            if (linked == null) {
+                linkedVariablesDelay = true;
+            } else {
+                linkedVariables.merge(at, linked, SetUtil::immutableUnion);
+            }
         }
 
         public Builder assignment(Variable assignmentTarget, Value resultOfExpression, boolean assignmentToNonEmptyExpression, int iteration) {
@@ -379,6 +436,18 @@ public class EvaluationResult {
         public void addCircularCallOrUndeclaredFunctionalInterface() {
             MethodLevelData methodLevelData = evaluationContext.getCurrentStatement().statementAnalysis.methodLevelData;
             addToModifications(methodLevelData.new SetCircularCallOrUndeclaredFunctionalInterface());
+        }
+
+        public void sizeCopyMap(Variable variable, Map<Variable, SizeCopy> sizeCopyMap) {
+            if (sizeCopyMap == null) {
+                sizeCopyVariablesDelay = true;
+            } else {
+                this.sizeCopyVariables.merge(variable, sizeCopyMap, (m1, m2) -> {
+                    Map<Variable, SizeCopy> map = new HashMap<>(m1);
+                    map.putAll(m2);
+                    return map;
+                });
+            }
         }
     }
 }

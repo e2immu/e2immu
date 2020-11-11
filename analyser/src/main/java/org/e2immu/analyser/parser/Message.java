@@ -88,6 +88,8 @@ public class Message {
     public static final String WORSE_THAN_OVERRIDDEN_METHOD = "Property value worse than overridden method";
     public static final String WORSE_THAN_OVERRIDDEN_METHOD_PARAMETER = "Property value worse than overridden method's parameter";
 
+    public static final String UNUSED_PARAMETER = "Unused parameter";
+
     @NotNull1
     @E2Container
     public static final Map<String, Severity> SEVERITY_MAP;

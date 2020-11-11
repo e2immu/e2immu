@@ -277,7 +277,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             if (absentUnlessStatic(VariableProperty.READ) &&
                     absentUnlessStatic(VariableProperty.ASSIGNED) &&
                     (getThisAsVariable().getProperty(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
-                    !methodInfo.hasOverrides(analyserContext.getPrimitives()) &&
+                    methodInfo.isNotOverridingAnyOtherMethod(analyserContext.getPrimitives()) &&
                     !methodInfo.isDefaultImplementation) {
                 MethodResolution methodResolution = methodInfo.methodResolution.get();
                 if (methodResolution.staticMethodCallsOnly.isSet() && methodResolution.staticMethodCallsOnly.get()) {

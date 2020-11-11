@@ -278,6 +278,66 @@ The statement analyser holds multiple properties for each variable:
 
 The field analyser holds `SIZE` but is not concerned with size restrictions or output-size.
 
-The method analyser sets `SIZE_COPY`  when the single return value has non-empty `sizeCopyVariables`, copied from the `VariableInfo` object.
+The method analyser's <<size-annotation>> computations split in:
+
+. modified vs non-modified: data comes from single return value, or from type's `fieldHoldingSize` variable info
+. if non-modified and there is a return value, then return the value of the `SIZE` property
+
+
+The method analyser sets `SIZE_COPY` when the single return value has non-empty `sizeCopyVariables`, copied from the `VariableInfo` object.
 It sets `SIZE` from the `SIZE` property of the single return value.
+
+The statement analyser acts in the following ways.
+
+Situation 1:: a non-modifying method requiring a SIZE:
+
+[source,java]
+----
+someMethod(paramSet)
+----
+
+where `someMethod` has the definition:
+
+[source,java]
+----
+void someMethod(@Size(min = 1) Set<X> xs);
+----
+
+Using forward information, the analyser sets a `SIZE` and `SIZE_RESTRICTION` on the parameter `paramSet`.
+
+Situation 2:: a non-modifying method withe a `SIZE_COPY` parameter:
+
+[source,java]
+----
+this.set = ImmutableSet.copyOf(paramSet);
+----
+where `copyOf` has the definition:
+
+[source,java]
+----
+@NotNull
+@E2Container
+public static <E> ImmutableSet<E> copyOf(@NotNull @Size(copy = true) Iterable<? extends E> iterable);
+----
+
+
+Situation 3:: a modifying method with a `SIZE_COPY` parameter:
+
+[source,java]
+----
+this.map.putAll(paramMap);
+----
+
+The `putAll` method has the definition:
+
+[source,java]
+----
+@Independent
+void putAll(@NotModified @Size(copyMin = true) @NotNull Map<? extends K, ? extends V> m);
+----
+
+The <<size-annotation>> in `putAll`'s parameter transfers `paramMap` into `this.map`'s `sizeCopyVariables`.
+At the same time, it copies `putAll`'s `SIZE` into `this.map`'s `SIZE`.
+Because `this.map` is not a parameter, the analyser does not write to `SIZE_OUT`.
+
 

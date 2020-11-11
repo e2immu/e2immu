@@ -26,9 +26,9 @@ import org.e2immu.analyser.util.AddOnceSet;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
+import org.e2immu.annotation.SizeCopy;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
@@ -38,7 +38,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     private final Map<String, Value> approvedPreconditions;
     private final Set<ParameterizedType> implicitlyImmutableDataTypes;
     private final FieldInfo fieldHoldingSize;
-    private final Map<Variable, Boolean> sizeCopyVariables;
+    private final Map<Variable, SizeCopy> sizeCopyVariables;
 
     private TypeAnalysisImpl(TypeInfo typeInfo,
                              Map<VariableProperty, Integer> properties,
@@ -47,7 +47,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                              Map<String, Value> approvedPreconditions,
                              Set<ParameterizedType> implicitlyImmutableDataTypes,
                              FieldInfo fieldHoldingSize,
-                             Map<Variable, Boolean> sizeCopyVariables) {
+                             Map<Variable, SizeCopy> sizeCopyVariables) {
         super(typeInfo.hasBeenDefined(), properties, annotations);
         this.typeInfo = typeInfo;
         this.approvedPreconditions = approvedPreconditions;
@@ -58,12 +58,17 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public Optional<FieldInfo> getFieldHoldingSize() {
-        return Optional.ofNullable(fieldHoldingSize);
+    public boolean haveFieldHoldingSizeAndSizeCopyVariables() {
+        return !sizeCopyVariables.isEmpty();
     }
 
     @Override
-    public Map<Variable, Boolean> getSizeCopyVariables() {
+    public FieldInfo getFieldHoldingSize() {
+        return fieldHoldingSize;
+    }
+
+    @Override
+    public Map<Variable, SizeCopy> getSizeCopyVariables() {
         return sizeCopyVariables;
     }
 
@@ -105,8 +110,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public final SetOnceMap<String, Value> approvedPreconditions = new SetOnceMap<>();
         public final SetOnce<Set<ParameterizedType>> implicitlyImmutableDataTypes = new SetOnce<>();
 
-        public final SetOnce<Optional<FieldInfo>> fieldHoldingSize = new SetOnce<>();
-        public final SetOnce<Map<Variable, Boolean>> sizeCopyVariables = new SetOnce<>();
+        public final SetOnce<FieldInfo> fieldHoldingSize = new SetOnce<>();
+        public final SetOnce<Map<Variable, SizeCopy>> sizeCopyVariables = new SetOnce<>();
 
         public Builder(Primitives primitives, TypeInfo typeInfo) {
             super(primitives, typeInfo.hasBeenDefined(), typeInfo.simpleName);
@@ -114,12 +119,17 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public Optional<FieldInfo> getFieldHoldingSize() {
+        public boolean haveFieldHoldingSizeAndSizeCopyVariables() {
+            return sizeCopyVariables.isSet();
+        }
+
+        @Override
+        public FieldInfo getFieldHoldingSize() {
             return fieldHoldingSize.getOrElse(null);
         }
 
         @Override
-        public Map<Variable, Boolean> getSizeCopyVariables() {
+        public Map<Variable, SizeCopy> getSizeCopyVariables() {
             return sizeCopyVariables.getOrElse(null);
         }
 
@@ -193,8 +203,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     constantObjectFlows.toImmutableSet(),
                     approvedPreconditions.toImmutableMap(),
                     implicitlyImmutableDataTypes.isSet() ? implicitlyImmutableDataTypes.get() : Set.of(),
-                    fieldHoldingSize.isSet() ? fieldHoldingSize.get().orElse(null) : null,
-                    getSizeCopyVariables());
+                    fieldHoldingSize.getOrElse(null),
+                    getSizeCopyVariables() == null ? Map.of() : getSizeCopyVariables());
         }
     }
 }

@@ -31,7 +31,10 @@ import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.*;
+import org.e2immu.analyser.util.AddOnceSet;
+import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetOnceMap;
+import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
@@ -60,7 +63,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public final AddOnceSet<Message> messages = new AddOnceSet<>();
     public final NavigationData<StatementAnalysis> navigationData = new NavigationData<>();
     public final SetOnceMap<String, VariableInfoContainer> variables = new SetOnceMap<>();
-    public final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
     public final AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
 
     public final MethodLevelData methodLevelData = new MethodLevelData();
@@ -416,25 +418,39 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         variables.put(variable.fullyQualifiedName(), vic);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", variable.fullyQualifiedName());
 
+        // linked variables travel from the parameters via the statements to the fields
         if (variable instanceof ReturnVariable) {
             vic.setInitialValueFromAnalyser(UnknownValue.RETURN_VALUE, Map.of());
+            // assignment will be at LEVEL 3
+            vic.setLinkedVariablesFromAnalyser(Set.of());
+            vic.setSizeCopyVariablesFromAnalyser(Map.of());
         } else if (variable instanceof This) {
             vic.setInitialValueFromAnalyser(new VariableValue(variable, ObjectFlow.NO_FLOW),
                     propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo));
+            vic.setLinkedVariablesFromAnalyser(Set.of());
+            vic.setSizeCopyVariablesFromAnalyser(Map.of());
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
             VariableValue variableValue = new VariableValue(variable, objectFlow);
             vic.setInitialValueFromAnalyser(variableValue, propertyMap(analyserContext, parameterInfo));
+            vic.setLinkedVariablesFromAnalyser(Set.of());
+            vic.setSizeCopyVariablesFromAnalyser(Map.of());
         } else if (variable instanceof FieldReference fieldReference) {
             Value initialValue = initialValueOfField(analyserContext, fieldReference);
             if (initialValue != UnknownValue.NO_VALUE) {
                 vic.setInitialValueFromAnalyser(initialValue, propertyMap(analyserContext, fieldReference.fieldInfo));
             }
-            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-            if (fieldAnalysis.getVariablesLinkedToMe() != null) {
-                vic.setLinkedVariablesFromAnalyser(fieldAnalysis.getVariablesLinkedToMe());
+            // a field's local copy is always created not modified... can only go "up"
+            vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, MODIFIED, 0);
+
+            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(methodAnalysis.getMethodInfo().typeInfo);
+            if (typeAnalysis.haveFieldHoldingSizeAndSizeCopyVariables() && typeAnalysis.getFieldHoldingSize() == fieldReference.fieldInfo) {
+                vic.setSizeCopyVariablesFromAnalyser(typeAnalysis.getSizeCopyVariables());
+            } else {
+                vic.setSizeCopyVariablesFromAnalyser(Map.of());
             }
-        }
+            vic.setLinkedVariablesFromAnalyser(Set.of());
+        } // but local variables get their linked variables from an assignment, potentially at LEVEL 1
 
         return vic;
     }
@@ -695,10 +711,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public VariableInfoContainer findForWriting(@NotNull Variable variable) {
         return variables.get(variable.fullyQualifiedName());
-    }
-
-    public boolean isDelaysInDependencyGraph() {
-        return !dependencyGraph.isFrozen();
     }
 
     public void removeAllVariables(List<String> toRemove) {

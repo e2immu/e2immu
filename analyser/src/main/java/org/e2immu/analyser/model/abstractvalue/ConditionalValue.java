@@ -28,10 +28,7 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 
 public class ConditionalValue implements Value {
@@ -236,9 +233,23 @@ public class ConditionalValue implements Value {
         return NO_PATTERN;
     }
 
+    // simple add-all, but return null upon delay
+
     @Override
     public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
-        return combinedValue.variables();
+        Set<Variable> result = null;
+        for (Variable variable : variables()) {
+            Set<Variable> links = evaluationContext.linkedVariables(variable);
+            if (links == null) {
+                return null;
+            }
+            if (result == null) {
+                result = new HashSet<>(links);
+            } else {
+                result.addAll(links);
+            }
+        }
+        return result;
     }
 
     @Override
