@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
@@ -163,7 +164,12 @@ public class ConditionalValue implements Value {
 
     @Override
     public String toString() {
-        return condition.toString() + "?" + ifTrue.toString() + ":" + ifFalse.toString();
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        return condition.print(printMode) + "?" + ifTrue.print(printMode) + ":" + ifFalse.print(printMode);
     }
 
     private static final int NO_PATTERN = -2;

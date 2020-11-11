@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
@@ -38,7 +39,12 @@ public class ArrayValue implements Value {
 
     @Override
     public String toString() {
-        return "{" + values.stream().map(Value::toString).collect(Collectors.joining(",")) + "}";
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        return "{" + values.stream().map(v -> v.print(printMode)).collect(Collectors.joining(",")) + "}";
     }
 
     @Override

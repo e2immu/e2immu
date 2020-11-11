@@ -3,6 +3,7 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 
 import java.util.Map;
 import java.util.function.Consumer;
@@ -86,7 +87,12 @@ public class InlineValue implements Value {
 
     @Override
     public String toString() {
-        return "inline " + methodInfo.name + " on " + value.toString();
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        return "inline " + methodInfo.name + " on " + value.print(printMode);
     }
 
     @Override

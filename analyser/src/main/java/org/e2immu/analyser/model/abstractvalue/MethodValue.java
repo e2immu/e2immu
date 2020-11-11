@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
@@ -80,11 +81,15 @@ public class MethodValue implements Value {
         return Objects.hash(object, methodInfo, parameters);
     }
 
-    // NOTE: toString() is NOT used for "official" purposes
     @Override
     public String toString() {
-        return object + "." + methodInfo.name
-                + parameters.stream().map(Object::toString).collect(Collectors.joining(", ", "(", ")"));
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        return object.print(printMode) + "." + methodInfo.name
+                + parameters.stream().map(p -> p.print(printMode)).collect(Collectors.joining(", ", "(", ")"));
     }
 
     @Override

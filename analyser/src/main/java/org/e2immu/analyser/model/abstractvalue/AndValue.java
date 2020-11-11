@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.Size;
@@ -393,7 +394,12 @@ public class AndValue extends PrimitiveValue {
 
     @Override
     public String toString() {
-        return "(" + values.stream().map(Value::toString).collect(Collectors.joining(" and ")) + ")";
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        return "(" + values.stream().map(v -> v.print(printMode)).collect(Collectors.joining(" and ")) + ")";
     }
 
     @Override

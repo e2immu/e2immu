@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.Set;
@@ -39,6 +40,10 @@ public interface Variable {
 
     ParameterizedType parameterizedType();
 
+    /**
+     * @return the most simple name that the variable can take. Used to determine which names have already been taken,
+     * so that the analyser can introduce a new variable with a unique name.
+     */
     String simpleName();
 
     String fullyQualifiedName();
@@ -51,5 +56,12 @@ public interface Variable {
         return parameterizedType().typesReferenced(explicit);
     }
 
-    default boolean isLocal() { return false; }
+    default boolean isLocal() {
+        return false;
+    }
+
+    default String print(PrintMode printMode) {
+        if (printMode.forAnnotations()) return simpleName();
+        return fullyQualifiedName();
+    }
 }

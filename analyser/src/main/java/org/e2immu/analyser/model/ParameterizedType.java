@@ -25,6 +25,7 @@ import com.github.javaparser.ast.type.WildcardType;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -261,6 +262,10 @@ public class ParameterizedType {
     public ParameterizedType copyWithOneFewerArrays() {
         if (arrays == 0) throw new UnsupportedOperationException();
         return new ParameterizedType(this.typeInfo, arrays - 1, wildCard, parameters, typeParameter);
+    }
+
+    public String print(PrintMode printMode) {
+        return stream(printMode.forDebug(), false, false, false);
     }
 
     @Override

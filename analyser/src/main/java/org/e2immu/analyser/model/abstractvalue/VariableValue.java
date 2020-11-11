@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
@@ -123,6 +124,23 @@ public class VariableValue implements Value {
 
     @Override
     public String toString() {
+        return name;
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        if (printMode.forAnnotations()) {
+            if (variable instanceof ParameterInfo parameterInfo) return parameterInfo.name;
+            if (variable instanceof FieldReference fieldReference) {
+                String scope;
+                if (fieldReference.scope == null) {
+                    scope = fieldReference.fieldInfo.owner.simpleName;
+                } else {
+                    scope = fieldReference.scope.print(printMode);
+                }
+                return scope + "." + fieldReference.fieldInfo.name;
+            }
+        }
         return name;
     }
 }

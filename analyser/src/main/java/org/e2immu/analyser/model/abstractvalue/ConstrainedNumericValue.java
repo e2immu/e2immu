@@ -2,6 +2,7 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.NumericValue;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
@@ -111,22 +112,31 @@ public class ConstrainedNumericValue extends PrimitiveValue implements ValueWrap
 
     @Override
     public String toString() {
-        String bound;
-        if (upperBound == MAX) {
-            String lb = nice(lowerBound);
-            bound = "?>=" + lb;
-        } else if (lowerBound == MIN) {
-            String ub = nice(upperBound);
-            bound = "?<=" + ub;
-        } else if (upperBound == lowerBound) {
-            String b = nice(lowerBound);
-            bound = "?=" + b;
-        } else {
-            String lb = nice(lowerBound);
-            String ub = nice(upperBound);
-            bound = lb + "<=?<=" + ub;
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        if (printMode.forDebug()) {
+            String bound;
+            if (upperBound == MAX) {
+                String lb = nice(lowerBound);
+                bound = "?>=" + lb;
+            } else if (lowerBound == MIN) {
+                String ub = nice(upperBound);
+                bound = "?<=" + ub;
+            } else if (upperBound == lowerBound) {
+                String b = nice(lowerBound);
+                bound = "?=" + b;
+            } else {
+                String lb = nice(lowerBound);
+                String ub = nice(upperBound);
+                bound = lb + "<=?<=" + ub;
+            }
+            return value.print(printMode) + "," + bound;
         }
-        return value.toString() + "," + bound;
+        // transparent
+        return value.print(printMode);
     }
 
     private String nice(double v) {

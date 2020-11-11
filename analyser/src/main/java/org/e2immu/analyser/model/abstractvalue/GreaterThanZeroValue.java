@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
@@ -286,8 +287,17 @@ public class GreaterThanZeroValue extends PrimitiveValue {
 
     @Override
     public String toString() {
-        String op = allowEquals ? ">=" : ">";
-        return value + " " + op + " 0";
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        if (printMode.forDebug()) {
+            String op = allowEquals ? ">=" : ">";
+            return value + " " + op + " 0";
+        }
+        // transparent
+        return value.print(printMode);
     }
 
     @Override

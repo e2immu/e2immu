@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -99,9 +100,18 @@ public class PropertyWrapper implements Value, ValueWrapper {
 
     @Override
     public String toString() {
-        return value.toString() + "," + properties.entrySet().stream()
-                .filter(e -> e.getValue() > e.getKey().falseValue)
-                .map(e -> e.getKey().toString()).sorted().collect(Collectors.joining(","));
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        if (printMode.forDebug()) {
+            return value.print(printMode) + "," + properties.entrySet().stream()
+                    .filter(e -> e.getValue() > e.getKey().falseValue)
+                    .map(e -> e.getKey().toString()).sorted().collect(Collectors.joining(","));
+        }
+        // transparent
+        return value.print(printMode);
     }
 
     @Override

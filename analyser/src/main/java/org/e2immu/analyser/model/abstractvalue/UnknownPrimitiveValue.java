@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 
 public class UnknownPrimitiveValue extends PrimitiveValue {
     public static final UnknownPrimitiveValue UNKNOWN_PRIMITIVE = new UnknownPrimitiveValue();
@@ -34,6 +35,11 @@ public class UnknownPrimitiveValue extends PrimitiveValue {
 
     @Override
     public String toString() {
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
         return "<unknown primitive value>";
     }
 

@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
@@ -70,7 +71,12 @@ public class InstanceOfValue extends PrimitiveValue {
 
     @Override
     public String toString() {
-        return variable.simpleName() + " instanceof " + parameterizedType.detailedString();
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        return variable.print(printMode) + " instanceof " + parameterizedType.print(printMode);
     }
 
     @Override

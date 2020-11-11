@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.Nullable;
@@ -248,5 +249,9 @@ public interface Value extends Comparable<Value> {
             return (T) this;
         }
         return null;
+    }
+
+    default String print(PrintMode printMode) {
+        return toString();
     }
 }

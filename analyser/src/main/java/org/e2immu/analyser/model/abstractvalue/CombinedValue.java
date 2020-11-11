@@ -7,6 +7,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.Size;
 
@@ -87,5 +88,10 @@ public class CombinedValue implements Value {
     public void visit(Consumer<Value> consumer) {
         values.forEach(v -> v.visit(consumer));
         consumer.accept(this);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        throw new UnsupportedOperationException();
     }
 }

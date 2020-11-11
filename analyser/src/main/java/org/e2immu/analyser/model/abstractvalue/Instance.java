@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
@@ -70,6 +71,11 @@ public class Instance implements Value {
 
     @Override
     public String toString() {
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
         return "instance type " + parameterizedType.detailedString()
                 + "(" + constructorParameterValues.stream()
                 .map(Value::toString)

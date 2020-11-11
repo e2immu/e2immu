@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 
 /**
  * Specifically used to transfer @Mark(" ...") at CONTRACT level.
@@ -53,6 +54,11 @@ public class ContractMark implements Value {
 
     @Override
     public String toString() {
+        return mark;
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
         return mark;
     }
 

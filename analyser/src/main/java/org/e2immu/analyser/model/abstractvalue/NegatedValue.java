@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.NumericValue;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -108,10 +109,15 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
 
     @Override
     public String toString() {
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
         if (value.isNumeric()) {
-            return "(-" + value + ")";
+            return "(-" + value.print(printMode) + ")";
         }
-        return "not (" + value + ")";
+        return "not (" + value.print(printMode) + ")";
     }
 
     @Override

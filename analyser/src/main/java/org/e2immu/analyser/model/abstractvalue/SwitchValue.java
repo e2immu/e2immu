@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.EvaluationResult;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -63,10 +64,14 @@ public class SwitchValue implements Value {
 
         @Override
         public String toString() {
+            return print(PrintMode.FOR_DEBUG);
+        }
+
+        public String print(PrintMode printMode) {
             if (labels.contains(UnknownValue.EMPTY)) {
-                return "default->" + value;
+                return "default->" + value.print(printMode);
             }
-            return "case " + labels.stream().map(Value::toString).collect(Collectors.joining(",")) + "->" + value;
+            return "case " + labels.stream().map(v -> v.print(printMode)).collect(Collectors.joining(",")) + "->" + value.print(printMode);
         }
 
         @Override
@@ -197,7 +202,12 @@ public class SwitchValue implements Value {
 
     @Override
     public String toString() {
-        return "switch(" + selector + "){" + entries.stream().map(SwitchValueEntry::toString).collect(Collectors.joining("; ")) + "}";
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        return "switch(" + selector.print(printMode) + "){" + entries.stream().map(sve -> sve.print(printMode)).collect(Collectors.joining("; ")) + "}";
     }
 
 

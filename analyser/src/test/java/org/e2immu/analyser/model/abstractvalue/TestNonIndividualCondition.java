@@ -2,6 +2,7 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.output.PrintMode;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -21,6 +22,7 @@ public class TestNonIndividualCondition extends CommonAbstractValue {
 
         Value pEqualsNull = equals(NullValue.NULL_VALUE, p);
         Assert.assertEquals("null == some.type.type(String):0:p", pEqualsNull.toString());
+        Assert.assertEquals("null == p", pEqualsNull.print(PrintMode.FOR_ANNOTATIONS));
         Assert.assertSame(UnknownValue.EMPTY, rest(pEqualsNull, Value.FilterMode.ACCEPT));
         Assert.assertSame(UnknownValue.EMPTY, rest(negate(pEqualsNull), Value.FilterMode.ACCEPT));
 
@@ -29,6 +31,7 @@ public class TestNonIndividualCondition extends CommonAbstractValue {
 
         Value orValue2 = newOrAppend(sEqualsNull, pEqualsNull);
         Assert.assertEquals("(null == s or null == some.type.type(String):0:p)", rest(orValue2, Value.FilterMode.ACCEPT).toString());
+        Assert.assertEquals("(null == s or null == p)", rest(orValue2, Value.FilterMode.ACCEPT).print(PrintMode.FOR_ANNOTATIONS));
 
         Value andValue = newAndAppend(sEqualsNull, pEqualsNull);
         Assert.assertEquals("(null == s and null == some.type.type(String):0:p)", rest(andValue, Value.FilterMode.REJECT).toString());

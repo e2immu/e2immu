@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 
 public class UnknownValue implements Value {
 
@@ -58,6 +59,11 @@ public class UnknownValue implements Value {
 
     @Override
     public String toString() {
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
         return msg;
     }
 

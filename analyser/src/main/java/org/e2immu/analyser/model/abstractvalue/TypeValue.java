@@ -3,6 +3,7 @@ package org.e2immu.analyser.model.abstractvalue;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
 
 /**
  * the thing that, for now, makes TypeValue different from UnknownValue is that it is not null.
@@ -30,7 +31,12 @@ public class TypeValue implements Value {
 
     @Override
     public String toString() {
-        return parameterizedType.detailedString();
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        return parameterizedType.print(printMode);
     }
 
     @Override
