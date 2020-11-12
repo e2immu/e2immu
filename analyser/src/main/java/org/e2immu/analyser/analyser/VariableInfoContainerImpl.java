@@ -399,6 +399,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 throw rte;
             }
         }
+
+        merged.mergeLinkedVariables(existingValuesWillBeOverwritten, existing, merge);
+        merged.mergeSizeCopyVariables(existingValuesWillBeOverwritten, existing, merge);
     }
 
     private static boolean notExistingStateEqualsAndMergeStates(EvaluationContext evaluationContext, VariableInfo oneSide, List<VariableInfo> merge) {

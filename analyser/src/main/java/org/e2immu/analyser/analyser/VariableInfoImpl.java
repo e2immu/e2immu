@@ -27,10 +27,7 @@ import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.SizeCopy;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.Stream;
 
@@ -164,6 +161,38 @@ class VariableInfoImpl implements VariableInfo {
         }
     }
 
+    // we essentially compute the union
+    public void mergeLinkedVariables(boolean existingValuesWillBeOverwritten, VariableInfoImpl existing, List<VariableInfo> merge) {
+        Set<Variable> merged = new HashSet<>();
+        if (!existingValuesWillBeOverwritten) {
+            if (!existing.linkedVariablesIsSet()) return;
+            merged.addAll(existing.getLinkedVariables());
+        }
+        for (VariableInfo vi : merge) {
+            if (!vi.linkedVariablesIsSet()) return;
+            merged.addAll(vi.getLinkedVariables());
+        }
+        if (!linkedVariablesIsSet() || !getLinkedVariables().equals(merged)) {
+            linkedVariables.set(merged);
+        }
+    }
+
+    // we essentially compute the union
+    public void mergeSizeCopyVariables(boolean existingValuesWillBeOverwritten, VariableInfoImpl existing, List<VariableInfo> merge) {
+        Map<Variable, SizeCopy> merged = new HashMap<>();
+        if (!existingValuesWillBeOverwritten) {
+            if (!existing.sizeCopyVariablesIsSet()) return;
+            merged.putAll(existing.getSizeCopyVariables());
+        }
+        for (VariableInfo vi : merge) {
+            if (!vi.sizeCopyVariablesIsSet()) return;
+            merged.putAll(vi.getSizeCopyVariables());
+        }
+        if (!sizeCopyVariablesIsSet() || !getSizeCopyVariables().equals(merged)) {
+            sizeCopyVariables.set(merged);
+        }
+    }
+
     private record MergeOp(VariableProperty variableProperty, IntBinaryOperator operator, int initial) {
     }
 
@@ -185,7 +214,7 @@ class VariableInfoImpl implements VariableInfo {
 
     /**
      * Merge the value of this object with the values of a list of other variables.
-     *
+     * <p>
      * This method has to decide whether a new variableInfo object should be created.
      * <p>
      * As soon as there is a need for overwriting the value or the state, either the provided newObject must be used

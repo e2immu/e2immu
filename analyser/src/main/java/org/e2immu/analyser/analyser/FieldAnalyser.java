@@ -650,7 +650,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                         m.methodLevelData().linksHaveBeenEstablished.isSet() && (
                                 !m.haveFieldAsVariable(fieldInfo) ||
                                         m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.ASSIGNED) < Level.TRUE ||
-                                                m.getFieldAsVariable(fieldInfo).linkedVariablesIsSet()));
+                                        m.getFieldAsVariable(fieldInfo).linkedVariablesIsSet()));
         if (!allDefined) {
             if (Logger.isLogEnabled(DELAYED)) {
                 log(DELAYED, "Evaluating {}, linksHaveBeenEstablished not yet set for methods: [{}]",
@@ -743,14 +743,17 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (fieldSummariesNotYetSet) return DELAYS;
 
         // we only consider methods, not constructors!
-        boolean allContentModificationsDefined = allMethodsAndConstructors.stream().allMatch(m ->
-                !m.haveFieldAsVariable(fieldInfo) ||
-                        m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.READ) < Level.TRUE ||
-                        m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.MODIFIED) != Level.DELAY);
+        boolean allContentModificationsDefined = allMethodsAndConstructors.stream()
+                .filter(m -> !m.methodInfo.isConstructor)
+                .allMatch(m ->
+                        !m.haveFieldAsVariable(fieldInfo) ||
+                                m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.READ) < Level.TRUE ||
+                                m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.MODIFIED) != Level.DELAY);
 
         if (allContentModificationsDefined) {
             boolean modified = fieldCanBeWrittenFromOutsideThisType ||
                     allMethodsAndConstructors.stream()
+                            .filter(m -> !m.methodInfo.isConstructor)
                             .filter(m -> m.haveFieldAsVariable(fieldInfo))
                             .filter(m -> m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.READ) >= Level.TRUE)
                             .anyMatch(m -> m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.MODIFIED) == Level.TRUE);
@@ -761,10 +764,10 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (Logger.isLogEnabled(DELAYED)) {
             log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or defined",
                     fieldInfo.fullyQualifiedName());
-            allMethodsAndConstructors.stream().filter(m ->
+            allMethodsAndConstructors.stream().filter(m -> !m.methodInfo.isConstructor &&
                     m.haveFieldAsVariable(fieldInfo) &&
-                            m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.READ) == Level.TRUE &&
-                            m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.MODIFIED) == Level.DELAY)
+                    m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.READ) == Level.TRUE &&
+                    m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.MODIFIED) == Level.DELAY)
                     .forEach(m -> log(DELAYED, "... method {} reads the field, but we're still waiting", m.methodInfo.name));
         }
         return DELAYS;
