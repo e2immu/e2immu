@@ -19,6 +19,7 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.LoopStatement;
@@ -549,7 +550,19 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         if (inPartOfConstruction && fieldReference.scope instanceof This thisVariable
                 && thisVariable.typeInfo.equals(methodAnalysis.getMethodInfo().typeInfo)) { // field that must be initialised
-            return analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();
+            Value initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();
+            if (initialValue.isConstant()) {
+                return initialValue;
+            }
+            FieldAnalyser fieldAnalyser = analyserContext.getFieldAnalysers().get(fieldReference.fieldInfo);
+            if (fieldAnalyser == null) {
+                return initialValue;
+            }
+            EvaluationContext evaluationContext = fieldAnalyser.createEvaluationContext();
+            Map<VariableProperty, Integer> properties = evaluationContext.getValueProperties(initialValue);
+            return PropertyWrapper.propertyWrapper(evaluationContext,
+                    new VariableValue(fieldReference, initialValue.getObjectFlow()), properties, initialValue.getObjectFlow());
+
         }
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
         int effectivelyFinal = fieldAnalysis.getProperty(FINAL);

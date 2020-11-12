@@ -23,11 +23,15 @@ import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.Instance;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.annotation.SizeCopy;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -46,49 +50,35 @@ public class Test_00_SizeCopy extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if (SIZE_COPY.equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-            if ("s1".equals(d.variableName())) {
-                Assert.assertEquals("[" + P0 + "]", d.variableInfo().getLinkedVariables().toString());
-            }
-        }
-        if (SIZE_COPY.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
             if (FIELD1.equals(d.variableName())) {
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
-                Assert.assertEquals("[" + P0 + "]", d.variableInfo().getLinkedVariables().toString());
+                Map<Variable, SizeCopy> map = d.variableInfo().getSizeCopyVariables();
+                Assert.assertEquals("{" + P0 + "=MIN}", map.toString());
+                // shows the property wrapper that sits around the initial value in the constructor
+                Assert.assertEquals(FIELD1 + ",@Container,@NotNull,@Size", d.currentValue().toString());
             }
-        }
-        if ("getStream".equals(d.methodInfo().name)) {
-            if (FIELD1.equals(d.variableName())) {
+            if (P0.equals(d.variableName())) {
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
-                Assert.assertEquals("[]", d.variableInfo().getLinkedVariables().toString());
-            }
-            if (GET_STREAM_RETURN.equals(d.variableName())) {
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
-                if (d.iteration() > 0) {
-                    Assert.assertEquals("[" + FIELD1 + "]", d.variableInfo().getLinkedVariables().toString());
-                }
             }
         }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if (SIZE_COPY.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-            Assert.assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
-        }
-        if ("getF1".equals(d.methodInfo().name) && d.iteration() > 0) {
-            Assert.assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
-        }
+
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("f1".equals(d.fieldInfo().name)) {
+            Assert.assertEquals(FIELD1, d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            Assert.assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableValue);
+            Assert.assertTrue(d.fieldAnalysis().getInitialValue() instanceof Instance);
+            Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+
             if (d.iteration() > 0) {
-                Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                Assert.assertEquals(FIELD1, d.fieldAnalysis().getEffectivelyFinalValue().toString());
                 Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
                 Assert.assertEquals(Level.IS_A_SIZE, d.fieldAnalysis().getProperty(VariableProperty.SIZE));
             }
             if (d.iteration() > 1) {
-                Assert.assertEquals("[" + P0 + "]", d.fieldAnalysis().getVariablesLinkedToMe().toString());
+                Assert.assertEquals("[]", d.fieldAnalysis().getVariablesLinkedToMe().toString());
             }
         }
     };
@@ -97,9 +87,6 @@ public class Test_00_SizeCopy extends CommonTestRunner {
         if (SIZE_COPY.equals(d.methodInfo().name)) {
             ParameterAnalysis p0 = d.parameterAnalyses().get(0);
             Assert.assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED));
-        }
-        if ("getF1".equals(d.methodInfo().name) && d.iteration() > 0) {
-            Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
         }
     };
 

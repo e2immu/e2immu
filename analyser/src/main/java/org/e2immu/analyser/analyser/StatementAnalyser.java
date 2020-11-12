@@ -32,12 +32,10 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.Container;
-import org.e2immu.annotation.SizeCopy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -455,6 +453,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         // first assignments, because they may create a new level in VariableInfoContainer
+        Set<Variable> createdAssignmentLevel = new HashSet<>();
 
         evaluationResult.getValueChangeStream().forEach(e -> {
             Variable variable = e.getKey();
@@ -473,6 +472,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             int assigned = vi == null ? Level.DELAY : vi.getProperty(VariableProperty.ASSIGNED);
 */
             vic.assignment(level);
+            createdAssignmentLevel.add(variable);
             Value value = valueChangeData.value();
             if (value != NO_VALUE) {
                 log(ANALYSER, "Write value {} to variable {}", value, variable.fullyQualifiedName());
@@ -499,6 +499,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 Variable variable = e.getKey();
                 VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, variable);
                 log(ANALYSER, "Set linked variables of {} to {}", variable, e.getValue());
+                if (!createdAssignmentLevel.contains(variable)) {
+                    VariableInfo vi = vic.best(level); // before the assignment call!
+                    vic.assignment(level);
+                    // copy value, state on assignment
+                    vic.setValueAndStateOnAssignment(level, vi.getValue(), vi.getStateOnAssignment(), vi.getProperties());
+                    createdAssignmentLevel.add(variable);
+                }
                 vic.setLinkedVariables(level, e.getValue());
             });
         }
@@ -509,6 +516,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 Variable variable = e.getKey();
                 VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, variable);
                 log(ANALYSER, "Set size copy map of {} to {}", variable, e.getValue());
+                if (!createdAssignmentLevel.contains(variable)) {
+                    VariableInfo vi = vic.best(level); // before the assignment call!
+                    vic.assignment(level);
+                    // copy value, state on assignment
+                    vic.setValueAndStateOnAssignment(level, vi.getValue(), vi.getStateOnAssignment(), vi.getProperties());
+                    if (vi.linkedVariablesIsSet()) {
+                        vic.setLinkedVariables(level, vi.getLinkedVariables());
+                    }
+                    createdAssignmentLevel.add(variable);
+                }
                 vic.setSizeCopyVariables(level, e.getValue());
             });
         }

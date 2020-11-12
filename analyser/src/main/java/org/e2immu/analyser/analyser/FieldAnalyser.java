@@ -61,6 +61,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     public static final String ANALYSE_NOT_NULL = "analyseNotNull";
     public static final String ANALYSE_MODIFIED = "analyseModified";
     public static final String ANALYSE_SIZE = "analyseSize";
+    public static final String ANALYSE_SIZE_COPY = "analyseSizeCopy";
     public static final String ANALYSE_SIZE_AS_DYNAMIC_TYPE_ANNOTATION = "analyseSizeAsDynamicTypeAnnotation";
     public static final String ANALYSE_NOT_MODIFIED_1 = "analyseNotModified1";
     public static final String ANALYSE_LINKED = "analyseLinked";
@@ -847,6 +848,10 @@ public class FieldAnalyser extends AbstractAnalyser {
 
     public Stream<Message> getMessageStream() {
         return messages.getMessageStream();
+    }
+
+    public EvaluationContext createEvaluationContext() {
+        return new EvaluationContextImpl(0, ConditionManager.INITIAL);
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
