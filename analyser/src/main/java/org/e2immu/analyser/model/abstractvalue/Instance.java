@@ -153,6 +153,7 @@ public class Instance implements Value {
             case NOT_MODIFIED_1:
             case METHOD_DELAY:
             case IDENTITY:
+            case IGNORE_MODIFICATIONS:
                 return Level.FALSE;
 
             case IMMUTABLE:
