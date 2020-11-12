@@ -36,15 +36,12 @@ public class MethodValue implements Value {
     public final List<Value> parameters;
     public final Value object;
     public final ObjectFlow objectFlow;
-    private final Primitives primitives;
 
-    public MethodValue(Primitives primitives,
-                       @NotNull MethodInfo methodInfo, @NotNull Value object, @NotNull List<Value> parameters, ObjectFlow objectFlow) {
+    public MethodValue(@NotNull MethodInfo methodInfo, @NotNull Value object, @NotNull List<Value> parameters, ObjectFlow objectFlow) {
         this.methodInfo = Objects.requireNonNull(methodInfo);
         this.parameters = Objects.requireNonNull(parameters);
         this.object = Objects.requireNonNull(object);
         this.objectFlow = Objects.requireNonNull(objectFlow);
-        this.primitives = primitives;
     }
 
     @Override
@@ -69,9 +66,9 @@ public class MethodValue implements Value {
      the interface and the implementation, or the interface and sub-interface
      */
     private boolean checkSpecialCasesWhereDifferentMethodsAreEquals(MethodInfo m1, MethodInfo m2) {
-        Set<MethodInfo> overrides1 = m1.typeInfo.overrides(primitives, m1, true);
+        Set<MethodInfo> overrides1 = m1.typeInfo.overrides(m1, true);
         if (m2.typeInfo.isInterface() && overrides1.contains(m2)) return true;
-        Set<MethodInfo> overrides2 = m2.typeInfo.overrides(primitives, m2, true);
+        Set<MethodInfo> overrides2 = m2.typeInfo.overrides(m2, true);
         return m1.typeInfo.isInterface() && overrides2.contains(m1);
 
         // any other?
@@ -183,8 +180,8 @@ public class MethodValue implements Value {
 
     @Override
     public Map<Variable, SizeCopy> sizeCopyVariables(EvaluationContext evaluationContext) {
-        if(methodInfo.returnType().hasSize(evaluationContext.getAnalyserContext())) {
-
+        if (methodInfo.returnType().hasSize(evaluationContext.getAnalyserContext())) {
+            // FIXME implement!
         }
         return Map.of();
     }

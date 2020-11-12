@@ -357,8 +357,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // normal method value
-        return builder.setValue(new MethodValue(evaluationContext.getPrimitives(),
-                methodInfo, objectValue, parameters, objectFlowOfResult)).build();
+        return builder.setValue(new MethodValue(methodInfo, objectValue, parameters, objectFlowOfResult)).build();
     }
 
     private static Value computeEvaluationOnConstant(Primitives primitives, MethodInfo methodInfo, Value objectValue) {
@@ -491,7 +490,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
             ObjectFlow objectFlow = sizeObjectFlow(evaluationContext, builder, location, sizeMethodAnalysis, objectValue);
             return ConstrainedNumericValue.lowerBound(evaluationContext,
-                    new MethodValue(primitives, methodInfo, objectValue, parameters, objectFlow),
+                    new MethodValue(methodInfo, objectValue, parameters, objectFlow),
                     Level.decodeSizeMin(sizeOfObject));
         }
         return null;
@@ -525,7 +524,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                                     Value objectValue,
                                                                     EvaluationContext evaluationContext) {
         MethodValue methodValue;
-        Primitives primitives = evaluationContext.getPrimitives();
         if ((methodValue = objectValue.asInstanceOf(MethodValue.class)) != null) {
             MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodValue.methodInfo);
             if (methodAnalysis.getProperty(VariableProperty.SIZE_COPY) == Level.SIZE_COPY_TRUE) {
@@ -536,11 +534,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 MethodInfo sizeMethodInfoOnObject = typeInfo.sizeMethod(evaluationContext.getAnalyserContext());
                 if (sizeMethodInfoOnObject == null)
                     throw new UnsupportedOperationException("Have a @Size(copy = true) but the object type has no size() method?");
-                return new MethodValue(primitives, sizeMethodInfoOnObject, methodValue.object, List.of(),
+                return new MethodValue(sizeMethodInfoOnObject, methodValue.object, List.of(),
                         sizeObjectFlow(evaluationContext, builder, location, sizeMethodAnalysis, objectValue));
             }
         }
-        return new MethodValue(primitives, sizeMethodAnalysis.getMethodInfo(), objectValue, List.of(),
+        return new MethodValue(sizeMethodAnalysis.getMethodInfo(), objectValue, List.of(),
                 sizeObjectFlow(evaluationContext, builder, location, sizeMethodAnalysis, objectValue));
     }
 

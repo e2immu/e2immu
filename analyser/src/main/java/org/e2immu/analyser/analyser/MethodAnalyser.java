@@ -277,7 +277,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             if (absentUnlessStatic(VariableProperty.READ) &&
                     absentUnlessStatic(VariableProperty.ASSIGNED) &&
                     (getThisAsVariable().getProperty(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
-                    methodInfo.isNotOverridingAnyOtherMethod(analyserContext.getPrimitives()) &&
+                    methodInfo.isNotOverridingAnyOtherMethod() &&
                     !methodInfo.isDefaultImplementation) {
                 MethodResolution methodResolution = methodInfo.methodResolution.get();
                 if (methodResolution.staticMethodCallsOnly.isSet() && methodResolution.staticMethodCallsOnly.get()) {
@@ -446,8 +446,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                 break;
             }
             ParameterizedType parentClass = typeInfo.typeInspection.getPotentiallyRun().parentClass;
-            typeInfo = parentClass.bestTypeInfo();
-            if (typeInfo == null) {
+            if (Primitives.isJavaLangObject(parentClass)) {
                 log(MARK, "No @Mark/@Only annotation in {}: found no non-final fields", methodInfo.distinguishingName());
                 methodAnalysis.preconditionForMarkAndOnly.set(List.of());
                 return DONE;

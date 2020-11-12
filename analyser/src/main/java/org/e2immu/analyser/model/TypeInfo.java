@@ -831,7 +831,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return null;
     }
 
-    public List<ParameterizedType> directSuperTypes(Primitives primitives) {
+    public List<ParameterizedType> directSuperTypes() {
         if (Primitives.isJavaLangObject(this)) return List.of();
         List<ParameterizedType> list = new ArrayList<>();
         list.add(typeInspection.getPotentiallyRun().parentClass);
@@ -869,14 +869,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      * @param methodInfo: the method for which we're looking for overrides
      * @return all super methods
      */
-    public Set<MethodInfo> overrides(Primitives primitives, MethodInfo methodInfo, boolean cacheResult) {
+    public Set<MethodInfo> overrides(MethodInfo methodInfo, boolean cacheResult) {
         // NOTE: we cache, but only at our own level
         boolean ourOwnLevel = methodInfo.typeInfo == this;
         if (cacheResult) {
             Set<MethodInfo> myOverrides = ourOwnLevel ? typeInspection.getPotentiallyRun().overrides.getOtherwiseNull(methodInfo) : null;
             if (myOverrides != null) return myOverrides;
         }
-        Set<MethodInfo> result = recursiveOverridesCall(primitives, methodInfo, Map.of());
+        Set<MethodInfo> result = recursiveOverridesCall(methodInfo, Map.of());
         Set<MethodInfo> immutable = ImmutableSet.copyOf(result);
         if (ourOwnLevel && cacheResult) {
             typeInspection.getPotentiallyRun().overrides.put(methodInfo, immutable);
@@ -884,9 +884,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return immutable;
     }
 
-    private Set<MethodInfo> recursiveOverridesCall(Primitives primitives, MethodInfo methodInfo, Map<NamedType, ParameterizedType> translationMap) {
+    private Set<MethodInfo> recursiveOverridesCall(MethodInfo methodInfo, Map<NamedType, ParameterizedType> translationMap) {
         Set<MethodInfo> result = new HashSet<>();
-        for (ParameterizedType superType : directSuperTypes(primitives)) {
+        for (ParameterizedType superType : directSuperTypes()) {
             Map<NamedType, ParameterizedType> translationMapOfSuperType;
             if (superType.parameters.isEmpty()) {
                 translationMapOfSuperType = translationMap;
@@ -904,8 +904,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             if (override != null) {
                 result.add(override);
             }
-            if (superType.typeInfo != primitives.objectTypeInfo) {
-                result.addAll(superType.typeInfo.recursiveOverridesCall(primitives, methodInfo, translationMapOfSuperType));
+            if (!Primitives.isJavaLangObject(superType.typeInfo)) {
+                result.addAll(superType.typeInfo.recursiveOverridesCall(methodInfo, translationMapOfSuperType));
             }
         }
         return result;

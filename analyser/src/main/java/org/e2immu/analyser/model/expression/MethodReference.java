@@ -27,7 +27,6 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
@@ -126,8 +125,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                     if (scopeResult.value.isInstanceOf(NullValue.class)) {
                         builder.raiseError(Message.NULL_POINTER_EXCEPTION);
                     }
-                    result = new MethodValue(evaluationContext.getPrimitives(),
-                            methodInfo, scopeResult.value, List.of(), objectFlow);
+                    result = new MethodValue(methodInfo, scopeResult.value, List.of(), objectFlow);
                 }
             } else if (methodInfo.hasBeenDefined()) {
                 result = UnknownValue.NO_VALUE; // delay, waiting
@@ -135,8 +133,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 if (scopeResult.value instanceof NullValue) {
                     builder.raiseError(Message.NULL_POINTER_EXCEPTION);
                 }
-                result = new MethodValue(evaluationContext.getPrimitives(),
-                        methodInfo, scopeResult.value, List.of(), objectFlow);
+                result = new MethodValue(methodInfo, scopeResult.value, List.of(), objectFlow);
             }
             builder.setValue(result);
         }

@@ -154,7 +154,7 @@ public class InspectAnnotatedAPIs {
             if (!isInTypeTo) {
                 // make sure it is in one of the supertypes; otherwise, raise error
                 MethodInfo copy = copy(methodInfo, typeTo);
-                Set<MethodInfo> overrides = typeTo.overrides(globalTypeContext.getPrimitives(), copy, false);
+                Set<MethodInfo> overrides = typeTo.overrides(copy, false);
                 if (overrides.isEmpty()) {
                     Message error = Message.newMessage(new Location(methodInfo), Message.CANNOT_FIND_METHOD_IN_SUPER_TYPE, distinguishingName);
                     messages.add(error);

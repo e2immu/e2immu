@@ -130,16 +130,16 @@ public interface ParameterAnalysis extends Analysis {
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                 if (bestType != null && Primitives.isPrimitiveExcludingVoid(bestType))
                     return MultiLevel.EFFECTIVELY_NOT_NULL;
-                return getParameterPropertyCheckOverrides(AnalysisProvider.DEFAULT_PROVIDER, parameterInfo, variableProperty);
+                return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, variableProperty);
             }
 
             case SIZE:
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                 int min = bestType != null && bestType.hasSize(analysisProvider) ? Level.IS_A_SIZE : Level.NOT_A_SIZE;
-                return Level.best(min, getParameterPropertyCheckOverrides(AnalysisProvider.DEFAULT_PROVIDER, parameterInfo, variableProperty));
+                return Level.best(min, getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, variableProperty));
 
             case SIZE_COPY:
-                return Level.FALSE; // FIXME temporarily, until we have time to work on this
+                return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, variableProperty);
 
             case NOT_MODIFIED_1:
                 if (!parameterInfo.parameterizedType.isFunctionalInterface()) {

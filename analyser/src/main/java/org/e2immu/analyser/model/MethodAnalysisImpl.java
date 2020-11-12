@@ -43,7 +43,6 @@ import java.util.stream.Collectors;
 public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodAnalysisImpl.class);
 
-    public final Set<MethodAnalysis> overrides;
     public final StatementAnalysis firstStatement;
     public final StatementAnalysis lastStatement;
     public final List<ParameterAnalysis> parameterAnalyses;
@@ -60,7 +59,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
     private MethodAnalysisImpl(boolean hasBeenDefined,
                                MethodInfo methodInfo,
-                               Set<MethodAnalysis> overrides,
                                StatementAnalysis firstStatement,
                                StatementAnalysis lastStatement,
                                List<ParameterAnalysis> parameterAnalyses,
@@ -77,7 +75,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Map<AnnotationExpression, Boolean> annotations) {
         super(hasBeenDefined, properties, annotations);
         this.methodInfo = methodInfo;
-        this.overrides = overrides;
         this.firstStatement = firstStatement;
         this.lastStatement = lastStatement;
         this.parameterAnalyses = parameterAnalyses;
@@ -109,7 +106,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
     @Override
     public Set<MethodAnalysis> getOverrides() {
-        return overrides;
+        return overrides(methodInfo);
     }
 
     @Override
@@ -254,7 +251,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public Analysis build() {
             return new MethodAnalysisImpl(isHasBeenDefined(),
                     methodInfo,
-                    ImmutableSet.copyOf(overrides.getOrElse(Set.of())),
                     firstStatement.getOrElse(null),
                     getLastStatement(),
                     parameterAnalyses,
@@ -383,7 +379,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public Set<MethodAnalysis> getOverrides() {
             if (overrides.isSet()) return overrides.get();
-            Set<MethodAnalysis> computed = overrides(primitives, methodInfo);
+            Set<MethodAnalysis> computed = overrides(methodInfo);
             overrides.set(ImmutableSet.copyOf(computed));
             return computed;
         }
@@ -420,18 +416,20 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return null;
         }
 
-        private static Set<MethodAnalysis> overrides(Primitives primitives, MethodInfo methodInfo) {
-            try {
-                return methodInfo.typeInfo.overrides(primitives, methodInfo, true).stream()
-                        .map(mi -> mi.methodAnalysis.get()).collect(Collectors.toSet());
-            } catch (RuntimeException rte) {
-                LOGGER.error("Cannot compute method analysis of {}", methodInfo.distinguishingName());
-                throw rte;
-            }
-        }
-
         public void setFirstStatement(StatementAnalysis firstStatement) {
             this.firstStatement.set(firstStatement);
         }
+
     }
+
+    private static Set<MethodAnalysis> overrides(MethodInfo methodInfo) {
+        try {
+            return methodInfo.typeInfo.overrides(methodInfo, true).stream()
+                    .map(mi -> mi.methodAnalysis.get()).collect(Collectors.toSet());
+        } catch (RuntimeException rte) {
+            LOGGER.error("Cannot compute method analysis of {}", methodInfo.distinguishingName());
+            throw rte;
+        }
+    }
+
 }

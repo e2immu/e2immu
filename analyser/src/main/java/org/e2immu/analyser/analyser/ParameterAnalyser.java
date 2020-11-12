@@ -196,7 +196,7 @@ public class ParameterAnalyser {
                 } else {
                     // unused parameter... let's ensure we don't block things
                     parameterAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
-                    if (parameterInfo.owner.isNotOverridingAnyOtherMethod(parameterAnalysis.primitives)) {
+                    if (parameterInfo.owner.isNotOverridingAnyOtherMethod()) {
                         messages.add(Message.newMessage(new Location(parameterInfo.owner), Message.UNUSED_PARAMETER, parameterInfo.simpleName()));
                     }
                 }
