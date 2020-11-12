@@ -119,6 +119,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                                      NodeList<BodyDeclaration<?>> members) {
         TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
         builder.setEnclosingType(expressionContext.enclosingType);
+        builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
         if (classImplemented.typeInfo.typeInspection.getPotentiallyRun().typeNature == TypeNature.INTERFACE) {
             builder.addInterfaceImplemented(classImplemented);
         } else {
@@ -146,6 +147,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         } else {
             builder.setPackageName(computePackageName());
         }
+        builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
         expressionContext.typeContext.addToContext(this);
 
         TypeNature typeNature = typeNature(typeDeclaration);
@@ -291,7 +293,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             for (TypeInfo subType : typeInspection.subTypes) {
                 expressionContext.typeContext.addToContext(subType);
             }
-            if (typeInspection.parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
+            if (!Primitives.isJavaLangObject(typeInspection.parentClass)) {
                 ensureLoaded(expressionContext, typeInspection.parentClass);
             }
             typeInspection.interfacesImplemented.forEach(i -> ensureLoaded(expressionContext, i));
@@ -300,6 +302,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public void inspectLocalClassDeclaration(ExpressionContext expressionContext, ClassOrInterfaceDeclaration cid) {
         TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
+        builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
         builder.setEnclosingType(expressionContext.enclosingType);
         doClassOrInterfaceDeclaration(true, expressionContext, TypeNature.CLASS, cid, builder);
         continueInspection(true, expressionContext, builder, cid.getMembers(), false, false);
@@ -472,7 +475,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                         inSamePackage && typeInfo.typeInspection.getPotentiallyRun().access == TypeModifier.PACKAGE ||
                         !inSamePackage && typeInfo.typeInspection.getPotentiallyRun().access == TypeModifier.PROTECTED);
         Stream<TypeInfo> parentStream;
-        if (typeInspection.parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
+        if (!Primitives.isJavaLangObject(typeInspection.parentClass)) {
             parentStream = typeInspection.parentClass.typeInfo.accessibleBySimpleNameTypeInfoStream(startingPoint, visited);
         } else parentStream = Stream.empty();
 
@@ -514,7 +517,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         // my parent's fields
         Stream<FieldInfo> parentStream;
-        if (typeInspection.parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
+        if (!Primitives.isJavaLangObject(typeInspection.parentClass)) {
             parentStream = typeInspection.parentClass.typeInfo.accessibleFieldsStream(startingPoint);
         } else parentStream = Stream.empty();
         joint = Stream.concat(joint, parentStream);
@@ -585,7 +588,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             constructors = typeInspection.constructors;
             methods = typeInspection.methods;
             subTypes = typeInspection.subTypes;
-            parentClass = typeInspection.parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT ? typeInspection.parentClass.stream() : "";
+            parentClass = parentIsNotJavaLangObject() ? typeInspection.parentClass.stream() : "";
             interfacesCsv = typeInspection.interfacesImplemented.stream()
                     .map(ParameterizedType::stream).collect(Collectors.joining(", "));
             typeParametersCsv = typeInspection.typeParameters.stream()
@@ -767,7 +770,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN)))
                 .findFirst();
         if (fromType.isPresent()) return fromType;
-        if (typeInspection.getPotentiallyRun().parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
+        if (parentIsNotJavaLangObject()) {
             Optional<AnnotationExpression> fromParent = typeInspection.getPotentiallyRun().parentClass.typeInfo.hasTestAnnotation(annotation);
             if (fromParent.isPresent()) return fromParent;
         }
@@ -776,6 +779,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public Optional<TypeInfo> inTypeInnerOuterHierarchy(TypeInfo typeInfo) {
         return inTypeInnerOuterHierarchy(typeInfo, new HashSet<>());
+    }
+
+    public boolean parentIsNotJavaLangObject() {
+        return !Primitives.isJavaLangObject(typeInspection.getPotentiallyRun().parentClass);
     }
 
     private Optional<TypeInfo> inTypeInnerOuterHierarchy(TypeInfo typeInfo, Set<TypeInfo> visited) {
@@ -827,15 +834,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public List<ParameterizedType> directSuperTypes(Primitives primitives) {
         if (Primitives.isJavaLangObject(this)) return List.of();
         List<ParameterizedType> list = new ArrayList<>();
-        ParameterizedType parentPt = typeInspection.getPotentiallyRun().parentClass;
-        boolean parentIsJLO = parentPt == ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT;
-        ParameterizedType parent;
-        if (parentIsJLO) {
-            parent = Objects.requireNonNull(primitives.objectParameterizedType);
-        } else {
-            parent = Objects.requireNonNull(parentPt);
-        }
-        list.add(parent);
+        list.add(typeInspection.getPotentiallyRun().parentClass);
         list.addAll(typeInspection.getPotentiallyRun().interfacesImplemented);
         return list;
     }
@@ -847,7 +846,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         List<TypeInfo> list = new ArrayList<>();
         ParameterizedType parentPt = typeInspection.getPotentiallyRun().parentClass;
         TypeInfo parent;
-        boolean parentIsNotJLO = parentPt != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT;
+        boolean parentIsNotJLO = !Primitives.isJavaLangObject(parentPt);
         if (parentIsNotJLO) {
             parent = Objects.requireNonNull(parentPt.typeInfo);
             list.add(parent);
@@ -962,6 +961,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         builder.setEnclosingType(this);
         builder.setTypeNature(TypeNature.CLASS);
         builder.addInterfaceImplemented(functionalInterfaceType);
+        builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
 
         // there are no extra type parameters; only those of the enclosing type(s) can be in 'type'
 

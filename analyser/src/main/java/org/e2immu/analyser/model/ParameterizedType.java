@@ -44,7 +44,6 @@ public class ParameterizedType {
     public static final ParameterizedType NULL_CONSTANT = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType RETURN_TYPE_OF_CONSTRUCTOR = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType NO_TYPE_GIVEN_IN_LAMBDA = new ParameterizedType(WildCard.NONE);
-    public static final ParameterizedType IMPLICITLY_JAVA_LANG_OBJECT = new ParameterizedType(WildCard.NONE);
     public static final ParameterizedType WILDCARD_PARAMETERIZED_TYPE = new ParameterizedType(WildCard.UNBOUND);
 
     public enum WildCard {
@@ -517,7 +516,7 @@ public class ParameterizedType {
                     if (scoreInterface != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreInterface;
                 }
                 ParameterizedType parentClass = type.typeInfo.typeInspection.getPotentiallyRun().parentClass;
-                if (parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
+                if (!Primitives.isJavaLangObject(parentClass)) {
                     int scoreParent = numericIsAssignableFrom(primitives, parentClass, true);
                     if (scoreParent != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreParent;
                 }

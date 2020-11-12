@@ -152,6 +152,7 @@ public abstract class CommonAbstractValue {
         if (!PRIMITIVES.objectTypeInfo.typeInspection.isSetPotentiallyRun()) {
             PRIMITIVES.objectTypeInfo.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
                     .setPackageName("java.lang")
+                    .setParentClass(PRIMITIVES.objectParameterizedType)
                     .build(false, PRIMITIVES.objectTypeInfo));
         }
         TypeInfo someType = new TypeInfo("some.type");
@@ -165,6 +166,7 @@ public abstract class CommonAbstractValue {
                 .build(methodInfo));
         someType.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
                 .setPackageName("org.e2immu.test")
+                .setParentClass(PRIMITIVES.objectParameterizedType)
                 .addMethod(methodInfo)
                 .build(true, someType));
         //methodInfo.methodAnalysis.set(new MethodAnalysis(methodInfo));

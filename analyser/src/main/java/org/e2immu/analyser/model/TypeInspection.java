@@ -20,6 +20,7 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetOnce;
@@ -290,9 +291,7 @@ public class TypeInspection extends Inspection {
 
         public TypeInspection build(boolean hasBeenDefined, TypeInfo typeInfo) {
             Objects.requireNonNull(typeNature);
-            if (parentClass == null) {
-                parentClass = ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT;
-            } else {
+            if (!Primitives.isJavaLangObject(typeInfo)) {
                 Objects.requireNonNull(parentClass);
             }
             Either<String, TypeInfo> packageNameOrEnclosingType = packageName == null ? Either.right(enclosingType) : Either.left(packageName);

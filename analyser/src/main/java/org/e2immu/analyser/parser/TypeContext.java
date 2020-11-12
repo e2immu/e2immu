@@ -287,7 +287,7 @@ public class TypeContext {
                 .forEach(result::add);
 
         ParameterizedType parentClass = typeInfo.typeInspection.getPotentiallyRun().parentClass;
-        if (parentClass != ParameterizedType.IMPLICITLY_JAVA_LANG_OBJECT) {
+        if (!Primitives.isJavaLangObject(parentClass)) {
             recursivelyResolveOverloadedMethods(parentClass, methodName, parametersPresented, decrementWhenNotStatic, joinMaps(typeMap, parentClass), result, visited, staticOnly);
         }
         for (ParameterizedType interfaceImplemented : typeInfo.typeInspection.getPotentiallyRun().interfacesImplemented) {

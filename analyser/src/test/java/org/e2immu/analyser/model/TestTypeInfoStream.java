@@ -133,6 +133,7 @@ public class TestTypeInfoStream {
 
         TypeInspection containerTypeInspection = new TypeInspection.TypeInspectionBuilder()
                 .setTypeNature(TypeNature.CLASS)
+                .setParentClass(primitives.objectParameterizedType)
                 .setEnclosingType(typeInfo)
                 .addTypeModifier(TypeModifier.STATIC)
                 .addField(intFieldInContainer)
@@ -154,6 +155,7 @@ public class TestTypeInfoStream {
                 .setBlock(new Block.BlockBuilder().build())
                 .build(referenceMethodInfo));
         testEquivalent.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
+                .setParentClass(primitives.objectParameterizedType)
                 .setPackageName(TEST_PACKAGE)
                 .setTypeNature(TypeNature.ANNOTATION)
                 .addMethod(referenceMethodInfo)
@@ -187,6 +189,7 @@ public class TestTypeInfoStream {
 
         TypeInspection typeInspection = new TypeInspection.TypeInspectionBuilder()
                 .addTypeModifier(TypeModifier.PUBLIC)
+                .setParentClass(primitives.objectParameterizedType)
                 .setPackageName("com.wrc.equivalent.model")
                 .addField(logger)
                 .addSubType(containerTypeInfo)

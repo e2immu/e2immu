@@ -104,6 +104,9 @@ public class MyClassVisitor extends ClassVisitor {
         currentTypePath = name;
         typeInspectionBuilder = new TypeInspection.TypeInspectionBuilder();
 
+        // may be overwritten, but this is the default
+        typeInspectionBuilder.setParentClass(typeContext.getPrimitives().objectParameterizedType);
+
         TypeNature currentTypeNature = typeNatureFromOpCode(access);
         typeInspectionBuilder.setTypeNature(currentTypeNature);
         if (!enclosingTypes.isEmpty()) {

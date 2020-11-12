@@ -277,6 +277,7 @@ public class Primitives {
             ti.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
                     .setPackageName(JAVA_LANG)
                     .setTypeNature(TypeNature.PRIMITIVE)
+                    .setParentClass(objectParameterizedType)
                     .build(false, ti));
             primitiveByName.put(ti.simpleName, ti);
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(this, ti);
@@ -301,6 +302,7 @@ public class Primitives {
         functionalInterface.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
                 .setPackageName("java.lang")
                 .setTypeNature(TypeNature.ANNOTATION)
+                .setParentClass(objectParameterizedType)
                 .build(false, functionalInterface));
     }
 
@@ -336,7 +338,7 @@ public class Primitives {
                 .setPackageName(ORG_E2IMMU_ANNOTATION)
                 .setTypeNature(TypeNature.ENUM)
                 .addTypeModifier(TypeModifier.PUBLIC)
-
+                .setParentClass(objectParameterizedType)
                 .addMethod(valueOf)
                 .addMethod(name);
         for (FieldInfo fieldInfo : fields) typeInspectionBuilder.addField(fieldInfo);
