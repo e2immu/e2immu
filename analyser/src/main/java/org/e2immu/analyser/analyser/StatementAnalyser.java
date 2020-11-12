@@ -1249,20 +1249,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return null; // delay
         }
 
-        @Override
-        public Map<Variable, SizeCopy> sizeCopyVariables(Value value) {
-            if (value instanceof VariableValue variableValue) {
-                return sizeCopyVariables(variableValue.variable);
-            }
-            return value.sizeCopyVariables(this);
-        }
-
-        public Map<Variable, SizeCopy> sizeCopyVariables(Variable variable) {
-            VariableInfo variableInfo = statementAnalysis.find(analyserContext, variable);
-            return variableInfo.getSizeCopyVariables(); // or null, which will cause a delay
-            // FIXME we'll need real code
-        }
-
     }
 
 

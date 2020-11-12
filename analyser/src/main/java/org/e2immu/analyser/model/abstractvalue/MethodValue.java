@@ -25,7 +25,6 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.SizeCopy;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -176,14 +175,6 @@ public class MethodValue implements Value {
             }
         }
         return evaluationContext.getMethodAnalysis(methodInfo).getProperty(VariableProperty.SIZE_COPY);
-    }
-
-    @Override
-    public Map<Variable, SizeCopy> sizeCopyVariables(EvaluationContext evaluationContext) {
-        if (methodInfo.returnType().hasSize(evaluationContext.getAnalyserContext())) {
-            // FIXME implement!
-        }
-        return Map.of();
     }
 
     @Override

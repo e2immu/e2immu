@@ -133,10 +133,6 @@ public interface Value extends Comparable<Value> {
         return Set.of();
     }
 
-    default Map<Variable, SizeCopy> sizeCopyVariables(EvaluationContext evaluationContext) {
-        return Map.of();
-    }
-
     default FilterResult isIndividualNullOrNotNullClauseOnParameter() {
         return new FilterResult(Map.of(), this);
     }

@@ -36,6 +36,7 @@ import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Only;
+import org.e2immu.annotation.SizeCopy;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -202,6 +203,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             result = UnknownValue.NO_RETURN_VALUE;
         }
+
+        VariableValue objectVariableValue;
+        if (modified == Level.TRUE && (objectVariableValue = objectValue.asInstanceOf(VariableValue.class)) != null) {
+            checkSizeCopy(objectVariableValue.variable, methodInfo, parameterValues, evaluationContext, builder);
+        }
         builder.setValue(result);
 
         checkCommonErrors(builder, evaluationContext, objectValue);
@@ -301,6 +307,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // @Fluent as method annotation
+        // fluent methods are modifying
         Value fluent = computeFluent(methodAnalysis, objectValue);
         if (fluent != null) {
             return builder.setValue(fluent).build();
@@ -315,6 +322,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return builder.compose(reInline).setValue(reInline.value).build();
         }
 
+        // singleReturnValue implies non-modifying
         if (methodAnalysis.isHasBeenDefined() && methodAnalysis.getSingleReturnValue() != null) {
             // if this method was identity?
             Value srv = methodAnalysis.getSingleReturnValue();
@@ -357,7 +365,31 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // normal method value
-        return builder.setValue(new MethodValue(methodInfo, objectValue, parameters, objectFlowOfResult)).build();
+        MethodValue methodValue = new MethodValue(methodInfo, objectValue, parameters, objectFlowOfResult);
+        return builder.setValue(methodValue).build();
+    }
+
+    private static void checkSizeCopy(Variable scopeVariable, MethodInfo methodInfo, List<Value> parameters, EvaluationContext evaluationContext, EvaluationResult.Builder builder) {
+        if (methodInfo.typeInfo.hasSize(evaluationContext.getAnalyserContext())) {
+            int i = 0;
+            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+                ParameterAnalysis parameterAnalysis = evaluationContext.getParameterAnalysis(parameterInfo);
+                int sizeCopy = parameterAnalysis.getProperty(VariableProperty.SIZE_COPY);
+                if (sizeCopy >= Level.TRUE) {
+                    Map<Variable, SizeCopy> map = new HashMap<>();
+                    Value paramValue = parameters.get(i);
+                    Set<Variable> variables = paramValue.variables();
+                    if (!variables.isEmpty()) {
+                        SizeCopy sizeCopyEnum = sizeCopy == Level.SIZE_COPY_MIN_TRUE ? SizeCopy.MIN : SizeCopy.EQUALS;
+                        variables.forEach(v -> map.put(v, sizeCopyEnum));
+                    }
+                    builder.sizeCopyMap(scopeVariable, map);
+                }
+
+                // TODO also copy size info, if available
+                i++;
+            }
+        }
     }
 
     private static Value computeEvaluationOnConstant(Primitives primitives, MethodInfo methodInfo, Value objectValue) {
