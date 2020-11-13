@@ -20,28 +20,30 @@ package org.e2immu.analyser.model;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public record CompanionMethod(String methodName, Action action, String aspect) {
+public record CompanionMethodName(String methodName, Action action, String aspect) {
 
     public enum Action {
-        ASPECT(true, true, "Aspect"),
-        MODIFICATION(true, true, "Modification"),
-        VALUE(false, true, "Value"),
-        PRECONDITION(false, true, "Precondition"),
-        POSTCONDITION(false, true, "Postcondition"),
-        INVARIANT(false, true, "Invariant"),
-        TRANSFER(true, true, "Transfer"),
-        ERASE(false, true, "Erase"),
-        GENERATE(false, false, "Generate");
+        ASPECT(true, true, "Aspect", 0),
+        MODIFICATION(true, true, "Modification", 2), //pre, post (modifying)
+        VALUE(false, true, "Value", 1), // current (non-modifying)
+        PRECONDITION(false, true, "Precondition", 1), // pre-mod
+        POSTCONDITION(false, true, "Postcondition", 2), // pre, post (modifying)
+        INVARIANT(false, true, "Invariant", 1),
+        TRANSFER(true, true, "Transfer", 1), // post if modifying
+        ERASE(false, true, "Erase", 1), // post
+        GENERATE(false, true, "Generate", 1); // post
 
         public final boolean requiresAspect;
         public final boolean allowsAspect;
         public final String action;
         public final Pattern pattern;
+        public final int aspectVariables;
 
-        Action(boolean requiresAspect, boolean allowsAspect, String action) {
+        Action(boolean requiresAspect, boolean allowsAspect, String action, int aspectVariables) {
             this.requiresAspect = requiresAspect;
             this.allowsAspect = allowsAspect;
             this.action = action;
+            this.aspectVariables = aspectVariables;
             this.pattern = composePattern();
         }
 
@@ -54,15 +56,19 @@ public record CompanionMethod(String methodName, Action action, String aspect) {
         }
     }
 
+    public int numAspectVariables() {
+        return aspect == null ? 0 : action.aspectVariables;
+    }
+
     // generates a CompanionMethod based on a method's name, or null when the method's name
     // does not fit the pattern methodName$action$aspect
 
-    public static CompanionMethod extract(String methodName) {
+    public static CompanionMethodName extract(String methodName) {
         if (methodName.contains("$")) {
             for (Action action : Action.values()) {
                 Matcher m = action.pattern.matcher(methodName);
                 if (m.matches()) {
-                    return new CompanionMethod(m.group(1), action, action.allowsAspect ? m.group(3) : null);
+                    return new CompanionMethodName(m.group(1), action, action.allowsAspect ? m.group(3) : null);
                 }
             }
             throw new UnsupportedOperationException("Method with $, but not recognized as companion? " + methodName);

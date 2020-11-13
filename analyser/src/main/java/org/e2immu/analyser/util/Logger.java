@@ -50,7 +50,7 @@ public class Logger {
         VARIABLE_PROPERTIES,
 
         DELAYED,
-
+        COMPANION,
         LINKED_VARIABLES, DEBUG_LINKED_VARIABLES,
         INDEPENDENT,
         DEBUG_MODIFY_CONTENT,

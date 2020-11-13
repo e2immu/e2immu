@@ -27,7 +27,10 @@ import org.e2immu.analyser.analyser.check.CheckPrecondition;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.*;
+import org.e2immu.analyser.model.abstractvalue.InlineValue;
+import org.e2immu.analyser.model.abstractvalue.NegatedValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.statement.Block;
@@ -64,6 +67,9 @@ public class MethodAnalyser extends AbstractAnalyser {
     public final TypeAnalyser myTypeAnalyser;
     public final List<ParameterAnalyser> parameterAnalysers;
     public final List<ParameterAnalysis> parameterAnalyses;
+    public final Map<CompanionMethodName, CompanionAnalyser> companionAnalysers;
+    public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
+
     public final StatementAnalyser firstStatementAnalyser;
     private final AnalyserComponents<String, SharedState> analyserComponents;
     private final CheckConstant checkConstant;
@@ -85,14 +91,23 @@ public class MethodAnalyser extends AbstractAnalyser {
         this.checkConstant = new CheckConstant(analyserContext.getPrimitives());
         this.methodInfo = methodInfo;
         methodInspection = methodInfo.methodInspection.get();
+
+        ImmutableMap.Builder<CompanionMethodName, CompanionAnalyser> companionAnalysersBuilder = new ImmutableMap.Builder<>();
+        for (Map.Entry<CompanionMethodName, MethodInfo> entry : methodInspection.companionMethods.entrySet()) {
+            companionAnalysersBuilder.put(entry.getKey(), new CompanionAnalyser(myTypeAnalyser.typeAnalysis, entry.getKey(), entry.getValue(), methodInfo));
+        }
+        companionAnalysers = companionAnalysersBuilder.build();
+        companionAnalyses = companionAnalysers.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
+                e -> e.getValue().companionAnalysis));
+
         ImmutableList.Builder<ParameterAnalyser> parameterAnalysersBuilder = new ImmutableList.Builder<>();
         for (ParameterInfo parameterInfo : methodInspection.parameters) {
             parameterAnalysersBuilder.add(new ParameterAnalyser(analyserContext, parameterInfo));
         }
         parameterAnalysers = parameterAnalysersBuilder.build();
-        this.myTypeAnalyser = myTypeAnalyser;
         parameterAnalyses = parameterAnalysers.stream().map(pa -> pa.parameterAnalysis).collect(Collectors.toUnmodifiableList());
 
+        this.myTypeAnalyser = myTypeAnalyser;
         Block block = methodInspection.methodBody.get();
         methodAnalysis = new MethodAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext,
                 methodInfo, parameterAnalyses);
@@ -109,6 +124,9 @@ public class MethodAnalyser extends AbstractAnalyser {
         AnalyserComponents.Builder<String, SharedState> builder = new AnalyserComponents.Builder<>();
         if (firstStatementAnalyser != null) {
 
+            for (CompanionAnalyser companionAnalyser : companionAnalysers.values()) {
+                builder.add(companionAnalyser.companionMethodName.toString(), (sharedState -> companionAnalyser.analyse(sharedState.iteration)));
+            }
             AnalysisStatus.AnalysisResultSupplier<SharedState> statementAnalyser = (sharedState) -> {
                 StatementAnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(sharedState.iteration,
                         ForwardAnalysisInfo.START_OF_METHOD);
@@ -130,7 +148,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                     .add("methodIsIndependent", this::methodIsIndependent);
 
             for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
-                builder.add("Parameter " + parameterAnalyser.parameterInfo.name, (iteration -> parameterAnalyser.analyse()));
+                builder.add("Parameter " + parameterAnalyser.parameterInfo.name, (sharedState -> parameterAnalyser.analyse()));
             }
         }
         analyserComponents = builder.build();

@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -52,4 +53,17 @@ public interface TypeAnalysis extends Analysis {
         if (variableProperty == VariableProperty.NOT_NULL) return MultiLevel.EFFECTIVELY_NOT_NULL;
         return internalGetProperty(variableProperty);
     }
+
+    /**
+     * @return the labels of the aspects, pointing to the method on which the aspect has been marked
+     */
+    Map<String, MethodInfo> getAspects();
+
+    /**
+     * Invariants can be associated with an aspect, such as "size()>=0". They can describe the aspect and the state of fields.
+     * Invariants that are not associated with an aspect must only describe the state of fields.
+     *
+     * @return a list of values, each of boolean return type, describing invariants.
+     */
+    List<Value> getInvariants();
 }

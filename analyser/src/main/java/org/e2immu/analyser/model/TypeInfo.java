@@ -405,7 +405,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         log(INSPECT, "Variable context after parsing fields of type {}: {}", fullyQualifiedName, subContext.variableContext);
 
         AtomicInteger countNonStaticNonDefaultIfInterface = new AtomicInteger();
-        Map<CompanionMethod, MethodInfo> companionMethodsWaiting = new LinkedHashMap<>();
+        Map<CompanionMethodName, MethodInfo> companionMethodsWaiting = new LinkedHashMap<>();
 
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifConstructorDeclaration(cd -> {
@@ -418,16 +418,16 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 // NOTE: it is possible that the return type is unknown at this moment: it can be one of the type
                 // parameters that we'll be parsing soon at inspection. That's why we can live with "void" for now
                 String methodName = md.getName().getIdentifier();
-                CompanionMethod companionMethod = CompanionMethod.extract(methodName);
+                CompanionMethodName companionMethodName = CompanionMethodName.extract(methodName);
 
                 MethodInfo methodInfo = new MethodInfo(this, methodName, List.of(),
                         expressionContext.typeContext.getPrimitives().voidParameterizedType, md.isStatic(), md.isDefault());
-                methodInfo.inspect(isInterface, md, subContext, companionMethod != null ? Map.of() : companionMethodsWaiting);
+                methodInfo.inspect(isInterface, md, subContext, companionMethodName != null ? Map.of() : companionMethodsWaiting);
                 if (isInterface && !methodInfo.isStatic && !methodInfo.isDefaultImplementation) {
                     countNonStaticNonDefaultIfInterface.incrementAndGet();
                 }
-                if (companionMethod != null) {
-                    companionMethodsWaiting.put(companionMethod, methodInfo);
+                if (companionMethodName != null) {
+                    companionMethodsWaiting.put(companionMethodName, methodInfo);
                 } else {
                     builder.addMethod(methodInfo);
                     companionMethodsWaiting.clear();

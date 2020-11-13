@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model;
 
+import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -27,6 +28,7 @@ import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,18 +38,34 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     private final Set<ObjectFlow> objectFlows;
     private final Map<String, Value> approvedPreconditions;
     private final Set<ParameterizedType> implicitlyImmutableDataTypes;
+    private final Map<String, MethodInfo> aspects;
+    private final List<Value> invariants;
 
     private TypeAnalysisImpl(TypeInfo typeInfo,
                              Map<VariableProperty, Integer> properties,
                              Map<AnnotationExpression, Boolean> annotations,
                              Set<ObjectFlow> objectFlows,
                              Map<String, Value> approvedPreconditions,
-                             Set<ParameterizedType> implicitlyImmutableDataTypes) {
+                             Set<ParameterizedType> implicitlyImmutableDataTypes,
+                             Map<String, MethodInfo> aspects,
+                             List<Value> invariants) {
         super(typeInfo.hasBeenDefined(), properties, annotations);
         this.typeInfo = typeInfo;
         this.approvedPreconditions = approvedPreconditions;
         this.objectFlows = objectFlows;
         this.implicitlyImmutableDataTypes = implicitlyImmutableDataTypes;
+        this.aspects = aspects;
+        this.invariants = invariants;
+    }
+
+    @Override
+    public List<Value> getInvariants() {
+        return invariants;
+    }
+
+    @Override
+    public Map<String, MethodInfo> getAspects() {
+        return aspects;
     }
 
     @Override
@@ -88,9 +106,22 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public final SetOnceMap<String, Value> approvedPreconditions = new SetOnceMap<>();
         public final SetOnce<Set<ParameterizedType>> implicitlyImmutableDataTypes = new SetOnce<>();
 
+        public final SetOnceMap<String, MethodInfo> aspects = new SetOnceMap<>();
+        public final SetOnce<List<Value>> invariants = new SetOnce<>();
+
         public Builder(Primitives primitives, TypeInfo typeInfo) {
             super(primitives, typeInfo.hasBeenDefined(), typeInfo.simpleName);
             this.typeInfo = typeInfo;
+        }
+
+        @Override
+        public Map<String, MethodInfo> getAspects() {
+            return aspects.toImmutableMap();
+        }
+
+        @Override
+        public List<Value> getInvariants() {
+            return invariants.getOrElse(null);
         }
 
         @Override
@@ -162,7 +193,9 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                     annotations.toImmutableMap(),
                     constantObjectFlows.toImmutableSet(),
                     approvedPreconditions.toImmutableMap(),
-                    implicitlyImmutableDataTypes.isSet() ? implicitlyImmutableDataTypes.get() : Set.of());
+                    implicitlyImmutableDataTypes.isSet() ? implicitlyImmutableDataTypes.get() : Set.of(),
+                    getAspects(),
+                    ImmutableList.copyOf(invariants.getOrElse(List.of())));
         }
     }
 }

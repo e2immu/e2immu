@@ -57,7 +57,7 @@ public class MethodInspection extends Inspection {
     // this is used to check inherited annotations on methods
     //@Immutable
     public final List<MethodInfo> implementationOf;
-    public final Map<CompanionMethod, MethodInfo> companionMethods;
+    public final Map<CompanionMethodName, MethodInfo> companionMethods;
 
     private MethodInspection(MethodInfo methodInfo,
                              List<MethodModifier> modifiers,
@@ -67,7 +67,7 @@ public class MethodInspection extends Inspection {
                              List<TypeParameter> typeParameters,
                              List<ParameterizedType> exceptionTypes,
                              List<MethodInfo> implementationOf,
-                             Map<CompanionMethod, MethodInfo> companionMethods,
+                             Map<CompanionMethodName, MethodInfo> companionMethods,
                              FirstThen<BlockStmt, Block> methodBody) {
         super(annotations);
         this.companionMethods = companionMethods;
@@ -105,7 +105,7 @@ public class MethodInspection extends Inspection {
         private final List<AnnotationExpression> annotations = new ArrayList<>();
         private final List<TypeParameter> typeParameters = new ArrayList<>();
         private final List<MethodInfo> implementationsOf = new ArrayList<>();
-        private final Map<CompanionMethod, MethodInfo> companionMethods = new LinkedHashMap<>();
+        private final Map<CompanionMethodName, MethodInfo> companionMethods = new LinkedHashMap<>();
         private BlockStmt block;
         private Block alreadyKnown;
         private final List<ParameterizedType> exceptionTypes = new ArrayList<>();
@@ -174,7 +174,7 @@ public class MethodInspection extends Inspection {
         }
 
         @Fluent
-        public MethodInspectionBuilder addCompanionMethods(Map<CompanionMethod, MethodInfo> companionMethods) {
+        public MethodInspectionBuilder addCompanionMethods(Map<CompanionMethodName, MethodInfo> companionMethods) {
             this.companionMethods.putAll(companionMethods);
             return this;
         }

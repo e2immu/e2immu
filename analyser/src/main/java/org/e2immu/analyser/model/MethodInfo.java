@@ -163,7 +163,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
 
-    public void inspect(ConstructorDeclaration cd, ExpressionContext expressionContext, Map<CompanionMethod, MethodInfo> companionMethods) {
+    public void inspect(ConstructorDeclaration cd, ExpressionContext expressionContext, Map<CompanionMethodName, MethodInfo> companionMethods) {
         log(INSPECT, "Inspecting constructor {}", fullyQualifiedName());
         MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
         builder.addCompanionMethods(companionMethods);
@@ -177,15 +177,15 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         methodInspection.set(builder.build(this));
     }
 
-    private void checkCompanionMethods(Map<CompanionMethod, MethodInfo> companionMethods) {
-        for (Map.Entry<CompanionMethod, MethodInfo> entry : companionMethods.entrySet()) {
-            CompanionMethod companionMethod = entry.getKey();
+    private void checkCompanionMethods(Map<CompanionMethodName, MethodInfo> companionMethods) {
+        for (Map.Entry<CompanionMethodName, MethodInfo> entry : companionMethods.entrySet()) {
+            CompanionMethodName companionMethodName = entry.getKey();
             MethodInfo theMethod = entry.getValue();
             if (!theMethod.methodInspection.get().annotations.isEmpty()) {
-                throw new UnsupportedOperationException("Companion methods do not accept annotations: " + companionMethod);
+                throw new UnsupportedOperationException("Companion methods do not accept annotations: " + companionMethodName);
             }
-            if (!companionMethod.methodName().equals(name)) {
-                throw new UnsupportedOperationException("Companion method's name differs from the method name: " + companionMethod + " vs " + name);
+            if (!companionMethodName.methodName().equals(name)) {
+                throw new UnsupportedOperationException("Companion method's name differs from the method name: " + companionMethodName + " vs " + name);
             }
             int expectStatements = theMethod.isVoid() ? 0 : 1;
             boolean error;
@@ -195,7 +195,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 error = theMethod.methodInspection.get().methodBody.getFirst().getStatements().size() != expectStatements;
             }
             if (error) {
-                throw new UnsupportedOperationException("Companion methods must have only one statement when non-void: a return statement! " + companionMethod);
+                throw new UnsupportedOperationException("Companion methods must have only one statement when non-void: a return statement! " + companionMethodName);
             }
         }
 
@@ -204,7 +204,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public void inspect(boolean isInterface,
                         MethodDeclaration md,
                         ExpressionContext expressionContext,
-                        Map<CompanionMethod, MethodInfo> companionMethods) {
+                        Map<CompanionMethodName, MethodInfo> companionMethods) {
         log(INSPECT, "Inspecting method {}", fullyQualifiedName());
         MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
         builder.addCompanionMethods(companionMethods);
