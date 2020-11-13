@@ -278,7 +278,7 @@ public class Primitives {
                     .setPackageName(JAVA_LANG)
                     .setTypeNature(TypeNature.PRIMITIVE)
                     .setParentClass(objectParameterizedType)
-                    .build(false, ti));
+                    .build(ti));
             primitiveByName.put(ti.simpleName, ti);
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(this, ti);
             ti.typeAnalysis.set(builder);
@@ -303,7 +303,7 @@ public class Primitives {
                 .setPackageName("java.lang")
                 .setTypeNature(TypeNature.ANNOTATION)
                 .setParentClass(objectParameterizedType)
-                .build(false, functionalInterface));
+                .build(functionalInterface));
     }
 
     public static boolean isPrimitiveExcludingVoid(ParameterizedType parameterizedType) {
@@ -342,7 +342,7 @@ public class Primitives {
                 .addMethod(valueOf)
                 .addMethod(name);
         for (FieldInfo fieldInfo : fields) typeInspectionBuilder.addField(fieldInfo);
-        typeInfo.typeInspection.set(typeInspectionBuilder.build(false, typeInfo));
+        typeInfo.typeInspection.set(typeInspectionBuilder.build( typeInfo));
         for (FieldInfo fieldInfo : fields) {
             fieldInfo.fieldInspection.set(new FieldInspection.FieldInspectionBuilder()
                     .addModifiers(List.of(FieldModifier.STATIC, FieldModifier.FINAL, FieldModifier.PUBLIC))

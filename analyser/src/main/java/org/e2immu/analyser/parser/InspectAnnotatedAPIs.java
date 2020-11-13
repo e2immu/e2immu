@@ -87,7 +87,6 @@ public class InspectAnnotatedAPIs {
     }
 
     private void possiblyInspectThenMerge() {
-        List<TypeInfo> typesInGlobalTypeContext = new LinkedList<>();
         localTypeStore.visit(new String[0], (s, types) -> {
             for (TypeInfo typeInfo : types) {
                 TypeInfo typeInGlobalTypeContext = globalTypeContext.getFullyQualified(typeInfo.fullyQualifiedName, false);
@@ -96,7 +95,6 @@ public class InspectAnnotatedAPIs {
                     byteCodeInspector.inspectFromPath(pathInClassPath);
                     typeInGlobalTypeContext = globalTypeContext.getFullyQualified(typeInfo.fullyQualifiedName, true);
                 }
-                typesInGlobalTypeContext.add(typeInGlobalTypeContext);
                 mergeAnnotationsAndCompanions(typeInfo, typeInGlobalTypeContext);
 
                 ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInGlobalTypeContext, globalTypeContext);

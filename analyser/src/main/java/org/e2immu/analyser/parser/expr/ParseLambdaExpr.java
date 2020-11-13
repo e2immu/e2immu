@@ -142,7 +142,7 @@ public class ParseLambdaExpr {
         typeInspectionBuilder.addMethod(methodInfo);
 
         TypeInfo typeInfo = methodInfo.typeInfo;
-        typeInfo.typeInspection.set(typeInspectionBuilder.build(true, typeInfo));
+        typeInfo.typeInspection.set(typeInspectionBuilder.build(typeInfo));
         return typeInfo;
     }
 }

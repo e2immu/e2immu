@@ -442,7 +442,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 builder.addAnnotation(expressionContext.typeContext.getPrimitives().functionalInterfaceAnnotationExpression);
             }
         }
-        typeInspection.set(builder.build(hasBeenDefined, this));
+        typeInspection.set(builder.build(this));
     }
 
     private boolean haveNonStaticNonDefaultMethods() {
@@ -991,7 +991,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         log(LAMBDA, "Result of translating block: {}", block.statementString(0, null));
         methodInfo.methodInspection.get().methodBody.set(block);
-        typeInfo.typeInspection.set(builder.build(true, typeInfo));
+        typeInfo.typeInspection.set(builder.build(typeInfo));
         expressionContext.addNewlyCreatedType(typeInfo);
         return methodInfo;
     }

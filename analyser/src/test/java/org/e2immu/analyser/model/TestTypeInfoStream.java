@@ -143,7 +143,7 @@ public class TestTypeInfoStream {
                 .addMethod(genericContainerPutMethod)
                 .addTypeParameter(typeParameterT)
                 .addInterfaceImplemented(new ParameterizedType(genericContainer, List.of(typeT)))
-                .build(true, containerTypeInfo);
+                .build(containerTypeInfo);
         containerTypeInfo.typeInspection.set(containerTypeInspection);
 
         TypeInfo commutative = new TypeInfo(GENERATED_PACKAGE, "Commutative");
@@ -159,7 +159,7 @@ public class TestTypeInfoStream {
                 .setPackageName(TEST_PACKAGE)
                 .setTypeNature(TypeNature.ANNOTATION)
                 .addMethod(referenceMethodInfo)
-                .build(true, testEquivalent));
+                .build(testEquivalent));
 
         toStringMethodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
                 .addModifier(MethodModifier.PUBLIC)
@@ -196,7 +196,7 @@ public class TestTypeInfoStream {
                 .addConstructor(emptyConstructor)
                 .addMethod(toStringMethodInfo)
                 .addMethod(intSum)
-                .build(true, typeInfo);
+                .build(typeInfo);
         typeInfo.typeInspection.set(typeInspection);
 
         String stream = typeInfo.stream();

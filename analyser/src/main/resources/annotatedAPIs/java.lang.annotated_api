@@ -36,6 +36,7 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
+/*
 @E2Container
 public class Object {
     @NotNull
@@ -76,6 +77,8 @@ public class Object {
     public void wait(long timeMillis, int nanos) {
     }
 }
+
+ */
 
 @E2Container
 public class StackTraceElement {
@@ -213,6 +216,7 @@ public @interface Override {
 
 }
 
+/*
 @E2Container
 public class Class {
     String descriptorString() {
@@ -224,6 +228,8 @@ public interface CharSequence {
 
     int length();
 }
+
+ */
 
 @E2Container
 public class String implements CharSequence {

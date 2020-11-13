@@ -143,6 +143,7 @@ public abstract class CommonAbstractValue {
     protected static Value newInt(int i) {
         return new IntValue(PRIMITIVES, i, ObjectFlow.NO_FLOW);
     }
+
     protected static Value newString(String s) {
         return new StringValue(PRIMITIVES, s, ObjectFlow.NO_FLOW);
     }
@@ -153,7 +154,7 @@ public abstract class CommonAbstractValue {
             PRIMITIVES.objectTypeInfo.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
                     .setPackageName("java.lang")
                     .setParentClass(PRIMITIVES.objectParameterizedType)
-                    .build(false, PRIMITIVES.objectTypeInfo));
+                    .build(PRIMITIVES.objectTypeInfo));
         }
         TypeInfo someType = new TypeInfo("some.type");
         someType.typeAnalysis.set(new TypeAnalysisImpl.Builder(PRIMITIVES, someType).build());
@@ -168,7 +169,7 @@ public abstract class CommonAbstractValue {
                 .setPackageName("org.e2immu.test")
                 .setParentClass(PRIMITIVES.objectParameterizedType)
                 .addMethod(methodInfo)
-                .build(true, someType));
+                .build(someType));
         //methodInfo.methodAnalysis.set(new MethodAnalysis(methodInfo));
         return pi;
     }

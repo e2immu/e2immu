@@ -122,8 +122,8 @@ public class Resolver {
 
         List<TypeInfo> allTypesInPrimaryType = typeInfo.allTypesInPrimaryType();
         typeDependencies.removeAll(allTypesInPrimaryType);
+        typeDependencies.remove(typeInfo);
         typeDependencies.retainAll(stayWithin);
-        typeDependencies.add(typeContextOfFile.getPrimitives().objectTypeInfo);
 
         typeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
         ImmutableList<WithInspectionAndAnalysis> methodFieldSubTypeOrder = ImmutableList.copyOf(methodFieldSubTypeGraph.sorted());

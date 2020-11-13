@@ -40,7 +40,6 @@ import java.util.stream.Stream;
 public class TypeInspection extends Inspection {
     // the type that this inspection object belongs to
     public final TypeInfo typeInfo;
-    private final boolean hasBeenDefined;
 
     // when this type is an inner or nested class of an enclosing class
     public final Either<String, TypeInfo> packageNameOrEnclosingType;
@@ -68,8 +67,7 @@ public class TypeInspection extends Inspection {
 
     public final AnnotationMode annotationMode;
 
-    private TypeInspection(boolean hasBeenDefined,
-                           TypeInfo typeInfo,
+    private TypeInspection(TypeInfo typeInfo,
                            Either<String, TypeInfo> packageNameOrEnclosingType,
                            List<TypeInfo> allTypesInPrimaryType,
                            TypeNature typeNature,
@@ -95,21 +93,12 @@ public class TypeInspection extends Inspection {
         this.fields = fields;
         this.modifiers = modifiers;
         this.subTypes = subTypes;
-        if (typeNature == TypeNature.PRIMITIVE || typeNature == TypeNature.ANNOTATION) {
-            this.hasBeenDefined = false;
-        } else {
-            this.hasBeenDefined = hasBeenDefined;
-        }
-        if (modifiers.contains(TypeModifier.PUBLIC)) access = TypeModifier.PUBLIC;
+         if (modifiers.contains(TypeModifier.PUBLIC)) access = TypeModifier.PUBLIC;
         else if (modifiers.contains(TypeModifier.PROTECTED)) access = TypeModifier.PROTECTED;
         else if (modifiers.contains(TypeModifier.PRIVATE)) access = TypeModifier.PRIVATE;
         else access = TypeModifier.PACKAGE;
 
-        if (hasBeenDefined) {
-            annotationMode = annotationMode(annotations);
-        } else {
-            annotationMode = AnnotationMode.DEFENSIVE; // does not matter what we put here
-        }
+        annotationMode = annotationMode(annotations);
     }
 
     private static final Set<String> OFFENSIVE_ANNOTATIONS = Set.of(
@@ -192,7 +181,7 @@ public class TypeInspection extends Inspection {
     public TypeInspection copy(List<AnnotationExpression> alternativeAnnotations,
                                List<MethodInfo> extraConstructors, // exist identically in super types, but with different annotations
                                List<MethodInfo> extraMethods) { // ditto
-        return new TypeInspection(hasBeenDefined, typeInfo, packageNameOrEnclosingType, allTypesInPrimaryType,
+        return new TypeInspection(typeInfo, packageNameOrEnclosingType, allTypesInPrimaryType,
                 typeNature, typeParameters,
                 parentClass, interfacesImplemented,
                 ListUtil.immutableConcat(constructors, extraConstructors),
@@ -289,16 +278,15 @@ public class TypeInspection extends Inspection {
             return this;
         }
 
-        public TypeInspection build(boolean hasBeenDefined, TypeInfo typeInfo) {
+        public TypeInspection build(TypeInfo typeInfo) {
             Objects.requireNonNull(typeNature);
             if (!Primitives.isJavaLangObject(typeInfo)) {
                 Objects.requireNonNull(parentClass);
             }
             Either<String, TypeInfo> packageNameOrEnclosingType = packageName == null ? Either.right(enclosingType) : Either.left(packageName);
-            List<TypeInfo> allTypesInPrimaryType = hasBeenDefined && packageName != null ? allTypes(typeInfo) : List.of();
+            List<TypeInfo> allTypesInPrimaryType = packageName != null ? allTypes(typeInfo) : List.of();
 
             return new TypeInspection(
-                    hasBeenDefined,
                     typeInfo,
                     packageNameOrEnclosingType,
                     allTypesInPrimaryType,
