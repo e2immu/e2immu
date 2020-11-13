@@ -62,7 +62,7 @@ public class InspectAnnotatedAPIs {
         this.byteCodeInspector = byteCodeInspector;
     }
 
-    public List<TypeInfo> inspect(List<URL> annotatedAPIs, Charset sourceCharSet) throws IOException {
+    public List<SortedType> inspectAndResolve(List<URL> annotatedAPIs, Charset sourceCharSet) throws IOException {
         // load all primary types in the local type store
         // we have to do it this way, because an annotated API file may contain MULTIPLE primary types
         for (URL url : annotatedAPIs) load(url);
@@ -81,15 +81,12 @@ public class InspectAnnotatedAPIs {
         }
 
         // finally, merge the annotations in the result of .class byte code inspection
-        List<TypeInfo> typesInGlobalTypeContext = possiblyInspectThenMerge();
-
+        possiblyInspectThenMerge();
         Resolver resolver = new Resolver();
-        resolver.sortTypes(inspectedTypes);
-
-        return typesInGlobalTypeContext;
+        return resolver.sortTypes(inspectedTypes);
     }
 
-    private List<TypeInfo> possiblyInspectThenMerge() {
+    private void possiblyInspectThenMerge() {
         List<TypeInfo> typesInGlobalTypeContext = new LinkedList<>();
         localTypeStore.visit(new String[0], (s, types) -> {
             for (TypeInfo typeInfo : types) {
@@ -100,19 +97,25 @@ public class InspectAnnotatedAPIs {
                     typeInGlobalTypeContext = globalTypeContext.getFullyQualified(typeInfo.fullyQualifiedName, true);
                 }
                 typesInGlobalTypeContext.add(typeInGlobalTypeContext);
-                mergeAnnotations(typeInfo, typeInGlobalTypeContext);
+                mergeAnnotationsAndCompanions(typeInfo, typeInGlobalTypeContext);
 
                 ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInGlobalTypeContext, globalTypeContext);
                 typeInGlobalTypeContext.resolveAllAnnotations(expressionContext);
             }
         });
-        return typesInGlobalTypeContext;
     }
 
     private static final Function<TypeInspection, List<MethodInfo>> CONSTRUCTORS = typeInspection -> typeInspection.constructors;
     private static final Function<TypeInspection, List<MethodInfo>> METHODS = typeInspection -> typeInspection.methods;
 
-    private void mergeAnnotations(TypeInfo typeFrom, TypeInfo typeTo) {
+    /**
+     * Problem with copying the companions: the parameter names in the companion are based on the annotated API, not on the bytecode version.
+     * They must be the same at this point. FIXME
+     *
+     * @param typeFrom the AnnotatedAPIs version
+     * @param typeTo   the version inspected from the byte code
+     */
+    private void mergeAnnotationsAndCompanions(TypeInfo typeFrom, TypeInfo typeTo) {
         List<MethodInfo> extraConstructors = findMissingCheckOverride(typeFrom, typeTo, CONSTRUCTORS);
         List<MethodInfo> extraMethods = findMissingCheckOverride(typeFrom, typeTo, METHODS);
 
@@ -123,7 +126,9 @@ public class InspectAnnotatedAPIs {
         typeTo.typeInspection.getPotentiallyRun().methodsAndConstructors().forEach(methodInfo -> {
             MethodInfo methodFrom = typeFrom.getMethodOrConstructorByDistinguishingName(methodInfo.distinguishingName());
             if (methodFrom != null) {
-                methodInfo.methodInspection.overwrite(methodInfo.methodInspection.get().copy(methodFrom.methodInspection.get().annotations));
+                methodInfo.methodInspection.overwrite(methodInfo.methodInspection.get().copy(
+                        methodFrom.methodInspection.get().companionMethods,
+                        methodFrom.methodInspection.get().annotations));
                 for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
                     if (parameterInfo.index < methodFrom.methodInspection.get().parameters.size()) {
                         ParameterInfo parameterFrom = methodFrom.methodInspection.get().parameters.get(parameterInfo.index);

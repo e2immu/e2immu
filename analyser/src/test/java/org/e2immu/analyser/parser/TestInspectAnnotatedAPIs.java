@@ -85,8 +85,7 @@ public class TestInspectAnnotatedAPIs {
                 .build();
         URL url = new URL("file:src/main/resources/annotatedAPIs/java.util.annotated_api");
         Parser parser = new Parser(configuration);
-        List<TypeInfo> types = parser.runAnnotatedAPIs(List.of(url));
-        Assert.assertTrue(types.size() >= 15);
+        parser.runAnnotatedAPIs(List.of(url));
         TypeInfo optional = parser.getTypeContext().typeStore.get("java.util.Optional");
         Assert.assertNotNull(optional);
         Assert.assertEquals(Level.TRUE, MultiLevel.value(optional.typeAnalysis.get().getProperty(VariableProperty.CONTAINER), 0));

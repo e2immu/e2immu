@@ -88,6 +88,7 @@ public class Test_00_SizeCopy extends CommonTestRunner {
 
     TypeContextVisitor typeContextVisitor = typeContext -> {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+        Assert.assertFalse(collection.doesNotNeedAnalysing());
         MethodInfo stream = collection.findUniqueMethod("stream", 0);
         MethodInfo addAll = collection.findUniqueMethod("addAll", 1);
         ParameterInfo param0 = addAll.methodInspection.get().parameters.get(0);

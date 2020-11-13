@@ -87,15 +87,10 @@ public class MethodInspection extends Inspection {
                 .collect(Collectors.joining(",")) + ")";
     }
 
-    public MethodInspection copy(List<AnnotationExpression> alternativeAnnotations) {
+    public MethodInspection copy(Map<CompanionMethodName, MethodInfo> companionMethods, List<AnnotationExpression> alternativeAnnotations) {
         return new MethodInspection(methodInfo, modifiers, parameters, returnType,
                 ImmutableList.copyOf(alternativeAnnotations), typeParameters, exceptionTypes, implementationOf,
-                companionMethods, methodBody);
-    }
-
-    public boolean haveCodeBlock() {
-        return methodBody.isSet() && !methodBody.get().structure.statements.isEmpty() ||
-                !methodBody.isSet() && !methodBody.getFirst().getStatements().isEmpty();
+                ImmutableMap.copyOf(companionMethods), methodBody);
     }
 
     @Container(builds = MethodInspection.class)
@@ -189,6 +184,9 @@ public class MethodInspection extends Inspection {
             }
             FirstThen<BlockStmt, Block> methodBody = new FirstThen<>(block != null ? block : new BlockStmt());
             if (alreadyKnown != null) methodBody.set(alreadyKnown);
+            else if (methodBody.getFirst().isEmpty()) {
+                methodBody.set(Block.EMPTY_BLOCK);
+            }
             for (TypeParameter typeParameter : typeParameters) {
                 if (typeParameter.owner.isRight() && typeParameter.owner.getRight() != methodInfo) {
                     throw new UnsupportedOperationException("I cannot have type parameters owned by another method!");

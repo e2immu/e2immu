@@ -39,6 +39,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.util.Logger.log;
+
 
 public class Parser {
     private static final Logger LOGGER = LoggerFactory.getLogger(Parser.class);
@@ -72,10 +74,21 @@ public class Parser {
         return parseJavaFiles(input.getSourceURLs());
     }
 
-    // method result only used in tests
-    public List<TypeInfo> runAnnotatedAPIs(List<URL> annotatedAPIs) throws IOException {
+    // method result only used separately in tests
+    public void runAnnotatedAPIs(List<URL> annotatedAPIs) throws IOException {
         InspectAnnotatedAPIs inspectAnnotatedAPIs = new InspectAnnotatedAPIs(globalTypeContext, byteCodeInspector);
-        return inspectAnnotatedAPIs.inspect(annotatedAPIs, configuration.inputConfiguration.sourceEncoding);
+        List<SortedType> sortedTypes = inspectAnnotatedAPIs.inspectAndResolve(annotatedAPIs, configuration.inputConfiguration.sourceEncoding);
+
+        ensureMinimalAnalysisOfLoadedObjects();
+        log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Sorted API: {}",
+                sortedTypes.stream().map(st -> st.primaryType.fullyQualifiedName).collect(Collectors.joining("\n")));
+        for (SortedType sortedType : sortedTypes) {
+            if (sortedType.primaryType.doesNotNeedAnalysing()) {
+                sortedType.primaryType.copyAnnotationsIntoTypeAnalysisProperties(globalTypeContext.getPrimitives(), e2ImmuAnnotationExpressions);
+            } else {
+                analyseSortedType(sortedType);
+            }
+        }
     }
 
     public List<SortedType> parseJavaFiles(Map<TypeInfo, URL> urls) {
@@ -114,33 +127,15 @@ public class Parser {
 
         if (configuration.skipAnalysis) return sortedPrimaryTypes;
 
-        checkTypeAnalysisOfLoadedObjects();
+        ensureMinimalAnalysisOfLoadedObjects();
 
         for (TypeContextVisitor typeContextVisitor : configuration.debugConfiguration.typeContextVisitors) {
             typeContextVisitor.visit(globalTypeContext);
         }
-
+        log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Analysing primary types:\n{}",
+                sortedPrimaryTypes.stream().map(t -> t.primaryType.fullyQualifiedName).collect(Collectors.joining("\n")));
         for (SortedType sortedType : sortedPrimaryTypes) {
-            PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(sortedType, configuration, globalTypeContext, e2ImmuAnnotationExpressions);
-            try {
-                primaryTypeAnalyser.analyse();
-            } catch (RuntimeException rte) {
-                LOGGER.warn("Caught runtime exception while analysing type {}", sortedType.primaryType.fullyQualifiedName);
-                throw rte;
-            }
-            try {
-                primaryTypeAnalyser.write();
-            } catch (RuntimeException rte) {
-                LOGGER.warn("Caught runtime exception while making analysis immutable for type {}", sortedType.primaryType.fullyQualifiedName);
-                throw rte;
-            }
-            try {
-                primaryTypeAnalyser.check();
-            } catch (RuntimeException rte) {
-                LOGGER.warn("Caught runtime exception while checking type {}", sortedType.primaryType.fullyQualifiedName);
-                throw rte;
-            }
-            messages.addAll(primaryTypeAnalyser.getMessageStream());
+            analyseSortedType(sortedType);
         }
         if (configuration.uploadConfiguration.upload) {
             AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration, e2ImmuAnnotationExpressions);
@@ -158,7 +153,30 @@ public class Parser {
         return sortedPrimaryTypes;
     }
 
-    private void checkTypeAnalysisOfLoadedObjects() {
+    private void analyseSortedType(SortedType sortedType) {
+        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(sortedType, configuration, globalTypeContext, e2ImmuAnnotationExpressions);
+        try {
+            primaryTypeAnalyser.analyse();
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Caught runtime exception while analysing type {}", sortedType.primaryType.fullyQualifiedName);
+            throw rte;
+        }
+        try {
+            primaryTypeAnalyser.write();
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Caught runtime exception while making analysis immutable for type {}", sortedType.primaryType.fullyQualifiedName);
+            throw rte;
+        }
+        try {
+            primaryTypeAnalyser.check();
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Caught runtime exception while checking type {}", sortedType.primaryType.fullyQualifiedName);
+            throw rte;
+        }
+        messages.addAll(primaryTypeAnalyser.getMessageStream());
+    }
+
+    private void ensureMinimalAnalysisOfLoadedObjects() {
         globalTypeContext.typeStore.visit(new String[0], (s, list) -> {
             for (TypeInfo typeInfo : list) {
                 if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() && typeInfo.doesNotNeedAnalysing()) {

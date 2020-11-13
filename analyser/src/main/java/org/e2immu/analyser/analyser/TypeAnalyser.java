@@ -242,16 +242,15 @@ public class TypeAnalyser extends AbstractAnalyser {
         AtomicBoolean delays = new AtomicBoolean();
         AtomicBoolean progress = new AtomicBoolean();
         myMethodAndConstructorAnalysersExcludingSAMs.forEach(methodAnalyser -> {
-            Map<CompanionMethodName, MethodInfo> aspects =
-                    methodAnalyser.methodInspection.companionMethods.entrySet().stream()
-                            .filter(e -> e.getKey().action() == CompanionMethodName.Action.ASPECT)
-                            .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
-            for (Map.Entry<CompanionMethodName, MethodInfo> entry : aspects.entrySet()) {
-                if (entry.getKey().aspect() == null) {
+            List<CompanionMethodName> companionMethodNames =
+                    methodAnalyser.methodInspection.companionMethods.keySet().stream()
+                            .filter(methodInfo -> methodInfo.action() == CompanionMethodName.Action.ASPECT).collect(Collectors.toList());
+            for (CompanionMethodName companionMethodName : companionMethodNames) {
+                if (companionMethodName.aspect() == null) {
                     throw new UnsupportedOperationException("Aspect is null in aspect definition?");
                 }
-                String aspect = entry.getKey().aspect();
-                MethodInfo mainMethod = entry.getValue();
+                String aspect = companionMethodName.aspect();
+                MethodInfo mainMethod = methodAnalyser.methodInfo;
                 int modified = analyserContext.getMethodAnalysis(mainMethod).getProperty(VariableProperty.MODIFIED);
                 if (modified == Level.DELAY) {
                     delays.set(true);
