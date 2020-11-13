@@ -87,15 +87,15 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         ImmutableMap.Builder<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new ImmutableMap.Builder<>();
         sortedType.methodsFieldsSubTypes.forEach(mfs -> {
             if (mfs instanceof MethodInfo methodInfo) {
-                if (methodInfo.hasBeenDefined()) {
+                if (methodInfo.doesNotNeedAnalysing()) {
+                    methodInfo.copyAnnotationsIntoMethodAnalysisProperties(getPrimitives(), getE2ImmuAnnotationExpressions());
+                } else {
                     MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo),
                             false, this);
                     for (ParameterAnalyser parameterAnalyser : analyser.getParameterAnalysers()) {
                         parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
                     }
                     methodAnalysersBuilder.put(methodInfo, analyser);
-                } else {
-                    methodInfo.copyAnnotationsIntoMethodAnalysisProperties(getPrimitives(), getE2ImmuAnnotationExpressions());
                 }
             }
         });
@@ -114,7 +114,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
                     MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod;
                     if (sam != null) {
                         samAnalyser = new MethodAnalyser(sam, typeAnalysers.get(fieldInfo.owner), true, this);
-                        samAnalyser.methodAnalysis.overrides.set(overrides(typeContext.getPrimitives(), sam, methodAnalysers));
+                        samAnalyser.methodAnalysis.overrides.set(overrides(sam, methodAnalysers));
                     }
                 }
                 TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).typeAnalysis;
@@ -124,17 +124,17 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
                     return List.of(analyser, samAnalyser).stream();
                 }
             } else if (mfs instanceof MethodInfo methodInfo) {
-                if (!methodInfo.hasBeenDefined()) {
+                if (methodInfo.doesNotNeedAnalysing()) {
                     return Stream.empty(); // interface method
                 }
                 MethodAnalyser methodAnalyser = methodAnalysers.get(mfs);
                 analyser = methodAnalyser;
-                methodAnalyser.methodAnalysis.overrides.set(overrides(typeContext.getPrimitives(), (MethodInfo) mfs, methodAnalysers));
+                methodAnalyser.methodAnalysis.overrides.set(overrides((MethodInfo) mfs, methodAnalysers));
             } else if (mfs instanceof TypeInfo) {
                 analyser = typeAnalysers.get(mfs);
             } else throw new UnsupportedOperationException();
             assert analyser != null : "Cannot find analyser for " + mfs.fullyQualifiedName();
-            return List.of(analyser).stream();
+            return Stream.of(analyser);
         }).collect(Collectors.toList());
         fieldAnalysers = fieldAnalysersBuilder.build();
 
@@ -147,7 +147,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         return typeContext.getPrimitives();
     }
 
-    private static Set<MethodAnalysis> overrides(Primitives primitives, MethodInfo methodInfo, Map<MethodInfo, MethodAnalyser> methodAnalysers) {
+    private static Set<MethodAnalysis> overrides(MethodInfo methodInfo, Map<MethodInfo, MethodAnalyser> methodAnalysers) {
         return methodInfo.typeInfo.overrides(methodInfo, true)
                 .stream().map(mi -> {
                     MethodAnalyser methodAnalyser = methodAnalysers.get(mi);

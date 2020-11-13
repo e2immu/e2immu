@@ -46,7 +46,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
                                   FieldInfo assignedToField,
                                   boolean copiedFromFieldToParameters,
                                   boolean isAssignedToAField) {
-        super(parameterInfo.hasBeenDefined(), properties, annotations);
+        super(properties, annotations);
         this.parameterInfo = parameterInfo;
         this.objectFlow = objectFlow;
         this.assignedToField = assignedToField;
@@ -102,7 +102,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         public final FirstThen<ObjectFlow, ObjectFlow> objectFlow;
 
         public Builder(Primitives primitives, AnalysisProvider analysisProvider, ParameterInfo parameterInfo) {
-            super(primitives, parameterInfo.hasBeenDefined(), parameterInfo.simpleName());
+            super(primitives, parameterInfo.simpleName());
             this.parameterInfo = parameterInfo;
             this.location = new Location(parameterInfo);
             ObjectFlow initialObjectFlow = new ObjectFlow(new Location(parameterInfo),
@@ -114,11 +114,6 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         @Override
         public int getProperty(VariableProperty variableProperty) {
             return getParameterProperty(analysisProvider, parameterInfo, getObjectFlow(), variableProperty);
-        }
-
-        @Override
-        public boolean isHasBeenDefined() {
-            return parameterInfo.owner.typeInfo.hasBeenDefined();
         }
 
         @Override

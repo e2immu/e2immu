@@ -161,7 +161,7 @@ public class Parser {
     private void checkTypeAnalysisOfLoadedObjects() {
         globalTypeContext.typeStore.visit(new String[0], (s, list) -> {
             for (TypeInfo typeInfo : list) {
-                if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() && !typeInfo.hasBeenDefined()) {
+                if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() && typeInfo.doesNotNeedAnalysing()) {
                     typeInfo.copyAnnotationsIntoTypeAnalysisProperties(globalTypeContext.getPrimitives(), e2ImmuAnnotationExpressions);
                 }
             }

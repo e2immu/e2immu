@@ -28,18 +28,11 @@ import java.util.stream.Stream;
 public abstract class AnalysisImpl implements Analysis {
 
     public final Map<VariableProperty, Integer> properties;
-    public final boolean hasBeenDefined;
     private final Map<AnnotationExpression, Boolean> annotations;
 
-    protected AnalysisImpl(boolean hasBeenDefined, Map<VariableProperty, Integer> properties, Map<AnnotationExpression, Boolean> annotations) {
-        this.hasBeenDefined = hasBeenDefined;
+    protected AnalysisImpl(Map<VariableProperty, Integer> properties, Map<AnnotationExpression, Boolean> annotations) {
         this.annotations = annotations;
         this.properties = properties;
-    }
-
-    @Override
-    public boolean isHasBeenDefined() {
-        return hasBeenDefined;
     }
 
     @Override
@@ -53,7 +46,7 @@ public abstract class AnalysisImpl implements Analysis {
     }
 
     public int internalGetProperty(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, hasBeenDefined ? Level.DELAY : variableProperty.valueWhenAbsent(annotationMode()));
+        return properties.getOrDefault(variableProperty, variableProperty.valueWhenAbsent(annotationMode()));
     }
 
     @Override

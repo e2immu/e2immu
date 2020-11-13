@@ -108,11 +108,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.isSetPotentiallyRun();
     }
 
-    @Override
-    public boolean hasBeenDefined() {
-        return hasBeenInspected() && typeInspection.getPotentiallyRun().hasBeenDefined;
-    }
-
     public void inspectAnonymousType(ParameterizedType classImplemented,
                                      ExpressionContext expressionContext,
                                      NodeList<BodyDeclaration<?>> members) {
@@ -500,7 +495,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     private Stream<FieldInfo> accessibleFieldsStream(TypeInfo startingPoint) {
-        TypeInspection typeInspection = this.typeInspection.getPotentiallyRun("Inspection of "+fullyQualifiedName);
+        TypeInspection typeInspection = this.typeInspection.getPotentiallyRun("Inspection of " + fullyQualifiedName);
         boolean inSameCompilationUnit = this == startingPoint || primaryType() == startingPoint.primaryType();
         boolean inSamePackage = !inSameCompilationUnit &&
                 primaryType().typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getLeft().equals(
@@ -771,15 +766,15 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     @Override
-    public Optional<AnnotationExpression> hasTestAnnotation(Class<?> annotation) {
-        if (!hasBeenDefined()) return Optional.empty();
+    public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
+        if (!typeInspection.isSet()) return Optional.empty();
         String annotationFQN = annotation.getName();
         Optional<AnnotationExpression> fromType = (getInspection().annotations.stream()
                 .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN)))
                 .findFirst();
         if (fromType.isPresent()) return fromType;
         if (parentIsNotJavaLangObject()) {
-            Optional<AnnotationExpression> fromParent = typeInspection.getPotentiallyRun().parentClass.typeInfo.hasTestAnnotation(annotation);
+            Optional<AnnotationExpression> fromParent = typeInspection.getPotentiallyRun().parentClass.typeInfo.hasInspectedAnnotation(annotation);
             if (fromParent.isPresent()) return fromParent;
         }
         return Optional.empty();
@@ -1047,7 +1042,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public Messages copyAnnotationsIntoTypeAnalysisProperties(Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        assert !hasBeenDefined();
+        assert doesNotNeedAnalysing();
         Messages messages = new Messages();
         log(RESOLVE, "copy annotations into properties: {}", fullyQualifiedName);
 
@@ -1171,4 +1166,18 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.isSet() && typeInspection.get().packageNameOrEnclosingType.isLeft();
     }
 
+    /**
+     * Analysis
+     *
+     * @return true when we can completely bypass the analysers using the "copyAnnotationsIntoTypeAnalysisProperties" method
+     */
+    public boolean doesNotNeedAnalysing() {
+        if (!typeInspection.isSet()) return true;
+        TypeInspection inspection = typeInspection.get();
+        if (inspection.typeNature == TypeNature.ENUM) {
+            return inspection.fields.isEmpty();
+        }
+        if (inspection.typeNature == TypeNature.ANNOTATION) return true;
+        return inspection.methodsAndConstructors(TypeInspection.Methods.INCLUDE_SUBTYPES).allMatch(MethodInfo::doesNotNeedAnalysing);
+    }
 }

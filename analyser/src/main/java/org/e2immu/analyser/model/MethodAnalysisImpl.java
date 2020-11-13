@@ -55,8 +55,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final Value precondition;
     public final Value singleReturnValue;
 
-    private MethodAnalysisImpl(boolean hasBeenDefined,
-                               MethodInfo methodInfo,
+    private MethodAnalysisImpl(MethodInfo methodInfo,
                                StatementAnalysis firstStatement,
                                StatementAnalysis lastStatement,
                                List<ParameterAnalysis> parameterAnalyses,
@@ -70,7 +69,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Value precondition,
                                Map<VariableProperty, Integer> properties,
                                Map<AnnotationExpression, Boolean> annotations) {
-        super(hasBeenDefined, properties, annotations);
+        super(properties, annotations);
         this.methodInfo = methodInfo;
         this.firstStatement = firstStatement;
         this.lastStatement = lastStatement;
@@ -222,7 +221,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                        AnalysisProvider analysisProvider,
                        MethodInfo methodInfo,
                        List<ParameterAnalysis> parameterAnalyses) {
-            super(primitives, methodInfo.hasBeenDefined(), methodInfo.name);
+            super(primitives, methodInfo.name);
             this.parameterAnalyses = parameterAnalyses;
             this.methodInfo = methodInfo;
             this.returnType = methodInfo.returnType();
@@ -239,8 +238,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public Analysis build() {
-            return new MethodAnalysisImpl(isHasBeenDefined(),
-                    methodInfo,
+            return new MethodAnalysisImpl(methodInfo,
                     firstStatement.getOrElse(null),
                     getLastStatement(),
                     parameterAnalyses,
@@ -269,11 +267,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         @Override
         public AnnotationMode annotationMode() {
             return methodInfo.typeInfo.typeInspection.get().annotationMode;
-        }
-
-        @Override
-        public boolean isHasBeenDefined() {
-            return methodInfo.hasBeenDefined();
         }
 
         @Override

@@ -20,12 +20,9 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ContractMark;
-import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.IncrementalMap;
@@ -43,18 +40,16 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
 
     public final SetOnceMap<AnnotationExpression, Boolean> annotations = new SetOnceMap<>();
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
-    public final boolean hasBeenDefined;
     public final String simpleName; // for debugging purposes
     public final Primitives primitives;
 
-    protected AbstractAnalysisBuilder(Primitives primitives, boolean hasBeenDefined, String simpleName) {
+    protected AbstractAnalysisBuilder(Primitives primitives, String simpleName) {
         this.simpleName = simpleName;
-        this.hasBeenDefined = hasBeenDefined;
         this.primitives = primitives;
     }
 
     public int getProperty(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, hasBeenDefined ? Level.DELAY : variableProperty.valueWhenAbsent(annotationMode()));
+        return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 
     public int getPropertyAsIs(VariableProperty variableProperty) {
@@ -62,7 +57,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     public int internalGetProperty(VariableProperty variableProperty) {
-        return properties.getOrDefault(variableProperty, hasBeenDefined ? Level.DELAY : variableProperty.valueWhenAbsent(annotationMode()));
+        return properties.getOrDefault(variableProperty, Level.DELAY);
     }
 
     public void setProperty(VariableProperty variableProperty, int i) {
@@ -321,5 +316,10 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         public void run() {
             setProperty(variableProperty, value);
         }
+    }
+
+    @Override
+    public boolean isBeingAnalysed() {
+        return true;
     }
 }

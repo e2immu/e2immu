@@ -27,8 +27,6 @@ import java.util.stream.Stream;
 
 public interface Analysis {
 
-    default boolean isHasBeenDefined() { return false; }
-
     default Stream<Map.Entry<AnnotationExpression, Boolean>> getAnnotationStream() { return Stream.empty(); }
 
     default Boolean getAnnotation(AnnotationExpression annotationExpression) { return null; }
@@ -83,4 +81,6 @@ public interface Analysis {
 
     default int internalGetProperty(VariableProperty variableProperty) { return Level.DELAY; }
 
+    // will be true in the builders
+    default boolean isBeingAnalysed() { return false; }
 }

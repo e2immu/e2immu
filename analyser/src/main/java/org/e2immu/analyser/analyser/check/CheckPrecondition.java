@@ -10,7 +10,7 @@ import org.e2immu.annotation.Precondition;
 public class CheckPrecondition {
 
     public static void checkPrecondition(Messages messages, MethodInfo methodInfo) {
-        AnnotationExpression annotationExpression = methodInfo.hasTestAnnotation(Precondition.class).orElse(null);
+        AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(Precondition.class).orElse(null);
         if (annotationExpression == null) return; // nothing to verify
         AnnotationType annotationType = annotationExpression.extract("type", null);
         boolean mustBeAbsent = annotationType == AnnotationType.VERIFY_ABSENT;

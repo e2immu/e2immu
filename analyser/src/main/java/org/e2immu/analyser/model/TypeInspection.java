@@ -40,7 +40,7 @@ import java.util.stream.Stream;
 public class TypeInspection extends Inspection {
     // the type that this inspection object belongs to
     public final TypeInfo typeInfo;
-    public final boolean hasBeenDefined;
+    private final boolean hasBeenDefined;
 
     // when this type is an inner or nested class of an enclosing class
     public final Either<String, TypeInfo> packageNameOrEnclosingType;

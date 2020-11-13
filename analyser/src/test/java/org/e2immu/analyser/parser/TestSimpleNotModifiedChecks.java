@@ -243,7 +243,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         TypeInfo set = typeContext.getFullyQualified(Set.class);
         Assert.assertEquals(AnnotationMode.DEFENSIVE, set.typeInspection.getPotentiallyRun().annotationMode);
         MethodInfo add = set.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("add")).findFirst().orElseThrow();
-        Assert.assertFalse(add.methodAnalysis.get().isHasBeenDefined());
+        Assert.assertFalse(add.methodAnalysis.get().getMethodInfo().doesNotNeedAnalysing());
         Assert.assertEquals(Level.TRUE, add.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
         MethodInfo addAll = set.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("addAll")).findFirst().orElseThrow();

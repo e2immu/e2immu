@@ -114,11 +114,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     @Override
-    public boolean hasBeenDefined() {
-        return typeInfo.hasBeenDefined() && (!typeInfo.isInterface() || methodInspection.get().haveCodeBlock());
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -285,6 +280,11 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return UpgradableBooleanMap.of(constructorTypes, parameterTypes, annotationTypes, exceptionTypes, bodyTypes);
     }
 
+    @Override
+    public TypeInfo primaryType() {
+        return typeInfo.primaryType();
+    }
+
     public String stream(int indent) {
         StringBuilder sb = new StringBuilder();
         ParameterizedType returnType;
@@ -386,14 +386,14 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 returnTypeObserved, "Null return type for " + fullyQualifiedName() + ", inspected? " + hasBeenInspected());
     }
 
-    public Optional<AnnotationExpression> hasTestAnnotation(String annotationFQN) {
-        if (!hasBeenDefined()) return Optional.empty();
+    public Optional<AnnotationExpression> hasInspectedAnnotation(String annotationFQN) {
+        if (!hasBeenInspected()) return Optional.empty();
         Optional<AnnotationExpression> fromMethod = (getInspection().annotations.stream()
                 .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN))).findFirst();
         if (fromMethod.isPresent()) return fromMethod;
         if (methodInspection.isSet()) {
             for (MethodInfo interfaceMethod : methodInspection.get().implementationOf) {
-                Optional<AnnotationExpression> fromInterface = (interfaceMethod.hasTestAnnotation(annotationFQN));
+                Optional<AnnotationExpression> fromInterface = (interfaceMethod.hasInspectedAnnotation(annotationFQN));
                 if (fromInterface.isPresent()) return fromInterface;
             }
         }
@@ -401,10 +401,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     @Override
-    public Optional<AnnotationExpression> hasTestAnnotation(Class<?> annotation) {
-        if (!hasBeenDefined()) return Optional.empty();
+    public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
         String annotationFQN = annotation.getName();
-        return hasTestAnnotation(annotationFQN);
+        return hasInspectedAnnotation(annotationFQN);
     }
 
     // given R accept(T t), and types={string}, returnType=string, deduce that R=string, T=string, and we have Function<String, String>
@@ -603,6 +602,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
 
     public Messages copyAnnotationsIntoMethodAnalysisProperties(Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        assert doesNotNeedAnalysing();
         Messages messages = new Messages();
 
         methodInspection.get().parameters.forEach(parameterInfo -> {
@@ -614,7 +614,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
         List<ParameterAnalysis> parameterAnalyses = methodInspection.get().parameters.stream()
                 .map(parameterInfo -> parameterInfo.parameterAnalysis.get()).collect(Collectors.toList());
-        assert !hasBeenDefined();
+
         MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER,
                 this, parameterAnalyses);
 
@@ -682,7 +682,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean isTestMethod() {
-        return hasTestAnnotation("org.junit.Test").isPresent();
+        return hasInspectedAnnotation("org.junit.Test").isPresent();
     }
 
     public boolean noReturnValue() {
@@ -691,5 +691,24 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public boolean hasReturnValue() {
         return !noReturnValue();
+    }
+
+    /**
+     * Even when we're analysing types, we may skip this method
+     *
+     * @return true when we can skip the analysers
+     */
+    public boolean doesNotNeedAnalysing() {
+        if (!methodInspection.isSet()) return true;
+        MethodInspection inspection = methodInspection.get();
+        if (!inspection.methodBody.isSet()) return true;
+        return inspection.methodBody.get() == Block.EMPTY_BLOCK && inspection.companionMethods.isEmpty();
+    }
+
+    public boolean hasStatements() {
+        if (!methodInspection.isSet()) return true;
+        MethodInspection inspection = methodInspection.get();
+        if (!inspection.methodBody.isSet()) return true;
+        return inspection.methodBody.get().structure.statements.size() > 0;
     }
 }

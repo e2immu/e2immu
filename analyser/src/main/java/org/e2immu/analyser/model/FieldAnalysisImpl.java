@@ -54,7 +54,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                               Value initialValue,
                               Map<VariableProperty, Integer> properties,
                               Map<AnnotationExpression, Boolean> annotations) {
-        super(fieldInfo.hasBeenDefined(), properties, annotations);
+        super(properties, annotations);
         this.fieldInfo = fieldInfo;
         this.isOfImplicitlyImmutableDataType = isOfImplicitlyImmutableDataType;
         this.objectFlow = objectFlow;
@@ -126,7 +126,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         public final SetOnce<Value> initialValue = new SetOnce<>();
 
         public Builder(Primitives primitives, AnalysisProvider analysisProvider, @NotModified FieldInfo fieldInfo, TypeAnalysis typeAnalysisOfOwner) {
-            super(primitives, fieldInfo.hasBeenDefined(), fieldInfo.name);
+            super(primitives, fieldInfo.name);
             this.typeAnalysisOfOwner = typeAnalysisOfOwner;
             this.bestType = fieldInfo.type.bestTypeInfo();
             isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
@@ -143,11 +143,6 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         @Override
         public Value getInitialValue() {
             return initialValue.getOrElse(UnknownValue.NO_VALUE);
-        }
-
-        @Override
-        public boolean isHasBeenDefined() {
-            return fieldInfo.owner.hasBeenDefined();
         }
 
         @Override

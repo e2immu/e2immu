@@ -75,7 +75,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public StatementAnalysis(Primitives primitives,
                              MethodAnalysis methodAnalysis,
                              Statement statement, StatementAnalysis parent, String index, boolean inSyncBlock) {
-        super(primitives, true, index);
+        super(primitives, index);
         this.index = super.simpleName;
         this.statement = statement;
         this.parent = parent;
@@ -273,11 +273,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     @Override
     public Location location() {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean isHasBeenDefined() {
-        return true;
     }
 
     // ****************************************************************************************
@@ -567,7 +562,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 if (efv != null) {
                     return efv;
                 }
-                if (fieldReference.fieldInfo.owner.hasBeenDefined()) {
+                if (analyserContext.getTypeAnalysis(fieldReference.fieldInfo.owner).isBeingAnalysed()) {
                     return UnknownValue.NO_VALUE; // delay
                 }
             }

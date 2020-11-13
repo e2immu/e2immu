@@ -14,7 +14,7 @@ public class CheckOnly {
 
     public static void checkOnly(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         MethodAnalysis.MarkAndOnly markAndOnly = methodAnalysis.getMarkAndOnly();
-        AnnotationExpression annotationExpression = methodInfo.hasTestAnnotation(Only.class).orElse(null);
+        AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(Only.class).orElse(null);
         if (annotationExpression == null) return; // nothing to verify
 
         AnnotationType annotationType = annotationExpression.extract("type", null);
@@ -64,7 +64,7 @@ public class CheckOnly {
 
     public static void checkMark(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         MethodAnalysis.MarkAndOnly markAndOnly = methodAnalysis.getMarkAndOnly();
-        AnnotationExpression annotationExpression = methodInfo.hasTestAnnotation(Mark.class).orElse(null);
+        AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(Mark.class).orElse(null);
         if (annotationExpression == null) return; // nothing to verify
 
         AnnotationType annotationType = annotationExpression.extract("type", null);

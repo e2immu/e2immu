@@ -307,7 +307,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // singleReturnValue implies non-modifying
-        if (methodAnalysis.isHasBeenDefined() && methodAnalysis.getSingleReturnValue() != null) {
+        if (methodAnalysis.isBeingAnalysed() && methodAnalysis.getSingleReturnValue() != null) {
             // if this method was identity?
             Value srv = methodAnalysis.getSingleReturnValue();
             if (srv.isInstanceOf(InlineValue.class)) {
@@ -343,7 +343,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (srv.isConstant()) {
                 return builder.setValue(srv).build();
             }
-        } else if (methodAnalysis.isHasBeenDefined()) {
+        } else if (methodAnalysis.isBeingAnalysed()) {
             // we will, at some point, analyse this method
             return builder.setValue(UnknownValue.NO_VALUE).build();
         }
@@ -385,7 +385,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private static Value computeFluent(MethodAnalysis methodAnalysis, Value scope) {
         int fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
-        if (fluent == Level.DELAY && methodAnalysis.isHasBeenDefined()) return UnknownValue.NO_VALUE;
+        if (fluent == Level.DELAY && methodAnalysis.isBeingAnalysed()) return UnknownValue.NO_VALUE;
         if (fluent != Level.TRUE) return null;
         return scope;
     }
@@ -396,7 +396,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                          List<Value> parameters,
                                          ObjectFlow objectFlowOfResult) {
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
-        if (identity == Level.DELAY && methodAnalysis.isHasBeenDefined()) return UnknownValue.NO_VALUE; // delay
+        if (identity == Level.DELAY && methodAnalysis.isBeingAnalysed()) return UnknownValue.NO_VALUE; // delay
         if (identity != Level.TRUE) return null;
 
         Map<VariableProperty, Integer> map = new HashMap<>();

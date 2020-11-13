@@ -86,11 +86,6 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     }
 
     @Override
-    public boolean hasBeenDefined() {
-        return owner.hasBeenDefined() && (!owner.isInterface() || fieldInspection.get().haveInitialiser());
-    }
-
-    @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(
                 type.typesReferenced(true),
@@ -98,6 +93,11 @@ public class FieldInfo implements WithInspectionAndAnalysis {
                         fieldInspection.get().initialiser.get().initialiser.typesReferenced()
                         : UpgradableBooleanMap.of()
         );
+    }
+
+    @Override
+    public TypeInfo primaryType() {
+        return owner.primaryType();
     }
 
     public String stream(int indent) {
@@ -146,13 +146,13 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     }
 
     @Override
-    public Optional<AnnotationExpression> hasTestAnnotation(Class<?> annotation) {
-        if (!hasBeenDefined()) return Optional.empty();
+    public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
+        if (!fieldInspection.isSet()) return Optional.empty();
         String annotationFQN = annotation.getName();
         Optional<AnnotationExpression> fromField = (getInspection().annotations.stream()
                 .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN))).findFirst();
         if (fromField.isPresent()) return fromField;
-        if (annotation.equals(NotNull.class)) return owner.hasTestAnnotation(annotation);
+        if (annotation.equals(NotNull.class)) return owner.hasInspectedAnnotation(annotation);
         // TODO check "where" on @NotNull
         return Optional.empty();
     }

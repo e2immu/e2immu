@@ -188,14 +188,14 @@ public interface MethodAnalysis extends Analysis {
     private int getPropertyCheckOverrides(VariableProperty variableProperty) {
         IntStream mine = IntStream.of(getPropertyAsIs(variableProperty));
         IntStream theStream;
-        if (isHasBeenDefined()) {
-            theStream = mine;
-        } else {
+        if (getMethodInfo().doesNotNeedAnalysing()) {
             IntStream overrideValues = getOverrides().stream().mapToInt(ma -> ma.getPropertyAsIs(variableProperty));
             theStream = IntStream.concat(mine, overrideValues);
+        } else {
+            theStream = mine;
         }
         int max = theStream.max().orElse(Level.DELAY);
-        if (max == Level.DELAY && !isHasBeenDefined()) {
+        if (max == Level.DELAY && getMethodInfo().doesNotNeedAnalysing()) {
             // no information found in the whole hierarchy
             return variableProperty.valueWhenAbsent(annotationMode());
         }

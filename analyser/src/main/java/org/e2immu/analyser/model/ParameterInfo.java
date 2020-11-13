@@ -61,6 +61,11 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     }
 
     @Override
+    public TypeInfo primaryType() {
+        return owner.typeInfo.primaryType();
+    }
+
+    @Override
     public String toString() {
         return fullyQualifiedName();
     }
@@ -92,12 +97,6 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
 
     public boolean hasBeenInspected() {
         return parameterInspection.isSet();
-    }
-
-    @Override
-    public boolean hasBeenDefined() {
-        // owner == null means a parameter of an inline lambda expression, which can have properties!
-        return owner == null || owner.hasBeenDefined();
     }
 
     @Override
@@ -168,16 +167,16 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     }
 
     @Override
-    public Optional<AnnotationExpression> hasTestAnnotation(Class<?> annotation) {
-        if (!hasBeenDefined()) return Optional.empty();
+    public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
         String annotationFQN = annotation.getName();
-        Optional<AnnotationExpression> fromParameter = (getInspection().annotations.stream()
-                .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN))).findFirst();
+        Optional<AnnotationExpression> fromParameter = getInspection().annotations.stream()
+                .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN))
+                .findFirst();
         if (fromParameter.isPresent()) return fromParameter;
         if (NotNull.class.equals(annotation)) {
-            return owner.typeInfo.hasTestAnnotation(annotation);
+            return owner.typeInfo.hasInspectedAnnotation(annotation);
         }
-        return Optional.empty(); // do not copy from type!
+        return Optional.empty();
     }
 
     @Override

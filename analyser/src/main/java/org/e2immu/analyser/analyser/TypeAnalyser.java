@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -96,9 +97,10 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         typeAnalysis = new TypeAnalysisImpl.Builder(analyserContext.getPrimitives(), typeInfo);
         AnalyserComponents.Builder<String, Integer> builder = new AnalyserComponents.Builder<String, Integer>()
+                .add("findAspects", (iteration) -> findAspects())
                 .add("analyseImplicitlyImmutableTypes", (iteration) -> analyseImplicitlyImmutableTypes());
 
-        if (typeInfo.hasBeenDefined() && !typeInfo.isInterface()) {
+        if (!typeInfo.isInterface()) {
             builder.add("analyseOnlyMarkEventuallyE1Immutable", this::analyseOnlyMarkEventuallyE1Immutable)
                     .add("analyseEffectivelyE1Immutable", (iteration) -> analyseEffectivelyE1Immutable())
                     .add("analyseIndependent", (iteration) -> analyseIndependent())
@@ -235,6 +237,39 @@ public class TypeAnalyser extends AbstractAnalyser {
         typeAnalysis.transferPropertiesToAnnotations(e2);
     }
 
+    private AnalysisStatus findAspects() {
+        assert !typeAnalysis.aspects.isFrozen();
+        AtomicBoolean delays = new AtomicBoolean();
+        AtomicBoolean progress = new AtomicBoolean();
+        myMethodAndConstructorAnalysersExcludingSAMs.forEach(methodAnalyser -> {
+            Map<CompanionMethodName, MethodInfo> aspects =
+                    methodAnalyser.methodInspection.companionMethods.entrySet().stream()
+                            .filter(e -> e.getKey().action() == CompanionMethodName.Action.ASPECT)
+                            .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+            for (Map.Entry<CompanionMethodName, MethodInfo> entry : aspects.entrySet()) {
+                if (entry.getKey().aspect() == null) {
+                    throw new UnsupportedOperationException("Aspect is null in aspect definition?");
+                }
+                String aspect = entry.getKey().aspect();
+                MethodInfo mainMethod = entry.getValue();
+                int modified = analyserContext.getMethodAnalysis(mainMethod).getProperty(VariableProperty.MODIFIED);
+                if (modified == Level.DELAY) {
+                    delays.set(true);
+                } else if (modified == Level.TRUE) {
+                    throw new UnsupportedOperationException("Aspects need to be defined on non-modifying methods: " +
+                            mainMethod.fullyQualifiedName());
+                } else if (!typeAnalysis.aspects.isSet(aspect)) {
+                    typeAnalysis.aspects.put(aspect, mainMethod);
+                    progress.set(true);
+                }
+            }
+        });
+        if (!delays.get()) {
+            typeAnalysis.aspects.freeze();
+        }
+        return delays.get() ? (progress.get() ? PROGRESS : DELAYS) : DONE;
+    }
+
     private AnalysisStatus makeInternalObjectFlowsPermanent() {
         if (typeAnalysis.constantObjectFlows.isFrozen()) return DONE;
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
@@ -292,7 +327,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             TypeInfo bestType = type.bestTypeInfo();
             if (bestType == null) return false;
             int immutable = analyserContext.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
-            return immutable == MultiLevel.DELAY && bestType.hasBeenDefined();
+            return immutable == MultiLevel.DELAY && analyserContext.getTypeAnalysis(bestType).isBeingAnalysed();
         });
         if (e2immuDelay) {
             log(DELAYED, "Delaying implicitly immutable data types on {} because of immutable", typeInfo.fullyQualifiedName);

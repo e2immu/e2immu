@@ -49,7 +49,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
                              Set<ParameterizedType> implicitlyImmutableDataTypes,
                              Map<String, MethodInfo> aspects,
                              List<Value> invariants) {
-        super(typeInfo.hasBeenDefined(), properties, annotations);
+        super(properties, annotations);
         this.typeInfo = typeInfo;
         this.approvedPreconditions = approvedPreconditions;
         this.objectFlows = objectFlows;
@@ -110,7 +110,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public final SetOnce<List<Value>> invariants = new SetOnce<>();
 
         public Builder(Primitives primitives, TypeInfo typeInfo) {
-            super(primitives, typeInfo.hasBeenDefined(), typeInfo.simpleName);
+            super(primitives, typeInfo.simpleName);
             this.typeInfo = typeInfo;
         }
 
@@ -127,11 +127,6 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         @Override
         public int getProperty(VariableProperty variableProperty) {
             return getTypeProperty(variableProperty);
-        }
-
-        @Override
-        public boolean isHasBeenDefined() {
-            return typeInfo.hasBeenDefined();
         }
 
         @Override

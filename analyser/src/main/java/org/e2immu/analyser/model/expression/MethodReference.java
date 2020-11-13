@@ -127,7 +127,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                     }
                     result = new MethodValue(methodInfo, scopeResult.value, List.of(), objectFlow);
                 }
-            } else if (methodInfo.hasBeenDefined()) {
+            } else if (methodInfo.hasStatements()) {
                 result = UnknownValue.NO_VALUE; // delay, waiting
             } else {
                 if (scopeResult.value instanceof NullValue) {

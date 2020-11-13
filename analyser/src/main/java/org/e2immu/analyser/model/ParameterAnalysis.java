@@ -60,7 +60,7 @@ public interface ParameterAnalysis extends Analysis {
                                                    VariableProperty variableProperty) {
         IntStream mine = IntStream.of(getPropertyAsIs(variableProperty));
         IntStream theStream;
-        if (isHasBeenDefined()) {
+        if (isBeingAnalysed()) {
             theStream = mine;
         } else {
             IntStream overrideValues = analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides().stream()
@@ -69,7 +69,7 @@ public interface ParameterAnalysis extends Analysis {
             theStream = IntStream.concat(mine, overrideValues);
         }
         int max = theStream.max().orElse(Level.DELAY);
-        if (max == Level.DELAY && !isHasBeenDefined()) {
+        if (max == Level.DELAY && !isBeingAnalysed()) {
             // no information found in the whole hierarchy
             return variableProperty.valueWhenAbsent(annotationMode());
         }
