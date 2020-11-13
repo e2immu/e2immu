@@ -222,14 +222,13 @@ public class Class {
     String descriptorString() {
     }
 }
+*/
 
 public interface CharSequence {
     char charAt(int index);
 
     int length();
 }
-
- */
 
 @E2Container
 public class String implements CharSequence {

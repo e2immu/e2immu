@@ -272,15 +272,17 @@ public class TypeAnalyser extends AbstractAnalyser {
     private AnalysisStatus makeInternalObjectFlowsPermanent() {
         if (typeAnalysis.constantObjectFlows.isFrozen()) return DONE;
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
-            MethodLevelData methodLevelData = methodAnalyser.methodLevelData();
-            if (!methodLevelData.internalObjectFlows.isFrozen()) {
-                log(DELAYED, "Delay the freezing of internal object flows in type {}", typeInfo.fullyQualifiedName);
-                return DELAYS;
+            if (methodAnalyser.hasCode()) {
+                MethodLevelData methodLevelData = methodAnalyser.methodLevelData();
+                if (!methodLevelData.internalObjectFlows.isFrozen()) {
+                    log(DELAYED, "Delay the freezing of internal object flows in type {}", typeInfo.fullyQualifiedName);
+                    return DELAYS;
+                }
+                methodLevelData.internalObjectFlows.stream().filter(of -> of.origin == Origin.LITERAL).forEach(of -> {
+                    ObjectFlow inType = ensureConstantObjectFlow(of);
+                    of.moveAllInto(inType);
+                });
             }
-            methodLevelData.internalObjectFlows.stream().filter(of -> of.origin == Origin.LITERAL).forEach(of -> {
-                ObjectFlow inType = ensureConstantObjectFlow(of);
-                of.moveAllInto(inType);
-            });
         }
         typeAnalysis.constantObjectFlows.freeze();
         return DONE;
@@ -483,10 +485,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             log(DELAYED, "Delaying container, need assignedToField to be set");
             return DELAYS;
         }
-        boolean allReady = myMethodAndConstructorAnalysersExcludingSAMs.stream().allMatch(
-                methodAnalyser -> methodAnalyser.getParameterAnalysers().stream().allMatch(parameterAnalyser ->
-                        parameterAnalyser.getParameterAnalysis().getIsAssignedToAField() == Boolean.FALSE ||
-                                parameterAnalyser.parameterAnalysis.copiedFromFieldToParameters.isSet()));
+        boolean allReady = myMethodAndConstructorAnalysersExcludingSAMs.stream().allMatch(MethodAnalyser::fromFieldToParametersIsDone);
         if (!allReady) {
             log(DELAYED, "Delaying container, variables linked to fields and params not yet set");
             return DELAYS;
@@ -495,7 +494,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             if (!methodAnalyser.methodInfo.isPrivate()) {
                 for (ParameterAnalyser parameterAnalyser : methodAnalyser.getParameterAnalysers()) {
                     int modified = parameterAnalyser.parameterAnalysis.getProperty(VariableProperty.MODIFIED);
-                    if (modified == Level.DELAY) return DELAYS; // cannot yet decide
+                    if (modified == Level.DELAY && methodAnalyser.hasCode()) return DELAYS; // cannot yet decide
                     if (modified == Level.TRUE) {
                         log(CONTAINER, "{} is not a @Container: the content of {} is modified in {}",
                                 typeInfo.fullyQualifiedName,
@@ -607,7 +606,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         // RULE 3
 
         for (MethodAnalyser methodAnalyser : myMethodAnalysers) {
-            if (methodAnalyser.methodInfo.hasReturnValue() &&
+            if (methodAnalyser.methodInfo.hasReturnValue() && methodAnalyser.hasCode() &&
                     !typeAnalysis.implicitlyImmutableDataTypes.get().contains(methodAnalyser.methodInfo.returnType())) {
                 VariableInfo variableInfo = methodAnalyser.getReturnAsVariable();
                 if (variableInfo == null) {

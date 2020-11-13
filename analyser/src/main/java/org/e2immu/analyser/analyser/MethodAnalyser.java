@@ -184,6 +184,17 @@ public class MethodAnalyser extends AbstractAnalyser {
         return methodAnalysis;
     }
 
+    public boolean fromFieldToParametersIsDone() {
+        return !hasCode() || getParameterAnalysers().stream().allMatch(parameterAnalyser ->
+                parameterAnalyser.getParameterAnalysis().getIsAssignedToAField() == Boolean.FALSE ||
+                        parameterAnalyser.parameterAnalysis.copiedFromFieldToParameters.isSet());
+    }
+
+    public boolean hasCode() {
+        StatementAnalysis firstStatement = methodAnalysis.getFirstStatement();
+        return firstStatement != null;
+    }
+
     @Override
     public void check() {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
