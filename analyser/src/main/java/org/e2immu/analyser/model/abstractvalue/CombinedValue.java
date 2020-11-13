@@ -9,7 +9,6 @@ import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.annotation.Size;
 
 import java.util.HashSet;
 import java.util.List;
@@ -36,7 +35,7 @@ public class CombinedValue implements Value {
         return false;
     }
 
-    public static Value create(@Size(min = 1) List<Value> values) {
+    public static Value create(List<Value> values) {
         if (values.isEmpty()) throw new UnsupportedOperationException();
         return new CombinedValue(ImmutableList.copyOf(values));
     }

@@ -85,11 +85,6 @@ public class VariableExpression implements Expression {
             builder.variableOccursInNotModified1Context(variable, currentValue);
         }
 
-        int size = forwardEvaluationInfo.getProperty(VariableProperty.SIZE);
-        if (size >= Level.NOT_A_SIZE) {
-            builder.markSizeRestriction(variable, size);
-        }
-
         int methodCalled = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_CALLED);
         if (methodCalled == Level.TRUE) {
             builder.markMethodCalled(variable, methodCalled);

@@ -20,10 +20,8 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.annotation.SizeCopy;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -54,15 +52,4 @@ public interface TypeAnalysis extends Analysis {
         if (variableProperty == VariableProperty.NOT_NULL) return MultiLevel.EFFECTIVELY_NOT_NULL;
         return internalGetProperty(variableProperty);
     }
-
-    boolean haveFieldHoldingSizeAndSizeCopyVariables();
-
-    FieldInfo getFieldHoldingSize();
-
-    /**
-     * Typically parameters in the map.
-     *
-     * @return True for equals, false for min
-     */
-    Map<Variable, SizeCopy> getSizeCopyVariables();
 }

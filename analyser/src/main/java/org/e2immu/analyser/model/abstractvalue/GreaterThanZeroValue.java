@@ -321,32 +321,6 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     }
 
     @Override
-    public int encodedSizeRestriction(EvaluationContext evaluationContext) {
-        XB xb = extract(evaluationContext);
-        if (!xb.lessThan) {
-            return Level.encodeSizeMin((int) xb.b);
-        }
-        return 0;
-    }
-
-    @Override
-    public FilterResult isIndividualSizeRestrictionOnParameter(EvaluationContext evaluationContext) {
-        XB xb = extract(evaluationContext);
-        if (!xb.lessThan && xb.x instanceof ConstrainedNumericValue cnv) {
-            if (cnv.value instanceof MethodValue methodValue) {
-                if (methodValue.methodInfo.typeInfo.sizeMethod(evaluationContext.getAnalyserContext())
-                        == methodValue.methodInfo) {
-                    // I am the size method!
-                    if (methodValue.object instanceof VariableValue v) {
-                        return new FilterResult(Map.of(v.variable, this), UnknownValue.NO_VALUE);
-                    }
-                }
-            }
-        }
-        return new FilterResult(Map.of(), this);
-    }
-
-    @Override
     public void visit(Consumer<Value> consumer) {
         value.visit(consumer);
         consumer.accept(this);

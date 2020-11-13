@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Only;
-import org.e2immu.annotation.Size;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -43,7 +42,6 @@ public class SetOnceMap<K, V> extends Freezable {
     private final Map<K, V> map = new HashMap<>();
 
     @Only(before = "frozen,map")
-    @Size(min = 1)
     public void put(@NotNull K k, @NotNull V v) {
         Objects.requireNonNull(k);
         Objects.requireNonNull(v);
@@ -59,7 +57,6 @@ public class SetOnceMap<K, V> extends Freezable {
         return Objects.requireNonNull(map.get(k));
     }
 
-    @Size(min = 0)
     public int size() {
         return map.size();
     }
@@ -72,7 +69,6 @@ public class SetOnceMap<K, V> extends Freezable {
         return map.containsKey(k);
     }
 
-    @Size(equals = 0)
     public boolean isEmpty() {
         return map.isEmpty();
     }
@@ -81,7 +77,6 @@ public class SetOnceMap<K, V> extends Freezable {
         map.forEach(consumer);
     }
 
-    @Size(copy = true)
     public Stream<Map.Entry<K, V>> stream() {
         return map.entrySet().stream();
     }

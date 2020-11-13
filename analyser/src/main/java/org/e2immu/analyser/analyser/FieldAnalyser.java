@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
-import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.*;
@@ -61,8 +60,6 @@ public class FieldAnalyser extends AbstractAnalyser {
     public static final String ANALYSE_NOT_NULL = "analyseNotNull";
     public static final String ANALYSE_MODIFIED = "analyseModified";
     public static final String ANALYSE_SIZE = "analyseSize";
-    public static final String ANALYSE_SIZE_COPY = "analyseSizeCopy";
-    public static final String ANALYSE_SIZE_AS_DYNAMIC_TYPE_ANNOTATION = "analyseSizeAsDynamicTypeAnnotation";
     public static final String ANALYSE_NOT_MODIFIED_1 = "analyseNotModified1";
     public static final String ANALYSE_LINKED = "analyseLinked";
     public static final String FIELD_ERRORS = "fieldErrors";
@@ -108,8 +105,6 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .add(ANALYSE_DYNAMIC_TYPE_ANNOTATION_IMMUTABLE, (iteration) -> analyseDynamicTypeAnnotation(iteration, VariableProperty.IMMUTABLE))
                 .add(ANALYSE_NOT_NULL, this::analyseNotNull)
                 .add(ANALYSE_MODIFIED, (iteration) -> analyseModified())
-                .add(ANALYSE_SIZE, this::analyseSize)
-                .add(ANALYSE_SIZE_AS_DYNAMIC_TYPE_ANNOTATION, this::analyseSizeAsDynamicTypeAnnotation)
                 .add(ANALYSE_NOT_MODIFIED_1, (iteration) -> analyseNotModified1())
                 .add(ANALYSE_LINKED, (iteration) -> analyseLinked())
                 .add(FIELD_ERRORS, (iteration) -> fieldErrors())
@@ -210,15 +205,6 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DELAYS;
     }
 
-
-    private AnalysisStatus analyseSizeAsDynamicTypeAnnotation(int iteration) {
-        int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
-        if (modified == Level.DELAY) return DELAYS;
-        if (modified == Level.FALSE)
-            return analyseDynamicTypeAnnotation(iteration, VariableProperty.SIZE);
-        return DONE; // not for me
-    }
-
     private AnalysisStatus computeImplicitlyImmutableDataType() {
         assert !fieldAnalysis.isOfImplicitlyImmutableDataType.isSet();
         if (myTypeAnalyser.typeAnalysis.getImplicitlyImmutableDataTypes() == null) return DELAYS;
@@ -241,72 +227,6 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         log(NOT_MODIFIED, "Set @NotModified1 on {} to {}", fieldInfo.fullyQualifiedName(), allParametersNotModified);
         fieldAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, allParametersNotModified);
-        return DONE;
-    }
-
-    // TODO SIZE = min over assignments IF the field is not modified + not exposed or e2immu + max over restrictions + max of these two
-
-    private AnalysisStatus analyseSize(int iteration) {
-        if (fieldAnalysis.getProperty(VariableProperty.SIZE) != Level.DELAY) return DONE;
-
-        if (!fieldInfo.type.hasSize(analyserContext)) {
-            log(SIZE, "No @Size annotation on {}, because the type has no size!", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(VariableProperty.SIZE, Level.FALSE); // in the case of size, FALSE there cannot be size
-            return DONE;
-        }
-        int isFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-        if (isFinal == Level.DELAY) {
-            log(DELAYED, "Delaying @Size on {} until we know about @Final", fieldInfo.fullyQualifiedName());
-            return DELAYS;
-        }
-        if (isFinal == Level.FALSE && fieldCanBeWrittenFromOutsideThisType) {
-            log(SIZE, "Field {} cannot have @Size: it is not @Final, and it can be assigned to from outside this class", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.setProperty(VariableProperty.SIZE, Level.FALSE); // in the case of size, FALSE there cannot be size
-            return DONE;
-        }
-        if (fieldSummariesNotYetSet) return DELAYS;
-
-        // now for the more serious restrictions... if the type is @E2Immu, we can have a @Size restriction (actually, size is constant!)
-        // if the field is @NotModified, and not exposed, then @Size is governed by the assignments and restrictions of the method.
-        // but if the field is exposed somehow, or modified in the type, we must stick to @Size(min >= 0) (we have a size)
-        int modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
-        if (modified == Level.DELAY) {
-            log(DELAYED, "Delaying @Size on {} until we know about @NotModified", fieldInfo.fullyQualifiedName());
-            return DELAYS;
-        }
-        if (modified == Level.TRUE) {
-            fieldAnalysis.setProperty(VariableProperty.SIZE, Level.IS_A_SIZE);
-            log(SIZE, "Setting @Size on {} to @Size(min = 0), meaning 'we have a @Size, but nothing else'", fieldInfo.fullyQualifiedName());
-            return DONE;
-        }
-        int e2Immutable = MultiLevel.value(fieldAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
-        if (e2Immutable == MultiLevel.DELAY) {
-            log(DELAYED, "Delaying @Size on {} until we know about @E2Immutable", fieldInfo.fullyQualifiedName());
-            return DELAYS;
-        }
-        if (someAssignmentValuesUndefined(VariableProperty.SIZE)) return DELAYS;
-
-        boolean allDelaysResolved = delaysOnFieldSummariesResolved();
-
-        int valueFromAssignment = computeValueFromAssignment(iteration, VariableProperty.SIZE, allDelaysResolved);
-        if (valueFromAssignment == Level.DELAY) {
-            log(DELAYED, "Delaying property @NotNull on field {}, initialiser delayed", fieldInfo.fullyQualifiedName());
-            return DELAYS;
-        }
-
-        int valueFromContext = computeValueFromContext(VariableProperty.SIZE, allDelaysResolved);
-        if (valueFromContext == Level.DELAY) {
-            log(DELAYED, "Delaying property @NotNull on {}, context property delay", fieldInfo.fullyQualifiedName());
-            return DELAYS;
-        }
-
-        if (valueFromContext > valueFromAssignment) {
-            log(SIZE, "Problematic: assignments have lower value than requirements for @Size");
-            messages.add(Message.newMessage(new Location(fieldInfo), Message.POTENTIAL_SIZE_PROBLEM));
-        }
-        int finalValue = Level.best(valueFromAssignment, valueFromContext);
-        log(SIZE, "Set property @Size on field {} to value {}", fieldInfo.fullyQualifiedName(), finalValue);
-        fieldAnalysis.setProperty(VariableProperty.SIZE, finalValue);
         return DONE;
     }
 
@@ -540,9 +460,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             int v = evaluationContext.getProperty(fieldAnalysis.getInitialValue(), property);
             values.add(v);
         }
-        int result = property == VariableProperty.SIZE ? MethodAnalyser.safeMinimumForSize(messages,
-                new Location(fieldInfo), values.stream().mapToInt(Integer::intValue)) :
-                values.stream().mapToInt(Integer::intValue).min().orElse(property.falseValue);
+        int result = values.stream().mapToInt(Integer::intValue).min().orElse(property.falseValue);
         if (result == Level.DELAY && allDelaysResolved) return property.falseValue;
         return result;
     }
@@ -835,7 +753,6 @@ public class FieldAnalyser extends AbstractAnalyser {
         check(Nullable.class, e2.nullable.get());
 
         checkConstant.checkConstantForFields(messages, fieldInfo, fieldAnalysis);
-        CheckSize.checkSizeForFields(messages, fieldInfo, fieldAnalysis);
     }
 
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {

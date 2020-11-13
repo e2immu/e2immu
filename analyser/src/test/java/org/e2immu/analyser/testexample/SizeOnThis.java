@@ -2,7 +2,6 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.Size;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -16,27 +15,27 @@ public class SizeOnThis {
 
     private final Set<String> strings = new HashSet<>();
 
-    @Size
+    void size$Aspect$Size() {}
     @NotModified
     public int size() {
         return strings.size();
     }
 
-    @Size(equals = 0)
+    boolean isEmpty$Value$Size(int size) { return size == 0; }
     @NotModified
     public boolean isEmpty() {
         return strings.isEmpty();
     }
 
     // annotation is about the object
-    @Size(equals = 0)
+    boolean clear$Modification$Size(int post, int pre) { return post == 0; }
     @NotModified(type = AnnotationType.VERIFY_ABSENT)
     private void clear() {
         strings.clear();
     }
 
     // this annotation is about the object, not the return value
-    @Size(min = 1)
+    boolean add$Modification$Size(int post, int pre) { return pre == 0 ? post == 1: post >= pre && post <= pre+1; }
     @NotModified(type = AnnotationType.VERIFY_ABSENT)
     public boolean add(String a) {
         return strings.add(a);
@@ -44,7 +43,7 @@ public class SizeOnThis {
 
     // this annotation is about the object, not the return value (even though in this particular case,
     // they could be the same.)
-    @Size(min = 1)
+    boolean method1$Modification$Size(int post, int pre) { return post >= 1; }
     @NotModified(type = AnnotationType.VERIFY_ABSENT)
     public int method1(String s) {
         clear();
@@ -61,9 +60,8 @@ public class SizeOnThis {
         return size();
     }
 
-    // again the annotation is about the object
+    boolean method2$Modification$Size(int post, int pre) { return post >= 1; }
     @NotModified(type = AnnotationType.VERIFY_ABSENT)
-    @Size(min = 1)
     public void method2() {
         int n = method1("a");
         if(n >= 1) { // ERROR constant evaluation

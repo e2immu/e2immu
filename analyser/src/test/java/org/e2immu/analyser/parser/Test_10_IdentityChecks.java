@@ -1,6 +1,5 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -11,7 +10,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Set;
 
 public class Test_10_IdentityChecks extends CommonTestRunner {
     public Test_10_IdentityChecks() {
@@ -44,16 +42,6 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
         if (d.methodInfo().name.equals("idem3") && IDEM3_S.equals(d.variableName())) {
             // there is an explicit @NotNull on the first parameter of debug
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
-        }
-        if (IDEM.equals(d.variableName()) && "1".equals(d.statementId())) {
-            int expectSize = Level.IS_A_SIZE;
-            Assert.assertEquals(expectSize, d.getProperty(VariableProperty.SIZE));
-        }
-        if (IDEM3.equals(d.variableName()) && Set.of("1.0.0", "1.1.0", "1").contains(d.statementId())) {
-            int expectSize = Level.IS_A_SIZE;
-            Assert.assertEquals(expectSize, d.getProperty(VariableProperty.SIZE));
-            int expectSizeCopy = Level.FALSE;
-            Assert.assertEquals(expectSizeCopy, d.getProperty(VariableProperty.SIZE_COPY));
         }
     };
 
@@ -112,18 +100,12 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
         }
     };
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
-        TypeInfo stringTypeInfo = typeContext.getFullyQualified(String.class);
-        Assert.assertTrue(stringTypeInfo.hasSize(AnalysisProvider.DEFAULT_PROVIDER));
-    };
-
     @Test
     public void test() throws IOException {
         testClass("IdentityChecks", 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addTypeContextVisitor(typeContextVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }

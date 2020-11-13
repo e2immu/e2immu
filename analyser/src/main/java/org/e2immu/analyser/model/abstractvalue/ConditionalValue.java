@@ -188,11 +188,6 @@ public class ConditionalValue implements Value {
     (4) (-3) + a.size() >= 0 ? a : x
      */
     private int lookForPatterns(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        if (variableProperty == VariableProperty.SIZE) {
-            // contrary to null situation, we never have a negation because not equals to 0 is written as >= 1
-            return Level.bestSize(checkSizeRestriction(evaluationContext, condition, ifTrue, ifFalse),
-                    checkSizeRestriction(evaluationContext, NegatedValue.negate(evaluationContext, condition), ifFalse, ifTrue));
-        }
         if (variableProperty == VariableProperty.NOT_NULL) {
             Value c = condition;
             boolean not = false;
@@ -212,22 +207,6 @@ public class ConditionalValue implements Value {
                     // null == a ? something: a
                     return not ? MultiLevel.NULLABLE : evaluationContext.getProperty(ifTrue, variableProperty);
                 }
-            }
-        }
-        return NO_PATTERN;
-    }
-
-    private static int checkSizeRestriction(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse) {
-        Map<Variable, Value> sizeRestrictions = condition.filter(evaluationContext,
-                FilterMode.REJECT, val -> val.isIndividualSizeRestriction(evaluationContext)).accepted;
-        if (ifTrue instanceof VariableValue) {
-            Value sizeRestriction = sizeRestrictions.get(((VariableValue) ifTrue).variable);
-            if (sizeRestriction != null) {
-                // have a size restriction on ifTrue
-                int t = sizeRestriction.encodedSizeRestriction(evaluationContext);
-                int f = evaluationContext.getProperty(ifFalse, VariableProperty.SIZE);
-                if (Level.haveEquals(t) && Level.haveEquals(f) && t != f) return Level.IS_A_SIZE;
-                return Level.joinSizeRestrictions(t, f);
             }
         }
         return NO_PATTERN;

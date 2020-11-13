@@ -36,9 +36,6 @@ public abstract class ConstantValue implements Value {
                 return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
             case NOT_NULL:
                 return MultiLevel.EFFECTIVELY_NOT_NULL;
-            case SIZE:
-            case SIZE_COPY:
-                return Level.DELAY;
             case MODIFIED:
             case NOT_MODIFIED_1:
             case METHOD_DELAY:

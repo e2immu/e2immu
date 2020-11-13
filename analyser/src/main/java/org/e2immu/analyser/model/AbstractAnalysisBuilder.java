@@ -129,40 +129,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         annotations.put(e2ImmuAnnotationExpressions.notModified1.get(), getProperty(VariableProperty.NOT_MODIFIED_1) == Level.TRUE);
     }
 
-    protected void doSize(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, boolean isParameter) {
-        List<Expression> parameters = new ArrayList<>(3);
-
-        // collect annotations
-        // size copy
-        int sizeCopy = getProperty(VariableProperty.SIZE_COPY);
-        if (sizeCopy == Level.SIZE_COPY_MIN_TRUE) {
-            parameters.add(new MemberValuePair("copyMin", new BooleanConstant(primitives, true)));
-        } else if (sizeCopy == Level.SIZE_COPY_TRUE) {
-            parameters.add(new MemberValuePair("copy", new BooleanConstant(primitives, true)));
-        }
-
-        if (isParameter) {
-            addSize("min", "equals", parameters, VariableProperty.SIZE_RESTRICTION);
-            addSize("outMin", "outEquals", parameters, VariableProperty.SIZE_OUT);
-        } else {
-            addSize("min", "equals", parameters, VariableProperty.SIZE);
-        }
-
-        AnnotationExpression ae = AnnotationExpression.fromAnalyserExpressions(e2ImmuAnnotationExpressions.size.get().typeInfo, parameters);
-        annotations.put(ae, true);
-    }
-
-    private void addSize(String min, String equals, List<Expression> parameters, VariableProperty property) {
-        int size = getProperty(property);
-        if (size >= Level.IS_A_SIZE) {
-            if (Level.haveEquals(size)) {
-                parameters.add(new MemberValuePair(equals, new IntConstant(primitives, Level.decodeSizeEquals(size))));
-            } else {
-                parameters.add(new MemberValuePair(min, new IntConstant(primitives, Level.decodeSizeMin(size))));
-            }
-        }
-    }
-
     protected void doImmutableContainer(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions, int immutable, boolean betterThanFormal) {
         int container = getProperty(VariableProperty.CONTAINER);
         String mark;
@@ -284,22 +250,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     properties.put(VariableProperty.LINKED, Level.TRUE);
                 } else if (e2ImmuAnnotationExpressions.notModified1.get().typeInfo == t) {
                     properties.put(VariableProperty.NOT_MODIFIED_1, Level.TRUE);
-                } else if (e2ImmuAnnotationExpressions.size.get().typeInfo == t) {
-                    int sizeMinEq = extractSizeMin("min", "equals", annotationExpression);
-                    int sizeOutMinEq = extractSizeMin("outMin", "outEquals", annotationExpression);
-                    int sizeCopy = extractSizeCopy(annotationExpression);
-                    if (sizeCopy == Level.DELAY && sizeMinEq == Level.DELAY && sizeOutMinEq == Level.DELAY) {
-                        messages.add(Message.newMessage(location(), Message.SIZE_NEED_PARAMETER));
-                    } else {
-                        if (isParameter) {
-                            properties.put(VariableProperty.SIZE_RESTRICTION, sizeMinEq);
-                        }
-                        properties.put(VariableProperty.SIZE, sizeMinEq);
-                        properties.put(VariableProperty.SIZE_COPY, sizeCopy);
-                        if (isParameter) {
-                            properties.put(VariableProperty.SIZE_OUT, sizeOutMinEq);
-                        }
-                    }
                 } else if (e2ImmuAnnotationExpressions.precondition.get().typeInfo == t) {
                     //String value = annotationExpression.extract("value", "");
                     throw new UnsupportedOperationException("Not yet implemented");
@@ -343,36 +293,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     private static List<String> safeSplit(String s) {
         String[] ss = s.split(",\\s*");
         return Arrays.stream(ss).filter(l -> l.trim().isEmpty()).collect(Collectors.toList());
-    }
-
-    /**
-     * Values: -1 = absent; 0 = NOT A SIZE; 1 = min=0,(is a size);  2 = equals 0 (empty) ; 3 = min 1 (not empty); 4 = equals 1; 5 = min 2; 6 = equals 2
-     *
-     * @param annotationExpression the annotation
-     * @return encoded value
-     */
-    public int extractSizeMin(String minString, String equalsString, AnnotationExpression annotationExpression) {
-        Integer min = annotationExpression.extract(minString, -1);
-        if (min >= 0) {
-            // min = 0 is FALSE; min = 1 means FALSE at level 1 (value 2), min = 2 means FALSE at level 2 (value 4)
-            return Level.encodeSizeMin(min);
-        }
-        Integer equals = annotationExpression.extract(equalsString, -1);
-        if (equals >= 0) {
-            // equals 0 means TRUE at level 0, equals 1 means TRUE at level 1 (value 3)
-
-            // @Size is the default
-            return Level.encodeSizeEquals(equals);
-        }
-        return Level.DELAY;
-    }
-
-    public static int extractSizeCopy(AnnotationExpression annotationExpression) {
-        Boolean copy = annotationExpression.extract("copy", false);
-        if (copy) return Level.SIZE_COPY_TRUE;
-        Boolean copyMin = annotationExpression.extract("copyMin", false);
-        if (copyMin) return Level.SIZE_COPY_MIN_TRUE;
-        return Level.FALSE;
     }
 
     public Map<VariableProperty, Integer> getProperties(Set<VariableProperty> properties) {

@@ -24,10 +24,8 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.annotation.SizeCopy;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -63,8 +61,6 @@ public interface MethodAnalysis extends Analysis {
     default Value getSingleReturnValue() {
         return UnknownValue.NO_VALUE;
     }
-
-    default Map<Variable, SizeCopy> getSizeCopyVariables() { return Map.of(); }
 
     default Set<MethodAnalysis> getOverrides() {
         return Set.of();
@@ -152,7 +148,6 @@ public interface MethodAnalysis extends Analysis {
 
             case FLUENT:
             case IDENTITY:
-            case SIZE:
 
             case INDEPENDENT:
                 // TODO if we have an array constructor created on-the-fly, it should be EFFECTIVELY INDEPENDENT

@@ -9,6 +9,8 @@ public class PreconditionChecks {
 
     // the first 4 methods are an exercise in applying a precondition on parameters
 
+    static boolean either$Precondition(String e1, String e2) { return e1 != null || e2 != null; }
+
     @Precondition("(not (null == e1) or not (null == e2))")
     public static String either(String e1, String e2) {
         if (e1 == null && e2 == null) throw new UnsupportedOperationException();
@@ -39,13 +41,16 @@ public class PreconditionChecks {
 
     private int i;
 
-    @Precondition("this.i >= 0")
+    boolean setPositive$Precondition() { return i >= 0; }
+    static boolean setPositive$Postcondition() { return true; } // no meaningful one
+
     public void setPositive1(int j1) {
         if (i < 0) throw new UnsupportedOperationException();
         this.i = j1;
     }
 
-    @Precondition("j1 >= 0")
+    static boolean setPositive2$Precondition(int j1) { return j1 >= 0; }
+    boolean setPositive2$Postcondition() { return i >= 0; } // no meaningful one
     public void setPositive2(int j1) {
         if (j1 < 0) throw new UnsupportedOperationException();
         this.i = j1;
@@ -94,7 +99,8 @@ public class PreconditionChecks {
     }
 
     // here, the first condition does not disappear, because of the AND rather than the OR
-    @Precondition("(p1 > 0 and (((-2) + p1) >= 0 or p2 > 0))")
+    static boolean combinedPrecondition3$Precondition(int p1, int p2) { return p1>0 && (p1 >= 2 || p2 > 0); }
+
     public void combinedPrecondition3(int p1, int p2) {
         if (p1 <= 0) throw new UnsupportedOperationException();
         if (p1 < 2 && p2 <= 0) throw new UnsupportedOperationException();
@@ -103,8 +109,8 @@ public class PreconditionChecks {
 
     private Integer integer;
 
+    boolean setInteger$Precondition(int ii) { return this.integer == null && ii >= 0; }
     @NotNull
-    @Precondition("(null == this.integer and ii >= 0)")
     public Integer setInteger(int ii) {
         synchronized (this) {
             if (ii < 0) throw new UnsupportedOperationException();

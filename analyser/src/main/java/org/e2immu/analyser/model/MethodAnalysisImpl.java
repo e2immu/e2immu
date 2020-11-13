@@ -31,7 +31,6 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationMode;
-import org.e2immu.annotation.SizeCopy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +54,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final boolean complainedAboutApprovedPreconditions;
     public final Value precondition;
     public final Value singleReturnValue;
-    public final Map<Variable, SizeCopy> sizeCopyVariables;
 
     private MethodAnalysisImpl(boolean hasBeenDefined,
                                MethodInfo methodInfo,
@@ -63,7 +61,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                StatementAnalysis lastStatement,
                                List<ParameterAnalysis> parameterAnalyses,
                                Value singleReturnValue,
-                               Map<Variable, SizeCopy> sizeCopyVariables,
                                ObjectFlow objectFlow,
                                Set<ObjectFlow> internalObjectFlows,
                                List<Value> preconditionForMarkAndOnly,
@@ -86,12 +83,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.complainedAboutApprovedPreconditions = complainedAboutApprovedPreconditions;
         this.precondition = precondition;
         this.singleReturnValue = singleReturnValue;
-        this.sizeCopyVariables = sizeCopyVariables;
-    }
-
-    @Override
-    public Map<Variable, SizeCopy> getSizeCopyVariables() {
-        return sizeCopyVariables;
     }
 
     @Override
@@ -191,7 +182,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public final SetOnce<Value> singleReturnValue = new SetOnce<>();
         public final SetOnce<Integer> singleReturnValueImmutable = new SetOnce<>();
-        public final SetOnce<Map<Variable, SizeCopy>> sizeCopyVariables = new SetOnce<>();
 
         // ************* object flow
 
@@ -255,7 +245,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     getLastStatement(),
                     parameterAnalyses,
                     getSingleReturnValue(),
-                    getSizeCopyVariables(),
                     getObjectFlow(),
                     ImmutableSet.copyOf(internalObjectFlows.getOrElse(Set.of())),
                     ImmutableList.copyOf(preconditionForMarkAndOnly.getOrElse(List.of())),
@@ -265,11 +254,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     precondition.getOrElse(UnknownValue.EMPTY),
                     properties.toImmutableMap(),
                     annotations.toImmutableMap());
-        }
-
-        @Override
-        public Map<Variable, SizeCopy> getSizeCopyVariables() {
-            return sizeCopyVariables.getOrElse(null);
         }
 
         @Override
@@ -350,9 +334,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // @NotNull
             doNotNull(e2ImmuAnnotationExpressions);
-
-            // @Size
-            doSize(e2ImmuAnnotationExpressions, false);
 
             // dynamic type annotations for functional interface types: @NotModified1
             doNotModified1(e2ImmuAnnotationExpressions);

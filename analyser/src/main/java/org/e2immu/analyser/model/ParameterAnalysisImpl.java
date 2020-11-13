@@ -180,7 +180,6 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
             // @NotNull, @Size
             doNotNull(e2ImmuAnnotationExpressions);
-            doSize(e2ImmuAnnotationExpressions, true);
         }
     }
 

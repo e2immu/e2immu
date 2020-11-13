@@ -424,18 +424,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setInitialValueFromAnalyser(UnknownValue.RETURN_VALUE, Map.of());
             // assignment will be at LEVEL 3
             vic.setLinkedVariablesFromAnalyser(Set.of());
-            vic.setSizeCopyVariablesFromAnalyser(Map.of());
         } else if (variable instanceof This) {
             vic.setInitialValueFromAnalyser(new VariableValue(variable, ObjectFlow.NO_FLOW),
                     propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo));
             vic.setLinkedVariablesFromAnalyser(Set.of());
-            vic.setSizeCopyVariablesFromAnalyser(Map.of());
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
             VariableValue variableValue = new VariableValue(variable, objectFlow);
             vic.setInitialValueFromAnalyser(variableValue, propertyMap(analyserContext, parameterInfo));
             vic.setLinkedVariablesFromAnalyser(Set.of());
-            vic.setSizeCopyVariablesFromAnalyser(Map.of());
         } else if (variable instanceof FieldReference fieldReference) {
             Value initialValue = initialValueOfField(analyserContext, fieldReference);
             if (initialValue != UnknownValue.NO_VALUE) {
@@ -443,13 +440,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
             // a field's local copy is always created not modified... can only go "up"
             vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, MODIFIED, 0);
-
-            TypeAnalysis typeAnalysis = analyserContext.getTypeAnalysis(methodAnalysis.getMethodInfo().typeInfo);
-            if (typeAnalysis.haveFieldHoldingSizeAndSizeCopyVariables() && typeAnalysis.getFieldHoldingSize() == fieldReference.fieldInfo) {
-                vic.setSizeCopyVariablesFromAnalyser(typeAnalysis.getSizeCopyVariables());
-            } else {
-                vic.setSizeCopyVariablesFromAnalyser(Map.of());
-            }
             vic.setLinkedVariablesFromAnalyser(Set.of());
         } // but local variables get their linked variables from an assignment, potentially at LEVEL 1
 

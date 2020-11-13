@@ -75,18 +75,15 @@ public class TestSetOnceMap extends CommonTestRunner {
             Assert.assertEquals("0 == this.map.size(),?>=0", tv.getValue().toString());
 
             // there is no reason to have a @Size annotation on this expression
-            Assert.assertEquals(Level.DELAY, tv.getProperty(VariableProperty.SIZE));
             if (iteration > 0) {
                 Value srv = d.methodAnalysis().getSingleReturnValue();
                 Assert.assertEquals("inline isEmpty on 0 == this.map.size(),?>=0", srv.toString());
                 // @Size(equals = 0)
-                Assert.assertEquals(Level.SIZE_EMPTY, d.methodAnalysis().getProperty(VariableProperty.SIZE));
             }
         }
         if ("stream".equals(name)) {
             Value stream = d.getReturnAsVariable().getValue();
             Assert.assertEquals("this.map.entrySet().stream()", stream.toString());
-            Assert.assertEquals(Level.SIZE_COPY_TRUE, d.getProperty(stream, VariableProperty.SIZE_COPY));
         }
         if ("put".equals(name)) {
             if (iteration > 0) {

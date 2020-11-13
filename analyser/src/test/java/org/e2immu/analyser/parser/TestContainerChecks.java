@@ -36,9 +36,6 @@ public class TestContainerChecks extends CommonTestRunner {
             }
         }
         if ("Container4".equals(d.methodInfo().name)) {
-            if ("strings4Param".equals(d.variableName())) {
-                Assert.assertEquals(Level.IS_A_SIZE, d.getProperty(VariableProperty.SIZE));
-            }
             if ("Container4.this.strings4".equals(d.variableName())) {
                 Assert.assertTrue(d.currentValue() instanceof PropertyWrapper);
                 Assert.assertEquals("strings4Param,@NotNull", d.currentValue().toString());
@@ -97,7 +94,6 @@ public class TestContainerChecks extends CommonTestRunner {
             Assert.assertEquals("strings2", strings.name);
             VariableInfo transferValue = d.getFieldAsVariable(strings);
             Assert.assertFalse(transferValue.hasProperty(VariableProperty.NOT_NULL));
-            Assert.assertEquals(Level.SIZE_NOT_EMPTY, transferValue.getProperty(VariableProperty.SIZE));
         }
         if ("add2b".equals(name)) {
             FieldInfo strings = typeInfo.typeInspection.getPotentiallyRun().fields.get(0);

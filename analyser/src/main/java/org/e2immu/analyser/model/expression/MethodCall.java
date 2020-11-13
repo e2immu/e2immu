@@ -22,7 +22,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
-import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.StringValue;
@@ -36,15 +35,12 @@ import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Only;
-import org.e2immu.annotation.SizeCopy;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.LogTarget.SIZE;
-import static org.e2immu.analyser.util.Logger.log;
+
 
 public class MethodCall extends ExpressionWithMethodReferenceResolution implements HasParameterExpressions {
     public final Expression object;
@@ -197,16 +193,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             MethodInspection methodInspection = methodInfo.methodInspection.get();
             complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo, contentNotNullRequired);
 
-            EvaluationResult mv = methodValue(evaluationContext, location, methodInfo, methodAnalysis, objectValue, parameterValues, objectFlowOfResult);
+            EvaluationResult mv = methodValue(evaluationContext, methodInfo, methodAnalysis, objectValue, parameterValues, objectFlowOfResult);
             builder.compose(mv);
             result = mv.value;
         } else {
             result = UnknownValue.NO_RETURN_VALUE;
-        }
-
-        VariableValue objectVariableValue;
-        if (modified == Level.TRUE && (objectVariableValue = objectValue.asInstanceOf(VariableValue.class)) != null) {
-            checkSizeCopy(objectVariableValue.variable, methodInfo, parameterValues, evaluationContext, builder);
         }
         builder.setValue(result);
 
@@ -272,7 +263,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     // static, also used in MethodValue re-evaluation
     public static EvaluationResult methodValue(EvaluationContext evaluationContext,
-                                               Location location,
                                                MethodInfo methodInfo,
                                                MethodAnalysis methodAnalysis,
                                                Value objectValue,
@@ -292,12 +282,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 methodInfo, objectValue);
         if (evaluationOnConstant != null) {
             return builder.setValue(evaluationOnConstant).build();
-        }
-
-        // @Size as method annotation
-        Value sizeShortCut = computeSize(builder, methodInfo, methodAnalysis, objectValue, parameters, evaluationContext, location);
-        if (sizeShortCut != null) {
-            return builder.setValue(sizeShortCut).build();
         }
 
         // @Identity as method annotation
@@ -369,29 +353,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return builder.setValue(methodValue).build();
     }
 
-    private static void checkSizeCopy(Variable scopeVariable, MethodInfo methodInfo, List<Value> parameters, EvaluationContext evaluationContext, EvaluationResult.Builder builder) {
-        if (methodInfo.typeInfo.hasSize(evaluationContext.getAnalyserContext())) {
-            int i = 0;
-            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
-                ParameterAnalysis parameterAnalysis = evaluationContext.getParameterAnalysis(parameterInfo);
-                int sizeCopy = parameterAnalysis.getProperty(VariableProperty.SIZE_COPY);
-                if (sizeCopy >= Level.TRUE) {
-                    Map<Variable, SizeCopy> map = new HashMap<>();
-                    Value paramValue = parameters.get(i);
-                    Set<Variable> variables = paramValue.variables();
-                    if (!variables.isEmpty()) {
-                        SizeCopy sizeCopyEnum = sizeCopy == Level.SIZE_COPY_MIN_TRUE ? SizeCopy.MIN : SizeCopy.EQUALS;
-                        variables.forEach(v -> map.put(v, sizeCopyEnum));
-                    }
-                    builder.sizeCopyMap(scopeVariable, map);
-                }
-
-                // TODO also copy size info, if available
-                i++;
-            }
-        }
-    }
-
     private static Value computeEvaluationOnConstant(Primitives primitives, MethodInfo methodInfo, Value objectValue) {
         if (!objectValue.isConstant()) return null;
         StringValue stringValue;
@@ -420,14 +381,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 } // else: delaying is fine
             }
         } // else: we've already requested this from the scope (functional interface)
-
-        int requiredSize = forwardEvaluationInfo.getProperty(VariableProperty.SIZE);
-        if (requiredSize > Level.IS_A_SIZE) {
-            int currentSize = methodAnalysis.getProperty(VariableProperty.SIZE);
-            if (!Level.compatibleSizes(currentSize, requiredSize)) {
-                builder.raiseError(Message.POTENTIAL_SIZE_PROBLEM);
-            }
-        }
     }
 
     private static Value computeFluent(MethodAnalysis methodAnalysis, Value scope) {
@@ -452,172 +405,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (v != Level.DELAY) map.put(property, v);
         }
         return PropertyWrapper.propertyWrapper(evaluationContext, parameters.get(0), map, objectFlowOfResult);
-    }
-
-    private static Value computeSize(EvaluationResult.Builder builder,
-                                     MethodInfo methodInfo,
-                                     MethodAnalysis methodAnalysis,
-                                     Value objectValue,
-                                     List<Value> parameters,
-                                     EvaluationContext evaluationContext,
-                                     Location location) {
-        if (!methodInfo.typeInfo.hasSize(evaluationContext.getAnalyserContext()))
-            return null;
-
-        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
-        if (modified == Level.DELAY) {
-            return null; // ignore
-        }
-        if (modified == Level.TRUE) {
-            Stream<ParameterAnalysis> parameterAnalyses = evaluationContext.getParameterAnalyses(methodInfo);
-
-            return computeSizeModifyingMethod(builder, methodInfo, methodAnalysis, parameterAnalyses, objectValue, evaluationContext);
-        }
-
-        int requiredSize = methodAnalysis.getProperty(VariableProperty.SIZE);
-        if (requiredSize <= Level.NOT_A_SIZE) return null;
-        // we have an @Size annotation on the method that we're calling
-        int sizeOfObject = evaluationContext.getProperty(objectValue, VariableProperty.SIZE);
-
-        Primitives primitives = evaluationContext.getPrimitives();
-        // SITUATION 1: @Size(equals = 0) boolean isEmpty() { }, @Size(min = 1) boolean isNotEmpty() {}, etc.
-        MethodAnalysis sizeMethodAnalysis = evaluationContext.getMethodAnalysis(methodInfo.typeInfo
-                .sizeMethod(evaluationContext.getAnalyserContext()));
-
-        if (Primitives.isBooleanOrBoxedBoolean(methodInfo.returnType())) {
-            // there is an @Size annotation on a method returning a boolean...
-            if (sizeOfObject <= Level.IS_A_SIZE) {
-                log(SIZE, "Required @Size is {}, but we have no information. Result could be true or false.");
-                return sizeMethodValue(builder, location, evaluationContext, sizeMethodAnalysis, objectValue, requiredSize);
-            }
-            // we have a requirement, and we have a size.
-            if (Level.haveEquals(requiredSize)) {
-                // we require a fixed size.
-                if (Level.haveEquals(sizeOfObject)) {
-                    builder.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
-                    log(SIZE, "Required @Size is {}, and we have {}. Result is a constant true or false.", requiredSize, sizeOfObject);
-                    return sizeOfObject == requiredSize ? BoolValue.createTrue(primitives) : BoolValue.createFalse(primitives);
-                }
-                if (sizeOfObject > requiredSize) {
-                    log(SIZE, "Required @Size is {}, and we have {}. Result is always false.", requiredSize, sizeOfObject);
-                    builder.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
-                    return BoolValue.createFalse(primitives);
-                }
-                log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);
-                return sizeMethodValue(builder, location, evaluationContext, sizeMethodAnalysis, objectValue, requiredSize); // we want =3, but we have >= 2; could be anything
-            }
-            if (sizeOfObject > requiredSize) {
-                log(SIZE, "Required @Size is {}, and we have {}. Result is always true.", requiredSize, sizeOfObject);
-                builder.raiseError(Message.METHOD_EVALUATES_TO_CONSTANT);
-                return BoolValue.createFalse(primitives);
-            }
-            log(SIZE, "Required @Size is {}, and we have {}. Result could be true or false.", requiredSize, sizeOfObject);
-            return sizeMethodValue(builder, location, evaluationContext, sizeMethodAnalysis, objectValue, requiredSize);
-        }
-
-        // SITUATION 2: @Size int size(): this method returns the size
-        if (TypeInfo.returnsIntOrLong(methodInfo)) {
-            if (Level.haveEquals(sizeOfObject)) {
-                return new IntValue(primitives, Level.decodeSizeEquals(sizeOfObject), ObjectFlow.NO_FLOW);
-            }
-            ObjectFlow objectFlow = sizeObjectFlow(evaluationContext, builder, location, sizeMethodAnalysis, objectValue);
-            return ConstrainedNumericValue.lowerBound(evaluationContext,
-                    new MethodValue(methodInfo, objectValue, parameters, objectFlow),
-                    Level.decodeSizeMin(sizeOfObject));
-        }
-        return null;
-    }
-
-    // instead of returning isEmpty(), we return size() == 0
-    // instead of returning isNotEmpty(), we return size() >= 1
-    private static Value sizeMethodValue(EvaluationResult.Builder builder,
-                                         Location location,
-                                         EvaluationContext evaluationContext,
-                                         MethodAnalysis sizeMethodAnalysis, Value objectValue, int requiredSize) {
-        MethodValue sizeMethod = createSizeMethodCheckForSizeCopyTrue(builder, location, sizeMethodAnalysis, objectValue, evaluationContext);
-        if (Level.haveEquals(requiredSize)) {
-            Primitives primitives = evaluationContext.getPrimitives();
-            ConstrainedNumericValue constrainedSizeMethod = ConstrainedNumericValue.lowerBound(evaluationContext, sizeMethod, 0);
-            ObjectFlow objectFlow = builder.createInternalObjectFlow(location, primitives.booleanParameterizedType, Origin.RESULT_OF_METHOD);
-            return EqualsValue.equals(evaluationContext,
-                    new IntValue(primitives, Level.decodeSizeEquals(requiredSize),
-                            builder.createInternalObjectFlow(location, primitives.intParameterizedType, Origin.RESULT_OF_METHOD)),
-                    constrainedSizeMethod, objectFlow);
-        }
-        return ConstrainedNumericValue.lowerBound(evaluationContext, sizeMethod, Level.decodeSizeMin(requiredSize));
-    }
-
-    // we normally return  objectValue.size();
-    // but if objectValue is a method itself, and that method preserves the size, then we remove that method
-    // object.entrySet().size() == object.size(); the entrySet() method has a @Size(copy = true) annotation
-    private static MethodValue createSizeMethodCheckForSizeCopyTrue(EvaluationResult.Builder builder,
-                                                                    Location location,
-                                                                    MethodAnalysis sizeMethodAnalysis,
-                                                                    Value objectValue,
-                                                                    EvaluationContext evaluationContext) {
-        MethodValue methodValue;
-        if ((methodValue = objectValue.asInstanceOf(MethodValue.class)) != null) {
-            MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodValue.methodInfo);
-            if (methodAnalysis.getProperty(VariableProperty.SIZE_COPY) == Level.SIZE_COPY_TRUE) {
-                // there must be a sizeMethod()
-                TypeInfo typeInfo = methodValue.object.type().bestTypeInfo();
-                if (typeInfo == null)
-                    throw new UnsupportedOperationException("Haze a @Size(copy = true) but the object type is not known?");
-                MethodInfo sizeMethodInfoOnObject = typeInfo.sizeMethod(evaluationContext.getAnalyserContext());
-                if (sizeMethodInfoOnObject == null)
-                    throw new UnsupportedOperationException("Have a @Size(copy = true) but the object type has no size() method?");
-                return new MethodValue(sizeMethodInfoOnObject, methodValue.object, List.of(),
-                        sizeObjectFlow(evaluationContext, builder, location, sizeMethodAnalysis, objectValue));
-            }
-        }
-        return new MethodValue(sizeMethodAnalysis.getMethodInfo(), objectValue, List.of(),
-                sizeObjectFlow(evaluationContext, builder, location, sizeMethodAnalysis, objectValue));
-    }
-
-    private static ObjectFlow sizeObjectFlow(EvaluationContext evaluationContext,
-                                             EvaluationResult.Builder builder,
-                                             Location location,
-                                             MethodAnalysis sizeMethodAnalysis,
-                                             Value object) {
-        if (object.getObjectFlow() != ObjectFlow.NO_FLOW) {
-            builder.addAccess(false, new MethodAccess(sizeMethodAnalysis.getMethodInfo(), List.of()), object);
-            ParameterizedType intParameterizedType = evaluationContext.getPrimitives().intParameterizedType;
-            ObjectFlow source = sizeMethodAnalysis.getObjectFlow();
-            ObjectFlow resultOfMethod = builder.createInternalObjectFlow(location, intParameterizedType, Origin.RESULT_OF_METHOD);
-            resultOfMethod.addPrevious(source);
-            return resultOfMethod;
-        }
-        return ObjectFlow.NO_FLOW;
-    }
-
-    private static Value computeSizeModifyingMethod(EvaluationResult.Builder builder,
-                                                    MethodInfo methodInfo,
-                                                    MethodAnalysis methodAnalysis,
-                                                    Stream<ParameterAnalysis> parameterAnalyses,
-                                                    Value objectValue, EvaluationContext evaluationContext) {
-        int sizeOfMethod = methodAnalysis.getProperty(VariableProperty.SIZE);
-        List<Integer> sizeInParameters = parameterAnalyses
-                .map(p -> p.getProperty(VariableProperty.SIZE_COPY))
-                .filter(v -> v > Level.FALSE)
-                .collect(Collectors.toList());
-        int numSizeInParameters = sizeInParameters.size();
-        boolean haveSizeOnMethod = sizeOfMethod > Level.FALSE;
-        if (numSizeInParameters == 0 && !haveSizeOnMethod) return null;
-        if (numSizeInParameters > 1) {
-            builder.raiseError(Message.MULTIPLE_SIZE_ANNOTATIONS);
-            return null;
-        }
-        int newSize = numSizeInParameters == 1 ? sizeInParameters.get(0) : sizeOfMethod;
-        int currentSize = evaluationContext.getProperty(objectValue, VariableProperty.SIZE);
-        VariableValue variableValue;
-        if (newSize > currentSize && (variableValue = objectValue.asInstanceOf(VariableValue.class)) != null) {
-            builder.markSizeRestriction(variableValue.variable, newSize);
-            log(SIZE, "Upgrade @Size of {} to {} because of method call {}", variableValue.variable.fullyQualifiedName(), newSize,
-                    methodInfo.distinguishingName());
-        } else {
-            log(SIZE, "No effect of @Size annotation on modifying method call {}", methodInfo.distinguishingName());
-        }
-        return null;
     }
 
     @Override

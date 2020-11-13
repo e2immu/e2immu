@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckOnly;
 import org.e2immu.analyser.analyser.check.CheckPrecondition;
-import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.*;
@@ -32,12 +31,10 @@ import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.*;
@@ -47,7 +44,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
@@ -131,9 +127,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                     .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                     .add("computeOnlyMarkPrepWork", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork(sharedState))
                     .add("computeOnlyMarkAnnotate", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkAnnotate(sharedState))
-                    .add("methodIsIndependent", this::methodIsIndependent)
-                    .add("computeSize", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeSize(sharedState))
-                    .add("computeSizeCopy", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeSizeCopy());
+                    .add("methodIsIndependent", this::methodIsIndependent);
 
             for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
                 builder.add("Parameter " + parameterAnalyser.parameterInfo.name, (iteration -> parameterAnalyser.analyse()));
@@ -205,7 +199,6 @@ public class MethodAnalyser extends AbstractAnalyser {
         // opposites
         check(Dependent.class, e2.dependent.get());
 
-        CheckSize.checkSizeForMethods(messages, methodInfo, methodAnalysis);
         CheckPrecondition.checkPrecondition(messages, methodInfo);
         CheckOnly.checkOnly(messages, methodInfo, methodAnalysis);
         CheckOnly.checkMark(messages, methodInfo, methodAnalysis);
@@ -605,156 +598,6 @@ public class MethodAnalyser extends AbstractAnalyser {
         log(NOT_NULL, "Set value of {} to {} for method {}", variableProperty, value, methodInfo.distinguishingName());
         methodAnalysis.setProperty(variableProperty, value);
         return DONE;
-    }
-
-    private AnalysisStatus computeSize(SharedState sharedState) {
-        assert methodAnalysis.getProperty(VariableProperty.SIZE) == Level.DELAY;
-        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
-        if (modified == Level.DELAY) {
-            log(DELAYED, "Delaying @Size on {} because waiting for @Modified", methodInfo.distinguishingName());
-            return DELAYS;
-        }
-        if (modified == Level.FALSE) {
-            if (methodInfo.returnType().hasSize(analyserContext)) {
-                // non-modifying method that returns a type with @Size (like Collection, Map, ...)
-                log(SIZE, "Return type {} of method {} has a size!", methodInfo.returnType().detailedString(), methodInfo.fullyQualifiedName());
-
-                int size = getReturnAsVariable().getProperty(VariableProperty.SIZE);
-                // then try @Size(min, equals)
-                if (size == Level.DELAY) {
-                    log(DELAYED, "Return statement value not yet set for @Size on {}", methodInfo.distinguishingName());
-                    return DELAYS;
-                }
-                int value = Math.max(Level.IS_A_SIZE, size);
-                return writeSize(VariableProperty.SIZE, value);
-            } else {
-                log(SIZE, "Return type {} of method {} has no size", methodInfo.returnType().detailedString(), methodInfo.fullyQualifiedName());
-            }
-
-            // non-modifying method that defines @Size (size(), isEmpty())
-            return writeSize(VariableProperty.SIZE, propagateSizeAnnotations(sharedState));
-        }
-
-        // modifying method
-        // we can write size copy (if there is a modification that copies a map) or size equals, min if the modification is of that nature
-        // the size copy will need to be written on the PARAMETER from which the copying has taken place
-        //if (methodInfo.typeInfo.hasSize()) {
-        //   return sizeModifying(methodInfo, methodAnalysis); TODO
-
-        //}
-        return DONE;
-    }
-
-
-    private AnalysisStatus computeSizeCopy() {
-        assert methodAnalysis.getProperty(VariableProperty.SIZE_COPY) == Level.DELAY;
-
-        int modified = methodAnalysis.getProperty(VariableProperty.MODIFIED);
-        if (modified == Level.DELAY) {
-            log(DELAYED, "Delaying @Size(copy) on {} because waiting for @Modified", methodInfo.distinguishingName());
-            return DELAYS;
-        }
-        if (modified == Level.FALSE) {
-            if (methodInfo.returnType().hasSize(analyserContext)) {
-                // first try @Size(copy ...)
-                int sizeCopy = getReturnAsVariable().getProperty(VariableProperty.SIZE_COPY);
-                if (sizeCopy == Level.DELAY) {
-                    log(DELAYED, "Return statement value not yet set for SIZE_COPY on {}", methodInfo.distinguishingName());
-                    return DELAYS;
-                }
-
-                int min = Math.max(sizeCopy, Level.IS_A_SIZE);
-                return writeSize(VariableProperty.SIZE_COPY, min);
-            }
-            // not for me
-            return writeSize(VariableProperty.SIZE_COPY, Level.NOT_A_SIZE);
-        }
-
-        // modifying method
-        // we can write size copy (if there is a modification that copies a map) or size equals, min if the modification is of that nature
-        // the size copy will need to be written on the PARAMETER from which the copying has taken place
-        //if (methodInfo.typeInfo.hasSize()) {
-        //   // TODO not implemented yet
-        //}
-        return DONE;
-    }
-
-    private AnalysisStatus writeSize(VariableProperty variableProperty, int value) {
-        if (value == Level.DELAY) {
-            log(DELAYED, "Not deciding on {} yet for method {}", variableProperty, methodInfo.distinguishingName());
-            return DELAYS;
-        }
-        int currentValue = methodAnalysis.getProperty(variableProperty);
-        if (value <= currentValue) return DONE; // not improving.
-        log(NOT_NULL, "Set value of {} to {} for method {}", variableProperty, value, methodInfo.distinguishingName());
-        methodAnalysis.setProperty(variableProperty, value);
-        return DONE;
-    }
-
-    private int propagateSizeAnnotations(SharedState sharedState) {
-        VariableInfo variableInfo = getReturnAsVariable();
-        Value returnValue = variableInfo.getValue();
-        if (returnValue == UnknownValue.NO_VALUE) {
-            return Level.DELAY;
-        }
-        ConstrainedNumericValue cnv;
-        if (Primitives.isDiscrete(methodInfo.returnType()) && ((cnv = returnValue.asInstanceOf(ConstrainedNumericValue.class)) != null)) {
-            // very specific situation, we see if the return statement is a @Size method; if so, we propagate that info
-            MethodValue methodValue;
-            if ((methodValue = cnv.value.asInstanceOf(MethodValue.class)) != null) {
-                MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod(analyserContext);
-                if (methodValue.methodInfo == theSizeMethod && cnv.lowerBound >= 0 && cnv.upperBound == ConstrainedNumericValue.MAX) {
-                    return Level.encodeSizeMin((int) cnv.lowerBound);
-                }
-            }
-        } else if (Primitives.isBooleanOrBoxedBoolean(methodInfo.returnType())) {
-            // very specific situation, we see if the return statement is a predicate on a @Size method; if so we propagate that info
-            // size restrictions are ALWAYS int == size() or -int + size() >= 0
-            EqualsValue equalsValue;
-            if ((equalsValue = returnValue.asInstanceOf(EqualsValue.class)) != null) {
-                IntValue intValue;
-                ConstrainedNumericValue cnvRhs;
-                if ((intValue = equalsValue.lhs.asInstanceOf(IntValue.class)) != null &&
-                        (cnvRhs = equalsValue.rhs.asInstanceOf(ConstrainedNumericValue.class)) != null) {
-                    MethodValue methodValue;
-                    if ((methodValue = cnvRhs.value.asInstanceOf(MethodValue.class)) != null) {
-                        MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod(analyserContext);
-                        if (methodValue.methodInfo == theSizeMethod) {
-                            return Level.encodeSizeEquals(intValue.value);
-                        }
-                    }
-                }
-            } else {
-                GreaterThanZeroValue gzv;
-                if ((gzv = returnValue.asInstanceOf(GreaterThanZeroValue.class)) != null) {
-                    EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration, ConditionManager.INITIAL);
-                    GreaterThanZeroValue.XB xb = gzv.extract(evaluationContext);
-                    ConstrainedNumericValue cnvXb;
-                    if (!xb.lessThan && ((cnvXb = xb.x.asInstanceOf(ConstrainedNumericValue.class)) != null)) {
-                        MethodValue methodValue;
-                        if ((methodValue = cnvXb.value.asInstanceOf(MethodValue.class)) != null) {
-                            MethodInfo theSizeMethod = methodValue.methodInfo.typeInfo.sizeMethod(analyserContext);
-                            if (methodValue.methodInfo == theSizeMethod) {
-                                return Level.encodeSizeMin((int) xb.b);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        // if DELAY here for a simple method that returns a string, the whole thing remains on DELAY
-        return Level.FALSE;
-    }
-
-    static int safeMinimumForSize(Messages messages, Location location, IntStream intStream) {
-        int res = intStream.reduce(Integer.MAX_VALUE, (v1, v2) -> {
-            if (Level.haveEquals(v1) && Level.haveEquals(v2) && v1 != v2) {
-                messages.add(Message.newMessage(location, Message.POTENTIAL_SIZE_PROBLEM,
-                        "Equal to " + Level.decodeSizeEquals(v1) + ", equal to " + Level.decodeSizeEquals(v2)));
-            }
-            return Math.min(v1, v2);
-        });
-        return res == Integer.MAX_VALUE ? Level.DELAY : Math.max(res, Level.IS_A_SIZE);
     }
 
     private AnalysisStatus computeModified(SharedState sharedState) {

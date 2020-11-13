@@ -19,14 +19,15 @@ package org.e2immu.analyser.testexample;
 
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.Size;
 
 import java.util.Set;
 
 public class DynamicTypeAnnotation {
 
+    boolean DynamicTypeAnnotation$Invariant() { return set1.size() == 2; }
+    public DynamicTypeAnnotation() {}
+    
     @E2Container
-    @Size(equals = 2)
     private final Set<String> set1 = Set.of("a", "b");
 
     public void modifySet1() {
@@ -34,7 +35,6 @@ public class DynamicTypeAnnotation {
     }
 
     @E2Container
-    @Size(equals = 1)
     public static Set<String> createSet(String a) {
         return ImmutableSet.of(a);
     }

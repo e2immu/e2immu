@@ -31,8 +31,6 @@ public abstract class PrimitiveValue implements Value {
                 return Level.TRUE;
             case NOT_NULL:
                 return MultiLevel.EFFECTIVELY_NOT_NULL;
-            case SIZE:
-            case SIZE_COPY:
             case MODIFIED:
             case METHOD_DELAY:
             case IDENTITY:

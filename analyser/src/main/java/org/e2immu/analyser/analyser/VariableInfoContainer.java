@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
-import org.e2immu.annotation.SizeCopy;
 
 import java.util.List;
 import java.util.Map;
@@ -74,8 +73,6 @@ public interface VariableInfoContainer {
      */
     VariableInfo best(int level);
 
-    int bestLevel(int level);
-
     /**
      * Mostly for debugging
      *
@@ -122,10 +119,6 @@ public interface VariableInfoContainer {
     }
 
     void setLinkedVariables(int level, Set<Variable> variables);
-
-    void setSizeCopyVariables(int level, Map<Variable, SizeCopy> sizeCopyMap);
-
-    void setSizeCopyVariablesFromAnalyser(Map<Variable, SizeCopy> sizeCopyMap);
 
     void setLinkedVariablesFromAnalyser(Set<Variable> variables);
 

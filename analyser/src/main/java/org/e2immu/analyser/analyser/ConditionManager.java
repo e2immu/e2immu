@@ -136,32 +136,6 @@ public class ConditionManager {
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 
-    public Map<Variable, Value> findIndividualSizeRestrictionsInCondition(EvaluationContext evaluationContext) {
-        return getIndividualSizeRestrictions(evaluationContext, condition, Value.FilterMode.REJECT, true);
-    }
-
-    public Map<Variable, Value> individualSizeRestrictions(EvaluationContext evaluationContext) {
-        return getIndividualSizeRestrictions(evaluationContext, state, Value.FilterMode.ACCEPT, false);
-    }
-
-    private static Map<Variable, Value> getIndividualSizeRestrictions(
-            EvaluationContext evaluationContext,
-            Value base, Value.FilterMode filterMode, boolean parametersOnly) {
-        if (base == null || isDelayed(base)) {
-            return Map.of();
-        }
-        Map<Variable, Value> map = base.filter(evaluationContext, filterMode,
-                parametersOnly ? val -> val.isIndividualSizeRestrictionOnParameter(evaluationContext) :
-                        val -> val.isIndividualSizeRestriction(evaluationContext)).accepted;
-        if (parametersOnly) {
-            return map.entrySet().stream()
-                    .filter(e -> e.getKey() instanceof ParameterInfo)
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        }
-        return map;
-    }
-
-
     public boolean haveNonEmptyState() {
         return state != UnknownValue.EMPTY;
     }
@@ -239,8 +213,8 @@ public class ConditionManager {
         }
 
         // TRUE: parameters only FALSE: preconditionSide; OR of 2 filters
-        Value.FilterResult filterResult = condition.filter(evaluationContext, Value.FilterMode.REJECT, Value::isIndividualNullOrNotNullClauseOnParameter,
-                val -> val.isIndividualSizeRestrictionOnParameter(evaluationContext)); // those parts that have nothing to do with individual clauses
+        Value.FilterResult filterResult = condition.filter(evaluationContext, Value.FilterMode.REJECT, Value::isIndividualNullOrNotNullClauseOnParameter);
+        // those parts that have nothing to do with individual clauses
         if (filterResult.rest == UnknownValue.EMPTY) {
             return builder.setValue(UnknownValue.EMPTY).build();
         }

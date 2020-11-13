@@ -20,6 +20,7 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.annotation.Container;
@@ -27,10 +28,7 @@ import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MethodInspection extends Inspection {
@@ -59,6 +57,7 @@ public class MethodInspection extends Inspection {
     // this is used to check inherited annotations on methods
     //@Immutable
     public final List<MethodInfo> implementationOf;
+    public final Map<CompanionMethod, MethodInfo> companionMethods;
 
     private MethodInspection(MethodInfo methodInfo,
                              List<MethodModifier> modifiers,
@@ -68,8 +67,10 @@ public class MethodInspection extends Inspection {
                              List<TypeParameter> typeParameters,
                              List<ParameterizedType> exceptionTypes,
                              List<MethodInfo> implementationOf,
+                             Map<CompanionMethod, MethodInfo> companionMethods,
                              FirstThen<BlockStmt, Block> methodBody) {
         super(annotations);
+        this.companionMethods = companionMethods;
         this.modifiers = modifiers;
         this.methodInfo = methodInfo;
         this.parameters = parameters;
@@ -88,7 +89,8 @@ public class MethodInspection extends Inspection {
 
     public MethodInspection copy(List<AnnotationExpression> alternativeAnnotations) {
         return new MethodInspection(methodInfo, modifiers, parameters, returnType,
-                ImmutableList.copyOf(alternativeAnnotations), typeParameters, exceptionTypes, implementationOf, methodBody);
+                ImmutableList.copyOf(alternativeAnnotations), typeParameters, exceptionTypes, implementationOf,
+                companionMethods, methodBody);
     }
 
     public boolean haveCodeBlock() {
@@ -103,6 +105,7 @@ public class MethodInspection extends Inspection {
         private final List<AnnotationExpression> annotations = new ArrayList<>();
         private final List<TypeParameter> typeParameters = new ArrayList<>();
         private final List<MethodInfo> implementationsOf = new ArrayList<>();
+        private final Map<CompanionMethod, MethodInfo> companionMethods = new LinkedHashMap<>();
         private BlockStmt block;
         private Block alreadyKnown;
         private final List<ParameterizedType> exceptionTypes = new ArrayList<>();
@@ -170,6 +173,12 @@ public class MethodInspection extends Inspection {
             return this;
         }
 
+        @Fluent
+        public MethodInspectionBuilder addCompanionMethods(Map<CompanionMethod, MethodInfo> companionMethods) {
+            this.companionMethods.putAll(companionMethods);
+            return this;
+        }
+
         @NotModified
         @NotNull
         public MethodInspection build(MethodInfo methodInfo) {
@@ -197,8 +206,10 @@ public class MethodInspection extends Inspection {
                     ImmutableList.copyOf(typeParameters),
                     ImmutableList.copyOf(exceptionTypes),
                     ImmutableList.copyOf(implementationsOf),
+                    ImmutableMap.copyOf(companionMethods),
                     methodBody
             );
         }
+
     }
 }

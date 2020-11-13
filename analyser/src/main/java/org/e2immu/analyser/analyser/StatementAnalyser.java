@@ -321,7 +321,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                 forwardAnalysisInfo.execution()))
 
                         .add("checkNotNullEscapes", this::checkNotNullEscapes)
-                        .add("checkSizeEscapes", this::checkSizeEscapes)
                         .add("checkPrecondition", this::checkPrecondition)
                         .add("copyPrecondition", sharedState -> statementAnalysis.stateData.copyPrecondition(this,
                                 previous, sharedState.evaluationContext))
@@ -509,26 +508,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 vic.setLinkedVariables(level, e.getValue());
             });
         }
-        if (evaluationResult.sizeCopyVariablesDelay()) {
-            status = DELAYS;
-        } else {
-            evaluationResult.getSizeCopyVariablesStream().forEach(e -> {
-                Variable variable = e.getKey();
-                VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, variable);
-                log(ANALYSER, "Set size copy map of {} to {}", variable, e.getValue());
-                if (!createdAssignmentLevel.contains(variable)) {
-                    VariableInfo vi = vic.best(level); // before the assignment call!
-                    vic.assignment(level);
-                    // copy value, state on assignment
-                    vic.setValueAndStateOnAssignment(level, vi.getValue(), vi.getStateOnAssignment(), vi.getProperties());
-                    if (vi.linkedVariablesIsSet()) {
-                        vic.setLinkedVariables(level, vi.getLinkedVariables());
-                    }
-                    createdAssignmentLevel.add(variable);
-                }
-                vic.setSizeCopyVariables(level, e.getValue());
-            });
-        }
 
         // then all modifications get applied
         evaluationResult.getModificationStream().forEach(mod -> mod.accept(new ModificationData(sharedState.builder, level)));
@@ -600,28 +579,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 statementAnalysis.addProperty(analyserContext, VariableInfoContainer.LEVEL_4_SUMMARY,
                         nullVariable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                 disableErrorsOnIfStatement();
-            }
-        }
-        return DONE;
-    }
-
-    private AnalysisStatus checkSizeEscapes(SharedState sharedState) {
-        if (isEscapeAlwaysExecutedInCurrentBlock()) {
-            Map<Variable, Value> individualSizeRestrictions = statementAnalysis.stateData
-                    .getConditionManager().findIndividualSizeRestrictionsInCondition(sharedState.evaluationContext);
-            for (Map.Entry<Variable, Value> entry : individualSizeRestrictions.entrySet()) {
-                ParameterInfo parameterInfo = (ParameterInfo) entry.getKey();
-                Value negated = NegatedValue.negate(sharedState.evaluationContext, entry.getValue());
-                log(VARIABLE_PROPERTIES, "Escape with check on size on {}: {}", parameterInfo.fullyQualifiedName(), negated);
-                int sizeRestriction = negated.encodedSizeRestriction(sharedState.evaluationContext);
-                if (sizeRestriction > 0) { // if the complement is a meaningful restriction
-                    ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
-                    sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.SIZE, sizeRestriction));
-
-                    statementAnalysis.addProperty(analyserContext, VariableInfoContainer.LEVEL_4_SUMMARY,
-                            parameterInfo, VariableProperty.SIZE, sizeRestriction);
-                    disableErrorsOnIfStatement();
-                }
             }
         }
         return DONE;
@@ -808,14 +765,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             StatementAnalysis firstStatementInBlock = firstStatementFirstBlock();
             firstStatementInBlock.addProperty(analyserContext, VariableInfoContainer.LEVEL_3_EVALUATION,
                     localVariableReference, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-        }
-
-        int size = sharedState.evaluationContext.getProperty(value, VariableProperty.SIZE);
-        if (size == Level.SIZE_EMPTY && !statementAnalysis.inErrorState(Message.EMPTY_LOOP)) {
-            statementAnalysis.ensure(Message.newMessage(sharedState.evaluationContext.getLocation(), Message.EMPTY_LOOP));
-            // ensure that the loop is not evaluated
-            Optional<StatementAnalysis> firstStatement = statementAnalysis.navigationData.blocks.get().get(0);
-            firstStatement.ifPresent(analysis -> analysis.flowData.setGuaranteedToBeReached(NEVER));
         }
     }
 
@@ -1185,12 +1134,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (VariableProperty.NOT_NULL == variableProperty && notNullAccordingToConditionManager(variable)) {
                     return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
                             statementAnalysis.getProperty(analyserContext, variable, variableProperty));
-                }
-                if (VariableProperty.SIZE == variableProperty) {
-                    Value sizeRestriction = conditionManager.individualSizeRestrictions(this).get(variable);
-                    if (sizeRestriction != null) {
-                        return sizeRestriction.encodedSizeRestriction(this);
-                    }
                 }
                 return statementAnalysis.getProperty(analyserContext, variable, variableProperty);
             }

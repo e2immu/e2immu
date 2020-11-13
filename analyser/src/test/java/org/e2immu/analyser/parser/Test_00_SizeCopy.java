@@ -25,7 +25,6 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
-import org.e2immu.annotation.SizeCopy;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -51,10 +50,8 @@ public class Test_00_SizeCopy extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if (SIZE_COPY.equals(d.methodInfo().name) && "0".equals(d.statementId())) {
             if (FIELD1.equals(d.variableName())) {
-                Map<Variable, SizeCopy> map = d.variableInfo().getSizeCopyVariables();
-                Assert.assertEquals("{" + P0 + "=MIN}", map.toString());
                 // shows the property wrapper that sits around the initial value in the constructor
-                Assert.assertEquals(FIELD1 + ",@Container,@NotNull,@Size", d.currentValue().toString());
+                Assert.assertEquals(FIELD1 + ",@Container,@NotNull", d.currentValue().toString());
             }
             if (P0.equals(d.variableName())) {
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
@@ -75,7 +72,6 @@ public class Test_00_SizeCopy extends CommonTestRunner {
 
             if (d.iteration() > 0) {
                 Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.IS_A_SIZE, d.fieldAnalysis().getProperty(VariableProperty.SIZE));
             }
             if (d.iteration() > 1) {
                 Assert.assertEquals("[]", d.fieldAnalysis().getVariablesLinkedToMe().toString());
@@ -92,25 +88,19 @@ public class Test_00_SizeCopy extends CommonTestRunner {
 
     TypeContextVisitor typeContextVisitor = typeContext -> {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
-        Assert.assertTrue(collection.hasSize(AnalysisProvider.DEFAULT_PROVIDER));
         MethodInfo stream = collection.findUniqueMethod("stream", 0);
-        Assert.assertEquals(Level.SIZE_COPY_TRUE, stream.methodAnalysis.get().getProperty(VariableProperty.SIZE_COPY));
         MethodInfo addAll = collection.findUniqueMethod("addAll", 1);
         ParameterInfo param0 = addAll.methodInspection.get().parameters.get(0);
-        Assert.assertEquals(Level.SIZE_COPY_MIN_TRUE, param0.parameterAnalysis.get().getProperty(VariableProperty.SIZE_COPY));
 
         TypeInfo set = typeContext.getFullyQualified(Set.class);
-        Assert.assertTrue(set.hasSize(AnalysisProvider.DEFAULT_PROVIDER));
         MethodInfo addAllSet = set.findUniqueMethod("addAll", 1);
 
         Set<MethodAnalysis> overrides = addAllSet.methodAnalysis.get().getOverrides();
         Assert.assertEquals(1, overrides.size());
 
         ParameterInfo param0Set = addAllSet.methodInspection.get().parameters.get(0);
-        Assert.assertEquals(Level.SIZE_COPY_MIN_TRUE, param0Set.parameterAnalysis.get().getProperty(VariableProperty.SIZE_COPY));
 
         TypeInfo streamType = typeContext.getFullyQualified(Stream.class);
-        Assert.assertTrue(streamType.hasSize(AnalysisProvider.DEFAULT_PROVIDER));
     };
 
     @Test

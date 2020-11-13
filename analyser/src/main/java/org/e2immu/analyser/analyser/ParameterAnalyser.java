@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.check.CheckSize;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -33,7 +32,6 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.SIZE;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class ParameterAnalyser {
@@ -74,8 +72,6 @@ public class ParameterAnalyser {
         // opposites
         check(Nullable.class, e2.nullable.get());
         check(Modified.class, e2.modified.get());
-
-        CheckSize.checkSizeForParameters(messages, parameterInfo, parameterAnalysis);
 
         checkWorseThanParent();
     }
@@ -162,7 +158,7 @@ public class ParameterAnalyser {
                     int inField = fieldAnalysis.getProperty(variableProperty);
                     if (inField != Level.DELAY) {
                         int inParameter = parameterAnalysis.getProperty(variableProperty);
-                        if (inField > inParameter && verifySizeNotModified(variableProperty)) {
+                        if (inField > inParameter) {
                             log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
                                     fieldInfo.fullyQualifiedName(), parameterInfo.fullyQualifiedName(), variableProperty);
                             parameterAnalysis.setProperty(variableProperty, inField);
@@ -204,17 +200,6 @@ public class ParameterAnalyser {
         }
 
         return delays ? (changed ? AnalysisStatus.PROGRESS : AnalysisStatus.DELAYS) : DONE;
-    }
-
-    /**
-     * we only copy SIZE when it is also not MODIFIED!
-     */
-    private boolean verifySizeNotModified(VariableProperty variableProperty) {
-        if (variableProperty != VariableProperty.SIZE) return true;
-        int modified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
-        boolean accept = modified != Level.TRUE;
-        log(SIZE, "To copy the SIZE property on {}, we look at MODIFIED. Copy? {}", parameterInfo.fullyQualifiedName(), accept);
-        return accept;
     }
 
     public Stream<Message> getMessageStream() {

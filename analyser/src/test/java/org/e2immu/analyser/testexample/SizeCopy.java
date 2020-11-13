@@ -18,7 +18,6 @@
 package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.Size;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -28,18 +27,15 @@ public class SizeCopy {
 
     private final Set<String> f1 = new HashSet<>();
 
-    public SizeCopy(@Size(copy = true) Set<String> p0) {
+    public SizeCopy(Set<String> p0) {
         f1.addAll(p0);
     }
 
-    @Size(copy = true)
     @NotModified
     public Stream<String> getStream() {
         return f1.stream();
     }
 
-    // most importantly in this test, we want @Size(copy = true) to be absent
-    @Size(equals = 1)
     @NotModified
     public Stream<String> getStream2() {
         if (f1.isEmpty()) return Stream.of("a");

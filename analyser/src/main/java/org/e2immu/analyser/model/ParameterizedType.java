@@ -629,11 +629,6 @@ public class ParameterizedType {
         return false;
     }
 
-    public boolean hasSize(AnalysisProvider analysisProvider) {
-        TypeInfo bestType = bestTypeInfo();
-        return bestType != null && bestType.hasSize(analysisProvider);
-    }
-
     /**
      * return the best common type
      *

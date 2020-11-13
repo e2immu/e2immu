@@ -143,12 +143,6 @@ public class Instance implements Value {
                         MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
                                 evaluationContext.getTypeAnalysis(bestType).getProperty(VariableProperty.NOT_NULL));
             }
-            case SIZE:
-                return MethodValue.checkSize(evaluationContext, constructor, constructorParameterValues);
-
-            case SIZE_COPY:
-                return MethodValue.checkSizeCopy(evaluationContext, constructor);
-
             case MODIFIED:
             case NOT_MODIFIED_1:
             case METHOD_DELAY:

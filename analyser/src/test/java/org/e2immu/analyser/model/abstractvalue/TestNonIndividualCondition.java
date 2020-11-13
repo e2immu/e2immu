@@ -10,8 +10,7 @@ public class TestNonIndividualCondition extends CommonAbstractValue {
 
     private Value rest(Value value, Value.FilterMode filterMode) {
         return value.filter(minimalEvaluationContext,
-                filterMode, Value::isIndividualNullOrNotNullClauseOnParameter,
-                val -> val.isIndividualSizeRestrictionOnParameter(minimalEvaluationContext)).rest;
+                filterMode, Value::isIndividualNullOrNotNullClauseOnParameter).rest;
     }
 
     @Test

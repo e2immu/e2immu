@@ -30,12 +30,7 @@ public class ForEachStatement extends LoopStatement {
                             Expression expression,
                             Block block) {
         super(new Structure.Builder()
-                .setStatementExecution((v, evaluationContext) -> {
-                    int size = evaluationContext.getProperty(v, VariableProperty.SIZE);
-                    if (size == Level.SIZE_EMPTY) return FlowData.Execution.NEVER;
-                    if (size >= Level.SIZE_NOT_EMPTY) return FlowData.Execution.ALWAYS;
-                    return FlowData.Execution.CONDITIONALLY; // no idea
-                })
+                .setStatementExecution(StatementExecution.CONDITIONALLY)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setLocalVariableCreation(localVariable)
                 .setExpression(expression)

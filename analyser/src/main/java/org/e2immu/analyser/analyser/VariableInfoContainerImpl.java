@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Freezable;
-import org.e2immu.annotation.SizeCopy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,15 +51,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(variable);
         data[LEVEL_1_INITIALISER] = new VariableInfoImpl(variable);
         currentLevel = LEVEL_1_INITIALISER;
-    }
-
-    @Override
-    public int bestLevel(int start) {
-        int level = start;
-        while (level >= 0 && data[level] == null) {
-            level--;
-        }
-        return level;
     }
 
     @Override
@@ -171,22 +161,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     /* ******************************* modifying methods unrelated to assignment ************************************ */
-
-    @Override
-    public void setSizeCopyVariablesFromAnalyser(Map<Variable, SizeCopy> sizeCopyMap) {
-        internalSetSizeCopyVariables(LEVEL_1_INITIALISER, sizeCopyMap);
-    }
-
-    private void internalSetSizeCopyVariables(int level, Map<Variable, SizeCopy> sizeCopyMap) {
-        ensureNotFrozen();
-        Objects.requireNonNull(sizeCopyMap);
-        int writeLevel = findLevelForWriting(level);
-        VariableInfoImpl variableInfo = getAndCast(writeLevel);
-        if (!variableInfo.sizeCopyVariables.isSet() || !sizeCopyMap.equals(variableInfo.sizeCopyVariables.get())) {
-            variableInfo.sizeCopyVariables.set(sizeCopyMap);
-            liftCurrentLevel(writeLevel);
-        }
-    }
 
     @Override
     public void setLinkedVariablesFromAnalyser(Set<Variable> variables) {
@@ -312,18 +286,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void setSizeCopyVariables(int level, Map<Variable, SizeCopy> sizeCopyMap) {
-        ensureNotFrozen();
-        Objects.requireNonNull(sizeCopyMap);
-        int writeLevel = findLevelForWriting(level);
-        VariableInfoImpl variableInfo = getAndCast(writeLevel);
-        if (!variableInfo.sizeCopyVariables.isSet() || !variableInfo.sizeCopyVariables.get().equals(sizeCopyMap)) {
-            variableInfo.sizeCopyVariables.set(sizeCopyMap);
-            liftCurrentLevel(writeLevel);
-        }
-    }
-
-    @Override
     public void setObjectFlow(int level, ObjectFlow objectFlow) {
         ensureNotFrozen();
         Objects.requireNonNull(objectFlow);
@@ -347,9 +309,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
         if (previousVariableInfo.linkedVariablesIsSet()) {
             internalSetLinkedVariables(level, previousVariableInfo.getLinkedVariables());
-        }
-        if (previousVariableInfo.sizeCopyVariablesIsSet()) {
-            internalSetSizeCopyVariables(level, previousVariableInfo.getSizeCopyVariables());
         }
         if (previousVariableInfo.getObjectFlow() != null) {
             setObjectFlow(level, previousVariableInfo.getObjectFlow());
@@ -401,7 +360,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
 
         merged.mergeLinkedVariables(existingValuesWillBeOverwritten, existing, merge);
-        merged.mergeSizeCopyVariables(existingValuesWillBeOverwritten, existing, merge);
     }
 
     private static boolean notExistingStateEqualsAndMergeStates(EvaluationContext evaluationContext, VariableInfo oneSide, List<VariableInfo> merge) {

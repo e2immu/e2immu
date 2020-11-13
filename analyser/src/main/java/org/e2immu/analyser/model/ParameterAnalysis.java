@@ -133,14 +133,6 @@ public interface ParameterAnalysis extends Analysis {
                 return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, variableProperty);
             }
 
-            case SIZE:
-                TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
-                int min = bestType != null && bestType.hasSize(analysisProvider) ? Level.IS_A_SIZE : Level.NOT_A_SIZE;
-                return Level.best(min, getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, variableProperty));
-
-            case SIZE_COPY:
-                return getParameterPropertyCheckOverrides(analysisProvider, parameterInfo, variableProperty);
-
             case NOT_MODIFIED_1:
                 if (!parameterInfo.parameterizedType.isFunctionalInterface()) {
                     return Level.FALSE;

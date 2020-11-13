@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 public class Test_00_LinkVariables extends CommonTestRunner {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Test_00_LinkVariables.class);
 
     private static final String TYPE = "org.e2immu.analyser.testexample.LinkVariables";
     private static final String P0 = TYPE + ".LinkVariables(Set<String>,Set<String>,String):0:p0";
@@ -85,7 +84,6 @@ public class Test_00_LinkVariables extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 Assert.assertEquals(FIELD1, d.fieldAnalysis().getEffectivelyFinalValue().toString());
                 Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.IS_A_SIZE, d.fieldAnalysis().getProperty(VariableProperty.SIZE));
             }
             if (d.iteration() > 1) {
                 Assert.assertEquals("[" + P0 + "]", d.fieldAnalysis().getVariablesLinkedToMe().toString());

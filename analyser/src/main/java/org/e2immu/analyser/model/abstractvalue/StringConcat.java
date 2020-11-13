@@ -72,8 +72,6 @@ public class StringConcat implements Value {
             case CONTAINER -> Level.TRUE;
             case IMMUTABLE -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
             case NOT_NULL -> MultiLevel.EFFECTIVELY_NOT_NULL;
-            case SIZE -> Level.joinSizeRestrictions(evaluationContext.getProperty(lhs, VariableProperty.SIZE), evaluationContext.getProperty(rhs, VariableProperty.SIZE));
-            case SIZE_COPY -> Level.FALSE; // TODO
             default -> Level.FALSE;
         };
     }

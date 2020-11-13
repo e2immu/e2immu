@@ -19,7 +19,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
@@ -38,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 public class Test_00_Basics extends CommonTestRunner {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Test_00_Basics.class);
 
     public Test_00_Basics() {
         super(false);
@@ -89,7 +87,6 @@ public class Test_00_Basics extends CommonTestRunner {
         // check that the XML annotations have been read properly, and copied into the correct place
         TypeInfo stringType = typeContext.getPrimitives().stringTypeInfo;
         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
-        Assert.assertFalse(stringType.hasSize(AnalysisProvider.DEFAULT_PROVIDER));
     };
 
     @Test

@@ -26,7 +26,6 @@ import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.MethodReference;
 import org.e2immu.analyser.model.expression.TypeExpression;
@@ -406,24 +405,33 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         log(INSPECT, "Variable context after parsing fields of type {}: {}", fullyQualifiedName, subContext.variableContext);
 
         AtomicInteger countNonStaticNonDefaultIfInterface = new AtomicInteger();
+        Map<CompanionMethod, MethodInfo> companionMethodsWaiting = new LinkedHashMap<>();
 
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifConstructorDeclaration(cd -> {
                 MethodInfo methodInfo = new MethodInfo(this, List.of());
-                methodInfo.inspect(cd, subContext);
+                methodInfo.inspect(cd, subContext, companionMethodsWaiting);
                 builder.addConstructor(methodInfo);
+                companionMethodsWaiting.clear();
             });
             bodyDeclaration.ifMethodDeclaration(md -> {
                 // NOTE: it is possible that the return type is unknown at this moment: it can be one of the type
                 // parameters that we'll be parsing soon at inspection. That's why we can live with "void" for now
                 String methodName = md.getName().getIdentifier();
+                CompanionMethod companionMethod = CompanionMethod.extract(methodName);
+
                 MethodInfo methodInfo = new MethodInfo(this, methodName, List.of(),
                         expressionContext.typeContext.getPrimitives().voidParameterizedType, md.isStatic(), md.isDefault());
-                methodInfo.inspect(isInterface, md, subContext);
+                methodInfo.inspect(isInterface, md, subContext, companionMethod != null ? Map.of() : companionMethodsWaiting);
                 if (isInterface && !methodInfo.isStatic && !methodInfo.isDefaultImplementation) {
                     countNonStaticNonDefaultIfInterface.incrementAndGet();
                 }
-                builder.addMethod(methodInfo);
+                if (companionMethod != null) {
+                    companionMethodsWaiting.put(companionMethod, methodInfo);
+                } else {
+                    builder.addMethod(methodInfo);
+                    companionMethodsWaiting.clear();
+                }
             });
         }
 
@@ -1034,14 +1042,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return isAnEnclosingTypeOf(typeInfo.typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getRight());
     }
 
-    public List<TypeInfo> myselfAndMyEnclosingTypes() {
-        if (isNestedType()) {
-            return ListUtil.immutableConcat(List.of(this), typeInspection.getPotentiallyRun().packageNameOrEnclosingType
-                    .getRight().myselfAndMyEnclosingTypes());
-        }
-        return List.of(this);
-    }
-
     public boolean isRecord() {
         return isNestedType() && isPrivate();
     }
@@ -1090,34 +1090,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         }
         return typeInspection.getPotentiallyRun().annotations.stream()
                 .anyMatch(ann -> Primitives.isFunctionalInterfaceAnnotation(ann.typeInfo));
-    }
-
-    // TODO there may be delays?
-
-    public MethodInfo sizeMethod(AnalysisProvider analysisProvider) {
-        MethodInfo methodInfo = typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .filter(mi -> returnsIntOrLong(mi) && mi.methodInspection.get().parameters.isEmpty())
-                .filter(mi -> analysisProvider.getMethodAnalysis(mi).getProperty(VariableProperty.SIZE) > Level.FALSE)
-                .filter(mi -> analysisProvider.getMethodAnalysis(mi).getProperty(VariableProperty.MODIFIED) == Level.FALSE)
-                .findFirst().orElse(null);
-        if (methodInfo != null) {
-            return methodInfo;
-        }
-        // we can afford to exclude JLO because it does NOT have a @Size method
-        return superTypesExcludingJavaLangObject().stream().map(t -> t.sizeMethod(analysisProvider))
-                .filter(Objects::nonNull).findFirst().orElse(null);
-    }
-
-    // TODO there may be delays
-    public boolean hasSize(AnalysisProvider analysisProvider) {
-        return sizeMethod(analysisProvider) != null;
-    }
-
-    public static boolean returnsIntOrLong(MethodInfo methodInfo) {
-        TypeInfo returnType = methodInfo.returnType().typeInfo;
-        if (returnType == null) return false;
-        return Primitives.isInt(returnType) || Primitives.isInteger(returnType) ||
-                Primitives.isLong(returnType) || Primitives.isBoxedLong(returnType);
     }
 
     public Set<ObjectFlow> objectFlows(AnalysisProvider analysisProvider) {

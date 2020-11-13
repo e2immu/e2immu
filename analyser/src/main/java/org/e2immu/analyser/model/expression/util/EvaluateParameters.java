@@ -162,24 +162,10 @@ public class EvaluateParameters {
                     }
                 }
 
-                // SIZE
-                Map<Variable, Value> sizeRestrictions = reEvaluated.filter(evaluationContext,
-                        Value.FilterMode.ACCEPT, val -> val.isIndividualSizeRestriction(evaluationContext)).accepted;
-                for (Map.Entry<Variable, Value> sizeRestriction : sizeRestrictions.entrySet()) {
-                    // now back to precondition world
-                    if (sizeRestriction.getKey() instanceof ParameterInfo) {
-                        int v = sizeRestriction.getValue().encodedSizeRestriction(evaluationContext);
-                        if (v > Level.NOT_A_SIZE) {
-                            builder.setProperty(sizeRestriction.getKey(), VariableProperty.SIZE, v);
-                        }
-                    }
-                }
-
                 // all the rest: preconditions
                 // TODO: also weed out conditions that are not on parameters, and not on `this`
                 Value rest = reEvaluated.filter(evaluationContext,
-                        Value.FilterMode.ACCEPT, Value::isIndividualNullOrNotNullClauseOnParameter, val ->
-                                val.isIndividualSizeRestrictionOnParameter(evaluationContext)).rest;
+                        Value.FilterMode.ACCEPT, Value::isIndividualNullOrNotNullClauseOnParameter).rest;
                 if (rest != null) {
                     builder.addPrecondition(rest);
                 }

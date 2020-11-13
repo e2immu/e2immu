@@ -30,7 +30,6 @@ import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.Nullable;
-import org.e2immu.annotation.SizeCopy;
 
 import java.util.Map;
 import java.util.Set;
@@ -136,7 +135,7 @@ public interface Value extends Comparable<Value> {
     default FilterResult isIndividualNullOrNotNullClauseOnParameter() {
         return new FilterResult(Map.of(), this);
     }
-    // NOTE: contrary to the SizeRestriction and the FieldCondition, this one stores not the whole equality, but
+    // NOTE: contrary to the FieldCondition, this one stores not the whole equality, but
     // only the NullValue in the Map.
 
     default FilterResult isIndividualNullOrNotNullClause() {
@@ -148,14 +147,6 @@ public interface Value extends Comparable<Value> {
         if (variables.size() == 1 && variables.stream().allMatch(v -> v instanceof FieldReference)) {
             return new FilterResult(Map.of(variables.stream().findAny().orElseThrow(), this), UnknownValue.NO_VALUE);
         }
-        return new FilterResult(Map.of(), this);
-    }
-
-    default FilterResult isIndividualSizeRestrictionOnParameter(EvaluationContext evaluationContext) {
-        return new FilterResult(Map.of(), this);
-    }
-
-    default FilterResult isIndividualSizeRestriction(EvaluationContext evaluationContext) {
         return new FilterResult(Map.of(), this);
     }
 

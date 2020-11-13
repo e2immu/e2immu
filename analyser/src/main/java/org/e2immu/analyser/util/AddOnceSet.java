@@ -22,10 +22,8 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Only;
-import org.e2immu.annotation.Size;
 
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -39,8 +37,9 @@ public class AddOnceSet<V> extends Freezable {
 
     private final Map<V, V> set = new HashMap<>();
 
+    boolean add$Modification$Size(int post, int pre, V v) { return pre == 0 || !contains(v) ? post == 1: contains(v) ? post == pre: post >= pre && post <= pre+1; }
+    boolean add$Generate(V v) { return contains(v); }
     @Only(before = "frozen,set")
-    @Size(min = 1)
     public void add(@NotNull V v) {
         Objects.requireNonNull(v);
         ensureNotFrozen();
@@ -55,16 +54,17 @@ public class AddOnceSet<V> extends Freezable {
         return Objects.requireNonNull(set.get(v));
     }
 
-    @Size(min = 0)
+    void size$Aspect$Size() {}
     public int size() {
         return set.size();
     }
 
+    boolean contains$Value$Size(int size, boolean retVal) { return size != 0 && retVal; }
     public boolean contains(V v) {
         return set.containsKey(v);
     }
 
-    @Size(equals = 0)
+    boolean isEmpty$Value$Size(int size) { return size == 0; }
     public boolean isEmpty() {
         return set.isEmpty();
     }
@@ -73,11 +73,12 @@ public class AddOnceSet<V> extends Freezable {
         set.keySet().forEach(consumer);
     }
 
-    @Size(copy = true)
+    int stream$Transfer$Size(int size) { return size; }
     public Stream<V> stream() {
         return set.keySet().stream();
     }
 
+    int toImmutableSet$Transfer$Size(int size) { return size; }
     public Set<V> toImmutableSet() {
         return ImmutableSet.copyOf(set.keySet());
     }

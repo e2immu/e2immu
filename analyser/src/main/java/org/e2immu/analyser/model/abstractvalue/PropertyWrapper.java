@@ -25,7 +25,6 @@ import org.e2immu.analyser.output.PrintMode;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -80,11 +79,6 @@ public class PropertyWrapper implements Value, ValueWrapper {
         // second, we always want the negation to be on the outside
         if (value instanceof NegatedValue) {
             throw new UnsupportedOperationException(); // this makes no sense!!
-        }
-        if (value instanceof ConstrainedNumericValue) {
-            int size = newMap.getOrDefault(VariableProperty.SIZE, Level.DELAY);
-            if (Level.haveEquals(size) || size < Level.TRUE) throw new UnsupportedOperationException();
-            return ConstrainedNumericValue.lowerBound(evaluationContext, value, Level.decodeSizeMin(size));
         }
         return new PropertyWrapper(value, properties, objectFlow);
     }

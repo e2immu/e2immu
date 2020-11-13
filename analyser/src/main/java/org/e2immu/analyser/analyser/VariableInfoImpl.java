@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.annotation.SizeCopy;
 
 import java.util.*;
 import java.util.function.IntBinaryOperator;
@@ -47,7 +46,6 @@ class VariableInfoImpl implements VariableInfo {
 
     public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
     public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
-    public final SetOnce<Map<Variable, SizeCopy>> sizeCopyVariables = new SetOnce<>();
 
     VariableInfoImpl(Variable variable) {
         this.variable = Objects.requireNonNull(variable);
@@ -61,7 +59,6 @@ class VariableInfoImpl implements VariableInfo {
         this.value.copy(previous.value);
         this.stateOnAssignment.copy(previous.stateOnAssignment);
         this.linkedVariables.copy(previous.linkedVariables);
-        this.sizeCopyVariables.copy(previous.sizeCopyVariables);
         this.objectFlow.copy(previous.objectFlow);
     }
 
@@ -83,11 +80,6 @@ class VariableInfoImpl implements VariableInfo {
     @Override
     public Set<Variable> getLinkedVariables() {
         return linkedVariables.getOrElse(null);
-    }
-
-    @Override
-    public Map<Variable, SizeCopy> getSizeCopyVariables() {
-        return sizeCopyVariables.getOrElse(null);
     }
 
     @Override
@@ -177,22 +169,6 @@ class VariableInfoImpl implements VariableInfo {
         }
     }
 
-    // we essentially compute the union
-    public void mergeSizeCopyVariables(boolean existingValuesWillBeOverwritten, VariableInfoImpl existing, List<VariableInfo> merge) {
-        Map<Variable, SizeCopy> merged = new HashMap<>();
-        if (!existingValuesWillBeOverwritten) {
-            if (!existing.sizeCopyVariablesIsSet()) return;
-            merged.putAll(existing.getSizeCopyVariables());
-        }
-        for (VariableInfo vi : merge) {
-            if (!vi.sizeCopyVariablesIsSet()) return;
-            merged.putAll(vi.getSizeCopyVariables());
-        }
-        if (!sizeCopyVariablesIsSet() || !getSizeCopyVariables().equals(merged)) {
-            sizeCopyVariables.set(merged);
-        }
-    }
-
     private record MergeOp(VariableProperty variableProperty, IntBinaryOperator operator, int initial) {
     }
 
@@ -201,10 +177,6 @@ class VariableInfoImpl implements VariableInfo {
 
     private static final List<MergeOp> MERGE = List.of(
             new MergeOp(VariableProperty.NOT_NULL, Math::min, Integer.MAX_VALUE),
-            new MergeOp(VariableProperty.SIZE, Math::min, Integer.MAX_VALUE),
-            new MergeOp(VariableProperty.SIZE_COPY, Math::min, Integer.MAX_VALUE),
-            new MergeOp(VariableProperty.SIZE_RESTRICTION, Math::max, Level.DELAY),
-            new MergeOp(VariableProperty.SIZE_OUT, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.IMMUTABLE, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.CONTAINER, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.IDENTITY, Math::min, Integer.MAX_VALUE),

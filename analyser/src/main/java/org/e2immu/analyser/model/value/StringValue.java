@@ -40,17 +40,6 @@ public class StringValue extends ConstantValue implements Constant<String> {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        if (VariableProperty.SIZE == variableProperty) {
-            return Level.encodeSizeEquals(value.length());
-        }
-        if (VariableProperty.SIZE_COPY == variableProperty) {
-            return Level.FALSE;
-        }
-        return super.getProperty(evaluationContext, variableProperty);
-    }
-
-    @Override
     public String toString() {
         return value;
     }

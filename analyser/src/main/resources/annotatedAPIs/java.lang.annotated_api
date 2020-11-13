@@ -42,6 +42,8 @@ public class Object {
     protected Object clone() {
     }
 
+    boolean equals$Value(Object object, boolean retVal) { return object == null ? false: this == object ? true: retVal; }
+    boolean equals$Invariant(Object object) { return (this.equals(object) && object !=null) == object.equals(this); }
     public boolean equals(@NotModified Object object) {
     }
 
@@ -80,7 +82,7 @@ public class StackTraceElement {
     public StackTraceElement(String declaringClass, String methodName, String fileName, int lineNumber) {
     }
 
-    public StackTraceElement​(String classLoaderName, String moduleName, String moduleVersion,
+    public StackTraceElement(String classLoaderName, String moduleName, String moduleVersion,
                               String declaringClass, String methodName, String fileName, int lineNumber) {
     }
 
@@ -228,67 +230,81 @@ public class String implements CharSequence {
     public String() {
     }
 
-    @Size(copy = true)
+    int chars$Transfer$Len(int len) { return len; }
     @NotNull
     IntStream chars() {
     }
 
-    @Size(copyMin = true)
+    int concat$Transfer$Len(int len, String str) { return str.length() + len; }
+    boolean concat$Postcondition(String str) { return startsWith(this) && endsWith(str) && contains(this) && contains(str); }
     @NotNull
     public String concat(@NotNull String str) {
     }
 
-    @Size(min = 0)
+    boolean length$Invariant$Len(int l) { return l >= 0; }
+    void length$Aspect$Len() {}
     public int length() {
     }
 
-    @Size(equals = 0)
+    boolean isEmpty$Value$Len(int l) { return l == 0; }
     public boolean isEmpty() {
     }
 
+    boolean indexOf$Postcondition$Len(int len, int retVal) { return retVal >= -1 && retVal < len; }
     public int indexOf(int ch) {
     }
 
-    @Size(copy = true)
+    int intern$Transfer$Len(int len) { return len; }
+    // TODO try to write that the result equals this
     @NotNull
     public String intern() {
     }
 
+    int lastIndexOf$Postcondition$Len(int len, int retVal) { return retVal >= -1 && retVal < len; }
     public int lastIndexOf(int ch) {
     }
 
+    int repeat$Transfer$Len(int len, int count) { return len * count; }
     @NotNull
     public String repeat(int count) {
     }
 
+    int startsWith$Value$Len(int len, String s, int retVal) { return s.length()>len ? false: retVal; }
     public boolean startsWith(@NotNull String s) {
     }
 
+    int startsWith$Value$Len(int len, String s, int i, int retVal) { return s.length()+i>len ? false: retVal; }
     public boolean startsWith(@NotNull String s, int i) {
     }
 
+    boolean substring$Precondition$Len(int len, int beginIndex) { return beginIndex < len; }
+    int substring$Transfer$Value(int len, int beginIndex) { return len - beginIndex; }
     @NotNull
     public String substring(int beginIndex) {
     }
 
+    boolean substring$Precondition$Len(int len, int beginIndex, int endIndex) { return beginIndex < len && endIndex < len && beginIndex <= endIndex; }
+    int substring$Transfer$Value(int len, int beginIndex, int endIndex) { return endIndex - beginIndex; }
     @NotNull
     public String substring(int beginIndex, int endIndex) {
     }
 
-    @Size(copy = true)
+    int toLowerCase$Transfer$Len(int len) { return len; }
     @NotNull
     public String toLowerCase() {
     }
 
-    @Size(copy = true)
+    int toUpperCase$Transfer$Len(int len) { return len; }
     @NotNull
     public String toUpperCase() {
     }
 
+    boolean trim$Postcondition$Len(int post, int pre) { return post <= pre; }
     @NotNull
     public String trim() {
     }
 
+    boolean strip$Postcondition$Len(int post, int pre) { return post <= pre; }
     @NotNull
     public String strip() {
     }
@@ -389,6 +405,7 @@ public interface Iterable<T> {
 }
 
 public interface Comparable<T> {
+    int compareTo$Value(T t, int retVal) { return state(equals(t)) || state(t.equals(this)) ? 0: retVal; }
     @NotModified
     int compareTo(@NotNull @NotModified T t);
 }

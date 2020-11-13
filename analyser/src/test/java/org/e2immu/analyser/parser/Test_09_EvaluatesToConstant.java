@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.util.Set;
 
 public class Test_09_EvaluatesToConstant extends CommonTestRunner {
-    private static final String METHOD2 = "org.e2immu.analyser.testexample.EvaluatesToConstant.method2(String)";
     private static final String PARAM_2_TO_LOWER = "org.e2immu.analyser.testexample.EvaluatesToConstant.method2(String):0:param.toLowerCase()";
     private static final String PARAM_3_TO_LOWER = "org.e2immu.analyser.testexample.EvaluatesToConstant.method3(String):0:param.toLowerCase()";
     public static final String PARAM_3_CONTAINS = "org.e2immu.analyser.testexample.EvaluatesToConstant.method3(String):0:param.contains(a)";
@@ -80,10 +79,6 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 Assert.assertEquals(XZY_TO_LOWER_CASE, d.currentValue().toString());
             }
 
-        }
-        if (METHOD2.equals(d.variableName()) && "2".equals(d.statementId())) {
-            int size = d.getProperty(VariableProperty.SIZE);
-            Assert.assertEquals(Level.encodeSizeEquals(1), size);
         }
     };
 

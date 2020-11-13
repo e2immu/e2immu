@@ -63,9 +63,6 @@ public class ArrayValue implements Value {
             int notNull = evaluationContext.getProperty(combinedValue, variableProperty);
             return MultiLevel.shift(MultiLevel.EFFECTIVE, notNull); // default = @NotNull level 0
         }
-        if (VariableProperty.SIZE == variableProperty) {
-            return Level.encodeSizeEquals(values.size());
-        }
         // default is to refer to each of the components
         return evaluationContext.getProperty(combinedValue, variableProperty);
     }

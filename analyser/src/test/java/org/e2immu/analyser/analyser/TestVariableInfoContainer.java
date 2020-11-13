@@ -110,10 +110,8 @@ public class TestVariableInfoContainer extends CommonVariableInfo {
         Assert.assertFalse(vic.current().valueIsSet());
 
         vic.assignment(VariableInfoContainer.LEVEL_4_SUMMARY);
-        vic.setValueOnAssignment(VariableInfoContainer.LEVEL_4_SUMMARY, three, Map.of(VariableProperty.SIZE, Level.TRUE));
         Assert.assertEquals(VariableInfoContainer.LEVEL_4_SUMMARY, vic.getCurrentLevel());
         Assert.assertSame(three, vic.current().getValue());
 
-        Assert.assertEquals(Level.TRUE, vic.current().getProperty(VariableProperty.SIZE));
     }
 }

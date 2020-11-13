@@ -163,9 +163,12 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
 
-    public void inspect(ConstructorDeclaration cd, ExpressionContext expressionContext) {
+    public void inspect(ConstructorDeclaration cd, ExpressionContext expressionContext, Map<CompanionMethod, MethodInfo> companionMethods) {
         log(INSPECT, "Inspecting constructor {}", fullyQualifiedName());
         MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
+        builder.addCompanionMethods(companionMethods);
+        checkCompanionMethods(companionMethods);
+
         addAnnotations(builder, cd.getAnnotations(), expressionContext);
         addModifiers(builder, cd.getModifiers());
         addParameters(builder, cd.getParameters(), expressionContext);
@@ -174,9 +177,26 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         methodInspection.set(builder.build(this));
     }
 
-    public void inspect(boolean isInterface, MethodDeclaration md, ExpressionContext expressionContext) {
+    private void checkCompanionMethods(Map<CompanionMethod, MethodInfo> companionMethods) {
+        for (Map.Entry<CompanionMethod, MethodInfo> entry : companionMethods.entrySet()) {
+            if (!entry.getValue().methodInspection.get().annotations.isEmpty()) {
+                throw new UnsupportedOperationException("Companion methods do not accept annotations: " + entry.getKey());
+            }
+            if (!entry.getKey().methodName().equals(name)) {
+                throw new UnsupportedOperationException("Companion method's name differs from the method name: " + entry.getKey() + " vs " + name);
+            }
+        }
+
+    }
+    public void inspect(boolean isInterface,
+                        MethodDeclaration md,
+                        ExpressionContext expressionContext,
+                        Map<CompanionMethod, MethodInfo> companionMethods) {
         log(INSPECT, "Inspecting method {}", fullyQualifiedName());
         MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
+        builder.addCompanionMethods(companionMethods);
+        checkCompanionMethods(companionMethods);
+
         int tpIndex = 0;
         ExpressionContext newContext = md.getTypeParameters().isEmpty() ? expressionContext :
                 expressionContext.newTypeContext("Method type parameters");

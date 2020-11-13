@@ -19,11 +19,8 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.model.Level;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -46,18 +43,11 @@ public class TestDynamicTypeAnnotation extends CommonTestRunner {
         }
     };
 
-    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-        if ("set1".equals(d.fieldInfo().name) && d.iteration() > 0) {
-            int size = d.fieldInfo().fieldAnalysis.get().getProperty(VariableProperty.SIZE);
-            Assert.assertEquals(Level.encodeSizeEquals(2), size);
-        }
-    };
 
     @Test
     public void test() throws IOException {
         testClass("DynamicTypeAnnotation", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

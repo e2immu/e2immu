@@ -263,81 +263,38 @@ The results need to be known to the evaluation context.
 . determine state after this statement
 . finally, make the results of the evaluation(s) permanent by calling `finalise`
 
-==== Computation of @Size
+==== Post- and pre-conditions
 
-The type analyser holds `fieldHoldingSize`, and a link to the variables that determine the size: `sizeCopyVariables`.
-It computes the former by looking at the return value of the <<size-annotation>> marker method.
-It determines the latter by going over the constructors collecting `sizeVariables` linked to the `fieldHoldingSize`.
+A non-modifying method without parameters can define an _aspect_ of a type, like `size` or `length`.
+We define methods complementary to a normal class or interface method, using the naming convention _method name$action$aspect_.
+Let's call them companion methods for now.
 
-The statement analyser holds multiple properties for each variable:
+Modification+aspect:: for modifying methods, show how the aspect changes from before to after the modification.
 
-. `SIZE`, which holds the current size of a @Size-able object;
-. `SIZE_RESTRICTION`, which will end up on a parameter
-. `SIZE_OUT`, which also ends up on a parameter
-. `SIZE_COPY`, determined by the fact that the parameter ends up in the type's `variablesDeterminingSizeCopy`.
+Value (+aspect):: compute edge case values, and return the normal value otherwise.
+Aspect can be used, but does not have to be present.
 
-The field analyser holds `SIZE` but is not concerned with size restrictions or output-size.
+Precondition:: describe the precondition in terms of parameters or field values
 
-The method analyser's <<size-annotation>> computations split in:
+Invariant:: without aspect present, it has to be a condition on fields which holds all the time.
 
-. modified vs non-modified: data comes from single return value, or from type's `fieldHoldingSize` variable info
-. if non-modified and there is a return value, then return the value of the `SIZE` property
+Invariant+aspect:: this expression describes an invariant of the aspect.
+For example, `size >= 0`, before and after any method.
 
+Postcondition:: describe the postcondition of the fields after the modification.
+(This is the modification without aspect.)
 
-The method analyser sets `SIZE_COPY` when the single return value has non-empty `sizeCopyVariables`, copied from the `VariableInfo` object.
-It sets `SIZE` from the `SIZE` property of the single return value.
+Transfer (+aspect):: assign state to the return element, transferring it from the current object.
 
-The statement analyser acts in the following ways.
+Generate:: generate any other type of
 
-Situation 1:: a non-modifying method requiring a SIZE:
+Erase:: we need to think about something that erases state.
+A `clear()` method on a collection should remove all `contains(x)` clauses.
 
-[source,java]
-----
-someMethod(paramSet)
-----
+Implementation issues:
 
-where `someMethod` has the definition:
-
-[source,java]
-----
-void someMethod(@Size(min = 1) Set<X> xs);
-----
-
-Using forward information, the analyser sets a `SIZE` and `SIZE_RESTRICTION` on the parameter `paramSet`.
-
-Situation 2:: a non-modifying method withe a `SIZE_COPY` parameter:
-
-[source,java]
-----
-this.set = ImmutableSet.copyOf(paramSet);
-----
-where `copyOf` has the definition:
-
-[source,java]
-----
-@NotNull
-@E2Container
-public static <E> ImmutableSet<E> copyOf(@NotNull @Size(copy = true) Iterable<? extends E> iterable);
-----
-
-
-Situation 3:: a modifying method with a `SIZE_COPY` parameter:
-
-[source,java]
-----
-this.map.putAll(paramMap);
-----
-
-The `putAll` method has the definition:
-
-[source,java]
-----
-@Independent
-void putAll(@NotModified @Size(copyMin = true) @NotNull Map<? extends K, ? extends V> m);
-----
-
-The <<size-annotation>> in `putAll`'s parameter transfers `paramMap` into `this.map`'s `sizeCopyVariables`.
-At the same time, it copies `putAll`'s `SIZE` into `this.map`'s `SIZE`.
-Because `this.map` is not a parameter, the analyser does not write to `SIZE_OUT`.
-
-
+. Get rid of SIZE and everything surrounding it
+. Parsing the methods, and storing them in the type in a reasonable data structure.
+We'll work with the evaluated inline-functions; they have a translation mechanism already built in.
+. The system generates preconditions, ensure that they can be tested.
+. From a companion method we have to translate.
