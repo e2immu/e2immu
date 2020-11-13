@@ -241,6 +241,12 @@ public class String implements CharSequence {
     public String concat(@NotNull String str) {
     }
 
+    boolean contains$Value$Len(int len, CharSequence s, boolean retVal) { return s.length()==0 ? true: s.length()>len ? false: retVal; }
+    boolean contains(CharSequence s) {}
+
+    boolean endsWith$Value$Len(int len, String s, int retVal) { return s.length() == 0 ? true: s.length() > s ? false: retVal; }
+    public boolean endsWith(String suffix) {}
+
     boolean length$Invariant$Len(int l) { return l >= 0; }
     void length$Aspect$Len() {}
     public int length() {
@@ -405,7 +411,7 @@ public interface Iterable<T> {
 }
 
 public interface Comparable<T> {
-    int compareTo$Value(T t, int retVal) { return state(equals(t)) || state(t.equals(this)) ? 0: retVal; }
+    int compareTo$Value(T t, int retVal) { return equals(t) || t.equals(this) ? 0: retVal; }
     @NotModified
     int compareTo(@NotNull @NotModified T t);
 }

@@ -500,7 +500,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     private Stream<FieldInfo> accessibleFieldsStream(TypeInfo startingPoint) {
-        TypeInspection typeInspection = this.typeInspection.getPotentiallyRun();
+        TypeInspection typeInspection = this.typeInspection.getPotentiallyRun("Inspection of "+fullyQualifiedName);
         boolean inSameCompilationUnit = this == startingPoint || primaryType() == startingPoint.primaryType();
         boolean inSamePackage = !inSameCompilationUnit &&
                 primaryType().typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getLeft().equals(

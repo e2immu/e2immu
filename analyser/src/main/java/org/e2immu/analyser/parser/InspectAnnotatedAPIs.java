@@ -70,16 +70,23 @@ public class InspectAnnotatedAPIs {
         // then, inspect in the normal way using a delegating type store
         DelegatingTypeStore delegatingTypeStore = new DelegatingTypeStore(localTypeStore, globalTypeContext.typeStore);
         ParseAndInspect parseAndInspect = new ParseAndInspect(byteCodeInspector, false, localTypeStore);
+        Map<TypeInfo, TypeContext> inspectedTypes = new HashMap<>();
         for (URL url : annotatedAPIs) {
             try (InputStreamReader isr = new InputStreamReader(url.openStream(), sourceCharSet)) {
                 String source = IOUtils.toString(isr);
                 TypeContext typeContextOfFile = new TypeContext(globalTypeContext, delegatingTypeStore);
-                parseAndInspect.phase1ParseAndInspect(typeContextOfFile, url.getFile(), source);
+                List<TypeInfo> inspectedTypesList = parseAndInspect.phase1ParseAndInspect(typeContextOfFile, url.getFile(), source);
+                inspectedTypesList.forEach(typeInfo -> inspectedTypes.put(typeInfo, typeContextOfFile));
             }
         }
 
         // finally, merge the annotations in the result of .class byte code inspection
-        return possiblyInspectThenMerge();
+        List<TypeInfo> typesInGlobalTypeContext = possiblyInspectThenMerge();
+
+        Resolver resolver = new Resolver();
+        resolver.sortTypes(inspectedTypes);
+
+        return typesInGlobalTypeContext;
     }
 
     private List<TypeInfo> possiblyInspectThenMerge() {

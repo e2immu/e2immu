@@ -139,43 +139,48 @@ public class Resolver {
 
     private void doType(TypeInfo typeInfo, TypeContext typeContextOfType,
                         DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
-        TypeInspection typeInspection = typeInfo.typeInspection.getPotentiallyRun();
+        try {
+            TypeInspection typeInspection = typeInfo.typeInspection.getPotentiallyRun();
 
-        typeInspection.subTypes.forEach(typeContextOfType::addToContext);
+            typeInspection.subTypes.forEach(typeContextOfType::addToContext);
 
-        // recursion, do sub-types first
-        typeInspection.subTypes.forEach(subType -> doType(subType, typeContextOfType, methodFieldSubTypeGraph));
+            // recursion, do sub-types first
+            typeInspection.subTypes.forEach(subType -> doType(subType, typeContextOfType, methodFieldSubTypeGraph));
 
-        log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
-        ExpressionContext expressionContext = ExpressionContext.forBodyParsing(typeInfo, typeInfo.primaryType(), typeContextOfType);
+            log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
+            ExpressionContext expressionContext = ExpressionContext.forBodyParsing(typeInfo, typeInfo.primaryType(), typeContextOfType);
 
-        expressionContext.typeContext.addToContext(typeInfo);
-        typeInspection.typeParameters.forEach(expressionContext.typeContext::addToContext);
+            expressionContext.typeContext.addToContext(typeInfo);
+            typeInspection.typeParameters.forEach(expressionContext.typeContext::addToContext);
 
-        // add visible types to the type context
-        typeInfo.accessibleBySimpleNameTypeInfoStream().forEach(expressionContext.typeContext::addToContext);
+            // add visible types to the type context
+            typeInfo.accessibleBySimpleNameTypeInfoStream().forEach(expressionContext.typeContext::addToContext);
 
-        // add visible fields to variable context
-        typeInfo.accessibleFieldsStream().forEach(fieldInfo -> expressionContext.variableContext.add(new FieldReference(fieldInfo,
-                fieldInfo.isStatic() ? null : new This(fieldInfo.owner))));
+            // add visible fields to variable context
+            typeInfo.accessibleFieldsStream().forEach(fieldInfo -> expressionContext.variableContext.add(new FieldReference(fieldInfo,
+                    fieldInfo.isStatic() ? null : new This(fieldInfo.owner))));
 
-        // ANNOTATIONS ON THE TYPE
+            // ANNOTATIONS ON THE TYPE
 
-        typeInspection.annotations.forEach(annotationExpression -> {
-            if (!annotationExpression.expressions.isSet()) {
-                annotationExpression.resolve(expressionContext);
-            }
-        });
+            typeInspection.annotations.forEach(annotationExpression -> {
+                if (!annotationExpression.expressions.isSet()) {
+                    annotationExpression.resolve(expressionContext);
+                }
+            });
 
-        doFields(typeInspection, expressionContext, methodFieldSubTypeGraph);
-        doMethodsAndConstructors(typeInspection, expressionContext, methodFieldSubTypeGraph);
+            doFields(typeInspection, expressionContext, methodFieldSubTypeGraph);
+            doMethodsAndConstructors(typeInspection, expressionContext, methodFieldSubTypeGraph);
 
-        // dependencies of the type
+            // dependencies of the type
 
-        Set<TypeInfo> typeDependencies = typeInfo.typesReferenced().stream().map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
-        List<TypeInfo> allTypesInPrimaryType = typeInfo.allTypesInPrimaryType();
-        typeDependencies.retainAll(allTypesInPrimaryType);
-        methodFieldSubTypeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
+            Set<TypeInfo> typeDependencies = typeInfo.typesReferenced().stream().map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
+            List<TypeInfo> allTypesInPrimaryType = typeInfo.allTypesInPrimaryType();
+            typeDependencies.retainAll(allTypesInPrimaryType);
+            methodFieldSubTypeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
+        } catch (RuntimeException re) {
+            LOGGER.warn("Caught exception resolving type {}", typeInfo.fullyQualifiedName);
+            throw re;
+        }
     }
 
     private void doFields(TypeInspection typeInspection,
@@ -265,6 +270,8 @@ public class Resolver {
         typeInspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
             try {
                 doMethodOrConstructor(methodInfo, expressionContext, methodFieldSubTypeGraph);
+                methodInfo.methodInspection.get().companionMethods.values().forEach(companionMethod ->
+                        doMethodOrConstructor(companionMethod, expressionContext, new DependencyGraph<>()));
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while resolving method {}", methodInfo.fullyQualifiedName());
                 throw rte;
