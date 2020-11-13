@@ -179,15 +179,28 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     private void checkCompanionMethods(Map<CompanionMethod, MethodInfo> companionMethods) {
         for (Map.Entry<CompanionMethod, MethodInfo> entry : companionMethods.entrySet()) {
-            if (!entry.getValue().methodInspection.get().annotations.isEmpty()) {
-                throw new UnsupportedOperationException("Companion methods do not accept annotations: " + entry.getKey());
+            CompanionMethod companionMethod = entry.getKey();
+            MethodInfo theMethod = entry.getValue();
+            if (!theMethod.methodInspection.get().annotations.isEmpty()) {
+                throw new UnsupportedOperationException("Companion methods do not accept annotations: " + companionMethod);
             }
-            if (!entry.getKey().methodName().equals(name)) {
-                throw new UnsupportedOperationException("Companion method's name differs from the method name: " + entry.getKey() + " vs " + name);
+            if (!companionMethod.methodName().equals(name)) {
+                throw new UnsupportedOperationException("Companion method's name differs from the method name: " + companionMethod + " vs " + name);
+            }
+            int expectStatements = theMethod.isVoid() ? 0 : 1;
+            boolean error;
+            if (theMethod.methodInspection.get().methodBody.isSet()) {
+                error = theMethod.methodInspection.get().methodBody.get().structure.statements.size() != expectStatements;
+            } else {
+                error = theMethod.methodInspection.get().methodBody.getFirst().getStatements().size() != expectStatements;
+            }
+            if (error) {
+                throw new UnsupportedOperationException("Companion methods must have only one statement when non-void: a return statement! " + companionMethod);
             }
         }
 
     }
+
     public void inspect(boolean isInterface,
                         MethodDeclaration md,
                         ExpressionContext expressionContext,

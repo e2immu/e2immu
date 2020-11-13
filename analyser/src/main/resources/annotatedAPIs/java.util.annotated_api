@@ -125,11 +125,10 @@ public interface Collection<E> extends Iterable<E> {
 // this is not in line with the JDK, but we will block null keys!
 public interface List<E> extends Collection<E> {
 
-    @Size(min = 1)
     boolean add(@NotNull E e);
 
     @Independent
-    boolean addAll(@Size(copyMin = true) @NotNull1 Collection<? extends E> collection);
+    boolean addAll(@NotNull1 Collection<? extends E> collection);
 
     @NotModified
     boolean contains(@NotNull Object object);
@@ -138,7 +137,6 @@ public interface List<E> extends Collection<E> {
     boolean containsAll(@NotNull1 Collection<?> c);
 
     @NotModified
-    @Size(equals = 0)
     boolean isEmpty();
 
     @NotNull1
@@ -180,7 +178,6 @@ public interface List<E> extends Collection<E> {
     boolean removeAll(@NotNull1 Collection<?> c);
 
     @NotModified
-    @Size(min = 0)
     int size();
 
     @NotModified
@@ -189,13 +186,11 @@ public interface List<E> extends Collection<E> {
 
     @NotNull1
     @NotModified
-    @Size(copy = true)
     Object[] toArray();
 
     @NotNull1
     @Independent
     @NotModified
-    @Size(copy = true)
     <T> T[] toArray(@NotNull1 @Independent T[] a);
 }
 
@@ -209,28 +204,24 @@ public interface Set<E> extends Collection<E> {
     @NotNull1
     @NotModified
     @E2Container
-    @Size(equals = 0)
     static <E> Set<E> of() {
     }
 
     @NotNull1
     @NotModified
     @E2Container
-    @Size(equals = 1)
     static <E> Set<E> of(@NotNull E e1) {
     }
 
     @NotNull1
     @NotModified
     @E2Container
-    @Size(equals = 2)
     static <E> Set<E> of(@NotNull E e1, @NotNull E e2) {
     }
 
     @NotNull1
     @NotModified
     @E2Container
-    @Size(equals = 3)
     static <E> Set<E> of(@NotNull E e1, @NotNull E e2, @NotNull E e3) {
     }
 }
@@ -251,7 +242,6 @@ public interface Map<K, V> {
 
     }
 
-    @Size(equals = 0)
     void clear();
 
     @NotModified
@@ -265,39 +255,33 @@ public interface Map<K, V> {
 
     @NotNull
     @NotModified
-    @Size(copy = true)
     Collection<V> values();
 
     @NotModified
-    @Size(min = 0)
     int size();
 
     @NotModified
-    @Size(equals = 0)
     boolean isEmpty();
 
     @NotModified
     V get(@NotNull Object key);
 
-    @Size(min = 1)
     V put(@NotNull K k, @NotNull V v);
 
     V remove(@NotNull Object key);
 
     @Independent
-    void putAll(@Size(copyMin = true) @NotNull Map<? extends K, ? extends V> m);
+    void putAll(@NotNull Map<? extends K, ? extends V> m);
 
     @NotModified
     void forEach(@NotNull BiConsumer<? super K, ? super V> action);
 
     @NotModified
     @NotNull
-    @Size(copy = true)
     Set<Map.Entry<K, V>> entrySet();
 
     @NotModified
     @NotNull
-    @Size(copy = true)
     Set<K> keySet();
 }
 
@@ -313,12 +297,10 @@ public class HashSet<E> implements Set<E> {
     @Independent
     public HashSet(@NotNull Collection<? extends E> c) {
     }
-
-    @Size(min = 1)
+    
     public boolean add(@NotNull E e) {
     }
-
-    @Size(equals = 0)
+    
     public void clear() {
     }
 
@@ -327,7 +309,6 @@ public class HashSet<E> implements Set<E> {
     }
 
     @NotModified
-    @Size(equals = 0)
     public boolean isEmpty() {
     }
 
@@ -339,7 +320,6 @@ public class HashSet<E> implements Set<E> {
     }
 
     @NotModified
-    @Size(min = 0)
     public int size() {
     }
 }
@@ -347,11 +327,9 @@ public class HashSet<E> implements Set<E> {
 @Container
 // this is not in line with the JDK, but we will block null keys!
 public class ArrayList<E> implements List<E> {
-    @Size(equals = 0)
     public ArrayList() {
     }
-
-    @Size(equals = 0)
+    
     public ArrayList(int size) {
     }
 
@@ -362,20 +340,18 @@ public class ArrayList<E> implements List<E> {
 @Container
 // this is not in line with the JDK, but we will block null keys!
 public class LinkedList<E> implements List<E> {
-    @Size(equals = 0)
     public LinkedList() {
     }
 
     @Independent
-    public LinkedList(@Size(copy = true) @NotNull Collection<? extends E> c) {
+    public LinkedList(@NotNull Collection<? extends E> c) {
     }
 
-    @Size(min = 1)
     public boolean add(@NotNull E e) {
     }
 
     @Independent
-    public boolean addAll(@Size(copyMin = true) @NotNull Collection<? extends E> c) {
+    public boolean addAll(@NotNull Collection<? extends E> c) {
     }
 
     @NotModified
@@ -383,7 +359,6 @@ public class LinkedList<E> implements List<E> {
     }
 
     @NotModified
-    @Size(min = 0)
     public int size() {
     }
 }
@@ -391,30 +366,25 @@ public class LinkedList<E> implements List<E> {
 @Container
 // this is not in line with the JDK, but we will block null keys and values!
 public class HashMap<K, V> implements Map<K, V> {
-    @Size(equals = 0)
     public HashMap() {
     }
 
-    // IMPORTANT NOTE: The @Size(copy) here assumes that the equals methods behave similarly
     @Independent
-    public HashMap(@Size(copy = true) @NotNull Map<? extends K, ? extends V> map) {
+    public HashMap(@NotNull Map<? extends K, ? extends V> map) {
     }
 
-    @Size(equals = 0)
     public void clear() {
     }
 
     @NotModified
-    @Size(equals = 0)
     public boolean isEmpty() {
     }
 
-    @Size(min = 1)
     public V put(@NotNull K key, @NotNull V value) {
     }
 
     @Independent
-    public void putAll(@Size(copyMin = true) @NotNull Map<? extends K, ? extends V> map) {
+    public void putAll(@NotNull Map<? extends K, ? extends V> map) {
     }
 }
 
@@ -422,7 +392,6 @@ public class HashMap<K, V> implements Map<K, V> {
 // this is not in line with the JDK, but we will block null keys!
 public class Vector<E> implements List<E> {
 
-    @Size(min = 1)
     public void add(int index, @NotNull E element) {
     }
 
@@ -434,12 +403,10 @@ public class Vector<E> implements List<E> {
 @Container
 // this is not in line with the JDK, but we will block null keys!
 public class Stack<E> extends Vector<E> {
-    @Size(equals = 0)
     public Stack() {
     }
 
     @NotModified
-    @Size(equals = 0)
     public boolean empty() {
     }
 
@@ -454,7 +421,6 @@ public class Stack<E> extends Vector<E> {
 
     @Identity
     @NotNull // could be implied
-    @Size(min = 1)
     public E push(@NotNull E item) {
     }
 
@@ -510,17 +476,14 @@ public interface Comparator<T> {
 public class Optional<T> {
     @Independent
     @NotNull
-    @Size(equals = 0)
     static <T> Optional<T> empty() {
     }
 
     @NotNull
-    @Size(equals = 1)
     static <T> Optional<T> of(@NotNull T t) {
     }
 
     @NotNull
-    @Size(min = 0)
     static <T> Optional<T> ofNullable(T t) {
     }
 
@@ -539,11 +502,9 @@ public class Optional<T> {
     <X extends Throwable> T orElseThrow(@NotNull Supplier<? extends X> exceptionSupplier) {
     }
 
-    @Size(equals = 0)
     boolean isEmpty() {
     }
 
-    @Size(equals = 1)
     boolean isPresent() {
     }
 
@@ -552,13 +513,13 @@ public class Optional<T> {
 @UtilityClass
 public class Arrays {
     @NotNull
-    static IntStream stream(@Size(copy = true) @NotNull int[] array) {
+    static IntStream stream(@NotNull int[] array) {
     }
 }
 
 @UtilityClass
 public class Collections {
 
-    static <T> boolean addAll(@Size(copyMin = true) @NotNull @Modified Collection<? super T> c,
+    static <T> boolean addAll(@NotNull @Modified Collection<? super T> c,
                               @NotModified T... elements);
 }

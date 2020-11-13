@@ -40,12 +40,10 @@ public class Collectors {
 
 @E2Container
 public interface IntStream {
-    @Size(min = 0)
     long count();
 
     int sum();
 
-    @Size(copy = true)
     @NotNull
     IntStream sorted();
 }
@@ -53,21 +51,17 @@ public interface IntStream {
 @E2Container
 public interface Stream<T> {
 
-    @Size(equals = 0)
     @NotNull
     static <T> Stream<T> empty();
 
-    @Size(equals = 1)
     @NotNull
     static <T> Stream<T> of(@NotNull T t);
 
     @NotNull
-    static <T> Stream<T> of(@NotNull @Size(copy = true) T... t);
+    static <T> Stream<T> of(@NotNull T... t);
 
-    @Size(min = 0)
     long count();
 
-    @Size(copy = true)
     @NotNull
     <R> Stream<R> map(@NotNull Function<? super T, ? extends R> mapper);
 
@@ -78,14 +72,12 @@ public interface Stream<T> {
     Stream<T> filter(@NotNull Predicate<? super T> predicate);
 
     @NotNull
-    @Size(copy = true)
     IntStream mapToInt(@NotNull ToIntFunction<? super T> mapper);
 
     @NotNull
     Optional<T> min(@NotNull Comparator<? super T> comparator);
 
     @NotNull
-    @Size(copy = true)
     Stream<T> sorted();
 
     @NotNull

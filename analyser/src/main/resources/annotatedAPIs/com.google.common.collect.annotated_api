@@ -40,7 +40,7 @@ public abstract class ImmutableCollection<E> {
 
     }
 
-    @Size(copy = true)
+    int toArray$Transfer$Size(int size) { return size; }
     public Object[] toArray() {
     }
 
@@ -54,11 +54,10 @@ public abstract class ImmutableList<E> extends ImmutableCollection<E> implements
     @Container(builds = ImmutableList.class)
     public static class Builder<E> {
         @Fluent
-        public Builder<E> add(@Size(copy = true) E... elements) {
+        public Builder<E> add(E... elements) {
         }
 
         @Fluent
-        @Size(min = 1)
         public Builder<E> add(E element) {
         }
 
@@ -73,14 +72,13 @@ public abstract class ImmutableList<E> extends ImmutableCollection<E> implements
         @NotNull
         @Independent
         @NotModified
-        @Size(copy = true)
         public ImmutableList<E> build() {
         }
     }
 
     @NotNull
     @E2Container
-    static <E> ImmutableList<E> copyOf(@Size(copy = true) @NotNull Iterable<? extends E> iterable);
+    static <E> ImmutableList<E> copyOf(@NotNull Iterable<? extends E> iterable);
 }
 
 @E2Container
@@ -89,11 +87,10 @@ public abstract class ImmutableSet<E> extends ImmutableCollection<E> implements 
     @Container(builds = ImmutableSet.class)
     public static class Builder<E> {
         @Fluent
-        public Builder<E> add(@Size(copy = true) E... elements) {
+        public Builder<E> add(E... elements) {
         }
 
         @Fluent
-        @Size(min = 1)
         public Builder<E> add(E element) {
         }
 
@@ -108,7 +105,6 @@ public abstract class ImmutableSet<E> extends ImmutableCollection<E> implements 
         @NotNull
         @Independent
         @NotModified
-        @Size(copy = true)
         public ImmutableSet<E> build() {
         }
     }
@@ -119,7 +115,7 @@ public abstract class ImmutableSet<E> extends ImmutableCollection<E> implements 
 
     @NotNull
     @E2Container
-    public static <E> ImmutableSet<E> copyOf(@Size(copy = true) @NotNull Collection<? extends E> elements);
+    public static <E> ImmutableSet<E> copyOf(@NotNull Collection<? extends E> elements);
 }
 
 @E2Container
@@ -128,18 +124,16 @@ public abstract class ImmutableMap<K, V> implements Map<K, V> {
     @Container(builds = ImmutableMap.class)
     public static class Builder<K, V> {
         @Fluent
-        @Size(min = 1)
         public com.google.common.collect.ImmutableMap.Builder<K, V> put(K key, V value) {
         }
 
         @Fluent
-        public com.google.common.collect.ImmutableMap.Builder<K, V> putAll(@Size(copyMin = true) @NotNull Map<? extends K, ? extends V> map) {
+        public com.google.common.collect.ImmutableMap.Builder<K, V> putAll(@NotNull Map<? extends K, ? extends V> map) {
         }
 
         @NotNull
         @Independent
         @NotModified
-        @Size(copy = true)
         public com.google.common.collect.ImmutableMap<K, V> build() {
         }
     }
