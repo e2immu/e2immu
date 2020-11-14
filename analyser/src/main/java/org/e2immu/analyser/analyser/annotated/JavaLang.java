@@ -26,9 +26,10 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 class JavaLang {
+    final static String PACKAGE_NAME = "java.lang";
 
     @E2Container
-    static class JavaLangObject {
+    static class Object$ {
         @NotNull
         protected Object clone() { return null; }
 
@@ -46,69 +47,71 @@ class JavaLang {
 
 
     @E2Container
-    static class JavaLangStackTraceElement {}
+    static class TraceElement$ {}
 
-    static class JavaLangThrowable {
-
-        @NotModified
-        JavaLangString getMessage() { return null; }
+    static class Throwable$ {
 
         @NotModified
-        JavaLangString getLocalizedMessage() { return null; }
+        String getMessage() { return null; }
 
         @NotModified
-        java.lang.Throwable getCause() { return null; }
+        String getLocalizedMessage() { return null; }
+
+        @NotModified
+        Throwable getCause() { return null; }
 
         @Fluent
-        java.lang.Throwable initCause(java.lang.Throwable cause) { return null; }
+        Throwable initCause(Throwable cause) { return null; }
 
-        void setStackTrace(@NotNull java.lang.StackTraceElement[] stackTrace) { }
+        void setStackTrace(@NotNull StackTraceElement[] stackTrace) { }
 
-        void addSuppressed(@NotNull java.lang.Throwable exception) { }
+        void addSuppressed(@NotNull Throwable exception) { }
 
         @Fluent
-        java.lang.Throwable fillInStackTrace() { return null; }
+        Throwable fillInStackTrace() { return null; }
     }
 
 
     @E2Container
-    static class JavaLangClass_NOT_PRESENT {
-        // because it introduces a giant dependency circle which complicates resolution
+    static class Class$ {
+
     }
 
-    interface JavaLangCharSequence {
+    interface CharSequence$ {
         char charAt(int index);
 
         int length();
     }
 
     @E2Container
-    static class JavaLangString implements JavaLangCharSequence {
-        JavaLangString() { }
+    static class String$ implements CharSequence {
+        String$() { }
 
         public char charAt(int index) { return 0; }
 
         int chars$Transfer$Len(int len) { return len; }
         @NotNull
-        IntStream chars() { return null; }
+        public IntStream chars() { return null; }
+        @Override
+        public IntStream codePoints() { return null; }
 
-        int concat$Transfer$Len(int len, JavaLangString str) { return str.length() + len; }
-        boolean concat$Postcondition(JavaLangString str) { return startsWith(this) && endsWith(str) && contains(this) && contains(str); }
+        int concat$Transfer$Len(int len, String str) { return str.length() + len; }
+        boolean concat$Postcondition(String str) { return startsWith(this) && endsWith(str) && contains(this) && contains(str); }
         @NotNull
-        JavaLangString concat(@NotNull JavaLangString str) { return null; }
+        String concat(@NotNull String str) { return null; }
 
-        boolean contains$Value$Len(int len, JavaLangCharSequence s, boolean retVal) { return s.length() == 0 || (s.length() <= len && retVal); }
-        boolean contains(JavaLangCharSequence s) { return true; }
+        boolean contains$Value$Len(int len, CharSequence s, boolean retVal) { return s.length() == 0 || (s.length() <= len && retVal); }
+        boolean contains(CharSequence s) { return true; }
 
-        boolean endsWith$Value$Len(int len, JavaLangString s, boolean retVal) { return s.length() == 0 || (s.length() <= len && retVal); }
-        boolean endsWith(JavaLangString suffix) { return false; }
+        boolean endsWith$Value$Len(int len, String s, boolean retVal) { return s.length() == 0 || (s.length() <= len && retVal); }
+        boolean endsWith(String suffix) { return false; }
 
         boolean length$Invariant$Len(int l) { return l >= 0; }
         void length$Aspect$Len() { }
         public int length() { return 0; }
 
         boolean isEmpty$Value$Len(int l) { return l == 0; }
-        boolean isEmpty() { return false; }
+        public boolean isEmpty() { return false; }
 
         boolean indexOf$Postcondition$Len(int len, int retVal) { return retVal >= -1 && retVal < len; }
         int indexOf(int ch) { return 0; }
@@ -116,97 +119,100 @@ class JavaLang {
         int intern$Transfer$Len(int len) { return len; }
         // TODO try to write that the result equals this
         @NotNull
-        JavaLangString intern() { return null; }
+        String intern() { return null; }
 
         boolean lastIndexOf$Postcondition$Len(int len, int retVal) { return retVal >= -1 && retVal < len; }
         int lastIndexOf(int ch) { return 0; }
 
         int repeat$Transfer$Len(int len, int count) { return len * count; }
         @NotNull
-        JavaLangString repeat(int count) { return null; }
+        String repeat(int count) { return null; }
 
-        boolean startsWith$Value$Len(int len, JavaLangString s, boolean retVal) { return s.length() <= len && retVal; }
-        boolean startsWith(@NotNull JavaLangString s) { return true; }
+        boolean startsWith$Value$Len(int len, String s, boolean retVal) { return s.length() <= len && retVal; }
+        boolean startsWith(@NotNull String$ s) { return true; }
 
-        boolean startsWith$Value$Len(int len, JavaLangString s, int i, boolean retVal) { return s.length() + i <= len && retVal; }
-        boolean startsWith(@NotNull JavaLangString s, int i) { return true; }
+        boolean startsWith$Value$Len(int len, String s, int i, boolean retVal) { return s.length() + i <= len && retVal; }
+        boolean startsWith(@NotNull String s, int i) { return true; }
 
         boolean substring$Precondition$Len(int len, int beginIndex) { return beginIndex < len; }
         int substring$Transfer$Value(int len, int beginIndex) { return len - beginIndex; }
         @NotNull
-        JavaLangString substring(int beginIndex) { return null; }
+        String substring(int beginIndex) { return null; }
 
         boolean substring$Precondition$Len(int len, int beginIndex, int endIndex) { return endIndex < len && beginIndex <= endIndex; }
         int substring$Transfer$Value(int len, int beginIndex, int endIndex) { return endIndex - beginIndex; }
         @NotNull
-        JavaLangString substring(int beginIndex, int endIndex) { return null; }
+        String substring(int beginIndex, int endIndex) { return null; }
+
+        @Override
+        public CharSequence subSequence(int start, int end) { return null; }
 
         int toLowerCase$Transfer$Len(int len) { return len; }
         @NotNull
-        JavaLangString toLowerCase() { return null; }
+        String toLowerCase() { return null; }
 
         int toUpperCase$Transfer$Len(int len) { return len; }
         @NotNull
-        JavaLangString toUpperCase() { return null; }
+        String toUpperCase() { return null; }
 
         boolean trim$Postcondition$Len(int post, int pre) { return post <= pre; }
         @NotNull
-        JavaLangString trim() { return null; }
+        String trim() { return null; }
 
         boolean strip$Postcondition$Len(int post, int pre) { return post <= pre; }
         @NotNull
-        JavaLangString strip() { return null; }
+        String strip() { return null; }
     }
 
     @Container
-    static class JavaLangStringBuilder {
-        JavaLangStringBuilder() {
+    static class StringBuilder$ {
+        StringBuilder$() {
         }
 
-        JavaLangStringBuilder(JavaLangString string) { }
+        StringBuilder$(String string) { }
 
         @Fluent
-        JavaLangStringBuilder append(boolean b) { return this; }
+        StringBuilder append(boolean b) { return null; }
 
         @Fluent
-        JavaLangStringBuilder append(char c) { return this; }
+        StringBuilder append(char c) { return null; }
 
         @Fluent
-        JavaLangStringBuilder append(float f) { return this; }
+        StringBuilder append(float f) { return null; }
 
         @Fluent
-        JavaLangStringBuilder append(long l) { return this; }
+        StringBuilder append(long l) { return null; }
 
         @Fluent
-        JavaLangStringBuilder append(int i) { return this; }
+        StringBuilder append(int i) { return null; }
 
         @Fluent
-        JavaLangStringBuilder append(char[] chars) { return this; }
+        StringBuilder append(char[] chars) { return null; }
 
         @Fluent
-        JavaLangStringBuilder append(JavaLangString str) { return this; }
+        StringBuilder append(String str) { return null; }
 
         @Fluent
-        JavaLangStringBuilder append(Object o) { return this; }
+        StringBuilder append(Object o) { return null; }
     }
 
     @E2Container
-    static class JavaLangInteger {
+    static class Integer$ {
 
     }
 
     @E2Container
-    static class JavaLangBoolean {
+    static class Boolean$ {
 
     }
 
     @UtilityClass
-    static class JavaLangMath {
+    static class Math$ {
         @NotModified
         static int max(int a, int b) { return 0; }
     }
 
-    static class JavaLangSystem {
+    static class System$ {
         @IgnoreModifications
         @NotNull
         static final PrintStream out = null;
@@ -218,7 +224,7 @@ class JavaLang {
         }
     }
 
-    interface JavaLangIterable<T> {
+    interface Iterable$<T> {
         // looping over the collection should not not change it!
         @NotModified
         void forEach(@NotNull Consumer<? super T> action);
@@ -230,7 +236,7 @@ class JavaLang {
         Spliterator<T> spliterator();
     }
 
-    static class JavaLangComparable<T> {
+    static class Comparable$<T> {
         int compareTo$Value(T t, int retVal) { return equals(t) || t.equals(this) ? 0 : retVal; }
         @NotModified
         int compareTo(@NotNull @NotModified T t) { return 0; }

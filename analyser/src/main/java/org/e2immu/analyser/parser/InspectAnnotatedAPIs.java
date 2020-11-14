@@ -243,7 +243,7 @@ public class InspectAnnotatedAPIs {
                 compilationUnit.getTypes().forEach(td -> {
                     String name = td.getName().asString();
                     TypeInfo typeInfo = localTypeStore.getOrCreate(packageName + "." + name);
-                    typeInfo.recursivelyAddToTypeStore(localTypeStore, td);
+                    typeInfo.recursivelyAddToTypeStore(true, localTypeStore, td);
                 });
             }
         }

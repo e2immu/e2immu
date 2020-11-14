@@ -2,6 +2,18 @@
 
 === Inspection
 
+Special naming conventions for creating Java classes that hold annotations and companion methods:
+
+Types:: A sub-type immediately below the primary type in the file can have a dollar at the end.
+This indicates that the sub-type becomes a primary type, with the name identical to the sub-type name without the dollar, and the package detailed by a static final field called `PACKAGE_NAME` in the primary type.
+
+Methods:: the rare occasion of adding an annotation to `getClass`, which is final in `java.lang.Object`, requires a dollar at the end which the inspector will remove.
+
+Constructors:: when the type has a $ at the end, the constructor has to follow.
+The inspector removes the dollar silently.
+
+Note that the name of the primary type holding the sub-types is completely irrelevant.
+
 === Analysis
 
 ==== Code structure

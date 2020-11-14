@@ -25,8 +25,9 @@ import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
 public class JavaUtil extends Annotated {
+    final static String PACKAGE_NAME="com.google.common.collect";
 
-    interface JavaUtilIterator<T> {
+    interface Iterator$<T> {
         @NotModified
         default void forEachRemaining(Consumer<? super T> action) {
         }
@@ -35,7 +36,7 @@ public class JavaUtil extends Annotated {
 
     @Container
     // this is not in line with the JDK, but we will block null keys!
-    static class JavaUtilCollection<E> extends Annotated {
+    static class Collection$<E> extends Annotated {
 
         boolean add$Modification$Size(int i, int j, E e) { return addModificationHelper(i, j, contains(e), !contains(e)); }
         boolean add$Value$Size(int i, int j, E e, boolean retVal) { return addValueHelper(i, j, contains(e), !contains(e), retVal); }
@@ -114,7 +115,7 @@ public class JavaUtil extends Annotated {
 
     @Container
     // this is not in line with the JDK, but we will block null keys!
-    static class JavaUtilList<E> extends Annotated {
+    static class List$<E> extends Annotated {
 
         boolean add$Modification$Size(int i, int j, E e) { return addModificationHelper(i, j, contains(e), !contains(e)); }
         boolean add$Value$Size(int i, int j, E e, boolean retVal) { return addValueHelper(i, j, contains(e), !contains(e), retVal); }

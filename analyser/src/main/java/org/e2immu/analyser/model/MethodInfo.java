@@ -71,21 +71,33 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     // for constructors
     public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull List<ParameterInfo> parametersAsObserved) {
-        this(typeInfo, typeInfo.simpleName, parametersAsObserved, null, true, false, false);
+        this(typeInfo, dropDollar(typeInfo.simpleName), parametersAsObserved, null, true, false, false);
     }
 
     public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull String name, @NotNull List<ParameterInfo> parametersAsObserved,
                       ParameterizedType returnTypeObserved, boolean isStatic) {
-        this(typeInfo, name, parametersAsObserved, returnTypeObserved, false, isStatic, false);
+        this(typeInfo, dropDollarGetClass(name), parametersAsObserved, returnTypeObserved, false, isStatic, false);
     }
 
     public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull String name, @NotNull List<ParameterInfo> parametersAsObserved,
                       ParameterizedType returnTypeObserved, boolean isStatic, boolean isDefaultImplementation) {
-        this(typeInfo, name, parametersAsObserved, returnTypeObserved, false, isStatic, isDefaultImplementation);
+        this(typeInfo, dropDollarGetClass(name), parametersAsObserved, returnTypeObserved, false, isStatic, isDefaultImplementation);
     }
 
     public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull String name, boolean isStatic) {
-        this(typeInfo, name, List.of(), null, false, isStatic, false);
+        this(typeInfo, dropDollarGetClass(name), List.of(), null, false, isStatic, false);
+    }
+
+    private static String dropDollarGetClass(String string) {
+        if (string.endsWith("$") && !"getClass$".equals(string)) {
+            throw new UnsupportedOperationException();
+        }
+        return string;
+    }
+
+    private static String dropDollar(String string) {
+        if (string.endsWith("$")) return string.substring(0, string.length() - 1);
+        return string;
     }
 
     /**

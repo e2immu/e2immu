@@ -173,7 +173,7 @@ public class ParseAndInspect {
             String name = td.getName().asString();
             TypeInfo typeInfo = typeContextOfFile.typeStore.getOrCreate(packageName + "." + name);
             typeContextOfFile.addToContext(typeInfo);
-            typeInfo.recursivelyAddToTypeStore(typeContextOfFile.typeStore, td);
+            typeInfo.recursivelyAddToTypeStore(true, typeContextOfFile.typeStore, td);
         });
 
         // only then do we start inspection

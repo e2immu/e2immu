@@ -25,10 +25,10 @@ import java.util.Iterator;
 import java.util.List;
 
 public class ComGoogleCommonCollect {
+    final static String PACKAGE_NAME="com.google.common.collect";
 
-
-    static class ImmutableCollection<E> {
-        com.google.common.collect.ImmutableList<E> asList() { return null;  }
+    static class ImmutableCollection$<E> {
+        ImmutableList<E> asList() { return null;  }
 
         boolean contains(Object object) { return false; }
 
@@ -39,9 +39,9 @@ public class ComGoogleCommonCollect {
     }
 
     @E2Container
-    static class ComGoogleCommonCollectImmutableList<E> extends Annotated {
+    static class ImmutableList$<E> extends Annotated {
 
-        @Container(builds = ComGoogleCommonCollectImmutableList.class)
+        @Container(builds = ImmutableList.class)
         public static class Builder<E> {
             @Fluent
             public Builder<E> add(E... elements) {return this; }
@@ -58,12 +58,12 @@ public class ComGoogleCommonCollect {
             @NotNull
             @Independent
             @NotModified
-            public ComGoogleCommonCollectImmutableList<E> build() { return null; }
+            public ImmutableList<E> build() { return null; }
         }
 
         @NotNull
         @E2Container
-        static <E> ComGoogleCommonCollectImmutableList<E> copyOf(@NotNull Iterable<? extends E> iterable) { return null; }
+        static <E> ImmutableList<E> copyOf(@NotNull Iterable<? extends E> iterable) { return null; }
     }
 
 }
