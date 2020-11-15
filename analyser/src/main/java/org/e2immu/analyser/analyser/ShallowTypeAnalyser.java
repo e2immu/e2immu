@@ -88,6 +88,11 @@ public class ShallowTypeAnalyser implements AnalyserContext {
     }
 
     @Override
+    public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
+        return parameterInfo.parameterAnalysis.get();
+    }
+
+    @Override
     public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
         MethodAnalysis methodAnalysis = methodAnalyses.get(methodInfo);
         if (methodAnalysis != null) return methodAnalysis;
@@ -178,8 +183,6 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                                              TypeAnalysisImpl.Builder typeAnalysisBuilder,
                                              Primitives primitives,
                                              E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        assert typeInfo.shallowAnalysis();
-
         log(RESOLVE, "copy annotations into properties: {}", typeInfo.fullyQualifiedName);
 
         TypeInspection typeInspection = typeInfo.typeInspection.get();

@@ -67,8 +67,10 @@ public class Parser {
     // method result only used separately in tests
     public void runAnnotatedAPIs(Collection<URL> annotatedAPIs) throws IOException {
         InspectAnnotatedAPIs inspectAnnotatedAPIs = new InspectAnnotatedAPIs(getTypeContext(), getByteCodeInspector());
-        inspectAnnotatedAPIs.inspectResolvePossiblyMerge(annotatedAPIs, configuration.inputConfiguration.sourceEncoding);
-        ensureShallowAnalysisOfLoadedObjects();
+        List<SortedType> sortedTypes = inspectAnnotatedAPIs.inspectResolvePossiblyMerge(annotatedAPIs, configuration.inputConfiguration.sourceEncoding);
+        if (!configuration.skipAnalysis) {
+            ensureShallowAnalysisOfLoadedObjects(sortedTypes);
+        }
     }
 
     public List<SortedType> parseJavaFiles(Map<TypeInfo, URL> urls) {
@@ -107,7 +109,7 @@ public class Parser {
 
         if (configuration.skipAnalysis) return sortedPrimaryTypes;
 
-        ensureShallowAnalysisOfLoadedObjects();
+        ensureShallowAnalysisOfLoadedObjects(null);
 
         for (TypeContextVisitor typeContextVisitor : configuration.debugConfiguration.typeContextVisitors) {
             typeContextVisitor.visit(getTypeContext());
@@ -156,11 +158,22 @@ public class Parser {
         messages.addAll(primaryTypeAnalyser.getMessageStream());
     }
 
-    private void ensureShallowAnalysisOfLoadedObjects() {
+    private void ensureShallowAnalysisOfLoadedObjects(List<SortedType> sortedTypes) {
+        boolean acceptAll = sortedTypes != null;
+
+        // the following block of code ensures that primary types are processed first.
+        // Doing so allows for methods to be defined in primary types of annotated APIs
+        
         List<TypeInfo> typesForShallowAnalysis = new LinkedList<>();
+        if (sortedTypes != null) {
+            sortedTypes.forEach(st -> typesForShallowAnalysis.add(st.primaryType));
+
+        }
+        Set<TypeInfo> alreadyIncluded = new HashSet<>(typesForShallowAnalysis);
         getTypeContext().typeStore.visit(new String[0], (s, list) -> {
             for (TypeInfo typeInfo : list) {
-                if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() && typeInfo.shallowAnalysis()) {
+                if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() &&
+                        (acceptAll || typeInfo.shallowAnalysis()) && !alreadyIncluded.contains(typeInfo)) {
                     typesForShallowAnalysis.add(typeInfo);
                 }
             }

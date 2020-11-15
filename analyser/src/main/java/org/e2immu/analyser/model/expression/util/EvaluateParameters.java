@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +37,7 @@ import java.util.Map;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 
 public class EvaluateParameters {
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(EvaluateParameters.class);
 
     public static Pair<EvaluationResult.Builder, List<Value>> transform(List<Expression> parameterExpressions,
                                                                         EvaluationContext evaluationContext,
@@ -67,9 +69,15 @@ public class EvaluateParameters {
                     parameterInfo = params.get(i);
                 }
                 // NOT_NULL, NOT_MODIFIED, SIZE
-                Map<VariableProperty, Integer> map = evaluationContext.getParameterAnalysis(parameterInfo)
-                        .getProperties(VariableProperty.FORWARD_PROPERTIES_ON_PARAMETERS);
+                Map<VariableProperty, Integer> map;
+                try {
+                  map = evaluationContext.getParameterAnalysis(parameterInfo)
+                            .getProperties(VariableProperty.FORWARD_PROPERTIES_ON_PARAMETERS);
 
+                } catch (RuntimeException e) {
+                    LOGGER.error("Failed to obtain parameter analysis of {}", parameterInfo.fullyQualifiedName());
+                    throw e;
+                }
                 if (notModified1Scope == Level.TRUE) {
                     map.put(VariableProperty.MODIFIED, Level.FALSE);
                 }

@@ -25,16 +25,18 @@ import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.AnnotationType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.COMPANION;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
+import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class CompanionAnalyser {
+    private static final Logger LOGGER = LoggerFactory.getLogger(CompanionAnalyser.class);
 
     private final AnalyserContext analyserContext;
     public final MethodInfo mainMethod;
@@ -58,25 +60,34 @@ public class CompanionAnalyser {
     }
 
     public AnalysisStatus analyse(int iteration) {
-        if (companionMethodName.aspect() != null && !typeAnalysis.aspectsIsSet(companionMethodName.aspect())) {
-            log(DELAYED, "Delaying companion analysis of {} of {}, aspect function not known",
-                    companionMethodName, mainMethod.fullyQualifiedName());
-            return AnalysisStatus.DELAYS;
-        }
-        computeRemapParameters();
+        try {
+            if (companionMethodName.aspect() != null && !typeAnalysis.aspectsIsSet(companionMethodName.aspect())) {
+                log(DELAYED, "Delaying companion analysis of {} of {}, aspect function not known",
+                        companionMethodName, mainMethod.fullyQualifiedName());
+                return AnalysisStatus.DELAYS;
+            }
+            computeRemapParameters();
 
-        ReturnStatement returnStatement = (ReturnStatement) companionMethod.methodInspection.get()
-                .methodBody.get().structure.statements.get(0);
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
-        EvaluationResult evaluationResult = returnStatement.expression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-        if (evaluationResult.value == UnknownValue.NO_VALUE) {
-            log(DELAYED, "Delaying companion analysis of {} of {}, delay in evaluation",
-                    companionMethodName, mainMethod.fullyQualifiedName());
-            return AnalysisStatus.DELAYS;
-        }
-        companionAnalysis.value.set(evaluationResult.value);
+            ReturnStatement returnStatement = (ReturnStatement) companionMethod.methodInspection.get()
+                    .methodBody.get().structure.statements.get(0);
+            EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
+            EvaluationResult evaluationResult = returnStatement.expression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+            if (evaluationResult.value == UnknownValue.NO_VALUE) {
+                log(DELAYED, "Delaying companion analysis of {} of {}, delay in evaluation",
+                        companionMethodName, mainMethod.fullyQualifiedName());
+                return AnalysisStatus.DELAYS;
+            }
+            if (evaluationResult.value == null) {
+                throw new RuntimeException("? have null result");
+            }
+            companionAnalysis.value.set(evaluationResult.value);
 
-        return AnalysisStatus.DONE;
+            log(ANALYSER, "Finished companion analysis of {} in {}", companionMethodName, mainMethod.fullyQualifiedName());
+            return AnalysisStatus.DONE;
+        } catch (RuntimeException e) {
+            LOGGER.error("Caught runtime exception in companion analyser of {} of {}", companionMethodName, mainMethod.fullyQualifiedName());
+            throw e;
+        }
     }
 
     private void computeRemapParameters() {
@@ -116,6 +127,13 @@ public class CompanionAnalyser {
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
+
+        @Override
+        public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
+            MethodAnalysis methodAnalysis = getMethodAnalysis(parameterInfo.owner);
+            return methodAnalysis.getParameterAnalyses().get(parameterInfo.index);
+            //return getAnalyserContext().getParameterAnalysis(parameterInfo);
+        }
 
         @Override
         public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {

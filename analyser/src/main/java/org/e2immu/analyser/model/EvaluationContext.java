@@ -20,6 +20,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
@@ -115,6 +116,18 @@ public interface EvaluationContext {
     }
 
     default int getProperty(Value value, VariableProperty variableProperty) {
+        if (value instanceof VariableValue variableValue) {
+            if (variableValue.variable instanceof ParameterInfo parameterInfo) {
+                return getParameterAnalysis(parameterInfo).getProperty(variableProperty);
+            }
+            if (variableValue.variable instanceof FieldReference fieldReference) {
+                return getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
+            }
+            if (variableValue.variable instanceof This thisVariable) {
+                return getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
+            }
+            throw new UnsupportedOperationException("Variable value of type "+variableValue.variable.getClass());
+        }
         return value.getProperty(this, variableProperty); // will work in many cases
     }
 

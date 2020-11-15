@@ -62,7 +62,7 @@ public class InspectAnnotatedAPIs {
         this.byteCodeInspector = byteCodeInspector;
     }
 
-    public void inspectResolvePossiblyMerge(Collection<URL> annotatedAPIs, Charset sourceCharSet) throws IOException {
+    public List<SortedType> inspectResolvePossiblyMerge(Collection<URL> annotatedAPIs, Charset sourceCharSet) throws IOException {
         // load all primary types in the local type store
         // we have to do it this way, because an annotated API file may contain MULTIPLE primary types
         for (URL url : annotatedAPIs) load(url);
@@ -91,7 +91,7 @@ public class InspectAnnotatedAPIs {
         possiblyByteCodeInspectThenMerge(notInByteCode);
         log(RESOLVE, "Starting resolver in {} inspected types", inspectedTypes.size());
         Resolver resolver = new Resolver();
-        resolver.sortTypes(inspectedTypes);
+        return resolver.sortTypes(inspectedTypes);
     }
 
     private void possiblyByteCodeInspectThenMerge(Set<TypeInfo> notInByteCode) {

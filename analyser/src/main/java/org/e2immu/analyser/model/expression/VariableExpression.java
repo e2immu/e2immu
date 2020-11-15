@@ -66,6 +66,10 @@ public class VariableExpression implements Expression {
     public static EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo, Variable variable) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         Value currentValue = builder.currentValue(variable);
+        builder.setValue(currentValue);
+
+        // no statement analyser... we're in the shallow analyser
+        if(evaluationContext.getCurrentStatement() == null) return builder.build();
 
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
             builder.markRead(variable, evaluationContext.getIteration());
@@ -95,7 +99,6 @@ public class VariableExpression implements Expression {
             builder.markMethodDelay(variable, methodDelay);
         }
 
-        builder.setValue(currentValue);
         return builder.build();
     }
 

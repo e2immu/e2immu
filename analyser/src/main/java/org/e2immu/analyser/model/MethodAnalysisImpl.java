@@ -106,7 +106,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
     @Override
     public Set<MethodAnalysis> getOverrides() {
-        return overrides(methodInfo);
+        return overrides(AnalysisProvider.DEFAULT_PROVIDER, methodInfo);
     }
 
     @Override
@@ -369,7 +369,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public Set<MethodAnalysis> getOverrides() {
             if (overrides.isSet()) return overrides.get();
-            Set<MethodAnalysis> computed = overrides(methodInfo);
+            Set<MethodAnalysis> computed = overrides(analysisProvider, methodInfo);
             overrides.set(ImmutableSet.copyOf(computed));
             return computed;
         }
@@ -409,17 +409,18 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public void setFirstStatement(StatementAnalysis firstStatement) {
             this.firstStatement.set(firstStatement);
         }
-
     }
 
-    private static Set<MethodAnalysis> overrides(MethodInfo methodInfo) {
+    private static Set<MethodAnalysis> overrides(AnalysisProvider analysisProvider, MethodInfo methodInfo) {
         try {
             return methodInfo.typeInfo.overrides(methodInfo, true).stream()
-                    .map(mi -> mi.methodAnalysis.get()).collect(Collectors.toSet());
+                    .map(mi -> analysisProvider.getMethodAnalysis(methodInfo))
+                    .collect(Collectors.toSet());
         } catch (RuntimeException rte) {
             LOGGER.error("Cannot compute method analysis of {}", methodInfo.distinguishingName());
             throw rte;
         }
     }
+
 
 }
