@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.CompanionAnalysis;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
@@ -26,6 +27,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -112,11 +114,7 @@ public interface MethodAnalysis extends Analysis {
         return null;
     }
 
-
-    // replacements
-
-    // set when all replacements have been done
-
+    default Map<CompanionMethodName, CompanionAnalysis> getCompanionAnalyses() { return null; }
 
     // ************** PRECONDITION
 

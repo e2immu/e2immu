@@ -831,7 +831,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                 }
                 if (commonTypeOfFirstParameter == null) {
                     commonTypeOfFirstParameter = typeOfFirstParameter;
-                } else if (!ParameterizedType.equalsTypeParametersOnlyIndex(commonTypeOfFirstParameter,
+                } else if (ParameterizedType.notEqualsTypeParametersOnlyIndex(commonTypeOfFirstParameter,
                         typeOfFirstParameter)) {
                     log(EXTENSION_CLASS, "Type " + typeInfo.fullyQualifiedName +
                             " is not an @ExtensionClass, it has no common type for the first " +

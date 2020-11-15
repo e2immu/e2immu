@@ -20,6 +20,7 @@ package org.e2immu.analyser.parser;
 
 import org.apache.commons.io.IOUtils;
 import org.e2immu.analyser.analyser.PrimaryTypeAnalyser;
+import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
 import org.e2immu.analyser.annotationxml.AnnotationXmlWriter;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
@@ -32,10 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,10 +45,6 @@ public class Parser {
 
     public final Configuration configuration;
     private final Input input;
-    private final TypeContext globalTypeContext;
-    private final ByteCodeInspector byteCodeInspector;
-    public final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
-    private final TypeStore sourceTypeStore;
     private final Messages messages = new Messages();
 
     public Parser() throws IOException {
@@ -61,46 +55,32 @@ public class Parser {
     public Parser(Configuration configuration) throws IOException {
         this.configuration = configuration;
         input = new Input(configuration);
-        globalTypeContext = input.getGlobalTypeContext();
-        byteCodeInspector = input.getByteCodeInspector();
-        sourceTypeStore = input.getSourceTypeStore();
-        e2ImmuAnnotationExpressions = input.getE2ImmuAnnotationExpressions();
     }
 
     public List<SortedType> run() throws IOException {
         LOGGER.info("Running with configuration: {}", configuration);
-        List<URL> annotatedAPIs = input.getAnnotatedAPIs();
+        Collection<URL> annotatedAPIs = input.getAnnotatedAPIs().values();
         if (!annotatedAPIs.isEmpty()) runAnnotatedAPIs(annotatedAPIs);
         return parseJavaFiles(input.getSourceURLs());
     }
 
     // method result only used separately in tests
-    public void runAnnotatedAPIs(List<URL> annotatedAPIs) throws IOException {
-        InspectAnnotatedAPIs inspectAnnotatedAPIs = new InspectAnnotatedAPIs(globalTypeContext, byteCodeInspector);
-        List<SortedType> sortedTypes = inspectAnnotatedAPIs.inspectAndResolve(annotatedAPIs, configuration.inputConfiguration.sourceEncoding);
-
-        ensureMinimalAnalysisOfLoadedObjects();
-        log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Sorted API: {}",
-                sortedTypes.stream().map(st -> st.primaryType.fullyQualifiedName).collect(Collectors.joining("\n")));
-        for (SortedType sortedType : sortedTypes) {
-            if (sortedType.primaryType.doesNotNeedAnalysing()) {
-                sortedType.primaryType.copyAnnotationsIntoTypeAnalysisProperties(globalTypeContext.getPrimitives(), e2ImmuAnnotationExpressions);
-            } else {
-                analyseSortedType(sortedType);
-            }
-        }
+    public void runAnnotatedAPIs(Collection<URL> annotatedAPIs) throws IOException {
+        InspectAnnotatedAPIs inspectAnnotatedAPIs = new InspectAnnotatedAPIs(getTypeContext(), getByteCodeInspector());
+        inspectAnnotatedAPIs.inspectResolvePossiblyMerge(annotatedAPIs, configuration.inputConfiguration.sourceEncoding);
+        ensureShallowAnalysisOfLoadedObjects();
     }
 
     public List<SortedType> parseJavaFiles(Map<TypeInfo, URL> urls) {
         Map<TypeInfo, TypeContext> inspectedPrimaryTypesToTypeContextOfFile = new HashMap<>();
-        ParseAndInspect parseAndInspect = new ParseAndInspect(byteCodeInspector, true, sourceTypeStore);
+        ParseAndInspect parseAndInspect = new ParseAndInspect(getByteCodeInspector(), true, input.getSourceTypeStore());
         urls.forEach((typeInfo, url) -> typeInfo.typeInspection.setRunnable(() -> {
             if (!typeInfo.typeInspection.isSet()) {
                 try {
                     LOGGER.info("Starting source code inspection of {}", url);
                     InputStreamReader isr = new InputStreamReader(url.openStream(), configuration.inputConfiguration.sourceEncoding);
                     String source = IOUtils.toString(isr);
-                    TypeContext inspectionTypeContext = new TypeContext(globalTypeContext);
+                    TypeContext inspectionTypeContext = new TypeContext(getTypeContext());
                     List<TypeInfo> primaryTypes = parseAndInspect.phase1ParseAndInspect(inspectionTypeContext, url.toString(), source);
                     primaryTypes.forEach(t -> inspectedPrimaryTypesToTypeContextOfFile.put(t, inspectionTypeContext));
                 } catch (RuntimeException rte) {
@@ -127,10 +107,10 @@ public class Parser {
 
         if (configuration.skipAnalysis) return sortedPrimaryTypes;
 
-        ensureMinimalAnalysisOfLoadedObjects();
+        ensureShallowAnalysisOfLoadedObjects();
 
         for (TypeContextVisitor typeContextVisitor : configuration.debugConfiguration.typeContextVisitors) {
-            typeContextVisitor.visit(globalTypeContext);
+            typeContextVisitor.visit(getTypeContext());
         }
         log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Analysing primary types:\n{}",
                 sortedPrimaryTypes.stream().map(t -> t.primaryType.fullyQualifiedName).collect(Collectors.joining("\n")));
@@ -138,13 +118,13 @@ public class Parser {
             analyseSortedType(sortedType);
         }
         if (configuration.uploadConfiguration.upload) {
-            AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration, e2ImmuAnnotationExpressions);
+            AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration, getE2ImmuAnnotationExpressions());
             Map<String, String> map = annotationUploader.createMap(sortedPrimaryTypes.stream().map(sortedType -> sortedType.primaryType).collect(Collectors.toSet()));
             annotationUploader.writeMap(map);
         }
         if (configuration.annotationXmlConfiguration.writeAnnotationXml) {
             try {
-                AnnotationXmlWriter.write(configuration.annotationXmlConfiguration, globalTypeContext.typeStore);
+                AnnotationXmlWriter.write(configuration.annotationXmlConfiguration, getTypeContext().typeStore);
             } catch (IOException ioe) {
                 LOGGER.error("Caught ioe exception writing annotation XMLs");
                 throw new RuntimeException(ioe);
@@ -154,7 +134,7 @@ public class Parser {
     }
 
     private void analyseSortedType(SortedType sortedType) {
-        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(sortedType, configuration, globalTypeContext, e2ImmuAnnotationExpressions);
+        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(sortedType, configuration, getTypeContext(), getE2ImmuAnnotationExpressions());
         try {
             primaryTypeAnalyser.analyse();
         } catch (RuntimeException rte) {
@@ -176,25 +156,27 @@ public class Parser {
         messages.addAll(primaryTypeAnalyser.getMessageStream());
     }
 
-    private void ensureMinimalAnalysisOfLoadedObjects() {
-        globalTypeContext.typeStore.visit(new String[0], (s, list) -> {
+    private void ensureShallowAnalysisOfLoadedObjects() {
+        List<TypeInfo> typesToAnalyse = new LinkedList<>();
+        getTypeContext().typeStore.visit(new String[0], (s, list) -> {
             for (TypeInfo typeInfo : list) {
                 if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() && typeInfo.doesNotNeedAnalysing()) {
-                    typeInfo.copyAnnotationsIntoTypeAnalysisProperties(globalTypeContext.getPrimitives(), e2ImmuAnnotationExpressions);
+                    typesToAnalyse.add(typeInfo);
                 }
             }
         });
+        messages.addAll(ShallowTypeAnalyser.analyse(typesToAnalyse, getTypeContext().getPrimitives(), getE2ImmuAnnotationExpressions()));
     }
 
 
     // only meant to be used in tests!!
     public TypeContext getTypeContext() {
-        return globalTypeContext;
+        return input.getGlobalTypeContext();
     }
 
     // only meant to be used in tests!
     public ByteCodeInspector getByteCodeInspector() {
-        return byteCodeInspector;
+        return input.getByteCodeInspector();
     }
 
     public Stream<Message> getMessages() {
@@ -202,6 +184,6 @@ public class Parser {
     }
 
     public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
-        return e2ImmuAnnotationExpressions;
+        return input.getE2ImmuAnnotationExpressions();
     }
 }

@@ -34,7 +34,9 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.parser.ExpressionContext;
+import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.TypeStore;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
@@ -42,14 +44,17 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.*;
+import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
+import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeInfo.class);
+    public static final String PACKAGE_NAME_FIELD = "PACKAGE_NAME";
 
     @NotNull
     public final String simpleName;
@@ -119,7 +124,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         } else {
             builder.setParentClass(classImplemented);
         }
-        continueInspection(true, expressionContext, builder, members, null, false, false);
+        continueInspection(true, expressionContext, builder, members, null, false, false, null);
     }
 
     /**
@@ -134,12 +139,32 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                         TypeInfo enclosingType,
                         TypeDeclaration<?> typeDeclaration,
                         ExpressionContext expressionContext) {
+        inspect(hasBeenDefined, enclosingTypeIsInterface, enclosingType, typeDeclaration, expressionContext, null);
+    }
+
+    private void inspect(boolean hasBeenDefined,
+                         boolean enclosingTypeIsInterface,
+                         TypeInfo enclosingType,
+                         TypeDeclaration<?> typeDeclaration,
+                         ExpressionContext expressionContext,
+                         DollarResolver dollarResolverInput) {
         LOGGER.info("Inspecting type {}", fullyQualifiedName);
         TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
+
+        DollarResolver dollarResolver;
         if (enclosingType != null) {
             builder.setEnclosingType(enclosingType);
+            dollarResolver = dollarResolverInput;
         } else {
             builder.setPackageName(computePackageName());
+            FieldDeclaration packageNameField = typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null);
+            String dollarPackageName = packageName(packageNameField);
+            dollarResolver = name -> {
+                if (name.endsWith("$") && dollarPackageName != null) {
+                    return expressionContext.typeContext.typeStore.get(dollarPackageName + "." + name.substring(0, name.length() - 1));
+                }
+                return null;
+            };
         }
         builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
         expressionContext.typeContext.addToContext(this);
@@ -177,8 +202,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         }
         continueInspection(hasBeenDefined, expressionContext, builder,
                 typeDeclaration.getMembers(),
-                typeDeclaration.getFieldByName("PACKAGE_NAME").orElse(null),
-                typeNature == TypeNature.INTERFACE, haveFunctionalInterface);
+                typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null),
+                typeNature == TypeNature.INTERFACE, haveFunctionalInterface,
+                dollarResolver);
     }
 
     private void doAnnotationDeclaration(ExpressionContext expressionContext, AnnotationDeclaration annotationDeclaration,
@@ -302,20 +328,20 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
         builder.setEnclosingType(expressionContext.enclosingType);
         doClassOrInterfaceDeclaration(true, expressionContext, TypeNature.CLASS, cid, builder);
-        continueInspection(true, expressionContext, builder, cid.getMembers(), null, false, false);
+        continueInspection(true, expressionContext, builder, cid.getMembers(), null, false, false, null);
     }
 
 
     public void recursivelyAddToTypeStore(boolean parentIsPrimaryType, TypeStore typeStore, TypeDeclaration<?> typeDeclaration) {
         typeDeclaration.getMembers().forEach(bodyDeclaration -> {
             bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> {
-                TypeInfo subType = subTypeInfo(fullyQualifiedName, cid.getName().asString(), typeDeclaration);
+                TypeInfo subType = subTypeInfo(fullyQualifiedName, cid.getName().asString(), typeDeclaration, parentIsPrimaryType);
                 typeStore.add(subType);
                 log(INSPECT, "Added to type store: " + subType.fullyQualifiedName);
                 subType.recursivelyAddToTypeStore(false, typeStore, cid);
             });
             bodyDeclaration.ifEnumDeclaration(ed -> {
-                TypeInfo subType = subTypeInfo(fullyQualifiedName, ed.getName().asString(), typeDeclaration);
+                TypeInfo subType = subTypeInfo(fullyQualifiedName, ed.getName().asString(), typeDeclaration, parentIsPrimaryType);
                 typeStore.add(subType);
                 log(INSPECT, "Added enum to type store: " + subType.fullyQualifiedName);
                 subType.recursivelyAddToTypeStore(false, typeStore, ed);
@@ -330,24 +356,20 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             NodeList<BodyDeclaration<?>> members,
             FieldDeclaration packageNameField,
             boolean isInterface,
-            boolean haveFunctionalInterface) {
+            boolean haveFunctionalInterface,
+            DollarResolver dollarResolver) {
         // first, do sub-types
         ExpressionContext subContext = expressionContext.newVariableContext("body of " + fullyQualifiedName);
+
 
         // 2 step approach: first, add these types to the expression context, without inspection
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> {
-                String subTypeFqn = decideSubTypeName(fullyQualifiedName, cid.getNameAsString(), packageNameField);
-                TypeInfo subType = expressionContext.typeContext.typeStore.get(subTypeFqn);
-                if (subType == null)
-                    throw new UnsupportedOperationException("I should already know type " + cid.getNameAsString() + " inside " + fullyQualifiedName);
+                TypeInfo subType = subType(expressionContext, dollarResolver, cid.getNameAsString());
                 expressionContext.typeContext.addToContext(subType);
             });
             bodyDeclaration.ifEnumDeclaration(ed -> {
-                String subTypeFqn = decideSubTypeName(fullyQualifiedName, ed.getNameAsString(), packageNameField);
-                TypeInfo subType = expressionContext.typeContext.typeStore.get(subTypeFqn);
-                if (subType == null)
-                    throw new UnsupportedOperationException("I should already know enum type " + ed + " inside " + fullyQualifiedName);
+                TypeInfo subType = subType(expressionContext, dollarResolver, ed.getNameAsString());
                 expressionContext.typeContext.addToContext(subType);
             });
         }
@@ -355,17 +377,15 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         // then inspect them...
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> {
-                String subTypeFqn = decideSubTypeName(fullyQualifiedName, cid.getNameAsString(), packageNameField);
-                TypeInfo subType = expressionContext.typeContext.typeStore.get(subTypeFqn);
+                TypeInfo subType = subType(expressionContext, dollarResolver, cid.getNameAsString());
                 ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
-                subType.inspect(hasBeenDefined, isInterface, this, cid.asTypeDeclaration(), newExpressionContext);
+                subType.inspect(hasBeenDefined, isInterface, this, cid.asTypeDeclaration(), newExpressionContext, dollarResolver);
                 builder.addSubType(subType);
             });
             bodyDeclaration.ifEnumDeclaration(ed -> {
-                String subTypeFqn = decideSubTypeName(fullyQualifiedName, ed.getNameAsString(), packageNameField);
-                TypeInfo subType = expressionContext.typeContext.typeStore.get(subTypeFqn);
+                TypeInfo subType = subType(expressionContext, dollarResolver, ed.getNameAsString());
                 ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
-                subType.inspect(hasBeenDefined, isInterface, this, ed.asTypeDeclaration(), newExpressionContext);
+                subType.inspect(hasBeenDefined, isInterface, this, ed.asTypeDeclaration(), newExpressionContext, dollarResolver);
                 builder.addSubType(subType);
             });
         }
@@ -413,19 +433,20 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifConstructorDeclaration(cd -> {
                 MethodInfo methodInfo = new MethodInfo(this, List.of());
-                methodInfo.inspect(cd, subContext, companionMethodsWaiting);
+                methodInfo.inspect(cd, subContext, companionMethodsWaiting, dollarResolver);
                 builder.addConstructor(methodInfo);
                 companionMethodsWaiting.clear();
             });
             bodyDeclaration.ifMethodDeclaration(md -> {
                 // NOTE: it is possible that the return type is unknown at this moment: it can be one of the type
                 // parameters that we'll be parsing soon at inspection. That's why we can live with "void" for now
-                String methodName = md.getName().getIdentifier();
+                String methodName = MethodInfo.dropDollarGetClass(md.getName().getIdentifier());
                 CompanionMethodName companionMethodName = CompanionMethodName.extract(methodName);
 
                 MethodInfo methodInfo = new MethodInfo(this, methodName, List.of(),
                         expressionContext.typeContext.getPrimitives().voidParameterizedType, md.isStatic(), md.isDefault());
-                methodInfo.inspect(isInterface, md, subContext, companionMethodName != null ? Map.of() : companionMethodsWaiting);
+                methodInfo.inspect(isInterface, md, subContext,
+                        companionMethodName != null ? Map.of() : companionMethodsWaiting, dollarResolver);
                 if (isInterface && !methodInfo.isStatic && !methodInfo.isDefaultImplementation) {
                     countNonStaticNonDefaultIfInterface.incrementAndGet();
                 }
@@ -453,26 +474,31 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         typeInspection.set(builder.build(this));
     }
 
+    private TypeInfo subType(ExpressionContext expressionContext, DollarResolver dollarResolver, String name) {
+        TypeInfo subType = dollarResolver == null ? null : dollarResolver.apply(name);
+        if (subType != null) return subType;
+        TypeInfo fromStore = expressionContext.typeContext.typeStore.get(fullyQualifiedName + "." + name);
+        if (fromStore == null)
+            throw new UnsupportedOperationException("I should already know type " + name + " inside " + fullyQualifiedName);
+        return fromStore;
+    }
+
+    public interface DollarResolver extends Function<String, TypeInfo> {
+    }
+
     /* the following three methods are part of the annotated API system.
     Briefly, if a first-level subtype's name ends with a $, its FQN is composed by the PACKAGE_NAME field in the primary type
     and the subtype name without the $.
      */
-    private static TypeInfo subTypeInfo(String fullyQualifiedName, String simpleName, TypeDeclaration<?> typeDeclaration) {
+    private static TypeInfo subTypeInfo(String fullyQualifiedName, String simpleName, TypeDeclaration<?> typeDeclaration, boolean parentIsPrimaryType) {
         if (simpleName.endsWith("$")) {
-            String packageName = packageName(typeDeclaration.getFieldByName("PACKAGE_NAME").orElse(null));
+            if (!parentIsPrimaryType) throw new UnsupportedOperationException();
+            String packageName = packageName(typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null));
             if (packageName != null) {
                 return new TypeInfo(packageName, simpleName.substring(0, simpleName.length() - 1));
             }
         }
         return new TypeInfo(fullyQualifiedName, simpleName);
-    }
-
-    public static String decideSubTypeName(String fullyQualifiedNameOfPrimaryType, String nameAsString, FieldDeclaration packageNameField) {
-        if (nameAsString.endsWith("$") && packageNameField != null) {
-            String packageName = packageName(packageNameField);
-            return packageName + "." + nameAsString.substring(0, nameAsString.length() - 1);
-        }
-        return fullyQualifiedNameOfPrimaryType + "." + nameAsString;
     }
 
     private static String packageName(FieldDeclaration packageNameField) {
@@ -1081,23 +1107,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public boolean isRecord() {
         return isNestedType() && isPrivate();
-    }
-
-    public Messages copyAnnotationsIntoTypeAnalysisProperties(Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        assert doesNotNeedAnalysing();
-        Messages messages = new Messages();
-        log(RESOLVE, "copy annotations into properties: {}", fullyQualifiedName);
-
-        TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(primitives, this);
-        messages.addAll(builder.fromAnnotationsIntoProperties(false, true, typeInspection.getPotentiallyRun().annotations, e2ImmuAnnotationExpressions));
-
-        this.typeAnalysis.set(builder.build());
-
-        typeInspection.getPotentiallyRun().methodsAndConstructors().forEach(methodInfo ->
-                messages.addAll(methodInfo.copyAnnotationsIntoMethodAnalysisProperties(primitives, e2ImmuAnnotationExpressions)));
-        typeInspection.getPotentiallyRun().fields.forEach(fieldInfo ->
-                messages.addAll(fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(primitives, e2ImmuAnnotationExpressions)));
-        return messages;
     }
 
     public void resolveAllAnnotations(ExpressionContext expressionContext) {

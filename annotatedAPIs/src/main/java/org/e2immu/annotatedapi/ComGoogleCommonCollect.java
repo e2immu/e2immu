@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.e2immu.analyser.analyser.annotated;
+package org.e2immu.annotatedapi;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
@@ -39,7 +39,7 @@ public class ComGoogleCommonCollect {
     }
 
     @E2Container
-    static class ImmutableList$<E> extends Annotated {
+    static class ImmutableList$<E> {
 
         @Container(builds = ImmutableList.class)
         public static class Builder<E> {

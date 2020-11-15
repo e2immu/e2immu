@@ -30,6 +30,7 @@ import org.e2immu.annotation.AnnotationMode;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
@@ -54,7 +55,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         this.approvedPreconditions = approvedPreconditions;
         this.objectFlows = objectFlows;
         this.implicitlyImmutableDataTypes = implicitlyImmutableDataTypes;
-        this.aspects = aspects;
+        this.aspects = Objects.requireNonNull(aspects);
         this.invariants = invariants;
     }
 
@@ -112,6 +113,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public Builder(Primitives primitives, TypeInfo typeInfo) {
             super(primitives, typeInfo.simpleName);
             this.typeInfo = typeInfo;
+        }
+
+        @Override
+        public boolean aspectsIsSet(String aspect) {
+            return aspects.isSet(aspect);
         }
 
         @Override

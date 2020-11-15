@@ -19,6 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.annotation.AnnotationType;
 
 import java.util.Map;
 import java.util.Objects;
@@ -26,10 +27,17 @@ import java.util.Objects;
 public class CompanionAnalysisImpl implements CompanionAnalysis {
 
     private final Value value;
+    private final AnnotationType annotationType;
 
-    private CompanionAnalysisImpl(Value value) {
+    private CompanionAnalysisImpl(AnnotationType annotationType, Value value) {
         Objects.requireNonNull(value);
         this.value = value;
+        this.annotationType = annotationType;
+    }
+
+    @Override
+    public AnnotationType getAnnotationType() {
+        return annotationType;
     }
 
     @Override
@@ -39,16 +47,26 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
 
     public static class Builder implements CompanionAnalysis {
 
+        private final AnnotationType annotationType;
         public final SetOnce<Value> value = new SetOnce<>();
         public final SetOnce<Map<String, Value>> remapParameters = new SetOnce<>();
 
+        public Builder(AnnotationType annotationType) {
+            this.annotationType = annotationType;
+        }
+
         public CompanionAnalysis build() {
-            return new CompanionAnalysisImpl(value.get());
+            return new CompanionAnalysisImpl(annotationType, value.get());
         }
 
         @Override
         public Value getValue() {
             return value.getOrElse(null);
+        }
+
+        @Override
+        public AnnotationType getAnnotationType() {
+            return annotationType;
         }
     }
 }

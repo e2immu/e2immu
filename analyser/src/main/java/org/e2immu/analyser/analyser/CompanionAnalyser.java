@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.annotation.AnnotationType;
 
 import java.util.List;
 import java.util.Map;
@@ -39,18 +40,22 @@ public class CompanionAnalyser {
     public final MethodInfo companionMethod;
     public final CompanionMethodName companionMethodName;
     public final CompanionAnalysisImpl.Builder companionAnalysis;
-    public final TypeAnalysisImpl.Builder typeAnalysis;
+    public final TypeAnalysis typeAnalysis;
 
-    public CompanionAnalyser(TypeAnalysisImpl.Builder typeAnalysis, CompanionMethodName companionMethodName, MethodInfo companionMethod, MethodInfo mainMethod) {
+    public CompanionAnalyser(TypeAnalysis typeAnalysis,
+                             CompanionMethodName companionMethodName,
+                             MethodInfo companionMethod,
+                             MethodInfo mainMethod,
+                             AnnotationType annotationType) {
         this.companionMethod = companionMethod;
         this.companionMethodName = companionMethodName;
         this.mainMethod = mainMethod;
-        companionAnalysis = new CompanionAnalysisImpl.Builder();
+        companionAnalysis = new CompanionAnalysisImpl.Builder(annotationType);
         this.typeAnalysis = typeAnalysis;
     }
 
     public AnalysisStatus analyse(int iteration) {
-        if (companionMethodName.aspect() != null && !typeAnalysis.aspects.isSet(companionMethodName.aspect())) {
+        if (companionMethodName.aspect() != null && !typeAnalysis.aspectsIsSet(companionMethodName.aspect())) {
             log(DELAYED, "Delaying companion analysis of {} of {}, aspect function not known",
                     companionMethodName, mainMethod.fullyQualifiedName());
             return AnalysisStatus.DELAYS;
@@ -80,12 +85,12 @@ public class CompanionAnalyser {
             Value value;
             if (aspectVariables >= 1 && parameterInfo.index == 0) {
                 // this is the aspect as a method call
-                MethodInfo aspectMethod = typeAnalysis.aspects.get(companionMethodName.aspect());
+                MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
                 Value scope = new VariableValue(new This(aspectMethod.typeInfo));
                 value = new MethodValue(aspectMethod, scope, List.of(), ObjectFlow.NO_FLOW);
             } else if (aspectVariables >= 2 && parameterInfo.index == 1) {
                 // this is the initial aspect value in a Modification$Aspect
-                MethodInfo aspectMethod = typeAnalysis.aspects.get(companionMethodName.aspect());
+                MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
                 ParameterizedType returnType = aspectMethod.returnType();
                 value = new VariableValue(new PreAspectVariable(returnType));
             } else {

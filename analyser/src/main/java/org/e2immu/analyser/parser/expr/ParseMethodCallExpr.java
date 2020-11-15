@@ -50,10 +50,8 @@ public class ParseMethodCallExpr {
             scopeType = new ParameterizedType(expressionContext.enclosingType, 0);
         } else {
             scopeType = scope.returnType();
-            if (scope instanceof VariableExpression) {
-                VariableExpression variableExpression = (VariableExpression) scope;
-                if (variableExpression.variable instanceof This) {
-                    This v = (This) variableExpression.variable;
+            if (scope instanceof VariableExpression variableExpression) {
+                if (variableExpression.variable instanceof This v) {
                     if (v.writeSuper) {
                         scopeType = v.typeInfo.typeInspection.getPotentiallyRun().parentClass;
                     }
@@ -118,14 +116,14 @@ public class ParseMethodCallExpr {
             while (true) {
                 Expression evaluatedExpression = null;
                 // we know that all method candidates have an identical amount of parameters
-                Integer pos = findParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate(expressionContext, methodCandidates, evaluatedExpressions.keySet());
+                Integer pos = findParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate(methodCandidates, evaluatedExpressions.keySet());
                 if (pos == null) {
-                    pos = findParameterWhereUnevaluatedLambdaWillHelp(expressionContext, expressions, methodCandidates, evaluatedExpressions.keySet());
+                    pos = findParameterWhereUnevaluatedLambdaWillHelp(expressions, methodCandidates, evaluatedExpressions.keySet());
                 }
                 if (pos != null) {
                     evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), singleAbstractMethod == null ? null : singleAbstractMethod.copyWithoutMethod());
                 } else {
-                    Pair<MethodTypeParameterMap, Integer> pair = findParameterWithASingleFunctionalInterfaceType(expressionContext, methodCandidates, evaluatedExpressions.keySet());
+                    Pair<MethodTypeParameterMap, Integer> pair = findParameterWithASingleFunctionalInterfaceType(methodCandidates, evaluatedExpressions.keySet());
                     if (pair != null) {
                         pos = pair.v;
                         MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(pair.k, pos, singleAbstractMethod);
@@ -242,7 +240,7 @@ public class ParseMethodCallExpr {
         for (Expression expression : newParameterExpressions) {
             log(METHOD_CALL, "Examine parameter {}", i);
             ParameterizedType concreteParameterType = expression.returnType();
-            Map<NamedType, ParameterizedType> translated = formalParameters.get(i).parameterizedType.translateMap(concreteParameterType, expressionContext.typeContext);
+            Map<NamedType, ParameterizedType> translated = formalParameters.get(i).parameterizedType.translateMap(concreteParameterType);
             ParameterizedType concreteTypeInMethod = method.getConcreteTypeOfParameter(i);
 
             translated.forEach((k, v) -> {
@@ -297,7 +295,9 @@ public class ParseMethodCallExpr {
 
     // File.listFiles(FileNameFilter) vs File.listFiles(FileFilter): both types take a functional interface with a different number of parameters
     // (fileFilter takes 1, fileNameFilter takes 2)
-    private static Integer findParameterWhereUnevaluatedLambdaWillHelp(ExpressionContext expressionContext, List<com.github.javaparser.ast.expr.Expression> expressions, List<TypeContext.MethodCandidate> methodCandidates, Set<Integer> ignore) {
+    private static Integer findParameterWhereUnevaluatedLambdaWillHelp(List<com.github.javaparser.ast.expr.Expression> expressions,
+                                                                       List<TypeContext.MethodCandidate> methodCandidates,
+                                                                       Set<Integer> ignore) {
         if (methodCandidates.isEmpty()) return null;
         MethodInspection mi0 = methodCandidates.get(0).method.methodInfo.methodInspection.get();
         outer:
@@ -324,9 +324,8 @@ public class ParseMethodCallExpr {
         return null;
     }
 
-    private static Pair<MethodTypeParameterMap, Integer> findParameterWithASingleFunctionalInterfaceType(ExpressionContext expressionContext,
-                                                                                                         List<TypeContext.MethodCandidate> methodCandidates,
-                                                                                                         Set<Integer> ignore) {
+    private static Pair<MethodTypeParameterMap, Integer> findParameterWithASingleFunctionalInterfaceType
+            (List<TypeContext.MethodCandidate> methodCandidates, Set<Integer> ignore) {
         if (methodCandidates.isEmpty()) return null;
         MethodInspection mi0 = methodCandidates.get(0).method.methodInfo.methodInspection.get();
         for (int i = 0; i < mi0.parameters.size(); i++) {
@@ -363,9 +362,8 @@ public class ParseMethodCallExpr {
         return null;
     }
 
-    private static Integer findParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate(ExpressionContext expressionContext,
-                                                                                           List<TypeContext.MethodCandidate> methodCandidates,
-                                                                                           Set<Integer> ignore) {
+    private static Integer findParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate
+            (List<TypeContext.MethodCandidate> methodCandidates, Set<Integer> ignore) {
         if (methodCandidates.isEmpty()) return null;
         MethodInspection mi0 = methodCandidates.get(0).method.methodInfo.methodInspection.get();
         for (int i = 0; i < mi0.parameters.size(); i++) {

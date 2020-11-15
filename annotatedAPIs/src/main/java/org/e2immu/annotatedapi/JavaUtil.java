@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.e2immu.analyser.analyser.annotated;
+package org.e2immu.annotatedapi;
 
 import org.e2immu.annotation.*;
 
@@ -24,8 +24,18 @@ import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
-public class JavaUtil extends Annotated {
-    final static String PACKAGE_NAME="com.google.common.collect";
+import static org.e2immu.annotatedapi.JavaLang.state;
+
+public class JavaUtil {
+    final static String PACKAGE_NAME = "java.util";
+
+
+    static boolean addModificationHelper(int i, int j, boolean containsE, boolean notContainsE) {
+        return state(containsE) ? i == j : state(notContainsE) || j == 0 ? i == j + 1 : i >= j && i <= j + 1;
+    }
+    static boolean addValueHelper(int i, int j, boolean containsE, boolean notContainsE, boolean retVal) {
+        return !state(containsE) && (state(notContainsE) || j == 0 || retVal);
+    }
 
     interface Iterator$<T> {
         @NotModified
@@ -36,7 +46,7 @@ public class JavaUtil extends Annotated {
 
     @Container
     // this is not in line with the JDK, but we will block null keys!
-    static class Collection$<E> extends Annotated {
+    static class Collection$<E>  {
 
         boolean add$Modification$Size(int i, int j, E e) { return addModificationHelper(i, j, contains(e), !contains(e)); }
         boolean add$Value$Size(int i, int j, E e, boolean retVal) { return addValueHelper(i, j, contains(e), !contains(e), retVal); }
@@ -115,7 +125,7 @@ public class JavaUtil extends Annotated {
 
     @Container
     // this is not in line with the JDK, but we will block null keys!
-    static class List$<E> extends Annotated {
+    static class List$<E> {
 
         boolean add$Modification$Size(int i, int j, E e) { return addModificationHelper(i, j, contains(e), !contains(e)); }
         boolean add$Value$Size(int i, int j, E e, boolean retVal) { return addValueHelper(i, j, contains(e), !contains(e), retVal); }

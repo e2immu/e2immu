@@ -18,8 +18,11 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Value;
+import org.e2immu.annotation.AnnotationType;
 
 public interface CompanionAnalysis {
+
+    AnnotationType getAnnotationType();
 
     /**
      *

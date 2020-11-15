@@ -53,34 +53,33 @@ public class Input {
     public static final String JAR_WITH_PATH_PREFIX = "jar-on-classpath:";
 
     private final Configuration configuration;
-    private final Resources classPath = new Resources();
-    private final Resources sourcePath = new Resources();
     private final TypeContext globalTypeContext = new TypeContext();
-    private final TypeStore sourceTypeStore = new MapBasedTypeStore();
+    private final TypeStore sourceTypeStore = new MapBasedTypeStore(); // to deal with * imports
+    private final TypeStore annotatedAPIsTypeStore = new MapBasedTypeStore(); // to deal with * imports
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions(globalTypeContext);
     private final ByteCodeInspector byteCodeInspector;
-    private final List<URL> annotatedAPIs;
+    private final Map<TypeInfo, URL> annotatedAPIs;
     private final Map<TypeInfo, URL> sourceURLs;
 
     public Input(Configuration configuration) throws IOException {
         this.configuration = configuration;
-        initializeClassPath();
-        assembleClassPath(classPath, "Classpath", configuration.inputConfiguration.classPathParts);
+        loadPrimitivesIntoGlobalTypeContext();
+        Resources classPath = assemblePath(true, "Classpath", configuration.inputConfiguration.classPathParts);
         AnnotationStore annotationStore = new AnnotationXmlReader(classPath);
         LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
         byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext, e2ImmuAnnotationExpressions);
-        preload("org.e2immu.annotation"); // needed for our own stuff
-        preload("java.lang"); // there are needed to help with implicit imports
-        preload("java.util.function"); // they are needed for functional interfaces that lurk in the background
+        preload(classPath, "org.e2immu.annotation"); // needed for our own stuff
+        preload(classPath, "java.lang"); // there are needed to help with implicit imports
+        preload(classPath, "java.util.function"); // they are needed for functional interfaces that lurk in the background
 
-        assembleClassPath(sourcePath, "Source path", configuration.inputConfiguration.sources);
-        sourceURLs = computeSourceURLs();
+        Resources sourcePath = assemblePath(false, "Source path", configuration.inputConfiguration.sources);
+        sourceURLs = computeSourceURLs(sourcePath, sourceTypeStore, configuration.inputConfiguration.restrictSourceToPackages, "source path");
 
-        annotatedAPIs = classPath.expandURLs("annotated_api");
-        LOGGER.info("Found {} annotated_api files in class path", annotatedAPIs.size());
+        Resources annotatedAPIsPath = assemblePath(false, "Annotated APIs path", configuration.inputConfiguration.sourcesAnnotatedAPIs);
+        annotatedAPIs = computeSourceURLs(annotatedAPIsPath, annotatedAPIsTypeStore, List.of(), "annotated API path");
     }
 
-    private Map<TypeInfo, URL> computeSourceURLs() {
+    private Map<TypeInfo, URL> computeSourceURLs(Resources sourcePath, TypeStore sourceTypeStore, List<String> restrictions, String what) {
         Map<TypeInfo, URL> sourceURLs = new HashMap<>();
         AtomicInteger ignored = new AtomicInteger();
         sourcePath.visit(new String[0], (parts, list) -> {
@@ -89,7 +88,7 @@ public class Input {
                 if (name.endsWith(".java")) {
                     String typeName = name.substring(0, name.length() - 5);
                     String packageName = Arrays.stream(parts).limit(parts.length - 1).collect(Collectors.joining("."));
-                    if (acceptSource(packageName, typeName)) {
+                    if (acceptSource(packageName, typeName, restrictions)) {
                         TypeInfo typeInfo = new TypeInfo(packageName, typeName);
                         sourceTypeStore.add(typeInfo);
                         globalTypeContext.typeStore.add(typeInfo);
@@ -101,13 +100,13 @@ public class Input {
                 }
             }
         });
-        LOGGER.info("Found {} .java files in source path, skipped {}", sourceURLs.size(), ignored);
+        LOGGER.info("Found {} .java files in {}, skipped {}", sourceURLs.size(), what, ignored);
         return sourceURLs;
     }
 
-    private boolean acceptSource(String packageName, String typeName) {
-        if (configuration.inputConfiguration.restrictSourceToPackages.isEmpty()) return true;
-        for (String packageString : configuration.inputConfiguration.restrictSourceToPackages) {
+    private static boolean acceptSource(String packageName, String typeName, List<String> restrictions) {
+        if (restrictions.isEmpty()) return true;
+        for (String packageString : restrictions) {
             if (packageString.endsWith(".")) {
                 if (packageName.startsWith(packageString)) return true;
             } else if (packageName.equals(packageString) || packageString.equals(packageName + "." + typeName))
@@ -116,7 +115,7 @@ public class Input {
         return false;
     }
 
-    private void initializeClassPath() throws IOException {
+    private void loadPrimitivesIntoGlobalTypeContext() throws IOException {
         for (TypeInfo typeInfo : globalTypeContext.getPrimitives().typeByName.values()) {
             globalTypeContext.typeStore.add(typeInfo);
             globalTypeContext.addToContext(typeInfo);
@@ -125,8 +124,6 @@ public class Input {
             globalTypeContext.typeStore.add(typeInfo);
             globalTypeContext.addToContext(typeInfo);
         }
-        int entriesAdded = classPath.addJarFromClassPath("org/e2immu/annotation");
-        if (entriesAdded < 10) throw new RuntimeException("? expected at least 10 entries");
     }
 
     /**
@@ -134,7 +131,7 @@ public class Input {
      * if not, the method will have little effect and no classes beyond the ones from
      * <code>initializeClassPath</code> will be present
      */
-    private void preload(String thePackage) {
+    private void preload(Resources classPath, String thePackage) {
         LOGGER.info("Start pre-loading {}", thePackage);
         AtomicInteger inspected = new AtomicInteger();
         classPath.expandLeaves(thePackage, ".class", (expansion, list) -> {
@@ -152,15 +149,20 @@ public class Input {
         LOGGER.info("... inspected {} paths", inspected);
     }
 
-    private void assembleClassPath(Resources classPath, String msg, List<String> parts) throws IOException {
+    private Resources assemblePath(boolean isClassPath, String msg, List<String> parts) throws IOException {
+        Resources resources = new Resources();
+        if (isClassPath) {
+            int entriesAdded = resources.addJarFromClassPath("org/e2immu/annotation");
+            if (entriesAdded < 10) throw new RuntimeException("? expected at least 10 entries");
+        }
         for (String part : parts) {
             if (part.startsWith(JAR_WITH_PATH_PREFIX)) {
-                classPath.addJarFromClassPath(part.substring(JAR_WITH_PATH_PREFIX.length()));
+                resources.addJarFromClassPath(part.substring(JAR_WITH_PATH_PREFIX.length()));
             } else if (part.endsWith(".jar")) {
                 try {
                     // "jar:file:build/libs/equivalent.jar!/"
                     URL url = new URL("jar:file:" + part + "!/");
-                    classPath.addJar(url);
+                    resources.addJar(url);
                 } catch (IOException e) {
                     LOGGER.error("{} part '{}' ignored: IOException {}", msg, part, e.getMessage());
                 }
@@ -179,7 +181,7 @@ public class Input {
                         if (!jre.endsWith("/")) jre = jre + "/";
                         url = new URL("jar:file:" + jre + part + "!/");
                     }
-                    int entries = classPath.addJmod(url);
+                    int entries = resources.addJmod(url);
                     LOGGER.debug("Added {} entries for jmod {}", entries, part);
                 } catch (IOException e) {
                     LOGGER.error("{} part '{}' ignored: IOException {}", msg, part, e.getMessage());
@@ -188,15 +190,16 @@ public class Input {
                 File directory = new File(part);
                 if (directory.isDirectory()) {
                     LOGGER.info("Adding {} to classpath", directory.getAbsolutePath());
-                    classPath.addDirectoryFromFileSystem(directory);
+                    resources.addDirectoryFromFileSystem(directory);
                 } else {
                     LOGGER.error("{} part '{}' is not a .jar file, and not a directory: ignored", msg, part);
                 }
             }
         }
+        return resources;
     }
 
-    public List<URL> getAnnotatedAPIs() {
+    public Map<TypeInfo, URL> getAnnotatedAPIs() {
         return annotatedAPIs;
     }
 
@@ -204,16 +207,8 @@ public class Input {
         return sourceURLs;
     }
 
-    public Resources getClassPath() {
-        return classPath;
-    }
-
     public TypeContext getGlobalTypeContext() {
         return globalTypeContext;
-    }
-
-    public Resources getSourcePath() {
-        return sourcePath;
     }
 
     public ByteCodeInspector getByteCodeInspector() {
@@ -222,6 +217,10 @@ public class Input {
 
     public TypeStore getSourceTypeStore() {
         return sourceTypeStore;
+    }
+
+    public TypeStore getAnnotatedAPIsTypeStore() {
+        return annotatedAPIsTypeStore;
     }
 
     public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {

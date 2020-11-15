@@ -37,10 +37,7 @@ import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.statement.SwitchStatement;
 import org.e2immu.analyser.parser.*;
-import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetTwice;
-import org.e2immu.analyser.util.StringUtil;
-import org.e2immu.analyser.util.UpgradableBooleanMap;
+import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
@@ -88,14 +85,17 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         this(typeInfo, dropDollarGetClass(name), List.of(), null, false, isStatic, false);
     }
 
-    private static String dropDollarGetClass(String string) {
-        if (string.endsWith("$") && !"getClass$".equals(string)) {
-            throw new UnsupportedOperationException();
+    public static String dropDollarGetClass(String string) {
+        if (string.endsWith("$")) {
+            if (!"getClass$".equals(string)) {
+                throw new UnsupportedOperationException();
+            }
+            return "getClass";
         }
         return string;
     }
 
-    private static String dropDollar(String string) {
+    public static String dropDollar(String string) {
         if (string.endsWith("$")) return string.substring(0, string.length() - 1);
         return string;
     }
@@ -170,7 +170,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
 
-    public void inspect(ConstructorDeclaration cd, ExpressionContext expressionContext, Map<CompanionMethodName, MethodInfo> companionMethods) {
+    public void inspect(ConstructorDeclaration cd,
+                        ExpressionContext expressionContext,
+                        Map<CompanionMethodName, MethodInfo> companionMethods,
+                        TypeInfo.DollarResolver dollarResolver) {
         log(INSPECT, "Inspecting constructor {}", fullyQualifiedName());
         MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
         builder.addCompanionMethods(companionMethods);
@@ -178,7 +181,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
         addAnnotations(builder, cd.getAnnotations(), expressionContext);
         addModifiers(builder, cd.getModifiers());
-        addParameters(builder, cd.getParameters(), expressionContext);
+        addParameters(builder, cd.getParameters(), expressionContext, dollarResolver);
         addExceptionTypes(builder, cd.getThrownExceptions(), expressionContext.typeContext);
         builder.setBlock(cd.getBody());
         methodInspection.set(builder.build(this));
@@ -211,7 +214,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public void inspect(boolean isInterface,
                         MethodDeclaration md,
                         ExpressionContext expressionContext,
-                        Map<CompanionMethodName, MethodInfo> companionMethods) {
+                        Map<CompanionMethodName, MethodInfo> companionMethods,
+                        TypeInfo.DollarResolver dollarResolver) {
         log(INSPECT, "Inspecting method {}", fullyQualifiedName());
         MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
         builder.addCompanionMethods(companionMethods);
@@ -230,7 +234,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         addAnnotations(builder, md.getAnnotations(), newContext);
         addModifiers(builder, md.getModifiers());
         if (isInterface) builder.addModifier(MethodModifier.PUBLIC);
-        addParameters(builder, md.getParameters(), newContext);
+        addParameters(builder, md.getParameters(), newContext, dollarResolver);
         addExceptionTypes(builder, md.getThrownExceptions(), newContext.typeContext);
         ParameterizedType pt = ParameterizedType.from(newContext.typeContext, md.getType());
         builder.setReturnType(pt);
@@ -265,10 +269,11 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     private void addParameters(MethodInspection.MethodInspectionBuilder builder, NodeList<Parameter> parameters,
-                               ExpressionContext expressionContext) {
+                               ExpressionContext expressionContext,
+                               TypeInfo.DollarResolver dollarResolver) {
         int i = 0;
         for (Parameter parameter : parameters) {
-            ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, parameter.getType(), parameter.isVarArgs());
+            ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, parameter.getType(), parameter.isVarArgs(), dollarResolver);
             ParameterInfo parameterInfo = new ParameterInfo(this, pt, parameter.getNameAsString(), i++);
             parameterInfo.inspect(parameter, expressionContext, parameter.isVarArgs());
             builder.addParameter(parameterInfo);
@@ -613,7 +618,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
 
-    public Messages copyAnnotationsIntoMethodAnalysisProperties(Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    public Pair<Messages, MethodAnalysisImpl.Builder> copyAnnotationsIntoMethodAnalysisProperties(Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         assert doesNotNeedAnalysing();
         Messages messages = new Messages();
 
@@ -632,8 +637,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
         messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(false, true, methodInspection.get().annotations,
                 e2ImmuAnnotationExpressions));
-        setAnalysis(methodAnalysisBuilder.build());
-        return messages;
+        return new Pair<>(messages, methodAnalysisBuilder);
     }
 
     public boolean isSingleAbstractMethod() {

@@ -31,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -73,6 +72,7 @@ public abstract class CommonTestRunner {
         // test runner's classpath to ours
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
                 .addSources("src/test/java")
+                .addAnnotatedAPISources("../annotatedAPIs/src/main/java")
                 .addClassPath(withAnnotatedAPIs ? InputConfiguration.DEFAULT_CLASSPATH : InputConfiguration.CLASSPATH_WITHOUT_ANNOTATED_APIS)
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
@@ -117,6 +117,7 @@ public abstract class CommonTestRunner {
                                         DebugConfiguration debugConfiguration) throws IOException {
         InputConfiguration.Builder builder = new InputConfiguration.Builder()
                 .addSources("src/main/java")
+                .addAnnotatedAPISources("../annotatedAPIs/src/main/java")
                 .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")

@@ -52,15 +52,15 @@ public class ParameterizedType {
 
     @NotNull
     public static ParameterizedType from(TypeContext context, Type type) {
-        return from(context, type, WildCard.NONE, false);
+        return from(context, type, WildCard.NONE, false, null);
     }
 
     @NotNull
-    public static ParameterizedType from(TypeContext context, Type type, boolean varargs) {
-        return from(context, type, WildCard.NONE, varargs);
+    public static ParameterizedType from(TypeContext context, Type type, boolean varargs, TypeInfo.DollarResolver dollarResolver) {
+        return from(context, type, WildCard.NONE, varargs, dollarResolver);
     }
 
-    private static ParameterizedType from(TypeContext context, Type type, WildCard wildCard, boolean varargs) {
+    private static ParameterizedType from(TypeContext context, Type type, WildCard wildCard, boolean varargs, TypeInfo.DollarResolver dollarResolver) {
         Type baseType = type;
         int arrays = 0;
         if (type.isArrayType()) {
@@ -72,15 +72,14 @@ public class ParameterizedType {
         if (baseType.isPrimitiveType()) {
             return new ParameterizedType(context.getPrimitives().primitiveByName(baseType.asString()), arrays);
         }
-        if (type instanceof WildcardType) {
-            WildcardType wildcardType = (WildcardType) type;
+        if (type instanceof WildcardType wildcardType) {
             if (wildcardType.getExtendedType().isPresent()) {
                 // ? extends T
-                return from(context, wildcardType.getExtendedType().get(), WildCard.EXTENDS, false);
+                return from(context, wildcardType.getExtendedType().get(), WildCard.EXTENDS, false, dollarResolver);
             }
             if (wildcardType.getSuperType().isPresent()) {
                 // ? super T
-                return from(context, wildcardType.getSuperType().get(), WildCard.SUPER, false);
+                return from(context, wildcardType.getSuperType().get(), WildCard.SUPER, false, dollarResolver);
             }
             return WILDCARD_PARAMETERIZED_TYPE; // <?>
         }
@@ -88,8 +87,7 @@ public class ParameterizedType {
 
         String name;
         List<ParameterizedType> parameters = new ArrayList<>();
-        if (baseType instanceof ClassOrInterfaceType) {
-            ClassOrInterfaceType cit = (ClassOrInterfaceType) baseType;
+        if (baseType instanceof ClassOrInterfaceType cit) {
             name = cit.getName().getIdentifier();
             if (cit.getTypeArguments().isPresent()) {
                 for (Type typeArgument : cit.getTypeArguments().get()) {
@@ -122,28 +120,27 @@ public class ParameterizedType {
                     TypeInfo subType = context.typeStore.getOrCreate(subTypeFqn);
                     return parameters.isEmpty() ? new ParameterizedType(subType, arrays) : new ParameterizedType(subType, parameters);
                 }
-            } else {
-                // class or interface type, but completely without scope? we should look in our own hierarchy (this scope)
-                // could be a subtype of one of the interfaces (here, we're in an implementation of Expression, and InScopeType is a subtype of Expression)
-                // TODO
-            }
+            }// else {
+            // class or interface type, but completely without scope? we should look in our own hierarchy (this scope)
+            // could be a subtype of one of the interfaces (here, we're in an implementation of Expression, and InScopeType is a subtype of Expression)
+            // TODO
+            //}
         } else {
             name = baseType.asString();
         }
-        NamedType namedType = context.get(name, false);
-        if (namedType instanceof TypeInfo) {
-            TypeInfo typeInfo = (TypeInfo) namedType;
+        NamedType namedType = dollarResolver == null ? null : dollarResolver.apply(name);
+        if (namedType == null) namedType = context.get(name, false);
+        if (namedType instanceof TypeInfo typeInfo) {
             if (parameters.isEmpty()) {
                 return new ParameterizedType(typeInfo, arrays);
             }
             // Set<T>... == Set<T>[]
             return new ParameterizedType(typeInfo, arrays, WildCard.NONE, parameters);
         }
-        if (namedType instanceof TypeParameter) {
+        if (namedType instanceof TypeParameter typeParameter) {
             if (!parameters.isEmpty()) {
                 throw new UnsupportedOperationException("??");
             }
-            TypeParameter typeParameter = (TypeParameter) namedType;
             return new ParameterizedType(typeParameter, arrays, wildCard);
         }
 
@@ -284,7 +281,7 @@ public class ParameterizedType {
     /**
      * Stream for sending the qualified name to the KV store
      *
-     * @param varArgs
+     * @param varArgs property of the type
      * @return the type as a fully qualified name, with type parameters according to the format
      * Tn or Mn, with n the index, and T for type, M for method
      */
@@ -364,20 +361,20 @@ public class ParameterizedType {
         return Objects.hash(typeInfo, parameters, typeParameter, arrays, wildCard);
     }
 
-    public static boolean equalsTypeParametersOnlyIndex(ParameterizedType pt1, ParameterizedType pt2) {
-        if (pt1.typeInfo == null && pt2.typeInfo != null) return false;
-        if (pt1.typeInfo != null && pt2.typeInfo == null) return false;
-        if (pt1.typeInfo != null && !pt1.typeInfo.equals(pt2.typeInfo)) return false;
-        if (pt1.parameters.size() != pt2.parameters.size()) return false;
+    public static boolean notEqualsTypeParametersOnlyIndex(ParameterizedType pt1, ParameterizedType pt2) {
+        if (pt1.typeInfo == null && pt2.typeInfo != null) return true;
+        if (pt1.typeInfo != null && pt2.typeInfo == null) return true;
+        if (pt1.typeInfo != null && !pt1.typeInfo.equals(pt2.typeInfo)) return true;
+        if (pt1.parameters.size() != pt2.parameters.size()) return true;
         int i = 0;
         for (ParameterizedType parameter1 : pt1.parameters) {
             ParameterizedType parameter2 = pt2.parameters.get(i++);
-            if (!equalsTypeParametersOnlyIndex(parameter1, parameter2)) return false;
+            if (notEqualsTypeParametersOnlyIndex(parameter1, parameter2)) return true;
         }
-        if (pt1.typeParameter == null && pt2.typeParameter != null) return false;
-        if (pt1.typeParameter != null && pt2.typeParameter == null) return false;
-        if (pt1.typeParameter == null) return true;
-        return pt1.typeParameter.index == pt2.typeParameter.index;
+        if (pt1.typeParameter == null && pt2.typeParameter != null) return true;
+        if (pt1.typeParameter != null && pt2.typeParameter == null) return true;
+        if (pt1.typeParameter == null) return false;
+        return pt1.typeParameter.index != pt2.typeParameter.index;
     }
 
     public boolean allowsForOperators() {
@@ -407,7 +404,7 @@ public class ParameterizedType {
         return map;
     }
 
-    public Map<NamedType, ParameterizedType> translateMap(ParameterizedType concreteType, TypeContext typeContext) {
+    public Map<NamedType, ParameterizedType> translateMap(ParameterizedType concreteType) {
         if (parameters.isEmpty()) {
             if (isTypeParameter())
                 return Map.of(this.typeParameter, concreteType);
@@ -432,19 +429,19 @@ public class ParameterizedType {
             for (int i = 0; i < methodParams.size(); i++) {
                 ParameterizedType abstractTypeParameter = methodParams.get(i).parameterizedType;
                 ParameterizedType concreteTypeParameter = concreteTypeMap.getConcreteTypeOfParameter(i);
-                res.putAll(abstractTypeParameter.translateMap(concreteTypeParameter, typeContext));
+                res.putAll(abstractTypeParameter.translateMap(concreteTypeParameter));
             }
             // and now the return type
             ParameterizedType myReturnType = methodTypeParameterMap.getConcreteReturnType();
             ParameterizedType concreteReturnType = concreteTypeMap.getConcreteReturnType();
-            res.putAll(myReturnType.translateMap(concreteReturnType, typeContext));
+            res.putAll(myReturnType.translateMap(concreteReturnType));
         } else {
             // it is possible that the concrete type has fewer type parameters than the formal one
             // e.g., when "new Stack<>" is to be matched with "Stack<String>"
             for (int i = 0; i < Math.min(parameters.size(), concreteType.parameters.size()); i++) {
                 ParameterizedType abstractTypeParameter = parameters.get(i);
                 ParameterizedType concreteTypeParameter = concreteType.parameters.get(i);
-                res.putAll(abstractTypeParameter.translateMap(concreteTypeParameter, typeContext));
+                res.putAll(abstractTypeParameter.translateMap(concreteTypeParameter));
             }
         }
 

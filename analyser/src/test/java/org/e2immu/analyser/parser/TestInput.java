@@ -20,7 +20,6 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
-import org.e2immu.analyser.util.Resources;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -46,16 +45,26 @@ public class TestInput {
         Input input = new Input(new Configuration.Builder()
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/main/java")
+                        .addAnnotatedAPISources("../annotatedAPIs/src/main/java")
                         .addRestrictSourceToPackages("org.e2immu.analyser.util")
                         .addClassPath("jmods/java.base.jmod")
                         .build())
                 .build());
         Assert.assertTrue("Have at least 15 classes in util package", 15 <= input.getSourceURLs().size());
-        Resources sourcePath = input.getSourcePath();
-        for (URL url : sourcePath.expandURLs(".java")) {
+
+        for (URL url : input.getSourceURLs().values()) {
             LOGGER.info("Have source URL {}", url);
             File file = new File(url.toURI());
             Assert.assertTrue(file.canRead());
         }
+
+        Assert.assertTrue("Have at least 3 annotated API sources", 3 <= input.getAnnotatedAPIs().size());
+
+        for (URL url : input.getAnnotatedAPIs().values()) {
+            LOGGER.info("Have annotated API URL {}", url);
+            File file = new File(url.toURI());
+            Assert.assertTrue(file.canRead());
+        }
     }
+
 }

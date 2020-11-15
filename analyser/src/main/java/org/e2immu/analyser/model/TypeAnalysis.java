@@ -66,4 +66,8 @@ public interface TypeAnalysis extends Analysis {
      * @return a list of values, each of boolean return type, describing invariants.
      */
     List<Value> getInvariants();
+
+    default boolean aspectsIsSet(String aspect) {
+        return getAspects().containsKey(aspect);
+    }
 }

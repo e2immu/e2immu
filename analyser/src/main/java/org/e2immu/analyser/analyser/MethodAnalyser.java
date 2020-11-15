@@ -94,7 +94,8 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         ImmutableMap.Builder<CompanionMethodName, CompanionAnalyser> companionAnalysersBuilder = new ImmutableMap.Builder<>();
         for (Map.Entry<CompanionMethodName, MethodInfo> entry : methodInspection.companionMethods.entrySet()) {
-            companionAnalysersBuilder.put(entry.getKey(), new CompanionAnalyser(myTypeAnalyser.typeAnalysis, entry.getKey(), entry.getValue(), methodInfo));
+            companionAnalysersBuilder.put(entry.getKey(),
+                    new CompanionAnalyser(myTypeAnalyser.typeAnalysis, entry.getKey(), entry.getValue(), methodInfo, AnnotationType.VERIFY));
         }
         companionAnalysers = companionAnalysersBuilder.build();
         companionAnalyses = companionAnalysers.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,

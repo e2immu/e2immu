@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.e2immu.analyser.analyser.annotated;
+package org.e2immu.annotatedapi;
 
 import org.e2immu.annotation.*;
 
@@ -26,6 +26,9 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 class JavaLang {
+
+    public static <T> T state(T t) { return t; }
+
     final static String PACKAGE_NAME = "java.lang";
 
     @E2Container
@@ -47,7 +50,7 @@ class JavaLang {
 
 
     @E2Container
-    static class TraceElement$ {}
+    static class StackTraceElement$ {}
 
     static class Throwable$ {
 
@@ -69,6 +72,10 @@ class JavaLang {
 
         @Fluent
         Throwable fillInStackTrace() { return null; }
+
+        @NotNull
+        @NotModified
+        StackTraceElement[] getStackTrace() { return null; }
     }
 
 
@@ -129,7 +136,7 @@ class JavaLang {
         String repeat(int count) { return null; }
 
         boolean startsWith$Value$Len(int len, String s, boolean retVal) { return s.length() <= len && retVal; }
-        boolean startsWith(@NotNull String$ s) { return true; }
+        boolean startsWith(@NotNull String$ s) { return true; } // we use the $ version because of post-condition in concat
 
         boolean startsWith$Value$Len(int len, String s, int i, boolean retVal) { return s.length() + i <= len && retVal; }
         boolean startsWith(@NotNull String s, int i) { return true; }

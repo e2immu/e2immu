@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.CompanionAnalysis;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ContractMark;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
@@ -30,6 +31,7 @@ import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.AnnotationMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +56,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final boolean complainedAboutApprovedPreconditions;
     public final Value precondition;
     public final Value singleReturnValue;
+    public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
 
     private MethodAnalysisImpl(MethodInfo methodInfo,
                                StatementAnalysis firstStatement,
@@ -68,7 +71,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                boolean complainedAboutApprovedPreconditions,
                                Value precondition,
                                Map<VariableProperty, Integer> properties,
-                               Map<AnnotationExpression, Boolean> annotations) {
+                               Map<AnnotationExpression, Boolean> annotations,
+                               Map<CompanionMethodName, CompanionAnalysis> companionAnalyses) {
         super(properties, annotations);
         this.methodInfo = methodInfo;
         this.firstStatement = firstStatement;
@@ -82,6 +86,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.complainedAboutApprovedPreconditions = complainedAboutApprovedPreconditions;
         this.precondition = precondition;
         this.singleReturnValue = singleReturnValue;
+        this.companionAnalyses = companionAnalyses;
+    }
+
+    @Override
+    public Map<CompanionMethodName, CompanionAnalysis> getCompanionAnalyses() {
+        return companionAnalyses;
     }
 
     @Override
@@ -191,7 +201,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         // ************** PRECONDITION
 
         public final SetOnce<Value> precondition = new SetOnce<>();
-
+        public final SetOnceMap<CompanionMethodName, CompanionAnalysis> companionAnalyses = new SetOnceMap<>();
 
         public ObjectFlow getObjectFlow() {
             return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
@@ -251,7 +261,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     complainedAboutApprovedPreconditions.getOrElse(false),
                     precondition.getOrElse(UnknownValue.EMPTY),
                     properties.toImmutableMap(),
-                    annotations.toImmutableMap());
+                    annotations.toImmutableMap(),
+                    getCompanionAnalyses());
+        }
+
+        @Override
+        public Map<CompanionMethodName, CompanionAnalysis> getCompanionAnalyses() {
+            return companionAnalyses.toImmutableMap();
         }
 
         @Override

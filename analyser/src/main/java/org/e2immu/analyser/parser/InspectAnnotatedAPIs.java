@@ -35,7 +35,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.MERGE_ANNOTATIONS;
+import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 
@@ -62,7 +62,7 @@ public class InspectAnnotatedAPIs {
         this.byteCodeInspector = byteCodeInspector;
     }
 
-    public List<SortedType> inspectAndResolve(List<URL> annotatedAPIs, Charset sourceCharSet) throws IOException {
+    public void inspectResolvePossiblyMerge(Collection<URL> annotatedAPIs, Charset sourceCharSet) throws IOException {
         // load all primary types in the local type store
         // we have to do it this way, because an annotated API file may contain MULTIPLE primary types
         for (URL url : annotatedAPIs) load(url);
@@ -71,34 +71,45 @@ public class InspectAnnotatedAPIs {
         DelegatingTypeStore delegatingTypeStore = new DelegatingTypeStore(localTypeStore, globalTypeContext.typeStore);
         ParseAndInspect parseAndInspect = new ParseAndInspect(byteCodeInspector, false, localTypeStore);
         Map<TypeInfo, TypeContext> inspectedTypes = new HashMap<>();
+        Set<TypeInfo> notInByteCode = new HashSet<>();
         for (URL url : annotatedAPIs) {
             try (InputStreamReader isr = new InputStreamReader(url.openStream(), sourceCharSet)) {
                 String source = IOUtils.toString(isr);
                 TypeContext typeContextOfFile = new TypeContext(globalTypeContext, delegatingTypeStore);
                 List<TypeInfo> inspectedTypesList = parseAndInspect.phase1ParseAndInspect(typeContextOfFile, url.getFile(), source);
                 inspectedTypesList.forEach(typeInfo -> inspectedTypes.put(typeInfo, typeContextOfFile));
+
+                if (!inspectedTypesList.isEmpty()) {
+                    TypeInfo primaryType = inspectedTypesList.get(0);
+                    assert primaryType.isPrimaryType();
+                    notInByteCode.add(primaryType);
+                }
             }
         }
 
         // finally, merge the annotations in the result of .class byte code inspection
-        possiblyInspectThenMerge();
+        possiblyByteCodeInspectThenMerge(notInByteCode);
+        log(RESOLVE, "Starting resolver in {} inspected types", inspectedTypes.size());
         Resolver resolver = new Resolver();
-        return resolver.sortTypes(inspectedTypes);
+        resolver.sortTypes(inspectedTypes);
     }
 
-    private void possiblyInspectThenMerge() {
+    private void possiblyByteCodeInspectThenMerge(Set<TypeInfo> notInByteCode) {
+        log(INSPECT, "Starting merge with byte-code inspection");
         localTypeStore.visit(new String[0], (s, types) -> {
             for (TypeInfo typeInfo : types) {
-                TypeInfo typeInGlobalTypeContext = globalTypeContext.getFullyQualified(typeInfo.fullyQualifiedName, false);
-                if (typeInGlobalTypeContext == null || !typeInGlobalTypeContext.hasBeenInspected()) {
-                    String pathInClassPath = byteCodeInspector.getClassPath().fqnToPath(typeInfo.fullyQualifiedName, ".class");
-                    byteCodeInspector.inspectFromPath(pathInClassPath);
-                    typeInGlobalTypeContext = globalTypeContext.getFullyQualified(typeInfo.fullyQualifiedName, true);
-                }
-                mergeAnnotationsAndCompanions(typeInfo, typeInGlobalTypeContext);
+                if (!notInByteCode.contains(typeInfo)) {
+                    TypeInfo typeInGlobalTypeContext = globalTypeContext.getFullyQualified(typeInfo.fullyQualifiedName, false);
+                    if (typeInGlobalTypeContext == null || !typeInGlobalTypeContext.hasBeenInspected()) {
+                        String pathInClassPath = byteCodeInspector.getClassPath().fqnToPath(typeInfo.fullyQualifiedName, ".class");
+                        byteCodeInspector.inspectFromPath(pathInClassPath);
+                        typeInGlobalTypeContext = globalTypeContext.getFullyQualified(typeInfo.fullyQualifiedName, true);
+                    }
+                    mergeAnnotationsAndCompanions(typeInfo, typeInGlobalTypeContext);
 
-                ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInGlobalTypeContext, globalTypeContext);
-                typeInGlobalTypeContext.resolveAllAnnotations(expressionContext);
+                    ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInGlobalTypeContext, globalTypeContext);
+                    typeInGlobalTypeContext.resolveAllAnnotations(expressionContext);
+                }
             }
         });
     }
@@ -107,9 +118,6 @@ public class InspectAnnotatedAPIs {
     private static final Function<TypeInspection, List<MethodInfo>> METHODS = typeInspection -> typeInspection.methods;
 
     /**
-     * Problem with copying the companions: the parameter names in the companion are based on the annotated API, not on the bytecode version.
-     * They must be the same at this point. FIXME
-     *
      * @param typeFrom the AnnotatedAPIs version
      * @param typeTo   the version inspected from the byte code
      */

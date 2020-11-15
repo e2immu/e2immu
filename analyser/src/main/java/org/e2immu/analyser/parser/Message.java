@@ -90,6 +90,8 @@ public class Message {
 
     public static final String UNUSED_PARAMETER = "Unused parameter";
 
+    public static final String PROBLEM_ANALYSING_COMPANION_METHOD = "Problem analysing companion method";
+
     @NotNull1
     @E2Container
     public static final Map<String, Severity> SEVERITY_MAP;

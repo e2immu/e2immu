@@ -35,18 +35,20 @@ import static org.e2immu.analyser.config.Configuration.setStringProperty;
 public class InputConfiguration {
     public static final String DEFAULT_SOURCE_DIRS = "src/main/java";
     public static final String[] DEFAULT_CLASSPATH = {"build/classes/java/main",
-            "jmods/java.base.jmod", "src/main/resources/annotatedAPIs"};
+            "jmods/java.base.jmod"};
     public static final String[] CLASSPATH_WITHOUT_ANNOTATED_APIS = {"build/classes/java/main",
             "jmods/java.base.jmod", "src/main/resources/annotations/minimal"};
 
     // input options
     public final List<String> sources;
+    public final List<String> sourcesAnnotatedAPIs;
     public final Charset sourceEncoding;
     public final List<String> classPathParts;
     public final List<String> restrictSourceToPackages;
     public final String alternativeJREDirectory;
 
     public InputConfiguration(List<String> sources,
+                              List<String> sourcesAnnotatedAPIs,
                               List<String> classPathParts,
                               List<String> restrictSourceToPackages,
                               String alternativeJREDirectory,
@@ -56,11 +58,13 @@ public class InputConfiguration {
         this.restrictSourceToPackages = restrictSourceToPackages;
         this.alternativeJREDirectory = alternativeJREDirectory;
         this.sourceEncoding = sourceEncoding;
+        this.sourcesAnnotatedAPIs = sourcesAnnotatedAPIs;
     }
 
     @Override
     public String toString() {
         return "sources: " + sources +
+                "\nsourcesAnnotatedAPIs: " + sourcesAnnotatedAPIs +
                 "\nsourceEncoding: " + sourceEncoding.displayName() +
                 "\nclassPathParts: " + classPathParts +
                 "\nrestrictSourceToPackages: " + restrictSourceToPackages +
@@ -74,6 +78,7 @@ public class InputConfiguration {
         if (o == null || getClass() != o.getClass()) return false;
         InputConfiguration that = (InputConfiguration) o;
         return sources.equals(that.sources) &&
+                sourcesAnnotatedAPIs.equals(that.sourcesAnnotatedAPIs) &&
                 sourceEncoding.equals(that.sourceEncoding) &&
                 classPathParts.equals(that.classPathParts) &&
                 restrictSourceToPackages.equals(that.restrictSourceToPackages) &&
@@ -82,7 +87,7 @@ public class InputConfiguration {
 
     @Override
     public int hashCode() {
-        return Objects.hash(sources, sourceEncoding, classPathParts, restrictSourceToPackages, alternativeJREDirectory);
+        return Objects.hash(sources, sourcesAnnotatedAPIs, sourceEncoding, classPathParts, restrictSourceToPackages, alternativeJREDirectory);
     }
 
     public static InputConfiguration fromProperties(Map<String, String> analyserProperties) {
@@ -98,6 +103,7 @@ public class InputConfiguration {
     @Container
     public static class Builder {
         private final List<String> sourceDirs = new ArrayList<>();
+        private final List<String> annotatedAPISourceDirs = new ArrayList<>();
         private final List<String> classPathParts = new ArrayList<>();
         private final List<String> restrictSourceToPackages = new ArrayList<>();
         private String alternativeJREDirectory;
@@ -112,6 +118,7 @@ public class InputConfiguration {
             }
             Charset sourceCharset = sourceEncoding == null ? StandardCharsets.UTF_8 : Charset.forName(sourceEncoding);
             return new InputConfiguration(ImmutableList.copyOf(sourceDirs),
+                    ImmutableList.copyOf(annotatedAPISourceDirs),
                     ImmutableList.copyOf(classPathParts),
                     ImmutableList.copyOf(restrictSourceToPackages),
                     alternativeJREDirectory,
@@ -122,6 +129,12 @@ public class InputConfiguration {
         @Fluent
         public Builder addSources(String... sources) {
             sourceDirs.addAll(Arrays.asList(sources));
+            return this;
+        }
+
+        @Fluent
+        public Builder addAnnotatedAPISources(String... sources) {
+            annotatedAPISourceDirs.addAll(Arrays.asList(sources));
             return this;
         }
 
