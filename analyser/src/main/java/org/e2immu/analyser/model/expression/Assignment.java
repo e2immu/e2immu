@@ -203,7 +203,7 @@ public class Assignment implements Expression {
             FieldInfo fieldInfo = ((FieldReference) at).fieldInfo;
 
             // check illegal assignment into nested type
-            if (checkIllegalAssignmentIntoNestedType(at, fieldInfo, evaluationContext.getCurrentType().typeInfo)) {
+            if (checkIllegalAssignmentIntoNestedType(at, fieldInfo, evaluationContext.getCurrentType())) {
                 builder.addErrorAssigningToFieldOutsideType(fieldInfo);
             }
 

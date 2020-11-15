@@ -39,7 +39,7 @@ public interface EvaluationContext {
     }
 
     @NotNull
-    default TypeAnalyser getCurrentType() {
+    default TypeInfo getCurrentType() {
         return null;
     }
 

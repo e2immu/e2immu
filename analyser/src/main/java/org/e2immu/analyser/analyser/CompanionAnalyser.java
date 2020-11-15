@@ -36,17 +36,20 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class CompanionAnalyser {
 
+    private final AnalyserContext analyserContext;
     public final MethodInfo mainMethod;
     public final MethodInfo companionMethod;
     public final CompanionMethodName companionMethodName;
     public final CompanionAnalysisImpl.Builder companionAnalysis;
     public final TypeAnalysis typeAnalysis;
 
-    public CompanionAnalyser(TypeAnalysis typeAnalysis,
+    public CompanionAnalyser(AnalyserContext analyserContext,
+                             TypeAnalysis typeAnalysis,
                              CompanionMethodName companionMethodName,
                              MethodInfo companionMethod,
                              MethodInfo mainMethod,
                              AnnotationType annotationType) {
+        this.analyserContext = analyserContext;
         this.companionMethod = companionMethod;
         this.companionMethodName = companionMethodName;
         this.mainMethod = mainMethod;
@@ -94,12 +97,12 @@ public class CompanionAnalyser {
                 ParameterizedType returnType = aspectMethod.returnType();
                 value = new VariableValue(new PreAspectVariable(returnType));
             } else {
-                ParameterInfo parameterInMain = parameterInfo.index + aspectVariables < mainIndices ?
-                        mainMethod.methodInspection.get().parameters.get(parameterInfo.index + aspectVariables) : null;
-                if (parameterInMain != null && parameterInfo.name.equals(parameterInMain.name)) {
+                ParameterInfo parameterInMain = parameterInfo.index - aspectVariables < mainIndices ?
+                        mainMethod.methodInspection.get().parameters.get(parameterInfo.index - aspectVariables) : null;
+                if (parameterInMain != null && parameterInfo.parameterizedType().equalsErased(parameterInMain.parameterizedType())) {
                     value = new VariableValue(parameterInMain);
                 } else if (parameterInfo.index == numIndices - 1 && !mainMethod.isVoid() &&
-                        parameterInfo.concreteReturnType().equals(mainMethod.returnType())) {
+                        parameterInfo.concreteReturnType().equalsErased(mainMethod.returnType())) {
                     value = new VariableValue(new ReturnVariable(mainMethod));
                 } else {
                     throw new UnsupportedOperationException("Cannot map parameter " + parameterInfo.index + " of " +
@@ -114,9 +117,33 @@ public class CompanionAnalyser {
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
+        @Override
+        public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
+            return getAnalyserContext().getMethodAnalysis(methodInfo);
+        }
+
+        @Override
+        public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
+            return getAnalyserContext().getTypeAnalysis(typeInfo);
+        }
+
+        @Override
+        public AnalyserContext getAnalyserContext() {
+            return analyserContext;
+        }
 
         protected EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
             super(iteration, conditionManager);
+        }
+
+        @Override
+        public Location getLocation() {
+            return new Location(mainMethod);
+        }
+
+        @Override
+        public TypeInfo getCurrentType() {
+            return mainMethod.typeInfo;
         }
 
         @Override
@@ -128,6 +155,5 @@ public class CompanionAnalyser {
             }
             return new VariableValue(variable);
         }
-
     }
 }

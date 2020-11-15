@@ -164,7 +164,7 @@ public class MethodValue implements Value {
         MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
 
         // RULE 1: if the return type is E2IMMU, then no links at all
-        boolean notSelf = returnType.typeInfo != evaluationContext.getCurrentType().typeInfo;
+        boolean notSelf = returnType.typeInfo != evaluationContext.getCurrentType();
         if (notSelf) {
             int immutable = MultiLevel.value(methodAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
             if (immutable == MultiLevel.DELAY) return null;
@@ -189,7 +189,7 @@ public class MethodValue implements Value {
         int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
         int objectE2Immutable = MultiLevel.value(evaluationContext.getProperty(object, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
         if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY) return null;
-        boolean objectOfSameType = methodInfo.typeInfo == evaluationContext.getCurrentType().typeInfo;
+        boolean objectOfSameType = methodInfo.typeInfo == evaluationContext.getCurrentType();
         if (objectOfSameType || (objectE2Immutable < MultiLevel.EVENTUAL_AFTER && independent == MultiLevel.FALSE)) {
             Set<Variable> b = evaluationContext.linkedVariables(object);
             if (b == null) return null;

@@ -59,7 +59,7 @@ public class JavaUtil {
         boolean addAll(@NotNull1 java.util.Collection<? extends E> collection) { return true; }
 
         boolean clear$Modification$Size(int i, int j) { return i == 0; }
-        boolean clear$Erase(Object any) { return !contains(any); } // should remove all contains
+        // TODO need proper definition boolean clear$Erase(Object any) { return !contains(any); } // should remove all contains
         @Modified
         void clear() { }
 
@@ -154,6 +154,10 @@ public class JavaUtil {
         @NotNull
         E get(int index) { return null; }
 
+        void size$Aspect$Size() {}
+        @NotModified
+        int size() { return 0; }
+
         int of$Transfer$Size() { return 0; }
         @NotModified
         @NotNull1
@@ -183,9 +187,6 @@ public class JavaUtil {
 
         @Independent
         boolean removeAll(@NotNull1 Collection<?> c) { return false; }
-
-        @NotModified
-        int size() { return 0; }
 
         @NotModified
         @NotNull1

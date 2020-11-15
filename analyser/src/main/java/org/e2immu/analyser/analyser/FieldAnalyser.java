@@ -784,8 +784,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public TypeAnalyser getCurrentType() {
-            return myTypeAnalyser;
+        public TypeInfo getCurrentType() {
+            return fieldInfo.owner;
         }
 
         @Override

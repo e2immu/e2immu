@@ -102,7 +102,7 @@ public class Instance implements Value {
         }
 
         // RULE 2, 3
-        boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType().typeInfo;
+        boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType();
         if (notSelf) {
             TypeAnalysis typeAnalysisOfConstructor = evaluationContext.getTypeAnalysis(constructor.typeInfo);
             int immutable = typeAnalysisOfConstructor.getProperty(VariableProperty.IMMUTABLE);

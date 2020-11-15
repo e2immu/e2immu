@@ -53,6 +53,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
     private final Map<FieldInfo, FieldAnalyser> fieldAnalysers;
     private final Map<ParameterInfo, ParameterAnalyser> parameterAnalysers;
     private final TypeContext typeContext;
+    private final Messages messages = new Messages();
 
     public PrimaryTypeAnalyser(@NotNull SortedType sortedType,
                                @NotNull Configuration configuration,
@@ -88,7 +89,10 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         sortedType.methodsFieldsSubTypes.forEach(mfs -> {
             if (mfs instanceof MethodInfo methodInfo) {
                 if (methodInfo.shallowAnalysis()) {
-                    methodInfo.copyAnnotationsIntoMethodAnalysisProperties(getPrimitives(), getE2ImmuAnnotationExpressions());
+                    Pair<Messages, MethodAnalysisImpl.Builder> pair =
+                            methodInfo.copyAnnotationsIntoMethodAnalysisProperties(getPrimitives(), getE2ImmuAnnotationExpressions());
+                    methodInfo.setAnalysis(pair.v.build());
+                    messages.addAll(pair.k);
                 } else {
                     MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo),
                             false, this);
@@ -157,7 +161,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
     }
 
     public Stream<Message> getMessageStream() {
-        return analysers.stream().flatMap(Analyser::getMessageStream);
+        return Stream.concat(messages.getMessageStream(), analysers.stream().flatMap(Analyser::getMessageStream));
     }
 
     public void check() {

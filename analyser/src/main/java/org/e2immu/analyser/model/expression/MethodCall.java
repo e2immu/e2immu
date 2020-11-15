@@ -35,6 +35,7 @@ import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Only;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,6 +44,8 @@ import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 
 
 public class MethodCall extends ExpressionWithMethodReferenceResolution implements HasParameterExpressions {
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MethodCall.class);
+
     public final Expression object;
     public final Expression computedScope;
     public final List<Expression> parameterExpressions;
@@ -101,7 +104,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         boolean delayUndeclared = false;
 
         if (evaluationContext.getCurrentMethod() != null) {
-            TypeInfo currentPrimaryType = evaluationContext.getCurrentType().primaryType;
+            TypeInfo currentPrimaryType = evaluationContext.getCurrentType().primaryType();
 
             assert currentPrimaryType.typeResolution.get().circularDependencies.isSet() :
                     "Circular dependencies of type " + currentPrimaryType.fullyQualifiedName + " not yet set";
@@ -122,9 +125,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             alwaysModifying = false;
         }
-
-        MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
-
+        MethodAnalysis methodAnalysis;
+        try {
+            methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+        } catch (UnsupportedOperationException e) {
+            LOGGER.warn("Error obtaining method analysis for {}", methodInfo.fullyQualifiedName());
+            throw e;
+        }
         // is the method modifying, do we need to wait?
         int modified = alwaysModifying ? Level.TRUE : methodAnalysis.getProperty(VariableProperty.MODIFIED);
         int methodDelay = Level.fromBool(modified == Level.DELAY || delayUndeclared);

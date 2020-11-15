@@ -38,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -238,35 +237,38 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus findAspects() {
+        return findAspects(analyserContext, typeAnalysis,
+                myMethodAndConstructorAnalysersExcludingSAMs.stream().map(ma -> ma.methodInfo));
+    }
+
+    // also used by ShallowTypeAnalyser
+    public static AnalysisStatus findAspects(AnalyserContext analyserContext,
+                                             TypeAnalysisImpl.Builder typeAnalysis,
+                                             Stream<MethodInfo> methodsAndConstructorsExclSAM) {
         assert !typeAnalysis.aspects.isFrozen();
-        AtomicBoolean delays = new AtomicBoolean();
-        AtomicBoolean progress = new AtomicBoolean();
-        myMethodAndConstructorAnalysersExcludingSAMs.forEach(methodAnalyser -> {
+
+        methodsAndConstructorsExclSAM.forEach(mainMethod -> {
             List<CompanionMethodName> companionMethodNames =
-                    methodAnalyser.methodInspection.companionMethods.keySet().stream()
-                            .filter(methodInfo -> methodInfo.action() == CompanionMethodName.Action.ASPECT).collect(Collectors.toList());
-            for (CompanionMethodName companionMethodName : companionMethodNames) {
-                if (companionMethodName.aspect() == null) {
-                    throw new UnsupportedOperationException("Aspect is null in aspect definition?");
-                }
-                String aspect = companionMethodName.aspect();
-                MethodInfo mainMethod = methodAnalyser.methodInfo;
-                int modified = analyserContext.getMethodAnalysis(mainMethod).getProperty(VariableProperty.MODIFIED);
-                if (modified == Level.DELAY) {
-                    delays.set(true);
-                } else if (modified == Level.TRUE) {
-                    throw new UnsupportedOperationException("Aspects need to be defined on non-modifying methods: " +
-                            mainMethod.fullyQualifiedName());
-                } else if (!typeAnalysis.aspects.isSet(aspect)) {
-                    typeAnalysis.aspects.put(aspect, mainMethod);
-                    progress.set(true);
+                    mainMethod.methodInspection.get().companionMethods.keySet().stream()
+                            .filter(mi -> mi.action() == CompanionMethodName.Action.ASPECT).collect(Collectors.toList());
+            if (!companionMethodNames.isEmpty()) {
+                log(ANALYSER, "Find aspects in {}", typeAnalysis.typeInfo.fullyQualifiedName);
+
+                for (CompanionMethodName companionMethodName : companionMethodNames) {
+                    if (companionMethodName.aspect() == null) {
+                        throw new UnsupportedOperationException("Aspect is null in aspect definition of " + mainMethod.fullyQualifiedName());
+                    }
+                    String aspect = companionMethodName.aspect();
+                    if (!typeAnalysis.aspects.isSet(aspect)) {
+                        typeAnalysis.aspects.put(aspect, mainMethod);
+                    } else {
+                        throw new UnsupportedOperationException("Duplicating aspect " + aspect + " in " + mainMethod.fullyQualifiedName());
+                    }
                 }
             }
         });
-        if (!delays.get()) {
-            typeAnalysis.aspects.freeze();
-        }
-        return delays.get() ? (progress.get() ? PROGRESS : DELAYS) : DONE;
+        typeAnalysis.aspects.freeze();
+        return DONE;
     }
 
     private AnalysisStatus makeInternalObjectFlowsPermanent() {

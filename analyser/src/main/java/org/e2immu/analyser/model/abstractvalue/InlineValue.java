@@ -110,9 +110,9 @@ public class InlineValue implements Value {
         return switch (applicability) {
             case EVERYWHERE -> true;
             case NONE -> false;
-            case TYPE -> evaluationContext.getCurrentType().typeInfo.equals(methodInfo.typeInfo);
+            case TYPE -> evaluationContext.getCurrentType().equals(methodInfo.typeInfo);
             case METHOD -> methodInfo.equals(evaluationContext.getCurrentMethod().methodInfo);
-            case PACKAGE -> evaluationContext.getCurrentType().typeInfo.packageName().equals(methodInfo.typeInfo.packageName());
+            case PACKAGE -> evaluationContext.getCurrentType().packageName().equals(methodInfo.typeInfo.packageName());
             default -> throw new UnsupportedOperationException("TODO");
         };
     }

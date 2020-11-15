@@ -617,7 +617,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return methodInspection.get().modifiers.contains(MethodModifier.ABSTRACT);
     }
 
-
+    // this code is partially in the ShallowTypeAnalyser as well... TODO unify
     public Pair<Messages, MethodAnalysisImpl.Builder> copyAnnotationsIntoMethodAnalysisProperties(Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         assert shallowAnalysis();
         Messages messages = new Messages();

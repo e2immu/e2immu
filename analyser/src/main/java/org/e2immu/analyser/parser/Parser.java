@@ -165,7 +165,9 @@ public class Parser {
                 }
             }
         });
-        messages.addAll(ShallowTypeAnalyser.analyse(typesForShallowAnalysis, getTypeContext().getPrimitives(), getE2ImmuAnnotationExpressions()));
+        ShallowTypeAnalyser shallowTypeAnalyser = new ShallowTypeAnalyser(typesForShallowAnalysis,
+                getTypeContext().getPrimitives(), getE2ImmuAnnotationExpressions());
+        messages.addAll(shallowTypeAnalyser.analyse());
     }
 
 

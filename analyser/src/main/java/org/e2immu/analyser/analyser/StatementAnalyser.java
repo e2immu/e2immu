@@ -1077,7 +1077,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public Set<String> allUnqualifiedVariableNames() {
-            return statementAnalysis.allUnqualifiedVariableNames(getCurrentType().typeInfo);
+            return statementAnalysis.allUnqualifiedVariableNames(getCurrentType());
         }
 
         @Override
@@ -1086,8 +1086,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public TypeAnalyser getCurrentType() {
-            return myMethodAnalyser.myTypeAnalyser;
+        public TypeInfo getCurrentType() {
+            return myMethodAnalyser.myTypeAnalyser.typeInfo;
         }
 
         @Override
@@ -1194,7 +1194,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         @Override
         public Set<Variable> linkedVariables(Variable variable) {
             TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
-            boolean notSelf = typeInfo != getCurrentType().typeInfo;
+            boolean notSelf = typeInfo != getCurrentType();
             if (notSelf) {
                 VariableInfo variableInfo = statementAnalysis.find(analyserContext, variable);
                 int immutable = variableInfo.getProperty(VariableProperty.IMMUTABLE);

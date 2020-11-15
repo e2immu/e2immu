@@ -704,4 +704,11 @@ public class ParameterizedType {
                         UpgradableBooleanMap.of(typeInfo, explicit) : UpgradableBooleanMap.of());
     }
 
+    public boolean equalsErased(ParameterizedType other) {
+        TypeInfo best = bestTypeInfo();
+        TypeInfo otherBest = other.bestTypeInfo();
+        if (best == null) return otherBest == null;
+        return best.equals(otherBest) && arrays == other.arrays;
+    }
+
 }

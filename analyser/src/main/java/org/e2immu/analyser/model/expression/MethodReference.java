@@ -84,7 +84,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         Objects.requireNonNull(evaluationContext);
         // we know the method we're passing on...
-        if (evaluationContext.getCurrentType().typeInfo.inTypeInnerOuterHierarchy(methodInfo.typeInfo).isPresent()) {
+        if (evaluationContext.getCurrentType().inTypeInnerOuterHierarchy(methodInfo.typeInfo).isPresent()) {
             return SideEffect.NONE_CONTEXT;
         }
         // no idea which method we're passing on... should not be a problem

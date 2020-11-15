@@ -273,7 +273,7 @@ public class EvaluationResult {
         }
 
         public ObjectFlow createLiteralObjectFlow(ParameterizedType parameterizedType) {
-            return createInternalObjectFlow(new Location(evaluationContext.getCurrentType().typeInfo), parameterizedType, Origin.LITERAL);
+            return createInternalObjectFlow(new Location(evaluationContext.getCurrentType()), parameterizedType, Origin.LITERAL);
         }
 
         public ObjectFlow createInternalObjectFlow(Location location, ParameterizedType parameterizedType, Origin origin) {
@@ -325,8 +325,8 @@ public class EvaluationResult {
             Variable v;
             if (variable instanceof This) {
                 v = variable;
-            } else if (variable.concreteReturnType().typeInfo == evaluationContext.getCurrentType().typeInfo) {
-                v = new This(evaluationContext.getCurrentType().typeInfo);
+            } else if (variable.concreteReturnType().typeInfo == evaluationContext.getCurrentType()) {
+                v = new This(evaluationContext.getCurrentType());
             } else v = null;
             if (v != null) {
                 addToModifications(statementAnalyser.new SetProperty(v, VariableProperty.METHOD_CALLED, methodCalled));
