@@ -87,7 +87,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         ImmutableMap.Builder<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new ImmutableMap.Builder<>();
         sortedType.methodsFieldsSubTypes.forEach(mfs -> {
             if (mfs instanceof MethodInfo methodInfo) {
-                if (methodInfo.doesNotNeedAnalysing()) {
+                if (methodInfo.shallowAnalysis()) {
                     methodInfo.copyAnnotationsIntoMethodAnalysisProperties(getPrimitives(), getE2ImmuAnnotationExpressions());
                 } else {
                     MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo),
@@ -124,7 +124,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
                     return List.of(analyser, samAnalyser).stream();
                 }
             } else if (mfs instanceof MethodInfo methodInfo) {
-                if (methodInfo.doesNotNeedAnalysing()) {
+                if (methodInfo.shallowAnalysis()) {
                     return Stream.empty(); // interface method
                 }
                 MethodAnalyser methodAnalyser = methodAnalysers.get(mfs);

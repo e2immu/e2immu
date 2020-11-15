@@ -41,7 +41,7 @@ public interface WithInspectionAndAnalysis {
     // interfaces: only for methods with code block, and initialisers, if the type has been defined
 
     default Boolean annotatedWith(Analysis analysis, AnnotationExpression annotation) {
-        if (primaryType().doesNotNeedAnalysing()) {
+        if (primaryType().shallowAnalysis()) {
             return getInspection().annotations.stream()
                     .anyMatch(ae -> ae.typeInfo.fullyQualifiedName.equals(annotation.typeInfo.fullyQualifiedName));
         }

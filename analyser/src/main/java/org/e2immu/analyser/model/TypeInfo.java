@@ -1222,13 +1222,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      *
      * @return true when we can completely bypass the analysers using the "copyAnnotationsIntoTypeAnalysisProperties" method
      */
-    public boolean doesNotNeedAnalysing() {
-        if (!typeInspection.isSet()) return true;
+    public boolean shallowAnalysis() {
+        if (!typeInspection.isSet()) throw new UnsupportedOperationException();
         TypeInspection inspection = typeInspection.get();
-        if (inspection.typeNature == TypeNature.ENUM) {
-            return inspection.fields.isEmpty();
-        }
+        // we don't analyse annotations at the moment
         if (inspection.typeNature == TypeNature.ANNOTATION) return true;
-        return inspection.methodsAndConstructors(TypeInspection.Methods.INCLUDE_SUBTYPES).allMatch(MethodInfo::doesNotNeedAnalysing);
+        return inspection.methodsAndConstructors(TypeInspection.Methods.INCLUDE_SUBTYPES).allMatch(MethodInfo::shallowAnalysis);
     }
 }

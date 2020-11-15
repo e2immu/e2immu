@@ -132,7 +132,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         ImmutableList.Builder<MethodAnalyser> myMethodsAndConstructors = new ImmutableList.Builder<>();
 
         analyserContext.getMethodAnalysers().values().forEach(analyser -> {
-            assert !analyser.methodAnalysis.methodInfo.doesNotNeedAnalysing();
+            assert !analyser.methodAnalysis.methodInfo.shallowAnalysis();
             allMethodsAndConstructors.add(analyser);
             if (analyser.methodInfo.typeInfo == fieldInfo.owner) {
                 myMethodsAndConstructors.add(analyser);

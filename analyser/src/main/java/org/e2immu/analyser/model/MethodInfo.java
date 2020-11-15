@@ -619,7 +619,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
 
     public Pair<Messages, MethodAnalysisImpl.Builder> copyAnnotationsIntoMethodAnalysisProperties(Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        assert doesNotNeedAnalysing();
+        assert shallowAnalysis();
         Messages messages = new Messages();
 
         methodInspection.get().parameters.forEach(parameterInfo -> {
@@ -714,17 +714,13 @@ public class MethodInfo implements WithInspectionAndAnalysis {
      *
      * @return true when we can skip the analysers
      */
-    public boolean doesNotNeedAnalysing() {
-        if (!methodInspection.isSet()) return true;
+    public boolean shallowAnalysis() {
         MethodInspection inspection = methodInspection.get();
-        if (!inspection.methodBody.isSet()) return true;
-        return inspection.methodBody.get() == Block.EMPTY_BLOCK && inspection.companionMethods.isEmpty();
+        return !inspection.methodBody.isSet() || inspection.methodBody.get() == Block.EMPTY_BLOCK;
     }
 
     public boolean hasStatements() {
-        if (!methodInspection.isSet()) return true;
         MethodInspection inspection = methodInspection.get();
-        if (!inspection.methodBody.isSet()) return true;
-        return inspection.methodBody.get().structure.statements.size() > 0;
+        return inspection.methodBody.isSet() && inspection.methodBody.get().structure.statements.size() > 0;
     }
 }

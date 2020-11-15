@@ -157,15 +157,15 @@ public class Parser {
     }
 
     private void ensureShallowAnalysisOfLoadedObjects() {
-        List<TypeInfo> typesToAnalyse = new LinkedList<>();
+        List<TypeInfo> typesForShallowAnalysis = new LinkedList<>();
         getTypeContext().typeStore.visit(new String[0], (s, list) -> {
             for (TypeInfo typeInfo : list) {
-                if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() && typeInfo.doesNotNeedAnalysing()) {
-                    typesToAnalyse.add(typeInfo);
+                if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() && typeInfo.shallowAnalysis()) {
+                    typesForShallowAnalysis.add(typeInfo);
                 }
             }
         });
-        messages.addAll(ShallowTypeAnalyser.analyse(typesToAnalyse, getTypeContext().getPrimitives(), getE2ImmuAnnotationExpressions()));
+        messages.addAll(ShallowTypeAnalyser.analyse(typesForShallowAnalysis, getTypeContext().getPrimitives(), getE2ImmuAnnotationExpressions()));
     }
 
 

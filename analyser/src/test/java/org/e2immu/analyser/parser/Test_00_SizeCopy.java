@@ -19,18 +19,18 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.CompanionAnalysis;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.annotation.AnnotationType;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -88,8 +88,17 @@ public class Test_00_SizeCopy extends CommonTestRunner {
 
     TypeContextVisitor typeContextVisitor = typeContext -> {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
-        Assert.assertFalse(collection.doesNotNeedAnalysing());
+        Assert.assertTrue(collection.shallowAnalysis());
         MethodInfo stream = collection.findUniqueMethod("stream", 0);
+        Assert.assertEquals(1, stream.methodInspection.get().companionMethods.size());
+        CompanionMethodName streamCmn = stream.methodInspection.get().companionMethods.keySet().stream().findFirst().orElseThrow();
+        Assert.assertEquals("Size", streamCmn.aspect());
+        Assert.assertSame(CompanionMethodName.Action.TRANSFER, streamCmn.action());
+
+        CompanionAnalysis streamCompanionAnalysis = stream.methodAnalysis.get().getCompanionAnalyses().get(streamCmn);
+        Assert.assertSame(AnnotationType.CONTRACT, streamCompanionAnalysis.getAnnotationType());
+        Assert.assertEquals("", streamCompanionAnalysis.getValue().toString());
+
         MethodInfo addAll = collection.findUniqueMethod("addAll", 1);
         ParameterInfo param0 = addAll.methodInspection.get().parameters.get(0);
 

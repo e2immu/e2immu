@@ -97,7 +97,7 @@ public class ShallowTypeAnalyser {
     }
 
     private static Messages shallowTypeAndFieldAnalysis(TypeInfo typeInfo, Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        assert typeInfo.doesNotNeedAnalysing();
+        assert typeInfo.shallowAnalysis();
         Messages messages = new Messages();
         log(RESOLVE, "copy annotations into properties: {}", typeInfo.fullyQualifiedName);
 
