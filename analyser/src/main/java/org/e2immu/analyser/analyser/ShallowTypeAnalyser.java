@@ -43,10 +43,10 @@ public class ShallowTypeAnalyser implements AnalyserContext {
     public ShallowTypeAnalyser(List<TypeInfo> types, Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.primitives = primitives;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
-        ImmutableMap.Builder<TypeInfo, TypeAnalysis> typeAnalysesBuilder = new ImmutableMap.Builder<>();
+        typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
         ImmutableMap.Builder<MethodInfo, MethodAnalysis> methodAnalysesBuilder = new ImmutableMap.Builder<>();
         for (TypeInfo typeInfo : types) {
-            typeAnalysesBuilder.put(typeInfo, new TypeAnalysisImpl.Builder(primitives, typeInfo));
+            typeAnalyses.put(typeInfo, new TypeAnalysisImpl.Builder(primitives, typeInfo));
 
             typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
 
@@ -64,7 +64,6 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                 methodAnalysesBuilder.put(methodInfo, methodAnalysisBuilder);
             });
         }
-        typeAnalyses = typeAnalysesBuilder.build();
         methodAnalyses = methodAnalysesBuilder.build();
     }
 

@@ -114,7 +114,9 @@ public interface MethodAnalysis extends Analysis {
         return null;
     }
 
-    default Map<CompanionMethodName, CompanionAnalysis> getCompanionAnalyses() { return null; }
+    default Map<CompanionMethodName, CompanionAnalysis> getCompanionAnalyses() {
+        return null;
+    }
 
     // ************** PRECONDITION
 
@@ -160,7 +162,7 @@ public interface MethodAnalysis extends Analysis {
             case IMMUTABLE:
                 assert returnType != ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR : "void method";
                 int immutableType = returnType.getProperty(analysisProvider, VariableProperty.IMMUTABLE);
-                int immutableDynamic = dynamicProperty(immutableType, returnType);
+                int immutableDynamic = dynamicProperty(analysisProvider, immutableType, returnType);
                 return MultiLevel.bestImmutable(immutableType, immutableDynamic);
 
             case CONTAINER:
@@ -174,8 +176,9 @@ public interface MethodAnalysis extends Analysis {
         return internalGetProperty(variableProperty);
     }
 
-    private int dynamicProperty(int formalImmutableProperty, ParameterizedType returnType) {
-        int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty, getObjectFlow().conditionsMetForEventual(returnType));
+    private int dynamicProperty(AnalysisProvider analysisProvider, int formalImmutableProperty, ParameterizedType returnType) {
+        int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty,
+                getObjectFlow().conditionsMetForEventual(analysisProvider, returnType));
         return Level.best(internalGetProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
     }
 

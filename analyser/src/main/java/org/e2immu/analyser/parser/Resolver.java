@@ -70,7 +70,7 @@ public class Resolver {
                 TypeInfo typeInfo = entry.getKey();
                 TypeContext typeContext = entry.getValue();
 
-                assert typeInfo.isPrimaryType();
+                assert typeInfo.isPrimaryType(): "Not a primary type: "+typeInfo.fullyQualifiedName;
                 SortedType sortedType = addToTypeGraph(typeGraph, stayWithin, typeInfo, typeContext);
                 toSortedType.put(typeInfo, sortedType);
             } catch (RuntimeException rte) {
@@ -278,7 +278,7 @@ public class Resolver {
             try {
                 doMethodOrConstructor(methodInfo, expressionContext, methodFieldSubTypeGraph);
                 methodInfo.methodInspection.get().companionMethods.values().forEach(companionMethod ->
-                        doMethodOrConstructor(companionMethod, expressionContext, new DependencyGraph<>()));
+                        doMethodOrConstructor(companionMethod, expressionContext, methodFieldSubTypeGraph));
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while resolving method {}", methodInfo.fullyQualifiedName());
                 throw rte;

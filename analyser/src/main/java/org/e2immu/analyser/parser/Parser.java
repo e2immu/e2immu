@@ -161,13 +161,12 @@ public class Parser {
     private void ensureShallowAnalysisOfLoadedObjects(List<SortedType> sortedTypes) {
         boolean acceptAll = sortedTypes != null;
 
-        // the following block of code ensures that primary types are processed first.
-        // Doing so allows for methods to be defined in primary types of annotated APIs
-        
+        // the following block of code ensures that primary types of the annotated APIs
+        // are processed in the correct order
+
         List<TypeInfo> typesForShallowAnalysis = new LinkedList<>();
         if (sortedTypes != null) {
             sortedTypes.forEach(st -> typesForShallowAnalysis.add(st.primaryType));
-
         }
         Set<TypeInfo> alreadyIncluded = new HashSet<>(typesForShallowAnalysis);
         getTypeContext().typeStore.visit(new String[0], (s, list) -> {

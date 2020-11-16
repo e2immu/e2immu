@@ -294,6 +294,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 methodInspection.get().exceptionTypes.stream().flatMap(et -> et.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()) :
                 UpgradableBooleanMap.of();
         UpgradableBooleanMap<TypeInfo> bodyTypes = hasBeenInspected() && methodInspection.get().methodBody.isSet() ? methodInspection.get().methodBody.get().typesReferenced() : UpgradableBooleanMap.of();
+        UpgradableBooleanMap<TypeInfo> companionMethodTypes = hasBeenInspected() ? methodInspection.get().companionMethods.values().stream()
+                .flatMap(cm -> cm.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()) : UpgradableBooleanMap.of();
         return UpgradableBooleanMap.of(constructorTypes, parameterTypes, annotationTypes, exceptionTypes, bodyTypes);
     }
 

@@ -50,8 +50,10 @@ public class JavaUtil {
     // this is not in line with the JDK, but we will block null keys!
     static class Collection$<E>  {
 
-        boolean add$Modification$Size(int i, int j, E e) { return addModificationHelper(i, j, contains(e), !contains(e)); }
-        boolean add$Value$Size(int i, int j, E e, boolean retVal) { return addValueHelper(i, j, contains(e), !contains(e), retVal); }
+        // note that with the $, we're really in java.util.Collection, so we have no knowledge of addModificationHelper unless we add it to the
+        // type context (but that is possible) IMPROVE
+        boolean add$Modification$Size(int i, int j, E e) { return org.e2immu.annotatedapi.JavaUtil.addModificationHelper(i, j, contains(e), !contains(e)); }
+        boolean add$Value$Size(int i, int j, E e, boolean retVal) { return org.e2immu.annotatedapi.JavaUtil.addValueHelper(i, j, contains(e), !contains(e), retVal); }
         boolean add$Postcondition(E e) { return contains(e); }
         boolean add(@NotNull E e) { return true; }
 
@@ -129,8 +131,8 @@ public class JavaUtil {
     // this is not in line with the JDK, but we will block null keys!
     static class List$<E> {
 
-        boolean add$Modification$Size(int i, int j, E e) { return addModificationHelper(i, j, contains(e), !contains(e)); }
-        boolean add$Value$Size(int i, int j, E e, boolean retVal) { return addValueHelper(i, j, contains(e), !contains(e), retVal); }
+        boolean add$Modification$Size(int i, int j, E e) { return org.e2immu.annotatedapi.JavaUtil.addModificationHelper(i, j, contains(e), !contains(e)); }
+        boolean add$Value$Size(int i, int j, E e, boolean retVal) { return org.e2immu.annotatedapi.JavaUtil.addValueHelper(i, j, contains(e), !contains(e), retVal); }
         boolean add$Postcondition(E e) { return contains(e); }
         boolean add(@NotNull E e) { return false; }
 

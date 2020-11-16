@@ -71,27 +71,33 @@ public class InspectAnnotatedAPIs {
         DelegatingTypeStore delegatingTypeStore = new DelegatingTypeStore(localTypeStore, globalTypeContext.typeStore);
         ParseAndInspect parseAndInspect = new ParseAndInspect(byteCodeInspector, false, localTypeStore);
         Map<TypeInfo, TypeContext> inspectedTypes = new HashMap<>();
+        Map<TypeInfo, TypeContext> primarySourceTypesNotInByteCode = new HashMap<>();
         for (URL url : annotatedAPIs) {
             try (InputStreamReader isr = new InputStreamReader(url.openStream(), sourceCharSet)) {
                 String source = IOUtils.toString(isr);
                 TypeContext typeContextOfFile = new TypeContext(globalTypeContext, delegatingTypeStore);
                 List<TypeInfo> inspectedTypesList = parseAndInspect.phase1ParseAndInspect(typeContextOfFile, url.getFile(), source);
                 inspectedTypesList.forEach(typeInfo -> inspectedTypes.put(typeInfo, typeContextOfFile));
+                if (inspectedTypesList.size() > 0) {
+                    primarySourceTypesNotInByteCode.put(inspectedTypesList.get(0), typeContextOfFile);
+                }
             }
         }
 
         // finally, merge the annotations in the result of .class byte code inspection
-        possiblyByteCodeInspectThenMerge(inspectedTypes.keySet());
-        log(RESOLVE, "Starting resolver in {} inspected types", inspectedTypes.size());
+        Map<TypeInfo, TypeContext> merged = possiblyByteCodeInspectThenMerge(primarySourceTypesNotInByteCode.keySet(), inspectedTypes);
+        merged.putAll(primarySourceTypesNotInByteCode);
+        log(RESOLVE, "Starting resolver in {} inspected types", merged.size());
         Resolver resolver = new Resolver();
-        return resolver.sortTypes(inspectedTypes);
+        return resolver.sortTypes(merged);
     }
 
-    private void possiblyByteCodeInspectThenMerge(Set<TypeInfo> notInByteCode) {
+    private Map<TypeInfo, TypeContext> possiblyByteCodeInspectThenMerge(Set<TypeInfo> primarySourceTypesNotInBytecode, Map<TypeInfo, TypeContext> typeToTypeContext) {
         log(INSPECT, "Starting merge with byte-code inspection");
+        Map<TypeInfo, TypeContext> mergedPrimaryTypesWithTypeContext = new HashMap<>();
         localTypeStore.visit(new String[0], (s, types) -> {
             for (TypeInfo typeInfo : types) {
-                if (!notInByteCode.contains(typeInfo)) {
+                if (!primarySourceTypesNotInBytecode.contains(typeInfo)) {
                     TypeInfo typeInGlobalTypeContext = globalTypeContext.getFullyQualified(typeInfo.fullyQualifiedName, false);
                     if (typeInGlobalTypeContext == null || !typeInGlobalTypeContext.hasBeenInspected()) {
                         String pathInClassPath = byteCodeInspector.getClassPath().fqnToPath(typeInfo.fullyQualifiedName, ".class");
@@ -102,9 +108,13 @@ public class InspectAnnotatedAPIs {
 
                     ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInGlobalTypeContext, globalTypeContext);
                     typeInGlobalTypeContext.resolveAllAnnotations(expressionContext);
+                    if (typeInGlobalTypeContext.isPrimaryType()) {
+                        mergedPrimaryTypesWithTypeContext.put(typeInGlobalTypeContext, typeToTypeContext.get(typeInfo));
+                    }
                 }
             }
         });
+        return mergedPrimaryTypesWithTypeContext;
     }
 
     private static final Function<TypeInspection, List<MethodInfo>> CONSTRUCTORS = typeInspection -> typeInspection.constructors;

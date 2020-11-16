@@ -1,5 +1,6 @@
 package org.e2immu.analyser.objectflow;
 
+import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.util.SetUtil;
@@ -278,11 +279,11 @@ public class ObjectFlow {
 
 
     /**
-     * @param typeInfo the type to check for
+     * @param typeAnalysis the type to check for
      * @return also returns true if effectively immutable (not eventually!)
      */
-    public boolean conditionsMetForEventual(TypeInfo typeInfo) {
-        Set<String> set = typeInfo.typeAnalysis.get().marksRequiredForImmutable();
+    public boolean conditionsMetForEventual(TypeAnalysis typeAnalysis) {
+        Set<String> set = typeAnalysis.marksRequiredForImmutable();
         // set.isEmpty() is a speed-up, marks() could be expensive && not necessary
         return set.isEmpty() || marks().containsAll(set);
     }
@@ -293,9 +294,9 @@ public class ObjectFlow {
      * @param returnType te type to check for, uses bestTypeInfo
      * @return also returns true if effectively immutable (not eventually!)
      */
-    public boolean conditionsMetForEventual(ParameterizedType returnType) {
+    public boolean conditionsMetForEventual(AnalysisProvider analysisProvider, ParameterizedType returnType) {
         TypeInfo typeInfo = returnType.bestTypeInfo();
-        return typeInfo != null && conditionsMetForEventual(typeInfo);
+        return typeInfo != null && conditionsMetForEventual(analysisProvider.getTypeAnalysis(typeInfo));
     }
 
     // for testing

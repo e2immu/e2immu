@@ -141,7 +141,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                                   ExpressionContext expressionContext) {
         List<TypeInfo> dollarTypes = inspect(hasBeenDefined, enclosingTypeIsInterface, enclosingType, typeDeclaration, expressionContext, null);
         if (enclosingType == null) {
-            dollarTypes.add(this);
+            dollarTypes.add(0, this);
         }
         return dollarTypes;
     }

@@ -293,7 +293,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         private int dynamicProperty(int formalImmutableProperty) {
-            int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty, getObjectFlow().conditionsMetForEventual(returnType));
+            int immutableTypeAfterEventual = MultiLevel.eventual(formalImmutableProperty,
+                    getObjectFlow().conditionsMetForEventual(analysisProvider, returnType));
             return Level.best(super.getProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
         }
 
