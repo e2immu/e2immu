@@ -21,29 +21,46 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public record CompanionMethodName(String methodName, Action action, String aspect) {
+    public static final int INVALID = -1;
 
     public enum Action {
-        ASPECT(true, true, "Aspect", 0),
-        MODIFICATION(true, true, "Modification", 2), //pre, post (modifying)
-        VALUE(false, true, "Value", 1), // current (non-modifying)
-        PRECONDITION(false, true, "Precondition", 1), // pre-mod
-        POSTCONDITION(false, true, "Postcondition", 2), // pre, post (modifying)
-        INVARIANT(false, true, "Invariant", 1),
-        TRANSFER(true, true, "Transfer", 1), // post if modifying
-        ERASE(false, true, "Erase", 1), // post
-        GENERATE(false, true, "Generate", 1); // post
+
+        // define
+        ASPECT(true, true, "Aspect", 0, 0),
+
+        // a clause that is valid at all times, e.g. size() >= 0
+        INVARIANT(false, true, "Invariant", 1, 1),
+
+        // a clause that must be true before the method starts; otherwise an exception is thrown
+        PRECONDITION(false, true, "Precondition", 1, 1), // pre-mod
+
+        // return value of a primitive type, aspect or not
+        VALUE(false, true, "Value", 2, 1), // current (non-modifying)
+
+        // return value of the SAME type of object, change in aspect
+        TRANSFER(true, true, "Transfer", 2, 1), // post if modifying
+
+        // change to aspect of a modifying method
+        MODIFICATION(true, true, "Modification", 2, INVALID), //pre, post (modifying)
+
+        // clauses that can be added independent of the aspect after a modification (contains('a') after add('a'))
+        // clauses that can be added about the aspect of the return value of a non-modifying method
+        POSTCONDITION(false, true, "Postcondition", 2, 2), // pre, post (modifying),
+        ;
 
         public final boolean requiresAspect;
         public final boolean allowsAspect;
         public final String action;
         public final Pattern pattern;
-        public final int aspectVariables;
+        public final int aspectVariablesModifying;
+        public final int aspectVariablesNonModifying;
 
-        Action(boolean requiresAspect, boolean allowsAspect, String action, int aspectVariables) {
+        Action(boolean requiresAspect, boolean allowsAspect, String action, int aspectVariablesModifying, int aspectVariablesNonModifying) {
             this.requiresAspect = requiresAspect;
             this.allowsAspect = allowsAspect;
             this.action = action;
-            this.aspectVariables = aspectVariables;
+            this.aspectVariablesModifying = aspectVariablesModifying;
+            this.aspectVariablesNonModifying = aspectVariablesNonModifying;
             this.pattern = composePattern();
         }
 
@@ -56,8 +73,8 @@ public record CompanionMethodName(String methodName, Action action, String aspec
         }
     }
 
-    public int numAspectVariables() {
-        return aspect == null ? 0 : action.aspectVariables;
+    public int numAspectVariables(boolean modifyingMethod) {
+        return aspect == null ? 0 : (modifyingMethod ? action.aspectVariablesModifying : action.aspectVariablesNonModifying);
     }
 
     // generates a CompanionMethod based on a method's name, or null when the method's name

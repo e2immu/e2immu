@@ -251,7 +251,9 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return new MethodAnalysisImpl(methodInfo,
                     firstStatement.getOrElse(null),
                     getLastStatement(),
-                    parameterAnalyses,
+                    ImmutableList.copyOf(parameterAnalyses.stream()
+                            .map(parameterAnalysis -> parameterAnalysis instanceof ParameterAnalysisImpl.Builder builder ?
+                                    (ParameterAnalysis) builder.build() : parameterAnalysis).collect(Collectors.toList())),
                     getSingleReturnValue(),
                     getObjectFlow(),
                     ImmutableSet.copyOf(internalObjectFlows.getOrElse(Set.of())),
@@ -381,7 +383,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public List<ParameterAnalysis> getParameterAnalyses() {
-            return null;
+            return parameterAnalyses;
         }
 
         @Override

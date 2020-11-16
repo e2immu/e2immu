@@ -120,7 +120,7 @@ class JavaLang {
         boolean isEmpty$Value$Len(int l) { return l == 0; }
         public boolean isEmpty() { return false; }
 
-        boolean indexOf$Postcondition$Len(int len, int retVal) { return retVal >= -1 && retVal < len; }
+        boolean indexOf$Value$Len(int len, int retVal) { return retVal >= -1 && retVal < len; }
         int indexOf(int ch) { return 0; }
 
         int intern$Transfer$Len(int len) { return len; }
@@ -128,7 +128,7 @@ class JavaLang {
         @NotNull
         String intern() { return null; }
 
-        boolean lastIndexOf$Postcondition$Len(int len, int retVal) { return retVal >= -1 && retVal < len; }
+        boolean lastIndexOf$Value$Len(int len, int retVal) { return retVal >= -1 && retVal < len; }
         int lastIndexOf(int ch) { return 0; }
 
         int repeat$Transfer$Len(int len, int count) { return len * count; }
@@ -166,6 +166,7 @@ class JavaLang {
         @NotNull
         String trim() { return null; }
 
+        // result is smaller than original:
         boolean strip$Postcondition$Len(int post, int pre) { return post <= pre; }
         @NotNull
         String strip() { return null; }

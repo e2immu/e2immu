@@ -24,12 +24,8 @@ import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.AnnotationType;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
@@ -54,18 +50,16 @@ public class ShallowTypeAnalyser implements AnalyserContext {
 
                 MethodInspection methodInspection = methodInfo.methodInspection.get();
 
+                List<ParameterAnalysis> parameterAnalyses = new ArrayList<>(methodInspection.parameters.size());
                 methodInspection.parameters.forEach(parameterInfo -> {
                     ParameterAnalysisImpl.Builder parameterAnalysisBuilder = new ParameterAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER, parameterInfo);
                     messages.addAll(parameterAnalysisBuilder.fromAnnotationsIntoProperties(true, true,
                             parameterInfo.parameterInspection.get().annotations, e2ImmuAnnotationExpressions));
-                    parameterInfo.setAnalysis(parameterAnalysisBuilder.build());
+                    parameterAnalyses.add(parameterAnalysisBuilder);
                 });
-                List<ParameterAnalysis> parameterAnalyses = methodInspection.parameters.stream()
-                        .map(parameterInfo -> parameterInfo.parameterAnalysis.get()).collect(Collectors.toList());
 
                 MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(primitives, this, methodInfo, parameterAnalyses);
                 methodAnalysesBuilder.put(methodInfo, methodAnalysisBuilder);
-
             });
         }
         typeAnalyses = typeAnalysesBuilder.build();
@@ -128,7 +122,9 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                         methodInfo.methodInspection.get().annotations, e2ImmuAnnotationExpressions));
 
                 if (methodInfo.methodInspection.get().companionMethods.isEmpty()) {
-                    methodInfo.setAnalysis(methodAnalysisBuilder.build());
+                    MethodAnalysis methodAnalysis = (MethodAnalysis) methodAnalysisBuilder.build();
+                    methodInfo.setAnalysis(methodAnalysis);
+                    setAnalysis(methodInfo.methodInspection.get().parameters, methodAnalysis.getParameterAnalyses());
                 } else {
                     buildersForCompanionAnalysis.put(methodInfo, methodAnalysisBuilder);
                 }
@@ -163,7 +159,9 @@ public class ShallowTypeAnalyser implements AnalyserContext {
 
                 if (!delays.get()) {
                     keysToRemove.add(methodInfo);
-                    methodInfo.setAnalysis(builder.build());
+                    MethodAnalysis methodAnalysis = (MethodAnalysis) builder.build();
+                    methodInfo.setAnalysis(methodAnalysis);
+                    setAnalysis(methodInfo.methodInspection.get().parameters, methodAnalysis.getParameterAnalyses());
                 }
             }));
 
@@ -177,6 +175,15 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         }
 
         return messages;
+    }
+
+    private void setAnalysis(List<ParameterInfo> parameters, List<ParameterAnalysis> parameterAnalyses) {
+        Iterator<ParameterAnalysis> it = parameterAnalyses.iterator();
+        for (ParameterInfo parameterInfo : parameters) {
+            if (!it.hasNext()) throw new UnsupportedOperationException();
+            ParameterAnalysis parameterAnalysis = it.next();
+            parameterInfo.setAnalysis(parameterAnalysis);
+        }
     }
 
     private void shallowTypeAndFieldAnalysis(TypeInfo typeInfo,

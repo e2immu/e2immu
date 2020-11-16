@@ -126,6 +126,9 @@ public interface EvaluationContext {
             if (variableValue.variable instanceof This thisVariable) {
                 return getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
             }
+            if(variableValue.variable instanceof PreAspectVariable pre) {
+                return pre.valueForProperties.getProperty(this, variableProperty);
+            }
             throw new UnsupportedOperationException("Variable value of type "+variableValue.variable.getClass());
         }
         return value.getProperty(this, variableProperty); // will work in many cases

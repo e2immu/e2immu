@@ -18,8 +18,12 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface AnalysisProvider {
+    static final Logger LOGGER = LoggerFactory.getLogger(AnalysisProvider.class);
+
     FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo);
 
     ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo);
@@ -47,7 +51,12 @@ public interface AnalysisProvider {
 
         @Override
         public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
-            return methodInfo.methodAnalysis.get();
+            try {
+                return methodInfo.methodAnalysis.get();
+            } catch (RuntimeException re) {
+                LOGGER.error("Caught exception trying to obtain default method analysis for " + methodInfo.fullyQualifiedName());
+                throw re;
+            }
         }
     };
 }

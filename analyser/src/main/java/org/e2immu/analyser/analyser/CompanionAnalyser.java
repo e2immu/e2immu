@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -66,7 +67,20 @@ public class CompanionAnalyser {
                         companionMethodName, mainMethod.fullyQualifiedName());
                 return AnalysisStatus.DELAYS;
             }
-            computeRemapParameters();
+            if(companionMethodName.action() == CompanionMethodName.Action.ASPECT) {
+                // there is no code, and the type analyser deals with it
+                companionAnalysis.value.set(UnknownValue.EMPTY);
+                return DONE;
+            }
+            int modifyingMainMethod = analyserContext.getMethodAnalysis(mainMethod).getProperty(VariableProperty.MODIFIED);
+            if (modifyingMainMethod == Level.DELAY) {
+                // even though the method itself is annotated by contract (it has no code), method analysis may be delayed because
+                // its companion methods need processing
+                log(DELAYED, "Delaying companion analysis of {} of {}, modification of main method delayed",
+                        companionMethodName, mainMethod.fullyQualifiedName());
+                return AnalysisStatus.DELAYS;
+            }
+            computeRemapParameters(modifyingMainMethod == Level.TRUE);
 
             ReturnStatement returnStatement = (ReturnStatement) companionMethod.methodInspection.get()
                     .methodBody.get().structure.statements.get(0);
@@ -83,15 +97,15 @@ public class CompanionAnalyser {
             companionAnalysis.value.set(evaluationResult.value);
 
             log(ANALYSER, "Finished companion analysis of {} in {}", companionMethodName, mainMethod.fullyQualifiedName());
-            return AnalysisStatus.DONE;
+            return DONE;
         } catch (RuntimeException e) {
             LOGGER.error("Caught runtime exception in companion analyser of {} of {}", companionMethodName, mainMethod.fullyQualifiedName());
             throw e;
         }
     }
 
-    private void computeRemapParameters() {
-        int aspectVariables = companionMethodName.numAspectVariables();
+    private void computeRemapParameters(boolean modifyingMainMethod) {
+        int aspectVariables = companionMethodName.numAspectVariables(modifyingMainMethod);
         ImmutableMap.Builder<String, Value> remap = new ImmutableMap.Builder<>();
         int numIndices = companionMethod.methodInspection.get().parameters.size();
         int mainIndices = mainMethod.methodInspection.get().parameters.size();
@@ -106,7 +120,10 @@ public class CompanionAnalyser {
                 // this is the initial aspect value in a Modification$Aspect
                 MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
                 ParameterizedType returnType = aspectMethod.returnType();
-                value = new VariableValue(new PreAspectVariable(returnType));
+                // the value that we store is the same as that for the post-variable (see previous if-statement)
+                Value scope = new VariableValue(new This(aspectMethod.typeInfo));
+                MethodValue methodValue = new MethodValue(aspectMethod, scope, List.of(), ObjectFlow.NO_FLOW);
+                value = new VariableValue(new PreAspectVariable(returnType, methodValue));
             } else {
                 ParameterInfo parameterInMain = parameterInfo.index - aspectVariables < mainIndices ?
                         mainMethod.methodInspection.get().parameters.get(parameterInfo.index - aspectVariables) : null;
@@ -127,6 +144,10 @@ public class CompanionAnalyser {
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
+
+        protected EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
+            super(iteration, conditionManager);
+        }
 
         @Override
         public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
@@ -150,18 +171,24 @@ public class CompanionAnalyser {
             return analyserContext;
         }
 
-        protected EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
-            super(iteration, conditionManager);
+        @Override
+        public Location getLocation() {
+            return new Location(companionMethod);
         }
 
         @Override
-        public Location getLocation() {
-            return new Location(mainMethod);
+        public Location getLocation(Expression expression) {
+            return new Location(companionMethod);
         }
 
         @Override
         public TypeInfo getCurrentType() {
             return mainMethod.typeInfo;
+        }
+
+        @Override
+        public EvaluationContext child(Value condition) {
+            return new EvaluationContextImpl(iteration, conditionManager.addCondition(this, condition));
         }
 
         @Override
