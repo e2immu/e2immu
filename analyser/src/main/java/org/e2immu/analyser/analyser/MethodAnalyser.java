@@ -564,17 +564,17 @@ public class MethodAnalyser extends AbstractAnalyser {
         } else {
             methodAnalysis.annotations.put(e2.constant.get(), false);
         }
-        methodAnalysis.setProperty(VariableProperty.CONSTANT, isConstant);
+        methodAnalysis.setProperty(VariableProperty.CONSTANT, Level.fromBool(isConstant));
         log(CONSTANT, "Mark method {} as @Constant? {}", methodInfo.fullyQualifiedName(), isConstant);
 
         boolean isFluent = valueBeforeInlining instanceof VariableValue vv &&
                 vv.variable instanceof This thisVar &&
                 thisVar.typeInfo == methodInfo.typeInfo;
-        methodAnalysis.setProperty(VariableProperty.FLUENT, isFluent);
+        methodAnalysis.setProperty(VariableProperty.FLUENT, Level.fromBool(isFluent));
         log(FLUENT, "Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
 
         boolean isIdentity = variableInfo.getProperty(VariableProperty.IDENTITY) == Level.TRUE;
-        methodAnalysis.setProperty(VariableProperty.IDENTITY, isIdentity);
+        methodAnalysis.setProperty(VariableProperty.IDENTITY, Level.fromBool(isIdentity));
         log(IDENTITY, "Mark method {} as @Identity? {}", methodInfo.fullyQualifiedName(), isIdentity);
 
         return DONE;

@@ -62,7 +62,7 @@ public enum VariableProperty {
     CONTAINER("@Container", false, Level.FALSE, Level.TRUE, Level.FALSE, Level.TRUE),
     IMMUTABLE("@Immutable", true, MultiLevel.MUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE, MultiLevel.MUTABLE, MultiLevel.MUTABLE),
     MODIFIED("@Modified", true, Level.FALSE, Level.TRUE, Level.TRUE, Level.FALSE),
-    INDEPENDENT("@Independent", true, MultiLevel.FALSE, MultiLevel.EFFECTIVE, MultiLevel.FALSE, MultiLevel.EFFECTIVE),
+    INDEPENDENT("@Independent", false, MultiLevel.FALSE, MultiLevel.EFFECTIVE, MultiLevel.FALSE, MultiLevel.EFFECTIVE),
     CONSTANT("@Constant"),
     EXTENSION_CLASS("@ExtensionClass"),
     FLUENT("@Fluent"),

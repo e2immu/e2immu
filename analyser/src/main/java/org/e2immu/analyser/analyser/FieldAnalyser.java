@@ -226,7 +226,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 p.parameterAnalysis.getProperty(VariableProperty.MODIFIED) == Level.FALSE);
 
         log(NOT_MODIFIED, "Set @NotModified1 on {} to {}", fieldInfo.fullyQualifiedName(), allParametersNotModified);
-        fieldAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, allParametersNotModified);
+        fieldAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, Level.fromBool(allParametersNotModified));
         return DONE;
     }
 
@@ -517,7 +517,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         fieldAnalysis.effectivelyFinalValue.set(effectivelyFinalValue);
-        fieldAnalysis.setProperty(VariableProperty.CONSTANT, effectivelyFinalValue.isConstant());
+        fieldAnalysis.setProperty(VariableProperty.CONSTANT, Level.fromBool(effectivelyFinalValue.isConstant()));
 
         // check constant
 
@@ -625,7 +625,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     .max().orElse(Level.DELAY);
             isFinal = isAssignedOutsideConstructors < Level.TRUE;
         }
-        fieldAnalysis.setProperty(VariableProperty.FINAL, isFinal);
+        fieldAnalysis.setProperty(VariableProperty.FINAL, Level.fromBool(isFinal));
         if (isFinal && fieldInfo.type.isRecordType()) {
             messages.add(Message.newMessage(new Location(fieldInfo), Message.EFFECTIVELY_FINAL_FIELD_NOT_RECORD));
         }
@@ -676,7 +676,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                             .filter(m -> m.haveFieldAsVariable(fieldInfo))
                             .filter(m -> m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.READ) >= Level.TRUE)
                             .anyMatch(m -> m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.MODIFIED) == Level.TRUE);
-            fieldAnalysis.setProperty(VariableProperty.MODIFIED, modified);
+            fieldAnalysis.setProperty(VariableProperty.MODIFIED, Level.fromBool(modified));
             log(NOT_MODIFIED, "Mark field {} as {}", fieldInfo.fullyQualifiedName(), modified ? "@Modified" : "@NotModified");
             return DONE;
         }

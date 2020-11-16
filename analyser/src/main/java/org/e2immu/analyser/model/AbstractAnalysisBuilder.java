@@ -63,19 +63,10 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     public void setProperty(VariableProperty variableProperty, int i) {
         if (variableProperty.canImprove) {
             properties.improve(variableProperty, i);
-        } else {
+        } else if (!properties.isSet(variableProperty)) {
             properties.put(variableProperty, i);
         }
     }
-
-    public void setProperty(VariableProperty variableProperty, boolean b) {
-        properties.put(variableProperty, Level.fromBool(b));
-    }
-
-    public void improveProperty(VariableProperty variableProperty, int i) {
-        properties.improve(variableProperty, i);
-    }
-
 
     @Override
     public Stream<Map.Entry<AnnotationExpression, Boolean>> getAnnotationStream() {
@@ -188,8 +179,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     annotationType == AnnotationType.CONTRACT_ABSENT ||
                     // VERIFY is the default in annotated APIs, and non-default method declarations in interfaces...
                     acceptVerify && annotationType == AnnotationType.VERIFY) {
-                int trueFalse = annotationType == AnnotationType.CONTRACT_ABSENT ? Level.FALSE: Level.TRUE;
-                int falseTrue = annotationType != AnnotationType.CONTRACT_ABSENT ? Level.FALSE: Level.TRUE;
+                int trueFalse = annotationType == AnnotationType.CONTRACT_ABSENT ? Level.FALSE : Level.TRUE;
+                int falseTrue = annotationType != AnnotationType.CONTRACT_ABSENT ? Level.FALSE : Level.TRUE;
 
                 TypeInfo t = annotationExpression.typeInfo;
                 if (e2ImmuAnnotationExpressions.e1Immutable.get().typeInfo == t) {
@@ -232,7 +223,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.identity.get().typeInfo == t) {
                     properties.put(VariableProperty.IDENTITY, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.ignoreModifications.get().typeInfo == t) {
-                    properties.put(VariableProperty.IGNORE_MODIFICATIONS,trueFalse);
+                    properties.put(VariableProperty.IGNORE_MODIFICATIONS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.independent.get().typeInfo == t) {
                     properties.put(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
                 } else if (e2ImmuAnnotationExpressions.dependent.get().typeInfo == t) {

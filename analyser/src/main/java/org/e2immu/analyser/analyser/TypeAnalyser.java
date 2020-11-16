@@ -409,7 +409,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         // copy into approved preconditions
         tempApproved.forEach(typeAnalysis.approvedPreconditions::put);
         typeAnalysis.approvedPreconditions.freeze();
-        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.EVENTUAL);
+        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EVENTUAL);
         log(MARK, "Approved preconditions {} in {}, type is now @E1Immutable(after=)", tempApproved.values(), typeInfo.fullyQualifiedName);
         return DONE;
     }
@@ -527,12 +527,12 @@ public class TypeAnalyser extends AbstractAnalyser {
             if (effectivelyFinal == Level.FALSE) {
                 log(E1IMMUTABLE, "Type {} cannot be @E1Immutable, field {} is not effectively final",
                         typeInfo.fullyQualifiedName, fieldAnalyser.fieldInfo.name);
-                typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
+                typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
                 return DONE;
             }
         }
         log(E1IMMUTABLE, "Improve IMMUTABLE property of type {} to @E1Immutable", typeInfo.fullyQualifiedName);
-        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E1IMMUTABLE);
+        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E1IMMUTABLE);
         return DONE;
     }
 
@@ -583,7 +583,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         boolean someModified = fieldsLinkedToParameters.stream().anyMatch(fieldAnalyser -> fieldAnalyser.fieldAnalysis.getProperty(VariableProperty.MODIFIED) == Level.TRUE);
         if (someModified) {
             log(INDEPENDENT, "Type {} cannot be @Independent, some fields linked to parameters are modified", typeInfo.fullyQualifiedName);
-            typeAnalysis.improveProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
+            typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
             return DONE;
         }
 
@@ -600,7 +600,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             if (!MultiLevel.isAtLeastEventuallyE2Immutable(immutable)) {
                 log(INDEPENDENT, "Type {} cannot be @Independent, field {} is non-private and not level 2 immutable",
                         typeInfo.fullyQualifiedName, nonPrivateField.fieldInfo.name);
-                typeAnalysis.improveProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
+                typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
                 return DONE;
             }
         }
@@ -625,14 +625,14 @@ public class TypeAnalyser extends AbstractAnalyser {
                 if (!safeMethod) {
                     log(INDEPENDENT, "Type {} cannot be @Independent, method {}'s return values link to some of the fields linked to constructors",
                             typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
-                    typeAnalysis.improveProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
+                    typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
                     return DONE;
                 }
             }
         }
 
         log(INDEPENDENT, "Improve type {} to @Independent", typeInfo.fullyQualifiedName);
-        typeAnalysis.improveProperty(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
+        typeAnalysis.setProperty(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
         return DELAYS;
     }
 
@@ -649,7 +649,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
         if (propertyValues.stream().anyMatch(level -> level != Level.TRUE)) {
             log(DELAYED, "{} cannot be {}, parent or enclosing class is not", typeInfo.fullyQualifiedName, variableProperty);
-            typeAnalysis.improveProperty(variableProperty, falseValue);
+            typeAnalysis.setProperty(variableProperty, falseValue);
             return DONE;
         }
         return PROGRESS;
@@ -725,7 +725,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                 if (!eventual && modified == Level.TRUE) {
                     log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, not @E2Immutable, and its content is modified",
                             typeInfo.fullyQualifiedName, fieldInfo.name);
-                    typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
+                    typeAnalysis.setProperty(VariableProperty.IMMUTABLE, no);
                     return DONE;
                 }
 
@@ -735,7 +735,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                         log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, " +
                                         "not @E2Immutable, not implicitly immutable, and also exposed (not private)",
                                 typeInfo.fullyQualifiedName, fieldInfo.name);
-                        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
+                        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, no);
                         return DONE;
                     }
                 } else {
@@ -756,7 +756,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                 if (independent == Level.FALSE) {
                     log(E2IMMUTABLE, "{} is not an E2Immutable class, because constructor is not @Independent",
                             typeInfo.fullyQualifiedName, constructor.methodInfo.name);
-                    typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
+                    typeAnalysis.setProperty(VariableProperty.IMMUTABLE, no);
                     return DONE;
                 }
             }
@@ -784,7 +784,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                         if (independent == MultiLevel.FALSE) {
                             log(E2IMMUTABLE, "{} is not an E2Immutable class, because method {}'s return type is not primitive, not E2Immutable, not independent",
                                     typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
-                            typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, no);
+                            typeAnalysis.setProperty(VariableProperty.IMMUTABLE, no);
                             return DONE;
                         }
                     }
@@ -794,7 +794,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         log(E2IMMUTABLE, "Improve @Immutable of type {} to @E2Immutable", typeInfo.fullyQualifiedName);
         int e2Immutable = eventual ? MultiLevel.EVENTUAL : MultiLevel.EFFECTIVE;
-        typeAnalysis.improveProperty(VariableProperty.IMMUTABLE, MultiLevel.compose(typeE1Immutable, e2Immutable));
+        typeAnalysis.setProperty(VariableProperty.IMMUTABLE, MultiLevel.compose(typeE1Immutable, e2Immutable));
         return DONE;
     }
 
@@ -845,7 +845,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             }
         }
         boolean isExtensionClass = commonTypeOfFirstParameter != null && haveFirstParameter;
-        typeAnalysis.setProperty(VariableProperty.EXTENSION_CLASS, isExtensionClass);
+        typeAnalysis.setProperty(VariableProperty.EXTENSION_CLASS, Level.fromBool(isExtensionClass));
         log(EXTENSION_CLASS, "Type " + typeInfo.fullyQualifiedName + " marked " + (isExtensionClass ? "" : "not ")
                 + "@ExtensionClass");
         return DONE;

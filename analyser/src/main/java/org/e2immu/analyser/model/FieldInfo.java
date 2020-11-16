@@ -184,7 +184,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
         int effectivelyFinal = fieldAnalysisBuilder.getProperty(VariableProperty.FINAL);
         if (isExplicitlyFinal() && effectivelyFinal != Level.TRUE) {
-            fieldAnalysisBuilder.improveProperty(VariableProperty.FINAL, Level.TRUE);
+            fieldAnalysisBuilder.setProperty(VariableProperty.FINAL, Level.TRUE); // will improve if needed
         }
         setAnalysis(fieldAnalysisBuilder.build());
         return messages;

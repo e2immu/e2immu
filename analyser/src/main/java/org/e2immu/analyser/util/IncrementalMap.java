@@ -64,13 +64,6 @@ public class IncrementalMap<K> extends Freezable {
         }
     }
 
-    @Only(before = "freeze")
-    public void overwrite(@NotNull K k, int v) {
-        Objects.requireNonNull(k);
-        ensureNotFrozen();
-        map.put(k, v);
-    }
-
     @NotNull
     public int get(K k) {
         if (!isSet(k)) throw new UnsupportedOperationException("Not yet decided on " + k);
