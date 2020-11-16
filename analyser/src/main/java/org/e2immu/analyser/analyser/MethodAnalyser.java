@@ -372,11 +372,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus computeOnlyMarkAnnotate(SharedState sharedState) {
         assert !methodAnalysis.markAndOnly.isSet();
-        // the reason we check here is that the method analyser can also be called from the shallow type analyser,
-        // with a type analyser which has already been built
-        if (!(typeAnalysis instanceof TypeAnalysisImpl.Builder)) {
-            return DONE;
-        }
+
         SetOnceMap<String, Value> approvedPreconditions = ((TypeAnalysisImpl.Builder) typeAnalysis).approvedPreconditions;
         if (!approvedPreconditions.isFrozen()) {
             log(DELAYED, "No decision on approved preconditions yet for {}", methodInfo.distinguishingName());

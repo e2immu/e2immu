@@ -19,6 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
@@ -74,7 +75,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                     methodAnalysisBuilder = methodAnalyser.methodAnalysis;
                 } else {
                     // shallow method analysis
-                    methodAnalysisBuilder  = new MethodAnalysisImpl.Builder(primitives, this, methodInfo, parameterAnalyses);
+                    methodAnalysisBuilder = new MethodAnalysisImpl.Builder(primitives, this, methodInfo, parameterAnalyses);
 
                     messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(false, true,
                             methodInfo.methodInspection.get().annotations, e2ImmuAnnotationExpressions));
@@ -185,7 +186,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                 } else {
                     MethodAnalyser methodAnalyser = either.getLeft();
                     AnalysisStatus analysisStatus = methodAnalyser.analyse(effectivelyFinalIteration);
-                    if (analysisStatus == AnalysisStatus.DELAYS) {
+                    if (analysisStatus != AnalysisStatus.DONE) {
                         log(DELAYED, "Delaying analysis of {}, full method analyser", methodInfo.fullyQualifiedName());
                         delays.set(true);
                     }
@@ -199,7 +200,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
             }));
 
             if (keysToRemove.isEmpty()) {
-                throw new UnsupportedOperationException("Infinite loop: could not remove keys; have left: "+buildersForCompanionAnalysis.size());
+                throw new UnsupportedOperationException("Infinite loop: could not remove keys; have left: " + buildersForCompanionAnalysis.size());
             }
             buildersForCompanionAnalysis.keySet().removeAll(keysToRemove);
             log(ANALYSER, "At end of iteration {} in shallow method analysis, removed {}, remaining {}", iteration,
@@ -230,10 +231,30 @@ public class ShallowTypeAnalyser implements AnalyserContext {
 
         TypeAnalyser.findAspects(this, typeAnalysisBuilder,
                 typeInspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM));
-        typeInfo.typeAnalysis.set(typeAnalysisBuilder.build());
+        typeAnalysisBuilder.approvedPreconditions.freeze();
+        TypeAnalysis typeAnalysis = typeAnalysisBuilder.build();
+        typeInfo.typeAnalysis.set(typeAnalysis);
 
-        typeInspection.fields.forEach(fieldInfo ->
-                messages.addAll(fieldInfo.copyAnnotationsIntoFieldAnalysisProperties(primitives, e2ImmuAnnotationExpressions)));
+        typeInspection.fields.forEach(fieldInfo -> shallowFieldAnalyser(fieldInfo, typeAnalysis));
     }
 
+
+    public void shallowFieldAnalyser(FieldInfo fieldInfo, TypeAnalysis typeAnalysis) {
+        FieldAnalysisImpl.Builder fieldAnalysisBuilder = new FieldAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER,
+                fieldInfo, fieldInfo.owner.typeAnalysis.get());
+
+        messages.addAll(fieldAnalysisBuilder.fromAnnotationsIntoProperties(false, true,
+                fieldInfo.fieldInspection.get().annotations, e2ImmuAnnotationExpressions));
+
+        // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
+        if (fieldInfo.isExplicitlyFinal()) {
+            fieldAnalysisBuilder.setProperty(VariableProperty.FINAL, Level.TRUE);
+        }
+        if (fieldAnalysisBuilder.getProperty(VariableProperty.FINAL) == Level.TRUE) {
+            This thisVariable = new This(fieldInfo.owner);
+            FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
+            fieldAnalysisBuilder.effectivelyFinalValue.set(new VariableValue(fieldReference));
+        }
+        fieldInfo.setAnalysis(fieldAnalysisBuilder.build());
+    }
 }

@@ -174,22 +174,6 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE);
     }
 
-    public Messages copyAnnotationsIntoFieldAnalysisProperties(Primitives primitives, E2ImmuAnnotationExpressions typeContext) {
-        FieldAnalysisImpl.Builder fieldAnalysisBuilder = new FieldAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER,
-                this, owner.typeAnalysis.get());
-        Messages messages = new Messages();
-        messages.addAll(fieldAnalysisBuilder.fromAnnotationsIntoProperties(false, true, fieldInspection.get().annotations,
-                typeContext));
-
-        // the following code is here to save some @Final annotations in annotated APIs where there already is a `final` keyword.
-        int effectivelyFinal = fieldAnalysisBuilder.getProperty(VariableProperty.FINAL);
-        if (isExplicitlyFinal() && effectivelyFinal != Level.TRUE) {
-            fieldAnalysisBuilder.setProperty(VariableProperty.FINAL, Level.TRUE); // will improve if needed
-        }
-        setAnalysis(fieldAnalysisBuilder.build());
-        return messages;
-    }
-
     public Set<ParameterizedType> explicitTypes() {
         if (!fieldInspection.get().initialiser.isSet()) return Set.of();
         FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.get().initialiser.get();
