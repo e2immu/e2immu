@@ -151,4 +151,9 @@ public class PropertyWrapper implements Value, ValueWrapper {
     public boolean isInstanceOf(Class<? extends Value> clazz) {
         return value.isInstanceOf(clazz);
     }
+
+    @Override
+    public ParameterizedType type() {
+        return value.type();
+    }
 }

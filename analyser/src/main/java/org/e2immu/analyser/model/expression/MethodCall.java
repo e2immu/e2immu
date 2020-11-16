@@ -159,6 +159,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<Value> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 
+        if(parameterValues.stream().anyMatch(pv -> pv == UnknownValue.NO_VALUE)) {
+            Logger.log(DELAYED, "Delayed method call because one of the parameter values is delayed: {}, {}", methodInfo.name, parameterValues);
+            builder.setValue(UnknownValue.NO_VALUE);
+            return builder.build();
+        }
+
         // access
         ObjectFlow objectFlow = objectValue.getObjectFlow();
         if (objectFlow != ObjectFlow.NO_FLOW) {

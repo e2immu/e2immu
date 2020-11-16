@@ -104,8 +104,9 @@ public abstract class CommonTestRunner {
                         NOT_NULL,
                         NOT_MODIFIED,
                         PATTERN,
-                        MARK,
-                        OBJECT_FLOW).stream().map(Enum::toString).collect(Collectors.joining(",")))
+                        MARK
+                       // OBJECT_FLOW
+                ).stream().map(Enum::toString).collect(Collectors.joining(",")))
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .build();
         return execute(configuration, errorsToExpect, warningsToExpect);

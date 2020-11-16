@@ -39,6 +39,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     private final Map<TypeInfo, TypeAnalysis> typeAnalyses;
     private final Map<MethodInfo, MethodAnalysis> methodAnalyses;
+    private final Map<MethodInfo, Either<MethodAnalyser, MethodAnalysisImpl.Builder>> buildersForCompanionAnalysis = new HashMap<>();
 
     public ShallowTypeAnalyser(List<TypeInfo> types, Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.primitives = primitives;
@@ -46,7 +47,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
         ImmutableMap.Builder<MethodInfo, MethodAnalysis> methodAnalysesBuilder = new ImmutableMap.Builder<>();
         for (TypeInfo typeInfo : types) {
-            typeAnalyses.put(typeInfo, new TypeAnalysisImpl.Builder(primitives, typeInfo));
+            TypeAnalysis typeAnalysis = new TypeAnalysisImpl.Builder(primitives, typeInfo);
+            typeAnalyses.put(typeInfo, typeAnalysis);
 
             typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
 
@@ -60,7 +62,32 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                     parameterAnalyses.add(parameterAnalysisBuilder);
                 });
 
-                MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(primitives, this, methodInfo, parameterAnalyses);
+                MethodAnalysisImpl.Builder methodAnalysisBuilder;
+
+                boolean hasNoCompanionMethods = methodInfo.methodInspection.get().companionMethods.isEmpty();
+                if (hasNoCompanionMethods && methodInfo.hasStatements()) {
+                    // normal method analysis
+
+                    MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, typeAnalysis, false, this);
+                    methodAnalyser.initialize(); // sets the field analysers, not implemented yet.
+                    buildersForCompanionAnalysis.put(methodInfo, Either.left(methodAnalyser));
+                    methodAnalysisBuilder = methodAnalyser.methodAnalysis;
+                } else {
+                    // shallow method analysis
+                    methodAnalysisBuilder  = new MethodAnalysisImpl.Builder(primitives, this, methodInfo, parameterAnalyses);
+
+                    messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(false, true,
+                            methodInfo.methodInspection.get().annotations, e2ImmuAnnotationExpressions));
+
+                    if (hasNoCompanionMethods) {
+                        MethodAnalysis methodAnalysis = (MethodAnalysis) methodAnalysisBuilder.build();
+                        methodInfo.setAnalysis(methodAnalysis);
+                        setAnalysis(methodInfo.methodInspection.get().parameters, methodAnalysis.getParameterAnalyses());
+                    } else {
+                        buildersForCompanionAnalysis.put(methodInfo, Either.right(methodAnalysisBuilder));
+                    }
+                }
+
                 methodAnalysesBuilder.put(methodInfo, methodAnalysisBuilder);
             });
         }
@@ -118,40 +145,15 @@ public class ShallowTypeAnalyser implements AnalyserContext {
     }
 
     public Messages analyse() {
-        // create method analysers
         log(ANALYSER, "Starting shallow analysis on {} types, {} methods", typeAnalyses.size(), methodAnalyses.size());
 
-        Map<MethodInfo, Either<MethodAnalyser, MethodAnalysisImpl.Builder>> buildersForCompanionAnalysis = new HashMap<>();
+        // do the types and fields
         typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
-            // do types and fields; no need to recurse into sub-types
+            // do types and fields; no need to recurse into sub-types, they're included among the primary types
             shallowTypeAndFieldAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis, primitives, e2ImmuAnnotationExpressions);
-
-            // now what's left of methods
-            typeInfo.typeInspection.getPotentiallyRun().methodsAndConstructors().forEach(methodInfo -> {
-                boolean hasNoCompanionMethods = methodInfo.methodInspection.get().companionMethods.isEmpty();
-                if (hasNoCompanionMethods && methodInfo.hasStatements()) {
-                    // normal method analysis
-
-                    MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, typeInfo.typeAnalysis.get(), false, this);
-                    methodAnalyser.initialize(); // sets the field analysers, not implemented yet.
-                    buildersForCompanionAnalysis.put(methodInfo, Either.left(methodAnalyser));
-                } else {
-                    // shallow method analysis
-                    MethodAnalysisImpl.Builder methodAnalysisBuilder = (MethodAnalysisImpl.Builder) methodAnalyses.get(methodInfo);
-
-                    messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(false, true,
-                            methodInfo.methodInspection.get().annotations, e2ImmuAnnotationExpressions));
-
-                    if (hasNoCompanionMethods) {
-                        MethodAnalysis methodAnalysis = (MethodAnalysis) methodAnalysisBuilder.build();
-                        methodInfo.setAnalysis(methodAnalysis);
-                        setAnalysis(methodInfo.methodInspection.get().parameters, methodAnalysis.getParameterAnalyses());
-                    } else {
-                        buildersForCompanionAnalysis.put(methodInfo, Either.right(methodAnalysisBuilder));
-                    }
-                }
-            });
         });
+
+        // then the methods
         int iteration = 0;
         while (!buildersForCompanionAnalysis.isEmpty()) {
             List<MethodInfo> keysToRemove = new LinkedList<>();
@@ -197,7 +199,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
             }));
 
             if (keysToRemove.isEmpty()) {
-                throw new UnsupportedOperationException("Infinite loop: could not remove keys");
+                throw new UnsupportedOperationException("Infinite loop: could not remove keys; have left: "+buildersForCompanionAnalysis.size());
             }
             buildersForCompanionAnalysis.keySet().removeAll(keysToRemove);
             log(ANALYSER, "At end of iteration {} in shallow method analysis, removed {}, remaining {}", iteration,
