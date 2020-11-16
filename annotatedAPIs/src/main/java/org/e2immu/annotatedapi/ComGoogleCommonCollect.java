@@ -19,10 +19,12 @@ package org.e2immu.annotatedapi;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.*;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 public class ComGoogleCommonCollect {
     final static String PACKAGE_NAME="com.google.common.collect";
@@ -64,6 +66,35 @@ public class ComGoogleCommonCollect {
         @NotNull
         @E2Container
         static <E> ImmutableList<E> copyOf(@NotNull Iterable<? extends E> iterable) { return null; }
+    }
+
+
+    @E2Container
+    static class ImmutableSet$<E> {
+
+        @Container(builds = ImmutableSet.class)
+        public static class Builder<E> {
+            @Fluent
+            public Builder<E> add(E... elements) {return this; }
+
+            @Fluent
+            public Builder<E> add(E element) { return this; }
+
+            @Fluent
+            public Builder<E> addAll(@NotNull Iterable<? extends E> iterable) { return this; }
+
+            @Fluent
+            public Builder<E> addAll(@NotNull Iterator<? extends E> iterator) { return this; }
+
+            @NotNull
+            @Independent
+            @NotModified
+            public ImmutableSet<E> build() { return null; }
+        }
+
+        @NotNull
+        @E2Container
+        static <E> ImmutableSet<E> copyOf(@NotNull Set<? extends E> iterable) { return null; }
     }
 
 }

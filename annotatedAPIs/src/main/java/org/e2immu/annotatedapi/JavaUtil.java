@@ -24,17 +24,19 @@ import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
-import static org.e2immu.annotatedapi.JavaLang.state;
-
 public class JavaUtil {
     final static String PACKAGE_NAME = "java.util";
 
+    // protects containsE and !containsE from being collapsed as boolean values
+    // the analyser would normally recognize @Identity, and do the collapsing
+    @Identity(type = AnnotationType.CONTRACT_ABSENT)
+    private static boolean protect(boolean b) { return b; }
 
     static boolean addModificationHelper(int i, int j, boolean containsE, boolean notContainsE) {
-        return state(containsE) ? i == j : state(notContainsE) || j == 0 ? i == j + 1 : i >= j && i <= j + 1;
+        return protect(containsE) ? i == j : protect(notContainsE) || j == 0 ? i == j + 1 : i >= j && i <= j + 1;
     }
     static boolean addValueHelper(int i, int j, boolean containsE, boolean notContainsE, boolean retVal) {
-        return !state(containsE) && (state(notContainsE) || j == 0 || retVal);
+        return !protect(containsE) && (protect(notContainsE) || j == 0 || retVal);
     }
 
     interface Iterator$<T> {

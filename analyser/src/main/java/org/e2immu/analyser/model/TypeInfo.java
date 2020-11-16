@@ -134,20 +134,27 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      * @param typeDeclaration          the JavaParser object to inspect
      * @param expressionContext        the context to inspect in
      */
-    public void inspect(boolean hasBeenDefined,
-                        boolean enclosingTypeIsInterface,
-                        TypeInfo enclosingType,
-                        TypeDeclaration<?> typeDeclaration,
-                        ExpressionContext expressionContext) {
-        inspect(hasBeenDefined, enclosingTypeIsInterface, enclosingType, typeDeclaration, expressionContext, null);
+    public List<TypeInfo> inspect(boolean hasBeenDefined,
+                                  boolean enclosingTypeIsInterface,
+                                  TypeInfo enclosingType,
+                                  TypeDeclaration<?> typeDeclaration,
+                                  ExpressionContext expressionContext) {
+        List<TypeInfo> dollarTypes = inspect(hasBeenDefined, enclosingTypeIsInterface, enclosingType, typeDeclaration, expressionContext, null);
+        if (enclosingType == null) {
+            dollarTypes.add(this);
+        }
+        return dollarTypes;
     }
 
-    private void inspect(boolean hasBeenDefined,
-                         boolean enclosingTypeIsInterface,
-                         TypeInfo enclosingType,
-                         TypeDeclaration<?> typeDeclaration,
-                         ExpressionContext expressionContext,
-                         DollarResolver dollarResolverInput) {
+    /*
+    returns the primary type in normal cases, and primary types in case of $ types
+     */
+    private List<TypeInfo> inspect(boolean hasBeenDefined,
+                                   boolean enclosingTypeIsInterface,
+                                   TypeInfo enclosingType,
+                                   TypeDeclaration<?> typeDeclaration,
+                                   ExpressionContext expressionContext,
+                                   DollarResolver dollarResolverInput) {
         LOGGER.info("Inspecting type {}", fullyQualifiedName);
         TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
 
@@ -200,7 +207,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         for (Modifier modifier : typeDeclaration.getModifiers()) {
             builder.addTypeModifier(TypeModifier.from(modifier));
         }
-        continueInspection(hasBeenDefined, expressionContext, builder,
+        return continueInspection(hasBeenDefined, expressionContext, builder,
                 typeDeclaration.getMembers(),
                 typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null),
                 typeNature == TypeNature.INTERFACE, haveFunctionalInterface,
@@ -349,7 +356,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         });
     }
 
-    private void continueInspection(
+    private List<TypeInfo> continueInspection(
             boolean hasBeenDefined,
             ExpressionContext expressionContext,
             TypeInspection.TypeInspectionBuilder builder,
@@ -361,32 +368,26 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         // first, do sub-types
         ExpressionContext subContext = expressionContext.newVariableContext("body of " + fullyQualifiedName);
 
-
         // 2 step approach: first, add these types to the expression context, without inspection
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> {
-                TypeInfo subType = subType(expressionContext, dollarResolver, cid.getNameAsString());
-                expressionContext.typeContext.addToContext(subType);
+                prepareSubType(expressionContext, dollarResolver, cid.getNameAsString());
             });
             bodyDeclaration.ifEnumDeclaration(ed -> {
-                TypeInfo subType = subType(expressionContext, dollarResolver, ed.getNameAsString());
-                expressionContext.typeContext.addToContext(subType);
+                prepareSubType(expressionContext, dollarResolver, ed.getNameAsString());
             });
         }
 
         // then inspect them...
+        List<TypeInfo> dollarTypes = new ArrayList<>();
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> {
-                TypeInfo subType = subType(expressionContext, dollarResolver, cid.getNameAsString());
-                ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
-                subType.inspect(hasBeenDefined, isInterface, this, cid.asTypeDeclaration(), newExpressionContext, dollarResolver);
-                builder.addSubType(subType);
+                inspectSubType(builder, dollarResolver, dollarTypes, expressionContext, isInterface,
+                        hasBeenDefined, cid.getNameAsString(), cid.asTypeDeclaration());
             });
             bodyDeclaration.ifEnumDeclaration(ed -> {
-                TypeInfo subType = subType(expressionContext, dollarResolver, ed.getNameAsString());
-                ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
-                subType.inspect(hasBeenDefined, isInterface, this, ed.asTypeDeclaration(), newExpressionContext, dollarResolver);
-                builder.addSubType(subType);
+                inspectSubType(builder, dollarResolver, dollarTypes, expressionContext, isInterface,
+                        hasBeenDefined, ed.getNameAsString(), ed.asTypeDeclaration());
             });
         }
 
@@ -472,15 +473,44 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             }
         }
         typeInspection.set(builder.build(this));
+        return dollarTypes;
     }
 
-    private TypeInfo subType(ExpressionContext expressionContext, DollarResolver dollarResolver, String name) {
+    private void prepareSubType(ExpressionContext expressionContext, DollarResolver dollarResolver, String nameAsString) {
+        Pair<Boolean, TypeInfo> pair = subType(expressionContext, dollarResolver, nameAsString);
+        expressionContext.typeContext.addToContext(pair.v);
+        if (pair.k) { // dollar name
+            expressionContext.typeContext.addToContext(nameAsString, pair.v, false);
+        }
+    }
+
+    private void inspectSubType(TypeInspection.TypeInspectionBuilder builder,
+                                DollarResolver dollarResolver,
+                                List<TypeInfo> dollarTypes,
+                                ExpressionContext expressionContext,
+                                boolean isInterface,
+                                boolean hasBeenDefined,
+                                String nameAsString,
+                                TypeDeclaration<?> asTypeDeclaration) {
+        Pair<Boolean, TypeInfo> pair = subType(expressionContext, dollarResolver, nameAsString);
+        TypeInfo subType = pair.v;
+        ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
+        TypeInfo enclosingType = pair.k ? null : this;
+        subType.inspect(hasBeenDefined, isInterface, enclosingType, asTypeDeclaration, newExpressionContext, dollarResolver);
+        if (pair.k) {
+            dollarTypes.add(subType);
+        } else {
+            builder.addSubType(subType);
+        }
+    }
+
+    private Pair<Boolean, TypeInfo> subType(ExpressionContext expressionContext, DollarResolver dollarResolver, String name) {
         TypeInfo subType = dollarResolver == null ? null : dollarResolver.apply(name);
-        if (subType != null) return subType;
+        if (subType != null) return new Pair<>(true, subType);
         TypeInfo fromStore = expressionContext.typeContext.typeStore.get(fullyQualifiedName + "." + name);
         if (fromStore == null)
             throw new UnsupportedOperationException("I should already know type " + name + " inside " + fullyQualifiedName);
-        return fromStore;
+        return new Pair<>(false, fromStore);
     }
 
     public interface DollarResolver extends Function<String, TypeInfo> {

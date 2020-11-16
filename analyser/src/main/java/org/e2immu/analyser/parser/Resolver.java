@@ -62,7 +62,8 @@ public class Resolver {
         DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
         Map<TypeInfo, SortedType> toSortedType = new HashMap<>();
         Set<TypeInfo> stayWithin = inspectedTypes.keySet().stream()
-                .flatMap(typeInfo -> typeInfo.allTypesInPrimaryType().stream()).collect(Collectors.toSet());
+                .flatMap(typeInfo -> typeInfo.allTypesInPrimaryType().stream())
+                .collect(Collectors.toSet());
 
         for (Map.Entry<TypeInfo, TypeContext> entry : inspectedTypes.entrySet()) {
             try {
@@ -115,15 +116,20 @@ public class Resolver {
         DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph = new DependencyGraph<>();
         doType(typeInfo, typeContextOfType, methodFieldSubTypeGraph);
 
+
         fillInternalMethodCalls(methodFieldSubTypeGraph);
 
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
         Set<TypeInfo> typeDependencies = typeInfo.typesReferenced().stream().map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
 
-        List<TypeInfo> allTypesInPrimaryType = typeInfo.allTypesInPrimaryType();
-        typeDependencies.removeAll(allTypesInPrimaryType);
-        typeDependencies.remove(typeInfo);
-        typeDependencies.retainAll(stayWithin);
+        if (Primitives.isJavaLangObject(typeInfo)) {
+            typeDependencies.clear(); // removes a gigantic circular dependency on Object -> String
+        } else {
+            List<TypeInfo> allTypesInPrimaryType = typeInfo.allTypesInPrimaryType();
+            typeDependencies.removeAll(allTypesInPrimaryType);
+            typeDependencies.remove(typeInfo);
+            typeDependencies.retainAll(stayWithin);
+        }
 
         typeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
         ImmutableList<WithInspectionAndAnalysis> methodFieldSubTypeOrder = ImmutableList.copyOf(methodFieldSubTypeGraph.sorted());
@@ -373,17 +379,22 @@ public class Resolver {
 
     private static void fillInternalMethodCalls(DependencyGraph<WithInspectionAndAnalysis> methodGraph) {
         methodGraph.visit((from, toList) -> {
-            if (from instanceof MethodInfo methodInfo) {
-                Set<WithInspectionAndAnalysis> dependencies = methodGraph.dependenciesOnlyTerminals(from);
-                Set<MethodInfo> methodsReached = dependencies.stream().filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
+            try {
+                if (from instanceof MethodInfo methodInfo) {
+                    Set<WithInspectionAndAnalysis> dependencies = methodGraph.dependenciesOnlyTerminals(from);
+                    Set<MethodInfo> methodsReached = dependencies.stream().filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
 
-                MethodResolution methodResolution = new MethodResolution();
-                methodResolution.methodsOfOwnClassReached.set(methodsReached);
-                methodInfo.methodResolution.set(methodResolution);
+                    MethodResolution methodResolution = new MethodResolution();
+                    methodResolution.methodsOfOwnClassReached.set(methodsReached);
+                    methodInfo.methodResolution.set(methodResolution);
 
-                methodCreatesObjectOfSelf(methodInfo, methodResolution);
-                computeStaticMethodCallsOnly(methodInfo, methodResolution);
+                    methodCreatesObjectOfSelf(methodInfo, methodResolution);
+                    computeStaticMethodCallsOnly(methodInfo, methodResolution);
 
+                }
+            } catch (RuntimeException e) {
+                LOGGER.error("Caught runtime exception while filling {} to {} ", from.fullyQualifiedName(), toList);
+                throw e;
             }
         });
         methodGraph.visit((from, toList) -> {

@@ -22,6 +22,8 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.pattern.PatternMatcher;
+import org.e2immu.analyser.util.Either;
 import org.e2immu.annotation.AnnotationType;
 
 import java.util.*;
@@ -67,6 +69,11 @@ public class ShallowTypeAnalyser implements AnalyserContext {
     }
 
     @Override
+    public PatternMatcher<StatementAnalyser> getPatternMatcher() {
+        return PatternMatcher.NO_PATTERN_MATCHER;
+    }
+
+    @Override
     public Primitives getPrimitives() {
         return primitives;
     }
@@ -77,13 +84,19 @@ public class ShallowTypeAnalyser implements AnalyserContext {
     }
 
     @Override
+    public Map<FieldInfo, FieldAnalyser> getFieldAnalysers() {
+        return Map.of(); // IMPROVE
+    }
+
+    @Override
     public Map<MethodInfo, MethodAnalyser> getMethodAnalysers() {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
-        return parameterInfo.parameterAnalysis.get();
+        MethodAnalysis methodAnalysis = getMethodAnalysis(parameterInfo.owner);
+        return methodAnalysis.getParameterAnalyses().get(parameterInfo.index);
     }
 
     @Override
@@ -109,24 +122,34 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         // create method analysers
         log(ANALYSER, "Starting shallow analysis on {} types, {} methods", typeAnalyses.size(), methodAnalyses.size());
 
-        Map<MethodInfo, MethodAnalysisImpl.Builder> buildersForCompanionAnalysis = new HashMap<>();
+        Map<MethodInfo, Either<MethodAnalyser, MethodAnalysisImpl.Builder>> buildersForCompanionAnalysis = new HashMap<>();
         typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
             // do types and fields; no need to recurse into sub-types
             shallowTypeAndFieldAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis, primitives, e2ImmuAnnotationExpressions);
 
             // now what's left of methods
             typeInfo.typeInspection.getPotentiallyRun().methodsAndConstructors().forEach(methodInfo -> {
-                MethodAnalysisImpl.Builder methodAnalysisBuilder = (MethodAnalysisImpl.Builder) methodAnalyses.get(methodInfo);
+                boolean hasNoCompanionMethods = methodInfo.methodInspection.get().companionMethods.isEmpty();
+                if (hasNoCompanionMethods && methodInfo.hasStatements()) {
+                    // normal method analysis
 
-                messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(false, true,
-                        methodInfo.methodInspection.get().annotations, e2ImmuAnnotationExpressions));
-
-                if (methodInfo.methodInspection.get().companionMethods.isEmpty()) {
-                    MethodAnalysis methodAnalysis = (MethodAnalysis) methodAnalysisBuilder.build();
-                    methodInfo.setAnalysis(methodAnalysis);
-                    setAnalysis(methodInfo.methodInspection.get().parameters, methodAnalysis.getParameterAnalyses());
+                    MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, typeInfo.typeAnalysis.get(), false, this);
+                    methodAnalyser.initialize(); // sets the field analysers, not implemented yet.
+                    buildersForCompanionAnalysis.put(methodInfo, Either.left(methodAnalyser));
                 } else {
-                    buildersForCompanionAnalysis.put(methodInfo, methodAnalysisBuilder);
+                    // shallow method analysis
+                    MethodAnalysisImpl.Builder methodAnalysisBuilder = (MethodAnalysisImpl.Builder) methodAnalyses.get(methodInfo);
+
+                    messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(false, true,
+                            methodInfo.methodInspection.get().annotations, e2ImmuAnnotationExpressions));
+
+                    if (hasNoCompanionMethods) {
+                        MethodAnalysis methodAnalysis = (MethodAnalysis) methodAnalysisBuilder.build();
+                        methodInfo.setAnalysis(methodAnalysis);
+                        setAnalysis(methodInfo.methodInspection.get().parameters, methodAnalysis.getParameterAnalyses());
+                    } else {
+                        buildersForCompanionAnalysis.put(methodInfo, Either.right(methodAnalysisBuilder));
+                    }
                 }
             });
         });
@@ -136,30 +159,39 @@ public class ShallowTypeAnalyser implements AnalyserContext {
 
             int effectivelyFinalIteration = iteration;
 
-            buildersForCompanionAnalysis.forEach(((methodInfo, builder) -> {
+            buildersForCompanionAnalysis.forEach(((methodInfo, either) -> {
                 AtomicBoolean delays = new AtomicBoolean();
-                methodInfo.methodInspection.get().companionMethods.forEach((cmn, companionMethod) -> {
-                    if (!builder.companionAnalyses.isSet(cmn)) {
-                        CompanionAnalyser companionAnalyser = new CompanionAnalyser(
-                                this,
-                                methodInfo.typeInfo.typeAnalysis.get(),
-                                cmn, companionMethod,
-                                methodInfo,
-                                AnnotationType.CONTRACT);
-                        AnalysisStatus analysisStatus = companionAnalyser.analyse(effectivelyFinalIteration);
-                        if (analysisStatus == AnalysisStatus.DONE) {
-                            CompanionAnalysis companionAnalysis = companionAnalyser.companionAnalysis.build();
-                            builder.companionAnalyses.put(cmn, companionAnalysis);
-                        } else {
-                            log(DELAYED, "Delaying analysis of {} in {}", cmn, methodInfo.fullyQualifiedName());
-                            delays.set(true);
+                if (either.isRight()) {
+                    methodInfo.methodInspection.get().companionMethods.forEach((cmn, companionMethod) -> {
+                        MethodAnalysisImpl.Builder builder = either.getRight();
+                        if (!builder.companionAnalyses.isSet(cmn)) {
+                            CompanionAnalyser companionAnalyser = new CompanionAnalyser(
+                                    this,
+                                    methodInfo.typeInfo.typeAnalysis.get(),
+                                    cmn, companionMethod,
+                                    methodInfo,
+                                    AnnotationType.CONTRACT);
+                            AnalysisStatus analysisStatus = companionAnalyser.analyse(effectivelyFinalIteration);
+                            if (analysisStatus == AnalysisStatus.DONE) {
+                                CompanionAnalysis companionAnalysis = companionAnalyser.companionAnalysis.build();
+                                builder.companionAnalyses.put(cmn, companionAnalysis);
+                            } else {
+                                log(DELAYED, "Delaying analysis of {} in {}", cmn, methodInfo.fullyQualifiedName());
+                                delays.set(true);
+                            }
                         }
+                    });
+                } else {
+                    MethodAnalyser methodAnalyser = either.getLeft();
+                    AnalysisStatus analysisStatus = methodAnalyser.analyse(effectivelyFinalIteration);
+                    if (analysisStatus == AnalysisStatus.DELAYS) {
+                        log(DELAYED, "Delaying analysis of {}, full method analyser", methodInfo.fullyQualifiedName());
+                        delays.set(true);
                     }
-                });
-
+                }
                 if (!delays.get()) {
                     keysToRemove.add(methodInfo);
-                    MethodAnalysis methodAnalysis = (MethodAnalysis) builder.build();
+                    MethodAnalysis methodAnalysis = (MethodAnalysis) (either.isRight() ? either.getRight().build() : either.getLeft().methodAnalysis.build());
                     methodInfo.setAnalysis(methodAnalysis);
                     setAnalysis(methodInfo.methodInspection.get().parameters, methodAnalysis.getParameterAnalyses());
                 }

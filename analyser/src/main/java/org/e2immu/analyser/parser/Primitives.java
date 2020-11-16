@@ -168,6 +168,7 @@ public class Primitives {
     public final FieldInfo annotationTypeVerify = new FieldInfo(annotationTypeTypeInfo, "VERIFY", annotationTypeTypeInfo);
     public final FieldInfo annotationTypeVerifyAbsent = new FieldInfo(annotationTypeTypeInfo, "VERIFY_ABSENT", annotationTypeTypeInfo);
     public final FieldInfo annotationTypeContract = new FieldInfo(annotationTypeTypeInfo, "CONTRACT", annotationTypeTypeInfo);
+    public final FieldInfo annotationTypeContractAbsent = new FieldInfo(annotationTypeTypeInfo, "CONTRACT_ABSENT", annotationTypeTypeInfo);
 
     public final TypeInfo annotationModeTypeInfo = new TypeInfo(ORG_E2IMMU_ANNOTATION, "AnnotationMode");
     public final FieldInfo annotationModeDefensive = new FieldInfo(annotationTypeTypeInfo, "DEFENSIVE", annotationModeTypeInfo);
@@ -296,7 +297,8 @@ public class Primitives {
             typeByName.put(ti.simpleName, ti);
         }
 
-        processEnum(annotationTypeTypeInfo, List.of(annotationTypeComputed, annotationTypeContract, annotationTypeVerify, annotationTypeVerifyAbsent));
+        processEnum(annotationTypeTypeInfo, List.of(annotationTypeComputed, annotationTypeContract, annotationTypeContractAbsent,
+                annotationTypeVerify, annotationTypeVerifyAbsent));
         processEnum(annotationModeTypeInfo, List.of(annotationModeDefensive, annotationModeOffensive));
 
         functionalInterface.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
@@ -342,7 +344,7 @@ public class Primitives {
                 .addMethod(valueOf)
                 .addMethod(name);
         for (FieldInfo fieldInfo : fields) typeInspectionBuilder.addField(fieldInfo);
-        typeInfo.typeInspection.set(typeInspectionBuilder.build( typeInfo));
+        typeInfo.typeInspection.set(typeInspectionBuilder.build(typeInfo));
         for (FieldInfo fieldInfo : fields) {
             fieldInfo.fieldInspection.set(new FieldInspection.FieldInspectionBuilder()
                     .addModifiers(List.of(FieldModifier.STATIC, FieldModifier.FINAL, FieldModifier.PUBLIC))

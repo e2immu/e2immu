@@ -64,7 +64,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     public final boolean isSAM;
     public final MethodAnalysisImpl.Builder methodAnalysis;
 
-    public final TypeAnalyser myTypeAnalyser;
+    private final TypeAnalysis typeAnalysis;
     public final List<ParameterAnalyser> parameterAnalysers;
     public final List<ParameterAnalysis> parameterAnalyses;
     public final Map<CompanionMethodName, CompanionAnalyser> companionAnalysers;
@@ -84,7 +84,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     public MethodAnalyser(MethodInfo methodInfo,
-                          TypeAnalyser myTypeAnalyser,
+                          TypeAnalysis typeAnalysis,
                           boolean isSAM,
                           AnalyserContext analyserContext) {
         super("Method " + methodInfo.name, analyserContext);
@@ -95,7 +95,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         ImmutableMap.Builder<CompanionMethodName, CompanionAnalyser> companionAnalysersBuilder = new ImmutableMap.Builder<>();
         for (Map.Entry<CompanionMethodName, MethodInfo> entry : methodInspection.companionMethods.entrySet()) {
             companionAnalysersBuilder.put(entry.getKey(),
-                    new CompanionAnalyser(analyserContext, myTypeAnalyser.typeAnalysis, entry.getKey(), entry.getValue(), methodInfo, AnnotationType.VERIFY));
+                    new CompanionAnalyser(analyserContext, typeAnalysis, entry.getKey(), entry.getValue(), methodInfo, AnnotationType.VERIFY));
         }
         companionAnalysers = companionAnalysersBuilder.build();
         companionAnalyses = companionAnalysers.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
@@ -108,7 +108,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         parameterAnalysers = parameterAnalysersBuilder.build();
         parameterAnalyses = parameterAnalysers.stream().map(pa -> pa.parameterAnalysis).collect(Collectors.toUnmodifiableList());
 
-        this.myTypeAnalyser = myTypeAnalyser;
+        this.typeAnalysis = typeAnalysis;
         Block block = methodInspection.methodBody.get();
         methodAnalysis = new MethodAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext,
                 methodInfo, parameterAnalyses);
@@ -367,8 +367,12 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     private AnalysisStatus computeOnlyMarkAnnotate(SharedState sharedState) {
         assert !methodAnalysis.markAndOnly.isSet();
-
-        SetOnceMap<String, Value> approvedPreconditions = myTypeAnalyser.typeAnalysis.approvedPreconditions;
+        // the reason we check here is that the method analyser can also be called from the shallow type analyser,
+        // with a type analyser which has already been built
+        if (!(typeAnalysis instanceof TypeAnalysisImpl.Builder)) {
+            return DONE;
+        }
+        SetOnceMap<String, Value> approvedPreconditions = ((TypeAnalysisImpl.Builder) typeAnalysis).approvedPreconditions;
         if (!approvedPreconditions.isFrozen()) {
             log(DELAYED, "No decision on approved preconditions yet for {}", methodInfo.distinguishingName());
             return DELAYS;
@@ -560,7 +564,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         boolean isFluent = valueBeforeInlining instanceof VariableValue vv &&
                 vv.variable instanceof This thisVar &&
-                thisVar.typeInfo == myTypeAnalyser.typeInfo;
+                thisVar.typeInfo == methodInfo.typeInfo;
         methodAnalysis.setProperty(VariableProperty.FLUENT, isFluent);
         log(FLUENT, "Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
 

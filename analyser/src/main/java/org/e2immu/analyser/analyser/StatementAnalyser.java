@@ -1087,7 +1087,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public TypeInfo getCurrentType() {
-            return myMethodAnalyser.myTypeAnalyser.typeInfo;
+            return myMethodAnalyser.methodInfo.typeInfo;
         }
 
         @Override

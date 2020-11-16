@@ -130,6 +130,12 @@ public class TypeContext {
         }
     }
 
+    public void addToContext(String altName, @NotNull NamedType namedType, boolean allowOverwrite) {
+        if (allowOverwrite || !map.containsKey(altName)) {
+            map.put(altName, namedType);
+        }
+    }
+
     @NotNull
     private static MethodInfo emptyConstructor(@NotNull TypeInfo typeInfo) {
         MethodInfo constructor = new MethodInfo(typeInfo, List.of());

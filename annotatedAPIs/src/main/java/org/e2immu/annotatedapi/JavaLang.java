@@ -27,8 +27,6 @@ import java.util.stream.IntStream;
 
 class JavaLang {
 
-    public static <T> T state(T t) { return t; }
-
     final static String PACKAGE_NAME = "java.lang";
 
     @E2Container

@@ -71,24 +71,17 @@ public class InspectAnnotatedAPIs {
         DelegatingTypeStore delegatingTypeStore = new DelegatingTypeStore(localTypeStore, globalTypeContext.typeStore);
         ParseAndInspect parseAndInspect = new ParseAndInspect(byteCodeInspector, false, localTypeStore);
         Map<TypeInfo, TypeContext> inspectedTypes = new HashMap<>();
-        Set<TypeInfo> notInByteCode = new HashSet<>();
         for (URL url : annotatedAPIs) {
             try (InputStreamReader isr = new InputStreamReader(url.openStream(), sourceCharSet)) {
                 String source = IOUtils.toString(isr);
                 TypeContext typeContextOfFile = new TypeContext(globalTypeContext, delegatingTypeStore);
                 List<TypeInfo> inspectedTypesList = parseAndInspect.phase1ParseAndInspect(typeContextOfFile, url.getFile(), source);
                 inspectedTypesList.forEach(typeInfo -> inspectedTypes.put(typeInfo, typeContextOfFile));
-
-                if (!inspectedTypesList.isEmpty()) {
-                    TypeInfo primaryType = inspectedTypesList.get(0);
-                    assert primaryType.isPrimaryType();
-                    notInByteCode.add(primaryType);
-                }
             }
         }
 
         // finally, merge the annotations in the result of .class byte code inspection
-        possiblyByteCodeInspectThenMerge(notInByteCode);
+        possiblyByteCodeInspectThenMerge(inspectedTypes.keySet());
         log(RESOLVE, "Starting resolver in {} inspected types", inspectedTypes.size());
         Resolver resolver = new Resolver();
         return resolver.sortTypes(inspectedTypes);

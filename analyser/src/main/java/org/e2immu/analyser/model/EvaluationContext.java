@@ -82,8 +82,8 @@ public interface EvaluationContext {
     }
 
     default MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
-        MethodAnalyser methodAnalyser = getAnalyserContext().getMethodAnalysers().get(methodInfo);
-        return methodAnalyser != null ? methodAnalyser.methodAnalysis : methodInfo.methodAnalysis.get();
+        MethodAnalysis methodAnalysis = getAnalyserContext().getMethodAnalysis(methodInfo);
+        return methodAnalysis != null ? methodAnalysis : methodInfo.methodAnalysis.get();
     }
 
     default FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
@@ -98,8 +98,8 @@ public interface EvaluationContext {
     }
 
     default ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {
-        ParameterAnalyser parameterAnalyser = getAnalyserContext().getParameterAnalysers().get(parameterInfo);
-        return parameterAnalyser != null ? parameterAnalyser.parameterAnalysis : parameterInfo.parameterAnalysis.get();
+        ParameterAnalysis parameterAnalysis = getAnalyserContext().getParameterAnalysis(parameterInfo);
+        return parameterAnalysis != null ? parameterAnalysis : parameterInfo.parameterAnalysis.get();
     }
 
     default TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
@@ -126,10 +126,10 @@ public interface EvaluationContext {
             if (variableValue.variable instanceof This thisVariable) {
                 return getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
             }
-            if(variableValue.variable instanceof PreAspectVariable pre) {
+            if (variableValue.variable instanceof PreAspectVariable pre) {
                 return pre.valueForProperties.getProperty(this, variableProperty);
             }
-            throw new UnsupportedOperationException("Variable value of type "+variableValue.variable.getClass());
+            throw new UnsupportedOperationException("Variable value of type " + variableValue.variable.getClass());
         }
         return value.getProperty(this, variableProperty); // will work in many cases
     }

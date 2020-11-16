@@ -177,7 +177,7 @@ public class ParseAndInspect {
         });
 
         // only then do we start inspection
-        List<TypeInfo> result = new ArrayList<>();
+        List<TypeInfo> allPrimaryTypesInspected = new ArrayList<>();
         for (TypeDeclaration<?> td : compilationUnit.getTypes()) {
             String name = td.getName().asString();
             TypeInfo primaryType = typeContextOfFile.typeStore.get(packageName + "." + name);
@@ -187,16 +187,17 @@ public class ParseAndInspect {
                 try {
                     ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(primaryType,
                             new TypeContext(packageName, typeContextOfFile));
-                    primaryType.inspect(hasBeenDefined, false, null, td, expressionContext);
+                    List<TypeInfo> primaryTypes = primaryType.inspect(hasBeenDefined, false, null, td, expressionContext);
+                    allPrimaryTypesInspected.addAll(primaryTypes);
                 } catch (RuntimeException rte) {
                     LOGGER.error("Caught runtime exception inspecting type {}", primaryType.fullyQualifiedName);
                     throw rte;
                 }
+            } else {
+                allPrimaryTypesInspected.add(primaryType);
             }
-            assert primaryType.isPrimaryType();
-            result.add(primaryType);
         }
-        return result;
+        return allPrimaryTypesInspected;
     }
 
     private TypeInfo importType(String fqn, TypeContext typeContext) {

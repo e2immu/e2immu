@@ -94,7 +94,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
                     methodInfo.setAnalysis(pair.v.build());
                     messages.addAll(pair.k);
                 } else {
-                    MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo),
+                    MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo).typeAnalysis,
                             false, this);
                     for (ParameterAnalyser parameterAnalyser : analyser.getParameterAnalysers()) {
                         parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
@@ -117,7 +117,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
                     FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
                     MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod;
                     if (sam != null) {
-                        samAnalyser = new MethodAnalyser(sam, typeAnalysers.get(fieldInfo.owner), true, this);
+                        samAnalyser = new MethodAnalyser(sam, typeAnalysers.get(fieldInfo.owner).typeAnalysis, true, this);
                         samAnalyser.methodAnalysis.overrides.set(overrides(sam, methodAnalysers));
                     }
                 }

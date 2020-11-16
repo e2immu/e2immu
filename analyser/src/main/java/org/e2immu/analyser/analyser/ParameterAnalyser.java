@@ -175,7 +175,8 @@ public class ParameterAnalyser {
                     changed = true;
                 }
             } else {
-                VariableInfo vi = analysisProvider.getMethodAnalysis(parameterInfo.owner).getLastStatement().findOrNull(parameterInfo);
+                StatementAnalysis lastStatementAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner).getLastStatement();
+                VariableInfo vi = lastStatementAnalysis == null ? null : lastStatementAnalysis.findOrNull(parameterInfo);
                 if (vi != null) {
                     if (parameterAnalysis.isAssignedToAField.isSet()) { // not assigned to a field, we're sure
                         int notNullDelayResolved = vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED);
@@ -192,7 +193,7 @@ public class ParameterAnalyser {
                 } else {
                     // unused parameter... let's ensure we don't block things
                     parameterAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
-                    if (parameterInfo.owner.isNotOverridingAnyOtherMethod()) {
+                    if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()) {
                         messages.add(Message.newMessage(new Location(parameterInfo.owner), Message.UNUSED_PARAMETER, parameterInfo.simpleName()));
                     }
                 }

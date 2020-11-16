@@ -185,8 +185,12 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         for (AnnotationExpression annotationExpression : annotations) {
             AnnotationType annotationType = Analysis.e2immuAnnotation(annotationExpression);
             if (annotationType == AnnotationType.CONTRACT ||
+                    annotationType == AnnotationType.CONTRACT_ABSENT ||
                     // VERIFY is the default in annotated APIs, and non-default method declarations in interfaces...
                     acceptVerify && annotationType == AnnotationType.VERIFY) {
+                int trueFalse = annotationType == AnnotationType.CONTRACT_ABSENT ? Level.FALSE: Level.TRUE;
+                int falseTrue = annotationType != AnnotationType.CONTRACT_ABSENT ? Level.FALSE: Level.TRUE;
+
                 TypeInfo t = annotationExpression.typeInfo;
                 if (e2ImmuAnnotationExpressions.e1Immutable.get().typeInfo == t) {
                     immutable = Math.max(0, immutable);
@@ -212,23 +216,23 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.notNull2.get().typeInfo == t) {
                     notNull = MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL;
                 } else if (e2ImmuAnnotationExpressions.notModified.get().typeInfo == t) {
-                    properties.put(VariableProperty.MODIFIED, Level.FALSE);
+                    properties.put(VariableProperty.MODIFIED, falseTrue);
                 } else if (e2ImmuAnnotationExpressions.modified.get().typeInfo == t) {
-                    properties.put(VariableProperty.MODIFIED, Level.TRUE);
+                    properties.put(VariableProperty.MODIFIED, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.effectivelyFinal.get().typeInfo == t) {
-                    properties.put(VariableProperty.FINAL, Level.TRUE);
+                    properties.put(VariableProperty.FINAL, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.variableField.get().typeInfo == t) {
-                    properties.put(VariableProperty.FINAL, Level.FALSE);
+                    properties.put(VariableProperty.FINAL, falseTrue);
                 } else if (e2ImmuAnnotationExpressions.constant.get().typeInfo == t) {
-                    properties.put(VariableProperty.CONSTANT, Level.TRUE);
+                    properties.put(VariableProperty.CONSTANT, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.extensionClass.get().typeInfo == t) {
-                    properties.put(VariableProperty.EXTENSION_CLASS, Level.TRUE);
+                    properties.put(VariableProperty.EXTENSION_CLASS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.fluent.get().typeInfo == t) {
-                    properties.put(VariableProperty.FLUENT, Level.TRUE);
+                    properties.put(VariableProperty.FLUENT, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.identity.get().typeInfo == t) {
-                    properties.put(VariableProperty.IDENTITY, Level.TRUE);
+                    properties.put(VariableProperty.IDENTITY, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.ignoreModifications.get().typeInfo == t) {
-                    properties.put(VariableProperty.IGNORE_MODIFICATIONS, Level.TRUE);
+                    properties.put(VariableProperty.IGNORE_MODIFICATIONS,trueFalse);
                 } else if (e2ImmuAnnotationExpressions.independent.get().typeInfo == t) {
                     properties.put(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
                 } else if (e2ImmuAnnotationExpressions.dependent.get().typeInfo == t) {
@@ -238,13 +242,13 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 } else if (e2ImmuAnnotationExpressions.only.get().typeInfo == t) {
                     only = annotationExpression;
                 } else if (e2ImmuAnnotationExpressions.singleton.get().typeInfo == t) {
-                    properties.put(VariableProperty.SINGLETON, Level.TRUE);
+                    properties.put(VariableProperty.SINGLETON, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.utilityClass.get().typeInfo == t) {
-                    properties.put(VariableProperty.UTILITY_CLASS, Level.TRUE);
+                    properties.put(VariableProperty.UTILITY_CLASS, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.linked.get().typeInfo == t) {
-                    properties.put(VariableProperty.LINKED, Level.TRUE);
+                    properties.put(VariableProperty.LINKED, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.notModified1.get().typeInfo == t) {
-                    properties.put(VariableProperty.NOT_MODIFIED_1, Level.TRUE);
+                    properties.put(VariableProperty.NOT_MODIFIED_1, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.precondition.get().typeInfo == t) {
                     //String value = annotationExpression.extract("value", "");
                     throw new UnsupportedOperationException("Not yet implemented");
