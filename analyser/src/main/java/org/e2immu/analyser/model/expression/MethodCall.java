@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
@@ -108,7 +109,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             TypeInfo methodPrimaryType = methodInfo.typeInfo.primaryType();
 
             boolean circularCall = methodPrimaryType != currentPrimaryType &&
-                    currentPrimaryType.typeResolution.get().isPartOfDependencyCycle(methodPrimaryType);
+                    currentPrimaryType.typeResolution.get().isPartOfDependencyCycle(methodPrimaryType) &&
+                    !ShallowTypeAnalyser.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName());
 
             boolean undeclaredFunctionalInterface;
             if (methodInfo.isSingleAbstractMethod()) {

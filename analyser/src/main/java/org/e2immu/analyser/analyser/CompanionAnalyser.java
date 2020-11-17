@@ -85,7 +85,7 @@ public class CompanionAnalyser {
                 visit(iteration, DELAYS, null, null);
                 return AnalysisStatus.DELAYS;
             }
-            computeRemapParameters(modifyingMainMethod == Level.TRUE);
+            computeRemapParameters(!mainMethod.isConstructor && modifyingMainMethod == Level.TRUE);
 
             ReturnStatement returnStatement = (ReturnStatement) companionMethod.methodInspection.get()
                     .methodBody.get().structure.statements.get(0);

@@ -20,6 +20,8 @@ package org.e2immu.annotatedapi;
 import org.e2immu.annotation.*;
 
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
@@ -239,6 +241,28 @@ public class JavaUtil extends AnnotatedAPI {
         @E2Container
         <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3) { return null; }
 
+        void size$Aspect$Size() {}
+        @NotModified
+        int size() { return 0; }
     }
 
+    @Container
+    // this is not in line with the JDK, but we will block null keys!
+    static class ArrayList$<E> {
+
+        boolean ArrayList$Modification$Size(int post) { return post == 0; }
+        public ArrayList$() {
+        }
+
+        boolean ArrayList$Modification$Size(int post, int size) { return post == 0; }
+        public ArrayList$(int size) {
+        }
+
+        @NotNull
+        Iterator<E> iterator() { return null; }
+
+        void size$Aspect$Size() {}
+        @NotModified
+        int size() { return 0; }
+    }
 }

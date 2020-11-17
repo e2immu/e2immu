@@ -35,7 +35,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
 
-public class Test_00_SizeCopy extends CommonTestRunner {
+public class Test_01_SizeCopy extends CommonTestRunner {
 
     private static final String TYPE = "org.e2immu.analyser.testexample.SizeCopy";
     private static final String P0 = TYPE + ".SizeCopy(Set<String>):0:p0";
@@ -43,7 +43,7 @@ public class Test_00_SizeCopy extends CommonTestRunner {
     private static final String GET_STREAM_RETURN = TYPE + ".getStream()";
     public static final String SIZE_COPY = "SizeCopy";
 
-    public Test_00_SizeCopy() {
+    public Test_01_SizeCopy() {
         super(true);
     }
 
@@ -141,17 +141,20 @@ public class Test_00_SizeCopy extends CommonTestRunner {
                 .filter(cmn -> cmn.action() == CompanionMethodName.Action.MODIFICATION).findFirst().orElseThrow();
         CompanionAnalysis addModification = add.methodAnalysis.get().getCompanionAnalyses().get(addModificationCmn);
 
+        final String IS_FACT = "org.e2immu.annotatedapi.AnnotatedAPI.isFact";
         final String PARAM = "java.util.Collection.add(E):0:e";
         final String CONTAINS = "java.util.Collection.this.contains";
         final String SIZE = "java.util.Collection.this.size()";
-        Assert.assertEquals(CONTAINS + "(" + PARAM + ")?" + SIZE + " == pre:(1 + pre) == " + SIZE, addModification.getValue().toString());
+        Assert.assertEquals(IS_FACT + "(" + CONTAINS + "(" + PARAM + "))?" + CONTAINS + "(" + PARAM + ")?" + SIZE + " == pre:" +
+                "(1 + pre) == " + SIZE + ":(((1 + pre) + (-" + SIZE + ")) >= 0 and (" + SIZE + " + (-pre)) >= 0)", addModification.getValue().toString());
 
         CompanionMethodName addValueCmn = add.methodInspection.get().companionMethods.keySet().stream()
                 .filter(cmn -> cmn.action() == CompanionMethodName.Action.VALUE).findFirst().orElseThrow();
         CompanionAnalysis addValue = add.methodAnalysis.get().getCompanionAnalyses().get(addValueCmn);
 
         final String RETURN_VALUE = "java.util.Collection.add(E)";
-        Assert.assertEquals("(not (" + CONTAINS + "(" + PARAM + ")) or " + RETURN_VALUE + " or 0 == " + SIZE + ")", addValue.getValue().toString());
+        Assert.assertEquals(IS_FACT + "(" + CONTAINS + "(" + PARAM + "))?not (" + CONTAINS + "(" + PARAM + ")):" +
+                "(" + RETURN_VALUE + " or 0 == " + SIZE + ")", addValue.getValue().toString());
     }
 
     private void checkAddAll(TypeInfo collection) {

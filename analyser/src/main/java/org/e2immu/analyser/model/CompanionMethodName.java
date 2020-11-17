@@ -21,7 +21,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public record CompanionMethodName(String methodName, Action action, String aspect) {
-    public static final int INVALID = -1;
 
     public enum Action {
 
@@ -41,7 +40,8 @@ public record CompanionMethodName(String methodName, Action action, String aspec
         TRANSFER(true, true, "Transfer", 2, 1), // post if modifying
 
         // change to aspect of a modifying method
-        MODIFICATION(true, true, "Modification", 2, INVALID), //pre, post (modifying)
+        // also use for constructors, but then without the "pre" (only post)
+        MODIFICATION(true, true, "Modification", 2, 1), //pre, post (modifying)
 
         // clauses that can be added independent of the aspect after a modification (contains('a') after add('a'))
         // clauses that can be added about the aspect of the return value of a non-modifying method
