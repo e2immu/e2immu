@@ -79,7 +79,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                     methodAnalysisBuilder = methodAnalyser.methodAnalysis;
                 } else {
                     // shallow method analysis
-                    methodAnalysisBuilder = new MethodAnalysisImpl.Builder(primitives, this, methodInfo, parameterAnalyses);
+                    methodAnalysisBuilder = new MethodAnalysisImpl.Builder(false, primitives, this, methodInfo, parameterAnalyses);
 
                     messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(false, true,
                             methodInfo.methodInspection.get().annotations, e2ImmuAnnotationExpressions));

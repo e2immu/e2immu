@@ -203,6 +203,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public final SetOnce<Value> precondition = new SetOnce<>();
         public final SetOnceMap<CompanionMethodName, CompanionAnalysis> companionAnalyses = new SetOnceMap<>();
 
+        public final boolean isBeingAnalysed;
+
+        @Override
+        public boolean isBeingAnalysed() {
+            return isBeingAnalysed;
+        }
+
         public ObjectFlow getObjectFlow() {
             return objectFlow.isFirst() ? objectFlow.getFirst() : objectFlow.get();
         }
@@ -227,11 +234,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return precondition.getOrElse(null);
         }
 
-        public Builder(Primitives primitives,
+        public Builder(boolean isBeingAnalysed,
+                       Primitives primitives,
                        AnalysisProvider analysisProvider,
                        MethodInfo methodInfo,
                        List<ParameterAnalysis> parameterAnalyses) {
             super(primitives, methodInfo.name);
+            this.isBeingAnalysed = isBeingAnalysed;
             this.parameterAnalyses = parameterAnalyses;
             this.methodInfo = methodInfo;
             this.returnType = methodInfo.returnType();

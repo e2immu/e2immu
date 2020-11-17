@@ -89,10 +89,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         sortedType.methodsFieldsSubTypes.forEach(mfs -> {
             if (mfs instanceof MethodInfo methodInfo) {
                 if (methodInfo.shallowAnalysis()) {
-                    Pair<Messages, MethodAnalysisImpl.Builder> pair =
-                            methodInfo.copyAnnotationsIntoMethodAnalysisProperties(getPrimitives(), getE2ImmuAnnotationExpressions());
-                    methodInfo.setAnalysis(pair.v.build());
-                    messages.addAll(pair.k);
+                    copyAnnotationsIntoMethodAnalysisProperties(methodInfo);
                 } else {
                     MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo).typeAnalysis,
                             false, this);
@@ -144,6 +141,28 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
 
         // all important fields of the interface have been set.
         analysers.forEach(Analyser::initialize);
+    }
+
+    // this code is partially in the ShallowTypeAnalyser as well... TODO unify
+    private void copyAnnotationsIntoMethodAnalysisProperties(MethodInfo methodInfo) {
+        MethodInspection methodInspection = methodInfo.methodInspection.get();
+
+        methodInspection.parameters.forEach(parameterInfo -> {
+            ParameterAnalysisImpl.Builder builder = new ParameterAnalysisImpl.Builder(getPrimitives(), AnalysisProvider.DEFAULT_PROVIDER, parameterInfo);
+            messages.addAll(builder.fromAnnotationsIntoProperties(true, true,
+                    parameterInfo.parameterInspection.get().annotations, e2ImmuAnnotationExpressions));
+            parameterInfo.setAnalysis(builder.build());
+        });
+
+        List<ParameterAnalysis> parameterAnalyses = methodInspection.parameters.stream()
+                .map(parameterInfo -> parameterInfo.parameterAnalysis.get()).collect(Collectors.toList());
+
+        MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(false, getPrimitives(), AnalysisProvider.DEFAULT_PROVIDER,
+                methodInfo, parameterAnalyses);
+
+        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(false, true, methodInspection.annotations,
+                e2ImmuAnnotationExpressions));
+        methodInfo.setAnalysis(methodAnalysisBuilder.build());
     }
 
     @Override

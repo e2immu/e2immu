@@ -110,7 +110,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         this.typeAnalysis = typeAnalysis;
         Block block = methodInspection.methodBody.get();
-        methodAnalysis = new MethodAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext,
+        methodAnalysis = new MethodAnalysisImpl.Builder(true, analyserContext.getPrimitives(), analyserContext,
                 methodInfo, parameterAnalyses);
 
         if (block == Block.EMPTY_BLOCK) {

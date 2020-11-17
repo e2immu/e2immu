@@ -619,29 +619,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return methodInspection.get().modifiers.contains(MethodModifier.ABSTRACT);
     }
 
-    // this code is partially in the ShallowTypeAnalyser as well... TODO unify
-    public Pair<Messages, MethodAnalysisImpl.Builder> copyAnnotationsIntoMethodAnalysisProperties(Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        assert shallowAnalysis();
-        Messages messages = new Messages();
-
-        methodInspection.get().parameters.forEach(parameterInfo -> {
-            ParameterAnalysisImpl.Builder builder = new ParameterAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER, parameterInfo);
-            messages.addAll(builder.fromAnnotationsIntoProperties(true, true,
-                    parameterInfo.parameterInspection.get().annotations, e2ImmuAnnotationExpressions));
-            parameterInfo.setAnalysis(builder.build());
-        });
-
-        List<ParameterAnalysis> parameterAnalyses = methodInspection.get().parameters.stream()
-                .map(parameterInfo -> parameterInfo.parameterAnalysis.get()).collect(Collectors.toList());
-
-        MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER,
-                this, parameterAnalyses);
-
-        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(false, true, methodInspection.get().annotations,
-                e2ImmuAnnotationExpressions));
-        return new Pair<>(messages, methodAnalysisBuilder);
-    }
-
     public boolean isSingleAbstractMethod() {
         return typeInfo.isFunctionalInterface() && !isStatic && !isDefaultImplementation;
     }

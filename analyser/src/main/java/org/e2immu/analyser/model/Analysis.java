@@ -27,15 +27,23 @@ import java.util.stream.Stream;
 
 public interface Analysis {
 
-    default Stream<Map.Entry<AnnotationExpression, Boolean>> getAnnotationStream() { return Stream.empty(); }
+    default Stream<Map.Entry<AnnotationExpression, Boolean>> getAnnotationStream() {
+        return Stream.empty();
+    }
 
-    default Boolean getAnnotation(AnnotationExpression annotationExpression) { return null; }
+    default Boolean getAnnotation(AnnotationExpression annotationExpression) {
+        return null;
+    }
 
-    default int getProperty(VariableProperty variableProperty) { return Level.DELAY; }
+    default int getProperty(VariableProperty variableProperty) {
+        return Level.DELAY;
+    }
 
     Location location();
 
-    default AnnotationMode annotationMode() { return AnnotationMode.DEFENSIVE; }
+    default AnnotationMode annotationMode() {
+        return AnnotationMode.DEFENSIVE;
+    }
 
     default void peekIntoAnnotations(AnnotationExpression annotation, Set<TypeInfo> annotationsSeen, StringBuilder sb) {
         AnnotationType annotationType = e2immuAnnotation(annotation);
@@ -73,14 +81,28 @@ public interface Analysis {
         throw new UnsupportedOperationException();
     }
 
-    default Map<VariableProperty, Integer> getProperties(Set<VariableProperty> forwardPropertiesOnParameters) { return Map.of(); }
+    default Map<VariableProperty, Integer> getProperties(Set<VariableProperty> forwardPropertiesOnParameters) {
+        return Map.of();
+    }
 
     default int getPropertyAsIs(VariableProperty variableProperty) {
         return getProperty(variableProperty);
     }
 
-    default int internalGetProperty(VariableProperty variableProperty) { return Level.DELAY; }
+    default int internalGetProperty(VariableProperty variableProperty) {
+        return Level.DELAY;
+    }
 
-    // will be true in the builders
-    default boolean isBeingAnalysed() { return false; }
+    /**
+     * Helps to decide whether absence of a property must equal a delay. If the analyser is actively going over the method's code,
+     * then this method has to return true.
+     * <p>
+     * Note that in the annotated APIs, a method has a method analysis builder even if it is not being analysed, but its companion methods
+     * are.
+     *
+     * @return true when the method is being analysed, irrespective of whether its companion methods are being analysed.
+     */
+    default boolean isBeingAnalysed() {
+        return false;
+    }
 }
