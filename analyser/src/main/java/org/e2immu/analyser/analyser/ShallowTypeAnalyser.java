@@ -21,7 +21,10 @@ import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.InlineValue;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.expression.StringConstant;
+import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
@@ -38,6 +41,7 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class ShallowTypeAnalyser implements AnalyserContext {
 
+    public static final String IS_FACT_FQN = "org.e2immu.annotatedapi.AnnotatedAPI.isFact(boolean)";
     private final Configuration configuration;
     private final Messages messages = new Messages();
     private final Primitives primitives;
@@ -58,7 +62,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
 
             typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
 
-                if ("isFact".equals(methodInfo.name) && "org.e2immu.annotatedapi.AnnotatedAPI".equals(methodInfo.typeInfo.fullyQualifiedName)) {
+                if (IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
                     analyseIsFact(methodInfo);
                 } else {
                     MethodInspection methodInspection = methodInfo.methodInspection.get();
@@ -200,12 +204,17 @@ public class ShallowTypeAnalyser implements AnalyserContext {
 
             AtomicBoolean delayed = new AtomicBoolean();
             AtomicBoolean progress = new AtomicBoolean();
+
             buildersForCompanionAnalysis.forEach(((methodInfo, either) -> {
+                log(ANALYSER, "Shallowly analysing {}", methodInfo.fullyQualifiedName());
+
                 AtomicReference<AnalysisStatus> methodAnalysisStatus = new AtomicReference<>(AnalysisStatus.DONE);
                 if (either.isRight()) {
                     methodInfo.methodInspection.get().companionMethods.forEach((cmn, companionMethod) -> {
                         MethodAnalysisImpl.Builder builder = either.getRight();
                         if (!builder.companionAnalyses.isSet(cmn)) {
+                            log(ANALYSER, "Starting companion analyser for {}", cmn);
+
                             CompanionAnalyser companionAnalyser = new CompanionAnalyser(this, methodInfo.typeInfo.typeAnalysis.get(),
                                     cmn, companionMethod, methodInfo, AnnotationType.CONTRACT);
                             AnalysisStatus analysisStatus = companionAnalyser.analyse(effectivelyFinalIteration);
@@ -292,10 +301,15 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         if (fieldInfo.isExplicitlyFinal()) {
             fieldAnalysisBuilder.setProperty(VariableProperty.FINAL, Level.TRUE);
         }
-        if (fieldAnalysisBuilder.getProperty(VariableProperty.FINAL) == Level.TRUE) {
-            This thisVariable = new This(fieldInfo.owner);
-            FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-            fieldAnalysisBuilder.effectivelyFinalValue.set(new VariableValue(fieldReference));
+        if (fieldAnalysisBuilder.getProperty(VariableProperty.FINAL) == Level.TRUE && fieldInfo.fieldInspection.get().initialiser.isSet()) {
+            Expression initialiser = fieldInfo.fieldInspection.get().initialiser.get().initialiser;
+            Value value;
+            if(initialiser instanceof StringConstant stringConstant) {
+                value = new StringValue(getPrimitives(), stringConstant.constant);
+            } else {
+                value = UnknownValue.NO_VALUE; // IMPROVE
+            }
+            fieldAnalysisBuilder.effectivelyFinalValue.set(value);
         }
         fieldInfo.setAnalysis(fieldAnalysisBuilder.build());
     }

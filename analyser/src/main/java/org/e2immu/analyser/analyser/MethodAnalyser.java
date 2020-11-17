@@ -479,6 +479,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                 methodAnalysis.preconditionForMarkAndOnly.set(List.of());
                 return DONE;
             }
+            typeInfo = parentClass.bestTypeInfo();
         }
 
         if (!methodAnalysis.precondition.isSet()) {

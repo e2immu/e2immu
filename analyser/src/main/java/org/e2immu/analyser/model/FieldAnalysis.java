@@ -54,10 +54,10 @@ public interface FieldAnalysis extends Analysis {
                                  TypeInfo bestType,
                                  VariableProperty variableProperty) {
         switch (variableProperty) {
-            case FINAL:
-                int immutableOwner = analysisProvider.getTypeAnalysis(fieldInfo.owner).getProperty(VariableProperty.IMMUTABLE);
-                if (MultiLevel.isEffectivelyE1Immutable(immutableOwner)) return Level.TRUE;
-                break;
+            //case FINAL:
+                //int immutableOwner = analysisProvider.getTypeAnalysis(fieldInfo.owner).getProperty(VariableProperty.IMMUTABLE);
+                //if (MultiLevel.isEffectivelyE1Immutable(immutableOwner)) return Level.TRUE;
+                //break;
 
             case IMMUTABLE:
                 // dynamic type annotation not relevant here
