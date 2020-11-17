@@ -32,12 +32,9 @@ public class JavaUtil {
     @Identity(type = AnnotationType.CONTRACT_ABSENT)
     private static boolean protect(boolean b) { return b; }
 
-    @NotModified(type = AnnotationType.CONTRACT)
     static boolean addModificationHelper(int i, int j, boolean containsE, boolean notContainsE) {
         return protect(containsE) ? i == j : protect(notContainsE) || j == 0 ? i == j + 1 : i >= j && i <= j + 1;
     }
-
-    @NotModified(type = AnnotationType.CONTRACT)
     static boolean addValueHelper(int i, int j, boolean containsE, boolean notContainsE, boolean retVal) {
         return !protect(containsE) && (protect(notContainsE) || j == 0 || retVal);
     }

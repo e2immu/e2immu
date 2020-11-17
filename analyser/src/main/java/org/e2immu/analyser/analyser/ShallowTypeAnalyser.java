@@ -29,6 +29,7 @@ import org.e2immu.annotation.AnnotationType;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
@@ -161,8 +162,10 @@ public class ShallowTypeAnalyser implements AnalyserContext {
 
             int effectivelyFinalIteration = iteration;
 
+            AtomicBoolean delayed = new AtomicBoolean();
+            AtomicBoolean progress = new AtomicBoolean();
             buildersForCompanionAnalysis.forEach(((methodInfo, either) -> {
-                AtomicBoolean delays = new AtomicBoolean();
+                AtomicReference<AnalysisStatus> methodAnalysisStatus = new AtomicReference<>(AnalysisStatus.DONE);
                 if (either.isRight()) {
                     methodInfo.methodInspection.get().companionMethods.forEach((cmn, companionMethod) -> {
                         MethodAnalysisImpl.Builder builder = either.getRight();
@@ -179,7 +182,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                                 builder.companionAnalyses.put(cmn, companionAnalysis);
                             } else {
                                 log(DELAYED, "Delaying analysis of {} in {}", cmn, methodInfo.fullyQualifiedName());
-                                delays.set(true);
+                                methodAnalysisStatus.set(AnalysisStatus.DELAYS);
                             }
                         }
                     });
@@ -187,20 +190,24 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                     MethodAnalyser methodAnalyser = either.getLeft();
                     AnalysisStatus analysisStatus = methodAnalyser.analyse(effectivelyFinalIteration);
                     if (analysisStatus != AnalysisStatus.DONE) {
-                        log(DELAYED, "Delaying analysis of {}, full method analyser", methodInfo.fullyQualifiedName());
-                        delays.set(true);
+                        log(DELAYED, "{} in analysis of {}, full method analyser", analysisStatus, methodInfo.fullyQualifiedName());
+                        methodAnalysisStatus.set(analysisStatus);
                     }
                 }
-                if (!delays.get()) {
-                    keysToRemove.add(methodInfo);
-                    MethodAnalysis methodAnalysis = (MethodAnalysis) (either.isRight() ? either.getRight().build() : either.getLeft().methodAnalysis.build());
-                    methodInfo.setAnalysis(methodAnalysis);
-                    setAnalysis(methodInfo.methodInspection.get().parameters, methodAnalysis.getParameterAnalyses());
+                switch (methodAnalysisStatus.get()) {
+                    case DONE -> {
+                        keysToRemove.add(methodInfo);
+                        MethodAnalysis methodAnalysis = (MethodAnalysis) (either.isRight() ? either.getRight().build() : either.getLeft().methodAnalysis.build());
+                        methodInfo.setAnalysis(methodAnalysis);
+                        setAnalysis(methodInfo.methodInspection.get().parameters, methodAnalysis.getParameterAnalyses());
+                    }
+                    case DELAYS -> delayed.set(true);
+                    case PROGRESS -> progress.set(true);
                 }
             }));
 
-            if (keysToRemove.isEmpty()) {
-                throw new UnsupportedOperationException("Infinite loop: could not remove keys; have left: " + buildersForCompanionAnalysis.size());
+            if (delayed.get() && !progress.get()) {
+                throw new UnsupportedOperationException("No changes after iteration " + iteration + "; have left: " + buildersForCompanionAnalysis.size());
             }
             buildersForCompanionAnalysis.keySet().removeAll(keysToRemove);
             log(ANALYSER, "At end of iteration {} in shallow method analysis, removed {}, remaining {}", iteration,
