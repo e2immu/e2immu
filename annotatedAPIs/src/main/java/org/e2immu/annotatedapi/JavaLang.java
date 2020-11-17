@@ -209,7 +209,7 @@ class JavaLang {
 
     @E2Container
     static class Boolean$ {
-
+        static boolean parseBoolean(@NotNull String string) { return false; }
     }
 
     @UtilityClass

@@ -35,7 +35,7 @@ public record CompanionMethodName(String methodName, Action action, String aspec
         PRECONDITION(false, true, "Precondition", 1, 1), // pre-mod
 
         // return value of a primitive type, aspect or not
-        VALUE(false, true, "Value", 2, 1), // current (non-modifying)
+        VALUE(false, true, "Value", 1, 1), // current (non-modifying)
 
         // return value of the SAME type of object, change in aspect
         TRANSFER(true, true, "Transfer", 2, 1), // post if modifying

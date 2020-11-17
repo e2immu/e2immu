@@ -24,19 +24,15 @@ import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
-public class JavaUtil {
+public class JavaUtil extends AnnotatedAPI {
     final static String PACKAGE_NAME = "java.util";
 
-    // protects containsE and !containsE from being collapsed as boolean values
-    // the analyser would normally recognize @Identity, and do the collapsing
-    @Identity(type = AnnotationType.CONTRACT_ABSENT)
-    private static boolean protect(boolean b) { return b; }
-
-    static boolean addModificationHelper(int i, int j, boolean containsE, boolean notContainsE) {
-        return protect(containsE) ? i == j : protect(notContainsE) || j == 0 ? i == j + 1 : i >= j && i <= j + 1;
+    static boolean addModificationHelper(int i, int j, boolean containsE) {
+        return isFact(containsE) ? (containsE ? i == j : i == j + 1): i >= j && i <= j+1;
     }
-    static boolean addValueHelper(int i, int j, boolean containsE, boolean notContainsE, boolean retVal) {
-        return !protect(containsE) && (protect(notContainsE) || j == 0 || retVal);
+
+    static boolean addValueHelper(int size, boolean containsE, boolean retVal) {
+        return isFact(containsE) ? !containsE : (size == 0 || retVal);
     }
 
     interface Iterator$<T> {
@@ -52,8 +48,8 @@ public class JavaUtil {
 
         // note that with the $, we're really in java.util.Collection, so we have no knowledge of addModificationHelper unless we add it to the
         // type context (but that is possible) IMPROVE
-        boolean add$Modification$Size(int i, int j, E e) { return org.e2immu.annotatedapi.JavaUtil.addModificationHelper(i, j, contains(e), !contains(e)); }
-        boolean add$Value$Size(int i, int j, E e, boolean retVal) { return org.e2immu.annotatedapi.JavaUtil.addValueHelper(i, j, contains(e), !contains(e), retVal); }
+        boolean add$Modification$Size(int i, int j, E e) { return org.e2immu.annotatedapi.JavaUtil.addModificationHelper(i, j, contains(e)); }
+        boolean add$Value$Size(int size, E e, boolean retVal) { return org.e2immu.annotatedapi.JavaUtil.addValueHelper(size, contains(e), retVal); }
         boolean add$Postcondition(E e) { return contains(e); }
         boolean add(@NotNull E e) { return true; }
 
@@ -131,12 +127,13 @@ public class JavaUtil {
     // this is not in line with the JDK, but we will block null keys!
     static class List$<E> {
 
-        boolean add$Modification$Size(int i, int j, E e) { return org.e2immu.annotatedapi.JavaUtil.addModificationHelper(i, j, contains(e), !contains(e)); }
-        boolean add$Value$Size(int i, int j, E e, boolean retVal) { return org.e2immu.annotatedapi.JavaUtil.addValueHelper(i, j, contains(e), !contains(e), retVal); }
+        boolean add$Modification$Size(int i, int j, E e) { return i == j + 1; }
+        boolean add$Value(E e, boolean retVal) { return true; }
         boolean add$Postcondition(E e) { return contains(e); }
-        boolean add(@NotNull E e) { return false; }
+        boolean add(@NotNull E e) { return false; /* actually, true, see $Value */ }
 
-        boolean addAll$Modification$Size(int i, int j, java.util.Collection<? extends E> c) { return i >= j && i <= j + c.size(); }
+        boolean addAll$Modification$Size(int i, int j, java.util.Collection<? extends E> c) { return i == j + c.size(); }
+        boolean addAll$Value(java.util.Collection<? extends E> c, boolean retVal) { return true; }
         boolean addAll$Postcondition(java.util.Collection<? extends E> c) { return c.stream().allMatch(this::contains); }
         @Independent
         boolean addAll(@NotNull1 Collection<? extends E> collection) { return false; }
@@ -204,6 +201,44 @@ public class JavaUtil {
         @Independent
         @NotModified
         <T> T[] toArray(@NotNull1 T[] a) { return null; }
+    }
+
+
+    @Container
+    // this is not in line with the JDK, but we will block null keys!
+    static class Set$<E> {
+
+        static boolean contains$Value$Size(int i, boolean retVal) { return i != 0 && retVal; }
+        @NotModified
+        boolean contains(@NotNull Object object) { return true; }
+
+        @NotNull1
+        java.util.Iterator<E> iterator() { return null; }
+
+        int of$Transfer$Size() { return 0; }
+        @NotModified
+        @NotNull1
+        @E2Container
+        static <EE> java.util.Set<EE> of() { return null; }
+
+        //<F> int of$Transfer$Size(F e1) { return 1; }
+        //<F> boolean of$Postcondition(F e1) { return contains(e1); }
+        @NotModified
+        @NotNull1
+        @E2Container
+        static <F> java.util.Set<F> of(@NotNull F e1) { return null; }
+
+       // IMPROVE advanced <F> int of$Postcondition$Size(F f1, F f2, java.util.Set<F> retVal) { return isFact(f1.equals(f2)) ? (f1.equals(f2) ? 1: 2): retVal.size(); }
+        @NotModified
+        @NotNull1
+        @E2Container
+        <G> java.util.Set<G> of(@NotNull G e1, @NotNull G e2) { return null; }
+
+        @NotModified
+        @NotNull1
+        @E2Container
+        <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3) { return null; }
+
     }
 
 }

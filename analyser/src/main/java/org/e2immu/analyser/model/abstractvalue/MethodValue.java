@@ -200,6 +200,11 @@ public class MethodValue implements Value {
     }
 
     @Override
+    public boolean isNumeric() {
+        return Primitives.isNumeric(methodInfo.returnType().bestTypeInfo());
+    }
+
+    @Override
     public Set<Variable> variables() {
         return object.variables();
     }

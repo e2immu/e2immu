@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
@@ -57,46 +58,73 @@ public class ShallowTypeAnalyser implements AnalyserContext {
 
             typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
 
-                MethodInspection methodInspection = methodInfo.methodInspection.get();
-
-                List<ParameterAnalysis> parameterAnalyses = new ArrayList<>(methodInspection.parameters.size());
-                methodInspection.parameters.forEach(parameterInfo -> {
-                    ParameterAnalysisImpl.Builder parameterAnalysisBuilder = new ParameterAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER, parameterInfo);
-                    messages.addAll(parameterAnalysisBuilder.fromAnnotationsIntoProperties(true, true,
-                            parameterInfo.parameterInspection.get().annotations, e2ImmuAnnotationExpressions));
-                    parameterAnalyses.add(parameterAnalysisBuilder);
-                });
-
-                MethodAnalysisImpl.Builder methodAnalysisBuilder;
-
-                boolean hasNoCompanionMethods = methodInfo.methodInspection.get().companionMethods.isEmpty();
-                if (hasNoCompanionMethods && methodInfo.hasStatements()) {
-                    // normal method analysis
-
-                    MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, typeAnalysis, false, this);
-                    methodAnalyser.initialize(); // sets the field analysers, not implemented yet.
-                    buildersForCompanionAnalysis.put(methodInfo, Either.left(methodAnalyser));
-                    methodAnalysisBuilder = methodAnalyser.methodAnalysis;
+                if ("isFact".equals(methodInfo.name) && "org.e2immu.annotatedapi.AnnotatedAPI".equals(methodInfo.typeInfo.fullyQualifiedName)) {
+                    analyseIsFact(methodInfo);
                 } else {
-                    // shallow method analysis
-                    methodAnalysisBuilder = new MethodAnalysisImpl.Builder(false, primitives, this, methodInfo, parameterAnalyses);
+                    MethodInspection methodInspection = methodInfo.methodInspection.get();
+                    List<ParameterAnalysis> parameterAnalyses = new ArrayList<>(methodInspection.parameters.size());
+                    methodInspection.parameters.forEach(parameterInfo -> {
+                        ParameterAnalysisImpl.Builder parameterAnalysisBuilder = new ParameterAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER, parameterInfo);
+                        messages.addAll(parameterAnalysisBuilder.fromAnnotationsIntoProperties(true, true,
+                                parameterInfo.parameterInspection.get().annotations, e2ImmuAnnotationExpressions));
+                        parameterAnalyses.add(parameterAnalysisBuilder);
+                    });
 
-                    messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(false, true,
-                            methodInfo.methodInspection.get().annotations, e2ImmuAnnotationExpressions));
+                    MethodAnalysisImpl.Builder methodAnalysisBuilder;
 
-                    if (hasNoCompanionMethods) {
-                        MethodAnalysis methodAnalysis = (MethodAnalysis) methodAnalysisBuilder.build();
-                        methodInfo.setAnalysis(methodAnalysis);
-                        setAnalysis(methodInfo.methodInspection.get().parameters, methodAnalysis.getParameterAnalyses());
+                    boolean hasNoCompanionMethods = methodInfo.methodInspection.get().companionMethods.isEmpty();
+                    if (hasNoCompanionMethods && methodInfo.hasStatements()) {
+                        // normal method analysis
+
+                        MethodAnalyser methodAnalyser = new MethodAnalyser(methodInfo, typeAnalysis, false, this);
+                        methodAnalyser.initialize(); // sets the field analysers, not implemented yet.
+                        buildersForCompanionAnalysis.put(methodInfo, Either.left(methodAnalyser));
+                        methodAnalysisBuilder = methodAnalyser.methodAnalysis;
                     } else {
-                        buildersForCompanionAnalysis.put(methodInfo, Either.right(methodAnalysisBuilder));
-                    }
-                }
+                        // shallow method analysis
+                        methodAnalysisBuilder = new MethodAnalysisImpl.Builder(false, primitives, this, methodInfo, parameterAnalyses);
 
-                methodAnalysesBuilder.put(methodInfo, methodAnalysisBuilder);
+                        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(false, true,
+                                methodInfo.methodInspection.get().annotations, e2ImmuAnnotationExpressions));
+
+                        if (hasNoCompanionMethods) {
+                            MethodAnalysis methodAnalysis = (MethodAnalysis) methodAnalysisBuilder.build();
+                            methodInfo.setAnalysis(methodAnalysis);
+                            setAnalysis(methodInfo.methodInspection.get().parameters, methodAnalysis.getParameterAnalyses());
+                        } else {
+                            buildersForCompanionAnalysis.put(methodInfo, Either.right(methodAnalysisBuilder));
+                        }
+                    }
+
+                    methodAnalysesBuilder.put(methodInfo, methodAnalysisBuilder);
+                }
             });
         }
         methodAnalyses = methodAnalysesBuilder.build();
+    }
+
+    // dedicated method exactly for this "isFact" method
+    private void analyseIsFact(MethodInfo methodInfo) {
+        ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(0);
+        ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(getPrimitives(), this, parameterInfo);
+        parameterAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
+        parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        parameterAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
+        parameterAnalysis.isAssignedToAField.set(false);
+
+        List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
+        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(false, getPrimitives(), this, methodInfo, parameterAnalyses);
+        builder.setProperty(VariableProperty.IDENTITY, Level.FALSE);
+        builder.setProperty(VariableProperty.MODIFIED, Level.FALSE);
+        builder.setProperty(VariableProperty.INDEPENDENT, Level.TRUE);
+        builder.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        builder.setProperty(VariableProperty.IMMUTABLE, MultiLevel.MUTABLE);
+        builder.setProperty(VariableProperty.CONTAINER, Level.FALSE);
+        builder.companionAnalyses.freeze();
+        builder.singleReturnValueImmutable.set(MultiLevel.MUTABLE);
+        builder.singleReturnValue.set(new InlineValue(methodInfo, new VariableValue(parameterInfo), InlineValue.Applicability.EVERYWHERE));
+        log(ANALYSER, "Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
+        methodInfo.setAnalysis(builder.build());
     }
 
     @Override
@@ -178,12 +206,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                     methodInfo.methodInspection.get().companionMethods.forEach((cmn, companionMethod) -> {
                         MethodAnalysisImpl.Builder builder = either.getRight();
                         if (!builder.companionAnalyses.isSet(cmn)) {
-                            CompanionAnalyser companionAnalyser = new CompanionAnalyser(
-                                    this,
-                                    methodInfo.typeInfo.typeAnalysis.get(),
-                                    cmn, companionMethod,
-                                    methodInfo,
-                                    AnnotationType.CONTRACT);
+                            CompanionAnalyser companionAnalyser = new CompanionAnalyser(this, methodInfo.typeInfo.typeAnalysis.get(),
+                                    cmn, companionMethod, methodInfo, AnnotationType.CONTRACT);
                             AnalysisStatus analysisStatus = companionAnalyser.analyse(effectivelyFinalIteration);
                             if (analysisStatus == AnalysisStatus.DONE) {
                                 CompanionAnalysis companionAnalysis = companionAnalyser.companionAnalysis.build();
@@ -208,19 +232,22 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                         MethodAnalysis methodAnalysis = (MethodAnalysis) (either.isRight() ? either.getRight().build() : either.getLeft().methodAnalysis.build());
                         methodInfo.setAnalysis(methodAnalysis);
                         setAnalysis(methodInfo.methodInspection.get().parameters, methodAnalysis.getParameterAnalyses());
+                        progress.set(true);
                     }
                     case DELAYS -> delayed.set(true);
                     case PROGRESS -> progress.set(true);
                 }
             }));
 
+            buildersForCompanionAnalysis.keySet().removeAll(keysToRemove);
             if (delayed.get() && !progress.get()) {
                 throw new UnsupportedOperationException("No changes after iteration " + iteration + "; have left: " + buildersForCompanionAnalysis.size());
             }
-            buildersForCompanionAnalysis.keySet().removeAll(keysToRemove);
             log(ANALYSER, "**** At end of iteration {} in shallow method analysis, removed {}, remaining {}", iteration,
                     keysToRemove.size(), buildersForCompanionAnalysis.size());
             iteration++;
+
+            if (iteration >= 20) throw new UnsupportedOperationException();
         }
 
         return messages;

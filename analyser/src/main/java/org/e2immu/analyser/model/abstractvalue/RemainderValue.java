@@ -116,4 +116,9 @@ public class RemainderValue extends PrimitiveValue {
         rhs.visit(consumer);
         consumer.accept(this);
     }
+
+    @Override
+    public boolean isNumeric() {
+        return true;
+    }
 }
