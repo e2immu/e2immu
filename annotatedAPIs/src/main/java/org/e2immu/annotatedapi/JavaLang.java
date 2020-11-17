@@ -140,12 +140,12 @@ class JavaLang {
         boolean startsWith(@NotNull String s, int i) { return true; }
 
         boolean substring$Precondition$Len(int len, int beginIndex) { return beginIndex < len; }
-        int substring$Transfer$Value(int len, int beginIndex) { return len - beginIndex; }
+        int substring$Transfer$Len(int len, int beginIndex) { return len - beginIndex; }
         @NotNull
         String substring(int beginIndex) { return null; }
 
         boolean substring$Precondition$Len(int len, int beginIndex, int endIndex) { return endIndex < len && beginIndex <= endIndex; }
-        int substring$Transfer$Value(int len, int beginIndex, int endIndex) { return endIndex - beginIndex; }
+        int substring$Transfer$Len(int len, int beginIndex, int endIndex) { return endIndex - beginIndex; }
         @NotNull
         String substring(int beginIndex, int endIndex) { return null; }
 

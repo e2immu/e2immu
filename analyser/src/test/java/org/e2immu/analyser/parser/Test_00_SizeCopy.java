@@ -52,7 +52,7 @@ public class Test_00_SizeCopy extends CommonTestRunner {
         if (SIZE_COPY.equals(d.methodInfo().name) && "0".equals(d.statementId())) {
             if (FIELD1.equals(d.variableName())) {
                 // shows the property wrapper that sits around the initial value in the constructor
-                Assert.assertEquals(FIELD1 + ",@Container,@NotNull", d.currentValue().toString());
+                Assert.assertEquals(FIELD1 + ",@NotNull", d.currentValue().toString());
             }
             if (P0.equals(d.variableName())) {
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
@@ -94,28 +94,34 @@ public class Test_00_SizeCopy extends CommonTestRunner {
     TypeContextVisitor typeContextVisitor = typeContext -> {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
         Assert.assertTrue(collection.shallowAnalysis());
+
+        // looking at java.util.Collection.stream()
+        // has one companion method, $Transfer$Size
         MethodInfo stream = collection.findUniqueMethod("stream", 0);
         Assert.assertEquals(1, stream.methodInspection.get().companionMethods.size());
         CompanionMethodName streamCmn = stream.methodInspection.get().companionMethods.keySet().stream().findFirst().orElseThrow();
         Assert.assertEquals("Size", streamCmn.aspect());
         Assert.assertSame(CompanionMethodName.Action.TRANSFER, streamCmn.action());
-
+        // the result of the transfer size should be the size of the collection, by contract
         CompanionAnalysis streamCompanionAnalysis = stream.methodAnalysis.get().getCompanionAnalyses().get(streamCmn);
         Assert.assertSame(AnnotationType.CONTRACT, streamCompanionAnalysis.getAnnotationType());
-        Assert.assertEquals("", streamCompanionAnalysis.getValue().toString());
+        Assert.assertEquals("java.util.Collection.this.size()", streamCompanionAnalysis.getValue().toString());
 
+        // looking at java.util.Collection.addAll()
         MethodInfo addAll = collection.findUniqueMethod("addAll", 1);
         ParameterInfo param0 = addAll.methodInspection.get().parameters.get(0);
 
+
+        // looking at java.util.Set.addAll(), check inheritance
         TypeInfo set = typeContext.getFullyQualified(Set.class);
         MethodInfo addAllSet = set.findUniqueMethod("addAll", 1);
 
         Set<MethodAnalysis> overrides = addAllSet.methodAnalysis.get().getOverrides();
         Assert.assertEquals(1, overrides.size());
 
+        // ensure that in Set.addAll(p0), p0 is not modified
         ParameterInfo param0Set = addAllSet.methodInspection.get().parameters.get(0);
-
-        TypeInfo streamType = typeContext.getFullyQualified(Stream.class);
+        Assert.assertEquals(Level.FALSE, param0.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
     };
 
     @Test

@@ -33,6 +33,11 @@ public class ComGoogleCommonCollect {
         ImmutableList<E> asList() { return null;  }
 
         boolean contains(Object object) { return false; }
+        
+        boolean size$Invariant$Size(int i) { return i >= 0; }
+        void size$Aspect$Size() {}
+        @NotModified
+        int size() { return 0; }
 
         int toArray$Transfer$Size(int size) { return size; }
         public Object[] toArray() { return null; }
