@@ -376,7 +376,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()
-    // code for now dedicated as hell
+    // IMPROVE code for now dedicated as hell to catch X == this.method
     private static Value computeEvaluationOnInstance(EvaluationContext evaluationContext, MethodInfo methodInfo, Value objectValue) {
         // look for a clause that has "this.methodInfo" as a MethodValue
         Instance instance;

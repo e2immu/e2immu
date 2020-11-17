@@ -27,9 +27,25 @@ public class Size {
     @Constant(intValue = 4)
     static int test() {
         List<String> list = new ArrayList<>();
-        if(list.size() > 0) { // evaluates to constant
+        if (list.size() > 0) { // evaluates to constant
             return 3; // never reached!
         }
         return list.size() + 4;
     }
+
+    @Constant(boolValue = true)
+    static boolean test2() {
+        List<String> list = new ArrayList<>();
+        list.add("a");
+        return list.size() == 1 && list.contains("a");
+    }
+
+    @Constant(boolValue = true)
+    static boolean test3() {
+        List<String> list = new ArrayList<>();
+        list.add("a");
+        list.add("b");
+        return list.contains("a") && list.contains("b") && list.size() == 2;
+    }
+
 }

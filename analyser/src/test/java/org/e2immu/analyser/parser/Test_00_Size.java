@@ -44,6 +44,10 @@ public class Test_00_Size extends CommonTestRunner {
         if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "list".equals(d.variableName())) {
             Assert.assertEquals("instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()]", d.currentValue().toString());
         }
+        if ("test2".equals(d.methodInfo().name) && "1".equals(d.statementId()) && "list".equals(d.variableName())) {
+            Assert.assertEquals("instance type java.util.ArrayList()[(1 == java.util.ArrayList.this.size()) and (java.util.ArrayList.this.contains(\"a\")]",
+                    d.currentValue().toString());
+        }
     };
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
@@ -59,6 +63,10 @@ public class Test_00_Size extends CommonTestRunner {
         if ("test".equals(d.methodInfo().name)) {
             Assert.assertEquals("4", d.methodAnalysis().getSingleReturnValue().toString());
         }
+        if ("test2".equals(d.methodInfo().name) || "test3".equals(d.methodInfo().name)) {
+            Assert.assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
+        }
+
     };
 
     @Test
