@@ -39,6 +39,7 @@ import org.e2immu.annotation.Only;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
@@ -299,6 +300,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return builder.setValue(evaluationOnConstant).build();
         }
 
+        // evaluation on Instance, with state
+        Value evaluationOnInstance = computeEvaluationOnInstance(evaluationContext, methodInfo, objectValue);
+        if (evaluationOnInstance != null) {
+            return builder.setValue(evaluationOnInstance).build();
+        }
+
         // @Identity as method annotation
         Value identity = computeIdentity(evaluationContext, methodAnalysis, parameters, objectFlowOfResult);
         if (identity != null) {
@@ -366,6 +373,29 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // normal method value
         MethodValue methodValue = new MethodValue(methodInfo, objectValue, parameters, objectFlowOfResult);
         return builder.setValue(methodValue).build();
+    }
+
+    // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()
+    // code for now dedicated as hell
+    private static Value computeEvaluationOnInstance(EvaluationContext evaluationContext, MethodInfo methodInfo, Value objectValue) {
+        // look for a clause that has "this.methodInfo" as a MethodValue
+        Instance instance;
+        Value thisValue = new VariableValue(new This(methodInfo.typeInfo));
+        MethodValue methodValue = new MethodValue(methodInfo, thisValue, List.of(), ObjectFlow.NO_FLOW);
+        AtomicReference<Value> result = new AtomicReference<>();
+        if (((instance = objectValue.asInstanceOf(Instance.class)) != null)) {
+            instance.state.visit(component -> {
+                if (component instanceof EqualsValue equalsValue && equalsValue.rhs instanceof MethodValue methodInEquals) {
+                    if (methodInEquals.methodInfo == methodInfo) {
+                        result.set(equalsValue.lhs);
+                    } else {
+                        Set<MethodInfo> overrides = methodInEquals.methodInfo.typeInfo.overrides(methodInEquals.methodInfo, true);
+                        if (overrides.contains(methodInfo)) result.set(equalsValue.lhs);
+                    }
+                }
+            });
+        }
+        return result.get();
     }
 
     private static Value computeEvaluationOnConstant(Primitives primitives, MethodInfo methodInfo, Value objectValue) {

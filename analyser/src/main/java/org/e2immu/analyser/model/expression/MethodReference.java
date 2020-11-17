@@ -103,7 +103,8 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             // TODO arrays?
             Location location = evaluationContext.getLocation(this);
             ObjectFlow objectFlow = builder.createInternalObjectFlow(location, methodInfo.returnType(), Origin.NEW_OBJECT_CREATION);
-            builder.setValue(new Instance(methodInfo.returnType(), methodInfo, List.of(), objectFlow));
+            Value stateFromCompanion = NewObject.stateFromCompanionOfConstructor(methodInfo, evaluationContext);
+            builder.setValue(new Instance(methodInfo.returnType(), methodInfo, List.of(), objectFlow, stateFromCompanion));
         } else {
             // normal method call, very similar to MethodCall.evaluate
             MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);

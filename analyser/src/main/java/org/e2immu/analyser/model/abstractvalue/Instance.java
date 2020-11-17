@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -43,12 +44,22 @@ public class Instance implements Value {
     public final List<Value> constructorParameterValues;
     public final MethodInfo constructor;
     public final ObjectFlow objectFlow;
+    public final int index;
+    public final Value state;
 
-    public Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues, ObjectFlow objectFlow) {
+    private static final AtomicInteger indexGenerator = new AtomicInteger();
+
+    private static int newIndex() {
+        return indexGenerator.incrementAndGet();
+    }
+
+    public Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues, ObjectFlow objectFlow, Value state) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.constructor = constructor; // con be null, in anonymous classes
         this.constructorParameterValues = ImmutableList.copyOf(parameterValues);
         this.objectFlow = objectFlow;
+        this.index = newIndex();
+        this.state = Objects.requireNonNull(state);
     }
 
     // every new instance is different.
@@ -79,7 +90,8 @@ public class Instance implements Value {
         return "instance type " + parameterizedType.detailedString()
                 + "(" + constructorParameterValues.stream()
                 .map(Value::toString)
-                .collect(Collectors.joining(", ")) + ")";
+                .collect(Collectors.joining(", ")) + ")"
+                + (state == UnknownValue.EMPTY ? "" : "[" + state.print(printMode) + "]");
     }
 
     private static final Set<Variable> NO_LINKS = Set.of();

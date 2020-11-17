@@ -17,14 +17,19 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.Constant;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class Size {
 
+    @Constant(intValue = 4)
     static int test() {
         List<String> list = new ArrayList<>();
-
-        return list.size();
+        if(list.size() > 0) { // evaluates to constant
+            return 3; // never reached!
+        }
+        return list.size() + 4;
     }
 }

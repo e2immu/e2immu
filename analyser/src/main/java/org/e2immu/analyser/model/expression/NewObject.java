@@ -18,9 +18,11 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.CompanionAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -30,6 +32,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class NewObject implements HasParameterExpressions {
@@ -151,8 +154,26 @@ public class NewObject implements HasParameterExpressions {
                 evaluationContext, constructor, Level.FALSE, null);
         Location location = evaluationContext.getLocation(this);
         ObjectFlow objectFlow = res.k.createInternalObjectFlow(location, parameterizedType, Origin.NEW_OBJECT_CREATION);
-        res.k.setValue(new Instance(parameterizedType, constructor, res.v, objectFlow));
+
+        Value state = stateFromCompanionOfConstructor(constructor, evaluationContext);
+
+        Value valueToSet = new Instance(parameterizedType, constructor, res.v, objectFlow, state);
+        res.k.setValue(valueToSet);
         return res.k.build();
+    }
+
+    public static Value stateFromCompanionOfConstructor(MethodInfo constructor, EvaluationContext evaluationContext) {
+        if (constructor != null) {
+            Optional<CompanionMethodName> optEntry = constructor.methodInspection.get().companionMethods.keySet().stream()
+                    .filter(e -> e.aspect() != null && e.action() == CompanionMethodName.Action.MODIFICATION).findFirst();
+            if (optEntry.isPresent()) {
+                MethodAnalysis constructorAnalysis = evaluationContext.getMethodAnalysis(constructor);
+                CompanionAnalysis companionAnalysis = constructorAnalysis.getCompanionAnalyses().get(optEntry.get());
+                // in the case of new ArrayList(), the aspect is Size, the aspect method size()
+                return companionAnalysis.getValue();
+            }
+        }
+        return UnknownValue.EMPTY;
     }
 
 
