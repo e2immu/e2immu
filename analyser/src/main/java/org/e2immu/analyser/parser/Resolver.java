@@ -21,7 +21,6 @@ package org.e2immu.analyser.parser;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
@@ -70,7 +69,7 @@ public class Resolver {
                 TypeInfo typeInfo = entry.getKey();
                 TypeContext typeContext = entry.getValue();
 
-                assert typeInfo.isPrimaryType(): "Not a primary type: "+typeInfo.fullyQualifiedName;
+                assert typeInfo.isPrimaryType() : "Not a primary type: " + typeInfo.fullyQualifiedName;
                 SortedType sortedType = addToTypeGraph(typeGraph, stayWithin, typeInfo, typeContext);
                 toSortedType.put(typeInfo, sortedType);
             } catch (RuntimeException rte) {
@@ -98,9 +97,7 @@ public class Resolver {
         });
         for (TypeInfo typeInfo : sorted) {
             Set<TypeInfo> circularDependencies = participatesInCycles.get(typeInfo);
-            TypeResolution typeResolution = new TypeResolution();
-            typeResolution.circularDependencies.set(circularDependencies == null ? Set.of() : ImmutableSet.copyOf(circularDependencies));
-
+            TypeResolution typeResolution = new TypeResolution(circularDependencies == null ? Set.of() : circularDependencies);
             typeInfo.typeResolution.set(typeResolution);
         }
         return sorted;

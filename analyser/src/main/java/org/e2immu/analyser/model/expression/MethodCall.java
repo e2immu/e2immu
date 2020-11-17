@@ -105,11 +105,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         if (evaluationContext.getCurrentMethod() != null) {
             TypeInfo currentPrimaryType = evaluationContext.getCurrentType().primaryType();
+            TypeInfo methodPrimaryType = methodInfo.typeInfo.primaryType();
 
-            assert currentPrimaryType.typeResolution.get().circularDependencies.isSet() :
-                    "Circular dependencies of type " + currentPrimaryType.fullyQualifiedName + " not yet set";
+            boolean circularCall = methodPrimaryType != currentPrimaryType &&
+                    currentPrimaryType.typeResolution.get().isPartOfDependencyCycle(methodPrimaryType);
 
-            boolean circularCall = currentPrimaryType.typeResolution.get().circularDependencies.get().contains(methodInfo.typeInfo);
             boolean undeclaredFunctionalInterface;
             if (methodInfo.isSingleAbstractMethod()) {
                 Boolean b = EvaluateParameters.tryToDetectUndeclared(evaluationContext, computedScope);
@@ -159,7 +159,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<Value> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 
-        if(parameterValues.stream().anyMatch(pv -> pv == UnknownValue.NO_VALUE)) {
+        if (parameterValues.stream().anyMatch(pv -> pv == UnknownValue.NO_VALUE)) {
             Logger.log(DELAYED, "Delayed method call because one of the parameter values is delayed: {}, {}", methodInfo.name, parameterValues);
             builder.setValue(UnknownValue.NO_VALUE);
             return builder.build();

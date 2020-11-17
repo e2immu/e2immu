@@ -691,13 +691,13 @@ public class MethodAnalyser extends AbstractAnalyser {
             // this will be due to calling undeclared SAMs, or calling non-modifying methods in a circular type situation
             // (A.nonModifying() calls B.modifying() on a parameter (NOT a field, so nonModifying is just that) which itself calls A.modifying()
             // NOTE that in this situation we cannot have a container, as we require a modifying! (TODO check this statement is correct)
-
-            if (!methodLevelData.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
+            Boolean circular = methodLevelData.getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod();
+            if (circular == null) {
                 log(DELAYED, "Delaying modification on method {}, waiting for calls to undeclared functional interfaces",
                         methodInfo.distinguishingName());
                 return DELAYS;
             }
-            if (methodLevelData.callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get()) {
+            if (circular) {
                 Boolean haveModifying = findOtherModifyingElements();
                 if (haveModifying == null) return DELAYS;
                 isModified = haveModifying;
@@ -732,8 +732,8 @@ public class MethodAnalyser extends AbstractAnalyser {
         Optional<MethodInfo> someOtherMethodNotYetDecided = methodInfo.typeInfo.typeInspection.getPotentiallyRun()
                 .methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(mi ->
-                        !analyserContext.getMethodAnalysis(mi).methodLevelData().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet() ||
-                                (analyserContext.getMethodAnalysis(mi).methodLevelData().callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get() && (
+                        analyserContext.getMethodAnalysis(mi).methodLevelData().getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod() == null ||
+                                (analyserContext.getMethodAnalysis(mi).methodLevelData().getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod() && (
                                         analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.MODIFIED) == Level.DELAY ||
                                                 mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(analyserContext) == null ||
                                                 analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.INDEPENDENT) == Level.DELAY)))

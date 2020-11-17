@@ -17,12 +17,23 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.util.SetOnce;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.Set;
 
 public class TypeResolution {
 
-    public final SetOnce<Set<TypeInfo>> circularDependencies = new SetOnce<>();
+    private final Set<TypeInfo> circularDependencies;
 
+    public TypeResolution(Set<TypeInfo> circularDependencies) {
+        this.circularDependencies = ImmutableSet.copyOf(circularDependencies);
+    }
+
+    public boolean isPartOfDependencyCycle(TypeInfo methodPrimaryType) {
+        return circularDependencies.contains(methodPrimaryType);
+    }
+
+    public Set<TypeInfo> getCircularDependencies() {
+        return circularDependencies;
+    }
 }

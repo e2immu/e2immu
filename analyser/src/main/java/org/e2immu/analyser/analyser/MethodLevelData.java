@@ -45,7 +45,12 @@ public class MethodLevelData {
     public static final int VIC_LEVEL = VariableInfoContainer.LEVEL_4_SUMMARY;
 
     // part of modification status for methods dealing with SAMs
-    public final SetOnce<Boolean> callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod = new SetOnce<>();
+    private final SetOnce<Boolean> callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod = new SetOnce<>();
+
+    public Boolean getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod() {
+        return callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.getOrElse(null);
+    }
+
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
 
     // aggregates the preconditions on individual statements

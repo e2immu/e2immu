@@ -47,11 +47,11 @@ public class TestModificationGraph extends CommonTestRunner {
         String name = d.methodInfo().name;
         if ("incrementAndGetWithI".equals(name)) {
             Assert.assertTrue(d.methodAnalysis().methodLevelData()
-                    .callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
+                    .getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod());
         }
         if ("useC2".equals(name) && d.iteration() > 1) {
             Assert.assertTrue(d.methodAnalysis().methodLevelData()
-                    .callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.get());
+                    .getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod());
         }
         if ("C2".equals(name)) {
             ParameterInfo c1 = d.methodInfo().methodInspection.get().parameters.get(1);
@@ -66,10 +66,10 @@ public class TestModificationGraph extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("C1".equals(d.typeInfo().simpleName)) {
-            Assert.assertEquals(2, d.typeInfo().typeResolution.get().circularDependencies.get().size());
+            Assert.assertEquals(2, d.typeInfo().typeResolution.get().getCircularDependencies().size());
         }
         if ("C2".equals(d.typeInfo().simpleName)) {
-            Assert.assertEquals(2, d.typeInfo().typeResolution.get().circularDependencies.get().size());
+            Assert.assertEquals(2, d.typeInfo().typeResolution.get().getCircularDependencies().size());
             Assert.assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
         }
     };
