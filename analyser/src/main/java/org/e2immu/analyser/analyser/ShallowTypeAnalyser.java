@@ -18,6 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableMap;
+import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -36,6 +37,7 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class ShallowTypeAnalyser implements AnalyserContext {
 
+    private final Configuration configuration;
     private final Messages messages = new Messages();
     private final Primitives primitives;
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
@@ -43,8 +45,9 @@ public class ShallowTypeAnalyser implements AnalyserContext {
     private final Map<MethodInfo, MethodAnalysis> methodAnalyses;
     private final Map<MethodInfo, Either<MethodAnalyser, MethodAnalysisImpl.Builder>> buildersForCompanionAnalysis = new HashMap<>();
 
-    public ShallowTypeAnalyser(List<TypeInfo> types, Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    public ShallowTypeAnalyser(List<TypeInfo> types, Configuration configuration, Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.primitives = primitives;
+        this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
         ImmutableMap.Builder<MethodInfo, MethodAnalysis> methodAnalysesBuilder = new ImmutableMap.Builder<>();
@@ -94,6 +97,11 @@ public class ShallowTypeAnalyser implements AnalyserContext {
             });
         }
         methodAnalyses = methodAnalysesBuilder.build();
+    }
+
+    @Override
+    public Configuration getConfiguration() {
+        return configuration;
     }
 
     @Override
@@ -210,7 +218,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                 throw new UnsupportedOperationException("No changes after iteration " + iteration + "; have left: " + buildersForCompanionAnalysis.size());
             }
             buildersForCompanionAnalysis.keySet().removeAll(keysToRemove);
-            log(ANALYSER, "At end of iteration {} in shallow method analysis, removed {}, remaining {}", iteration,
+            log(ANALYSER, "**** At end of iteration {} in shallow method analysis, removed {}, remaining {}", iteration,
                     keysToRemove.size(), buildersForCompanionAnalysis.size());
             iteration++;
         }

@@ -19,6 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CompanionAnalysis;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -59,8 +60,12 @@ public class Test_00_SizeCopy extends CommonTestRunner {
         }
     };
 
-    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-
+    CompanionAnalyserVisitor companionAnalyserVisitor = d -> {
+        if ("add".equals(d.mainMethod().name) && "java.util.Collection".equals(d.mainMethod().typeInfo.fullyQualifiedName)
+                && CompanionMethodName.Action.MODIFICATION == d.companionMethodName().action()) {
+            AnalysisStatus expectStatus = d.iteration() == 0 ? AnalysisStatus.DELAYS : AnalysisStatus.DONE;
+            Assert.assertSame(expectStatus, d.analysisStatus());
+        }
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
@@ -119,9 +124,9 @@ public class Test_00_SizeCopy extends CommonTestRunner {
         testClass(SIZE_COPY, 0, 0, new DebugConfiguration.Builder()
                 .addTypeContextVisitor(typeContextVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterCompanionAnalyserVisitor(companionAnalyserVisitor)
                 .build());
     }
 

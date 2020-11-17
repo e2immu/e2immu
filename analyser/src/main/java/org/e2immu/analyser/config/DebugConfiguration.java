@@ -18,11 +18,13 @@ public class DebugConfiguration {
     public final List<StatementAnalyserVisitor> statementAnalyserVisitors;
     public final List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors;
     public final List<EvaluationResultVisitor> evaluationResultVisitors;
+    public final List<CompanionAnalyserVisitor> afterCompanionAnalyserVisitors;
 
     private DebugConfiguration(List<TypeContextVisitor> typeContextVisitors,
                                List<TypeAnalyserVisitor> afterTypePropertyComputations,
                                List<FieldAnalyserVisitor> afterFieldAnalyserVisitors,
                                List<MethodAnalyserVisitor> afterMethodAnalyserVisitors,
+                               List<CompanionAnalyserVisitor> afterCompanionAnalyserVisitors,
                                List<StatementAnalyserVisitor> statementAnalyserVisitors,
                                List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors,
                                List<EvaluationResultVisitor> evaluationResultVisitors) {
@@ -33,6 +35,7 @@ public class DebugConfiguration {
         this.afterTypePropertyComputations = afterTypePropertyComputations;
         this.typeContextVisitors = typeContextVisitors;
         this.evaluationResultVisitors = evaluationResultVisitors;
+        this.afterCompanionAnalyserVisitors = afterCompanionAnalyserVisitors;
     }
 
     @Container(builds = DebugConfiguration.class)
@@ -44,6 +47,7 @@ public class DebugConfiguration {
         private final List<StatementAnalyserVariableVisitor> statementAnalyserVariableVisitors = new ArrayList<>();
         private final List<TypeAnalyserVisitor> afterTypePropertyComputations = new ArrayList<>();
         private final List<EvaluationResultVisitor> evaluationResultVisitors = new ArrayList<>();
+        private final List<CompanionAnalyserVisitor> afterCompanionAnalyserVisitors = new ArrayList<>();
 
         @Fluent
         public Builder addAfterFieldAnalyserVisitor(FieldAnalyserVisitor fieldAnalyserVisitor) {
@@ -87,12 +91,19 @@ public class DebugConfiguration {
             return this;
         }
 
+        @Fluent
+        public Builder addAfterCompanionAnalyserVisitor(CompanionAnalyserVisitor companionAnalyserVisitor) {
+            this.afterCompanionAnalyserVisitors.add(companionAnalyserVisitor);
+            return this;
+        }
+
         public DebugConfiguration build() {
             return new DebugConfiguration(
                     ImmutableList.copyOf(typeContextVisitors),
                     ImmutableList.copyOf(afterTypePropertyComputations),
                     ImmutableList.copyOf(afterFieldAnalyserVisitors),
                     ImmutableList.copyOf(afterMethodAnalyserVisitors),
+                    ImmutableList.copyOf(afterCompanionAnalyserVisitors),
                     ImmutableList.copyOf(statementAnalyserVisitors),
                     ImmutableList.copyOf(statementAnalyserVariableVisitors),
                     ImmutableList.copyOf(evaluationResultVisitors));
