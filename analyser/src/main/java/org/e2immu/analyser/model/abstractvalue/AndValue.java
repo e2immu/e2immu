@@ -465,4 +465,13 @@ public class AndValue extends PrimitiveValue {
         // reject (the OR can be split)
         return Stream.of(this);
     }
+
+    @Override
+    public Value removeIndividualBooleanClause(EvaluationContext evaluationContext, Value clauseToRemove, FilterMode filterMode) {
+        if(filterMode == FilterMode.ACCEPT) {
+            return new AndValue(evaluationContext.getPrimitives()).append(evaluationContext,
+                    values.stream().filter(clauseToRemove::equals).toArray(Value[]::new));
+        }
+        return this;
+    }
 }

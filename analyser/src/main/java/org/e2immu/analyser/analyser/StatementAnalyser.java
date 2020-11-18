@@ -462,14 +462,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             VariableInfo vi = vic.best(level);
             int read = vi.getProperty(VariableProperty.READ);
             int assigned = vi.getProperty(VariableProperty.ASSIGNED);
-            /*
-            // get READ and ASSIGNED from the level below the assignment, if it exists
 
-            int bestLevel = vic.bestLevel(level - 1);
-            VariableInfo vi = bestLevel < 0 ? null : vic.get(bestLevel);
-            int read = vi == null ? Level.DELAY : vi.getProperty(VariableProperty.READ);
-            int assigned = vi == null ? Level.DELAY : vi.getProperty(VariableProperty.ASSIGNED);
-*/
             vic.assignment(level);
             createdAssignmentLevel.add(variable);
             Value value = valueChangeData.value();

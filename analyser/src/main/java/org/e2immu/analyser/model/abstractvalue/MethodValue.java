@@ -224,13 +224,19 @@ public class MethodValue implements Value {
 
     @Override
     public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
-        if(Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
+        if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
         return Stream.empty();
     }
 
     @Override
+    public Value removeIndividualBooleanClause(EvaluationContext evaluationContext, Value clauseToRemove, FilterMode filterMode) {
+        if (equals(clauseToRemove)) return UnknownValue.EMPTY;
+        return this;
+    }
+
+    @Override
     public Instance getInstance(EvaluationContext evaluationContext) {
-        if(Primitives.isPrimitiveExcludingVoid(type())) return null;
+        if (Primitives.isPrimitiveExcludingVoid(type())) return null;
         return new Instance(type(), getObjectFlow(), UnknownValue.EMPTY);
     }
 }

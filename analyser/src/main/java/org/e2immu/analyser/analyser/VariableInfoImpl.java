@@ -60,6 +60,7 @@ class VariableInfoImpl implements VariableInfo {
         this.stateOnAssignment.copy(previous.stateOnAssignment);
         this.linkedVariables.copy(previous.linkedVariables);
         this.objectFlow.copy(previous.objectFlow);
+        this.instance.copy(previous.instance);
     }
 
     @Override

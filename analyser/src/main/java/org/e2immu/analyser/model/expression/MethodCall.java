@@ -184,10 +184,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             }
         }
         Instance modifiedInstance = null;
-        VariableValue variableValue;
-        if (modified == Level.TRUE && (variableValue = objectValue.asInstanceOf(VariableValue.class)) != null) {
-            // any sort of variable value (This, LocalVariableReference, FieldReference, ...)
-            Instance instance = builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+        if (modified == Level.TRUE) {
+            Instance instance;
+            if (objectValue instanceof VariableValue variableValue) {
+                instance = builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+            } else {
+                instance = objectValue.getInstance(evaluationContext);
+            }
             Objects.requireNonNull(instance, "Modifying method on constant or primitive? Impossible");
 
             Value newState;
@@ -203,16 +206,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 // post is already OK (it is the new value of the aspect method)
                 // pre is the "old" value, which has to be obtained. If that's impossible, we bail out.
                 // the parameters are available
-                Map<Value, Value> translation = createTranslationMap(builder, evaluationContext, aspectMethod,
+                ClauseAndTranslationMap translation = createTranslationMap(builder, evaluationContext, aspectMethod,
                         companionAnalysis, optEntry.get(), instance, parameterValues);
 
-                if (translation != null) {
+                if (translation.clause != UnknownValue.NO_VALUE) {
                     Value companionValue = companionAnalysis.getValue();
-                    EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(evaluationContext, translation);
-                    builder.compose(companionValueTranslationResult);
+                    EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(evaluationContext, translation.translationMap);
+                    // NO NEED: this is a separate operation. builder.compose(companionValueTranslationResult);
                     Value companionValueTranslated = companionValueTranslationResult.value;
                     // IMPROVE the object flow and the state from the precondition!!
-                    newState = new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, instance.state, companionValueTranslated);
+
+                    // TODO remove the "old" component
+                    Value stateMinusPre = instance.state.removeIndividualBooleanClause(evaluationContext, translation.clause, Value.FilterMode.ACCEPT);
+                    if (stateMinusPre == UnknownValue.EMPTY) {
+                        newState = companionValueTranslated;
+                    } else {
+                        newState = new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, stateMinusPre, companionValueTranslated);
+                    }
                 } else {
                     // we reset the state -- were not able to evaluate
                     newState = UnknownValue.EMPTY;
@@ -221,7 +231,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 newState = instance.state;
             }
             modifiedInstance = new Instance(instance, newState);
-            builder.modifyingMethodAccess(variableValue.variable, modifiedInstance);
+            if (objectValue instanceof VariableValue variableValue) {
+                builder.modifyingMethodAccess(variableValue.variable, modifiedInstance);
+            }
         }
 
         // @Only check
@@ -264,23 +276,30 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return builder.build();
     }
 
-    private Map<Value, Value> createTranslationMap(EvaluationResult.Builder builder,
-                                                   EvaluationContext evaluationContext,
-                                                   MethodInfo aspectMethod,
-                                                   CompanionAnalysis companionAnalysis,
-                                                   CompanionMethodName companionMethodName,
-                                                   Instance instance,
-                                                   List<Value> parameterValues) {
-        ImmutableMap.Builder<Value, Value> result = new ImmutableMap.Builder<>();
+    private record ClauseAndTranslationMap(Value clause, Map<Value, Value> translationMap) {
+    }
+
+    private ClauseAndTranslationMap createTranslationMap(EvaluationResult.Builder builder,
+                                                         EvaluationContext evaluationContext,
+                                                         MethodInfo aspectMethod,
+                                                         CompanionAnalysis companionAnalysis,
+                                                         CompanionMethodName companionMethodName,
+                                                         Instance instance,
+                                                         List<Value> parameterValues) {
+        ImmutableMap.Builder<Value, Value> translationMap = new ImmutableMap.Builder<>();
         // first, pre
         Value preAspectVariableValue = companionAnalysis.getPreAspectVariableValue();
+        Value clause;
         if (preAspectVariableValue != UnknownValue.NO_VALUE) {
-            Value previousValue = computeEvaluationOnInstance(builder, evaluationContext, aspectMethod, instance, List.of());
-            result.put(preAspectVariableValue, previousValue);
+            ValueAndClause previousValue = computeEvaluationOnInstance(builder, evaluationContext, aspectMethod, instance, List.of());
+            translationMap.put(preAspectVariableValue, previousValue.value);
+            clause = previousValue.clause;
+        } else {
+            clause = UnknownValue.NO_VALUE; // there was no clause
         }
         // parameters
-        ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues).forEach(pair -> result.put(pair.k, pair.v));
-        return result.build();
+        ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
+        return new ClauseAndTranslationMap(clause, translationMap.build());
     }
 
 
@@ -362,9 +381,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // evaluation on Instance, with state
-        Value evaluationOnInstance = computeEvaluationOnInstance(builder, evaluationContext, methodInfo, objectValue, parameters);
+        ValueAndClause evaluationOnInstance = computeEvaluationOnInstance(builder, evaluationContext, methodInfo, objectValue, parameters);
         if (evaluationOnInstance != null) {
-            return builder.setValue(evaluationOnInstance).build();
+            return builder.setValue(evaluationOnInstance.value).build();
         }
 
         // @Identity as method annotation
@@ -436,13 +455,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return builder.setValue(methodValue).build();
     }
 
+    private record ValueAndClause(Value value, Value clause) {
+    }
+
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()
     // IMPROVE code for now dedicated as hell to catch X == this.method
-    private static Value computeEvaluationOnInstance(EvaluationResult.Builder builder,
-                                                     EvaluationContext evaluationContext,
-                                                     MethodInfo methodInfo,
-                                                     Value objectValue,
-                                                     List<Value> parameterValues) {
+    private static ValueAndClause computeEvaluationOnInstance(EvaluationResult.Builder builder,
+                                                              EvaluationContext evaluationContext,
+                                                              MethodInfo methodInfo,
+                                                              Value objectValue,
+                                                              List<Value> parameterValues) {
         // look for a clause that has "this.methodInfo" as a MethodValue
         Instance instance;
         if (objectValue instanceof Instance theInstance) {
@@ -452,18 +474,18 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             return null;
         }
-        AtomicReference<Value> result = new AtomicReference<>();
+        AtomicReference<ValueAndClause> result = new AtomicReference<>();
         instance.state.individualBooleanClauses(Value.FilterMode.ACCEPT).forEach(component -> {
             // example: 0 == java.util.ArrayList.this.size()
             if (component instanceof EqualsValue equalsValue && equalsValue.rhs instanceof MethodValue methodInEquals) {
                 if (compatibleMethod(methodInfo, methodInEquals.methodInfo)) {
-                    result.set(equalsValue.lhs);
+                    result.set(new ValueAndClause(equalsValue.lhs, equalsValue));
                 }
             }
             // example: java.util.ArrayList.contains("a")
             if (component instanceof MethodValue mv) {
                 if (compatibleMethod(methodInfo, mv.methodInfo) && compatibleParameters(parameterValues, mv.parameters)) {
-                    result.set(component);
+                    result.set(new ValueAndClause(component, component));
                 }
             }
         });

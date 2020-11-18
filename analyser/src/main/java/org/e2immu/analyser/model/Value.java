@@ -179,6 +179,10 @@ public interface Value extends Comparable<Value> {
         return Stream.empty();
     }
 
+    default Value removeIndividualBooleanClause(EvaluationContext evaluationContext, Value clauseToRemove, FilterMode filterMode) {
+        return equals(clauseToRemove) ? UnknownValue.EMPTY: this;
+    }
+
     Instance getInstance(EvaluationContext evaluationContext);
 
     class FilterResult {

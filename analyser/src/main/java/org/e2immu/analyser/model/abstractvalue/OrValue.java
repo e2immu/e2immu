@@ -238,10 +238,19 @@ public class OrValue extends PrimitiveValue {
 
     @Override
     public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
-        if(filterMode == FilterMode.REJECT) {
+        if (filterMode == FilterMode.REJECT) {
             return values.stream().flatMap(value -> value.individualBooleanClauses(FilterMode.REJECT));
         }
         // accept (the AND can be split)
         return Stream.of(this);
+    }
+
+    @Override
+    public Value removeIndividualBooleanClause(EvaluationContext evaluationContext, Value clauseToRemove, FilterMode filterMode) {
+        if (filterMode == FilterMode.REJECT) {
+            return new OrValue(evaluationContext.getPrimitives()).append(evaluationContext,
+                    values.stream().filter(clauseToRemove::equals).toArray(Value[]::new));
+        }
+        return this;
     }
 }

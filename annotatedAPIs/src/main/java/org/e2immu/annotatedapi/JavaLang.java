@@ -30,8 +30,10 @@ class JavaLang {
     final static String PACKAGE_NAME = "java.lang";
 
     interface CharSequence$ {
+        @NotModified
         char charAt(int index);
 
+        @NotModified
         int length();
     }
 
