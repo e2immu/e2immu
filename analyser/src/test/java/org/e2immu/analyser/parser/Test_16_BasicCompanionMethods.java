@@ -35,6 +35,8 @@ import java.util.Map;
 public class Test_16_BasicCompanionMethods extends CommonTestRunner {
 
     public static final String LIST_SIZE = "instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()]";
+    public static final String INSTANCE_SIZE_1_CONTAINS = "instance type java.util.ArrayList()[(java.util.List.this.contains(a) and 1 == java.util.List.this.size())]";
+    public static final String TEST_1_RETURN_VARIABLE = "org.e2immu.analyser.testexample.BasicCompanionMethods_1.test()";
 
     public Test_16_BasicCompanionMethods() {
         super(true);
@@ -102,14 +104,19 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertTrue(d.haveValueChange("list"));
-                Assert.assertEquals("instance type java.util.ArrayList()[1 == java.util.List.this.size()]", d.findValueChange("list").instance().toString());
+                Assert.assertEquals(INSTANCE_SIZE_1_CONTAINS, d.findValueChange("list").instance().toString());
+            }
+            if ("test".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                Assert.assertTrue(d.haveValueChange(TEST_1_RETURN_VARIABLE));
+                EvaluationResult.ValueChangeData valueChangeData = d.findValueChange(TEST_1_RETURN_VARIABLE);
+                Assert.assertEquals("true", valueChangeData.value().toString());
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId()) && "list".equals(d.variableName())) {
-                Assert.assertEquals("instance type java.util.ArrayList()[(1 == java.util.ArrayList.this.size()) and (java.util.ArrayList.this.contains(\"a\")]",
-                        d.variableInfo().getInstance().toString());
+                Assert.assertEquals(INSTANCE_SIZE_1_CONTAINS, d.variableInfo().getInstance().toString());
             }
         };
 

@@ -598,7 +598,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public void addProperty(AnalyserContext analyserContext, int level, Variable variable, VariableProperty variableProperty, int value) {
         Objects.requireNonNull(variable);
         VariableInfoContainer vic = findForWriting(analyserContext, variable);
-        vic.setProperty(level, variableProperty, value);
+        vic.ensureProperty(level, variableProperty, value);
 
         Value currentValue = vic.current().getValue();
         VariableValue valueWithVariable;

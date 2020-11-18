@@ -183,57 +183,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 builder.addAccess(modified == Level.TRUE, methodAccess, objectValue);
             }
         }
-        Instance modifiedInstance = null;
+
+        // companion methods
+        Instance modifiedInstance;
         if (modified == Level.TRUE) {
-            Instance instance;
-            if (objectValue instanceof VariableValue variableValue) {
-                instance = builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
-            } else {
-                instance = objectValue.getInstance(evaluationContext);
-            }
-            Objects.requireNonNull(instance, "Modifying method on constant or primitive? Impossible");
-
-            Value newState;
-            Optional<CompanionMethodName> optEntry = methodInfo.methodInspection.get().companionMethods.keySet().stream()
-                    .filter(e -> e.aspect() != null && e.action() == CompanionMethodName.Action.MODIFICATION).findFirst();
-            if (optEntry.isPresent()) {
-                CompanionAnalysis companionAnalysis = methodAnalysis.getCompanionAnalyses().get(optEntry.get());
-                MethodInfo aspectMethod = evaluationContext.getTypeAnalysis(methodInfo.typeInfo).getAspects().get(optEntry.get().aspect());
-                assert aspectMethod != null : "Expect aspect method to be known";
-
-                // in the case of java.util.List.add(), the aspect is Size, there are 3+ "parameters":
-                // pre, post, and the parameter(s) of the add method.
-                // post is already OK (it is the new value of the aspect method)
-                // pre is the "old" value, which has to be obtained. If that's impossible, we bail out.
-                // the parameters are available
-                ClauseAndTranslationMap translation = createTranslationMap(builder, evaluationContext, aspectMethod,
-                        companionAnalysis, optEntry.get(), instance, parameterValues);
-
-                if (translation.clause != UnknownValue.NO_VALUE) {
-                    Value companionValue = companionAnalysis.getValue();
-                    EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(evaluationContext, translation.translationMap);
-                    // NO NEED: this is a separate operation. builder.compose(companionValueTranslationResult);
-                    Value companionValueTranslated = companionValueTranslationResult.value;
-                    // IMPROVE the object flow and the state from the precondition!!
-
-                    // TODO remove the "old" component
-                    Value stateMinusPre = instance.state.removeIndividualBooleanClause(evaluationContext, translation.clause, Value.FilterMode.ACCEPT);
-                    if (stateMinusPre == UnknownValue.EMPTY) {
-                        newState = companionValueTranslated;
-                    } else {
-                        newState = new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, stateMinusPre, companionValueTranslated);
-                    }
-                } else {
-                    // we reset the state -- were not able to evaluate
-                    newState = UnknownValue.EMPTY;
-                }
-            } else {
-                newState = instance.state;
-            }
-            modifiedInstance = new Instance(instance, newState);
-            if (objectValue instanceof VariableValue variableValue) {
-                builder.modifyingMethodAccess(variableValue.variable, modifiedInstance);
-            }
+            modifiedInstance = checkCompanionMethods(builder, evaluationContext, methodAnalysis, objectValue, parameterValues);
+        } else {
+            modifiedInstance = null;
         }
 
         // @Only check
@@ -276,6 +232,69 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return builder.build();
     }
 
+    private Instance checkCompanionMethods(EvaluationResult.Builder builder,
+                                           EvaluationContext evaluationContext,
+                                           MethodAnalysis methodAnalysis,
+                                           Value objectValue,
+                                           List<Value> parameterValues) {
+        Instance instance;
+        if (objectValue instanceof VariableValue variableValue) {
+            instance = builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+        } else {
+            instance = objectValue.getInstance(evaluationContext);
+        }
+        Objects.requireNonNull(instance, "Modifying method on constant or primitive? Impossible");
+
+        AtomicReference<Value> newState = new AtomicReference<>(instance.state);
+        methodInfo.methodInspection.get().companionMethods.keySet().stream()
+                .filter(e -> e.action() == CompanionMethodName.Action.MODIFICATION || e.action() == CompanionMethodName.Action.POSTCONDITION)
+                .forEach(companionMethodName -> {
+                    CompanionAnalysis companionAnalysis = methodAnalysis.getCompanionAnalyses().get(companionMethodName);
+                    MethodInfo aspectMethod;
+                    if (companionMethodName.aspect() != null) {
+                        aspectMethod = evaluationContext.getTypeAnalysis(methodInfo.typeInfo).getAspects().get(companionMethodName.aspect());
+                        assert aspectMethod != null : "Expect aspect method to be known";
+                    } else {
+                        aspectMethod = null;
+                    }
+
+                    // in the case of java.util.List.add(), the aspect is Size, there are 3+ "parameters":
+                    // pre, post, and the parameter(s) of the add method.
+                    // post is already OK (it is the new value of the aspect method)
+                    // pre is the "old" value, which has to be obtained. If that's impossible, we bail out.
+                    // the parameters are available
+                    ClauseAndTranslationMap translation = createTranslationMap(builder, evaluationContext, aspectMethod,
+                            companionAnalysis, companionMethodName, instance, parameterValues);
+
+
+                    Value companionValue = companionAnalysis.getValue();
+                    EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(evaluationContext, translation.translationMap);
+                    // NO NEED: this is a separate operation. builder.compose(companionValueTranslationResult);
+                    Value companionValueTranslated = companionValueTranslationResult.value;
+                    // IMPROVE the object flow and the state from the precondition!!
+
+                    // TODO remove the "old" component
+                    Value stateMinusPre;
+                    if (translation.clause == UnknownValue.NO_VALUE) {
+                        stateMinusPre = newState.get();
+                    } else {
+                        stateMinusPre = newState.get().removeIndividualBooleanClause(evaluationContext, translation.clause, Value.FilterMode.ACCEPT);
+                    }
+                    if (stateMinusPre == UnknownValue.EMPTY) {
+                        newState.set(companionValueTranslated);
+                    } else {
+                        newState.set(new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, stateMinusPre, companionValueTranslated));
+                    }
+
+                });
+        Instance modifiedInstance = new Instance(instance, newState.get());
+        if (objectValue instanceof VariableValue variableValue) {
+            builder.modifyingMethodAccess(variableValue.variable, modifiedInstance);
+        }
+        return modifiedInstance;
+    }
+
+    // the "pre" clause
     private record ClauseAndTranslationMap(Value clause, Map<Value, Value> translationMap) {
     }
 
@@ -288,7 +307,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                          List<Value> parameterValues) {
         ImmutableMap.Builder<Value, Value> translationMap = new ImmutableMap.Builder<>();
         // first, pre
-        Value preAspectVariableValue = companionAnalysis.getPreAspectVariableValue();
+        Value preAspectVariableValue = companionMethodName.aspect() == null ? UnknownValue.NO_VALUE : companionAnalysis.getPreAspectVariableValue();
         Value clause;
         if (preAspectVariableValue != UnknownValue.NO_VALUE) {
             ValueAndClause previousValue = computeEvaluationOnInstance(builder, evaluationContext, aspectMethod, instance, List.of());
