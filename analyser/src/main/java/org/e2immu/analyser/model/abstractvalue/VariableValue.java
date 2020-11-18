@@ -26,6 +26,7 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * The evaluation context has to reroute requests for property values, linked variables, and object flow either
@@ -143,5 +144,11 @@ public class VariableValue implements Value {
             }
         }
         return name;
+    }
+
+    @Override
+    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
+        if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
+        return Stream.empty();
     }
 }

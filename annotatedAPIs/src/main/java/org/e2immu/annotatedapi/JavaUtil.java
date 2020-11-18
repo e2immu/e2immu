@@ -258,6 +258,14 @@ public class JavaUtil extends AnnotatedAPI {
         public ArrayList$(int size) {
         }
 
+        boolean add$Modification$Size(int i, int j, E e) { return i == j + 1; }
+        boolean add$Value(E e, boolean retVal) { return true; }
+        boolean add$Postcondition(E e) { return contains(e); }
+        boolean add(@NotNull E e) { return false; /* actually, true, see $Value */ }
+
+        @NotModified
+        boolean contains(@NotNull Object object) { return false; }
+
         @NotNull
         Iterator<E> iterator() { return null; }
 

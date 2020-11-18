@@ -34,6 +34,7 @@ import org.e2immu.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * Shared properties: @NotNull(n), dynamic type properties (@Immutable(n), @Container)
@@ -171,6 +172,10 @@ public interface Value extends Comparable<Value> {
     default boolean isBoolValueFalse() {
         BoolValue boolValue;
         return ((boolValue = this.asInstanceOf(BoolValue.class)) != null) && !boolValue.value;
+    }
+
+    default Stream<Value> individualBooleanClauses(FilterMode filterMode) {
+        return Stream.empty();
     }
 
     class FilterResult {

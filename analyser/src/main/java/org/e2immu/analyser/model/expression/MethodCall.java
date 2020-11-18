@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.CompanionAnalysis;
 import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
@@ -183,6 +184,27 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         VariableValue variableValue;
         if (modified == Level.TRUE && (variableValue = objectValue.asInstanceOf(VariableValue.class)) != null) {
+
+            // FIXME introduce code to change the instance
+            Optional<CompanionMethodName> optEntry = methodInfo.methodInspection.get().companionMethods.keySet().stream()
+                    .filter(e -> e.aspect() != null && e.action() == CompanionMethodName.Action.MODIFICATION).findFirst();
+            if (optEntry.isPresent()) {
+                CompanionAnalysis companionAnalysis = methodAnalysis.getCompanionAnalyses().get(optEntry.get());
+                // in the case of java.util.List.add(), the aspect is Size, there are 3 "parameters":
+                // pre, post, and the parameter of the add method
+
+                Value companionValue = companionAnalysis.getValue();
+                Map<Value, Value> translation = new HashMap<>();
+
+                EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(evaluationContext, translation);
+                builder.compose(companionValueTranslationResult);
+                Value companionValueTranslated = companionValueTranslationResult.value;
+
+                Value currentInstance = builder.currentValue(variableValue.variable);
+                assert currentInstance.isInstanceOf(Instance.class) : "Expected an instance, potentially wrapped, got " + currentInstance.getClass();
+
+            }
+
             builder.modifyingMethodAccess(variableValue.variable);
         }
 
@@ -301,7 +323,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // evaluation on Instance, with state
-        Value evaluationOnInstance = computeEvaluationOnInstance(evaluationContext, methodInfo, objectValue);
+        Value evaluationOnInstance = computeEvaluationOnInstance(evaluationContext, methodInfo, objectValue, parameters);
         if (evaluationOnInstance != null) {
             return builder.setValue(evaluationOnInstance).build();
         }
@@ -377,25 +399,42 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()
     // IMPROVE code for now dedicated as hell to catch X == this.method
-    private static Value computeEvaluationOnInstance(EvaluationContext evaluationContext, MethodInfo methodInfo, Value objectValue) {
+    private static Value computeEvaluationOnInstance(EvaluationContext evaluationContext,
+                                                     MethodInfo methodInfo,
+                                                     Value objectValue,
+                                                     List<Value> parameterValues) {
         // look for a clause that has "this.methodInfo" as a MethodValue
         Instance instance;
         Value thisValue = new VariableValue(new This(methodInfo.typeInfo));
         MethodValue methodValue = new MethodValue(methodInfo, thisValue, List.of(), ObjectFlow.NO_FLOW);
         AtomicReference<Value> result = new AtomicReference<>();
         if (((instance = objectValue.asInstanceOf(Instance.class)) != null)) {
-            instance.state.visit(component -> {
+            instance.state.individualBooleanClauses(Value.FilterMode.ACCEPT).forEach(component -> {
+                // example: 0 == java.util.ArrayList.this.size()
                 if (component instanceof EqualsValue equalsValue && equalsValue.rhs instanceof MethodValue methodInEquals) {
-                    if (methodInEquals.methodInfo == methodInfo) {
+                    if (compatibleMethod(methodInfo, methodInEquals.methodInfo)) {
                         result.set(equalsValue.lhs);
-                    } else {
-                        Set<MethodInfo> overrides = methodInEquals.methodInfo.typeInfo.overrides(methodInEquals.methodInfo, true);
-                        if (overrides.contains(methodInfo)) result.set(equalsValue.lhs);
+                    }
+                }
+                // example: java.util.ArrayList.contains("a")
+                if (component instanceof MethodValue mv) {
+                    if (compatibleMethod(methodInfo, mv.methodInfo) && compatibleParameters(parameterValues, mv.parameters)) {
+                        result.set(component);
                     }
                 }
             });
         }
         return result.get();
+    }
+
+    private static boolean compatibleParameters(List<Value> parameters, List<Value> parametersInClause) {
+        return ListUtil.joinLists(parameters, parametersInClause).allMatch(pair -> pair.k.equals(pair.v));
+    }
+
+    private static boolean compatibleMethod(MethodInfo methodInfo, MethodInfo methodInClause) {
+        if (methodInClause == methodInfo) return true;
+        Set<MethodInfo> overrides = methodInClause.typeInfo.overrides(methodInClause, true);
+        return overrides.contains(methodInfo);
     }
 
     private static Value computeEvaluationOnConstant(Primitives primitives, MethodInfo methodInfo, Value objectValue) {

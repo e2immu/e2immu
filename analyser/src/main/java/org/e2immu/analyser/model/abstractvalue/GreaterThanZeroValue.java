@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public class GreaterThanZeroValue extends PrimitiveValue {
     public final Value value;
@@ -324,5 +325,10 @@ public class GreaterThanZeroValue extends PrimitiveValue {
     public void visit(Consumer<Value> consumer) {
         value.visit(consumer);
         consumer.accept(this);
+    }
+
+    @Override
+    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
+        return Stream.of(this);
     }
 }

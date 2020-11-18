@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class NegatedValue extends PrimitiveValue implements ValueWrapper {
     public static NegatedValue NOT_NULL = new NegatedValue(NullValue.NULL_VALUE);
@@ -163,5 +165,11 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
     public void visit(Consumer<Value> consumer) {
         value.visit(consumer);
         consumer.accept(this);
+    }
+
+    @Override
+    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
+        if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
+        return Stream.empty();
     }
 }

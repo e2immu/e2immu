@@ -29,6 +29,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class MethodValue implements Value {
     public final MethodInfo methodInfo;
@@ -219,5 +220,11 @@ public class MethodValue implements Value {
         object.visit(consumer);
         parameters.forEach(v -> v.visit(consumer));
         consumer.accept(this);
+    }
+
+    @Override
+    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
+        if(Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
+        return Stream.empty();
     }
 }

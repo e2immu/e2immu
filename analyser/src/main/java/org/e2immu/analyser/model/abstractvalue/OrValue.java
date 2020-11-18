@@ -28,6 +28,7 @@ import org.e2immu.analyser.util.ListUtil;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.CNF;
 import static org.e2immu.analyser.util.Logger.log;
@@ -233,5 +234,14 @@ public class OrValue extends PrimitiveValue {
     public void visit(Consumer<Value> consumer) {
         values.forEach(v -> v.visit(consumer));
         consumer.accept(this);
+    }
+
+    @Override
+    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
+        if(filterMode == FilterMode.REJECT) {
+            return values.stream().flatMap(value -> value.individualBooleanClauses(FilterMode.REJECT));
+        }
+        // accept (the AND can be split)
+        return Stream.of(this);
     }
 }

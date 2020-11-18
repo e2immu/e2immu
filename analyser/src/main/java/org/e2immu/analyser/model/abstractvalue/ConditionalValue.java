@@ -30,6 +30,7 @@ import org.e2immu.analyser.util.SetUtil;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public class ConditionalValue implements Value {
 
@@ -241,5 +242,11 @@ public class ConditionalValue implements Value {
         ifTrue.visit(consumer);
         ifFalse.visit(consumer);
         consumer.accept(this);
+    }
+
+    @Override
+    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
+        if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
+        return Stream.empty();
     }
 }

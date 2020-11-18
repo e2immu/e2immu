@@ -25,6 +25,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 @ExtensionClass(of = List.class)
 public class ListUtil {
@@ -52,5 +53,16 @@ public class ListUtil {
         }
         if (it2.hasNext()) return -1;
         return 0;
+    }
+
+    public static <K> Stream<Pair<K, K>> joinLists(List<K> list1, List<K> list2) {
+        Stream.Builder<Pair<K, K>> builder = Stream.builder();
+        Iterator<K> it2 = list2.iterator();
+        for (K t1 : list1) {
+            if (!it2.hasNext()) break;
+            K t2 = it2.next();
+            builder.accept(new Pair<>(t1, t2));
+        }
+        return builder.build();
     }
 }

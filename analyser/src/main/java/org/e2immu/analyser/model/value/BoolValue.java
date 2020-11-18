@@ -24,6 +24,7 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class BoolValue extends ConstantValue implements Constant<Boolean> {
     public final boolean value;
@@ -100,5 +101,10 @@ public class BoolValue extends ConstantValue implements Constant<Boolean> {
 
     public Value negate() {
         return new BoolValue(booleanParameterizedType, !value, objectFlow);
+    }
+
+    @Override
+    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
+        return Stream.of(this);
     }
 }

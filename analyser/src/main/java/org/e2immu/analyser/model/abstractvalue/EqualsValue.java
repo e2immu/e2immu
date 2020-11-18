@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 public class EqualsValue extends PrimitiveValue {
     public final Value lhs;
@@ -174,5 +175,10 @@ public class EqualsValue extends PrimitiveValue {
         lhs.visit(consumer);
         rhs.visit(consumer);
         consumer.accept(this);
+    }
+
+    @Override
+    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
+        return Stream.of(this);
     }
 }

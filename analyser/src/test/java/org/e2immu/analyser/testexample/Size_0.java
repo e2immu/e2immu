@@ -22,7 +22,7 @@ import org.e2immu.annotation.Constant;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Size {
+public class Size_0 {
 
     @Constant(intValue = 4)
     static int test() {
@@ -32,20 +32,4 @@ public class Size {
         }
         return list.size() + 4;
     }
-
-    @Constant(boolValue = true)
-    static boolean test2() {
-        List<String> list = new ArrayList<>();
-        list.add("a");
-        return list.size() == 1 && list.contains("a");
-    }
-
-    @Constant(boolValue = true)
-    static boolean test3() {
-        List<String> list = new ArrayList<>();
-        list.add("a");
-        list.add("b");
-        return list.contains("a") && list.contains("b") && list.size() == 2;
-    }
-
 }

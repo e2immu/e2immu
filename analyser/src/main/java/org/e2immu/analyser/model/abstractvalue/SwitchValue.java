@@ -22,9 +22,11 @@ import org.e2immu.analyser.model.EvaluationResult;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This is the multi-entry variant of ConditionalValue; it is generally created from the evaluation
@@ -210,6 +212,11 @@ public class SwitchValue implements Value {
         return "switch(" + selector.print(printMode) + "){" + entries.stream().map(sve -> sve.print(printMode)).collect(Collectors.joining("; ")) + "}";
     }
 
+    @Override
+    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
+        if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
+        return Stream.empty();
+    }
 
     @Override
     public ObjectFlow getObjectFlow() {

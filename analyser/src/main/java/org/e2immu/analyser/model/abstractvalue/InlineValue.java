@@ -4,9 +4,11 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /*
  can only be created as the single result value of a method
@@ -115,5 +117,11 @@ public class InlineValue implements Value {
             case PACKAGE -> evaluationContext.getCurrentType().packageName().equals(methodInfo.typeInfo.packageName());
             default -> throw new UnsupportedOperationException("TODO");
         };
+    }
+
+    @Override
+    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
+        if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
+        return Stream.empty();
     }
 }

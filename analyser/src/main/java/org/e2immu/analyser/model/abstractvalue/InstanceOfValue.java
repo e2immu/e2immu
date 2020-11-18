@@ -28,6 +28,7 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class InstanceOfValue extends PrimitiveValue {
     public final ParameterizedType parameterizedType;
@@ -92,5 +93,10 @@ public class InstanceOfValue extends PrimitiveValue {
     @Override
     public Set<Variable> variables() {
         return Set.of(variable);
+    }
+
+    @Override
+    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
+        return Stream.of(this);
     }
 }
