@@ -20,13 +20,31 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.annotation.AnnotationType;
 
+import java.util.List;
+
 public interface CompanionAnalysis {
 
     AnnotationType getAnnotationType();
 
     /**
-     *
      * @return the value that represents the companion.
      */
     Value getValue();
+
+    /**
+     * The variable value referring to the "pre" aspect variable.
+     * This value is part of the getValue() value.
+     * We provide it to facilitate re-evaluation.
+     *
+     * @return NO_VALUE when there is none
+     */
+    Value getPreAspectVariableValue();
+
+    /**
+     * The values of the parameters, part of the getValue() value.
+     * We provide them to facilitate re-evaluation.
+     *
+     * @return a list of parameters, never null.
+     */
+    List<Value> getParameterValues();
 }

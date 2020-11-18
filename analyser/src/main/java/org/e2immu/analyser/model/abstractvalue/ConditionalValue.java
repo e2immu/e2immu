@@ -40,11 +40,11 @@ public class ConditionalValue implements Value {
     public final Value combinedValue;
     public final ObjectFlow objectFlow;
 
-    public ConditionalValue(Value condition, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
+    public ConditionalValue(Primitives primitives, Value condition, Value ifTrue, Value ifFalse, ObjectFlow objectFlow) {
         this.condition = condition;
         this.ifFalse = ifFalse;
         this.ifTrue = ifTrue;
-        combinedValue = CombinedValue.create(List.of(ifTrue, ifFalse));
+        combinedValue = CombinedValue.create(primitives, List.of(ifTrue, ifFalse));
         this.objectFlow = Objects.requireNonNull(objectFlow);
     }
 
@@ -61,6 +61,11 @@ public class ConditionalValue implements Value {
     @Override
     public int hashCode() {
         return Objects.hash(condition, ifTrue, ifFalse);
+    }
+
+    @Override
+    public ParameterizedType type() {
+        return combinedValue.type();
     }
 
     @Override
@@ -101,7 +106,7 @@ public class ConditionalValue implements Value {
         // standardization... we swap!
         // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form
 
-        return builder.setValue(new ConditionalValue(condition, ifTrue, ifFalse, objectFlow)).build();
+        return builder.setValue(new ConditionalValue(evaluationContext.getPrimitives(), condition, ifTrue, ifFalse, objectFlow)).build();
         // TODO more advanced! if a "large" part of ifTrue or ifFalse appears in condition, we should create a temp variable
     }
 
@@ -139,7 +144,8 @@ public class ConditionalValue implements Value {
         if (reCondition.value.isBoolValueFalse()) {
             return builder.setValue(reFalse.value).build();
         }
-        return builder.setValue(new ConditionalValue(reCondition.value, reTrue.value, reFalse.value, getObjectFlow())).build();
+        return builder.setValue(new ConditionalValue(evaluationContext.getPrimitives(),
+                reCondition.value, reTrue.value, reFalse.value, getObjectFlow())).build();
     }
 
     @Override
@@ -248,5 +254,11 @@ public class ConditionalValue implements Value {
     public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
         if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
         return Stream.empty();
+    }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        if (Primitives.isPrimitiveExcludingVoid(type())) return null;
+        return new Instance(type(), getObjectFlow(), UnknownValue.EMPTY);
     }
 }

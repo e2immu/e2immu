@@ -59,4 +59,9 @@ public class TypeValue implements Value {
         if (variableProperty == VariableProperty.NOT_NULL) return MultiLevel.EFFECTIVELY_NOT_NULL;
         return Level.FALSE;
     }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
 }

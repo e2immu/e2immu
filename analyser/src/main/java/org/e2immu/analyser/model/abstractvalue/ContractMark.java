@@ -27,7 +27,6 @@ import org.e2immu.analyser.output.PrintMode;
 
 /**
  * Specifically used to transfer @Mark(" ...") at CONTRACT level.
- *
  */
 public class ContractMark implements Value {
 
@@ -70,5 +69,10 @@ public class ContractMark implements Value {
     @Override
     public ObjectFlow getObjectFlow() {
         return ObjectFlow.NO_FLOW;
+    }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        throw new UnsupportedOperationException();
     }
 }

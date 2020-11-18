@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model.expression;
 
+import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.CompanionAnalysis;
 import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -184,28 +185,42 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         VariableValue variableValue;
         if (modified == Level.TRUE && (variableValue = objectValue.asInstanceOf(VariableValue.class)) != null) {
+            // any sort of variable value (This, LocalVariableReference, FieldReference, ...)
+            Instance instance = builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+            Objects.requireNonNull(instance, "Modifying method on constant or primitive? Impossible");
 
-            // FIXME introduce code to change the instance
+            Value newState;
             Optional<CompanionMethodName> optEntry = methodInfo.methodInspection.get().companionMethods.keySet().stream()
                     .filter(e -> e.aspect() != null && e.action() == CompanionMethodName.Action.MODIFICATION).findFirst();
             if (optEntry.isPresent()) {
                 CompanionAnalysis companionAnalysis = methodAnalysis.getCompanionAnalyses().get(optEntry.get());
-                // in the case of java.util.List.add(), the aspect is Size, there are 3 "parameters":
-                // pre, post, and the parameter of the add method
+                MethodInfo aspectMethod = evaluationContext.getTypeAnalysis(methodInfo.typeInfo).getAspects().get(optEntry.get().aspect());
+                assert aspectMethod != null : "Expect aspect method to be known";
 
-                Value companionValue = companionAnalysis.getValue();
-                Map<Value, Value> translation = new HashMap<>();
+                // in the case of java.util.List.add(), the aspect is Size, there are 3+ "parameters":
+                // pre, post, and the parameter(s) of the add method.
+                // post is already OK (it is the new value of the aspect method)
+                // pre is the "old" value, which has to be obtained. If that's impossible, we bail out.
+                // the parameters are available
+                Map<Value, Value> translation = createTranslationMap(evaluationContext, aspectMethod,
+                        companionAnalysis, optEntry.get(), instance, parameterValues);
 
-                EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(evaluationContext, translation);
-                builder.compose(companionValueTranslationResult);
-                Value companionValueTranslated = companionValueTranslationResult.value;
-
-                Value currentInstance = builder.currentValue(variableValue.variable);
-                assert currentInstance.isInstanceOf(Instance.class) : "Expected an instance, potentially wrapped, got " + currentInstance.getClass();
-
+                if (translation != null) {
+                    Value companionValue = companionAnalysis.getValue();
+                    EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(evaluationContext, translation);
+                    builder.compose(companionValueTranslationResult);
+                    Value companionValueTranslated = companionValueTranslationResult.value;
+                    // IMPROVE the object flow and the state from the precondition!!
+                    newState = new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, instance.state, companionValueTranslated);
+                } else {
+                    // we reset the state -- were not able to evaluate
+                    newState = UnknownValue.EMPTY;
+                }
+            } else {
+                newState = instance.state;
             }
-
-            builder.modifyingMethodAccess(variableValue.variable);
+            Instance modifiedInstance = new Instance(instance, newState);
+            builder.modifyingMethodAccess(variableValue.variable, modifiedInstance);
         }
 
         // @Only check
@@ -242,6 +257,24 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         checkCommonErrors(builder, evaluationContext, objectValue);
 
         return builder.build();
+    }
+
+    private Map<Value, Value> createTranslationMap(EvaluationContext evaluationContext,
+                                                   MethodInfo aspectMethod,
+                                                   CompanionAnalysis companionAnalysis,
+                                                   CompanionMethodName companionMethodName,
+                                                   Instance instance,
+                                                   List<Value> parameterValues) {
+        ImmutableMap.Builder<Value, Value> result = new ImmutableMap.Builder<>();
+        // first, pre
+        Value preAspectVariableValue = companionAnalysis.getPreAspectVariableValue();
+        if (preAspectVariableValue != UnknownValue.NO_VALUE) {
+            Value previousValue = computeEvaluationOnInstance(evaluationContext, aspectMethod, instance, List.of());
+            result.put(preAspectVariableValue, previousValue);
+        }
+        // parameters
+        ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues).forEach(pair -> result.put(pair.k, pair.v));
+        return result.build();
     }
 
 

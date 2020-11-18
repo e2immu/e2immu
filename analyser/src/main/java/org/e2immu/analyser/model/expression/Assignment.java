@@ -213,7 +213,9 @@ public class Assignment implements Expression {
         } else if (at instanceof ParameterInfo parameterInfo) {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
         }
-        builder.assignment(at, resultOfExpression, true, evaluationContext.getIteration());
+
+        builder.assignment(at, resultOfExpression, resultOfExpression.getInstance(evaluationContext),
+                true, evaluationContext.getIteration());
 
         // connect the value to the assignment target
         if (resultOfExpression != NO_VALUE) {

@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.ValueComparator;
@@ -177,6 +178,8 @@ public interface Value extends Comparable<Value> {
     default Stream<Value> individualBooleanClauses(FilterMode filterMode) {
         return Stream.empty();
     }
+
+    Instance getInstance(EvaluationContext evaluationContext);
 
     class FilterResult {
         public final Map<Variable, Value> accepted;

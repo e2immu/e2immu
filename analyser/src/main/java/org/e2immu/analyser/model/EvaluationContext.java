@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -172,5 +173,15 @@ public interface EvaluationContext {
 
     default Map<VariableProperty, Integer> getValueProperties(Value value) {
         return VariableProperty.VALUE_PROPERTIES.stream().collect(Collectors.toMap(vp -> vp, vp -> getProperty(value, vp)));
+    }
+
+    /*
+    This default implementation is the correct one for basic tests and the companion analyser (we cannot use companions in the
+    companion analyser, that would be chicken-and-egg).
+     */
+    default Instance currentInstance(Variable variable) {
+        if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
+        // always a new one with empty state -- we cannot be bothered here.
+        return new Instance(variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
     }
 }

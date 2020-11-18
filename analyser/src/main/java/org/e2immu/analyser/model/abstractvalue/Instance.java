@@ -46,21 +46,25 @@ public class Instance implements Value {
     public final List<Value> constructorParameterValues;
     public final MethodInfo constructor;
     public final ObjectFlow objectFlow;
-    public final int index;
     public final Value state;
 
     private static final AtomicInteger indexGenerator = new AtomicInteger();
 
-    private static int newIndex() {
-        return indexGenerator.incrementAndGet();
+    // IMPROVE add object flow
+    public Instance(Instance base, Value state) {
+        this(base.parameterizedType, base.constructor, base.constructorParameterValues, base.objectFlow, state);
+    }
+
+    // when constructor unknown
+    public Instance(@NotNull ParameterizedType parameterizedType, ObjectFlow objectFlow, Value state) {
+        this(parameterizedType, null, List.of(), objectFlow, state);
     }
 
     public Instance(@NotNull ParameterizedType parameterizedType, MethodInfo constructor, List<Value> parameterValues, ObjectFlow objectFlow, Value state) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
-        this.constructor = constructor; // con be null, in anonymous classes
+        this.constructor = constructor; // con be null, in anonymous classes; or when not known
         this.constructorParameterValues = ImmutableList.copyOf(parameterValues);
         this.objectFlow = objectFlow;
-        this.index = newIndex();
         this.state = Objects.requireNonNull(state);
     }
 
@@ -197,5 +201,10 @@ public class Instance implements Value {
     public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
         if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
         return Stream.empty();
+    }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        return this;
     }
 }

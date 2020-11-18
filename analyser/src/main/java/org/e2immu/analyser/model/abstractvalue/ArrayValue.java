@@ -5,6 +5,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
@@ -21,10 +22,10 @@ public class ArrayValue implements Value {
     public final List<Value> values;
     public final ObjectFlow objectFlow;
 
-    public ArrayValue(ObjectFlow objectFlow, List<Value> values) {
+    public ArrayValue(Primitives primitives, ObjectFlow objectFlow, List<Value> values) {
         this.objectFlow = Objects.requireNonNull(objectFlow);
         this.values = ImmutableList.copyOf(values);
-        combinedValue = values.isEmpty() ? UnknownValue.NO_VALUE : CombinedValue.create(values);
+        combinedValue = values.isEmpty() ? UnknownValue.NO_VALUE : CombinedValue.create(primitives, values);
     }
 
     @Override
@@ -33,7 +34,7 @@ public class ArrayValue implements Value {
         List<Value> reValues = reClauseERs.stream().map(er -> er.value).collect(Collectors.toList());
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setValue(new ArrayValue(objectFlow, reValues))
+                .setValue(new ArrayValue(evaluationContext.getPrimitives(), objectFlow, reValues))
                 .build();
     }
 
@@ -94,5 +95,10 @@ public class ArrayValue implements Value {
     public void visit(Consumer<Value> consumer) {
         values.forEach(v -> v.visit(consumer));
         consumer.accept(this);
+    }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        return new Instance(type(), getObjectFlow(), UnknownValue.EMPTY);
     }
 }

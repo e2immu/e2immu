@@ -54,4 +54,8 @@ public abstract class PrimitiveValue implements Value {
         return true;
     }
 
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
 }

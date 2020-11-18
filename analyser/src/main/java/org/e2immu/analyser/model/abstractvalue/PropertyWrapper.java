@@ -162,4 +162,9 @@ public class PropertyWrapper implements Value, ValueWrapper {
     public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
         return value.individualBooleanClauses(filterMode);
     }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        return value.getInstance(evaluationContext);
+    }
 }

@@ -227,4 +227,10 @@ public class MethodValue implements Value {
         if(Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
         return Stream.empty();
     }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        if(Primitives.isPrimitiveExcludingVoid(type())) return null;
+        return new Instance(type(), getObjectFlow(), UnknownValue.EMPTY);
+    }
 }

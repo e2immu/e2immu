@@ -136,4 +136,9 @@ public class StringConcat implements Value {
         rhs.visit(consumer);
         consumer.accept(this);
     }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        return new Instance(type(), getObjectFlow(), UnknownValue.EMPTY);
+    }
 }

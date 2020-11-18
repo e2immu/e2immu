@@ -20,15 +20,18 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.config.CompanionAnalyserVisitor;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.AnnotationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -123,6 +126,7 @@ public class CompanionAnalyser {
         ImmutableMap.Builder<String, Value> remap = new ImmutableMap.Builder<>();
         int numIndices = companionMethod.methodInspection.get().parameters.size();
         int mainIndices = mainMethod.methodInspection.get().parameters.size();
+        List<Value> parameterValues = new ArrayList<>();
         for (ParameterInfo parameterInfo : companionMethod.methodInspection.get().parameters) {
             Value value;
             if (aspectVariables >= 1 && parameterInfo.index == 0) {
@@ -138,6 +142,7 @@ public class CompanionAnalyser {
                 Value scope = new VariableValue(new This(aspectMethod.typeInfo));
                 MethodValue methodValue = new MethodValue(aspectMethod, scope, List.of(), ObjectFlow.NO_FLOW);
                 value = new VariableValue(new PreAspectVariable(returnType, methodValue));
+                companionAnalysis.preAspectVariableValue.set(value);
             } else {
                 ParameterInfo parameterInMain = parameterInfo.index - aspectVariables < mainIndices ?
                         mainMethod.methodInspection.get().parameters.get(parameterInfo.index - aspectVariables) : null;
@@ -150,11 +155,13 @@ public class CompanionAnalyser {
                     throw new UnsupportedOperationException("Cannot map parameter " + parameterInfo.index + " of " +
                             companionMethodName + " of " + mainMethod.fullyQualifiedName());
                 }
+                parameterValues.add(value);
             }
             remap.put(parameterInfo.name, value);
         }
         log(COMPANION, "Companion map for {} of {}: {}", companionMethodName, mainMethod.fullyQualifiedName(), remap);
         companionAnalysis.remapParameters.set(remap.build());
+        companionAnalysis.parameterValues.set(parameterValues);
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {

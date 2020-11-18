@@ -18,16 +18,14 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
-import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnce;
 
 import java.util.*;
 import java.util.function.IntBinaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
@@ -42,8 +40,10 @@ class VariableInfoImpl implements VariableInfo {
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
 
     public final SetOnce<Value> value = new SetOnce<>(); // value from step 3 (initialisers)
-    public final SetOnce<Value> stateOnAssignment = new SetOnce<>(); // EMPTY when no info, NO_VALUE when not set
 
+    public final SetOnce<Value> stateOnAssignment = new SetOnce<>();
+
+    public final SetOnce<Instance> instance = new SetOnce<>();
     public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
     public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
 
@@ -95,6 +95,11 @@ class VariableInfoImpl implements VariableInfo {
     @Override
     public Value getStateOnAssignment() {
         return stateOnAssignment.getOrElse(UnknownValue.NO_VALUE);
+    }
+
+    @Override
+    public Instance getInstance() {
+        return instance.getOrElse(null);
     }
 
     @Override
@@ -167,6 +172,18 @@ class VariableInfoImpl implements VariableInfo {
         if (!linkedVariablesIsSet() || !getLinkedVariables().equals(merged)) {
             linkedVariables.set(merged);
         }
+    }
+
+    public void mergeInstance(boolean existingValuesWillBeOverwritten, VariableInfoImpl existing, List<VariableInfo> merge) {
+        Stream<VariableInfo> all = Stream.concat(merge.stream(), existingValuesWillBeOverwritten ? Stream.empty() : Stream.of(existing));
+        List<Instance> distinct = all.map(VariableInfo::getInstance).distinct().collect(Collectors.toList());
+        Instance newInstance;
+        if (distinct.size() == 1 && distinct.get(0) != null) {
+            newInstance = distinct.get(0);
+        } else {
+            newInstance = new Instance(existing.variable.parameterizedType(), getObjectFlow(), UnknownValue.EMPTY);
+        }
+        instance.set(newInstance);
     }
 
     private record MergeOp(VariableProperty variableProperty, IntBinaryOperator operator, int initial) {

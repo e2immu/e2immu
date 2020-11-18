@@ -17,10 +17,13 @@
 
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationType;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -28,11 +31,24 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
 
     private final Value value;
     private final AnnotationType annotationType;
+    private final Value preAspectVariableValue;
+    private final List<Value> parameterValues;
 
-    private CompanionAnalysisImpl(AnnotationType annotationType, Value value) {
+    private CompanionAnalysisImpl(AnnotationType annotationType, Value value, Value preAspectVariableValue,  List<Value> parameterValues) {
         Objects.requireNonNull(value);
         this.value = value;
         this.annotationType = annotationType;
+        this.preAspectVariableValue = preAspectVariableValue;
+        this.parameterValues = parameterValues;
+    }
+
+    @Override
+    public List<Value> getParameterValues() {
+        return parameterValues;
+    }
+
+    public Value getPreAspectVariableValue() {
+        return preAspectVariableValue;
     }
 
     @Override
@@ -50,13 +66,20 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
         private final AnnotationType annotationType;
         public final SetOnce<Value> value = new SetOnce<>();
         public final SetOnce<Map<String, Value>> remapParameters = new SetOnce<>();
-
+        public final SetOnce<Value> preAspectVariableValue = new SetOnce<>();
+        public final SetOnce<List<Value>> parameterValues = new SetOnce<>();
         public Builder(AnnotationType annotationType) {
             this.annotationType = annotationType;
         }
 
         public CompanionAnalysis build() {
-            return new CompanionAnalysisImpl(annotationType, value.get());
+            return new CompanionAnalysisImpl(annotationType, value.get(), getPreAspectVariableValue(),
+                    ImmutableList.copyOf(parameterValues.getOrElse(List.of())));
+        }
+
+        @Override
+        public List<Value> getParameterValues() {
+            return parameterValues.getOrElse(null);
         }
 
         @Override
@@ -67,6 +90,11 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
         @Override
         public AnnotationType getAnnotationType() {
             return annotationType;
+        }
+
+        @Override
+        public Value getPreAspectVariableValue() {
+            return preAspectVariableValue.getOrElse(UnknownValue.NO_VALUE);
         }
     }
 }

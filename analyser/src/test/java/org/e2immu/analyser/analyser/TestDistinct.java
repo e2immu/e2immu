@@ -15,21 +15,24 @@
  * limitations under the License.
  */
 
-package org.e2immu.analyser.model.abstractvalue;
+package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class TestConditionalValue extends CommonAbstractValue {
+import java.util.ArrayList;
+import java.util.List;
+
+public class TestDistinct {
 
     @Test
     public void test1() {
-        Value cv1 = new ConditionalValue(PRIMITIVES, a, newInt(3), newInt(4), ObjectFlow.NO_FLOW);
-        Value cv2 = new ConditionalValue(PRIMITIVES, a, newInt(3), newInt(4), ObjectFlow.NO_FLOW);
-        Assert.assertEquals("a?3:4", cv1.toString());
-        Assert.assertEquals("a?3:4", cv2.toString());
-        Assert.assertEquals(cv1, cv2);
+        List<String> list = new ArrayList<>();
+        list.add(null);
+        list.add("abc");
+        list.add("abc");
+        list.add("b");
+        list.add(null);
+        Assert.assertEquals(3L, list.stream().distinct().count());
     }
 }

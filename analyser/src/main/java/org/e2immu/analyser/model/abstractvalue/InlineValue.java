@@ -124,4 +124,10 @@ public class InlineValue implements Value {
         if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
         return Stream.empty();
     }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        // TODO verify this
+       return value.getInstance(evaluationContext);
+    }
 }

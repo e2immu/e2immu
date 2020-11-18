@@ -146,7 +146,7 @@ public class NewObject implements HasParameterExpressions {
             builder.compose(results);
             List<Value> values = results.stream().map(EvaluationResult::getValue).collect(Collectors.toList());
             ObjectFlow objectFlow = builder.createLiteralObjectFlow(arrayInitializer.commonType);
-            builder.setValue(new ArrayValue(objectFlow, values));
+            builder.setValue(new ArrayValue(evaluationContext.getPrimitives(), objectFlow, values));
             return builder.build();
 
         }

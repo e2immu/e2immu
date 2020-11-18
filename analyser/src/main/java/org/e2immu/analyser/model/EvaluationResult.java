@@ -21,10 +21,12 @@ import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.StateData;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.*;
@@ -120,7 +122,7 @@ public class EvaluationResult {
      * Any of the three can be used independently: possibly we want to mark assignment, but still have NO_VALUE for the value.
      * The stateOnAssignment can also still be NO_VALUE while the value is known, and vice versa.
      */
-    public record ValueChangeData(Value value, Value stateOnAssignment, boolean markAssignment) {
+    public record ValueChangeData(Value value, Value stateOnAssignment, Instance instance, boolean markAssignment) {
     }
 
     // lazy creation of lists
@@ -313,6 +315,32 @@ public class EvaluationResult {
             return currentValue.value;
         }
 
+        public Instance currentInstance(Variable variable, ObjectFlow objectFlowForCreation, Value stateFromPreconditions) {
+            ValueChangeData currentValue = valueChanges.get(variable);
+            if (currentValue != null && currentValue.instance != null) return currentValue.instance;
+            Instance inContext = evaluationContext.currentInstance(variable);
+            if (inContext != null) return inContext;
+            // there is no instance yet... we'll have to create one, but only if the value can have an instance
+            if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
+            Value value = currentValue(variable);
+            if (value.isConstant()) return null;
+            Instance instance = new Instance(variable.parameterizedType(), objectFlowForCreation,
+                    stateFromPreconditions);
+            assignInstanceToVariable(variable, instance);
+            return instance;
+        }
+
+        private void assignInstanceToVariable(Variable variable, Instance instance) {
+            ValueChangeData current = valueChanges.get(variable);
+            ValueChangeData newVcd;
+            if (current == null) {
+                newVcd = new ValueChangeData(NO_VALUE, NO_VALUE, instance, false);
+            } else {
+                newVcd = new ValueChangeData(current.value, current.stateOnAssignment, instance, current.markAssignment);
+            }
+            valueChanges.put(variable, newVcd);
+        }
+
         public Stream<Map.Entry<Variable, ValueChangeData>> getCurrentValuesStream() {
             return valueChanges.entrySet().stream();
         }
@@ -365,8 +393,11 @@ public class EvaluationResult {
             }
         }
 
-        public Builder assignment(Variable assignmentTarget, Value resultOfExpression, boolean assignmentToNonEmptyExpression, int iteration) {
-            ValueChangeData valueChangeData = new ValueChangeData(resultOfExpression, evaluationContext.getConditionManager().state,
+        /*
+        Called from Assignment and from LocalVariableCreation.
+         */
+        public Builder assignment(Variable assignmentTarget, Value resultOfExpression, Instance instance, boolean assignmentToNonEmptyExpression, int iteration) {
+            ValueChangeData valueChangeData = new ValueChangeData(resultOfExpression, evaluationContext.getConditionManager().state, instance,
                     iteration == 0 && assignmentToNonEmptyExpression);
             valueChanges.put(assignmentTarget, valueChangeData);
             return this;
@@ -389,8 +420,9 @@ public class EvaluationResult {
             // TODO part of object flow
         }
 
-        public void modifyingMethodAccess(Variable variable) {
+        public void modifyingMethodAccess(Variable variable, Instance newInstance) {
             add(new StateData.RemoveVariableFromState(evaluationContext, variable));
+            assignInstanceToVariable(variable, newInstance);
         }
 
         public void addErrorAssigningToFieldOutsideType(FieldInfo fieldInfo) {

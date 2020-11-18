@@ -632,9 +632,25 @@ public class ParameterizedType {
      * @param other the other type
      * @return the common type
      */
-    public ParameterizedType commonType(ParameterizedType other) {
+    public ParameterizedType commonType(Primitives primitives, ParameterizedType other) {
+        if (other == null) return null;
         if (equals(other)) return this;
-        return this; // TODO implement!!
+        TypeInfo bestType = bestTypeInfo();
+        TypeInfo otherBestType = other.bestTypeInfo();
+        boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(this) || bestType != null && Primitives.isBoxedExcludingVoid(bestType);
+        boolean otherIsPrimitive = Primitives.isPrimitiveExcludingVoid(other) || otherBestType != null && Primitives.isBoxedExcludingVoid(otherBestType);
+        if (isPrimitive && otherIsPrimitive) {
+            return primitives.widestType(this, other);
+        }
+        if (isPrimitive || otherIsPrimitive) return null; // no common type
+        if (bestType == null || otherBestType == null) return null;
+        if (isAssignableFrom(primitives, other)) {
+            return this;
+        }
+        if (other.isAssignableFrom(primitives, this)) {
+            return other;
+        }
+        return null;
     }
 
     public Boolean isImplicitlyOrAtLeastEventuallyE2Immutable(AnalysisProvider analysisProvider) {

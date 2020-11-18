@@ -142,7 +142,7 @@ public class Lambda implements Expression {
             }
         }
         if (result == null) {
-            result = new Instance(parameterizedType, null, List.of(), objectFlow, UnknownValue.EMPTY);
+            result = new Instance(parameterizedType, objectFlow, UnknownValue.EMPTY);
         }
 
         builder.setValue(result);

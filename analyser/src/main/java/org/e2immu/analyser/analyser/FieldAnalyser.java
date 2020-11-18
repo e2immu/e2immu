@@ -546,7 +546,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (value.isConstant()) return value;
             combinedValue = value;
         } else {
-            combinedValue = CombinedValue.create(values);
+            combinedValue = CombinedValue.create(analyserContext.getPrimitives(), values);
         }
         This thisVariable = new This(fieldInfo.owner);
         FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);

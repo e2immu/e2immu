@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
+import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -157,6 +158,16 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
         if (state != UnknownValue.NO_VALUE && (!variableInfo.stateOnAssignment.isSet() || !state.equals(variableInfo.stateOnAssignment.get()))) {
             variableInfo.stateOnAssignment.set(state);
+        }
+    }
+
+    @Override
+    public void setInstanceOnAssignment(int level, Instance instance) {
+        ensureNotFrozen();
+        Objects.requireNonNull(instance);
+        VariableInfoImpl variableInfo = currentLevelForWriting(level);
+        if (!variableInfo.instance.isSet() || !instance.equals(variableInfo.instance.get())) {
+            variableInfo.instance.set(instance);
         }
     }
 
@@ -359,6 +370,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             }
         }
 
+        merged.mergeInstance(existingValuesWillBeOverwritten, existing, merge);
         merged.mergeLinkedVariables(existingValuesWillBeOverwritten, existing, merge);
     }
 

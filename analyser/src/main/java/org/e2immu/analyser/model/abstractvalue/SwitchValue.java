@@ -222,4 +222,10 @@ public class SwitchValue implements Value {
     public ObjectFlow getObjectFlow() {
         return ObjectFlow.NO_FLOW; // TODO
     }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        if (Primitives.isPrimitiveExcludingVoid(type())) return null;
+        return new Instance(type(), getObjectFlow(), UnknownValue.EMPTY);
+    }
 }

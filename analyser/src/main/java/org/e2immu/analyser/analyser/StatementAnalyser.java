@@ -487,6 +487,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (stateOnAssignment != NO_VALUE) {
                 vic.setStateOnAssignment(level, stateOnAssignment);
             }
+            Instance instance = valueChangeData.instance();
+            if (instance != null) {
+                vic.setInstanceOnAssignment(level, instance);
+            }
         });
 
         AnalysisStatus status = evaluationResult.value == NO_VALUE ? DELAYS : DONE;
@@ -1161,6 +1165,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         public Value currentValue(Variable variable) {
             VariableInfo vi = statementAnalysis.find(analyserContext, variable);
             return vi.getValue();
+        }
+
+        @Override
+        public Instance currentInstance(Variable variable) {
+            VariableInfo vi = statementAnalysis.find(analyserContext, variable);
+            return vi.getInstance();
         }
 
         @Override

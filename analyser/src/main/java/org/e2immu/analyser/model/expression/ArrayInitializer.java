@@ -73,7 +73,7 @@ public class ArrayInitializer implements Expression {
             if (expression != NullConstant.NULL_CONSTANT) {
                 ParameterizedType parameterizedType = expression.returnType();
                 if (commonType == null) commonType = parameterizedType;
-                else commonType = commonType.commonType(parameterizedType);
+                else commonType = commonType.commonType(primitives, parameterizedType);
             }
         }
         return commonType == null ? primitives.objectParameterizedType : commonType;
@@ -101,7 +101,7 @@ public class ArrayInitializer implements Expression {
 
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(results);
         ObjectFlow objectFlow = builder.createLiteralObjectFlow(commonType);
-        builder.setValue(new ArrayValue(objectFlow, values));
+        builder.setValue(new ArrayValue(evaluationContext.getPrimitives(), objectFlow, values));
 
         return builder.build();
     }

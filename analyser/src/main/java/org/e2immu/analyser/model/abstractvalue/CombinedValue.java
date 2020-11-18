@@ -2,12 +2,10 @@ package org.e2immu.analyser.model.abstractvalue;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.HashSet;
@@ -20,9 +18,11 @@ import java.util.stream.Collectors;
 public class CombinedValue implements Value {
 
     public final List<Value> values;
+    private final ParameterizedType commonType;
 
-    private CombinedValue(List<Value> values) {
+    private CombinedValue(ParameterizedType commonType, List<Value> values) {
         this.values = values;
+        this.commonType = commonType;
     }
 
     @Override
@@ -35,9 +35,19 @@ public class CombinedValue implements Value {
         return false;
     }
 
-    public static Value create(List<Value> values) {
+    public static Value create(Primitives primitives, List<Value> values) {
         if (values.isEmpty()) throw new UnsupportedOperationException();
-        return new CombinedValue(ImmutableList.copyOf(values));
+        ParameterizedType commonType = commonType(primitives, values);
+        return new CombinedValue(commonType, ImmutableList.copyOf(values));
+    }
+
+    private static ParameterizedType commonType(Primitives primitives, List<Value> values) {
+        ParameterizedType commonType = values.get(0).type();
+        for (int i = 1; i < values.size(); i++) {
+            if (commonType == null) return null;
+            commonType = commonType.commonType(primitives, values.get(i).type());
+        }
+        return commonType;
     }
 
     @Override
@@ -92,5 +102,16 @@ public class CombinedValue implements Value {
     @Override
     public String print(PrintMode printMode) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        if (Primitives.isPrimitiveExcludingVoid(type())) return null;
+        return new Instance(type(), getObjectFlow(), UnknownValue.EMPTY);
+    }
+
+    @Override
+    public ParameterizedType type() {
+        return commonType;
     }
 }
