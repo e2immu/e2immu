@@ -19,17 +19,15 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Constant;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class Size_2 {
+public class BasicCompanionMethods_3 {
 
     @Constant(boolValue = true)
     static boolean test() {
-        List<String> list = new ArrayList<>();
-        list.add("a");
-        list.add("b");
-        return list.contains("a") && list.contains("b") && list.size() == 2;
+        StringBuilder sb = new StringBuilder("abc").append(3).append("-");
+        if (sb.length() == 3) { //evaluates to constant
+            throw new UnsupportedOperationException(); // unreachable code
+        }
+        return sb.toString().length() == 5; // constant true
     }
 
 }

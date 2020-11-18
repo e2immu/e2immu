@@ -22,14 +22,13 @@ import org.e2immu.annotation.Constant;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Size_0 {
+public class BasicCompanionMethods_1 {
 
-    @Constant(intValue = 4)
-    static int test() {
+    @Constant(boolValue = true)
+    static boolean test() {
         List<String> list = new ArrayList<>();
-        if (list.size() > 0) { // evaluates to constant
-            return 3; // never reached!
-        }
-        return list.size() + 4;
+        list.add("a");
+        String a = "a";
+        return list.size() == 1 && list.contains(a);
     }
 }

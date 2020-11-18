@@ -63,6 +63,11 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
+    public boolean isVariableField() {
+        return variable instanceof FieldReference; // FIXME and some other criterion
+    }
+
+    @Override
     public Stream<Map.Entry<VariableProperty, Integer>> propertyStream() {
         return properties.stream();
     }

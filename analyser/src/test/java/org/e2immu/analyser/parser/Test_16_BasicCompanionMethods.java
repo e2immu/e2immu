@@ -21,42 +21,45 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.EvaluationResult;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Map;
 
-public class Test_00_Size extends CommonTestRunner {
+public class Test_16_BasicCompanionMethods extends CommonTestRunner {
 
     private static final String TYPE = "org.e2immu.analyser.testexample.Size";
+    public static final String LIST_SIZE = "instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()]";
 
-    public Test_00_Size() {
+    public Test_16_BasicCompanionMethods() {
         super(true);
     }
 
     @Test
     public void test0() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+            if ("0".equals(d.statementId())) {
                 Assert.assertEquals("<empty>", d.state().toString());
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "list".equals(d.variableName())) {
-                Assert.assertEquals("instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()]", d.currentValue().toString());
-            }
-            if ("test2".equals(d.methodInfo().name) && "1".equals(d.statementId()) && "list".equals(d.variableName())) {
-                Assert.assertEquals("instance type java.util.ArrayList()[(1 == java.util.ArrayList.this.size()) and (java.util.ArrayList.this.contains(\"a\")]",
-                        d.currentValue().toString());
+            if ("test".equals(d.methodInfo().name) && "list".equals(d.variableName())) {
+                Assert.assertEquals(LIST_SIZE, d.currentValue().toString());
+                Assert.assertEquals(LIST_SIZE, d.variableInfo().getInstance().toString());
             }
         };
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if("test".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                EvaluationResult.ValueChangeData valueChangeData = d.evaluationResult().getValueChangeStream()
+                        .filter(e -> "list".equals(e.getKey().fullyQualifiedName())).map(Map.Entry::getValue).findFirst().orElseThrow();
+                Assert.assertEquals(LIST_SIZE, valueChangeData.instance().toString());
+            }
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                // ((-1) + instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()) >= 0 needs to reduce...
-
                 Assert.assertEquals("false", d.evaluationResult().value.toString());
             }
         };
@@ -65,13 +68,9 @@ public class Test_00_Size extends CommonTestRunner {
             if ("test".equals(d.methodInfo().name)) {
                 Assert.assertEquals("4", d.methodAnalysis().getSingleReturnValue().toString());
             }
-            if ("test2".equals(d.methodInfo().name) || "test3".equals(d.methodInfo().name)) {
-                Assert.assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
-            }
-
         };
         // two errors: two unused parameters
-        testClass("Size_0", 2, 0, new DebugConfiguration.Builder()
+        testClass("BasicCompanionMethods_0", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
@@ -95,7 +94,7 @@ public class Test_00_Size extends CommonTestRunner {
             }
 
         };
-        testClass("Size_1", 0, 0, new DebugConfiguration.Builder()
+        testClass("BasicCompanionMethods_1", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
@@ -116,7 +115,28 @@ public class Test_00_Size extends CommonTestRunner {
             }
 
         };
-        testClass("Size_2", 0, 0, new DebugConfiguration.Builder()
+        testClass("BasicCompanionMethods_2", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
+    }
+
+
+    @Test
+    public void test3() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "sb".equals(d.variableName())) {
+                Assert.assertEquals("", d.currentValue().toString());
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("test".equals(d.methodInfo().name)) {
+                Assert.assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
+            }
+
+        };
+        testClass("BasicCompanionMethods_3", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());

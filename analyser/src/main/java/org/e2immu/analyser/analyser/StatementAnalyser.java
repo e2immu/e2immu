@@ -1164,7 +1164,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         @Override
         public Value currentValue(Variable variable) {
             VariableInfo vi = statementAnalysis.find(analyserContext, variable);
-            return vi.getValue();
+            Value value = vi.getValue();
+            return value instanceof Instance ? new VariableValue(variable, vi.getObjectFlow(), vi.isVariableField()) : value;
         }
 
         @Override
@@ -1175,11 +1176,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public int getProperty(Variable variable, VariableProperty variableProperty) {
-            Value currentValue = currentValue(variable);
-            if (currentValue instanceof VariableValue) {
-                return statementAnalysis.find(analyserContext, variable).getProperty(variableProperty);
-            }
-            return currentValue.getProperty(this, variableProperty);
+            VariableInfo vi = statementAnalysis.find(analyserContext, variable);
+            return vi.getProperty(variableProperty); // ALWAYS from the map!!!!
         }
 
         @Override

@@ -183,6 +183,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 builder.addAccess(modified == Level.TRUE, methodAccess, objectValue);
             }
         }
+        Instance modifiedInstance = null;
         VariableValue variableValue;
         if (modified == Level.TRUE && (variableValue = objectValue.asInstanceOf(VariableValue.class)) != null) {
             // any sort of variable value (This, LocalVariableReference, FieldReference, ...)
@@ -202,7 +203,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 // post is already OK (it is the new value of the aspect method)
                 // pre is the "old" value, which has to be obtained. If that's impossible, we bail out.
                 // the parameters are available
-                Map<Value, Value> translation = createTranslationMap(evaluationContext, aspectMethod,
+                Map<Value, Value> translation = createTranslationMap(builder, evaluationContext, aspectMethod,
                         companionAnalysis, optEntry.get(), instance, parameterValues);
 
                 if (translation != null) {
@@ -219,7 +220,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             } else {
                 newState = instance.state;
             }
-            Instance modifiedInstance = new Instance(instance, newState);
+            modifiedInstance = new Instance(instance, newState);
             builder.modifyingMethodAccess(variableValue.variable, modifiedInstance);
         }
 
@@ -248,7 +249,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
             EvaluationResult mv = methodValue(evaluationContext, methodInfo, methodAnalysis, objectValue, parameterValues, objectFlowOfResult);
             builder.compose(mv);
-            result = mv.value;
+            if (mv.value == objectValue && mv.value instanceof Instance && modifiedInstance != null) {
+                result = modifiedInstance;
+            } else {
+                result = mv.value;
+            }
         } else {
             result = UnknownValue.NO_RETURN_VALUE;
         }
@@ -259,7 +264,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return builder.build();
     }
 
-    private Map<Value, Value> createTranslationMap(EvaluationContext evaluationContext,
+    private Map<Value, Value> createTranslationMap(EvaluationResult.Builder builder,
+                                                   EvaluationContext evaluationContext,
                                                    MethodInfo aspectMethod,
                                                    CompanionAnalysis companionAnalysis,
                                                    CompanionMethodName companionMethodName,
@@ -269,7 +275,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // first, pre
         Value preAspectVariableValue = companionAnalysis.getPreAspectVariableValue();
         if (preAspectVariableValue != UnknownValue.NO_VALUE) {
-            Value previousValue = computeEvaluationOnInstance(evaluationContext, aspectMethod, instance, List.of());
+            Value previousValue = computeEvaluationOnInstance(builder, evaluationContext, aspectMethod, instance, List.of());
             result.put(preAspectVariableValue, previousValue);
         }
         // parameters
@@ -356,7 +362,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // evaluation on Instance, with state
-        Value evaluationOnInstance = computeEvaluationOnInstance(evaluationContext, methodInfo, objectValue, parameters);
+        Value evaluationOnInstance = computeEvaluationOnInstance(builder, evaluationContext, methodInfo, objectValue, parameters);
         if (evaluationOnInstance != null) {
             return builder.setValue(evaluationOnInstance).build();
         }
@@ -432,31 +438,36 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()
     // IMPROVE code for now dedicated as hell to catch X == this.method
-    private static Value computeEvaluationOnInstance(EvaluationContext evaluationContext,
+    private static Value computeEvaluationOnInstance(EvaluationResult.Builder builder,
+                                                     EvaluationContext evaluationContext,
                                                      MethodInfo methodInfo,
                                                      Value objectValue,
                                                      List<Value> parameterValues) {
         // look for a clause that has "this.methodInfo" as a MethodValue
         Instance instance;
-        Value thisValue = new VariableValue(new This(methodInfo.typeInfo));
-        MethodValue methodValue = new MethodValue(methodInfo, thisValue, List.of(), ObjectFlow.NO_FLOW);
-        AtomicReference<Value> result = new AtomicReference<>();
-        if (((instance = objectValue.asInstanceOf(Instance.class)) != null)) {
-            instance.state.individualBooleanClauses(Value.FilterMode.ACCEPT).forEach(component -> {
-                // example: 0 == java.util.ArrayList.this.size()
-                if (component instanceof EqualsValue equalsValue && equalsValue.rhs instanceof MethodValue methodInEquals) {
-                    if (compatibleMethod(methodInfo, methodInEquals.methodInfo)) {
-                        result.set(equalsValue.lhs);
-                    }
-                }
-                // example: java.util.ArrayList.contains("a")
-                if (component instanceof MethodValue mv) {
-                    if (compatibleMethod(methodInfo, mv.methodInfo) && compatibleParameters(parameterValues, mv.parameters)) {
-                        result.set(component);
-                    }
-                }
-            });
+        if (objectValue instanceof Instance theInstance) {
+            instance = theInstance;
+        } else if (objectValue instanceof VariableValue variableValue) {
+            instance = builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+        } else {
+            return null;
         }
+        AtomicReference<Value> result = new AtomicReference<>();
+        instance.state.individualBooleanClauses(Value.FilterMode.ACCEPT).forEach(component -> {
+            // example: 0 == java.util.ArrayList.this.size()
+            if (component instanceof EqualsValue equalsValue && equalsValue.rhs instanceof MethodValue methodInEquals) {
+                if (compatibleMethod(methodInfo, methodInEquals.methodInfo)) {
+                    result.set(equalsValue.lhs);
+                }
+            }
+            // example: java.util.ArrayList.contains("a")
+            if (component instanceof MethodValue mv) {
+                if (compatibleMethod(methodInfo, mv.methodInfo) && compatibleParameters(parameterValues, mv.parameters)) {
+                    result.set(component);
+                }
+            }
+        });
+
         return result.get();
     }
 

@@ -92,4 +92,6 @@ public interface VariableInfo {
     default boolean stateOnAssignmentIsSet() {
         return getStateOnAssignment() != UnknownValue.NO_VALUE;
     }
+
+    boolean isVariableField();
 }
