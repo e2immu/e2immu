@@ -132,7 +132,10 @@ class JavaLang {
 
     @E2Container
     static class String$ implements CharSequence {
-        boolean String$Modification$Len(int post) { return post == 0; }
+        boolean String$Modification$Len(int post) {
+            return post == 0;
+        }
+
         String$() {
         }
 
@@ -324,7 +327,16 @@ class JavaLang {
 
     @Container
     static class StringBuilder$ {
+
+        boolean StringBuilder$Modification$Len(int post) {
+            return post == 0;
+        }
+
         StringBuilder$() {
+        }
+
+        boolean StringBuilder$Modification$Len(int post, String string) {
+            return post == string.length();
         }
 
         StringBuilder$(String string) {
@@ -350,6 +362,7 @@ class JavaLang {
             return null;
         }
 
+        boolean append$Modification$Len(int post, int prev, int i) { return post == prev + Integer.toString(i).length(); }
         @Fluent
         StringBuilder append(int i) {
             return null;
@@ -360,6 +373,7 @@ class JavaLang {
             return null;
         }
 
+        boolean append$Modification$Len(int post, int prev, String str) { return post == prev + str.length(); }
         @Fluent
         StringBuilder append(String str) {
             return null;
@@ -369,11 +383,18 @@ class JavaLang {
         StringBuilder append(Object o) {
             return null;
         }
+
+        void length$Aspect$Len() {}
+        int length() {
+            return 0;
+        }
     }
 
     @E2Container
     static class Integer$ {
 
+        @NotNull
+        static String toString(int i) { return null; }
     }
 
     @E2Container

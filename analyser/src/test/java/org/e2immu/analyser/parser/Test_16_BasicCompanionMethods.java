@@ -20,19 +20,25 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.CompanionAnalysis;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.EvaluationResult;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.EqualsValue;
+import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.abstractvalue.SumValue;
+import org.e2immu.analyser.model.expression.BinaryOperator;
+import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.TypeExpression;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Test_16_BasicCompanionMethods extends CommonTestRunner {
 
@@ -186,21 +192,57 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
 
     @Test
     public void test3() throws IOException {
-        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "sb".equals(d.variableName())) {
-                Assert.assertEquals("", d.currentValue().toString());
+        TypeContextVisitor typeContextVisitor = typeContext -> {
+            TypeInfo string = typeContext.getFullyQualified(String.class);
+            MethodInfo length = string.findUniqueMethod("length", 0);
+            Assert.assertTrue(length.methodAnalysis.isSet());
+            Assert.assertEquals(Set.of(CompanionMethodName.Action.ASPECT, CompanionMethodName.Action.INVARIANT),
+                    length.methodInspection.get().companionMethods.keySet().stream().map(CompanionMethodName::action).collect(Collectors.toSet()));
+
+            TypeInfo intTypeInfo = typeContext.getPrimitives().intTypeInfo;
+            TypeInfo stringBuilder = typeContext.getFullyQualified(StringBuilder.class);
+            MethodInfo appendInt = stringBuilder.typeInspection.get().methods.stream().filter(methodInfo -> "append".equals(methodInfo.name) &&
+                    intTypeInfo == methodInfo.methodInspection.get().parameters.get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
+            MethodInfo appendIntCompanion = appendInt.methodInspection.get().companionMethods.values().stream().findFirst().orElseThrow();
+            ReturnStatement returnStatement = (ReturnStatement) appendIntCompanion.methodInspection.get().methodBody.get().structure.statements.get(0);
+            Assert.assertEquals("return post == prev + Integer.toString(i).length();\n", returnStatement.statementString(0, null));
+
+            if (returnStatement.expression instanceof BinaryOperator eq &&
+                    eq.rhs instanceof BinaryOperator plus &&
+                    plus.rhs instanceof MethodCall lengthCall &&
+                    lengthCall.object instanceof MethodCall toString &&
+                    toString.object instanceof TypeExpression integer) {
+                // check we have the same Integer type
+                Assert.assertSame(integer.parameterizedType.typeInfo, typeContext.getPrimitives().integerTypeInfo);
+                // check the length method
+                Assert.assertSame(lengthCall.methodInfo, length);
             }
+            CompanionAnalysis appendCa = appendInt.methodAnalysis.get().getCompanionAnalyses().values().stream().findFirst().orElseThrow();
+            Value appendCompanionValue = appendCa.getValue();
+            Assert.assertEquals("(java.lang.Integer.toString(java.lang.StringBuilder.append(int):0:i).length() + pre) == java.lang.StringBuilder.this.length()",
+                    appendCa.getValue().toString());
+            if (appendCompanionValue instanceof EqualsValue eq && eq.lhs instanceof SumValue sum && sum.lhs instanceof MethodValue lengthCall) {
+                Assert.assertSame(lengthCall.methodInfo, length);
+            } else Assert.fail();
+
+            TypeInfo stringTypeInfo = typeContext.getPrimitives().stringTypeInfo;
+            MethodInfo appendStr = stringBuilder.typeInspection.get().methods.stream().filter(methodInfo -> "append".equals(methodInfo.name) &&
+                    string == methodInfo.methodInspection.get().parameters.get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
+            MethodInfo appendStringCompanion = appendStr.methodInspection.get().companionMethods.values().stream().findFirst().orElseThrow();
+            ReturnStatement returnStatementStr = (ReturnStatement) appendStringCompanion.methodInspection.get().methodBody.get().structure.statements.get(0);
+            Assert.assertEquals("return post == prev + str.length();\n", returnStatementStr.statementString(0, null));
+
+            if (returnStatementStr.expression instanceof BinaryOperator eq &&
+                    eq.rhs instanceof BinaryOperator plus &&
+                    plus.rhs instanceof MethodCall lengthCall) {
+                // check the length method
+                Assert.assertEquals(lengthCall.methodInfo, length);
+                Assert.assertSame(lengthCall.methodInfo, length);
+            } else Assert.fail();
         };
 
-        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if ("test".equals(d.methodInfo().name)) {
-                Assert.assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
-            }
-
-        };
         testClass("BasicCompanionMethods_3", 0, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addTypeContextVisitor(typeContextVisitor)
                 .build());
     }
 

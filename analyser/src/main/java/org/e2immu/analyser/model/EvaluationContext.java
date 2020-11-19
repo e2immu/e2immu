@@ -25,6 +25,8 @@ import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +37,7 @@ import java.util.stream.Stream;
  * Defaults because of tests
  */
 public interface EvaluationContext {
+    static final Logger LOGGER = LoggerFactory.getLogger(EvaluationContext.class);
 
     default int getIteration() {
         return 0;
@@ -104,8 +107,13 @@ public interface EvaluationContext {
     }
 
     default TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
-        TypeAnalyser typeAnalyser = getAnalyserContext().getTypeAnalysers().get(typeInfo);
-        return typeAnalyser != null ? typeAnalyser.typeAnalysis : typeInfo.typeAnalysis.get();
+        try {
+            TypeAnalyser typeAnalyser = getAnalyserContext().getTypeAnalysers().get(typeInfo);
+            return typeAnalyser != null ? typeAnalyser.typeAnalysis : typeInfo.typeAnalysis.get();
+        } catch (RuntimeException e) {
+            LOGGER.error("Caught exception in default get type analysis: " + typeInfo.fullyQualifiedName);
+            throw e;
+        }
     }
 
     default Stream<ObjectFlow> getInternalObjectFlows() {

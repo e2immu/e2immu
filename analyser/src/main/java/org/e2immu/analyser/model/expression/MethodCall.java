@@ -539,6 +539,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 (stringValue = objectValue.asInstanceOf(StringValue.class)) != null) {
             return new IntValue(primitives, stringValue.value.length(), ObjectFlow.NO_FLOW);
         }
+        if ("java.lang.Integer.toString(int)".equals(methodInfo.fullyQualifiedName()) &&
+                objectValue instanceof IntValue intValue) {
+            return new StringValue(primitives, Integer.toString(intValue.value));
+        }
         return null;
     }
 

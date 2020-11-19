@@ -26,6 +26,7 @@ import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.TypeContextVisitor;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.upload.AnnotationUploader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,7 +110,7 @@ public class Parser {
 
         if (configuration.skipAnalysis) return sortedPrimaryTypes;
 
-        ensureShallowAnalysisOfLoadedObjects(null);
+        ensureShallowAnalysisOfLoadedObjects();
 
         for (TypeContextVisitor typeContextVisitor : configuration.debugConfiguration.typeContextVisitors) {
             typeContextVisitor.visit(getTypeContext());
@@ -159,27 +160,46 @@ public class Parser {
     }
 
     private void ensureShallowAnalysisOfLoadedObjects(List<SortedType> sortedTypes) {
-        boolean acceptAll = sortedTypes != null;
 
         // the following block of code ensures that primary types of the annotated APIs
         // are processed in the correct order
 
-        List<TypeInfo> typesForShallowAnalysis = new LinkedList<>();
-        if (sortedTypes != null) {
-            sortedTypes.forEach(st -> typesForShallowAnalysis.add(st.primaryType));
-        }
-        Set<TypeInfo> alreadyIncluded = new HashSet<>(typesForShallowAnalysis);
+        List<TypeInfo> types = new LinkedList<>();
+        sortedTypes.forEach(st -> types.add(st.primaryType));
+        Set<TypeInfo> alreadyIncluded = new HashSet<>(types);
+
         getTypeContext().typeStore.visit(new String[0], (s, list) -> {
             for (TypeInfo typeInfo : list) {
-                if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() &&
-                        (acceptAll || typeInfo.shallowAnalysis()) && !alreadyIncluded.contains(typeInfo)) {
-                    typesForShallowAnalysis.add(typeInfo);
+                if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() && !alreadyIncluded.contains(typeInfo)) {
+                    types.add(typeInfo);
                 }
             }
         });
-        ShallowTypeAnalyser shallowTypeAnalyser = new ShallowTypeAnalyser(typesForShallowAnalysis, configuration,
+        shallowAnalysis(types);
+    }
+
+    private void ensureShallowAnalysisOfLoadedObjects() {
+        List<TypeInfo> types = new LinkedList<>();
+        getTypeContext().typeStore.visit(new String[0], (s, list) -> {
+            for (TypeInfo typeInfo : list) {
+                if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() && typeInfo.shallowAnalysis()) {
+                    types.add(typeInfo);
+                }
+            }
+        });
+        shallowAnalysis(types);
+    }
+
+    private void shallowAnalysis(List<TypeInfo> types) {
+        assert types.size() == new HashSet<>(types).size() : "Duplicates?";
+
+        ShallowTypeAnalyser shallowTypeAnalyser = new ShallowTypeAnalyser(types, configuration,
                 getTypeContext().getPrimitives(), getE2ImmuAnnotationExpressions());
         messages.addAll(shallowTypeAnalyser.analyse());
+
+        assert types.stream().allMatch(typeInfo -> typeInfo.typeAnalysis.isSet() &&
+                typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                        .allMatch(methodInfo -> methodInfo.methodAnalysis.isSet())) : "All method analysis set";
     }
 
 
