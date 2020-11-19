@@ -265,19 +265,28 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     // pre is the "old" value, which has to be obtained. If that's impossible, we bail out.
                     // the parameters are available
                     FilterResultAndTranslationMap translation = createTranslationMap(builder, evaluationContext, aspectMethod,
-                            companionAnalysis, companionMethodName, instance, parameterValues);
+                            companionAnalysis, companionMethodName, newState.get(), parameterValues);
 
-                    if (translation != null) {
-                        Value companionValue = companionAnalysis.getValue();
-                        EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(evaluationContext, translation.translationMap);
-                        // no need to compose: this is a separate operation. builder.compose(companionValueTranslationResult);
-                        Value companionValueTranslated = companionValueTranslationResult.value;
-                        // IMPROVE the object flow and the state from the precondition!!
+                    Value companionValue = companionAnalysis.getValue();
+                    EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(evaluationContext, translation.translationMap);
+                    // no need to compose: this is a separate operation. builder.compose(companionValueTranslationResult);
+                    Value companionValueTranslated = companionValueTranslationResult.value;
+                    // IMPROVE the object flow and the state from the precondition!!
 
+                    if (translation.filterResult != null) {
+                        // there is an old "pre" value that needs to be removed
                         if (translation.filterResult.rest() == UnknownValue.EMPTY) {
                             newState.set(companionValueTranslated);
                         } else {
                             newState.set(new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, translation.filterResult.rest(),
+                                    companionValueTranslated));
+                        }
+                    } else {
+                        // no pre-value to be removed
+                        if (newState.get() == UnknownValue.EMPTY) {
+                            newState.set(companionValueTranslated);
+                        } else {
+                            newState.set(new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, newState.get(),
                                     companionValueTranslated));
                         }
                     }
@@ -314,22 +323,24 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                  Map<Value, Value> translationMap) {
     }
 
+    // for modifying methods only. there is a "Pre" variable when there are aspects.
+    // the filter result contains the pre-clause and the rest.
     private FilterResultAndTranslationMap createTranslationMap(EvaluationResult.Builder builder,
                                                                EvaluationContext evaluationContext,
                                                                MethodInfo aspectMethod,
                                                                CompanionAnalysis companionAnalysis,
                                                                CompanionMethodName companionMethodName,
-                                                               Instance instance,
+                                                               Value stateOfInstance,
                                                                List<Value> parameterValues) {
         ImmutableMap.Builder<Value, Value> translationMap = new ImmutableMap.Builder<>();
-        // first: pre
-        Value preAspectVariableValue = companionMethodName.aspect() == null ? UnknownValue.NO_VALUE : companionAnalysis.getPreAspectVariableValue();
         Filter.FilterResult<MethodValue> filterResult;
-        if (preAspectVariableValue != UnknownValue.NO_VALUE) {
-            filterResult = computeEvaluationOnInstance(builder, evaluationContext, aspectMethod, instance, List.of());
+        if (aspectMethod != null) {
+            // first: pre
+            Value preAspectVariableValue = companionAnalysis.getPreAspectVariableValue();
+            filterResult = filter(evaluationContext, aspectMethod, stateOfInstance, List.of());
             translationMap.put(preAspectVariableValue, filterResult.accepted().values().stream().findFirst().orElseThrow());
         } else {
-            return null;
+            filterResult = null;
         }
         // parameters
         ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
@@ -495,7 +506,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()
-    // IMPROVE code for now dedicated as hell to catch X == this.method
     private static Filter.FilterResult<MethodValue> computeEvaluationOnInstance(EvaluationResult.Builder builder,
                                                                                 EvaluationContext evaluationContext,
                                                                                 MethodInfo methodInfo,
@@ -510,9 +520,16 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             return null;
         }
+        return filter(evaluationContext, methodInfo, instance.state, parameterValues);
+    }
+
+    private static Filter.FilterResult<MethodValue> filter(EvaluationContext evaluationContext,
+                                                           MethodInfo methodInfo,
+                                                           Value state,
+                                                           List<Value> parameterValues) {
         List<Filter.FilterMethod<MethodValue>> filters = List.of(new Filter.MethodCallBooleanResult(methodInfo, parameterValues,
                 BoolValue.createTrue(evaluationContext.getPrimitives())), new Filter.ValueEqualsMethodCallNoParameters(methodInfo));
-        return Filter.filter(evaluationContext, instance, Filter.FilterMode.ACCEPT, filters);
+        return Filter.filter(evaluationContext, state, Filter.FilterMode.ACCEPT, filters);
     }
 
     private static Value computeEvaluationOnConstant(Primitives primitives, MethodInfo methodInfo, Value objectValue) {
