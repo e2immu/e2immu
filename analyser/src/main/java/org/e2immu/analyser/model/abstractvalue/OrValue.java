@@ -249,7 +249,7 @@ public class OrValue extends PrimitiveValue {
     public Value removeIndividualBooleanClause(EvaluationContext evaluationContext, Value clauseToRemove, FilterMode filterMode) {
         if (filterMode == FilterMode.REJECT) {
             return new OrValue(evaluationContext.getPrimitives()).append(evaluationContext,
-                    values.stream().filter(clauseToRemove::equals).toArray(Value[]::new));
+                    values.stream().filter(v -> !v.equals(clauseToRemove)).toArray(Value[]::new));
         }
         return this;
     }

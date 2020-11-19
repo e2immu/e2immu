@@ -165,7 +165,8 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                         d.currentValue().toString());
             }
             if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId()) && "list".equals(d.variableName())) {
-                Assert.assertEquals("instance type java.util.ArrayList()[(java.util.List.this.contains(a) and 1 == java.util.List.this.size())]",
+                Assert.assertEquals("instance type java.util.ArrayList()[(java.util.List.this.contains(a) and java.util.List.this.contains(b)" +
+                                " and 2 == java.util.List.this.size())]",
                         d.currentValue().toString());
             }
         };
