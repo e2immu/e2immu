@@ -78,7 +78,6 @@ public class MethodLevelData {
 
     public final AnalyserComponents<String, SharedState> analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
             .add("ensureThisProperties", sharedState -> ensureThisProperties(sharedState.evaluationContext, sharedState.statementAnalysis))
-            .add("establishLinks", this::establishLinks)
             .add("computeContentModifications", this::computeContentModifications)
             .add("combinePrecondition", this::combinePrecondition)
             .build();
@@ -126,57 +125,11 @@ public class MethodLevelData {
         return DONE;
     }
 
-    /*
-     Relies on
-     - numberedStatement.linkedVariables, which should return us all the variables involved in the return statement
-            it does so by computing the linkedVariables of the evaluation of the expression in the return statement
-     - for fields among the linkedVariables: fieldAnalysis.variablesLinkedToMe,
-       which in turn depends on fieldAssignments and fieldsLinkedToFieldsAndVariables of ALL OTHER methods
-     - for local variables: variablesLinkedToFieldsAndParameters for this method
-
-     sets variablesLinkedToMethodResult, and @Linked on or off dependent on whether the set is empty or not
-    */
-
-
-    /*
-      goal: we need to establish that in this method, recursively, a given field is linked to one or more fields or parameters
-      we need to find out if a parameter is linked, recursively, to another field or parameter
-      local variables need to be taken out of the loop
-
-      in essence: moving from the dependency graph to the MethodAnalysis.variablesLinkedToFieldsAndParameters data structure
-      gets rid of local vars and follows links transitively
-
-      To answer how this method deals with unevaluated links (links that can do better when one of their components are != NO_VALUE)
-      two dependency graphs have been created: a best-case one where some annotations on the current type have been discovered
-      already, and a worst-case one where we do not take them into account.
-
-      Why? if a method is called, as part of the value, and we do not yet know anything about the independence (@Independent) of that method,
-      the outcome of linkedVariables() can be seriously different. If there is a difference between the transitive
-      closures of best and worst, we should delay.
-
-      On top of this, fields whose @Final status has not been set yet, are represented (as currentValues in the evaluation context)
-      by VariableValues with a special boolean flag, instead of NO_VALUES.
-      This allows us to delay computations without completely losing the dependency structure as constructed up by method calls.
-      It is that dependency structure that we need to be able to distinguish between best and worst case.
-
-    */
-
-    private AnalysisStatus establishLinks(SharedState sharedState) {
-        if (linksHaveBeenEstablished.isSet()) return DONE;
-        StatementAnalysis statementAnalysis = sharedState.statementAnalysis;
-        boolean delays = statementAnalysis.variableStream()
-                .filter(variableInfo -> variableInfo.variable() instanceof FieldReference || variableInfo.variable() instanceof ReturnVariable)
-                .anyMatch(variableInfo -> !variableInfo.linkedVariablesIsSet());
-        if (delays) return DELAYS;
-        linksHaveBeenEstablished.set();
-        return DONE;
-    }
-
     private AnalysisStatus computeContentModifications(SharedState sharedState) {
-        if (!linksHaveBeenEstablished.isSet()) return DELAYS;
+        assert !linksHaveBeenEstablished.isSet();
 
         final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
-        final AtomicBoolean changes = new AtomicBoolean();
+        final AtomicBoolean progress = new AtomicBoolean();
 
         // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
         sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
@@ -205,7 +158,7 @@ public class MethodLevelData {
                                         linkedVariable.fullyQualifiedName(), logLocation);
                                 VariableInfoContainer vic = sharedState.statementAnalysis.findForWriting(vi.name());
                                 vic.setProperty(VIC_LEVEL, VariableProperty.MODIFIED, fieldModified);
-                                changes.set(true);
+                                progress.set(true);
                             }
                         }
                     } else if (linkedVariable instanceof ParameterInfo) {
@@ -226,7 +179,7 @@ public class MethodLevelData {
                                     // we can safely cast here to the builder
                                     ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
                                     sharedState.builder.add(builder.new SetProperty(VariableProperty.MODIFIED, summary));
-                                    changes.set(true);
+                                    progress.set(true);
                                 }
                             }
                         }
@@ -234,7 +187,10 @@ public class MethodLevelData {
                 }
             }
         });
-        return analysisStatus.get() == DELAYS ? (changes.get() ? PROGRESS : DELAYS) : DONE;
+        if(analysisStatus.get() == DONE) {
+            linksHaveBeenEstablished.set();
+        }
+        return analysisStatus.get() == DELAYS ? (progress.get() ? PROGRESS : DELAYS) : DONE;
     }
 
 

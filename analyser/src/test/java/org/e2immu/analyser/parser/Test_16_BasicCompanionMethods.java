@@ -19,6 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -31,16 +32,15 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Set;
 
 public class Test_16_BasicCompanionMethods extends CommonTestRunner {
-
-    public static final String LIST_SIZE = "instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()]";
-    public static final String INSTANCE_SIZE_1_CONTAINS = "instance type java.util.ArrayList()[(java.util.List.this.contains(a) and 1 == java.util.List.this.size())]";
-    public static final String TEST_1_RETURN_VARIABLE = "org.e2immu.analyser.testexample.BasicCompanionMethods_1.test()";
 
     public Test_16_BasicCompanionMethods() {
         super(true);
     }
+
+    public static final String LIST_SIZE = "instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()]";
 
     @Test
     public void test0() throws IOException {
@@ -53,7 +53,6 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "list".equals(d.variableName())) {
                 Assert.assertEquals(LIST_SIZE, d.currentValue().toString());
-                Assert.assertEquals(LIST_SIZE, d.variableInfo().getInstance().toString());
             }
         };
 
@@ -61,7 +60,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
             if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 EvaluationResult.ValueChangeData valueChangeData = d.evaluationResult().getValueChangeStream()
                         .filter(e -> "list".equals(e.getKey().fullyQualifiedName())).map(Map.Entry::getValue).findFirst().orElseThrow();
-                Assert.assertEquals(LIST_SIZE, valueChangeData.instance().toString());
+                Assert.assertEquals(LIST_SIZE, valueChangeData.value().toString());
             }
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
@@ -93,20 +92,30 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
     }
 
 
+    public static final String INSTANCE_SIZE_1_CONTAINS = "instance type java.util.ArrayList()[(java.util.List.this.contains(a) and 1 == java.util.List.this.size())]";
+    public static final String TEST_1_RETURN_VARIABLE = "org.e2immu.analyser.testexample.BasicCompanionMethods_1.test()";
+
     @Test
     public void test1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 EvaluationResult.ValueChangeData valueChangeData = d.evaluationResult().getValueChangeStream()
                         .filter(e -> "list".equals(e.getKey().fullyQualifiedName())).map(Map.Entry::getValue).findFirst().orElseThrow();
-                Assert.assertEquals(LIST_SIZE, valueChangeData.instance().toString());
+                Assert.assertEquals(LIST_SIZE, valueChangeData.value().toString());
             }
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                Assert.assertTrue(d.haveValueChange("list"));
-                Assert.assertEquals(INSTANCE_SIZE_1_CONTAINS, d.findValueChange("list").instance().toString());
+                Assert.assertTrue(d.haveValueChange("list")); // because of a modification
+                Assert.assertEquals(INSTANCE_SIZE_1_CONTAINS, d.findValueChange("list").value().toString());
+                Assert.assertTrue(d.haveLinkVariable("list", Set.of()));
             }
-            if ("test".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
+            if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
+                Assert.assertTrue(d.haveValueChange("b"));
+                EvaluationResult.ValueChangeData valueChangeData = d.findValueChange("b");
+                Assert.assertEquals("true", valueChangeData.value().toString());
+            }
+            if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertTrue(d.haveValueChange(TEST_1_RETURN_VARIABLE));
                 EvaluationResult.ValueChangeData valueChangeData = d.findValueChange(TEST_1_RETURN_VARIABLE);
@@ -115,8 +124,17 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId()) && "list".equals(d.variableName())) {
-                Assert.assertEquals(INSTANCE_SIZE_1_CONTAINS, d.variableInfo().getInstance().toString());
+            if ("test".equals(d.methodInfo().name) && "1".compareTo(d.statementId()) <= 0 && "list".equals(d.variableName())) {
+                Assert.assertEquals(INSTANCE_SIZE_1_CONTAINS, d.currentValue().toString());
+            }
+            if ("test".equals(d.methodInfo().name) && "3".compareTo(d.statementId()) <= 0 && "b".equals(d.variableName())) {
+                Assert.assertEquals("true", d.currentValue().toString());
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+                Assert.assertTrue(d.statusesAsMap().values().stream().allMatch(as -> as == AnalysisStatus.DONE || as == AnalysisStatus.RUN_AGAIN));
             }
         };
 
@@ -124,12 +142,16 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
             if ("test".equals(d.methodInfo().name)) {
                 Assert.assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
             }
-
         };
-        testClass("BasicCompanionMethods_1", 0, 0, new DebugConfiguration.Builder()
+
+        // 3.0.0 unreachable
+        // 3 condition evaluates to constant
+        // @Constant expect
+        testClass("BasicCompanionMethods_1", 3, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -139,7 +161,11 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId()) && "list".equals(d.variableName())) {
-                Assert.assertEquals("instance type java.util.ArrayList()[(1 == java.util.ArrayList.this.size()) and (java.util.ArrayList.this.contains(\"a\")]",
+                Assert.assertEquals("instance type java.util.ArrayList()[(java.util.List.this.contains(a) and 1 == java.util.List.this.size())]",
+                        d.currentValue().toString());
+            }
+            if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId()) && "list".equals(d.variableName())) {
+                Assert.assertEquals("instance type java.util.ArrayList()[(java.util.List.this.contains(a) and 1 == java.util.List.this.size())]",
                         d.currentValue().toString());
             }
         };

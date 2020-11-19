@@ -57,20 +57,6 @@ public interface VariableInfo {
      */
     Value getStateOnAssignment();
 
-    default boolean instanceIsSet() {
-        return getInstance() != null;
-    }
-
-    /**
-     * Will be set once the variable has been read.
-     * Cannot be used to implement the property READ, as it also used for the assigned instance (ASSIGNED)
-     *
-     * Cannot be present with primitives; is not present when the current value is a constant.
-     *
-     * @return Returns null when not yet set. (Cannot return NO_VALUE, because that is not an Instance.)
-     */
-    Instance getInstance();
-
     int getProperty(VariableProperty variableProperty);
 
     int getProperty(VariableProperty variableProperty, int defaultValue);

@@ -118,7 +118,7 @@ public class LocalVariableCreation implements Expression {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (expression == EmptyExpression.EMPTY_EXPRESSION) {
             return new EvaluationResult.Builder(evaluationContext)
-                    .assignment(localVariableReference, UnknownValue.EMPTY, null, false, evaluationContext.getIteration())
+                    .assignment(localVariableReference, null, false, evaluationContext.getIteration())
                     .setValue(UnknownValue.EMPTY).build();
         }
         Assignment assignment = new Assignment(evaluationContext.getPrimitives(),

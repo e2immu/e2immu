@@ -122,7 +122,7 @@ public class EvaluationResult {
      * Any of the three can be used independently: possibly we want to mark assignment, but still have NO_VALUE for the value.
      * The stateOnAssignment can also still be NO_VALUE while the value is known, and vice versa.
      */
-    public record ValueChangeData(Value value, Value stateOnAssignment, Instance instance, boolean markAssignment) {
+    public record ValueChangeData(Value value, Value stateOnAssignment, boolean markAssignment) {
     }
 
     // lazy creation of lists
@@ -317,7 +317,8 @@ public class EvaluationResult {
 
         public Instance currentInstance(Variable variable, ObjectFlow objectFlowForCreation, Value stateFromPreconditions) {
             ValueChangeData currentValue = valueChanges.get(variable);
-            if (currentValue != null && currentValue.instance != null) return currentValue.instance;
+            if (currentValue != null && currentValue.value instanceof Instance instance) return instance;
+
             Instance inContext = evaluationContext.currentInstance(variable);
             if (inContext != null) return inContext;
             // there is no instance yet... we'll have to create one, but only if the value can have an instance
@@ -334,9 +335,9 @@ public class EvaluationResult {
             ValueChangeData current = valueChanges.get(variable);
             ValueChangeData newVcd;
             if (current == null) {
-                newVcd = new ValueChangeData(NO_VALUE, NO_VALUE, instance, false);
+                newVcd = new ValueChangeData(instance, NO_VALUE, false);
             } else {
-                newVcd = new ValueChangeData(current.value, current.stateOnAssignment, instance, current.markAssignment);
+                newVcd = new ValueChangeData(instance, current.stateOnAssignment, current.markAssignment);
             }
             valueChanges.put(variable, newVcd);
         }
@@ -396,8 +397,8 @@ public class EvaluationResult {
         /*
         Called from Assignment and from LocalVariableCreation.
          */
-        public Builder assignment(Variable assignmentTarget, Value resultOfExpression, Instance instance, boolean assignmentToNonEmptyExpression, int iteration) {
-            ValueChangeData valueChangeData = new ValueChangeData(resultOfExpression, evaluationContext.getConditionManager().state, instance,
+        public Builder assignment(Variable assignmentTarget, Value resultOfExpression, boolean assignmentToNonEmptyExpression, int iteration) {
+            ValueChangeData valueChangeData = new ValueChangeData(resultOfExpression, evaluationContext.getConditionManager().state,
                     iteration == 0 && assignmentToNonEmptyExpression);
             valueChanges.put(assignmentTarget, valueChangeData);
             return this;
@@ -420,9 +421,10 @@ public class EvaluationResult {
             // TODO part of object flow
         }
 
-        public void modifyingMethodAccess(Variable variable, Instance newInstance) {
+        public void modifyingMethodAccess(Variable variable, Instance newInstance, Set<Variable> linkedVariables) {
             add(new StateData.RemoveVariableFromState(evaluationContext, variable));
             assignInstanceToVariable(variable, newInstance);
+            linkVariables(variable, linkedVariables);
         }
 
         public void addErrorAssigningToFieldOutsideType(FieldInfo fieldInfo) {

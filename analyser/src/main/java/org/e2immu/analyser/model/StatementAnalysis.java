@@ -19,6 +19,7 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
@@ -420,13 +421,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // assignment will be at LEVEL 3
             vic.setLinkedVariablesFromAnalyser(Set.of());
         } else if (variable instanceof This) {
-            vic.setInitialValueFromAnalyser(new VariableValue(variable, ObjectFlow.NO_FLOW),
+            vic.setInitialValueFromAnalyser(new Instance(variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY),
                     propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo));
             vic.setLinkedVariablesFromAnalyser(Set.of());
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
-            VariableValue variableValue = new VariableValue(variable, objectFlow);
-            vic.setInitialValueFromAnalyser(variableValue, propertyMap(analyserContext, parameterInfo));
+            // TODO copy state from known preconditions
+            Instance instance = new Instance(parameterInfo.parameterizedType, objectFlow, UnknownValue.EMPTY);
+            vic.setInitialValueFromAnalyser(instance, propertyMap(analyserContext, parameterInfo));
             vic.setLinkedVariablesFromAnalyser(Set.of());
         } else if (variable instanceof FieldReference fieldReference) {
             Value initialValue = initialValueOfField(analyserContext, fieldReference);

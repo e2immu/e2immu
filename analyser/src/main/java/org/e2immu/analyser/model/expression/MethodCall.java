@@ -25,6 +25,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
+import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.value.StringValue;
@@ -187,7 +188,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // companion methods
         Instance modifiedInstance;
         if (modified == Level.TRUE) {
-            modifiedInstance = checkCompanionMethods(builder, evaluationContext, methodAnalysis, objectValue, parameterValues);
+            modifiedInstance = checkCompanionMethodsModifying(builder, evaluationContext, methodAnalysis, objectValue, parameterValues);
         } else {
             modifiedInstance = null;
         }
@@ -232,11 +233,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return builder.build();
     }
 
-    private Instance checkCompanionMethods(EvaluationResult.Builder builder,
-                                           EvaluationContext evaluationContext,
-                                           MethodAnalysis methodAnalysis,
-                                           Value objectValue,
-                                           List<Value> parameterValues) {
+    private Instance checkCompanionMethodsModifying(EvaluationResult.Builder builder,
+                                                    EvaluationContext evaluationContext,
+                                                    MethodAnalysis methodAnalysis,
+                                                    Value objectValue,
+                                                    List<Value> parameterValues) {
         Instance instance;
         if (objectValue instanceof VariableValue variableValue) {
             instance = builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
@@ -289,9 +290,29 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 });
         Instance modifiedInstance = new Instance(instance, newState.get());
         if (objectValue instanceof VariableValue variableValue) {
-            builder.modifyingMethodAccess(variableValue.variable, modifiedInstance);
+            Set<Variable> linkedVariables = variablesLinkedToScopeVariableInModifyingMethod(evaluationContext, parameterValues);
+            builder.modifyingMethodAccess(variableValue.variable, modifiedInstance, linkedVariables);
         }
         return modifiedInstance;
+    }
+
+    /*
+    Modifying method
+
+    list.add(a);
+
+    After this operation, list should be linked to a.
+
+    Null value means delays, as per convention.
+     */
+    private Set<Variable> variablesLinkedToScopeVariableInModifyingMethod(EvaluationContext evaluationContext, List<Value> parameterValues) {
+        Set<Variable> result = new HashSet<>();
+        for (Value p : parameterValues) {
+            Set<Variable> cd = evaluationContext.linkedVariables(p);
+            if (cd == null) return null;
+            result.addAll(cd);
+        }
+        return result;
     }
 
     // the "pre" clause
@@ -504,7 +525,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             // example: java.util.ArrayList.contains("a")
             if (component instanceof MethodValue mv) {
                 if (compatibleMethod(methodInfo, mv.methodInfo) && compatibleParameters(parameterValues, mv.parameters)) {
-                    result.set(new ValueAndClause(component, component));
+                    result.set(new ValueAndClause(BoolValue.createTrue(evaluationContext.getPrimitives()), component));
                 }
             }
         });

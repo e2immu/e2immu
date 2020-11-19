@@ -21,7 +21,6 @@ import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.abstractvalue.AndValue;
-import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -131,7 +130,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
         if (value != UnknownValue.NO_VALUE) {
-            variableInfo.value.set(value);
+            variableInfo.setValue(value);
         }
         propertiesToSet.forEach(variableInfo::setProperty);
     }
@@ -142,7 +141,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
         if (value != UnknownValue.NO_VALUE) {
-            variableInfo.value.set(value);
+            variableInfo.setValue(value);
         }
         if (state != UnknownValue.NO_VALUE) {
             variableInfo.stateOnAssignment.set(state);
@@ -158,16 +157,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
         if (state != UnknownValue.NO_VALUE && (!variableInfo.stateOnAssignment.isSet() || !state.equals(variableInfo.stateOnAssignment.get()))) {
             variableInfo.stateOnAssignment.set(state);
-        }
-    }
-
-    @Override
-    public void setInstanceOnAssignment(int level, Instance instance) {
-        ensureNotFrozen();
-        Objects.requireNonNull(instance);
-        VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        if (!variableInfo.instance.isSet() || !instance.equals(variableInfo.instance.get())) {
-            variableInfo.instance.set(instance);
         }
     }
 
@@ -204,8 +193,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
         int writeLevel = findLevelForWriting(level);
         VariableInfoImpl variableInfo = getAndCast(writeLevel);
-        if (!variableInfo.value.isSet() || !value.equals(variableInfo.value.get())) {
-            variableInfo.value.set(value);
+        if (!variableInfo.valueIsSet() || !value.equals(variableInfo.getValue())) {
+            variableInfo.setValue(value);
             liftCurrentLevel(writeLevel);
         }
     }
@@ -370,7 +359,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             }
         }
 
-        merged.mergeInstance(existingValuesWillBeOverwritten, existing, merge);
         merged.mergeLinkedVariables(existingValuesWillBeOverwritten, existing, merge);
     }
 

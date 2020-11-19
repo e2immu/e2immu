@@ -24,11 +24,14 @@ import java.util.List;
 
 public class BasicCompanionMethods_1 {
 
-    @Constant(boolValue = true)
+    @Constant(boolValue = false, test = true)
     static boolean test() {
         List<String> list = new ArrayList<>();
         list.add("a");
-        String a = "a";
-        return list.size() == 1 && list.contains(a);
+        boolean b = list.contains("a");
+        if (!b) { // constant eval
+            return false; // statement not reached
+        }
+        return list.size() == 1 && list.contains("a");
     }
 }

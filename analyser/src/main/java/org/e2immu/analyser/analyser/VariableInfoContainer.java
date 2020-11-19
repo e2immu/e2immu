@@ -99,8 +99,6 @@ public interface VariableInfoContainer {
 
     void setValueAndStateOnAssignment(int level, Value value, Value state, Map<VariableProperty, Integer> propertiesToSet);
 
-    void setInstanceOnAssignment(int level, Instance instance);
-
     void setStateOnAssignment(int level, Value state);
 
     /**

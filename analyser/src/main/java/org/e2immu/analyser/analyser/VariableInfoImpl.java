@@ -25,7 +25,6 @@ import org.e2immu.analyser.util.SetOnce;
 
 import java.util.*;
 import java.util.function.IntBinaryOperator;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
@@ -39,11 +38,10 @@ class VariableInfoImpl implements VariableInfo {
 
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
 
-    public final SetOnce<Value> value = new SetOnce<>(); // value from step 3 (initialisers)
+    private final SetOnce<Value> value = new SetOnce<>(); // value from step 3 (initialisers)
 
     public final SetOnce<Value> stateOnAssignment = new SetOnce<>();
 
-    public final SetOnce<Instance> instance = new SetOnce<>();
     public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
     public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
 
@@ -60,7 +58,6 @@ class VariableInfoImpl implements VariableInfo {
         this.stateOnAssignment.copy(previous.stateOnAssignment);
         this.linkedVariables.copy(previous.linkedVariables);
         this.objectFlow.copy(previous.objectFlow);
-        this.instance.copy(previous.instance);
     }
 
     @Override
@@ -101,11 +98,6 @@ class VariableInfoImpl implements VariableInfo {
     @Override
     public Value getStateOnAssignment() {
         return stateOnAssignment.getOrElse(UnknownValue.NO_VALUE);
-    }
-
-    @Override
-    public Instance getInstance() {
-        return instance.getOrElse(null);
     }
 
     @Override
@@ -160,7 +152,7 @@ class VariableInfoImpl implements VariableInfo {
 
     public void writeValue(Value value) {
         if (value != UnknownValue.NO_VALUE) {
-            this.value.set(value);
+            setValue(value);
         }
     }
 
@@ -178,18 +170,6 @@ class VariableInfoImpl implements VariableInfo {
         if (!linkedVariablesIsSet() || !getLinkedVariables().equals(merged)) {
             linkedVariables.set(merged);
         }
-    }
-
-    public void mergeInstance(boolean existingValuesWillBeOverwritten, VariableInfoImpl existing, List<VariableInfo> merge) {
-        Stream<VariableInfo> all = Stream.concat(merge.stream(), existingValuesWillBeOverwritten ? Stream.empty() : Stream.of(existing));
-        List<Instance> distinct = all.map(VariableInfo::getInstance).distinct().collect(Collectors.toList());
-        Instance newInstance;
-        if (distinct.size() == 1 && distinct.get(0) != null) {
-            newInstance = distinct.get(0);
-        } else {
-            newInstance = new Instance(existing.variable.parameterizedType(), getObjectFlow(), UnknownValue.EMPTY);
-        }
-        instance.set(newInstance);
     }
 
     private record MergeOp(VariableProperty variableProperty, IntBinaryOperator operator, int initial) {
@@ -226,19 +206,26 @@ class VariableInfoImpl implements VariableInfo {
             return newObject == null ? this : newObject; // no need to create
         if (newObject == null) {
             if (!value.isSet()) {
-                value.set(mergedValue);
+                setValue(mergedValue);
                 return this;
             }
             VariableInfoImpl newVi = new VariableInfoImpl(variable);
             //if (!existingValuesWillBeOverwritten) newVi.properties.putAll(properties);
-            newVi.value.set(mergedValue);
+            newVi.setValue(mergedValue);
             newVi.stateOnAssignment.copy(stateOnAssignment);
             return newVi;
         }
         if (!newObject.value.isSet() || !newObject.value.get().equals(mergedValue)) {
-            newObject.value.set(mergedValue); // will cause severe problems if the value already there is different :-)
+            newObject.setValue(mergedValue); // will cause severe problems if the value already there is different :-)
         }
         return newObject;
+    }
+
+    void setValue(Value value) {
+        if(value instanceof VariableValue variableValue && variableValue.variable == variable) {
+            throw new UnsupportedOperationException("Cannot redirect to myself");
+        }
+        this.value.set(value);
     }
 
     public void mergeProperties(boolean existingValuesWillBeOverwritten, VariableInfo previous, List<VariableInfo> merge) {
@@ -299,13 +286,17 @@ class VariableInfoImpl implements VariableInfo {
         }
 
         // no clue
-        return new VariableValue(variable);
+        return noConclusion();
+    }
+
+    private Value noConclusion() {
+        return new Instance(variable.parameterizedType(), getObjectFlow(), UnknownValue.EMPTY);
     }
 
     private Value inlineSwitch(boolean existingValuesWillBeOverwritten, Value currentValue, Variable variable, List<VariableInfo> merge) {
         // TODO
         // fail
-        return new VariableValue(variable);
+        return noConclusion();
     }
 
     private Variable allInvolveConstantsEqualToAVariable(List<VariableInfo> merge) {
@@ -323,7 +314,7 @@ class VariableInfoImpl implements VariableInfo {
             return safe(ConditionalValue.conditionalValueConditionResolved(evaluationContext, x, b, a, ObjectFlow.NO_FLOW));
         }
 
-        return new VariableValue(variable);
+        return noConclusion();
     }
 
     private Value two(EvaluationContext evaluationContext, Value x, VariableInfo vi1, VariableInfo vi2) {
@@ -340,7 +331,7 @@ class VariableInfoImpl implements VariableInfo {
             Value s2bx = safe(ConditionalValue.conditionalValueConditionResolved(evaluationContext, s2, vi2.getValue(), x, ObjectFlow.NO_FLOW));
             return safe(ConditionalValue.conditionalValueConditionResolved(evaluationContext, s1, vi1.getValue(), s2bx, ObjectFlow.NO_FLOW));
         }
-        return new VariableValue(variable);
+        return noConclusion();
     }
 
     private Value twoOverwritten(EvaluationContext evaluationContext, VariableInfo vi1, VariableInfo vi2) {
@@ -353,13 +344,13 @@ class VariableInfoImpl implements VariableInfo {
                 return safe(ConditionalValue.conditionalValueConditionResolved(evaluationContext, s1, vi1.getValue(), vi2.getValue(), ObjectFlow.NO_FLOW));
             } else throw new UnsupportedOperationException("? impossible situation");
         }
-        return new VariableValue(variable);
+        return noConclusion();
     }
 
     private Value safe(EvaluationResult result) {
         if (result.getModificationStream().anyMatch(m -> m instanceof StatementAnalyser.RaiseErrorMessage)) {
             // something gone wrong, retreat
-            return new VariableValue(variable);
+            return noConclusion();
         }
         return result.value;
     }
