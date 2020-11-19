@@ -36,11 +36,10 @@ public class TestFilter extends CommonAbstractValue {
 
         Filter.FilterResult<Variable> filterResult = Filter.filter(minimalEvaluationContext, andValue,
                 Filter.FilterMode.ALL, value -> new Filter.FilterResult<Variable>(Map.of(), value));
-        Assert.assertNotSame(filterResult.rest(), andValue);
         Assert.assertEquals(filterResult.rest(), andValue);
 
         Filter.FilterResult<Variable> filterResult2 = Filter.filter(minimalEvaluationContext, andValue, Filter.FilterMode.ALL, value -> {
-            if (value instanceof VariableValue && ((VariableValue) value).variable == b.variable) {
+            if (value instanceof VariableValue variableValue && variableValue.variable == b.variable) {
                 return new Filter.FilterResult<Variable>(Map.of(b.variable, b), UnknownValue.EMPTY);
             }
             return null;

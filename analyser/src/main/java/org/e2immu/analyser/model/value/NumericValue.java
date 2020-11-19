@@ -41,11 +41,6 @@ public interface NumericValue extends Value {
     Number getNumber();
 
     @Override
-    default int encodedSizeRestriction(EvaluationContext evaluationContext) {
-        return Level.encodeSizeEquals(getNumber().intValue());
-    }
-
-    @Override
     default boolean isNumeric() {
         return true;
     }

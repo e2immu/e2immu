@@ -169,10 +169,6 @@ public interface Value extends Comparable<Value> {
         return Set.of();
     }
 
-    default int encodedSizeRestriction(EvaluationContext evaluationContext) {
-        return Level.FALSE;
-    }
-
     default EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
         Value inMap = translation.get(this);
         return new EvaluationResult.Builder().setValue(inMap == null ? this : inMap).build();

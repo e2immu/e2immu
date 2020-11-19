@@ -68,7 +68,7 @@ public class Filter {
         AtomicReference<FilterResult<X>> filterResult = new AtomicReference<>();
         value.visit(v -> {
             if (v instanceof NegatedValue negatedValue) {
-                FilterResult<X> resultOfNegated = internalFilter(evaluationContext, value, filterMode, filterMethods);
+                FilterResult<X> resultOfNegated = internalFilter(evaluationContext, negatedValue.value, filterMode, filterMethods);
                 if (resultOfNegated != null) {
                     FilterResult<X> negatedResult = new FilterResult<X>(resultOfNegated.accepted.entrySet().stream()
                             .collect(Collectors.toMap(Map.Entry::getKey,
@@ -79,13 +79,13 @@ public class Filter {
                 return false;
             }
             if (v instanceof AndValue andValue) {
-                if (filterMode == FilterMode.ACCEPT) {
+                if (filterMode == FilterMode.ACCEPT || filterMode == FilterMode.ALL) {
                     filterResult.set(processAndOr(evaluationContext, andValue.values, filterMode, filterMethods));
                 }
                 return false; // do not go deeper
             }
             if (v instanceof OrValue orValue) {
-                if (filterMode == FilterMode.REJECT) {
+                if (filterMode == FilterMode.REJECT || filterMode == FilterMode.ALL) {
                     filterResult.set(processAndOr(evaluationContext, orValue.values, filterMode, filterMethods));
                 }
                 return false;

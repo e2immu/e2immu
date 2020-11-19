@@ -45,55 +45,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         if (o == null || getClass() != o.getClass()) return false;
         GreaterThanZeroValue that = (GreaterThanZeroValue) o;
         if (allowEquals != that.allowEquals) return false;
-        if (value.equals(that.value)) return true;
-        // there's another situation that we want to be true
-        return specialEquals(value, that.value);
-    }
-
-    private static boolean specialEquals(Value v1, Value v2) {
-        CNVGreaterThan cnv1 = isCnv(v1);
-        if (cnv1 == null || !cnv1.cnv.onlyLowerBound()) return false;
-        CNVGreaterThan cnv2 = isCnv(v2);
-        if (cnv2 == null || !cnv2.cnv.onlyLowerBound()) return false;
-        cnv1.checkOnlyLowerBound();
-        cnv2.checkOnlyLowerBound();
-
-        // if cnv,?>=x >= y && cnv,?>=x' >= y',
-        // and y == y',
-        // then both expressions are equal, regardless of the value of x or x'
-
-        return cnv1.nv == cnv2.nv;
-    }
-
-    private static CNVGreaterThan isCnv(Value value) {
-        if (value instanceof ConstrainedNumericValue) {
-            return new CNVGreaterThan((ConstrainedNumericValue) value, 0.0);
-        }
-        if (value instanceof SumValue sumValue) {
-            if (sumValue.lhs instanceof NumericValue && sumValue.rhs instanceof ConstrainedNumericValue cnv) {
-                double v = ((NumericValue) sumValue.lhs).getNumber().doubleValue();
-                return new CNVGreaterThan(cnv, -v);
-            }
-        }
-        return null;
-    }
-
-    static class CNVGreaterThan {
-        final ConstrainedNumericValue cnv;
-        final double nv;
-
-        CNVGreaterThan(ConstrainedNumericValue cnv, double nv) {
-            this.cnv = cnv;
-            this.nv = nv;
-        }
-
-        void checkOnlyLowerBound() {
-            // cnv,?>=lb >= nv is the situation
-            // now if lb >= nv then we should not have this value, we simply should have cnv
-            // (it would be saying: cnv,?>=1 >= 1, which is a tautology
-            if (cnv.lowerBound >= nv)
-                throw new UnsupportedOperationException("Have LB " + cnv.lowerBound + ", >= " + nv);
-        }
+        return value.equals(that.value);
     }
 
     @Override
@@ -201,9 +153,6 @@ public class GreaterThanZeroValue extends PrimitiveValue {
             return new BoolValue(primitives, l.toInt().value > r.toInt().value, objectFlow);
         }
 
-        Value v = tautologyGreaterThan(primitives, l, r, allowEquals);
-        if (v != null) return v;
-
         ParameterizedType intParameterizedType = evaluationContext.getPrimitives().intParameterizedType;
         ParameterizedType booleanParameterizedType = evaluationContext.getPrimitives().booleanParameterizedType;
 
@@ -226,19 +175,6 @@ public class GreaterThanZeroValue extends PrimitiveValue {
 
         return new GreaterThanZeroValue(booleanParameterizedType,
                 SumValue.sum(evaluationContext, l, NegatedValue.negate(evaluationContext, r), objectFlowSum), allowEquals, objectFlow);
-    }
-
-    // check ConstrainedNV
-    private static Value tautologyGreaterThan(Primitives primitives, Value l, Value r, boolean allowEquals) {
-        if (l instanceof ConstrainedNumericValue cnv && r instanceof NumericValue) {
-            double v = ((NumericValue) r).getNumber().doubleValue();
-            // cnv,?>= v, >= v (trivial)   and   > v (real restriction)
-            if (v == cnv.lowerBound) return allowEquals ? BoolValue.createTrue(primitives) : null;
-
-            // cnv,?>=x >= v, v<x
-            if (cnv.onlyLowerBound() && v < cnv.lowerBound) return BoolValue.createTrue(primitives);
-        }
-        return null;
     }
 
     // testing only

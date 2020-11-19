@@ -62,9 +62,7 @@ public class EqualsValue extends PrimitiveValue {
         if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
 
         if (l instanceof NullValue && evaluationContext.isNotNull0(r) ||
-                r instanceof NullValue && evaluationContext.isNotNull0(l) ||
-                l instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) l).rejects(r) ||
-                r instanceof ConstrainedNumericValue && ((ConstrainedNumericValue) r).rejects(l))
+                r instanceof NullValue && evaluationContext.isNotNull0(l))
             return new BoolValue(primitives, false, objectFlow);
 
         return new EqualsValue(primitives, l, r, objectFlow);
@@ -118,15 +116,6 @@ public class EqualsValue extends PrimitiveValue {
     @Override
     public Set<Variable> variables() {
         return SetUtil.immutableUnion(lhs.variables(), rhs.variables());
-    }
-
-    @Override
-    public int encodedSizeRestriction(EvaluationContext evaluationContext) {
-        if (lhs instanceof NumericValue && lhs.isDiscreteType()) {
-            int size = ((NumericValue) lhs).getNumber().intValue();
-            return Level.encodeSizeEquals(size);
-        }
-        return 0;
     }
 
     @Override

@@ -82,12 +82,6 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
             return new OrValue(evaluationContext.getPrimitives(), v.getObjectFlow())
                     .append(evaluationContext, negated);
         }
-        if (v instanceof EqualsValue equalsValue) {
-            if (equalsValue.lhs instanceof NumericValue && equalsValue.rhs instanceof ConstrainedNumericValue) {
-                Value improve = ((ConstrainedNumericValue) equalsValue.rhs).notEquals(evaluationContext, (NumericValue) equalsValue.lhs);
-                if (improve != null) return improve;
-            }
-        }
         if (v instanceof SumValue) {
             return ((SumValue) v).negate(evaluationContext);
         }
@@ -118,7 +112,7 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
     @Override
     public String print(PrintMode printMode) {
         if (value.isNumeric()) {
-            return "(-" + value.print(printMode) + ")";
+            return "(-(" + value.print(printMode) + "))";
         }
         return "not (" + value.print(printMode) + ")";
     }
@@ -131,14 +125,6 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
     @Override
     public int internalCompareTo(Value v) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int encodedSizeRestriction(EvaluationContext evaluationContext) {
-        int sub = value.encodedSizeRestriction(evaluationContext);
-        if (sub == Level.SIZE_EMPTY) return Level.SIZE_NOT_EMPTY; // ==0 becomes >= 1
-        if (sub == Level.SIZE_NOT_EMPTY) return Level.SIZE_EMPTY; // >=1 becomes == 0
-        return 0; // not much we can do >=0 stays like that , ==5 cannot be replaced by sth else
     }
 
     @Override

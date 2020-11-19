@@ -14,7 +14,7 @@ public class TestComparisons extends CommonAbstractValue {
         GreaterThanZeroValue gt3 = (GreaterThanZeroValue) GreaterThanZeroValue.greater(minimalEvaluationContext, i, newInt(3), false);
         Assert.assertEquals("((-4) + i) >= 0", gt3.toString()); // i >= 4
         GreaterThanZeroValue notGt3 = (GreaterThanZeroValue) gt3.negate(minimalEvaluationContext);
-        Assert.assertEquals("(3 + (-i)) >= 0", notGt3.toString()); // i <= 3
+        Assert.assertEquals("(3 + (-(i))) >= 0", notGt3.toString()); // i <= 3
     }
 
     @Test
@@ -32,7 +32,7 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void testXb2() {
         GreaterThanZeroValue lt3 = (GreaterThanZeroValue) GreaterThanZeroValue.less(minimalEvaluationContext, i, newInt(3), false);
-        Assert.assertEquals("(2 + (-i)) >= 0", lt3.toString());
+        Assert.assertEquals("(2 + (-(i))) >= 0", lt3.toString());
         GreaterThanZeroValue.XB xb = lt3.extract(minimalEvaluationContext);
         Assert.assertNotNull(xb);
         Assert.assertTrue(lt3.allowEquals);
@@ -127,9 +127,9 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void test2() {
         Value iLe0 = GreaterThanZeroValue.less(minimalEvaluationContext, i, newInt(0), true);
-        Assert.assertEquals("(-i) >= 0", iLe0.toString());
+        Assert.assertEquals("(-(i)) >= 0", iLe0.toString());
         Value iLe3 = GreaterThanZeroValue.less(minimalEvaluationContext, i, newInt(3), true);
-        Assert.assertEquals("(3 + (-i)) >= 0", iLe3.toString());
+        Assert.assertEquals("(3 + (-(i))) >= 0", iLe3.toString());
         Value and = newAndAppend(iLe0, iLe3);
         Assert.assertEquals(iLe0, and);
     }
@@ -137,7 +137,7 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void test3() {
         Value iLe0 = GreaterThanZeroValue.less(minimalEvaluationContext, i, newInt(0), true);
-        Assert.assertEquals("(-i) >= 0", iLe0.toString());
+        Assert.assertEquals("(-(i)) >= 0", iLe0.toString());
         Value iGe3 = GreaterThanZeroValue.greater(minimalEvaluationContext, i, newInt(3), true);
         Assert.assertEquals("((-3) + i) >= 0", iGe3.toString());
         Value and = newAndAppend(iLe0, iGe3);
@@ -151,7 +151,7 @@ public class TestComparisons extends CommonAbstractValue {
         Value iGe0 = GreaterThanZeroValue.greater(minimalEvaluationContext, i, newInt(0), true);
         Assert.assertEquals("i >= 0", iGe0.toString());
         Value iLe3 = GreaterThanZeroValue.less(minimalEvaluationContext, i, newInt(3), true);
-        Assert.assertEquals("(3 + (-i)) >= 0", iLe3.toString());
+        Assert.assertEquals("(3 + (-(i))) >= 0", iLe3.toString());
         Value and = newAndAppend(iGe0, iLe3);
         Assert.assertTrue(and instanceof AndValue);
         Value and2 = newAndAppend(iLe3, iGe0);
@@ -173,7 +173,7 @@ public class TestComparisons extends CommonAbstractValue {
         Value iGe0 = GreaterThanZeroValue.greater(minimalEvaluationContext, i, newInt(0), true);
         Assert.assertEquals("i >= 0", iGe0.toString());
         Value iLe0 = GreaterThanZeroValue.less(minimalEvaluationContext, i, newInt(0), true);
-        Assert.assertEquals("(-i) >= 0", iLe0.toString());
+        Assert.assertEquals("(-(i)) >= 0", iLe0.toString());
         Value and = newAndAppend(iGe0, iLe0);
         Assert.assertEquals("0 == i", and.toString());
     }
@@ -183,7 +183,7 @@ public class TestComparisons extends CommonAbstractValue {
         Value iGe0 = GreaterThanZeroValue.greater(minimalEvaluationContext, i, newInt(0), false);
         Assert.assertEquals("((-1) + i) >= 0", iGe0.toString());
         Value iLe0 = GreaterThanZeroValue.less(minimalEvaluationContext, i, newInt(0), false);
-        Assert.assertEquals("((-1) + (-i)) >= 0", iLe0.toString());
+        Assert.assertEquals("((-1) + (-(i))) >= 0", iLe0.toString());
         Value and = newAndAppend(iGe0, iLe0);
         Assert.assertEquals(FALSE, and);
         Value and2 = newAndAppend(iLe0, iGe0);
@@ -191,36 +191,10 @@ public class TestComparisons extends CommonAbstractValue {
     }
 
     @Test
-    public void testSizeRestriction() {
-        Value iGe0 = GreaterThanZeroValue.greater(minimalEvaluationContext, i, newInt(0), false);
-        Assert.assertEquals(Level.SIZE_NOT_EMPTY, iGe0.encodedSizeRestriction(minimalEvaluationContext));
-        Value iGe3 = GreaterThanZeroValue.greater(minimalEvaluationContext, i, newInt(3), true);
-        Assert.assertEquals(Level.encodeSizeMin(3), iGe3.encodedSizeRestriction(minimalEvaluationContext));
-        Value iEq4 = equals(i, newInt(4));
-        Assert.assertEquals(Level.encodeSizeEquals(4), iEq4.encodedSizeRestriction(minimalEvaluationContext));
-    }
-
-    @Test
-    public void testEquals0AndGreaterThan0() {
-        Value iEq0 = equals(i, newInt(0));
-        Value iGt0 = GreaterThanZeroValue.greater(minimalEvaluationContext, i, newInt(0), false);
-        Value and = newAndAppend(iEq0, iGt0);
-        Assert.assertEquals(FALSE, and);
-
-        Value wrappedI = ConstrainedNumericValue.lowerBound(minimalEvaluationContext, i, 0);
-        Value iEq0Wrapped = equals(wrappedI, newInt(0));
-        Assert.assertEquals("0 == i,?>=0", iEq0Wrapped.toString());
-        Value iGt0Wrapped = GreaterThanZeroValue.greater(minimalEvaluationContext, wrappedI, newInt(0), false);
-        Assert.assertEquals("((-1) + i,?>=0) >= 0", iGt0Wrapped.toString());
-        Value andWrapped = newAndAppend(iEq0Wrapped, iGt0Wrapped);
-        Assert.assertEquals(FALSE, andWrapped);
-    }
-
-    @Test
     public void testGEZeroLZero() {
         // (((-1) + (-this.i)) >= 0 and this.i >= 0): if this fails, the problem is that this.i != this.i
         Value iLt0 = GreaterThanZeroValue.less(minimalEvaluationContext, i, newInt(0), false);
-        Assert.assertEquals("((-1) + (-i)) >= 0", iLt0.toString());
+        Assert.assertEquals("((-1) + (-(i))) >= 0", iLt0.toString());
         Value iGe0 = GreaterThanZeroValue.greater(minimalEvaluationContext, i, newInt(0), true);
         Assert.assertEquals("i >= 0", iGe0.toString());
 
