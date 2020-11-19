@@ -147,12 +147,6 @@ public class VariableValue implements Value {
     }
 
     @Override
-    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
-        if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
-        return Stream.empty();
-    }
-
-    @Override
     public Instance getInstance(EvaluationContext evaluationContext) {
         return evaluationContext.currentInstance(variable);
     }

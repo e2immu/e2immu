@@ -18,6 +18,7 @@
 package org.e2immu.analyser.model.abstractvalue;
 
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.value.NullValue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -33,18 +34,18 @@ public class TestFilter extends CommonAbstractValue {
         AndValue andValue = (AndValue) newAndAppend(a, b);
         Assert.assertEquals("(a and b)", andValue.toString());
 
-        Value.FilterResult filterResult = andValue.filter(minimalEvaluationContext,
-                Value.FilterMode.ALL, value -> new Value.FilterResult(Map.of(), value));
-        Assert.assertNotSame(filterResult.rest, andValue);
-        Assert.assertEquals(filterResult.rest, andValue);
+        Filter.FilterResult<Variable> filterResult = Filter.filter(minimalEvaluationContext, andValue,
+                Filter.FilterMode.ALL, value -> new Filter.FilterResult<Variable>(Map.of(), value));
+        Assert.assertNotSame(filterResult.rest(), andValue);
+        Assert.assertEquals(filterResult.rest(), andValue);
 
-        Value.FilterResult filterResult2 = andValue.filter(minimalEvaluationContext, Value.FilterMode.ALL, value -> {
+        Filter.FilterResult<Variable> filterResult2 = Filter.filter(minimalEvaluationContext, andValue, Filter.FilterMode.ALL, value -> {
             if (value instanceof VariableValue && ((VariableValue) value).variable == b.variable) {
-                return new Value.FilterResult(Map.of(b.variable, b), UnknownValue.EMPTY);
+                return new Filter.FilterResult<Variable>(Map.of(b.variable, b), UnknownValue.EMPTY);
             }
-            return new Value.FilterResult(Map.of(), value);
+            return null;
         });
-        Assert.assertEquals(a, filterResult2.rest);
+        Assert.assertEquals(a, filterResult2.rest());
     }
 
     // OrValue, AndValue, NegatedValue are collecting filters, but EqualsValue is NOT. So every ad-hoc filter that needs to be able
@@ -56,14 +57,14 @@ public class TestFilter extends CommonAbstractValue {
         AndValue andValue = (AndValue) newAndAppend(a, sNotNull);
         Assert.assertEquals("(a and not (null == s))", andValue.toString());
 
-        Value.FilterResult filterResult = andValue.filter(minimalEvaluationContext, Value.FilterMode.ALL, value -> {
+        Filter.FilterResult<Variable> filterResult = Filter.filter(minimalEvaluationContext, andValue, Filter.FilterMode.ALL, value -> {
             if (value instanceof EqualsValue equalsValue) {
                 if (equalsValue.rhs instanceof VariableValue && ((VariableValue) equalsValue.rhs).variable == s.variable) {
-                    return new Value.FilterResult(Map.of(s.variable, s), UnknownValue.EMPTY);
+                    return new Filter.FilterResult<Variable>(Map.of(s.variable, s), UnknownValue.EMPTY);
                 }
             }
-            return new Value.FilterResult(Map.of(), value);
+            return null;
         });
-        Assert.assertEquals(a, filterResult.rest);
+        Assert.assertEquals(a, filterResult.rest());
     }
 }

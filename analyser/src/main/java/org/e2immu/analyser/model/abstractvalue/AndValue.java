@@ -29,6 +29,7 @@ import org.e2immu.analyser.util.ListUtil;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -424,24 +425,6 @@ public class AndValue extends PrimitiveValue {
     }
 
     @Override
-    public FilterResult filter(EvaluationContext evaluationContext, FilterMode filterMode, FilterMethod... filterMethods) {
-        if (filterMode == FilterMode.REJECT) return new FilterResult(Map.of(), this);
-
-        List<FilterResult> results = values.stream().map(v -> v.filter(evaluationContext, filterMode, filterMethods)).collect(Collectors.toList());
-
-        List<Value> restList = results.stream().map(r -> r.rest).filter(r -> r != UnknownValue.EMPTY).collect(Collectors.toList());
-        Map<Variable, Value> acceptedCombined = results.stream().flatMap(r -> r.accepted.entrySet().stream())
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1));
-
-        Value rest;
-        if (restList.isEmpty()) rest = UnknownValue.EMPTY;
-        else if (restList.size() == 1) rest = restList.get(0);
-        else rest = new AndValue(primitives).append(evaluationContext, restList.toArray(Value[]::new));
-
-        return new FilterResult(acceptedCombined, rest);
-    }
-
-    @Override
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
         List<EvaluationResult> reClauseERs = values.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
         Value[] reClauses = reClauseERs.stream().map(er -> er.value).toArray(Value[]::new);
@@ -452,26 +435,9 @@ public class AndValue extends PrimitiveValue {
     }
 
     @Override
-    public void visit(Consumer<Value> consumer) {
-        values.forEach(v -> v.visit(consumer));
-        consumer.accept(this);
-    }
-
-    @Override
-    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
-        if(filterMode == FilterMode.ACCEPT) {
-            return values.stream().flatMap(value -> value.individualBooleanClauses(FilterMode.ACCEPT));
+    public void visit(Predicate<Value> predicate) {
+        if(predicate.test(this)) {
+            values.forEach(v -> v.visit(predicate));
         }
-        // reject (the OR can be split)
-        return Stream.of(this);
-    }
-
-    @Override
-    public Value removeIndividualBooleanClause(EvaluationContext evaluationContext, Value clauseToRemove, FilterMode filterMode) {
-        if(filterMode == FilterMode.ACCEPT) {
-            return new AndValue(evaluationContext.getPrimitives()).append(evaluationContext,
-                    values.stream().filter(v -> !v.equals(clauseToRemove)).toArray(Value[]::new));
-        }
-        return this;
     }
 }

@@ -27,10 +27,7 @@ import org.e2immu.analyser.analyser.check.CheckPrecondition;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.model.Variable;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.InlineValue;
-import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.statement.Block;
@@ -496,14 +493,15 @@ public class MethodAnalyser extends AbstractAnalyser {
         // we still need to remove other parameter components; what remains can be used for marking/only
 
         EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration, ConditionManager.INITIAL);
-        Value.FilterResult filterResult = precondition.filter(evaluationContext, Value.FilterMode.ACCEPT, Value::isIndividualFieldCondition);
-        if (filterResult.accepted.isEmpty()) {
+        Filter.FilterResult<FieldReference> filterResult = Filter.filter(evaluationContext, precondition, Filter.FilterMode.ACCEPT,Filter.INDIVIDUAL_FIELD_CLAUSE);
+        if (filterResult.accepted().isEmpty()) {
             log(MARK, "No @Mark/@Only annotation in {}: found no individual field preconditions", methodInfo.distinguishingName());
             methodAnalysis.preconditionForMarkAndOnly.set(List.of());
             return DONE;
         }
-        List<Value> preconditionParts = new ArrayList<>(filterResult.accepted.values());
-        log(MARK, "Did prep work for @Only, @Mark, found precondition on variables {} in {}", precondition, filterResult.accepted.keySet(), methodInfo.distinguishingName());
+        List<Value> preconditionParts = new ArrayList<>(filterResult.accepted().values());
+        log(MARK, "Did prep work for @Only, @Mark, found precondition on variables {} in {}", precondition,
+                filterResult.accepted().keySet(), methodInfo.distinguishingName());
         methodAnalysis.preconditionForMarkAndOnly.set(preconditionParts);
         return DONE;
     }
@@ -604,6 +602,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                     applicability.set(current.mostRestrictive(fieldApplicability));
                 }
             }
+            return true; // go deeper
         });
         return applicability.get();
     }

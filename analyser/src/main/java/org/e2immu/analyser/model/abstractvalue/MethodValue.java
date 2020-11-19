@@ -27,9 +27,8 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
-import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class MethodValue implements Value {
     public final MethodInfo methodInfo;
@@ -216,22 +215,11 @@ public class MethodValue implements Value {
     }
 
     @Override
-    public void visit(Consumer<Value> consumer) {
-        object.visit(consumer);
-        parameters.forEach(v -> v.visit(consumer));
-        consumer.accept(this);
-    }
-
-    @Override
-    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
-        if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
-        return Stream.empty();
-    }
-
-    @Override
-    public Value removeIndividualBooleanClause(EvaluationContext evaluationContext, Value clauseToRemove, FilterMode filterMode) {
-        if (equals(clauseToRemove)) return UnknownValue.EMPTY;
-        return this;
+    public void visit(Predicate<Value> predicate) {
+        if (predicate.test(this)) {
+            object.visit(predicate);
+            parameters.forEach(p -> p.visit(predicate));
+        }
     }
 
     @Override

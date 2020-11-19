@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -140,17 +141,6 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
         return 0; // not much we can do >=0 stays like that , ==5 cannot be replaced by sth else
     }
 
-    // no need to implement any of the filter methods; they all do the same
-
-    @Override
-    public FilterResult filter(EvaluationContext evaluationContext, FilterMode filterMode, FilterMethod... filterMethods) {
-        FilterResult filterResult = value.filter(evaluationContext, filterMode, filterMethods);
-        return new FilterResult(filterResult.accepted.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> NegatedValue.negate(evaluationContext, e.getValue()), (v1, v2) -> v1)),
-                NegatedValue.negate(evaluationContext, filterResult.rest));
-    }
-
     @Override
     public Set<Variable> variables() {
         return value.variables();
@@ -162,14 +152,9 @@ public class NegatedValue extends PrimitiveValue implements ValueWrapper {
     }
 
     @Override
-    public void visit(Consumer<Value> consumer) {
-        value.visit(consumer);
-        consumer.accept(this);
-    }
-
-    @Override
-    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
-        if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
-        return Stream.empty();
+    public void visit(Predicate<Value> predicate) {
+        if(predicate.test(this)) {
+            value.visit(predicate);
+        }
     }
 }

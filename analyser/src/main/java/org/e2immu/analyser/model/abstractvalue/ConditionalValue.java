@@ -29,8 +29,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
+import java.util.function.Predicate;
 
 public class ConditionalValue implements Value {
 
@@ -244,16 +243,12 @@ public class ConditionalValue implements Value {
     }
 
     @Override
-    public void visit(Consumer<Value> consumer) {
-        ifTrue.visit(consumer);
-        ifFalse.visit(consumer);
-        consumer.accept(this);
-    }
-
-    @Override
-    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
-        if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
-        return Stream.empty();
+    public void visit(Predicate<Value> predicate) {
+        if (predicate.test(this)) {
+            condition.visit(predicate);
+            ifTrue.visit(predicate);
+            ifFalse.visit(predicate);
+        }
     }
 
     @Override

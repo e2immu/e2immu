@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.abstractvalue.Filter;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -161,10 +162,10 @@ public class EvaluateParameters {
                 // from the result we either may infer another condition, or values to be set...
 
                 // NOT_NULL
-                Map<Variable, Value> individualNullClauses = reEvaluated.filter(evaluationContext,
-                        Value.FilterMode.ACCEPT,
-                        Value::isIndividualNullOrNotNullClauseOnParameter).accepted;
-                for (Map.Entry<Variable, Value> nullClauseEntry : individualNullClauses.entrySet()) {
+                Map<ParameterInfo, Value> individualNullClauses = Filter.filter(evaluationContext, reEvaluated,
+                        Filter.FilterMode.ACCEPT,
+                        Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE_ON_PARAMETER).accepted();
+                for (Map.Entry<ParameterInfo, Value> nullClauseEntry : individualNullClauses.entrySet()) {
                     if (nullClauseEntry.getValue() != NullValue.NULL_VALUE) {
                         builder.setProperty(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                     }
@@ -172,8 +173,8 @@ public class EvaluateParameters {
 
                 // all the rest: preconditions
                 // TODO: also weed out conditions that are not on parameters, and not on `this`
-                Value rest = reEvaluated.filter(evaluationContext,
-                        Value.FilterMode.ACCEPT, Value::isIndividualNullOrNotNullClauseOnParameter).rest;
+                Value rest = Filter.filter(evaluationContext, reEvaluated,
+                        Filter.FilterMode.ACCEPT, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE_ON_PARAMETER).rest();
                 if (rest != null) {
                     builder.addPrecondition(rest);
                 }

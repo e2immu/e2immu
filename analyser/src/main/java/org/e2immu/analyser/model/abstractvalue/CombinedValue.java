@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 // a combined value is NOT a variable value. that means it should not be assigned to a variable
@@ -94,9 +95,10 @@ public class CombinedValue implements Value {
     }
 
     @Override
-    public void visit(Consumer<Value> consumer) {
-        values.forEach(v -> v.visit(consumer));
-        consumer.accept(this);
+    public void visit(Predicate<Value> predicate) {
+        if(predicate.test(this)) {
+            values.forEach(v -> v.visit(predicate));
+        }
     }
 
     @Override

@@ -34,8 +34,7 @@ import org.e2immu.annotation.Nullable;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
+import java.util.function.Predicate;
 
 /**
  * Shared properties: @NotNull(n), dynamic type properties (@Immutable(n), @Container)
@@ -134,24 +133,6 @@ public interface Value extends Comparable<Value> {
         return Set.of();
     }
 
-    default FilterResult isIndividualNullOrNotNullClauseOnParameter() {
-        return new FilterResult(Map.of(), this);
-    }
-    // NOTE: contrary to the FieldCondition, this one stores not the whole equality, but
-    // only the NullValue in the Map.
-
-    default FilterResult isIndividualNullOrNotNullClause() {
-        return new FilterResult(Map.of(), this);
-    }
-
-    default FilterResult isIndividualFieldCondition() {
-        Set<Variable> variables = variables();
-        if (variables.size() == 1 && variables.stream().allMatch(v -> v instanceof FieldReference)) {
-            return new FilterResult(Map.of(variables.stream().findAny().orElseThrow(), this), UnknownValue.NO_VALUE);
-        }
-        return new FilterResult(Map.of(), this);
-    }
-
     default boolean isNotNull() {
         NegatedValue negatedValue = asInstanceOf(NegatedValue.class);
         return negatedValue != null && negatedValue.value.isInstanceOf(NullValue.class);
@@ -175,48 +156,7 @@ public interface Value extends Comparable<Value> {
         return ((boolValue = this.asInstanceOf(BoolValue.class)) != null) && !boolValue.value;
     }
 
-    default Stream<Value> individualBooleanClauses(FilterMode filterMode) {
-        return Stream.empty();
-    }
-
-    default Value removeIndividualBooleanClause(EvaluationContext evaluationContext, Value clauseToRemove, FilterMode filterMode) {
-        return equals(clauseToRemove) ? UnknownValue.EMPTY: this;
-    }
-
     Instance getInstance(EvaluationContext evaluationContext);
-
-    class FilterResult {
-        public final Map<Variable, Value> accepted;
-        public final Value rest;
-
-        public FilterResult(Map<Variable, Value> accepted, Value rest) {
-            this.accepted = accepted;
-            this.rest = rest;
-        }
-    }
-
-    @FunctionalInterface
-    interface FilterMethod {
-        FilterResult apply(Value value);
-    }
-
-    enum FilterMode {
-        ALL,
-        ACCEPT, // normal state of the variable AFTER the escape; independent = AND; does not recurse into OrValues
-        REJECT, // condition for escaping; independent = OR; does not recurse into AndValues
-    }
-
-    /**
-     * Filtering in the components of a value; implemented for AndValue, OrValue, NegatedValue, EqualsValue.
-     * The FilterResult contains individual clauses in a map accepted by the filter methods, and the rest of the value.
-     *
-     * @param filterMode    mode for filtering
-     * @param filterMethods if multiple accepted, the map contains the first result. (It should contain an AND, but see null clause)
-     * @return a FilterResult object, always, if only NO_RESULT
-     */
-    default FilterResult filter(EvaluationContext evaluationContext, FilterMode filterMode, FilterMethod... filterMethods) {
-        return filterMethods[0].apply(this);
-    }
 
     /**
      * @return the type, if we are certain; used in WidestType for operators
@@ -240,9 +180,15 @@ public interface Value extends Comparable<Value> {
 
     ObjectFlow getObjectFlow();
 
-    default void visit(Consumer<Value> consumer) {
-        consumer.accept(this);
+    /**
+     * Tests the value first, and only if true, visit deeper.
+     *
+     * @param predicate return true if the search is to be continued deeper
+     */
+    default void visit(Predicate<Value> predicate) {
+        predicate.test(this);
     }
+
 
     default boolean isInstanceOf(Class<? extends Value> clazz) {
         return clazz.isAssignableFrom(getClass());

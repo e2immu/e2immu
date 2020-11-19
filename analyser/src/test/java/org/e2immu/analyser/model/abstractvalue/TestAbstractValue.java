@@ -98,8 +98,8 @@ public class TestAbstractValue extends CommonAbstractValue {
         Assert.assertEquals("(a instanceof java.lang.Object or a instanceof java.lang.String)", or2.toString());
     }
 
-    Map<Variable, Boolean> nullClauses(Value v, Value.FilterMode filterMode) {
-        return v.filter(minimalEvaluationContext, filterMode, Value::isIndividualNullOrNotNullClause).accepted
+    Map<Variable, Boolean> nullClauses(Value v, Filter.FilterMode filterMode) {
+        return Filter.filter(minimalEvaluationContext, v, filterMode, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE).accepted()
                 .entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue() == NullValue.NULL_VALUE));
     }
 
@@ -107,19 +107,19 @@ public class TestAbstractValue extends CommonAbstractValue {
     public void testIsNull() {
         Value v = new EqualsValue(PRIMITIVES, a, NullValue.NULL_VALUE, ObjectFlow.NO_FLOW);
         Assert.assertEquals("null == a", v.toString());
-        Map<Variable, Boolean> nullClauses = nullClauses(v, Value.FilterMode.ACCEPT);
+        Map<Variable, Boolean> nullClauses = nullClauses(v, Filter.FilterMode.ACCEPT);
         Assert.assertEquals(1, nullClauses.size());
         Assert.assertEquals(true, nullClauses.get(va));
 
         Value v2 = new EqualsValue(PRIMITIVES, b, NullValue.NULL_VALUE, ObjectFlow.NO_FLOW);
         Assert.assertEquals("null == b", v2.toString());
-        Map<Variable, Boolean> nullClauses2 = nullClauses(v2, Value.FilterMode.ACCEPT);
+        Map<Variable, Boolean> nullClauses2 = nullClauses(v2, Filter.FilterMode.ACCEPT);
         Assert.assertEquals(1, nullClauses2.size());
         Assert.assertEquals(true, nullClauses2.get(vb));
 
         Value orValue = newOrAppend(v, negate(v2));
         Assert.assertEquals("(null == a or not (null == b))", orValue.toString());
-        Map<Variable, Boolean> nullClausesAnd = nullClauses(orValue, Value.FilterMode.REJECT);
+        Map<Variable, Boolean> nullClausesAnd = nullClauses(orValue, Filter.FilterMode.REJECT);
         Assert.assertEquals(2, nullClausesAnd.size());
         Assert.assertEquals(true, nullClausesAnd.get(va));
         Assert.assertEquals(false, nullClausesAnd.get(vb));
@@ -129,7 +129,7 @@ public class TestAbstractValue extends CommonAbstractValue {
     public void testIsNotNull() {
         Value v = NegatedValue.negate(minimalEvaluationContext, new EqualsValue(PRIMITIVES, NullValue.NULL_VALUE, a, ObjectFlow.NO_FLOW));
         Assert.assertEquals("not (null == a)", v.toString());
-        Map<Variable, Boolean> nullClauses = nullClauses(v, Value.FilterMode.REJECT);
+        Map<Variable, Boolean> nullClauses = nullClauses(v, Filter.FilterMode.REJECT);
         Assert.assertEquals(1, nullClauses.size());
         Assert.assertEquals(false, nullClauses.get(va));
     }

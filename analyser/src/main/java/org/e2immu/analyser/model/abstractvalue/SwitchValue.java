@@ -25,8 +25,8 @@ import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * This is the multi-entry variant of ConditionalValue; it is generally created from the evaluation
@@ -213,12 +213,6 @@ public class SwitchValue implements Value {
     }
 
     @Override
-    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
-        if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
-        return Stream.empty();
-    }
-
-    @Override
     public ObjectFlow getObjectFlow() {
         return ObjectFlow.NO_FLOW; // TODO
     }
@@ -227,5 +221,16 @@ public class SwitchValue implements Value {
     public Instance getInstance(EvaluationContext evaluationContext) {
         if (Primitives.isPrimitiveExcludingVoid(type())) return null;
         return new Instance(type(), getObjectFlow(), UnknownValue.EMPTY);
+    }
+
+    @Override
+    public void visit(Predicate<Value> predicate) {
+        if (predicate.test(this)) {
+            selector.visit(predicate);
+            entries.forEach(entry -> {
+                entry.labels().forEach(label -> label.visit(predicate));
+                entry.value.visit(predicate);
+            });
+        }
     }
 }

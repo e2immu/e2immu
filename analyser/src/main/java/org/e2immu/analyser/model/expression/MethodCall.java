@@ -264,29 +264,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     // post is already OK (it is the new value of the aspect method)
                     // pre is the "old" value, which has to be obtained. If that's impossible, we bail out.
                     // the parameters are available
-                    ClauseAndTranslationMap translation = createTranslationMap(builder, evaluationContext, aspectMethod,
+                    FilterResultAndTranslationMap translation = createTranslationMap(builder, evaluationContext, aspectMethod,
                             companionAnalysis, companionMethodName, instance, parameterValues);
 
+                    if (translation != null) {
+                        Value companionValue = companionAnalysis.getValue();
+                        EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(evaluationContext, translation.translationMap);
+                        // no need to compose: this is a separate operation. builder.compose(companionValueTranslationResult);
+                        Value companionValueTranslated = companionValueTranslationResult.value;
+                        // IMPROVE the object flow and the state from the precondition!!
 
-                    Value companionValue = companionAnalysis.getValue();
-                    EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(evaluationContext, translation.translationMap);
-                    // NO NEED: this is a separate operation. builder.compose(companionValueTranslationResult);
-                    Value companionValueTranslated = companionValueTranslationResult.value;
-                    // IMPROVE the object flow and the state from the precondition!!
-
-                    // TODO remove the "old" component
-                    Value stateMinusPre;
-                    if (translation.clause == UnknownValue.NO_VALUE) {
-                        stateMinusPre = newState.get();
-                    } else {
-                        stateMinusPre = newState.get().removeIndividualBooleanClause(evaluationContext, translation.clause, Value.FilterMode.ACCEPT);
+                        if (translation.filterResult.rest() == UnknownValue.EMPTY) {
+                            newState.set(companionValueTranslated);
+                        } else {
+                            newState.set(new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, translation.filterResult.rest(),
+                                    companionValueTranslated));
+                        }
                     }
-                    if (stateMinusPre == UnknownValue.EMPTY) {
-                        newState.set(companionValueTranslated);
-                    } else {
-                        newState.set(new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, stateMinusPre, companionValueTranslated));
-                    }
-
                 });
         Instance modifiedInstance = new Instance(instance, newState.get());
         if (objectValue instanceof VariableValue variableValue) {
@@ -316,30 +310,30 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     // the "pre" clause
-    private record ClauseAndTranslationMap(Value clause, Map<Value, Value> translationMap) {
+    private record FilterResultAndTranslationMap(Filter.FilterResult<MethodValue> filterResult,
+                                                 Map<Value, Value> translationMap) {
     }
 
-    private ClauseAndTranslationMap createTranslationMap(EvaluationResult.Builder builder,
-                                                         EvaluationContext evaluationContext,
-                                                         MethodInfo aspectMethod,
-                                                         CompanionAnalysis companionAnalysis,
-                                                         CompanionMethodName companionMethodName,
-                                                         Instance instance,
-                                                         List<Value> parameterValues) {
+    private FilterResultAndTranslationMap createTranslationMap(EvaluationResult.Builder builder,
+                                                               EvaluationContext evaluationContext,
+                                                               MethodInfo aspectMethod,
+                                                               CompanionAnalysis companionAnalysis,
+                                                               CompanionMethodName companionMethodName,
+                                                               Instance instance,
+                                                               List<Value> parameterValues) {
         ImmutableMap.Builder<Value, Value> translationMap = new ImmutableMap.Builder<>();
-        // first, pre
+        // first: pre
         Value preAspectVariableValue = companionMethodName.aspect() == null ? UnknownValue.NO_VALUE : companionAnalysis.getPreAspectVariableValue();
-        Value clause;
+        Filter.FilterResult<MethodValue> filterResult;
         if (preAspectVariableValue != UnknownValue.NO_VALUE) {
-            ValueAndClause previousValue = computeEvaluationOnInstance(builder, evaluationContext, aspectMethod, instance, List.of());
-            translationMap.put(preAspectVariableValue, previousValue.value);
-            clause = previousValue.clause;
+            filterResult = computeEvaluationOnInstance(builder, evaluationContext, aspectMethod, instance, List.of());
+            translationMap.put(preAspectVariableValue, filterResult.accepted().values().stream().findFirst().orElseThrow());
         } else {
-            clause = UnknownValue.NO_VALUE; // there was no clause
+            return null;
         }
         // parameters
         ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
-        return new ClauseAndTranslationMap(clause, translationMap.build());
+        return new FilterResultAndTranslationMap(filterResult, translationMap.build());
     }
 
 
@@ -421,9 +415,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         // evaluation on Instance, with state
-        ValueAndClause evaluationOnInstance = computeEvaluationOnInstance(builder, evaluationContext, methodInfo, objectValue, parameters);
-        if (evaluationOnInstance != null) {
-            return builder.setValue(evaluationOnInstance.value).build();
+        Filter.FilterResult<MethodValue> evaluationOnInstance =
+                computeEvaluationOnInstance(builder, evaluationContext, methodInfo, objectValue, parameters);
+        if (evaluationOnInstance != null && !evaluationOnInstance.accepted().isEmpty()) {
+            Value value = evaluationOnInstance.accepted().values().stream().findFirst().orElseThrow();
+            return builder.setValue(value).build();
         }
 
         // @Identity as method annotation
@@ -500,11 +496,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()
     // IMPROVE code for now dedicated as hell to catch X == this.method
-    private static ValueAndClause computeEvaluationOnInstance(EvaluationResult.Builder builder,
-                                                              EvaluationContext evaluationContext,
-                                                              MethodInfo methodInfo,
-                                                              Value objectValue,
-                                                              List<Value> parameterValues) {
+    private static Filter.FilterResult<MethodValue> computeEvaluationOnInstance(EvaluationResult.Builder builder,
+                                                                                EvaluationContext evaluationContext,
+                                                                                MethodInfo methodInfo,
+                                                                                Value objectValue,
+                                                                                List<Value> parameterValues) {
         // look for a clause that has "this.methodInfo" as a MethodValue
         Instance instance;
         if (objectValue instanceof Instance theInstance) {
@@ -514,33 +510,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         } else {
             return null;
         }
-        AtomicReference<ValueAndClause> result = new AtomicReference<>();
-        instance.state.individualBooleanClauses(Value.FilterMode.ACCEPT).forEach(component -> {
-            // example: 0 == java.util.ArrayList.this.size()
-            if (component instanceof EqualsValue equalsValue && equalsValue.rhs instanceof MethodValue methodInEquals) {
-                if (compatibleMethod(methodInfo, methodInEquals.methodInfo)) {
-                    result.set(new ValueAndClause(equalsValue.lhs, equalsValue));
-                }
-            }
-            // example: java.util.ArrayList.contains("a")
-            if (component instanceof MethodValue mv) {
-                if (compatibleMethod(methodInfo, mv.methodInfo) && compatibleParameters(parameterValues, mv.parameters)) {
-                    result.set(new ValueAndClause(BoolValue.createTrue(evaluationContext.getPrimitives()), component));
-                }
-            }
-        });
-
-        return result.get();
-    }
-
-    private static boolean compatibleParameters(List<Value> parameters, List<Value> parametersInClause) {
-        return ListUtil.joinLists(parameters, parametersInClause).allMatch(pair -> pair.k.equals(pair.v));
-    }
-
-    private static boolean compatibleMethod(MethodInfo methodInfo, MethodInfo methodInClause) {
-        if (methodInClause == methodInfo) return true;
-        Set<MethodInfo> overrides = methodInClause.typeInfo.overrides(methodInClause, true);
-        return overrides.contains(methodInfo);
+        List<Filter.FilterMethod<MethodValue>> filters = List.of(new Filter.MethodCallBooleanResult(methodInfo, parameterValues,
+                BoolValue.createTrue(evaluationContext.getPrimitives())), new Filter.ValueEqualsMethodCallNoParameters(methodInfo));
+        return Filter.filter(evaluationContext, instance, Filter.FilterMode.ACCEPT, filters);
     }
 
     private static Value computeEvaluationOnConstant(Primitives primitives, MethodInfo methodInfo, Value objectValue) {

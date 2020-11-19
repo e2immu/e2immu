@@ -107,7 +107,7 @@ public class ConditionManager {
      * @return individual variables that appear in a top-level disjunction as variable == null
      */
     public Set<Variable> findIndividualNullInCondition(EvaluationContext evaluationContext, boolean requireEqualsNull) {
-        return findIndividualNull(condition, evaluationContext, Value.FilterMode.REJECT, requireEqualsNull);
+        return findIndividualNull(condition, evaluationContext, Filter.FilterMode.REJECT, requireEqualsNull);
     }
 
     /**
@@ -116,7 +116,7 @@ public class ConditionManager {
      * @return individual variables that appear in a top-level disjunction as variable == null
      */
     public Set<Variable> findIndividualNullInState(EvaluationContext evaluationContext, boolean requireEqualsNull) {
-        return findIndividualNull(state, evaluationContext, Value.FilterMode.ACCEPT, requireEqualsNull);
+        return findIndividualNull(state, evaluationContext, Filter.FilterMode.ACCEPT, requireEqualsNull);
 
     }
 
@@ -125,11 +125,11 @@ public class ConditionManager {
      *
      * @return individual variables that appear in a top-level disjunction as variable == null
      */
-    private static Set<Variable> findIndividualNull(Value value, EvaluationContext evaluationContext, Value.FilterMode filterMode, boolean requireEqualsNull) {
+    private static Set<Variable> findIndividualNull(Value value, EvaluationContext evaluationContext, Filter.FilterMode filterMode, boolean requireEqualsNull) {
         if (value == UnknownValue.EMPTY || isDelayed(value)) {
             return Set.of();
         }
-        Map<Variable, Value> individualNullClauses = value.filter(evaluationContext, filterMode, Value::isIndividualNullOrNotNullClause).accepted;
+        Map<Variable, Value> individualNullClauses = Filter.filter(evaluationContext, value, filterMode, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE).accepted();
         return individualNullClauses.entrySet()
                 .stream()
                 .filter(e -> requireEqualsNull == (e.getValue() == NullValue.NULL_VALUE))
@@ -167,26 +167,26 @@ public class ConditionManager {
         return new ConditionManager(condition, removeClausesInvolving(evaluationContext, state, variable, false));
     }
 
-    private static Value.FilterResult removeVariableFilter(Variable variable, Value value, boolean removeEqualityOnVariable) {
+    private static Filter.FilterResult<Variable> removeVariableFilter(Variable variable, Value value, boolean removeEqualityOnVariable) {
         VariableValue variableValue;
         if ((variableValue = value.asInstanceOf(VariableValue.class)) != null && variable.equals(variableValue.variable)) {
-            return new Value.FilterResult(Map.of(variable, value), UnknownValue.EMPTY);
+            return new Filter.FilterResult<>(Map.of(variable, value), UnknownValue.EMPTY);
         }
         EqualsValue equalsValue;
         if (removeEqualityOnVariable && (equalsValue = value.asInstanceOf(EqualsValue.class)) != null) {
             VariableValue lhs;
             if ((lhs = equalsValue.lhs.asInstanceOf(VariableValue.class)) != null && variable.equals(lhs.variable)) {
-                return new Value.FilterResult(Map.of(lhs.variable, value), UnknownValue.EMPTY);
+                return new Filter.FilterResult<>(Map.of(lhs.variable, value), UnknownValue.EMPTY);
             }
             VariableValue rhs;
             if ((rhs = equalsValue.rhs.asInstanceOf(VariableValue.class)) != null && variable.equals(rhs.variable)) {
-                return new Value.FilterResult(Map.of(rhs.variable, value), UnknownValue.EMPTY);
+                return new Filter.FilterResult<>(Map.of(rhs.variable, value), UnknownValue.EMPTY);
             }
         }
         if (value.isInstanceOf(MethodValue.class) && value.variables().contains(variable)) {
-            return new Value.FilterResult(Map.of(variable, value), UnknownValue.EMPTY);
+            return new Filter.FilterResult<>(Map.of(variable, value), UnknownValue.EMPTY);
         }
-        return new Value.FilterResult(Map.of(), value);
+        return null;
     }
 
     /**
@@ -199,9 +199,9 @@ public class ConditionManager {
      */
     public static Value removeClausesInvolving(EvaluationContext evaluationContext,
                                                Value conditional, Variable variable, boolean removeEqualityOnVariable) {
-        Value.FilterResult filterResult = conditional.filter(evaluationContext, Value.FilterMode.ALL,
+        Filter.FilterResult<Variable> filterResult = Filter.filter(evaluationContext, conditional, Filter.FilterMode.ALL,
                 value -> removeVariableFilter(variable, value, removeEqualityOnVariable));
-        return filterResult.rest;
+        return filterResult.rest();
     }
 
     // return that part of the conditional that is NOT covered by @NotNull (individual not null clauses) or @Size (individual size clauses)
@@ -213,14 +213,15 @@ public class ConditionManager {
         }
 
         // TRUE: parameters only FALSE: preconditionSide; OR of 2 filters
-        Value.FilterResult filterResult = condition.filter(evaluationContext, Value.FilterMode.REJECT, Value::isIndividualNullOrNotNullClauseOnParameter);
+        Filter.FilterResult<ParameterInfo> filterResult = Filter.filter(evaluationContext, condition,
+                Filter.FilterMode.REJECT, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE_ON_PARAMETER);
         // those parts that have nothing to do with individual clauses
-        if (filterResult.rest == UnknownValue.EMPTY) {
+        if (filterResult.rest() == UnknownValue.EMPTY) {
             return builder.setValue(UnknownValue.EMPTY).build();
         }
         // replace all VariableValues in the rest by VVPlaceHolders
         Map<Value, Value> translation = new HashMap<>();
-        filterResult.rest.visit(v -> {
+        filterResult.rest().visit(v -> {
             VariableValue variableValue;
             if ((variableValue = v.asInstanceOf(VariableValue.class)) != null) {
                 // null evalContext -> do not copy properties (the condition+state may hold a not null, which can
@@ -228,25 +229,26 @@ public class ConditionManager {
                 Variable variable = variableValue.variable;
                 translation.put(v, new VariableValue(variable, ObjectFlow.NO_FLOW));
             }
+            return true;
         });
 
         // and negate. This will become the precondition or "initial state"
-        EvaluationResult reRest = filterResult.rest.reEvaluate(evaluationContext, translation);
+        EvaluationResult reRest = filterResult.rest().reEvaluate(evaluationContext, translation);
         return builder.compose(reRest).setValue(NegatedValue.negate(evaluationContext, reRest.value)).build();
     }
 
-    private static Value.FilterResult obtainVariableFilter(Variable variable, Value value) {
+    private static Filter.FilterResult<Variable> obtainVariableFilter(Variable variable, Value value) {
         Set<Variable> variables = value.variables();
         if (variables.size() == 1 && variable.equals(variables.stream().findAny().orElseThrow())) {
-            return new Value.FilterResult(Map.of(variable, value), UnknownValue.EMPTY);
+            return new Filter.FilterResult<>(Map.of(variable, value), UnknownValue.EMPTY);
         }
-        return new Value.FilterResult(Map.of(), value);
+        return null;
     }
 
     // note: very similar to remove, except that here we're interested in the actual value
     public Value individualStateInfo(EvaluationContext evaluationContext, Variable variable) {
-        Value.FilterResult filterResult = state.filter(evaluationContext, Value.FilterMode.ACCEPT,
+        Filter.FilterResult<Variable> filterResult = Filter.filter(evaluationContext, state, Filter.FilterMode.ACCEPT,
                 value -> obtainVariableFilter(variable, value));
-        return filterResult.accepted.getOrDefault(variable, UnknownValue.EMPTY);
+        return filterResult.accepted().getOrDefault(variable, UnknownValue.EMPTY);
     }
 }

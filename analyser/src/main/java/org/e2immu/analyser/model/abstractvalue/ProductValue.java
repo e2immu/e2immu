@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public class ProductValue extends PrimitiveValue {
     public final Value lhs;
@@ -128,10 +129,11 @@ public class ProductValue extends PrimitiveValue {
     }
 
     @Override
-    public void visit(Consumer<Value> consumer) {
-        lhs.visit(consumer);
-        rhs.visit(consumer);
-        consumer.accept(this);
+    public void visit(Predicate<Value> predicate) {
+        if (predicate.test(this)) {
+            lhs.visit(predicate);
+            rhs.visit(predicate);
+        }
     }
 
     @Override

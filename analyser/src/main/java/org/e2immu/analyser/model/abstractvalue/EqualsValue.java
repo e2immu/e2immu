@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class EqualsValue extends PrimitiveValue {
@@ -119,48 +120,6 @@ public class EqualsValue extends PrimitiveValue {
         return SetUtil.immutableUnion(lhs.variables(), rhs.variables());
     }
 
-    private FilterResult isIndividualNullOrNotNullClause(boolean parametersOnly) {
-        boolean lhsIsNull = lhs.isNull();
-        boolean lhsIsNotNull = lhs.isNotNull();
-        if ((lhsIsNull || lhsIsNotNull) && rhs instanceof VariableValue v) {
-            if (!parametersOnly || v.variable instanceof ParameterInfo) {
-                Value value = lhsIsNull ? NullValue.NULL_VALUE : NullValue.NOT_NULL_VALUE;
-                return new FilterResult(Map.of(v.variable, value), UnknownValue.EMPTY);
-            }
-        }
-        return new FilterResult(Map.of(), this);
-    }
-
-    @Override
-    public FilterResult isIndividualNullOrNotNullClauseOnParameter() {
-        return isIndividualNullOrNotNullClause(true);
-    }
-
-    @Override
-    public FilterResult isIndividualNullOrNotNullClause() {
-        return isIndividualNullOrNotNullClause(false);
-    }
-
-    @Override
-    public FilterResult isIndividualFieldCondition() {
-        boolean acceptR = rhs instanceof VariableValue && ((VariableValue) rhs).variable instanceof FieldReference;
-        boolean acceptL = lhs instanceof VariableValue && ((VariableValue) lhs).variable instanceof FieldReference;
-        if (acceptL && !acceptR)
-            return new FilterResult(Map.of(((VariableValue) lhs).variable, this), UnknownValue.EMPTY);
-        if (acceptR && !acceptL)
-            return new FilterResult(Map.of(((VariableValue) rhs).variable, this), UnknownValue.EMPTY);
-        return new FilterResult(Map.of(), this);
-    }
-
-    @Override
-    public FilterResult filter(EvaluationContext evaluationContext, FilterMode filterMode, FilterMethod... filterMethods) {
-        for (FilterMethod filterMethod : filterMethods) {
-            FilterResult filterResult = filterMethod.apply(this);
-            if (!filterResult.accepted.isEmpty()) return filterResult;
-        }
-        return new FilterResult(Map.of(), this);
-    }
-
     @Override
     public int encodedSizeRestriction(EvaluationContext evaluationContext) {
         if (lhs instanceof NumericValue && lhs.isDiscreteType()) {
@@ -171,14 +130,10 @@ public class EqualsValue extends PrimitiveValue {
     }
 
     @Override
-    public void visit(Consumer<Value> consumer) {
-        lhs.visit(consumer);
-        rhs.visit(consumer);
-        consumer.accept(this);
-    }
-
-    @Override
-    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
-        return Stream.of(this);
+    public void visit(Predicate<Value> predicate) {
+        if (predicate.test(this)) {
+            lhs.visit(predicate);
+            rhs.visit(predicate);
+        }
     }
 }

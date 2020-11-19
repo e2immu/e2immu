@@ -23,7 +23,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
@@ -31,9 +30,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * the result of a new object creation (new XX(...))
@@ -192,15 +190,10 @@ public class Instance implements Value {
     }
 
     @Override
-    public void visit(Consumer<Value> consumer) {
-        constructorParameterValues.forEach(v -> v.visit(consumer));
-        consumer.accept(this);
-    }
-
-    @Override
-    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
-        if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
-        return Stream.empty();
+    public void visit(Predicate<Value> predicate) {
+        if (predicate.test(this)) {
+            constructorParameterValues.forEach(predicate::test);
+        }
     }
 
     @Override

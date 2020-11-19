@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -138,9 +139,10 @@ public class PropertyWrapper implements Value, ValueWrapper {
     }
 
     @Override
-    public void visit(Consumer<Value> consumer) {
-        value.visit(consumer);
-        consumer.accept(this);
+    public void visit(Predicate<Value> predicate) {
+        if(predicate.test(this)) {
+            value.visit(predicate);
+        }
     }
 
     @Override
@@ -156,11 +158,6 @@ public class PropertyWrapper implements Value, ValueWrapper {
     @Override
     public ParameterizedType type() {
         return value.type();
-    }
-
-    @Override
-    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
-        return value.individualBooleanClauses(filterMode);
     }
 
     @Override

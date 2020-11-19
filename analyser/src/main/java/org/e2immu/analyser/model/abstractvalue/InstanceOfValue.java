@@ -94,9 +94,4 @@ public class InstanceOfValue extends PrimitiveValue {
     public Set<Variable> variables() {
         return Set.of(variable);
     }
-
-    @Override
-    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
-        return Stream.of(this);
-    }
 }

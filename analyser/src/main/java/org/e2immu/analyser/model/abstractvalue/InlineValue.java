@@ -8,6 +8,7 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /*
@@ -103,9 +104,10 @@ public class InlineValue implements Value {
     }
 
     @Override
-    public void visit(Consumer<Value> consumer) {
-        value.visit(consumer);
-        consumer.accept(this);
+    public void visit(Predicate<Value> predicate) {
+        if(predicate.test(this)) {
+            value.visit(predicate);
+        }
     }
 
     public boolean canBeApplied(EvaluationContext evaluationContext) {
@@ -117,12 +119,6 @@ public class InlineValue implements Value {
             case PACKAGE -> evaluationContext.getCurrentType().packageName().equals(methodInfo.typeInfo.packageName());
             default -> throw new UnsupportedOperationException("TODO");
         };
-    }
-
-    @Override
-    public Stream<Value> individualBooleanClauses(FilterMode filterMode) {
-        if (Primitives.isBooleanOrBoxedBoolean(type())) return Stream.of(this);
-        return Stream.empty();
     }
 
     @Override

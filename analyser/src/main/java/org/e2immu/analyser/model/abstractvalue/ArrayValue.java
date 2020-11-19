@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 // {1,2,3}, {a, b, {1,3,3}}, ...
@@ -92,9 +93,10 @@ public class ArrayValue implements Value {
     }
 
     @Override
-    public void visit(Consumer<Value> consumer) {
-        values.forEach(v -> v.visit(consumer));
-        consumer.accept(this);
+    public void visit(Predicate<Value> predicate) {
+        if(predicate.test(this)) {
+            values.forEach(v -> v.visit(predicate));
+        }
     }
 
     @Override
