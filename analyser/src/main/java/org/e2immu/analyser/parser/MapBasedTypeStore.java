@@ -40,7 +40,7 @@ public class MapBasedTypeStore implements TypeStore {
     public TypeInfo getOrCreate(String fullyQualifiedName) {
         String[] split = fullyQualifiedName.split("\\.");
         List<TypeInfo> typeInfoList = trie.getOrCompute(split, strings -> {
-            TypeInfo typeInfo = new TypeInfo(fullyQualifiedName);
+            TypeInfo typeInfo = TypeInfo.fromFqn(fullyQualifiedName);
             synchronized (newlyCreatedTypes) {
                 newlyCreatedTypes.add(typeInfo);
             }

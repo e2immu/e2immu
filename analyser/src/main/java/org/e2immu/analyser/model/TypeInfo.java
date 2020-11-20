@@ -68,8 +68,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     // creates an anonymous version of the parent type parameterizedType
     public TypeInfo(TypeInfo enclosingType, int number) {
-        simpleName = enclosingType.simpleName + "$" + number;
-        fullyQualifiedName = enclosingType.fullyQualifiedName + "$" + number;
+        this(enclosingType.fullyQualifiedName + "$" + number, enclosingType.simpleName + "$" + number);
     }
 
     @Override
@@ -82,21 +81,26 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return simpleName;
     }
 
-    public TypeInfo(@NotNull String packageName, @NotNull String simpleName) {
+    public static TypeInfo createFqnOrPackageNameDotSimpleName(@NotNull String packageName, @NotNull String simpleName) {
         if (Objects.requireNonNull(packageName).isEmpty())
             throw new UnsupportedOperationException("Expect a non-empty package name for " + simpleName);
-        this.fullyQualifiedName = packageName + "." + simpleName;
-        this.simpleName = Objects.requireNonNull(simpleName);
+        return new TypeInfo(packageName + "." + simpleName, simpleName);
     }
 
-    public TypeInfo(@NotNull String fullyQualifiedName) {
-        this.fullyQualifiedName = fullyQualifiedName;
+    public static TypeInfo fromFqn(@NotNull String fullyQualifiedName) {
         int dot = fullyQualifiedName.lastIndexOf('.');
+        String simpleName;
         if (dot >= 0) {
             simpleName = fullyQualifiedName.substring(dot + 1);
         } else {
             simpleName = fullyQualifiedName;
         }
+        return new TypeInfo(fullyQualifiedName, simpleName);
+    }
+
+    private TypeInfo(String fullyQualifiedName, String simpleName) {
+        this.simpleName = Objects.requireNonNull(simpleName);
+        this.fullyQualifiedName = Objects.requireNonNull(fullyQualifiedName);
     }
 
     @Override
@@ -119,12 +123,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
         builder.setEnclosingType(expressionContext.enclosingType);
         builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
+        assert classImplemented.typeInfo != null;
         if (classImplemented.typeInfo.typeInspection.getPotentiallyRun().typeNature == TypeNature.INTERFACE) {
             builder.addInterfaceImplemented(classImplemented);
         } else {
             builder.setParentClass(classImplemented);
         }
-        continueInspection(true, expressionContext, builder, members, null, false, false, null);
+        continueInspection(true, expressionContext, builder, members, false, false, null);
     }
 
     /**
@@ -209,7 +214,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         }
         return continueInspection(hasBeenDefined, expressionContext, builder,
                 typeDeclaration.getMembers(),
-                typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null),
                 typeNature == TypeNature.INTERFACE, haveFunctionalInterface,
                 dollarResolver);
     }
@@ -315,6 +319,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
      * all types currently under inspection, as we do with the bytecode inspector.
      */
     private void ensureLoaded(ExpressionContext expressionContext, ParameterizedType parameterizedType) {
+        assert parameterizedType.typeInfo != null;
         boolean insideCompilationUnit = parameterizedType.typeInfo.fullyQualifiedName.startsWith(expressionContext.primaryType.fullyQualifiedName);
         if (!insideCompilationUnit) {
             parameterizedType.typeInfo.typeInspection.getPotentiallyRun(parameterizedType.typeInfo.fullyQualifiedName);
@@ -335,7 +340,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
         builder.setEnclosingType(expressionContext.enclosingType);
         doClassOrInterfaceDeclaration(true, expressionContext, TypeNature.CLASS, cid, builder);
-        continueInspection(true, expressionContext, builder, cid.getMembers(), null, false, false, null);
+        continueInspection(true, expressionContext, builder, cid.getMembers(), false, false, null);
     }
 
 
@@ -361,7 +366,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             ExpressionContext expressionContext,
             TypeInspection.TypeInspectionBuilder builder,
             NodeList<BodyDeclaration<?>> members,
-            FieldDeclaration packageNameField,
             boolean isInterface,
             boolean haveFunctionalInterface,
             DollarResolver dollarResolver) {
@@ -370,25 +374,17 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         // 2 step approach: first, add these types to the expression context, without inspection
         for (BodyDeclaration<?> bodyDeclaration : members) {
-            bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> {
-                prepareSubType(expressionContext, dollarResolver, cid.getNameAsString());
-            });
-            bodyDeclaration.ifEnumDeclaration(ed -> {
-                prepareSubType(expressionContext, dollarResolver, ed.getNameAsString());
-            });
+            bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> prepareSubType(expressionContext, dollarResolver, cid.getNameAsString()));
+            bodyDeclaration.ifEnumDeclaration(ed -> prepareSubType(expressionContext, dollarResolver, ed.getNameAsString()));
         }
 
         // then inspect them...
         List<TypeInfo> dollarTypes = new ArrayList<>();
         for (BodyDeclaration<?> bodyDeclaration : members) {
-            bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> {
-                inspectSubType(builder, dollarResolver, dollarTypes, expressionContext, isInterface,
-                        hasBeenDefined, cid.getNameAsString(), cid.asTypeDeclaration());
-            });
-            bodyDeclaration.ifEnumDeclaration(ed -> {
-                inspectSubType(builder, dollarResolver, dollarTypes, expressionContext, isInterface,
-                        hasBeenDefined, ed.getNameAsString(), ed.asTypeDeclaration());
-            });
+            bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> inspectSubType(builder, dollarResolver, dollarTypes, expressionContext, isInterface,
+                    hasBeenDefined, cid.getNameAsString(), cid.asTypeDeclaration()));
+            bodyDeclaration.ifEnumDeclaration(ed -> inspectSubType(builder, dollarResolver, dollarTypes, expressionContext, isInterface,
+                    hasBeenDefined, ed.getNameAsString(), ed.asTypeDeclaration()));
         }
 
         // then, do fields
@@ -463,6 +459,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (countNonStaticNonDefaultIfInterface.get() == 1 && !haveFunctionalInterface && hasBeenDefined) {
             boolean haveNonStaticNonDefaultsInSuperType = false;
             for (ParameterizedType superInterface : builder.getInterfacesImplemented()) {
+                assert superInterface.typeInfo != null;
                 if (superInterface.typeInfo.haveNonStaticNonDefaultMethods()) {
                     haveNonStaticNonDefaultsInSuperType = true;
                     break;
@@ -472,7 +469,12 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 builder.addAnnotation(expressionContext.typeContext.getPrimitives().functionalInterfaceAnnotationExpression);
             }
         }
-        typeInspection.set(builder.build(this));
+        try {
+            typeInspection.set(builder.build(this));
+        } catch (RuntimeException e) {
+            LOGGER.error("Caught exception setting type inspection of {}", fullyQualifiedName);
+            throw e;
+        }
         return dollarTypes;
     }
 
@@ -525,10 +527,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             if (!parentIsPrimaryType) throw new UnsupportedOperationException();
             String packageName = packageName(typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null));
             if (packageName != null) {
-                return new TypeInfo(packageName, simpleName.substring(0, simpleName.length() - 1));
+                return TypeInfo.createFqnOrPackageNameDotSimpleName(packageName, simpleName.substring(0, simpleName.length() - 1));
             }
         }
-        return new TypeInfo(fullyQualifiedName, simpleName);
+        return TypeInfo.createFqnOrPackageNameDotSimpleName(fullyQualifiedName, simpleName);
     }
 
     private static String packageName(FieldDeclaration packageNameField) {
@@ -547,6 +549,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .anyMatch(m -> !m.isStatic && !m.isDefaultImplementation)) return true;
         for (ParameterizedType superInterface : typeInspection.getPotentiallyRun().interfacesImplemented) {
+            assert superInterface.typeInfo != null;
             if (superInterface.typeInfo.haveNonStaticNonDefaultMethods()) {
                 return true;
             }
@@ -577,11 +580,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                         !inSamePackage && typeInfo.typeInspection.getPotentiallyRun().access == TypeModifier.PROTECTED);
         Stream<TypeInfo> parentStream;
         if (!Primitives.isJavaLangObject(typeInspection.parentClass)) {
+            assert typeInspection.parentClass.typeInfo != null;
             parentStream = typeInspection.parentClass.typeInfo.accessibleBySimpleNameTypeInfoStream(startingPoint, visited);
         } else parentStream = Stream.empty();
 
         Stream<TypeInfo> joint = Stream.concat(Stream.concat(mySelf, localStream), parentStream);
         for (ParameterizedType interfaceType : typeInspection.interfacesImplemented) {
+            assert interfaceType.typeInfo != null;
             Stream<TypeInfo> fromInterface = interfaceType.typeInfo.accessibleBySimpleNameTypeInfoStream(startingPoint, visited);
             joint = Stream.concat(joint, fromInterface);
         }
@@ -619,12 +624,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         // my parent's fields
         Stream<FieldInfo> parentStream;
         if (!Primitives.isJavaLangObject(typeInspection.parentClass)) {
+            assert typeInspection.parentClass.typeInfo != null;
             parentStream = typeInspection.parentClass.typeInfo.accessibleFieldsStream(startingPoint);
         } else parentStream = Stream.empty();
         joint = Stream.concat(joint, parentStream);
 
         // my interfaces' fields
         for (ParameterizedType interfaceType : typeInspection.interfacesImplemented) {
+            assert interfaceType.typeInfo != null;
             Stream<FieldInfo> fromInterface = interfaceType.typeInfo.accessibleFieldsStream(startingPoint);
             joint = Stream.concat(joint, fromInterface);
         }
@@ -872,7 +879,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 .findFirst();
         if (fromType.isPresent()) return fromType;
         if (parentIsNotJavaLangObject()) {
-            Optional<AnnotationExpression> fromParent = typeInspection.getPotentiallyRun().parentClass.typeInfo.hasInspectedAnnotation(annotation);
+            Optional<AnnotationExpression> fromParent = Objects.requireNonNull(typeInspection.getPotentiallyRun().parentClass.typeInfo).hasInspectedAnnotation(annotation);
             if (fromParent.isPresent()) return fromParent;
         }
         return Optional.empty();
@@ -956,6 +963,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         typeInspection.getPotentiallyRun().interfacesImplemented.forEach(i -> {
             list.add(i.typeInfo);
+            assert i.typeInfo != null;
             list.addAll(i.typeInfo.superTypesExcludingJavaLangObject());
         });
         List<TypeInfo> immutable = ImmutableList.copyOf(list);
@@ -992,6 +1000,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             if (superType.parameters.isEmpty()) {
                 translationMapOfSuperType = translationMap;
             } else {
+                assert superType.typeInfo != null;
                 ParameterizedType formalType = superType.typeInfo.asParameterizedType();
                 translationMapOfSuperType = new HashMap<>(translationMap);
                 int index = 0;
@@ -1001,6 +1010,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                     index++;
                 }
             }
+            assert superType.typeInfo != null;
             MethodInfo override = superType.typeInfo.findUniqueMethod(methodInfo, translationMapOfSuperType);
             if (override != null) {
                 result.add(override);

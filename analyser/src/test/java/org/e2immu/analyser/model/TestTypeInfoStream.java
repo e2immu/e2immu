@@ -30,17 +30,17 @@ import java.util.List;
 
 public class TestTypeInfoStream {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestTypeInfoStream.class);
-    private static final String TEST_PACKAGE = "com.wrc.equivalent.testannotation";
-    private static final String GENERATED_PACKAGE = "com.wrc.equivalent.generatedannotation";
+    private static final String TEST_PACKAGE = "org.e2immu.analyser.test";
+    private static final String GENERATED_PACKAGE = "org.e2immu.analyser.generatedannotation";
     public static final String JAVA_UTIL = "java.util";
 
-    final TypeInfo genericContainer = new TypeInfo("com.wrc.equivalent.model",
+    final TypeInfo genericContainer = TypeInfo.createFqnOrPackageNameDotSimpleName("org.e2immu.analyser.model",
             "GenericContainer");
 
-    final TypeInfo typeInfo = new TypeInfo("com.wrc.equivalent.model",
+    final TypeInfo typeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName("org.e2immu.analyser.model",
             "TestTypeInfoStream");
-    final TypeInfo loggerTypeInfo = new TypeInfo("org.slf4j", "Logger");
-    final TypeInfo containerTypeInfo = new TypeInfo("com.wrc.equivalent.model.TestTypeInfoStream.Container");
+    final TypeInfo loggerTypeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName("org.slf4j", "Logger");
+    final TypeInfo containerTypeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName("org.e2immu.analyser.model.TestTypeInfoStream", "Container");
     final FieldInfo logger = new FieldInfo(loggerTypeInfo, "LOGGER", typeInfo);
 
     final Primitives primitives = new Primitives();
@@ -60,10 +60,10 @@ public class TestTypeInfoStream {
 
     @Test
     public void test2() {
-        final TypeInfo hashMap = new TypeInfo(JAVA_UTIL, "HashMap");
+        final TypeInfo hashMap = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_UTIL, "HashMap");
         final ParameterizedType hashMapParameterizedType = hashMap.asParameterizedType();
-        final TypeInfo map = new TypeInfo(JAVA_UTIL, "Map");
-        final TypeInfo mapEntry = new TypeInfo(JAVA_UTIL, "Entry");
+        final TypeInfo map = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_UTIL, "Map");
+        final TypeInfo mapEntry = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_UTIL, "Entry");
 
         logger.fieldInspection.set(new FieldInspection.FieldInspectionBuilder()
                 .addModifier(FieldModifier.PRIVATE)
@@ -146,8 +146,8 @@ public class TestTypeInfoStream {
                 .build(containerTypeInfo);
         containerTypeInfo.typeInspection.set(containerTypeInspection);
 
-        TypeInfo commutative = new TypeInfo(GENERATED_PACKAGE, "Commutative");
-        TypeInfo testEquivalent = new TypeInfo(TEST_PACKAGE, "TestEquivalent");
+        TypeInfo commutative = TypeInfo.createFqnOrPackageNameDotSimpleName(GENERATED_PACKAGE, "Commutative");
+        TypeInfo testEquivalent = TypeInfo.createFqnOrPackageNameDotSimpleName(TEST_PACKAGE, "TestEquivalent");
         MethodInfo referenceMethodInfo = new MethodInfo(testEquivalent, "reference", List.of(),
                 primitives.stringParameterizedType, false);
         referenceMethodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
@@ -190,7 +190,7 @@ public class TestTypeInfoStream {
         TypeInspection typeInspection = new TypeInspection.TypeInspectionBuilder()
                 .addTypeModifier(TypeModifier.PUBLIC)
                 .setParentClass(primitives.objectParameterizedType)
-                .setPackageName("com.wrc.equivalent.model")
+                .setPackageName("org.e2immu.analyser.model")
                 .addField(logger)
                 .addSubType(containerTypeInfo)
                 .addConstructor(emptyConstructor)

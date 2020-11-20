@@ -48,7 +48,7 @@ import static org.objectweb.asm.Opcodes.ASM7;
 
 public class MyClassVisitor extends ClassVisitor {
     private static final Logger LOGGER = LoggerFactory.getLogger(MyClassVisitor.class);
-
+    private static final Pattern ILLEGAL_IN_FQN = Pattern.compile("[/;$]");
     private final List<TypeInfo> types;
     private final TypeContext typeContext;
     private final OnDemandInspection onDemandInspection;
@@ -79,6 +79,40 @@ public class MyClassVisitor extends ClassVisitor {
                 e2ImmuAnnotationExpressions) : null;
     }
 
+    // return true when child = parent + $ + somethingWithoutDollars
+    static boolean isDirectChildOf(String child, String parent) {
+        if (!child.startsWith(parent)) return false;
+        int dollar = parent.length();
+        if (child.length() <= dollar + 1) return false;
+        int otherDollar = child.indexOf('$', dollar + 1);
+        return otherDollar < 0;
+    }
+
+    public static String pathToFqn(String path) {
+        String withoutDotClass = path.endsWith(".class") ? path.substring(0, path.length() - 6) : path;
+        return withoutDotClass.replaceAll("[/$]", ".");
+    }
+
+    private static String packageName(String fqName) {
+        int dot = fqName.lastIndexOf('.');
+        if (dot < 0) return fqName;
+        return fqName.substring(0, dot);
+    }
+
+    private static TypeNature typeNatureFromOpCode(int opCode) {
+        if ((opCode & Opcodes.ACC_ANNOTATION) != 0) return TypeNature.ANNOTATION;
+        if ((opCode & Opcodes.ACC_ENUM) != 0) return TypeNature.ENUM;
+        if ((opCode & Opcodes.ACC_INTERFACE) != 0) return TypeNature.INTERFACE;
+        return TypeNature.CLASS;
+    }
+
+    private static String makeMethodSignature(String name, TypeInfo typeInfo, List<ParameterizedType> types) {
+        String methodName = "<init>".equals(name) ? typeInfo.simpleName : name;
+        return methodName + "(" +
+                types.stream().map(ParameterizedType::detailedString).collect(Collectors.joining(", ")) +
+                ")";
+    }
+
     @Override
     public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
         log(BYTECODE_INSPECTOR_DEBUG, "Visit {} {} {} {} {} {}", version, access, name, signature, superName, interfaces);
@@ -91,7 +125,7 @@ public class MyClassVisitor extends ClassVisitor {
         String fqName = pathToFqn(name);
         currentType = typeContext.typeStore.get(fqName);
         if (currentType == null) {
-            currentType = new TypeInfo(fqName);
+            currentType = TypeInfo.fromFqn(fqName);
             typeContext.typeStore.add(currentType);
         } else if (currentType.typeInspection.isSet()) {
             log(BYTECODE_INSPECTOR_DEBUG, "Inspection of " + fqName + " has been set already");
@@ -231,8 +265,6 @@ public class MyClassVisitor extends ClassVisitor {
         return result != null && result.typeInspection.isSet() ? result : null;
     }
 
-    private static final Pattern ILLEGAL_IN_FQN = Pattern.compile("[/;$]");
-
     private TypeInfo getOrCreateTypeInfo(String fqn, String path) {
         Matcher m = ILLEGAL_IN_FQN.matcher(fqn);
         if (m.find()) throw new UnsupportedOperationException("Illegal FQN: " + fqn + "; path is " + path);
@@ -249,29 +281,6 @@ public class MyClassVisitor extends ClassVisitor {
         log(BYTECODE_INSPECTOR_DEBUG, "Could not find " + parentFqName + " in stack of enclosing types " +
                 enclosingTypes.stream().map(ti -> ti.fullyQualifiedName).collect(Collectors.joining(" -> ")));
         return null;
-    }
-
-    // return true when child = parent + $ + somethingWithoutDollars
-    static boolean isDirectChildOf(String child, String parent) {
-        if (!child.startsWith(parent)) return false;
-        int dollar = parent.length();
-        if (child.length() <= dollar + 1) return false;
-        int otherDollar = child.indexOf('$', dollar + 1);
-        return otherDollar < 0;
-    }
-
-    public static String pathToFqn(String path) {
-        String withoutDotClass = path.endsWith(".class") ? path.substring(0, path.length() - 6) : path;
-        return withoutDotClass.replaceAll("[/$]", ".");
-    }
-
-    private static class IterativeParsing {
-        int startPos;
-        int endPos;
-        ParameterizedType result;
-        boolean more;
-        String name;
-        boolean typeNotFoundError;
     }
 
     private int parseTypeGenerics(String signature) {
@@ -338,20 +347,6 @@ public class MyClassVisitor extends ClassVisitor {
             next.startPos = end;
         }
         return next;
-    }
-
-
-    private static String packageName(String fqName) {
-        int dot = fqName.lastIndexOf('.');
-        if (dot < 0) return fqName;
-        return fqName.substring(0, dot);
-    }
-
-    private static TypeNature typeNatureFromOpCode(int opCode) {
-        if ((opCode & Opcodes.ACC_ANNOTATION) != 0) return TypeNature.ANNOTATION;
-        if ((opCode & Opcodes.ACC_ENUM) != 0) return TypeNature.ENUM;
-        if ((opCode & Opcodes.ACC_INTERFACE) != 0) return TypeNature.INTERFACE;
-        return TypeNature.CLASS;
     }
 
     @Override
@@ -464,13 +459,6 @@ public class MyClassVisitor extends ClassVisitor {
     // ArrayList(java.util.Collection<? extends E>)     this is a constructor
     // copyOf(U[], int, java.lang.Class<? extends T[]>) spaces between parameter types
 
-    private static String makeMethodSignature(String name, TypeInfo typeInfo, List<ParameterizedType> types) {
-        String methodName = "<init>".equals(name) ? typeInfo.simpleName : name;
-        return methodName + "(" +
-                types.stream().map(ParameterizedType::detailedString).collect(Collectors.joining(", ")) +
-                ")";
-    }
-
     private int parseMethodGenerics(String signature,
                                     MethodInfo methodInfo,
                                     MethodInspection.MethodInspectionBuilder methodInspectionBuilder,
@@ -568,8 +556,6 @@ public class MyClassVisitor extends ClassVisitor {
         }
     }
 
-    // not overriding visitOuterClass
-
     @Override
     public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
         if (currentType == null) return null;
@@ -577,6 +563,8 @@ public class MyClassVisitor extends ClassVisitor {
         log(BYTECODE_INSPECTOR_DEBUG, "Have class annotation {} {}", descriptor, visible);
         return new MyAnnotationVisitor<>(typeContext, descriptor, typeInspectionBuilder);
     }
+
+    // not overriding visitOuterClass
 
     @Override
     public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
@@ -593,7 +581,7 @@ public class MyClassVisitor extends ClassVisitor {
                 log(BYTECODE_INSPECTOR_DEBUG, "Visit end of class " + currentType.fullyQualifiedName);
                 if (typeInspectionBuilder == null)
                     throw new UnsupportedOperationException("? was expecting a type inspection builder");
-                currentType.typeInspection.set(typeInspectionBuilder.build( currentType));
+                currentType.typeInspection.set(typeInspectionBuilder.build(currentType));
                 types.add(currentType);
                 inProcess.remove(currentType);
                 currentType = null;
@@ -616,5 +604,14 @@ public class MyClassVisitor extends ClassVisitor {
         inProcess.remove(currentType);
         currentType = null;
         typeInspectionBuilder = null;
+    }
+
+    private static class IterativeParsing {
+        int startPos;
+        int endPos;
+        ParameterizedType result;
+        boolean more;
+        String name;
+        boolean typeNotFoundError;
     }
 }

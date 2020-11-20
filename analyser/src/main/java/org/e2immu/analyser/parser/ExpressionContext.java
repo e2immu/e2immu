@@ -344,7 +344,7 @@ public class ExpressionContext {
 
     private org.e2immu.analyser.model.Statement localClassDeclaration(LocalClassDeclarationStmt statement) {
         String localName = statement.getClassDeclaration().getNameAsString();
-        TypeInfo typeInfo = new TypeInfo(localName);
+        TypeInfo typeInfo = TypeInfo.fromFqn(localName);
         typeInfo.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
         typeContext.addToContext(typeInfo);
         addNewlyCreatedType(typeInfo);

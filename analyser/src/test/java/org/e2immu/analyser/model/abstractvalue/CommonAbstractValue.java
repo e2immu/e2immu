@@ -156,7 +156,7 @@ public abstract class CommonAbstractValue {
                     .setParentClass(PRIMITIVES.objectParameterizedType)
                     .build(PRIMITIVES.objectTypeInfo));
         }
-        TypeInfo someType = new TypeInfo("some.type");
+        TypeInfo someType = TypeInfo.fromFqn("some.type");
         someType.typeAnalysis.set(new TypeAnalysisImpl.Builder(PRIMITIVES, someType).build());
         MethodInfo methodInfo = new MethodInfo(someType, List.of());
         ParameterInfo pi = new ParameterInfo(methodInfo, PRIMITIVES.stringParameterizedType, name, 0);

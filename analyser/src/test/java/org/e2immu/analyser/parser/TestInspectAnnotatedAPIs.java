@@ -58,8 +58,8 @@ public class TestInspectAnnotatedAPIs {
         Resources classPath = new Resources();
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(classPath, null, globalTypeContext, e2ImmuAnnotationExpressions);
         InspectAnnotatedAPIs inspectAnnotatedAPIs = new InspectAnnotatedAPIs(globalTypeContext, byteCodeInspector);
-        inspectAnnotatedAPIs.load(url);
-
+        //inspectAnnotatedAPIs.inspectResolvePossiblyMerge()
+        // FIXME update test
         AtomicInteger counter = new AtomicInteger(0);
         inspectAnnotatedAPIs.getLocalTypeStore().visit(new String[0], (s, types) -> {
             for (TypeInfo typeInfo : types) {

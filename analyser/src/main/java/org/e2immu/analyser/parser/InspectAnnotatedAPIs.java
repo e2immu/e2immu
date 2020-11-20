@@ -65,7 +65,7 @@ public class InspectAnnotatedAPIs {
     public List<SortedType> inspectResolvePossiblyMerge(Collection<URL> annotatedAPIs, Charset sourceCharSet) throws IOException {
         // load all primary types in the local type store
         // we have to do it this way, because an annotated API file may contain MULTIPLE primary types
-        for (URL url : annotatedAPIs) load(url);
+       // for (URL url : annotatedAPIs) load(url);
 
         // then, inspect in the normal way using a delegating type store
         DelegatingTypeStore delegatingTypeStore = new DelegatingTypeStore(localTypeStore, globalTypeContext.typeStore);
@@ -232,31 +232,6 @@ public class InspectAnnotatedAPIs {
         }
         if (typeInfo.typeInspection.getPotentiallyRun().packageNameOrEnclosingType.isRight()) {
             recursivelyAddTypeParameters(typeInfo.typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getRight(), typeContext);
-        }
-    }
-
-    void load(URL url) throws IOException {
-        try (InputStreamReader isr = new InputStreamReader(url.openStream())) {
-            String source = IOUtils.toString(isr);
-            CompilationUnit compilationUnit;
-            try {
-                compilationUnit = StaticJavaParser.parse(source);
-            } catch (RuntimeException rte) {
-                LOGGER.warn("Caught exception while parsing " + url);
-                throw rte;
-            }
-            if (compilationUnit.getTypes().isEmpty()) {
-                LOGGER.warn("No types in compilation unit: {}", url);
-            } else {
-                String packageName = compilationUnit.getPackageDeclaration()
-                        .map(pd -> pd.getName().asString())
-                        .orElseThrow(() -> new UnsupportedOperationException("Expect package declaration in file " + url));
-                compilationUnit.getTypes().forEach(td -> {
-                    String name = td.getName().asString();
-                    TypeInfo typeInfo = localTypeStore.getOrCreate(packageName + "." + name);
-                    typeInfo.recursivelyAddToTypeStore(true, localTypeStore, td);
-                });
-            }
         }
     }
 

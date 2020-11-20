@@ -89,7 +89,7 @@ public class Input {
                     String typeName = name.substring(0, name.length() - 5);
                     String packageName = Arrays.stream(parts).limit(parts.length - 1).collect(Collectors.joining("."));
                     if (acceptSource(packageName, typeName, restrictions)) {
-                        TypeInfo typeInfo = new TypeInfo(packageName, typeName);
+                        TypeInfo typeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName(packageName, typeName);
                         sourceTypeStore.add(typeInfo);
                         globalTypeContext.typeStore.add(typeInfo);
                         URL url = list.get(0);
