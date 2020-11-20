@@ -89,8 +89,8 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(
                 type.typesReferenced(true),
-                fieldInspection.isSet() && fieldInspection.get().initialiser.isSet() ?
-                        fieldInspection.get().initialiser.get().initialiser.typesReferenced()
+                fieldInspection.isSet() && fieldInspection.get().initialiserIsSet() ?
+                        fieldInspection.get().getInitialiser().initialiser().typesReferenced()
                         : UpgradableBooleanMap.of()
         );
     }
@@ -105,7 +105,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         StringUtil.indent(sb, indent);
         if (fieldInspection.isSet()) {
             Set<TypeInfo> annotationsSeen = new HashSet<>();
-            fieldInspection.get().annotations.forEach(ae -> {
+            fieldInspection.get().getAnnotations().forEach(ae -> {
                 sb.append(ae.stream());
                 if (fieldAnalysis.isSet()) {
                     fieldAnalysis.get().peekIntoAnnotations(ae, annotationsSeen, sb);
@@ -117,7 +117,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
                 fieldAnalysis.get().getAnnotationStream().forEach(entry -> {
                     boolean present = entry.getValue();
                     AnnotationExpression annotation = entry.getKey();
-                    if (present && !annotationsSeen.contains(annotation.typeInfo)) {
+                    if (present && !annotationsSeen.contains(annotation.typeInfo())) {
                         sb.append(annotation.stream());
                         sb.append("\n");
                         StringUtil.indent(sb, indent);
@@ -125,13 +125,13 @@ public class FieldInfo implements WithInspectionAndAnalysis {
                 });
             }
             FieldInspection fieldInspection = this.fieldInspection.get();
-            sb.append(fieldInspection.modifiers.stream().map(m -> m.toJava() + " ").collect(Collectors.joining()));
+            sb.append(fieldInspection.getModifiers().stream().map(m -> m.toJava() + " ").collect(Collectors.joining()));
         }
         sb.append(type.stream())
                 .append(" ")
                 .append(name);
-        if (fieldInspection.isSet() && fieldInspection.get().initialiser.isSet()) {
-            Expression expression = fieldInspection.get().initialiser.get().initialiser;
+        if (fieldInspection.isSet() && fieldInspection.get().initialiserIsSet()) {
+            Expression expression = fieldInspection.get().getInitialiser().initialiser();
             if (expression != EmptyExpression.EMPTY_EXPRESSION) {
                 sb.append(" = ");
                 sb.append(expression.expressionString(indent));
@@ -142,15 +142,15 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean isStatic() {
-        return fieldInspection.isSet() && fieldInspection.get().modifiers.contains(FieldModifier.STATIC);
+        return fieldInspection.isSet() && fieldInspection.get().getModifiers().contains(FieldModifier.STATIC);
     }
 
     @Override
     public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
         if (!fieldInspection.isSet()) return Optional.empty();
         String annotationFQN = annotation.getName();
-        Optional<AnnotationExpression> fromField = (getInspection().annotations.stream()
-                .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN))).findFirst();
+        Optional<AnnotationExpression> fromField = (getInspection().getAnnotations().stream()
+                .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(annotationFQN))).findFirst();
         if (fromField.isPresent()) return fromField;
         if (annotation.equals(NotNull.class)) return owner.hasInspectedAnnotation(annotation);
         // TODO check "where" on @NotNull
@@ -167,17 +167,17 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean isExplicitlyFinal() {
-        return fieldInspection.get().modifiers.contains(FieldModifier.FINAL);
+        return fieldInspection.get().getModifiers().contains(FieldModifier.FINAL);
     }
 
     public boolean isPrivate() {
-        return fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE);
+        return fieldInspection.get().getModifiers().contains(FieldModifier.PRIVATE);
     }
 
     public Set<ParameterizedType> explicitTypes() {
-        if (!fieldInspection.get().initialiser.isSet()) return Set.of();
-        FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.get().initialiser.get();
+        if (!fieldInspection.get().initialiserIsSet()) return Set.of();
+        FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.get().getInitialiser();
         // SAMs are handled by the method code
-        return MethodInfo.explicitTypes(fieldInitialiser.initialiser);
+        return MethodInfo.explicitTypes(fieldInitialiser.initialiser());
     }
 }

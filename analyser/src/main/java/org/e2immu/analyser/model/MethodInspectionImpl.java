@@ -1,0 +1,340 @@
+/*
+ * e2immu-analyser: code analyser for effective and eventual immutability
+ * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+package org.e2immu.analyser.model;
+
+import com.github.javaparser.ast.stmt.BlockStmt;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Fluent;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+public class MethodInspectionImpl extends InspectionImpl implements MethodInspection {
+
+    public final String fullyQualifiedName;
+    public final String distinguishingName;
+
+    public final MethodInfo methodInfo; // backlink, container... will become contextclass+immutable eventually
+    public final ParameterizedType returnType; // ContextClass
+    //@Immutable(after="??")
+    public final Block methodBody; // if empty, Block.EMPTY_BLOCK
+
+    //@Immutable(level = 2, after="MethodAnalyzer.analyse()")
+    //@Immutable
+    public final List<ParameterInfo> parameters;
+    //@Immutable
+    public final List<MethodModifier> modifiers;
+
+    //@Immutable
+    public final List<TypeParameter> typeParameters;
+    //@Immutable
+    public final List<ParameterizedType> exceptionTypes;
+
+    // if our type implements a number of interfaces, then the method definitions in these interfaces
+    // that this method implements, are represented in this variable
+    // this is used to check inherited annotations on methods
+    //@Immutable
+    public final List<MethodInfo> implementationOf;
+    public final Map<CompanionMethodName, MethodInfo> companionMethods;
+
+    private MethodInspectionImpl(MethodInfo methodInfo,
+                                 String fullyQualifiedName,
+                                 String distinguishingName,
+                                 List<MethodModifier> modifiers,
+                                 List<ParameterInfo> parameters,
+                                 ParameterizedType returnType,
+                                 List<AnnotationExpression> annotations,
+                                 List<TypeParameter> typeParameters,
+                                 List<ParameterizedType> exceptionTypes,
+                                 List<MethodInfo> implementationOf,
+                                 Map<CompanionMethodName, MethodInfo> companionMethods,
+                                 Block methodBody) {
+        super(annotations);
+        this.fullyQualifiedName = fullyQualifiedName;
+        this.distinguishingName = distinguishingName;
+        this.companionMethods = companionMethods;
+        this.modifiers = modifiers;
+        this.methodInfo = methodInfo;
+        this.parameters = parameters;
+        this.returnType = returnType;
+        this.typeParameters = typeParameters;
+        this.methodBody = methodBody;
+        this.exceptionTypes = exceptionTypes;
+        this.implementationOf = implementationOf;
+    }
+
+    @Override
+    public String getFullyQualifiedName() {
+        return fullyQualifiedName;
+    }
+
+    @Override
+    public String getDistinguishingName() {
+        return distinguishingName;
+    }
+
+    @Override
+    public MethodInfo getMethodInfo() {
+        return methodInfo;
+    }
+
+    @Override
+    public ParameterizedType getReturnType() {
+        return returnType;
+    }
+
+    @Override
+    public Block getMethodBody() {
+        return methodBody;
+    }
+
+    @Override
+    public List<ParameterInfo> getParameters() {
+        return parameters;
+    }
+
+    @Override
+    public List<MethodModifier> getModifiers() {
+        return modifiers;
+    }
+
+    @Override
+    public List<TypeParameter> getTypeParameters() {
+        return typeParameters;
+    }
+
+    @Override
+    public List<ParameterizedType> getExceptionTypes() {
+        return exceptionTypes;
+    }
+
+    @Override
+    public List<MethodInfo> getImplementationOf() {
+        return implementationOf;
+    }
+
+    @Override
+    public Map<CompanionMethodName, MethodInfo> getCompanionMethods() {
+        return companionMethods;
+    }
+
+    @Container(builds = MethodInspectionImpl.class)
+    public static class Builder extends AbstractInspectionBuilder implements BuilderWithAnnotations<Builder>, MethodInspection {
+        private final MethodInfo methodInfo;
+        private final List<ParameterInfo> parameters = new ArrayList<>();
+        private final List<MethodModifier> modifiers = new ArrayList<>();
+        private final List<AnnotationExpression> annotations = new ArrayList<>();
+        private final List<TypeParameter> typeParameters = new ArrayList<>();
+        private final List<MethodInfo> implementationsOf = new ArrayList<>();
+        private final Map<CompanionMethodName, Builder> companionMethods = new LinkedHashMap<>();
+        private BlockStmt block;
+        private Block inspectedBlock;
+        private final List<ParameterizedType> exceptionTypes = new ArrayList<>();
+        private ParameterizedType returnType;
+        private final Map<ParameterInfo, ParameterInspectionImpl.Builder> parameterInspectionBuilders = new HashMap<>();
+
+        public Builder(MethodInfo methodInfo) {
+            this.methodInfo = methodInfo;
+        }
+
+        @Fluent
+        public Builder setReturnType(ParameterizedType returnType) {
+            this.returnType = returnType;
+            return this;
+        }
+
+        @Fluent
+        public Builder setReturnType(@NotNull TypeInfo returnType) {
+            this.returnType = returnType.asParameterizedType();
+            return this;
+        }
+
+        public BlockStmt getBlock() {
+            return block;
+        }
+
+        @Fluent
+        public Builder setBlock(BlockStmt block) {
+            this.block = block;
+            return this;
+        }
+
+        @Fluent
+        public Builder setBlock(Block inspectedBlock) {
+            this.inspectedBlock = inspectedBlock;
+            return this;
+        }
+
+        public ParameterInspectionImpl.Builder addParameter(@NotNull ParameterInfo parameterInfo) {
+            parameters.add(parameterInfo);
+            ParameterInspectionImpl.Builder builder = new ParameterInspectionImpl.Builder();
+            parameterInspectionBuilders.put(parameterInfo, builder);
+            return builder;
+        }
+
+        @Fluent
+        public Builder addParameters(@NotNull Collection<ParameterInfo> parameters) {
+            parameters.forEach(this::addParameter);
+            return this;
+        }
+
+        @Fluent
+        public Builder addModifier(@NotNull MethodModifier methodModifier) {
+            modifiers.add(methodModifier);
+            return this;
+        }
+
+        @Fluent
+        public Builder addExceptionType(@NotNull ParameterizedType exceptionType) {
+            exceptionTypes.add(exceptionType);
+            return this;
+        }
+
+        @Fluent
+        public Builder addTypeParameter(@NotNull TypeParameter typeParameter) {
+            typeParameters.add(typeParameter);
+            if (!typeParameter.isMethodTypeParameter()) throw new IllegalArgumentException();
+            return this;
+        }
+
+        @Fluent
+        @Override
+        public Builder addAnnotation(@NotNull AnnotationExpression annotation) {
+            annotations.add(annotation);
+            return this;
+        }
+
+        @Fluent
+        public Builder addCompanionMethods(Map<CompanionMethodName, Builder> companionMethods) {
+            this.companionMethods.putAll(companionMethods);
+            return this;
+        }
+
+        public Map<ParameterInfo, ParameterInspectionImpl.Builder> getParameterInspectionBuilders() {
+            return parameterInspectionBuilders;
+        }
+
+        @NotModified
+        @NotNull
+        public MethodInspectionImpl build() {
+            if (methodInfo.isConstructor) {
+                returnType = ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
+            } else {
+                Objects.requireNonNull(returnType);
+            }
+            if (inspectedBlock == null) {
+                inspectedBlock = Block.EMPTY_BLOCK;
+            }
+            for (TypeParameter typeParameter : typeParameters) {
+                if (typeParameter.owner.isRight() && typeParameter.owner.getRight() != methodInfo) {
+                    throw new UnsupportedOperationException("I cannot have type parameters owned by another method!");
+                }
+            }
+
+            parameterInspectionBuilders.forEach((parameterInfo, builder) -> parameterInfo.parameterInspection.set(builder.build()));
+            companionMethods.values().forEach(builder -> builder.methodInfo.methodInspection.set(builder.build()));
+
+            // removed a check that the type parameter, if it belonged to a method, had to be this method.
+            // that's not correct, lambdas can have a method parameter type belonging to the enclosing method.
+            // we cannot easily check for that because anonymous types cannot (ATM) refer to their owning field/method.
+
+            return new MethodInspectionImpl(methodInfo,
+                    getFullyQualifiedName(), // the builders have not been invalidated yet
+                    getDistinguishingName(),
+                    ImmutableList.copyOf(modifiers),
+                    ImmutableList.copyOf(parameters),
+                    returnType,
+                    ImmutableList.copyOf(annotations),
+                    ImmutableList.copyOf(typeParameters),
+                    ImmutableList.copyOf(exceptionTypes),
+                    ImmutableList.copyOf(implementationsOf),
+                    ImmutableMap.copyOf(getCompanionMethods()),
+                    inspectedBlock
+            );
+        }
+
+        @Override
+        public String getFullyQualifiedName() {
+            return methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
+                    .map(p -> p.parameterizedType.stream(parameterInspectionBuilders.get(p).isVarArgs()))
+                    .collect(Collectors.joining(",")) + ")";
+        }
+
+        @Override
+        public String getDistinguishingName() {
+            return methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
+                    .map(p -> p.parameterizedType.distinguishingStream(parameterInspectionBuilders.get(p).isVarArgs()))
+                    .collect(Collectors.joining(",")) + ")";
+        }
+
+        @Override
+        public MethodInfo getMethodInfo() {
+            return methodInfo;
+        }
+
+        @Override
+        public ParameterizedType getReturnType() {
+            return returnType;
+        }
+
+        @Override
+        public Block getMethodBody() {
+            return inspectedBlock;
+        }
+
+        @Override
+        public List<ParameterInfo> getParameters() {
+            return parameters;
+        }
+
+        @Override
+        public List<MethodModifier> getModifiers() {
+            return modifiers;
+        }
+
+        @Override
+        public List<TypeParameter> getTypeParameters() {
+            return typeParameters;
+        }
+
+        @Override
+        public List<ParameterizedType> getExceptionTypes() {
+            return exceptionTypes;
+        }
+
+        @Override
+        public List<MethodInfo> getImplementationOf() {
+            return implementationsOf;
+        }
+
+        @Override
+        public Map<CompanionMethodName, MethodInfo> getCompanionMethods() {
+            return companionMethods.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().methodInfo));
+        }
+
+        public boolean methodBodyIsSet() {
+            return inspectedBlock != null;
+        }
+    }
+}

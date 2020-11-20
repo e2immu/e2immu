@@ -18,34 +18,17 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.UpgradableBooleanMap;
+
+import org.e2immu.analyser.util.AddOnceSet;
 
 import java.util.List;
-import java.util.Set;
 
+public abstract class AbstractInspectionBuilder implements Inspection {
 
-public interface AnnotationExpression {
+    protected final AddOnceSet<AnnotationExpression> annotations = new AddOnceSet<>();
 
-    TypeInfo typeInfo();
-
-    List<Expression> expressions();
-
-    String stream();
-
-    Set<String> imports();
-
-    <T> T extract(String fieldName, T defaultValue);
-
-    boolean isVerifyAbsent();
-
-    boolean test();
-
-    AnnotationExpression copyWith(Primitives primitives, String parameter, int value);
-
-    AnnotationExpression copyWith(Primitives primitives, String parameter, boolean value);
-
-    AnnotationExpression copyWith(Primitives primitives, String parameter, String value);
-
-    UpgradableBooleanMap<TypeInfo> typesReferenced();
+    @Override
+    public List<AnnotationExpression> getAnnotations() {
+        return List.copyOf(annotations.toImmutableSet());
+    }
 }

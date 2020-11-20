@@ -18,128 +18,25 @@
 
 package org.e2immu.analyser.model;
 
-import com.github.javaparser.ast.visitor.GenericVisitor;
-import com.github.javaparser.ast.visitor.VoidVisitor;
-import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.util.FirstThen;
-import org.e2immu.annotation.Container;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.NotNull;
-
 import java.util.List;
 import java.util.Objects;
 
-@E2Immutable(after = "??")
-@Container
-public class FieldInspection extends Inspection {
+public interface FieldInspection extends Inspection {
 
-    public static final com.github.javaparser.ast.expr.Expression EMPTY = new com.github.javaparser.ast.expr.Expression() {
-        @Override
-        public <R, A> R accept(GenericVisitor<R, A> v, A arg) {
-            return null;
-        }
+    List<FieldModifier> getModifiers();
 
-        @Override
-        public <A> void accept(VoidVisitor<A> v, A arg) {
+    FieldInitialiser getInitialiser();
 
-        }
-    };
-
-    @NotNull
-    public final List<FieldModifier> modifiers;
-    public final FirstThen<com.github.javaparser.ast.expr.Expression, FieldInitialiser> initialiser;
-    @NotNull
-    public final FieldModifier access;
-
-    @NotNull
-    public final List<AnnotationExpression> annotations;
-
-    private FieldInspection(@NotNull List<FieldModifier> modifiers,
-                            @NotNull FirstThen<com.github.javaparser.ast.expr.Expression, FieldInitialiser> initialiser,
-                            @NotNull List<AnnotationExpression> annotations) {
-        super(annotations);
-        Objects.requireNonNull(modifiers);
-        this.annotations = annotations;
-        this.initialiser = initialiser;
-        this.modifiers = modifiers;
-        access = computeAccess();
+    default boolean initialiserIsSet() {
+        return getInitialiser() != null;
     }
 
-    private FieldModifier computeAccess() {
-        if (modifiers.contains(FieldModifier.PRIVATE)) return FieldModifier.PRIVATE;
-        if (modifiers.contains(FieldModifier.PROTECTED)) return FieldModifier.PROTECTED;
-        if (modifiers.contains(FieldModifier.PUBLIC)) return FieldModifier.PUBLIC;
-        return FieldModifier.PACKAGE;
-    }
+    FieldModifier getAccess();
 
-    public FieldInspection copy(List<AnnotationExpression> alternativeAnnotations) {
-        return new FieldInspection(modifiers, initialiser, ImmutableList.copyOf(alternativeAnnotations));
-    }
-
-    public boolean haveInitialiser() {
-        return initialiser.isSet() ? initialiser.get().initialiser != EmptyExpression.EMPTY_EXPRESSION : initialiser.getFirst() != EMPTY;
-    }
-
-    public static class FieldInspectionBuilder implements BuilderWithAnnotations<FieldInspectionBuilder> {
-        private final ImmutableList.Builder<FieldModifier> modifiers = new ImmutableList.Builder<>();
-        private final ImmutableList.Builder<AnnotationExpression> annotations = new ImmutableList.Builder<>();
-        private com.github.javaparser.ast.expr.Expression initializer;
-        private Expression alreadyKnown;
-
-        public FieldInspectionBuilder setInitializer(com.github.javaparser.ast.expr.Expression initializer) {
-            this.initializer = initializer;
-            return this;
-        }
-
-        public FieldInspectionBuilder setInitializer(Expression alreadyKnown) {
-            this.alreadyKnown = alreadyKnown;
-            return this;
-        }
-
-        @Override
-        public FieldInspectionBuilder addAnnotation(AnnotationExpression annotation) {
-            this.annotations.add(annotation);
-            return this;
-        }
-
-        public FieldInspectionBuilder addAnnotations(List<AnnotationExpression> annotations) {
-            this.annotations.addAll(annotations);
-            return this;
-        }
-
-        public FieldInspectionBuilder addModifier(FieldModifier modifier) {
-            this.modifiers.add(modifier);
-            return this;
-        }
-
-        public FieldInspectionBuilder addModifiers(List<FieldModifier> modifiers) {
-            this.modifiers.addAll(modifiers);
-            return this;
-        }
-
-        @NotNull
-        public FieldInspection build() {
-            FirstThen<com.github.javaparser.ast.expr.Expression, FieldInitialiser> firstThen = new FirstThen<>(initializer != null ? initializer : EMPTY);
-            if (alreadyKnown != null) firstThen.set(new FieldInitialiser(alreadyKnown, null, false));
-            return new FieldInspection(modifiers.build(), firstThen, annotations.build());
-        }
-    }
-
-    public static class FieldInitialiser {
-        public final Expression initialiser;
-
-        // TODO at some point we need to expand this from SAM to arbitrary overriding implementation
-        // for now, SAM will do
-        public final MethodInfo implementationOfSingleAbstractMethod;
-
-        // artificial means: created by the inspection system; in the code, this method is not explicitly present
-        public final boolean artificial;
-
-        public FieldInitialiser(Expression initialiser, MethodInfo implementationOfSingleAbstractMethod, boolean artificial) {
-            this.implementationOfSingleAbstractMethod = implementationOfSingleAbstractMethod;
-            this.initialiser = Objects.requireNonNull(initialiser);
-            this.artificial = artificial;
+    record FieldInitialiser(Expression initialiser, MethodInfo implementationOfSingleAbstractMethod,
+                            boolean artificial) {
+        public FieldInitialiser {
+            Objects.requireNonNull(initialiser);
         }
     }
 }

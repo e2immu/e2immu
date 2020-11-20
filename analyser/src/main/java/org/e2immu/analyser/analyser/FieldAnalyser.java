@@ -95,7 +95,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         this.primaryType = primaryType;
         this.sam = sam;
         fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord() || !fieldInfo.isPrivate() && !fieldInfo.isExplicitlyFinal();
-        haveInitialiser = fieldInspection.initialiser.isSet() && fieldInspection.initialiser.get().initialiser != EmptyExpression.EMPTY_EXPRESSION;
+        haveInitialiser = fieldInspection.initialiserIsSet() && fieldInspection.getInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
 
         analyserComponents = new AnalyserComponents.Builder<String, Integer>()
                 .add(COMPUTE_IMPLICITLY_IMMUTABLE_DATA_TYPE, (iteration) -> computeImplicitlyImmutableDataType())
@@ -173,11 +173,11 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus evaluateInitialiser(int iteration) {
-        if (fieldInspection.initialiser.isSet()) {
-            FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.initialiser.get();
-            if (fieldInitialiser.initialiser != EmptyExpression.EMPTY_EXPRESSION) {
+        if (fieldInspection.initialiserIsSet()) {
+            FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.getInitialiser();
+            if (fieldInitialiser.initialiser() != EmptyExpression.EMPTY_EXPRESSION) {
                 EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
-                EvaluationResult evaluationResult = fieldInitialiser.initialiser.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
+                EvaluationResult evaluationResult = fieldInitialiser.initialiser().evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 Value initialiserValue = evaluationResult.value;
                 if (initialiserValue != NO_VALUE) {
                     fieldAnalysis.initialValue.set(initialiserValue);
@@ -339,7 +339,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     private AnalysisStatus fieldErrors() {
         assert !fieldAnalysis.fieldError.isSet();
 
-        if (fieldInspection.modifiers.contains(FieldModifier.PRIVATE)) {
+        if (fieldInspection.getModifiers().contains(FieldModifier.PRIVATE)) {
             if (!fieldInfo.isStatic()) {
                 if (fieldSummariesNotYetSet) return DELAYS;
                 int readInMethods = allMethodsAndConstructors.stream()

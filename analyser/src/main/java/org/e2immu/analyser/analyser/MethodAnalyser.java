@@ -90,7 +90,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         methodInspection = methodInfo.methodInspection.get();
 
         ImmutableMap.Builder<CompanionMethodName, CompanionAnalyser> companionAnalysersBuilder = new ImmutableMap.Builder<>();
-        for (Map.Entry<CompanionMethodName, MethodInfo> entry : methodInspection.companionMethods.entrySet()) {
+        for (Map.Entry<CompanionMethodName, MethodInfo> entry : methodInspection.getCompanionMethods().entrySet()) {
             companionAnalysersBuilder.put(entry.getKey(),
                     new CompanionAnalyser(analyserContext, typeAnalysis, entry.getKey(), entry.getValue(), methodInfo, AnnotationType.VERIFY));
         }
@@ -99,14 +99,14 @@ public class MethodAnalyser extends AbstractAnalyser {
                 e -> e.getValue().companionAnalysis));
 
         ImmutableList.Builder<ParameterAnalyser> parameterAnalysersBuilder = new ImmutableList.Builder<>();
-        for (ParameterInfo parameterInfo : methodInspection.parameters) {
+        for (ParameterInfo parameterInfo : methodInspection.getParameters()) {
             parameterAnalysersBuilder.add(new ParameterAnalyser(analyserContext, parameterInfo));
         }
         parameterAnalysers = parameterAnalysersBuilder.build();
         parameterAnalyses = parameterAnalysers.stream().map(pa -> pa.parameterAnalysis).collect(Collectors.toUnmodifiableList());
 
         this.typeAnalysis = typeAnalysis;
-        Block block = methodInspection.methodBody.get();
+        Block block = methodInspection.getMethodBody();
         methodAnalysis = new MethodAnalysisImpl.Builder(true, analyserContext.getPrimitives(), analyserContext,
                 methodInfo, parameterAnalyses);
 
@@ -178,7 +178,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         // copy CONTRACT annotations into the properties
         methodAnalysis.fromAnnotationsIntoProperties(false, false,
-                methodInspection.annotations,
+                methodInspection.getAnnotations(),
                 analyserContext.getE2ImmuAnnotationExpressions());
     }
 
@@ -446,13 +446,13 @@ public class MethodAnalyser extends AbstractAnalyser {
         log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), markAndOnly);
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         if (mark) {
-            AnnotationExpression markAnnotation = AnnotationExpression.fromAnalyserExpressions(e2.mark.get().typeInfo,
+            AnnotationExpression markAnnotation = new AnnotationExpressionImpl(e2.mark.get().typeInfo(),
                     List.of(new MemberValuePair("value",
                             new StringConstant(analyserContext.getPrimitives(), jointMarkLabel))));
             methodAnalysis.annotations.put(markAnnotation, true);
             methodAnalysis.annotations.put(e2.only.get(), false);
         } else {
-            AnnotationExpression onlyAnnotation = AnnotationExpression.fromAnalyserExpressions(e2.only.get().typeInfo,
+            AnnotationExpression onlyAnnotation = new AnnotationExpressionImpl(e2.only.get().typeInfo(),
                     List.of(new MemberValuePair(after ? "after" : "before",
                             new StringConstant(analyserContext.getPrimitives(), jointMarkLabel))));
             methodAnalysis.annotations.put(onlyAnnotation, true);
@@ -470,7 +470,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             if (haveNonFinalFields) {
                 break;
             }
-            ParameterizedType parentClass = typeInfo.typeInspection.getPotentiallyRun().parentClass;
+            ParameterizedType parentClass = typeInfo.typeInspection.get().parentClass();
             if (Primitives.isJavaLangObject(parentClass)) {
                 log(MARK, "No @Mark/@Only annotation in {}: found no non-final fields", methodInfo.distinguishingName());
                 methodAnalysis.preconditionForMarkAndOnly.set(List.of());
@@ -576,7 +576,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     private InlineValue.Applicability applicabilityField(FieldInfo fieldInfo) {
-        List<FieldModifier> fieldModifiers = fieldInfo.fieldInspection.get().modifiers;
+        List<FieldModifier> fieldModifiers = fieldInfo.fieldInspection.get().getModifiers();
         for (FieldModifier fieldModifier : fieldModifiers) {
             if (fieldModifier == FieldModifier.PRIVATE) return InlineValue.Applicability.TYPE;
             if (fieldModifier == FieldModifier.PUBLIC) return InlineValue.Applicability.EVERYWHERE;
@@ -729,7 +729,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         // We also check independence (maybe the user calls a method which returns one of the fields,
         // and calls a modification directly)
 
-        Optional<MethodInfo> someOtherMethodNotYetDecided = methodInfo.typeInfo.typeInspection.getPotentiallyRun()
+        Optional<MethodInfo> someOtherMethodNotYetDecided = methodInfo.typeInfo.typeInspection.get()
                 .methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(mi ->
                         analyserContext.getMethodAnalysis(mi).methodLevelData().getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod() == null ||
@@ -743,11 +743,11 @@ public class MethodAnalyser extends AbstractAnalyser {
                     methodInfo.distinguishingName(), someOtherMethodNotYetDecided.get().name);
             return null;
         }
-        return methodInfo.typeInfo.typeInspection.getPotentiallyRun()
+        return methodInfo.typeInfo.typeInspection.get()
                 .methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .anyMatch(mi -> mi.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.TRUE ||
+                .anyMatch(mi -> analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.MODIFIED) == Level.TRUE ||
                         !mi.returnType().isImplicitlyOrAtLeastEventuallyE2Immutable(analyserContext) &&
-                                mi.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT) == Level.FALSE);
+                                analyserContext.getMethodAnalysis(mi).getProperty(VariableProperty.INDEPENDENT) == Level.FALSE);
     }
 
     private AnalysisStatus methodIsIndependent(SharedState sharedState) {
@@ -783,7 +783,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             // TODO check ExplicitConstructorInvocations
 
             // PART 2: check parameters, but remove those that are recursively of my own type
-            List<ParameterInfo> parameters = new ArrayList<>(methodInfo.methodInspection.get().parameters);
+            List<ParameterInfo> parameters = new ArrayList<>(methodInfo.methodInspection.get().getParameters());
             parameters.removeIf(pi -> pi.parameterizedType.typeInfo == methodInfo.typeInfo);
 
             boolean allLinkedVariablesSet = methodAnalysis.getLastStatement().variableStream()

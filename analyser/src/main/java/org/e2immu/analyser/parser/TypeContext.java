@@ -33,7 +33,7 @@ import static org.e2immu.analyser.util.Logger.log;
  * <p>
  * TODO Should become eventual @E2Container
  */
-public class TypeContext {
+public class TypeContext implements InspectionProvider {
     private final TypeContext parentContext;
     private final Primitives primitives;
 

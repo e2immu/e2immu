@@ -20,14 +20,9 @@ package org.e2immu.analyser.model;
 
 
 import java.util.List;
-import java.util.Objects;
 
-public abstract class Inspection {
+public interface Inspection {
 
-    public final List<AnnotationExpression> annotations;
+    List<AnnotationExpression> getAnnotations();
 
-    protected Inspection(List<AnnotationExpression> annotations) {
-        Objects.requireNonNull(annotations);
-        this.annotations = annotations;
-    }
 }

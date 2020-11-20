@@ -42,8 +42,8 @@ public interface WithInspectionAndAnalysis {
 
     default Boolean annotatedWith(Analysis analysis, AnnotationExpression annotation) {
         if (primaryType().shallowAnalysis()) {
-            return getInspection().annotations.stream()
-                    .anyMatch(ae -> ae.typeInfo.fullyQualifiedName.equals(annotation.typeInfo.fullyQualifiedName));
+            return getInspection().getAnnotations().stream()
+                    .anyMatch(ae -> ae.typeInfo().fullyQualifiedName.equals(annotation.typeInfo().fullyQualifiedName));
         }
         return analysis.getAnnotation(annotation);
     }

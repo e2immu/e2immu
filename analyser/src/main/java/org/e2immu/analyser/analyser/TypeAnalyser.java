@@ -111,7 +111,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
         analyserComponents = builder.build();
 
-        messages.addAll(typeAnalysis.fromAnnotationsIntoProperties(false, typeInfo.isInterface(), typeInspection.annotations,
+        messages.addAll(typeAnalysis.fromAnnotationsIntoProperties(false, typeInfo.isInterface(), typeInspection.getAnnotations(),
                 analyserContext.getE2ImmuAnnotationExpressions()));
     }
 
@@ -162,14 +162,14 @@ public class TypeAnalyser extends AbstractAnalyser {
         this.myMethodAndConstructorAnalysersExcludingSAMs = myMethodAndConstructorAnalysersExcludingSAMs.build();
         this.myFieldAnalysers = myFieldAnalysers.build();
 
-        Either<String, TypeInfo> pe = typeInspection.packageNameOrEnclosingType;
+        Either<String, TypeInfo> pe = typeInspection.packageNameOrEnclosingType();
         List<TypeAnalysis> tmp = new ArrayList<>(2);
         if (pe.isRight() && !typeInfo.isStatic()) {
             tmp.add(analyserContext.getTypeAnalysers().get(pe.getRight()).typeAnalysis);
         }
-        if (!Primitives.isJavaLangObject(typeInspection.parentClass)) {
-            TypeAnalyser typeAnalyser = analyserContext.getTypeAnalysers().get(typeInspection.parentClass.typeInfo);
-            tmp.add(typeAnalyser != null ? typeAnalyser.typeAnalysis : typeInspection.parentClass.typeInfo.typeAnalysis.get());
+        if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
+            TypeAnalyser typeAnalyser = analyserContext.getTypeAnalysers().get(typeInspection.parentClass().typeInfo);
+            tmp.add(typeAnalyser != null ? typeAnalyser.typeAnalysis : typeInspection.parentClass().typeInfo.typeAnalysis.get());
         }
         parentAndOrEnclosingTypeAnalysis = ImmutableList.copyOf(tmp);
     }
@@ -237,19 +237,17 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus findAspects() {
-        return findAspects(analyserContext, typeAnalysis,
-                myMethodAndConstructorAnalysersExcludingSAMs.stream().map(ma -> ma.methodInfo));
+        return findAspects(typeAnalysis, myMethodAndConstructorAnalysersExcludingSAMs.stream().map(ma -> ma.methodInfo));
     }
 
     // also used by ShallowTypeAnalyser
-    public static AnalysisStatus findAspects(AnalyserContext analyserContext,
-                                             TypeAnalysisImpl.Builder typeAnalysis,
+    public static AnalysisStatus findAspects(TypeAnalysisImpl.Builder typeAnalysis,
                                              Stream<MethodInfo> methodsAndConstructorsExclSAM) {
         assert !typeAnalysis.aspects.isFrozen();
 
         methodsAndConstructorsExclSAM.forEach(mainMethod -> {
             List<CompanionMethodName> companionMethodNames =
-                    mainMethod.methodInspection.get().companionMethods.keySet().stream()
+                    mainMethod.methodInspection.get().getCompanionMethods().keySet().stream()
                             .filter(mi -> mi.action() == CompanionMethodName.Action.ASPECT).collect(Collectors.toList());
             if (!companionMethodNames.isEmpty()) {
                 log(ANALYSER, "Find aspects in {}", typeAnalysis.typeInfo.fullyQualifiedName);
@@ -303,7 +301,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         if (typeAnalysis.implicitlyImmutableDataTypes.isSet()) return DONE;
 
         log(E2IMMUTABLE, "Computing implicitly immutable types for {}", typeInfo.fullyQualifiedName);
-        Set<ParameterizedType> typesOfFields = typeInspection.fields.stream()
+        Set<ParameterizedType> typesOfFields = typeInspection.fields().stream()
                 .map(fieldInfo -> fieldInfo.type).collect(Collectors.toCollection(HashSet::new));
         typesOfFields.addAll(typeInfo.typesOfMethodsAndConstructors());
         typesOfFields.addAll(typesOfFields.stream().flatMap(pt -> pt.components(false).stream()).collect(Collectors.toList()));
@@ -731,7 +729,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
                 // RULE 2: ALL @SupportData FIELDS NON-PRIMITIVE NON-E2IMMUTABLE MUST HAVE ACCESS MODIFIER PRIVATE
                 if (fieldInfo.type.typeInfo != typeInfo) {
-                    if (!fieldInfo.fieldInspection.get().modifiers.contains(FieldModifier.PRIVATE) && fieldRequiresRules) {
+                    if (!fieldInfo.fieldInspection.get().getModifiers().contains(FieldModifier.PRIVATE) && fieldRequiresRules) {
                         log(E2IMMUTABLE, "{} is not an E2Immutable class, because field {} is not primitive, " +
                                         "not @E2Immutable, not implicitly immutable, and also exposed (not private)",
                                 typeInfo.fullyQualifiedName, fieldInfo.name);
@@ -821,9 +819,9 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         boolean haveFirstParameter = false;
         ParameterizedType commonTypeOfFirstParameter = null;
-        for (MethodInfo methodInfo : typeInspection.methods) {
+        for (MethodInfo methodInfo : typeInspection.methods()) {
             if (methodInfo.isStatic && !methodInfo.isPrivate()) {
-                List<ParameterInfo> parameters = methodInfo.methodInspection.get().parameters;
+                List<ParameterInfo> parameters = methodInfo.methodInspection.get().getParameters();
                 ParameterizedType typeOfFirstParameter;
                 if (parameters.isEmpty()) {
                     typeOfFirstParameter = methodInfo.returnType();
@@ -866,7 +864,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        for (MethodInfo methodInfo : typeInspection.methods) {
+        for (MethodInfo methodInfo : typeInspection.methods()) {
             if (!methodInfo.isStatic) {
                 log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                         " is not a @UtilityClass, method {} is not static", methodInfo.name);
@@ -875,7 +873,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             }
         }
         // this is technically enough, but we'll verify the constructors (should be private)
-        for (MethodInfo constructor : typeInspection.constructors) {
+        for (MethodInfo constructor : typeInspection.constructors()) {
             if (!constructor.isPrivate()) {
                 log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                         " looks like a @UtilityClass, but its constructors are not all private");
@@ -884,7 +882,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             }
         }
 
-        if (typeInspection.constructors.isEmpty()) {
+        if (typeInspection.constructors().isEmpty()) {
             log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                     " is not a @UtilityClass: it has no private constructors");
             typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE);

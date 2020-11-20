@@ -20,13 +20,11 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.config.CompanionAnalyserVisitor;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.MethodValue;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.AnnotationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +89,7 @@ public class CompanionAnalyser {
             computeRemapParameters(!mainMethod.isConstructor && modifyingMainMethod == Level.TRUE);
 
             ReturnStatement returnStatement = (ReturnStatement) companionMethod.methodInspection.get()
-                    .methodBody.get().structure.statements.get(0);
+                    .getMethodBody().structure.statements.get(0);
             EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
             EvaluationResult evaluationResult = returnStatement.expression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
             if (evaluationResult.value == UnknownValue.NO_VALUE) {
@@ -124,10 +122,10 @@ public class CompanionAnalyser {
     private void computeRemapParameters(boolean modifyingMainMethod) {
         int aspectVariables = companionMethodName.numAspectVariables(modifyingMainMethod);
         ImmutableMap.Builder<String, Value> remap = new ImmutableMap.Builder<>();
-        int numIndices = companionMethod.methodInspection.get().parameters.size();
-        int mainIndices = mainMethod.methodInspection.get().parameters.size();
+        int numIndices = companionMethod.methodInspection.get().getParameters().size();
+        int mainIndices = mainMethod.methodInspection.get().getParameters().size();
         List<Value> parameterValues = new ArrayList<>();
-        for (ParameterInfo parameterInfo : companionMethod.methodInspection.get().parameters) {
+        for (ParameterInfo parameterInfo : companionMethod.methodInspection.get().getParameters()) {
             Value value;
             if (aspectVariables >= 1 && parameterInfo.index == 0) {
                 // this is the aspect as a method call
@@ -145,7 +143,7 @@ public class CompanionAnalyser {
                 companionAnalysis.preAspectVariableValue.set(value);
             } else {
                 ParameterInfo parameterInMain = parameterInfo.index - aspectVariables < mainIndices ?
-                        mainMethod.methodInspection.get().parameters.get(parameterInfo.index - aspectVariables) : null;
+                        mainMethod.methodInspection.get().getParameters().get(parameterInfo.index - aspectVariables) : null;
                 if (parameterInMain != null && parameterInfo.parameterizedType().equalsErased(parameterInMain.parameterizedType())) {
                     value = new VariableValue(parameterInMain);
                 } else if (parameterInfo.index == numIndices - 1 && !mainMethod.isVoid() &&

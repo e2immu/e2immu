@@ -1,0 +1,167 @@
+/*
+ * e2immu: code analyser for effective and eventual immutability
+ * Copyright 2020, Bart Naudts, https://www.e2immu.org
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.e2immu.analyser.inspector;
+
+import com.github.javaparser.ast.Modifier;
+import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.body.AnnotationMemberDeclaration;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.type.ReferenceType;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.parser.ExpressionContext;
+import org.e2immu.analyser.parser.TypeContext;
+
+import java.util.Map;
+
+import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
+import static org.e2immu.analyser.util.Logger.log;
+
+public class MethodInspector {
+
+    private final MethodInfo methodInfo;
+    private final MethodInspectionImpl.Builder builder;
+
+    public MethodInspector(MethodInfo methodInfo) {
+        this.methodInfo = methodInfo;
+        builder = new MethodInspectionImpl.Builder(methodInfo);
+    }
+
+    public MethodInspection build() {
+        return builder.build();
+    }
+
+    public void inspect(AnnotationMemberDeclaration amd, ExpressionContext expressionContext) {
+        log(INSPECT, "Inspecting annotation member {}", methodInfo.fullyQualifiedName());
+        addAnnotations(amd.getAnnotations(), expressionContext);
+        addModifiers(amd.getModifiers());
+        Expression expression = expressionContext.parseExpression(amd.getDefaultValue());
+        Block body = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expression)).build();
+        builder.setBlock(body);
+        ParameterizedType returnType = ParameterizedType.from(expressionContext.typeContext, amd.getType());
+        builder.setReturnType(returnType);
+    }
+
+    public void inspect(ConstructorDeclaration cd,
+                        ExpressionContext expressionContext,
+                        Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
+                        TypeInspector.DollarResolver dollarResolver) {
+        log(INSPECT, "Inspecting constructor {}", methodInfo.fullyQualifiedName());
+        builder.addCompanionMethods(companionMethods);
+        checkCompanionMethods(companionMethods);
+
+        addAnnotations(cd.getAnnotations(), expressionContext);
+        addModifiers(cd.getModifiers());
+        addParameters(cd.getParameters(), expressionContext, dollarResolver);
+        addExceptionTypes(cd.getThrownExceptions(), expressionContext.typeContext);
+        builder.setBlock(cd.getBody());
+    }
+
+    private void checkCompanionMethods(Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods) {
+        for (Map.Entry<CompanionMethodName, MethodInspectionImpl.Builder> entry : companionMethods.entrySet()) {
+            CompanionMethodName companionMethodName = entry.getKey();
+            MethodInspectionImpl.Builder methodInspection = entry.getValue();
+            if (!methodInspection.getAnnotations().isEmpty()) {
+                throw new UnsupportedOperationException("Companion methods do not accept annotations: " + companionMethodName);
+            }
+            if (!companionMethodName.methodName().equals(methodInfo.name)) {
+                throw new UnsupportedOperationException("Companion method's name differs from the method name: " + companionMethodName + " vs " + methodInfo.name);
+            }
+            int expectStatements = methodInspection.getMethodInfo().isVoid() ? 0 : 1;
+            boolean error;
+            if (methodInspection.methodBodyIsSet()) {
+                error = methodInspection.getMethodBody().structure.statements.size() != expectStatements;
+            } else {
+                error = methodInspection.getBlock().getStatements().size() != expectStatements;
+            }
+            if (error) {
+                throw new UnsupportedOperationException("Companion methods must have only one statement when non-void: a return statement! " + companionMethodName);
+            }
+        }
+
+    }
+
+    public void inspect(boolean isInterface,
+                        MethodDeclaration md,
+                        ExpressionContext expressionContext,
+                        Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
+                        TypeInspector.DollarResolver dollarResolver) {
+        log(INSPECT, "Inspecting method {}", methodInfo.fullyQualifiedName());
+        builder.addCompanionMethods(companionMethods);
+        checkCompanionMethods(companionMethods);
+
+        int tpIndex = 0;
+        ExpressionContext newContext = md.getTypeParameters().isEmpty() ? expressionContext :
+                expressionContext.newTypeContext("Method type parameters");
+        for (com.github.javaparser.ast.type.TypeParameter typeParameter : md.getTypeParameters()) {
+            org.e2immu.analyser.model.TypeParameter tp = new org.e2immu.analyser.model.TypeParameter(methodInfo,
+                    typeParameter.getNameAsString(), tpIndex++);
+            builder.addTypeParameter(tp);
+            newContext.typeContext.addToContext(tp);
+            tp.inspect(newContext.typeContext, typeParameter);
+        }
+        addAnnotations(md.getAnnotations(), newContext);
+        addModifiers(md.getModifiers());
+        if (isInterface) builder.addModifier(MethodModifier.PUBLIC);
+        addParameters(md.getParameters(), newContext, dollarResolver);
+        addExceptionTypes(md.getThrownExceptions(), newContext.typeContext);
+        ParameterizedType pt = ParameterizedType.from(newContext.typeContext, md.getType());
+        builder.setReturnType(pt);
+        if (md.getBody().isPresent()) {
+            builder.setBlock(md.getBody().get());
+        }
+    }
+
+    private void addAnnotations(NodeList<AnnotationExpr> annotations,
+                                ExpressionContext expressionContext) {
+        for (AnnotationExpr ae : annotations) {
+            builder.addAnnotation(AnnotationExpressionImpl.inspect(expressionContext, ae));
+        }
+    }
+
+    private void addExceptionTypes(NodeList<ReferenceType> thrownExceptions,
+                                   TypeContext typeContext) {
+        for (ReferenceType referenceType : thrownExceptions) {
+            ParameterizedType pt = ParameterizedType.from(typeContext, referenceType);
+            builder.addExceptionType(pt);
+        }
+    }
+
+    private void addModifiers(NodeList<Modifier> modifiers) {
+        for (Modifier modifier : modifiers) {
+            if (!"static".equals(modifier.getKeyword().asString()))
+                builder.addModifier(MethodModifier.from(modifier));
+        }
+    }
+
+    private void addParameters(NodeList<Parameter> parameters,
+                               ExpressionContext expressionContext,
+                               TypeInspector.DollarResolver dollarResolver) {
+        int i = 0;
+        for (Parameter parameter : parameters) {
+            ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, parameter.getType(), parameter.isVarArgs(), dollarResolver);
+            ParameterInfo parameterInfo = new ParameterInfo(methodInfo, pt, parameter.getNameAsString(), i++);
+            ParameterInspectionImpl.Builder parameterInspectionBuilder = builder.addParameter(parameterInfo);
+            parameterInspectionBuilder.inspect(parameter, expressionContext, parameter.isVarArgs());
+        }
+    }
+}

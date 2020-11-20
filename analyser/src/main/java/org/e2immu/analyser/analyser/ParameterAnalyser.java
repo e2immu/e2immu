@@ -83,7 +83,7 @@ public class ParameterAnalyser {
     private void checkWorseThanParent() {
         for (VariableProperty variableProperty : VariableProperty.CHECK_WORSE_THAN_PARENT) {
             int valueFromOverrides = analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides().stream()
-                    .map(ma -> ma.getMethodInfo().methodInspection.get().parameters.get(parameterInfo.index))
+                    .map(ma -> ma.getMethodInfo().methodInspection.get().getParameters().get(parameterInfo.index))
                     .mapToInt(pi -> analysisProvider.getParameterAnalysis(pi).getProperty(variableProperty)).max().orElse(Level.DELAY);
             int value = parameterAnalysis.getProperty(variableProperty);
             if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
@@ -121,7 +121,7 @@ public class ParameterAnalyser {
         if (!parameterAnalysis.isAssignedToAField.isSet()) {
             boolean delays = false;
             // find a field that's linked to me; bail out when not all field's values are set.
-            for (FieldInfo fieldInfo : parameterInfo.owner.typeInfo.typeInspection.get().fields) {
+            for (FieldInfo fieldInfo : parameterInfo.owner.typeInfo.typeInspection.get().fields()) {
                 FieldAnalysis fieldAnalysis = analysisProvider.getFieldAnalysis(fieldInfo);
                 int effFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
                 if (effFinal == Level.DELAY) {

@@ -18,9 +18,6 @@
 
 package org.e2immu.analyser.model;
 
-import com.github.javaparser.ast.body.Parameter;
-import com.github.javaparser.ast.expr.AnnotationExpr;
-import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetTwice;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -128,7 +125,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
         StringBuilder sb = new StringBuilder();
         ParameterInspection parameterInspection = this.parameterInspection.get();
         Set<TypeInfo> annotationsSeen = new HashSet<>();
-        for (AnnotationExpression annotation : parameterInspection.annotations) {
+        for (AnnotationExpression annotation : parameterInspection.getAnnotations()) {
             sb.append(annotation.stream());
             if (parameterAnalysis.isSet()) {
                 parameterAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen, sb);
@@ -145,20 +142,11 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
             });
         }
         if (parameterizedType != ParameterizedType.NO_TYPE_GIVEN_IN_LAMBDA) {
-            sb.append(parameterizedType.stream(parameterInspection.varArgs));
+            sb.append(parameterizedType.stream(parameterInspection.isVarArgs()));
             sb.append(" ");
         }
         sb.append(name);
         return sb.toString();
-    }
-
-    public void inspect(Parameter parameter, ExpressionContext expressionContext, boolean isVarArgs) {
-        ParameterInspection.ParameterInspectionBuilder builder = new ParameterInspection.ParameterInspectionBuilder();
-        for (AnnotationExpr ae : parameter.getAnnotations()) {
-            builder.addAnnotation(AnnotationExpression.from(ae, expressionContext));
-        }
-        builder.setVarArgs(isVarArgs);
-        parameterInspection.set(builder.build());
     }
 
     @Override
@@ -169,7 +157,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     @Override
     public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
         String annotationFQN = annotation.getName();
-        Optional<AnnotationExpression> fromParameter = getInspection().annotations.stream()
+        Optional<AnnotationExpression> fromParameter = getInspection().getAnnotations().stream()
                 .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN))
                 .findFirst();
         if (fromParameter.isPresent()) return fromParameter;
@@ -193,7 +181,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     public UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
         return UpgradableBooleanMap.of(parameterizedType.typesReferenced(explicit),
                 hasBeenInspected() ?
-                        parameterInspection.get().annotations.stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
+                        parameterInspection.get().getAnnotations().stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
                         : UpgradableBooleanMap.of());
     }
 }

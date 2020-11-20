@@ -18,56 +18,8 @@
 
 package org.e2immu.analyser.model;
 
-import com.google.common.collect.ImmutableList;
-import org.e2immu.annotation.*;
+public interface ParameterInspection extends Inspection {
 
-import java.util.ArrayList;
-import java.util.List;
+    boolean isVarArgs();
 
-public class ParameterInspection extends Inspection {
-
-    public final boolean varArgs;
-
-    private ParameterInspection(List<AnnotationExpression> annotations, boolean varArgs) {
-        super(annotations);
-        this.varArgs = varArgs;
-    }
-
-    @NotNull
-    public ParameterInspection copy(@NotNull @NotModified List<AnnotationExpression> alternativeAnnotations) {
-        return new ParameterInspection(ImmutableList.copyOf(alternativeAnnotations), varArgs);
-    }
-
-    @Container(builds = ParameterInspection.class)
-    public static class ParameterInspectionBuilder implements BuilderWithAnnotations<ParameterInspectionBuilder> {
-        private final List<AnnotationExpression> annotations = new ArrayList<>();
-        private boolean varArgs;
-
-        @Fluent
-        public ParameterInspectionBuilder setVarArgs(boolean varArgs) {
-            this.varArgs = varArgs;
-            return this;
-        }
-
-
-        @Override
-        @Fluent
-        public ParameterInspectionBuilder addAnnotation(@NotNull AnnotationExpression annotationExpression) {
-            annotations.add(annotationExpression);
-            return this;
-        }
-
-        @Fluent
-        public ParameterInspectionBuilder addAnnotations(@NotNull1 List<AnnotationExpression> annotations) {
-            this.annotations.addAll(annotations);
-            return this;
-        }
-
-        @NotModified
-        @NotNull
-        public ParameterInspection build() {
-            return new ParameterInspection(ImmutableList.copyOf(annotations), varArgs);
-        }
-
-    }
 }

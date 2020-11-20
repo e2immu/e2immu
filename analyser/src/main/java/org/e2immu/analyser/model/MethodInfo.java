@@ -18,23 +18,12 @@
 
 package org.e2immu.analyser.model;
 
-import com.github.javaparser.ast.Modifier;
-import com.github.javaparser.ast.NodeList;
-import com.github.javaparser.ast.body.AnnotationMemberDeclaration;
-import com.github.javaparser.ast.body.ConstructorDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.body.Parameter;
-import com.github.javaparser.ast.expr.AnnotationExpr;
-import com.github.javaparser.ast.type.ReferenceType;
-import com.github.javaparser.ast.type.TypeParameter;
-import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.FieldAccess;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ForEachStatement;
-import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.statement.SwitchStatement;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.*;
@@ -46,9 +35,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
-import static org.e2immu.analyser.util.Logger.log;
 
 @Container
 @E2Immutable(after = "TypeAnalyser.analyse()") // and not MethodAnalyser.analyse(), given the back reference
@@ -131,7 +117,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         if (o == null || getClass() != o.getClass()) return false;
         MethodInfo that = (MethodInfo) o;
         if (hasBeenInspected()) {
-            return methodInspection.get().fullyQualifiedName.equals(that.methodInspection.get().fullyQualifiedName);
+            return methodInspection.get().getFullyQualifiedName().equals(that.methodInspection.get().getFullyQualifiedName());
         }
         return typeInfo.equals(that.typeInfo) &&
                 name.equals(that.name) &&
@@ -141,7 +127,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     @Override
     public int hashCode() {
         if (hasBeenInspected()) {
-            return Objects.hash(methodInspection.get().fullyQualifiedName);
+            return Objects.hash(methodInspection.get().getFullyQualifiedName());
         }
         return Objects.hash(typeInfo, name, parametersAsObserved);
     }
@@ -156,147 +142,25 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         methodAnalysis.set((MethodAnalysis) analysis);
     }
 
-    public void inspect(AnnotationMemberDeclaration amd, ExpressionContext expressionContext) {
-        log(INSPECT, "Inspecting annotation member {}", fullyQualifiedName());
-        MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
-        addAnnotations(builder, amd.getAnnotations(), expressionContext);
-        addModifiers(builder, amd.getModifiers());
-        Expression expression = expressionContext.parseExpression(amd.getDefaultValue());
-        Block body = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expression)).build();
-        builder.setBlock(body);
-        ParameterizedType returnType = ParameterizedType.from(expressionContext.typeContext, amd.getType());
-        builder.setReturnType(returnType);
-        methodInspection.set(builder.build(this));
-    }
-
-
-    public void inspect(ConstructorDeclaration cd,
-                        ExpressionContext expressionContext,
-                        Map<CompanionMethodName, MethodInfo> companionMethods,
-                        TypeInfo.DollarResolver dollarResolver) {
-        log(INSPECT, "Inspecting constructor {}", fullyQualifiedName());
-        MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
-        builder.addCompanionMethods(companionMethods);
-        checkCompanionMethods(companionMethods);
-
-        addAnnotations(builder, cd.getAnnotations(), expressionContext);
-        addModifiers(builder, cd.getModifiers());
-        addParameters(builder, cd.getParameters(), expressionContext, dollarResolver);
-        addExceptionTypes(builder, cd.getThrownExceptions(), expressionContext.typeContext);
-        builder.setBlock(cd.getBody());
-        methodInspection.set(builder.build(this));
-    }
-
-    private void checkCompanionMethods(Map<CompanionMethodName, MethodInfo> companionMethods) {
-        for (Map.Entry<CompanionMethodName, MethodInfo> entry : companionMethods.entrySet()) {
-            CompanionMethodName companionMethodName = entry.getKey();
-            MethodInfo theMethod = entry.getValue();
-            if (!theMethod.methodInspection.get().annotations.isEmpty()) {
-                throw new UnsupportedOperationException("Companion methods do not accept annotations: " + companionMethodName);
-            }
-            if (!companionMethodName.methodName().equals(name)) {
-                throw new UnsupportedOperationException("Companion method's name differs from the method name: " + companionMethodName + " vs " + name);
-            }
-            int expectStatements = theMethod.isVoid() ? 0 : 1;
-            boolean error;
-            if (theMethod.methodInspection.get().methodBody.isSet()) {
-                error = theMethod.methodInspection.get().methodBody.get().structure.statements.size() != expectStatements;
-            } else {
-                error = theMethod.methodInspection.get().methodBody.getFirst().getStatements().size() != expectStatements;
-            }
-            if (error) {
-                throw new UnsupportedOperationException("Companion methods must have only one statement when non-void: a return statement! " + companionMethodName);
-            }
-        }
-
-    }
-
-    public void inspect(boolean isInterface,
-                        MethodDeclaration md,
-                        ExpressionContext expressionContext,
-                        Map<CompanionMethodName, MethodInfo> companionMethods,
-                        TypeInfo.DollarResolver dollarResolver) {
-        log(INSPECT, "Inspecting method {}", fullyQualifiedName());
-        MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
-        builder.addCompanionMethods(companionMethods);
-        checkCompanionMethods(companionMethods);
-
-        int tpIndex = 0;
-        ExpressionContext newContext = md.getTypeParameters().isEmpty() ? expressionContext :
-                expressionContext.newTypeContext("Method type parameters");
-        for (TypeParameter typeParameter : md.getTypeParameters()) {
-            org.e2immu.analyser.model.TypeParameter tp = new org.e2immu.analyser.model.TypeParameter(this,
-                    typeParameter.getNameAsString(), tpIndex++);
-            builder.addTypeParameter(tp);
-            newContext.typeContext.addToContext(tp);
-            tp.inspect(newContext.typeContext, typeParameter);
-        }
-        addAnnotations(builder, md.getAnnotations(), newContext);
-        addModifiers(builder, md.getModifiers());
-        if (isInterface) builder.addModifier(MethodModifier.PUBLIC);
-        addParameters(builder, md.getParameters(), newContext, dollarResolver);
-        addExceptionTypes(builder, md.getThrownExceptions(), newContext.typeContext);
-        ParameterizedType pt = ParameterizedType.from(newContext.typeContext, md.getType());
-        builder.setReturnType(pt);
-        if (md.getBody().isPresent()) {
-            builder.setBlock(md.getBody().get());
-        }
-        methodInspection.set(builder.build(this));
-    }
-
-    private static void addAnnotations(MethodInspection.MethodInspectionBuilder builder,
-                                       NodeList<AnnotationExpr> annotations,
-                                       ExpressionContext expressionContext) {
-        for (AnnotationExpr ae : annotations) {
-            builder.addAnnotation(AnnotationExpression.from(ae, expressionContext));
-        }
-    }
-
-    private static void addExceptionTypes(MethodInspection.MethodInspectionBuilder builder,
-                                          NodeList<ReferenceType> thrownExceptions,
-                                          TypeContext typeContext) {
-        for (ReferenceType referenceType : thrownExceptions) {
-            ParameterizedType pt = ParameterizedType.from(typeContext, referenceType);
-            builder.addExceptionType(pt);
-        }
-    }
-
-    private static void addModifiers(MethodInspection.MethodInspectionBuilder builder, NodeList<Modifier> modifiers) {
-        for (Modifier modifier : modifiers) {
-            if (!"static".equals(modifier.getKeyword().asString()))
-                builder.addModifier(MethodModifier.from(modifier));
-        }
-    }
-
-    private void addParameters(MethodInspection.MethodInspectionBuilder builder, NodeList<Parameter> parameters,
-                               ExpressionContext expressionContext,
-                               TypeInfo.DollarResolver dollarResolver) {
-        int i = 0;
-        for (Parameter parameter : parameters) {
-            ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, parameter.getType(), parameter.isVarArgs(), dollarResolver);
-            ParameterInfo parameterInfo = new ParameterInfo(this, pt, parameter.getNameAsString(), i++);
-            parameterInfo.inspect(parameter, expressionContext, parameter.isVarArgs());
-            builder.addParameter(parameterInfo);
-        }
-    }
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         UpgradableBooleanMap<TypeInfo> constructorTypes = isConstructor ? UpgradableBooleanMap.of() : hasBeenInspected() ?
-                methodInspection.get().returnType.typesReferenced(true) : returnTypeObserved.typesReferenced(true);
+                methodInspection.get().getReturnType().typesReferenced(true) : returnTypeObserved.typesReferenced(true);
         UpgradableBooleanMap<TypeInfo> parameterTypes =
-                (hasBeenInspected() ? methodInspection.get().parameters : parametersAsObserved)
+                (hasBeenInspected() ? methodInspection.get().getParameters() : parametersAsObserved)
                         .stream().flatMap(p -> p.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector());
         UpgradableBooleanMap<TypeInfo> annotationTypes = hasBeenInspected() ?
-                methodInspection.get().annotations.stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()) :
+                methodInspection.get().getAnnotations().stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()) :
                 UpgradableBooleanMap.of();
         UpgradableBooleanMap<TypeInfo> exceptionTypes = hasBeenInspected() ?
-                methodInspection.get().exceptionTypes.stream().flatMap(et -> et.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()) :
+                methodInspection.get().getExceptionTypes().stream().flatMap(et -> et.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()) :
                 UpgradableBooleanMap.of();
-        UpgradableBooleanMap<TypeInfo> bodyTypes = hasBeenInspected() && methodInspection.get().methodBody.isSet() ? methodInspection.get().methodBody.get().typesReferenced() : UpgradableBooleanMap.of();
-        UpgradableBooleanMap<TypeInfo> companionMethodTypes = hasBeenInspected() ? methodInspection.get().companionMethods.values().stream()
+        UpgradableBooleanMap<TypeInfo> bodyTypes = hasBeenInspected() && methodInspection.get().getMethodBody().isSet() ?
+                methodInspection.get().getMethodBody().get().typesReferenced() : UpgradableBooleanMap.of();
+        UpgradableBooleanMap<TypeInfo> companionMethodTypes = hasBeenInspected() ? methodInspection.get().getCompanionMethods().values().stream()
                 .flatMap(cm -> cm.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()) : UpgradableBooleanMap.of();
-        return UpgradableBooleanMap.of(constructorTypes, parameterTypes, annotationTypes, exceptionTypes, bodyTypes);
+        return UpgradableBooleanMap.of(constructorTypes, parameterTypes, annotationTypes, exceptionTypes, companionMethodTypes, bodyTypes);
     }
 
     @Override
@@ -308,20 +172,20 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         StringBuilder sb = new StringBuilder();
         ParameterizedType returnType;
         if (hasBeenInspected()) {
-            returnType = isConstructor ? null : methodInspection.get().returnType;
+            returnType = isConstructor ? null : methodInspection.get().getReturnType();
         } else {
             returnType = returnTypeObserved;
         }
 
         List<MethodModifier> methodModifiers;
         if (hasBeenInspected()) {
-            methodModifiers = methodInspection.get().modifiers;
+            methodModifiers = methodInspection.get().getModifiers();
         } else {
             methodModifiers = List.of(MethodModifier.PUBLIC);
         }
         if (hasBeenInspected()) {
             Set<TypeInfo> annotationsSeen = new HashSet<>();
-            for (AnnotationExpression annotation : methodInspection.get().annotations) {
+            for (AnnotationExpression annotation : methodInspection.get().getAnnotations()) {
                 StringUtil.indent(sb, indent);
                 sb.append(annotation.stream());
                 if (methodAnalysis.isSet()) {
@@ -333,7 +197,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 methodAnalysis.get().getAnnotationStream().forEach(entry -> {
                     boolean present = entry.getValue();
                     AnnotationExpression annotation = entry.getKey();
-                    if (present && !annotationsSeen.contains(annotation.typeInfo)) {
+                    if (present && !annotationsSeen.contains(annotation.typeInfo())) {
                         StringUtil.indent(sb, indent);
                         sb.append(annotation.stream());
                         sb.append("\n");
@@ -348,9 +212,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         }
         if (hasBeenInspected()) {
             MethodInspection methodInspection = this.methodInspection.get();
-            if (!methodInspection.typeParameters.isEmpty()) {
+            if (!methodInspection.getTypeParameters().isEmpty()) {
                 sb.append("<");
-                sb.append(methodInspection.typeParameters.stream().map(tp -> tp.name).collect(Collectors.joining(", ")));
+                sb.append(methodInspection.getTypeParameters().stream().map(tp -> tp.name).collect(Collectors.joining(", ")));
                 sb.append("> ");
             }
         }
@@ -363,22 +227,22 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
         List<ParameterInfo> parameters;
         if (hasBeenInspected()) {
-            parameters = methodInspection.get().parameters;
+            parameters = methodInspection.get().getParameters();
         } else {
             parameters = parametersAsObserved;
         }
         sb.append(parameters.stream().map(ParameterInfo::stream).collect(Collectors.joining(", ")));
         sb.append(")");
-        if (hasBeenInspected() && !methodInspection.get().exceptionTypes.isEmpty()) {
+        if (hasBeenInspected() && !methodInspection.get().getExceptionTypes().isEmpty()) {
             sb.append(" throws ");
-            sb.append(methodInspection.get().exceptionTypes.stream()
+            sb.append(methodInspection.get().getExceptionTypes().stream()
                     .map(ParameterizedType::stream).collect(Collectors.joining(", ")));
         }
-        if (hasBeenInspected() && methodInspection.get().methodBody.isSet()) {
+        if (hasBeenInspected() && methodInspection.get().getMethodBody().isSet()) {
             if (methodAnalysis.isSet() && methodAnalysis.get().getFirstStatement() != null) {
-                sb.append(methodInspection.get().methodBody.get().statementString(indent, methodAnalysis.get().getFirstStatement()));
+                sb.append(methodInspection.get().getMethodBody().get().statementString(indent, methodAnalysis.get().getFirstStatement()));
             } else {
-                sb.append(methodInspection.get().methodBody.get().statementString(indent, null));
+                sb.append(methodInspection.get().getMethodBody().get().statementString(indent, null));
             }
         } else {
             sb.append(" { }");
@@ -388,30 +252,30 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public String fullyQualifiedName() {
         if (methodInspection.isSet()) {
-            return methodInspection.get().fullyQualifiedName;
+            return methodInspection.get().getFullyQualifiedName();
         }
         return typeInfo.fullyQualifiedName + "." + name + "()";
     }
 
     public String distinguishingName() {
         if (methodInspection.isSet()) {
-            return methodInspection.get().distinguishingName;
+            return methodInspection.get().getDistinguishingName();
         }
         return typeInfo.fullyQualifiedName + "." + name + "()";
     }
 
     public ParameterizedType returnType() {
-        return Objects.requireNonNull(hasBeenInspected() ? methodInspection.get().returnType :
+        return Objects.requireNonNull(hasBeenInspected() ? methodInspection.get().getReturnType() :
                 returnTypeObserved, "Null return type for " + fullyQualifiedName() + ", inspected? " + hasBeenInspected());
     }
 
     public Optional<AnnotationExpression> hasInspectedAnnotation(String annotationFQN) {
         if (!hasBeenInspected()) return Optional.empty();
-        Optional<AnnotationExpression> fromMethod = (getInspection().annotations.stream()
-                .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN))).findFirst();
+        Optional<AnnotationExpression> fromMethod = (getInspection().getAnnotations().stream()
+                .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(annotationFQN))).findFirst();
         if (fromMethod.isPresent()) return fromMethod;
         if (methodInspection.isSet()) {
-            for (MethodInfo interfaceMethod : methodInspection.get().implementationOf) {
+            for (MethodInfo interfaceMethod : methodInspection.get().getImplementationOf()) {
                 Optional<AnnotationExpression> fromInterface = (interfaceMethod.hasInspectedAnnotation(annotationFQN));
                 if (fromInterface.isPresent()) return fromInterface;
             }
@@ -427,16 +291,16 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     // given R accept(T t), and types={string}, returnType=string, deduce that R=string, T=string, and we have Function<String, String>
     public List<ParameterizedType> typeParametersComputed(List<ParameterizedType> types, ParameterizedType inferredReturnType) {
-        if (typeInfo.typeInspection.getPotentiallyRun().typeParameters.isEmpty()) return List.of();
-        return typeInfo.typeInspection.getPotentiallyRun().typeParameters.stream().map(typeParameter -> {
+        if (typeInfo.typeInspection.get().typeParameters.isEmpty()) return List.of();
+        return typeInfo.typeInspection.get().typeParameters.stream().map(typeParameter -> {
             int cnt = 0;
-            for (ParameterInfo parameterInfo : methodInspection.get().parameters) {
+            for (ParameterInfo parameterInfo : methodInspection.get().getParameters()) {
                 if (parameterInfo.parameterizedType.typeParameter == typeParameter) {
                     return types.get(cnt); // this is one we know!
                 }
                 cnt++;
             }
-            if (methodInspection.get().returnType.typeParameter == typeParameter) return inferredReturnType;
+            if (methodInspection.get().getReturnType().typeParameter == typeParameter) return inferredReturnType;
             return new ParameterizedType(typeParameter, 0, ParameterizedType.WildCard.NONE);
         }).collect(Collectors.toList());
     }
@@ -447,14 +311,14 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public int atLeastOneParameterModified() {
-        return methodInspection.get().parameters.stream()
+        return methodInspection.get().getParameters().stream()
                 .mapToInt(parameterInfo -> parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED))
                 .max().orElse(Level.FALSE);
     }
 
     public boolean sameMethod(MethodInfo target, Map<NamedType, ParameterizedType> translationMap) {
         return name.equals(target.name) &&
-                sameParameters(methodInspection.get().parameters, target.methodInspection.get().parameters, translationMap);
+                sameParameters(methodInspection.get().getParameters(), target.methodInspection.get().getParameters(), translationMap);
     }
 
     private static boolean sameParameters(List<ParameterInfo> parametersOfMyMethod,
@@ -537,8 +401,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public boolean isVarargs() {
         MethodInspection mi = methodInspection.get();
-        if (mi.parameters.isEmpty()) return false;
-        return mi.parameters.get(mi.parameters.size() - 1).parameterInspection.get().varArgs;
+        if (mi.getParameters().isEmpty()) return false;
+        return mi.getParameters().get(mi.getParameters().size() - 1).parameterInspection.get().isVarArgs();
     }
 
     public boolean isNotOverridingAnyOtherMethod() {
@@ -548,13 +412,13 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public boolean cannotBeOverridden() {
         return isStatic ||
-                methodInspection.get().modifiers.contains(MethodModifier.FINAL)
-                || methodInspection.get().modifiers.contains(MethodModifier.PRIVATE)
-                || typeInfo.typeInspection.getPotentiallyRun().modifiers.contains(TypeModifier.FINAL);
+                methodInspection.get().getModifiers().contains(MethodModifier.FINAL)
+                || methodInspection.get().getModifiers().contains(MethodModifier.PRIVATE)
+                || typeInfo.typeInspection.get().modifiers.contains(TypeModifier.FINAL);
     }
 
     public boolean isPrivate() {
-        return methodInspection.get().modifiers.contains(MethodModifier.PRIVATE);
+        return methodInspection.get().getModifiers().contains(MethodModifier.PRIVATE);
     }
 
     public boolean isVoid() {
@@ -562,18 +426,18 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean isCalledFromConstructors() {
-        for (MethodInfo other : typeInfo.typeInspection.getPotentiallyRun().constructors) {
+        for (MethodInfo other : typeInfo.typeInspection.get().constructors) {
             if (other.methodResolution.get().methodsOfOwnClassReached.get().contains(this)) {
                 return true;
             }
         }
-        for (FieldInfo fieldInfo : typeInfo.typeInspection.getPotentiallyRun().fields) {
-            if (fieldInfo.fieldInspection.get().initialiser.isSet()) {
-                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
-                if (fieldInitialiser.implementationOfSingleAbstractMethod == null) {
+        for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
+            if (fieldInfo.fieldInspection.get().initialiserIsSet()) {
+                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getInitialiser();
+                if (fieldInitialiser.implementationOfSingleAbstractMethod() == null) {
                     // return true when the method is part of the expression
                     AtomicBoolean found = new AtomicBoolean();
-                    fieldInitialiser.initialiser.visit(elt -> {
+                    fieldInitialiser.initialiser().visit(elt -> {
                         if (elt instanceof MethodCall methodCall) {
                             if (methodCall.methodInfo == this ||
                                     methodCall.methodInfo.methodResolution.get().methodsOfOwnClassReached.get().contains(this)) {
@@ -594,16 +458,16 @@ public class MethodInfo implements WithInspectionAndAnalysis {
      * @return true if there is a non-private method in this class which calls this private method.
      */
     public boolean isCalledFromNonPrivateMethod() {
-        for (MethodInfo other : typeInfo.typeInspection.getPotentiallyRun().methods) {
+        for (MethodInfo other : typeInfo.typeInspection.get().methods) {
             if (!other.isPrivate() && other.methodResolution.get().methodsOfOwnClassReached.get().contains(this)) {
                 return true;
             }
         }
-        for (FieldInfo fieldInfo : typeInfo.typeInspection.getPotentiallyRun().fields) {
-            if (!fieldInfo.isPrivate() && fieldInfo.fieldInspection.get().initialiser.isSet()) {
-                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().initialiser.get();
-                if (fieldInitialiser.implementationOfSingleAbstractMethod != null &&
-                        fieldInitialiser.implementationOfSingleAbstractMethod.methodResolution.get().methodsOfOwnClassReached.get().contains(this)) {
+        for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
+            if (!fieldInfo.isPrivate() && fieldInfo.fieldInspection.get().initialiserIsSet()) {
+                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getInitialiser();
+                if (fieldInitialiser.implementationOfSingleAbstractMethod() != null &&
+                        fieldInitialiser.implementationOfSingleAbstractMethod().methodResolution.get().methodsOfOwnClassReached.get().contains(this)) {
                     return true;
                 }
             }
@@ -612,11 +476,11 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean isSynchronized() {
-        return methodInspection.get().modifiers.contains(MethodModifier.SYNCHRONIZED);
+        return methodInspection.get().getModifiers().contains(MethodModifier.SYNCHRONIZED);
     }
 
     public boolean isAbstract() {
-        return methodInspection.get().modifiers.contains(MethodModifier.ABSTRACT);
+        return methodInspection.get().getModifiers().contains(MethodModifier.ABSTRACT);
     }
 
     public boolean isSingleAbstractMethod() {
@@ -624,7 +488,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public Set<ParameterizedType> explicitTypes() {
-        return explicitTypes(methodInspection.get().methodBody.get());
+        return explicitTypes(methodInspection.get().getMethodBody().get());
     }
 
     public static Set<ParameterizedType> explicitTypes(Element start) {
@@ -668,7 +532,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     // they cannot be replaced by unbound type parameter
     private static void addTypesFromParameters(Set<ParameterizedType> result, MethodInfo methodInfo) {
         Objects.requireNonNull(methodInfo);
-        for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+        for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().getParameters()) {
             ParameterizedType formal = parameterInfo.parameterizedType;
             if (!Primitives.isJavaLangObject(formal) && !formal.isUnboundParameterType()) {
                 result.add(formal);
@@ -695,11 +559,11 @@ public class MethodInfo implements WithInspectionAndAnalysis {
      */
     public boolean shallowAnalysis() {
         MethodInspection inspection = methodInspection.get();
-        return !inspection.methodBody.isSet() || inspection.methodBody.get() == Block.EMPTY_BLOCK;
+        return !inspection.getMethodBody().isSet() || inspection.getMethodBody().get() == Block.EMPTY_BLOCK;
     }
 
     public boolean hasStatements() {
         MethodInspection inspection = methodInspection.get();
-        return inspection.methodBody.isSet() && inspection.methodBody.get().structure.statements.size() > 0;
+        return inspection.getMethodBody().isSet() && inspection.getMethodBody().get().structure.statements.size() > 0;
     }
 }

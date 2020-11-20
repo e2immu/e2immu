@@ -35,7 +35,7 @@ public class SetOnce<T> {
         if (t == null) throw new NullPointerException("Null not allowed");
         synchronized (this) {
             if (this.t != null) {
-                throw new UnsupportedOperationException("Already set: have "+this.t+", try to set "+t);
+                throw new UnsupportedOperationException("Already set: have " + this.t + ", try to set " + t);
             }
             this.t = t;
         }
@@ -49,6 +49,18 @@ public class SetOnce<T> {
     public T get() {
         if (t == null) {
             throw new UnsupportedOperationException("Not yet set");
+        }
+        return t;
+    }
+
+    @Only(after = "t")
+    @NotNull
+    @NotModified
+    @Independent(type = AnnotationType.VERIFY_ABSENT) // note: independent of the support data, which is not present!
+    @Precondition("not (null == this.t)")
+    public T get(String message) {
+        if (t == null) {
+            throw new UnsupportedOperationException("Not yet set: " + message);
         }
         return t;
     }

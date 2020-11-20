@@ -18,34 +18,21 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
-import java.util.Set;
+import java.util.Objects;
 
+public abstract class InspectionImpl implements Inspection {
 
-public interface AnnotationExpression {
+    private final List<AnnotationExpression> annotations;
 
-    TypeInfo typeInfo();
+    protected InspectionImpl(List<AnnotationExpression> annotations) {
+        Objects.requireNonNull(annotations);
+        this.annotations = annotations;
+    }
 
-    List<Expression> expressions();
-
-    String stream();
-
-    Set<String> imports();
-
-    <T> T extract(String fieldName, T defaultValue);
-
-    boolean isVerifyAbsent();
-
-    boolean test();
-
-    AnnotationExpression copyWith(Primitives primitives, String parameter, int value);
-
-    AnnotationExpression copyWith(Primitives primitives, String parameter, boolean value);
-
-    AnnotationExpression copyWith(Primitives primitives, String parameter, String value);
-
-    UpgradableBooleanMap<TypeInfo> typesReferenced();
+    @Override
+    public List<AnnotationExpression> getAnnotations() {
+        return annotations;
+    }
 }

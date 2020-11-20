@@ -25,6 +25,7 @@ import com.github.javaparser.ast.type.WildcardType;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
@@ -56,11 +57,11 @@ public class ParameterizedType {
     }
 
     @NotNull
-    public static ParameterizedType from(TypeContext context, Type type, boolean varargs, TypeInfo.DollarResolver dollarResolver) {
+    public static ParameterizedType from(TypeContext context, Type type, boolean varargs, TypeInspector.DollarResolver dollarResolver) {
         return from(context, type, WildCard.NONE, varargs, dollarResolver);
     }
 
-    private static ParameterizedType from(TypeContext context, Type type, WildCard wildCard, boolean varargs, TypeInfo.DollarResolver dollarResolver) {
+    private static ParameterizedType from(TypeContext context, Type type, WildCard wildCard, boolean varargs, TypeInspector.DollarResolver dollarResolver) {
         Type baseType = type;
         int arrays = 0;
         if (type.isArrayType()) {
@@ -107,11 +108,11 @@ public class ParameterizedType {
                 // name probably is a sub type in scopePt...
                 if (scopePt.typeInfo != null) {
                     if (scopePt.typeInfo.typeInspection.isSet()) {
-                        Optional<TypeInfo> subType = scopePt.typeInfo.typeInspection.getPotentiallyRun().subTypes.stream().filter(st -> st.simpleName.equals(name)).findFirst();
+                        Optional<TypeInfo> subType = scopePt.typeInfo.typeInspection.get().subTypes.stream().filter(st -> st.simpleName.equals(name)).findFirst();
                         if (subType.isPresent()) {
                             return parameters.isEmpty() ? new ParameterizedType(subType.get(), arrays) : new ParameterizedType(subType.get(), parameters);
                         }
-                        Optional<FieldInfo> field = scopePt.typeInfo.typeInspection.getPotentiallyRun().fields.stream().filter(f -> f.name.equals(name)).findFirst();
+                        Optional<FieldInfo> field = scopePt.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals(name)).findFirst();
                         if (field.isPresent()) return field.get().type;
                         throw new UnsupportedOperationException("Cannot find " + name + " in " + scopePt);
                     }
@@ -416,9 +417,9 @@ public class ParameterizedType {
 
         if (iAmFunctionalInterface && concreteTypeIsFunctionalInterface) {
             MethodTypeParameterMap methodTypeParameterMap = findSingleAbstractMethodOfInterface();
-            List<ParameterInfo> methodParams = methodTypeParameterMap.methodInfo.methodInspection.get().parameters;
+            List<ParameterInfo> methodParams = methodTypeParameterMap.methodInfo.methodInspection.get().getParameters();
             MethodTypeParameterMap concreteTypeMap = concreteType.findSingleAbstractMethodOfInterface();
-            List<ParameterInfo> concreteTypeAbstractParams = concreteTypeMap.methodInfo.methodInspection.get().parameters;
+            List<ParameterInfo> concreteTypeAbstractParams = concreteTypeMap.methodInfo.methodInspection.get().getParameters();
 
             if (methodParams.size() != concreteTypeAbstractParams.size()) {
                 throw new UnsupportedOperationException("Have different param sizes for functional interface " +
@@ -508,11 +509,11 @@ public class ParameterizedType {
                     return arrays == 0 && type.checkBoxing(primitives, typeInfo) ? BOXING_TO_PRIMITIVE : NOT_ASSIGNABLE;
                 }
 
-                for (ParameterizedType interfaceImplemented : type.typeInfo.typeInspection.getPotentiallyRun().interfacesImplemented) {
+                for (ParameterizedType interfaceImplemented : type.typeInfo.typeInspection.get().interfacesImplemented) {
                     int scoreInterface = numericIsAssignableFrom(primitives, interfaceImplemented, true);
                     if (scoreInterface != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreInterface;
                 }
-                ParameterizedType parentClass = type.typeInfo.typeInspection.getPotentiallyRun().parentClass;
+                ParameterizedType parentClass = type.typeInfo.typeInspection.get().parentClass;
                 if (!Primitives.isJavaLangObject(parentClass)) {
                     int scoreParent = numericIsAssignableFrom(primitives, parentClass, true);
                     if (scoreParent != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreParent;
@@ -556,7 +557,7 @@ public class ParameterizedType {
 
     public boolean implementsFunctionalInterface() {
         if (typeInfo == null) return false;
-        return typeInfo.typeInspection.getPotentiallyRun().interfacesImplemented.stream().anyMatch(ParameterizedType::isFunctionalInterface);
+        return typeInfo.typeInspection.get().interfacesImplemented.stream().anyMatch(ParameterizedType::isFunctionalInterface);
     }
 
     public boolean isUnboundParameterType() {
@@ -569,10 +570,10 @@ public class ParameterizedType {
 
     private MethodTypeParameterMap findSingleAbstractMethodOfInterface(boolean complain) {
         if (!isFunctionalInterface()) return null;
-        Optional<MethodInfo> theMethod = typeInfo.typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+        Optional<MethodInfo> theMethod = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(m -> !m.isStatic && !m.isDefaultImplementation).findFirst();
         if (theMethod.isPresent()) return new MethodTypeParameterMap(theMethod.get(), initialTypeParameterMap());
-        for (ParameterizedType extension : typeInfo.typeInspection.getPotentiallyRun().interfacesImplemented) {
+        for (ParameterizedType extension : typeInfo.typeInspection.get().interfacesImplemented) {
             MethodTypeParameterMap ofExtension = extension.findSingleAbstractMethodOfInterface(false);
             if (ofExtension != null) {
                 return ofExtension;
@@ -696,7 +697,7 @@ public class ParameterizedType {
         TypeInfo bestType = bestTypeInfo();
         if (bestType != null) {
             // one of my fields is "component"
-            for (FieldInfo fieldInfo : bestType.typeInspection.getPotentiallyRun().fields) {
+            for (FieldInfo fieldInfo : bestType.typeInspection.get().fields) {
                 if (fieldInfo.type.equals(component) || fieldInfo.type.equals(boxedComponent)) return true;
             }
         }
