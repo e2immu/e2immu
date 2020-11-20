@@ -76,7 +76,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
     @Override
     public AnnotationMode annotationMode() {
-        return parameterInfo.owner.typeInfo.typeInspection.get().annotationMode;
+        return parameterInfo.owner.typeInfo.typeInspection.get().annotationMode();
     }
 
     @Override
@@ -123,7 +123,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
         @Override
         public AnnotationMode annotationMode() {
-            return parameterInfo.owner.typeInfo.typeInspection.get().annotationMode;
+            return parameterInfo.owner.typeInfo.typeInspection.get().annotationMode();
         }
 
         @Override

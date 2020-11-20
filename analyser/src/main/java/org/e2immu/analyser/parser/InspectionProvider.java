@@ -21,10 +21,11 @@ import org.e2immu.analyser.model.*;
 
 public interface InspectionProvider {
 
-    FieldInspectionImpl.Builder getFieldInspection(FieldInfo fieldInfo);
+    FieldInspection getFieldInspection(FieldInfo fieldInfo);
 
-    TypeInspection.TypeInspectionBuilder getTypeInspection(TypeInfo typeInfo);
+    TypeInspection getTypeInspection(TypeInfo typeInfo);
 
-    MethodInspectionImpl.Builder getMethodInspection(MethodInfo methodInfo);
+    MethodInspection getMethodInspection(MethodInfo methodInfo);
 
+    Primitives getPrimitives();
 }

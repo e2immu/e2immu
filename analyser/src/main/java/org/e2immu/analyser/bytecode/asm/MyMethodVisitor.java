@@ -34,22 +34,23 @@ import static org.e2immu.analyser.util.Logger.log;
 import static org.objectweb.asm.Opcodes.ASM7;
 
 public class MyMethodVisitor extends MethodVisitor {
-    private final TypeInspection.TypeInspectionBuilder typeInspectionBuilder;
+    private final TypeInspectionImpl.Builder typeInspectionBuilder;
     private final TypeContext typeContext;
     private final MethodInfo methodInfo;
-    private final MethodInspection.MethodInspectionBuilder methodInspectionBuilder;
+    private final MethodInspectionImpl.Builder methodInspectionBuilder;
     private final List<ParameterizedType> types;
-    private final ParameterInspection.ParameterInspectionBuilder[] parameterInspectionBuilders;
+    private final ParameterInspectionImpl.Builder[] parameterInspectionBuilders;
     private final int numberOfParameters;
     private final JetBrainsAnnotationTranslator jetBrainsAnnotationTranslator;
     private final MethodItem methodItem;
     private int countLocalVars;
-    private boolean[] hasNameFromLocalVar;
+    private final boolean[] hasNameFromLocalVar;
+    private final boolean lastParameterIsVarargs;
 
     public MyMethodVisitor(TypeContext typeContext,
                            MethodInfo methodInfo,
-                           MethodInspection.MethodInspectionBuilder methodInspectionBuilder,
-                           TypeInspection.TypeInspectionBuilder typeInspectionBuilder,
+                           MethodInspectionImpl.Builder methodInspectionBuilder,
+                           TypeInspectionImpl.Builder typeInspectionBuilder,
                            List<ParameterizedType> types,
                            boolean lastParameterIsVarargs,
                            MethodItem methodItem,
@@ -64,14 +65,8 @@ public class MyMethodVisitor extends MethodVisitor {
         this.methodItem = methodItem;
         numberOfParameters = types.size() - 1;
         hasNameFromLocalVar = new boolean[numberOfParameters];
-        parameterInspectionBuilders = new ParameterInspection.ParameterInspectionBuilder[numberOfParameters];
-
-        for (int i = 0; i < numberOfParameters; i++) {
-            parameterInspectionBuilders[i] = new ParameterInspection.ParameterInspectionBuilder();
-            if (lastParameterIsVarargs && i == numberOfParameters - 1) {
-                parameterInspectionBuilders[i].setVarArgs(true);
-            }
-        }
+        parameterInspectionBuilders = new ParameterInspectionImpl.Builder[numberOfParameters];
+        this.lastParameterIsVarargs = lastParameterIsVarargs;
     }
 
     @Override
@@ -92,8 +87,11 @@ public class MyMethodVisitor extends MethodVisitor {
         if (parameterIndex >= 0 && parameterIndex < numberOfParameters) {
             ParameterizedType parameterizedType = types.get(parameterIndex);
             ParameterInfo parameterInfo = new ParameterInfo(methodInfo, parameterizedType, name, parameterIndex);
-            parameterInfo.parameterInspection.set(parameterInspectionBuilders[parameterIndex].build());
-            methodInspectionBuilder.addParameter(parameterInfo);
+            ParameterInspectionImpl.Builder pib = methodInspectionBuilder.addParameter(parameterInfo);
+            parameterInspectionBuilders[parameterIndex] = pib;
+            if (lastParameterIsVarargs && parameterIndex == numberOfParameters - 1) {
+                pib.setVarArgs(true);
+            }
             hasNameFromLocalVar[parameterIndex] = true;
         }
         countLocalVars++;
@@ -107,9 +105,11 @@ public class MyMethodVisitor extends MethodVisitor {
                 ParameterizedType type = types.get(i);
                 String parameterName = factory.next(type);
                 ParameterInfo parameterInfo = new ParameterInfo(methodInfo, type, parameterName, i);
-                methodInspectionBuilder.addParameter(parameterInfo);
-
-                parameterInfo.parameterInspection.set(parameterInspectionBuilders[i].build());
+                ParameterInspectionImpl.Builder pib = methodInspectionBuilder.addParameter(parameterInfo);
+                parameterInspectionBuilders[i] = pib;
+                if (lastParameterIsVarargs && i == numberOfParameters - 1) {
+                    pib.setVarArgs(true);
+                }
                 log(BYTECODE_INSPECTOR_DEBUG, "Set parameterInspection {}", i);
             }
         }
@@ -126,7 +126,8 @@ public class MyMethodVisitor extends MethodVisitor {
                 }
             }
         }
-        methodInfo.methodInspection.set(methodInspectionBuilder.build(methodInfo));
+        // the build() on methodInspectionBuilder also builds the parameters
+        methodInfo.methodInspection.set(methodInspectionBuilder.build());
         if (methodInfo.isConstructor) {
             typeInspectionBuilder.addConstructor(methodInfo);
         } else {

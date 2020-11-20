@@ -251,8 +251,8 @@ public class ObjectFlow {
         Set<String> marksSources = getPrevious().flatMap(of -> of.marks().stream()).collect(Collectors.toSet());
         if (modifyingAccess != null) {
             MethodInfo methodInfo = modifyingAccess.methodInfo;
-            Optional<AnnotationExpression> oMark = methodInfo.methodInspection.get().annotations.stream()
-                    .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(Mark.class.getName())).findFirst();
+            Optional<AnnotationExpression> oMark = methodInfo.methodInspection.get().getAnnotations().stream()
+                    .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(Mark.class.getName())).findFirst();
             if (oMark.isPresent()) {
                 AnnotationExpression ae = oMark.get();
                 String mark = ae.extract("value", "");

@@ -27,6 +27,7 @@ import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -107,12 +108,13 @@ public class ParameterizedType {
                 ParameterizedType scopePt = from(context, scopeType);
                 // name probably is a sub type in scopePt...
                 if (scopePt.typeInfo != null) {
-                    if (scopePt.typeInfo.typeInspection.isSet()) {
-                        Optional<TypeInfo> subType = scopePt.typeInfo.typeInspection.get().subTypes.stream().filter(st -> st.simpleName.equals(name)).findFirst();
+                    TypeInspection scopeInspection = context.getTypeInspection(scopePt.typeInfo);
+                    if (scopeInspection != null) {
+                        Optional<TypeInfo> subType = scopeInspection.subTypes().stream().filter(st -> st.simpleName.equals(name)).findFirst();
                         if (subType.isPresent()) {
                             return parameters.isEmpty() ? new ParameterizedType(subType.get(), arrays) : new ParameterizedType(subType.get(), parameters);
                         }
-                        Optional<FieldInfo> field = scopePt.typeInfo.typeInspection.get().fields.stream().filter(f -> f.name.equals(name)).findFirst();
+                        Optional<FieldInfo> field = scopeInspection.fields().stream().filter(f -> f.name.equals(name)).findFirst();
                         if (field.isPresent()) return field.get().type;
                         throw new UnsupportedOperationException("Cannot find " + name + " in " + scopePt);
                     }
@@ -405,7 +407,7 @@ public class ParameterizedType {
         return map;
     }
 
-    public Map<NamedType, ParameterizedType> translateMap(ParameterizedType concreteType) {
+    public Map<NamedType, ParameterizedType> translateMap(InspectionProvider inspectionProvider, ParameterizedType concreteType) {
         if (parameters.isEmpty()) {
             if (isTypeParameter())
                 return Map.of(this.typeParameter, concreteType);
@@ -416,33 +418,33 @@ public class ParameterizedType {
         boolean concreteTypeIsFunctionalInterface = concreteType.isFunctionalInterface();
 
         if (iAmFunctionalInterface && concreteTypeIsFunctionalInterface) {
-            MethodTypeParameterMap methodTypeParameterMap = findSingleAbstractMethodOfInterface();
-            List<ParameterInfo> methodParams = methodTypeParameterMap.methodInfo.methodInspection.get().getParameters();
-            MethodTypeParameterMap concreteTypeMap = concreteType.findSingleAbstractMethodOfInterface();
-            List<ParameterInfo> concreteTypeAbstractParams = concreteTypeMap.methodInfo.methodInspection.get().getParameters();
+            MethodTypeParameterMap methodTypeParameterMap = findSingleAbstractMethodOfInterface(inspectionProvider);
+            List<ParameterInfo> methodParams = methodTypeParameterMap.methodInspectionBuilder.getParameters();
+            MethodTypeParameterMap concreteTypeMap = concreteType.findSingleAbstractMethodOfInterface(inspectionProvider);
+            List<ParameterInfo> concreteTypeAbstractParams = concreteTypeMap.methodInspectionBuilder.getParameters();
 
             if (methodParams.size() != concreteTypeAbstractParams.size()) {
                 throw new UnsupportedOperationException("Have different param sizes for functional interface " +
                         detailedString() + " method " +
-                        methodTypeParameterMap.methodInfo.fullyQualifiedName() + " and " +
-                        concreteTypeMap.methodInfo.fullyQualifiedName());
+                        methodTypeParameterMap.methodInspectionBuilder.getFullyQualifiedName() + " and " +
+                        concreteTypeMap.methodInspectionBuilder.getFullyQualifiedName());
             }
             for (int i = 0; i < methodParams.size(); i++) {
                 ParameterizedType abstractTypeParameter = methodParams.get(i).parameterizedType;
                 ParameterizedType concreteTypeParameter = concreteTypeMap.getConcreteTypeOfParameter(i);
-                res.putAll(abstractTypeParameter.translateMap(concreteTypeParameter));
+                res.putAll(abstractTypeParameter.translateMap(inspectionProvider, concreteTypeParameter));
             }
             // and now the return type
             ParameterizedType myReturnType = methodTypeParameterMap.getConcreteReturnType();
             ParameterizedType concreteReturnType = concreteTypeMap.getConcreteReturnType();
-            res.putAll(myReturnType.translateMap(concreteReturnType));
+            res.putAll(myReturnType.translateMap(inspectionProvider, concreteReturnType));
         } else {
             // it is possible that the concrete type has fewer type parameters than the formal one
             // e.g., when "new Stack<>" is to be matched with "Stack<String>"
             for (int i = 0; i < Math.min(parameters.size(), concreteType.parameters.size()); i++) {
                 ParameterizedType abstractTypeParameter = parameters.get(i);
                 ParameterizedType concreteTypeParameter = concreteType.parameters.get(i);
-                res.putAll(abstractTypeParameter.translateMap(concreteTypeParameter));
+                res.putAll(abstractTypeParameter.translateMap(inspectionProvider, concreteTypeParameter));
             }
         }
 
@@ -463,8 +465,8 @@ public class ParameterizedType {
      */
     public static int NOT_ASSIGNABLE = -1;
 
-    public boolean isAssignableFrom(Primitives primitives, ParameterizedType type) {
-        return numericIsAssignableFrom(primitives, type) != NOT_ASSIGNABLE;
+    public boolean isAssignableFrom(InspectionProvider inspectionProvider, ParameterizedType type) {
+        return numericIsAssignableFrom(inspectionProvider, type) != NOT_ASSIGNABLE;
     }
 
     private static final IntBinaryOperator REDUCER = (a, b) -> a == NOT_ASSIGNABLE || b == NOT_ASSIGNABLE ? NOT_ASSIGNABLE : a + b;
@@ -476,11 +478,11 @@ public class ParameterizedType {
     private static final int IN_HIERARCHY = 100;
     private static final int UNBOUND_WILDCARD = 1000;
 
-    public int numericIsAssignableFrom(Primitives primitives, ParameterizedType type) {
-        return numericIsAssignableFrom(primitives, type, false);
+    public int numericIsAssignableFrom(InspectionProvider inspectionProvider, ParameterizedType type) {
+        return numericIsAssignableFrom(inspectionProvider, type, false);
     }
 
-    private int numericIsAssignableFrom(Primitives primitives, ParameterizedType type, boolean ignoreArrays) {
+    private int numericIsAssignableFrom(InspectionProvider inspectionProvider, ParameterizedType type, boolean ignoreArrays) {
         Objects.requireNonNull(type);
         if (type == this || equals(type)) return 0;
         if (type == ParameterizedType.NULL_CONSTANT) {
@@ -497,25 +499,26 @@ public class ParameterizedType {
                 if (Primitives.isPrimitiveExcludingVoid(type)) {
                     if (arrays == 0) {
                         if (Primitives.isPrimitiveExcludingVoid(this)) {
-                            return primitives.isAssignableFromTo(type, this);
+                            return inspectionProvider.getPrimitives().isAssignableFromTo(type, this);
                         }
-                        return checkBoxing(primitives, type.typeInfo) ? BOXING_FROM_PRIMITIVE : NOT_ASSIGNABLE;
+                        return checkBoxing(inspectionProvider.getPrimitives(), type.typeInfo) ? BOXING_FROM_PRIMITIVE : NOT_ASSIGNABLE;
                     }
                     // TODO; for now: primitive array can only be assigned to its own type
                     return NOT_ASSIGNABLE;
                 }
                 if (Primitives.isPrimitiveExcludingVoid(this)) {
                     // the other one is not a primitive
-                    return arrays == 0 && type.checkBoxing(primitives, typeInfo) ? BOXING_TO_PRIMITIVE : NOT_ASSIGNABLE;
+                    return arrays == 0 && type.checkBoxing(inspectionProvider.getPrimitives(), typeInfo) ? BOXING_TO_PRIMITIVE : NOT_ASSIGNABLE;
                 }
 
-                for (ParameterizedType interfaceImplemented : type.typeInfo.typeInspection.get().interfacesImplemented) {
-                    int scoreInterface = numericIsAssignableFrom(primitives, interfaceImplemented, true);
+                TypeInspection typeInspection = inspectionProvider.getTypeInspection(type.typeInfo);
+                for (ParameterizedType interfaceImplemented : typeInspection.interfacesImplemented()) {
+                    int scoreInterface = numericIsAssignableFrom(inspectionProvider, interfaceImplemented, true);
                     if (scoreInterface != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreInterface;
                 }
-                ParameterizedType parentClass = type.typeInfo.typeInspection.get().parentClass;
+                ParameterizedType parentClass = typeInspection.parentClass();
                 if (!Primitives.isJavaLangObject(parentClass)) {
-                    int scoreParent = numericIsAssignableFrom(primitives, parentClass, true);
+                    int scoreParent = numericIsAssignableFrom(inspectionProvider, parentClass, true);
                     if (scoreParent != NOT_ASSIGNABLE) return IN_HIERARCHY + scoreParent;
                 }
             }
@@ -523,16 +526,13 @@ public class ParameterizedType {
         if (typeParameter != null) {
             // T extends Comparable<...> & Serializable
             try {
-                //if(typeParameter.owner.isLeft()) typeParameter.owner.getLeft().typeInspection.get();
-                //else typeParameter.owner.getRight().typeInfo.typeInspection.get();
-
-                List<ParameterizedType> typeBounds = typeParameter.typeParameterInspection.get().typeBounds;
+               List<ParameterizedType> typeBounds = typeParameter.typeParameterInspection.get().typeBounds;
                 if (!typeBounds.isEmpty()) {
                     if (wildCard == WildCard.EXTENDS) {
-                        return typeBounds.stream().mapToInt(pt -> numericIsAssignableFrom(primitives, pt)).reduce(IN_HIERARCHY, REDUCER);
+                        return typeBounds.stream().mapToInt(pt -> numericIsAssignableFrom(inspectionProvider, pt)).reduce(IN_HIERARCHY, REDUCER);
                     }
                     if (wildCard == WildCard.SUPER) {
-                        return typeBounds.stream().mapToInt(tb -> tb.numericIsAssignableFrom(primitives, this)).reduce(IN_HIERARCHY, REDUCER);
+                        return typeBounds.stream().mapToInt(tb -> tb.numericIsAssignableFrom(inspectionProvider, this)).reduce(IN_HIERARCHY, REDUCER);
                     }
                     throw new UnsupportedOperationException("?");
                 }
@@ -555,26 +555,24 @@ public class ParameterizedType {
         return typeInfo.isFunctionalInterface();
     }
 
-    public boolean implementsFunctionalInterface() {
-        if (typeInfo == null) return false;
-        return typeInfo.typeInspection.get().interfacesImplemented.stream().anyMatch(ParameterizedType::isFunctionalInterface);
-    }
-
     public boolean isUnboundParameterType() {
         return isTypeParameter() && wildCard == WildCard.NONE;
     }
 
-    public MethodTypeParameterMap findSingleAbstractMethodOfInterface() {
-        return findSingleAbstractMethodOfInterface(true);
+    public MethodTypeParameterMap findSingleAbstractMethodOfInterface(InspectionProvider inspectionProvider) {
+        return findSingleAbstractMethodOfInterface(inspectionProvider, true);
     }
 
-    private MethodTypeParameterMap findSingleAbstractMethodOfInterface(boolean complain) {
+    private MethodTypeParameterMap findSingleAbstractMethodOfInterface(InspectionProvider inspectionProvider, boolean complain) {
         if (!isFunctionalInterface()) return null;
-        Optional<MethodInfo> theMethod = typeInfo.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
+        Optional<MethodInfo> theMethod = typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(m -> !m.isStatic && !m.isDefaultImplementation).findFirst();
-        if (theMethod.isPresent()) return new MethodTypeParameterMap(theMethod.get(), initialTypeParameterMap());
-        for (ParameterizedType extension : typeInfo.typeInspection.get().interfacesImplemented) {
-            MethodTypeParameterMap ofExtension = extension.findSingleAbstractMethodOfInterface(false);
+        if (theMethod.isPresent()) {
+            return new MethodTypeParameterMap(inspectionProvider.getMethodInspection(theMethod.get()), initialTypeParameterMap());
+        }
+        for (ParameterizedType extension : typeInspection.interfacesImplemented()) {
+            MethodTypeParameterMap ofExtension = extension.findSingleAbstractMethodOfInterface(inspectionProvider, false);
             if (ofExtension != null) {
                 return ofExtension;
             }
@@ -633,7 +631,7 @@ public class ParameterizedType {
      * @param other the other type
      * @return the common type
      */
-    public ParameterizedType commonType(Primitives primitives, ParameterizedType other) {
+    public ParameterizedType commonType(InspectionProvider inspectionProvider, ParameterizedType other) {
         if (other == null) return null;
         if (equals(other)) return this;
         TypeInfo bestType = bestTypeInfo();
@@ -641,14 +639,14 @@ public class ParameterizedType {
         boolean isPrimitive = Primitives.isPrimitiveExcludingVoid(this) || bestType != null && Primitives.isBoxedExcludingVoid(bestType);
         boolean otherIsPrimitive = Primitives.isPrimitiveExcludingVoid(other) || otherBestType != null && Primitives.isBoxedExcludingVoid(otherBestType);
         if (isPrimitive && otherIsPrimitive) {
-            return primitives.widestType(this, other);
+            return inspectionProvider.getPrimitives().widestType(this, other);
         }
         if (isPrimitive || otherIsPrimitive) return null; // no common type
         if (bestType == null || otherBestType == null) return null;
-        if (isAssignableFrom(primitives, other)) {
+        if (isAssignableFrom(inspectionProvider, other)) {
             return this;
         }
-        if (other.isAssignableFrom(primitives, this)) {
+        if (other.isAssignableFrom(inspectionProvider, this)) {
             return other;
         }
         return null;
@@ -681,34 +679,11 @@ public class ParameterizedType {
         return primitives.boxed(typeInfo);
     }
 
-
-    // I am the bigger type, the argument is the component
-    // TODO this needs much more work
-    public boolean containsComponent(Primitives primitives, ParameterizedType component) {
-
-        // String[], String
-        if (arrays > component.arrays && numericIsAssignableFrom(primitives, component, true) != NOT_ASSIGNABLE)
-            return true;
-        // Set<X>, X; this is a bit of a hack, but one that's clear to understand
-        ParameterizedType boxedComponent = Primitives.isPrimitiveExcludingVoid(component) ?
-                component.toBoxed(primitives).asParameterizedType() : component;
-        if (parameters.contains(boxedComponent)) return true;
-
-        TypeInfo bestType = bestTypeInfo();
-        if (bestType != null) {
-            // one of my fields is "component"
-            for (FieldInfo fieldInfo : bestType.typeInspection.get().fields) {
-                if (fieldInfo.type.equals(component) || fieldInfo.type.equals(boxedComponent)) return true;
-            }
-        }
-        return false;
-    }
-
-    public ParameterizedType mostSpecific(Primitives primitives, ParameterizedType other) {
+    public ParameterizedType mostSpecific(InspectionProvider inspectionProvider, ParameterizedType other) {
         if (isType() && Primitives.isVoid(typeInfo) || other.isType() && Primitives.isVoid(other.typeInfo)) {
-            return primitives.voidParameterizedType;
+            return inspectionProvider.getPrimitives().voidParameterizedType;
         }
-        if (isAssignableFrom(primitives, other)) {
+        if (isAssignableFrom(inspectionProvider, other)) {
             return other;
         }
         return this;

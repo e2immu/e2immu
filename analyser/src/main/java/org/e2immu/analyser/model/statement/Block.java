@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.statement;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
@@ -121,15 +122,16 @@ public class Block extends StatementWithStructure {
         return sb.toString();
     }
 
-    public ParameterizedType mostSpecificReturnType(Primitives primitives) {
+    public ParameterizedType mostSpecificReturnType(InspectionProvider inspectionProvider) {
         AtomicReference<ParameterizedType> mostSpecific = new AtomicReference<>();
+        Primitives primitives = inspectionProvider.getPrimitives();
         visit(statement -> {
             if (statement instanceof ReturnStatement returnStatement) {
                 if (returnStatement.expression == EmptyExpression.EMPTY_EXPRESSION) {
                     mostSpecific.set(primitives.voidParameterizedType);
                 } else {
                     ParameterizedType returnType = returnStatement.expression.returnType();
-                    mostSpecific.set(mostSpecific.get() == null ? returnType : mostSpecific.get().mostSpecific(primitives, returnType));
+                    mostSpecific.set(mostSpecific.get() == null ? returnType : mostSpecific.get().mostSpecific(inspectionProvider, returnType));
                 }
             }
         });

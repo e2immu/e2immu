@@ -21,39 +21,36 @@ package org.e2immu.analyser.annotationxml.model;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Mark;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@E2Immutable(after = "freeze")
-public class Annotation {
-    public final String name;
-    private List<Value> values = new ArrayList<>();
+public record Annotation(String name, List<Value> values) {
 
-    public Annotation(String annotationType) {
-        this.name = annotationType;
-    }
-
-    // TODO @Mark("freeze")
-    public Annotation(AnnotationExpression ae) {
-        name = ae.typeInfo.fullyQualifiedName;
-        if (ae.expressions.isSet()) {
-            for (Expression expression : ae.expressions.get()) {
-                Value value = new Value(expression);
-                values.add(value);
-            }
+    public static Annotation from(AnnotationExpression ae) {
+        Builder builder = new Builder(ae.typeInfo().fullyQualifiedName);
+        for (Expression expression : ae.expressions()) {
+            Value value = new Value(expression);
+            builder.addValue(value);
         }
-        freeze();
+        return builder.build();
     }
 
-    @Mark("freeze")
-    public void freeze() {
-        values = ImmutableList.copyOf(values);
-    }
+    public static class Builder {
+        private final String name;
+        private final List<Value> values = new ArrayList<>();
 
-    public List<Value> getValues() {
-        return values;
+        public Builder(String name) {
+            this.name = name;
+        }
+
+        public Builder addValue(Value value) {
+            values.add(value);
+            return this;
+        }
+
+        public Annotation build() {
+            return new Annotation(name, ImmutableList.copyOf(values));
+        }
     }
 }

@@ -50,6 +50,10 @@ public class MethodInspector {
         return builder.build();
     }
 
+    public MethodInspectionImpl.Builder getBuilder() {
+        return builder;
+    }
+
     public void inspect(AnnotationMemberDeclaration amd, ExpressionContext expressionContext) {
         log(INSPECT, "Inspecting annotation member {}", methodInfo.fullyQualifiedName());
         addAnnotations(amd.getAnnotations(), expressionContext);
@@ -79,7 +83,7 @@ public class MethodInspector {
     private void checkCompanionMethods(Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods) {
         for (Map.Entry<CompanionMethodName, MethodInspectionImpl.Builder> entry : companionMethods.entrySet()) {
             CompanionMethodName companionMethodName = entry.getKey();
-            MethodInspectionImpl.Builder methodInspection = entry.getValue();
+            MethodInspection methodInspection = entry.getValue();
             if (!methodInspection.getAnnotations().isEmpty()) {
                 throw new UnsupportedOperationException("Companion methods do not accept annotations: " + companionMethodName);
             }
@@ -87,12 +91,7 @@ public class MethodInspector {
                 throw new UnsupportedOperationException("Companion method's name differs from the method name: " + companionMethodName + " vs " + methodInfo.name);
             }
             int expectStatements = methodInspection.getMethodInfo().isVoid() ? 0 : 1;
-            boolean error;
-            if (methodInspection.methodBodyIsSet()) {
-                error = methodInspection.getMethodBody().structure.statements.size() != expectStatements;
-            } else {
-                error = methodInspection.getBlock().getStatements().size() != expectStatements;
-            }
+            boolean error = methodInspection.getMethodBody().structure.statements.size() != expectStatements;
             if (error) {
                 throw new UnsupportedOperationException("Companion methods must have only one statement when non-void: a return statement! " + companionMethodName);
             }

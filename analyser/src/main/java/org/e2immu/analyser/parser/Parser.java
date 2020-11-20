@@ -137,7 +137,7 @@ public class Parser {
     }
 
     private void analyseSortedType(SortedType sortedType) {
-        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(sortedType, configuration, getTypeContext(), getE2ImmuAnnotationExpressions());
+        PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(sortedType, configuration, getTypeContext().getPrimitives(), getE2ImmuAnnotationExpressions());
         try {
             primaryTypeAnalyser.analyse();
         } catch (RuntimeException rte) {

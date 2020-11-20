@@ -45,7 +45,7 @@ public class EvaluateParameters {
                                                                         MethodInfo methodInfo,
                                                                         int notModified1Scope,
                                                                         Value scopeObject) {
-        int n = methodInfo == null ? 10 : methodInfo.methodInspection.get().parameters.size();
+        int n = methodInfo == null ? 10 : methodInfo.methodInspection.get().getParameters().size();
         List<Value> parameterValues = new ArrayList<>(n);
         List<EvaluationResult> parameterResults = new ArrayList<>(n);
         int i = 0;
@@ -57,11 +57,11 @@ public class EvaluateParameters {
             Value parameterValue;
             EvaluationResult parameterResult;
             if (methodInfo != null) {
-                List<ParameterInfo> params = methodInfo.methodInspection.get().parameters;
+                List<ParameterInfo> params = methodInfo.methodInspection.get().getParameters();
                 ParameterInfo parameterInfo;
                 if (i >= params.size()) {
                     ParameterInfo lastParameter = params.get(params.size() - 1);
-                    if (lastParameter.parameterInspection.get().varArgs) {
+                    if (lastParameter.parameterInspection.get().isVarArgs()) {
                         parameterInfo = lastParameter;
                     } else {
                         throw new UnsupportedOperationException("?");
@@ -187,7 +187,7 @@ public class EvaluateParameters {
         ImmutableMap.Builder<Value, Value> builder = new ImmutableMap.Builder<>();
         int i = 0;
         for (Value parameterValue : parameters) {
-            ParameterInfo parameterInfo = methodInfo.methodInspection.get().parameters.get(i);
+            ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(i);
             Value vv = new VariableValue(parameterInfo, parameterValue.getObjectFlow());
             builder.put(vv, parameterValue);
             i++;

@@ -25,6 +25,7 @@ import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.ExpressionContext;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeStore;
 import org.e2immu.analyser.util.Pair;
@@ -44,15 +45,15 @@ public class TypeInspector {
     public static final String PACKAGE_NAME_FIELD = "PACKAGE_NAME";
 
     private final TypeInfo typeInfo;
-    private final TypeInspection.TypeInspectionBuilder builder;
+    private final TypeInspectionImpl.Builder builder;
 
     public TypeInspector(TypeInfo typeInfo) {
         this.typeInfo = typeInfo;
-        builder = new TypeInspection.TypeInspectionBuilder();
+        builder = new TypeInspectionImpl.Builder(typeInfo);
     }
 
     public TypeInspection build() {
-        return builder.build(typeInfo);
+        return builder.build();
     }
 
     public void inspectAnonymousType(ParameterizedType classImplemented,
@@ -60,8 +61,8 @@ public class TypeInspector {
                                      NodeList<BodyDeclaration<?>> members) {
         builder.setEnclosingType(expressionContext.enclosingType);
         builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
-        assert classImplemented.typeInfo != null;
-        if (classImplemented.typeInfo.typeInspection.get().typeNature == TypeNature.INTERFACE) {
+        assert classImplemented.typeInfo != null && classImplemented.typeInfo.hasBeenInspected();
+        if (classImplemented.typeInfo.typeInspection.get().typeNature() == TypeNature.INTERFACE) {
             builder.addInterfaceImplemented(classImplemented);
         } else {
             builder.setParentClass(classImplemented);
@@ -138,12 +139,9 @@ public class TypeInspector {
         }
         boolean haveFunctionalInterface = false;
         for (AnnotationExpr annotationExpr : typeDeclaration.getAnnotations()) {
-            AnnotationExpression ae = AnnotationExpression.from(annotationExpr, expressionContext);
-            haveFunctionalInterface |= "java.lang.FunctionalInterface".equals(ae.typeInfo.fullyQualifiedName);
+            AnnotationExpression ae = AnnotationExpressionImpl.inspect(expressionContext, annotationExpr);
+            haveFunctionalInterface |= "java.lang.FunctionalInterface".equals(ae.typeInfo().fullyQualifiedName);
             builder.addAnnotation(ae);
-            if (!hasBeenDefined) {
-                ae.resolve(expressionContext);
-            } // we'll do it later during the resolution phase
         }
         for (Modifier modifier : typeDeclaration.getModifiers()) {
             builder.addTypeModifier(TypeModifier.from(modifier));
@@ -165,19 +163,19 @@ public class TypeInspector {
                 String methodName = amd.getName().getIdentifier();
                 MethodInfo methodInfo = new MethodInfo(typeInfo, methodName, List.of(),
                         expressionContext.typeContext.getPrimitives().voidParameterizedType, true, true);
-                methodInfo.inspect(amd, subContext);
-
+                MethodInspector methodInspector = new MethodInspector(methodInfo);
+                methodInspector.inspect(amd, subContext);
+                methodInfo.methodInspection.set(methodInspector.build());
                 builder.addMethod(methodInfo);
             }
         }
     }
 
-    private void doEnumDeclaration(ExpressionContext expressionContext,
-                                   EnumDeclaration enumDeclaration) {
+    private void doEnumDeclaration(ExpressionContext expressionContext, EnumDeclaration enumDeclaration) {
         builder.setTypeNature(TypeNature.ENUM);
         enumDeclaration.getEntries().forEach(enumConstantDeclaration -> {
             FieldInfo fieldInfo = new FieldInfo(typeInfo, enumConstantDeclaration.getNameAsString(), typeInfo);
-            FieldInspectionImpl.Builder fieldBuilder = new FieldInspection.FieldInspectionBuilder();
+            FieldInspectionImpl.Builder fieldBuilder = new FieldInspectionImpl.Builder();
             fieldBuilder.addModifier(FieldModifier.FINAL);
             fieldBuilder.addModifier(FieldModifier.PUBLIC);
             fieldBuilder.addModifier(FieldModifier.STATIC);
@@ -188,22 +186,22 @@ public class TypeInspector {
         Primitives primitives = expressionContext.typeContext.getPrimitives();
         MethodInfo nameMethodInfo = new MethodInfo(typeInfo, "name", List.of(),
                 primitives.stringParameterizedType, false);
-        nameMethodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
+        nameMethodInfo.methodInspection.set(new MethodInspectionImpl.Builder(nameMethodInfo)
                 .addAnnotation(expressionContext.e2ImmuAnnotationExpressions.notModified.get())
                 .setReturnType(primitives.stringParameterizedType)
-                .build(nameMethodInfo));
+                .build());
 
         MethodInfo valueOfMethodInfo = new MethodInfo(typeInfo, "valueOf", List.of(),
                 primitives.stringParameterizedType, true);
-        ParameterInfo valueOfP0 = new ParameterInfo(valueOfMethodInfo, primitives.stringParameterizedType, "name", 0);
-        valueOfP0.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder()
-                .addAnnotation(expressionContext.e2ImmuAnnotationExpressions.notNull.get())
-                .build());
-        valueOfMethodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
+        MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(valueOfMethodInfo)
                 .addAnnotation(expressionContext.e2ImmuAnnotationExpressions.notModified.get())
-                .setReturnType(typeInfo.asParameterizedType())
-                .addParameter(valueOfP0)
-                .build(valueOfMethodInfo));
+                .setReturnType(typeInfo.asParameterizedType());
+
+        ParameterInfo valueOfP0 = new ParameterInfo(valueOfMethodInfo, primitives.stringParameterizedType, "name", 0);
+        ParameterInspectionImpl.Builder valueOfP0B = valueOfBuilder.addParameter(valueOfP0);
+        valueOfP0B.addAnnotation(expressionContext.e2ImmuAnnotationExpressions.notNull.get());
+
+        valueOfMethodInfo.methodInspection.set(valueOfBuilder.build());
 
         builder.addMethod(nameMethodInfo).addMethod(valueOfMethodInfo);
     }
@@ -255,41 +253,46 @@ public class TypeInspector {
         assert parameterizedType.typeInfo != null;
         boolean insideCompilationUnit = parameterizedType.typeInfo.fullyQualifiedName.startsWith(expressionContext.primaryType.fullyQualifiedName);
         if (!insideCompilationUnit) {
-            parameterizedType.typeInfo.typeInspection.getPotentiallyRun(parameterizedType.typeInfo.fullyQualifiedName);
+            InspectionProvider inspectionProvider = expressionContext.typeContext;
+
+            TypeInspection typeInspection = inspectionProvider.getTypeInspection(parameterizedType.typeInfo);
             // now that we're sure it has been inspected, we add all its top-level subtypes to the type context
-            TypeInspection typeInspection = parameterizedType.typeInfo.typeInspection.getPotentiallyRun();
-            for (TypeInfo subType : typeInspection.subTypes) {
+            for (TypeInfo subType : typeInspection.subTypes()) {
                 expressionContext.typeContext.addToContext(subType);
             }
-            if (!Primitives.isJavaLangObject(typeInspection.parentClass)) {
-                ensureLoaded(expressionContext, typeInspection.parentClass);
+            if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
+                ensureLoaded(expressionContext, typeInspection.parentClass());
             }
-            typeInspection.interfacesImplemented.forEach(i -> ensureLoaded(expressionContext, i));
+            typeInspection.interfacesImplemented().forEach(i -> ensureLoaded(expressionContext, i));
         }
     }
 
-    public void inspectLocalClassDeclaration(ExpressionContext expressionContext, ClassOrInterfaceDeclaration cid) {
-        TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
+    public void inspectLocalClassDeclaration(ExpressionContext expressionContext, TypeInfo localType, ClassOrInterfaceDeclaration cid) {
+        TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(localType);
         builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
         builder.setEnclosingType(expressionContext.enclosingType);
         doClassOrInterfaceDeclaration(true, expressionContext, TypeNature.CLASS, cid);
         continueInspection(true, expressionContext, cid.getMembers(), false, false, null);
     }
 
+    // only to be called on primary types
+    public void recursivelyAddToTypeStore(TypeStore typeStore, TypeDeclaration<?> typeDeclaration) {
+        recursivelyAddToTypeStore(typeInfo, true, typeStore, typeDeclaration);
+    }
 
-    public void recursivelyAddToTypeStore(boolean parentIsPrimaryType, TypeStore typeStore, TypeDeclaration<?> typeDeclaration) {
+    private static void recursivelyAddToTypeStore(TypeInfo typeInfo, boolean parentIsPrimaryType, TypeStore typeStore, TypeDeclaration<?> typeDeclaration) {
         typeDeclaration.getMembers().forEach(bodyDeclaration -> {
             bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> {
                 TypeInfo subType = subTypeInfo(typeInfo.fullyQualifiedName, cid.getName().asString(), typeDeclaration, parentIsPrimaryType);
                 typeStore.add(subType);
                 log(INSPECT, "Added to type store: " + subType.fullyQualifiedName);
-                subType.recursivelyAddToTypeStore(false, typeStore, cid);
+                recursivelyAddToTypeStore(subType, false, typeStore, cid);
             });
             bodyDeclaration.ifEnumDeclaration(ed -> {
                 TypeInfo subType = subTypeInfo(typeInfo.fullyQualifiedName, ed.getName().asString(), typeDeclaration, parentIsPrimaryType);
                 typeStore.add(subType);
                 log(INSPECT, "Added enum to type store: " + subType.fullyQualifiedName);
-                subType.recursivelyAddToTypeStore(false, typeStore, ed);
+                recursivelyAddToTypeStore(subType, false, typeStore, ed);
             });
         });
     }
@@ -313,9 +316,9 @@ public class TypeInspector {
         // then inspect them...
         List<TypeInfo> dollarTypes = new ArrayList<>();
         for (BodyDeclaration<?> bodyDeclaration : members) {
-            bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> inspectSubType(builder, dollarResolver, dollarTypes, expressionContext, isInterface,
+            bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> inspectSubType(dollarResolver, dollarTypes, expressionContext, isInterface,
                     hasBeenDefined, cid.getNameAsString(), cid.asTypeDeclaration()));
-            bodyDeclaration.ifEnumDeclaration(ed -> inspectSubType(builder, dollarResolver, dollarTypes, expressionContext, isInterface,
+            bodyDeclaration.ifEnumDeclaration(ed -> inspectSubType(dollarResolver, dollarTypes, expressionContext, isInterface,
                     hasBeenDefined, ed.getNameAsString(), ed.asTypeDeclaration()));
         }
 
@@ -327,16 +330,14 @@ public class TypeInspector {
                         .map(FieldModifier::from)
                         .collect(Collectors.toList());
                 List<AnnotationExpression> annotations = fd.getAnnotations().stream()
-                        .map(ae -> AnnotationExpression.from(ae, expressionContext)).collect(Collectors.toList());
+                        .map(ae -> AnnotationExpressionImpl.inspect(expressionContext, ae)).collect(Collectors.toList());
                 for (VariableDeclarator vd : fd.getVariables()) {
                     ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, vd.getType());
 
                     String name = vd.getNameAsString();
                     FieldInfo fieldInfo = new FieldInfo(pt, name, typeInfo);
-                    FieldInspection.FieldInspectionBuilder fieldInspectionBuilder =
-                            new FieldInspection.FieldInspectionBuilder()
-                                    .addAnnotations(annotations)
-                                    .addModifiers(modifiers);
+                    FieldInspectionImpl.Builder fieldInspectionBuilder =
+                            new FieldInspectionImpl.Builder().addAnnotations(annotations).addModifiers(modifiers);
                     if (isInterface) {
                         fieldInspectionBuilder
                                 .addModifier(FieldModifier.STATIC)
@@ -357,12 +358,14 @@ public class TypeInspector {
         log(INSPECT, "Variable context after parsing fields of type {}: {}", typeInfo.fullyQualifiedName, subContext.variableContext);
 
         AtomicInteger countNonStaticNonDefaultIfInterface = new AtomicInteger();
-        Map<CompanionMethodName, MethodInfo> companionMethodsWaiting = new LinkedHashMap<>();
+        Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethodsWaiting = new LinkedHashMap<>();
 
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifConstructorDeclaration(cd -> {
                 MethodInfo methodInfo = new MethodInfo(typeInfo, List.of());
-                methodInfo.inspect(cd, subContext, companionMethodsWaiting, dollarResolver);
+                MethodInspector methodInspector = new MethodInspector(methodInfo);
+                methodInspector.inspect(cd, subContext, companionMethodsWaiting, dollarResolver);
+                methodInfo.methodInspection.set(methodInspector.build());
                 builder.addConstructor(methodInfo);
                 companionMethodsWaiting.clear();
             });
@@ -372,16 +375,18 @@ public class TypeInspector {
                 String methodName = MethodInfo.dropDollarGetClass(md.getName().getIdentifier());
                 CompanionMethodName companionMethodName = CompanionMethodName.extract(methodName);
 
-                MethodInfo methodInfo = new MethodInfo(this, methodName, List.of(),
+                MethodInfo methodInfo = new MethodInfo(typeInfo, methodName, List.of(),
                         expressionContext.typeContext.getPrimitives().voidParameterizedType, md.isStatic(), md.isDefault());
-                methodInfo.inspect(isInterface, md, subContext,
+                MethodInspector methodInspector = new MethodInspector(methodInfo);
+                methodInspector.inspect(isInterface, md, subContext,
                         companionMethodName != null ? Map.of() : companionMethodsWaiting, dollarResolver);
                 if (isInterface && !methodInfo.isStatic && !methodInfo.isDefaultImplementation) {
                     countNonStaticNonDefaultIfInterface.incrementAndGet();
                 }
                 if (companionMethodName != null) {
-                    companionMethodsWaiting.put(companionMethodName, methodInfo);
+                    companionMethodsWaiting.put(companionMethodName, methodInspector.getBuilder()); // will be built with its main method
                 } else {
+                    methodInfo.methodInspection.set(methodInspector.build()); // companions built here
                     builder.addMethod(methodInfo);
                     companionMethodsWaiting.clear();
                 }
@@ -392,7 +397,7 @@ public class TypeInspector {
             boolean haveNonStaticNonDefaultsInSuperType = false;
             for (ParameterizedType superInterface : builder.getInterfacesImplemented()) {
                 assert superInterface.typeInfo != null;
-                if (superInterface.typeInfo.haveNonStaticNonDefaultMethods()) {
+                if (superInterface.typeInfo.typeInspection.get().haveNonStaticNonDefaultMethods()) {
                     haveNonStaticNonDefaultsInSuperType = true;
                     break;
                 }
@@ -401,12 +406,7 @@ public class TypeInspector {
                 builder.addAnnotation(expressionContext.typeContext.getPrimitives().functionalInterfaceAnnotationExpression);
             }
         }
-        try {
-            typeInspection.set(builder.build(this));
-        } catch (RuntimeException e) {
-            LOGGER.error("Caught exception setting type inspection of {}", typeInfo.fullyQualifiedName);
-            throw e;
-        }
+        typeInfo.typeInspection.set(builder.build());
         return dollarTypes;
     }
 
@@ -418,8 +418,7 @@ public class TypeInspector {
         }
     }
 
-    private void inspectSubType(TypeInspection.TypeInspectionBuilder builder,
-                                DollarResolver dollarResolver,
+    private void inspectSubType(DollarResolver dollarResolver,
                                 List<TypeInfo> dollarTypes,
                                 ExpressionContext expressionContext,
                                 boolean isInterface,
@@ -430,7 +429,9 @@ public class TypeInspector {
         TypeInfo subType = pair.v;
         ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
         TypeInfo enclosingType = pair.k ? null : typeInfo;
-        subType.inspect(hasBeenDefined, isInterface, enclosingType, asTypeDeclaration, newExpressionContext, dollarResolver);
+        TypeInspector subTypeInspector = new TypeInspector(subType);
+        subTypeInspector.inspect(hasBeenDefined, isInterface, enclosingType, asTypeDeclaration, newExpressionContext, dollarResolver);
+        subType.typeInspection.set(subTypeInspector.build());
         if (pair.k) {
             dollarTypes.add(subType);
         } else {
@@ -476,20 +477,6 @@ public class TypeInspector {
         }
         return null;
     }
-
-
-    private boolean haveNonStaticNonDefaultMethods() {
-        if (typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .anyMatch(m -> !m.isStatic && !m.isDefaultImplementation)) return true;
-        for (ParameterizedType superInterface : typeInspection.getPotentiallyRun().interfacesImplemented) {
-            assert superInterface.typeInfo != null;
-            if (superInterface.typeInfo.haveNonStaticNonDefaultMethods()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
 
     private static TypeNature typeNature(TypeDeclaration<?> typeDeclaration) {
         if (typeDeclaration instanceof ClassOrInterfaceDeclaration cid) {

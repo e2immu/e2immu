@@ -112,7 +112,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
     @Override
     public AnnotationMode annotationMode() {
-        return fieldInfo.owner.typeInspection.get().annotationMode;
+        return fieldInfo.owner.typeInspection.get().annotationMode();
     }
 
     public static class Builder extends AbstractAnalysisBuilder implements FieldAnalysis {
@@ -132,8 +132,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
             this.analysisProvider = analysisProvider;
             type = fieldInfo.type;
-            this.sam = !fieldInfo.fieldInspection.get().initialiser.isSet() ? null :
-                    fieldInfo.fieldInspection.get().initialiser.get().implementationOfSingleAbstractMethod;
+            this.sam = !fieldInfo.fieldInspection.get().initialiserIsSet() ? null :
+                    fieldInfo.fieldInspection.get().getInitialiser().implementationOfSingleAbstractMethod();
             ObjectFlow initialObjectFlow = new ObjectFlow(new Location(fieldInfo), type,
                     Origin.INITIAL_FIELD_FLOW);
             objectFlow = new FirstThen<>(initialObjectFlow);

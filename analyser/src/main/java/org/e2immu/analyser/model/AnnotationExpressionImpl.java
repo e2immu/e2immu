@@ -20,6 +20,7 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
+import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
@@ -36,6 +37,26 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     public AnnotationExpressionImpl {
         Objects.requireNonNull(typeInfo);
         Objects.requireNonNull(expressions);
+    }
+
+    // used by the byte code inspector, MyAnnotationVisitor
+    public static class Builder {
+        private TypeInfo typeInfo;
+        private final List<Expression> expressions = new ArrayList<>();
+
+        public Builder setTypeInfo(TypeInfo typeInfo) {
+            this.typeInfo = typeInfo;
+            return this;
+        }
+
+        public Builder addExpression(Expression expression) {
+            this.expressions.add(expression);
+            return this;
+        }
+
+        public AnnotationExpression build() {
+            return new AnnotationExpressionImpl(typeInfo, ImmutableList.copyOf(expressions));
+        }
     }
 
     public static AnnotationExpression inspect(ExpressionContext expressionContext, com.github.javaparser.ast.expr.AnnotationExpr ae) {
@@ -162,7 +183,7 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     }
 
     private static Object enumInstance(ParameterizedType type, TypeInfo observedType, String name) {
-        if (type.typeInfo.typeInspection.get().typeNature != TypeNature.ENUM) {
+        if (type.typeInfo.typeInspection.get().typeNature() != TypeNature.ENUM) {
             throw new UnsupportedOperationException();
         }
         if (observedType != type.typeInfo) throw new UnsupportedOperationException("??");

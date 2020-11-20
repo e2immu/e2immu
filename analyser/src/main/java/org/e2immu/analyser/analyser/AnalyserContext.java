@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 
@@ -28,7 +29,7 @@ import java.util.Map;
 /**
  * many default values are there to make testing easier
  */
-public interface AnalyserContext extends AnalysisProvider {
+public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
 
     default Configuration getConfiguration() {
         return new Configuration.Builder().build();
@@ -109,4 +110,17 @@ public interface AnalyserContext extends AnalysisProvider {
             throw new UnsupportedOperationException("Method analysis of " + methodInfo.fullyQualifiedName() + " not yet set");
         }
     }
+
+    default FieldInspection getFieldInspection(FieldInfo fieldInfo) {
+        return fieldInfo.fieldInspection.get();
+    }
+
+    default TypeInspection getTypeInspection(TypeInfo typeInfo) {
+        return typeInfo.typeInspection.get();
+    }
+
+    default MethodInspection getMethodInspection(MethodInfo methodInfo) {
+        return methodInfo.methodInspection.get();
+    }
+
 }

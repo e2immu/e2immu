@@ -23,9 +23,14 @@ import org.e2immu.analyser.util.AddOnceSet;
 
 import java.util.List;
 
-public abstract class AbstractInspectionBuilder implements Inspection {
+public abstract class AbstractInspectionBuilder<B> implements Inspection {
 
     protected final AddOnceSet<AnnotationExpression> annotations = new AddOnceSet<>();
+
+    public B addAnnotation(AnnotationExpression annotationExpression) {
+        annotations.add(annotationExpression);
+        return (B) this; // unchecked cast saves us 4 copies
+    }
 
     @Override
     public List<AnnotationExpression> getAnnotations() {

@@ -198,6 +198,21 @@ public class TypeContext implements InspectionProvider {
         return map;
     }
 
+    @Override
+    public FieldInspection getFieldInspection(FieldInfo fieldInfo) {
+        return null;
+    }
+
+    @Override
+    public TypeInspection getTypeInspection(TypeInfo typeInfo) {
+        return null;
+    }
+
+    @Override
+    public MethodInspection getMethodInspection(MethodInfo methodInfo) {
+        return null;
+    }
+
     public Primitives getPrimitives() {
         return primitives;
     }

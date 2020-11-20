@@ -28,10 +28,8 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.CNF;
 import static org.e2immu.analyser.util.Logger.log;
@@ -63,7 +61,7 @@ public class AndValue extends PrimitiveValue {
     public Value append(EvaluationContext evaluationContext, Value... values) {
 
         // STEP 0: check that all values return boolean!
-        if (Arrays.stream(values).anyMatch(v -> v.type() == null || !Primitives.isBooleanOrBoxedBoolean(v.type()))) {
+        if (Arrays.stream(values).anyMatch(v -> v.type() == null || Primitives.isNotBooleanOrBoxedBoolean(v.type()))) {
             throw new UnsupportedOperationException("Internal error, values are " + Arrays.toString(values));
         }
 

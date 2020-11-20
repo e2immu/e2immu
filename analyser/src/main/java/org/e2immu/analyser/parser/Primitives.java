@@ -70,9 +70,9 @@ public class Primitives {
         return "java.lang.Boolean".equals(typeInfo.fullyQualifiedName);
     }
 
-    public static boolean isBooleanOrBoxedBoolean(ParameterizedType parameterizedType) {
-        if (parameterizedType.typeInfo == null) return false; // for parameterized types
-        return isBoolean(parameterizedType.typeInfo) || isBoxedBoolean(parameterizedType.typeInfo);
+    public static boolean isNotBooleanOrBoxedBoolean(ParameterizedType parameterizedType) {
+        if (parameterizedType.typeInfo == null) return true; // for parameterized types
+        return !isBoolean(parameterizedType.typeInfo) && !isBoxedBoolean(parameterizedType.typeInfo);
     }
 
     public final TypeInfo longTypeInfo = TypeInfo.fromFqn("long");
@@ -176,7 +176,7 @@ public class Primitives {
 
     public final TypeInfo functionalInterface = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_LANG, "FunctionalInterface");
     public final AnnotationExpression functionalInterfaceAnnotationExpression =
-            AnnotationExpression.fromAnalyserExpressions(functionalInterface, List.of());
+            new AnnotationExpressionImpl(functionalInterface, List.of());
 
     public static boolean isFunctionalInterfaceAnnotation(TypeInfo typeInfo) {
         return "java.lang.FunctionalInterface".equals(typeInfo.fullyQualifiedName);
@@ -198,14 +198,13 @@ public class Primitives {
     private MethodInfo createOperator(TypeInfo owner, String name, List<ParameterizedType> parameterizedTypes, ParameterizedType returnType) {
         MethodInfo methodInfo = new MethodInfo(owner, name, true);
         int i = 0;
-        MethodInspection.MethodInspectionBuilder builder = new MethodInspection.MethodInspectionBuilder();
+        MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(methodInfo);
         for (ParameterizedType parameterizedType : parameterizedTypes) {
             ParameterInfo parameterInfo = new ParameterInfo(methodInfo, parameterizedType, "p" + i, i++);
-            parameterInfo.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
-            builder.addParameter(parameterInfo);
+            builder.addParameter(parameterInfo); // inspection built when method is built
         }
         builder.setReturnType(returnType);
-        methodInfo.methodInspection.set(builder.build(methodInfo));
+        methodInfo.methodInspection.set(builder.build());
         return methodInfo;
     }
 
@@ -247,7 +246,7 @@ public class Primitives {
     public final MethodInfo unaryMinusOperatorInt = createOperator(intTypeInfo, "-", List.of(intParameterizedType), intParameterizedType);
 
     public static boolean isUnaryMinusOperatorInt(MethodInfo operator) {
-        return "int.-(int)".equals(operator.fullyQualifiedName()) && operator.methodInspection.get().parameters.size() == 1;
+        return "int.-(int)".equals(operator.fullyQualifiedName()) && operator.methodInspection.get().getParameters().size() == 1;
     }
 
     public final MethodInfo bitWiseNotOperatorInt = createOperator(intTypeInfo, "~", List.of(intParameterizedType), intParameterizedType);
@@ -275,11 +274,11 @@ public class Primitives {
 
     public Primitives() {
         for (TypeInfo ti : primitives) {
-            ti.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
+            ti.typeInspection.set(new TypeInspectionImpl.Builder(ti)
                     .setPackageName(JAVA_LANG)
                     .setTypeNature(TypeNature.PRIMITIVE)
                     .setParentClass(objectParameterizedType)
-                    .build(ti));
+                    .build());
             primitiveByName.put(ti.simpleName, ti);
             TypeAnalysisImpl.Builder builder = new TypeAnalysisImpl.Builder(this, ti);
             ti.typeAnalysis.set(builder);
@@ -301,11 +300,11 @@ public class Primitives {
                 annotationTypeVerify, annotationTypeVerifyAbsent));
         processEnum(annotationModeTypeInfo, List.of(annotationModeDefensive, annotationModeOffensive));
 
-        functionalInterface.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
+        functionalInterface.typeInspection.set(new TypeInspectionImpl.Builder(functionalInterface)
                 .setPackageName("java.lang")
                 .setTypeNature(TypeNature.ANNOTATION)
                 .setParentClass(objectParameterizedType)
-                .build(functionalInterface));
+                .build());
     }
 
     public static boolean isPrimitiveExcludingVoid(ParameterizedType parameterizedType) {
@@ -325,18 +324,17 @@ public class Primitives {
     private void processEnum(TypeInfo typeInfo, List<FieldInfo> fields) {
         MethodInfo valueOf = new MethodInfo(typeInfo, "valueOf", true);
         ParameterInfo valueOf1 = new ParameterInfo(valueOf, stringParameterizedType, "s", 0);
-        valueOf1.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
-        valueOf.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
+        valueOf.methodInspection.set(new MethodInspectionImpl.Builder(valueOf)
                 .setReturnType(typeInfo)
-                .addParameter(valueOf1)
+                .addParameterFluently(valueOf1)
                 .addModifier(MethodModifier.PUBLIC)
-                .build(valueOf));
+                .build());
         MethodInfo name = new MethodInfo(typeInfo, "name", false);
-        name.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
+        name.methodInspection.set(new MethodInspectionImpl.Builder(name)
                 .setReturnType(stringTypeInfo)
                 .addModifier(MethodModifier.PUBLIC)
-                .build(name));
-        TypeInspection.TypeInspectionBuilder typeInspectionBuilder = new TypeInspection.TypeInspectionBuilder()
+                .build());
+        TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo)
                 .setPackageName(ORG_E2IMMU_ANNOTATION)
                 .setTypeNature(TypeNature.ENUM)
                 .addTypeModifier(TypeModifier.PUBLIC)
@@ -344,9 +342,9 @@ public class Primitives {
                 .addMethod(valueOf)
                 .addMethod(name);
         for (FieldInfo fieldInfo : fields) typeInspectionBuilder.addField(fieldInfo);
-        typeInfo.typeInspection.set(typeInspectionBuilder.build(typeInfo));
+        typeInfo.typeInspection.set(typeInspectionBuilder.build());
         for (FieldInfo fieldInfo : fields) {
-            fieldInfo.fieldInspection.set(new FieldInspection.FieldInspectionBuilder()
+            fieldInfo.fieldInspection.set(new FieldInspectionImpl.Builder()
                     .addModifiers(List.of(FieldModifier.STATIC, FieldModifier.FINAL, FieldModifier.PUBLIC))
                     .build());
         }

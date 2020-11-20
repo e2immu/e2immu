@@ -19,10 +19,7 @@
 package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.bytecode.ExpressionFactory;
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.BuilderWithAnnotations;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.parser.TypeContext;
 import org.objectweb.asm.AnnotationVisitor;
@@ -34,16 +31,16 @@ import static org.objectweb.asm.Opcodes.ASM7;
 
 public class MyAnnotationVisitor<T> extends AnnotationVisitor {
     private final TypeContext typeContext;
-    private final BuilderWithAnnotations<T> builderWithAnnotations;
-    private final AnnotationExpression.AnnotationExpressionBuilder expressionBuilder;
+    private final AbstractInspectionBuilder inspectionBuilder;
+    private final AnnotationExpressionImpl.Builder expressionBuilder;
 
-    public MyAnnotationVisitor(TypeContext typeContext, String descriptor, BuilderWithAnnotations<T> builderWithAnnotations) {
+    public MyAnnotationVisitor(TypeContext typeContext, String descriptor, AbstractInspectionBuilder inspectionBuilder) {
         super(ASM7);
         this.typeContext = typeContext;
-        this.builderWithAnnotations = builderWithAnnotations;
+        this.inspectionBuilder = inspectionBuilder;
         log(BYTECODE_INSPECTOR_DEBUG, "My annotation visitor: {}", descriptor);
         ParameterizedType type = ParameterizedTypeFactory.from(typeContext, descriptor).parameterizedType;
-        expressionBuilder = new AnnotationExpression.AnnotationExpressionBuilder(type.typeInfo);
+        expressionBuilder = new AnnotationExpressionImpl.Builder().setTypeInfo(type.typeInfo);
     }
 
     @Override
@@ -66,6 +63,6 @@ public class MyAnnotationVisitor<T> extends AnnotationVisitor {
 
     @Override
     public void visitEnd() {
-        builderWithAnnotations.addAnnotation(expressionBuilder.build());
+        inspectionBuilder.addAnnotation(expressionBuilder.build());
     }
 }

@@ -53,7 +53,7 @@ public interface Analysis {
             if (verified != null) {
                 boolean ok = verified && annotationType == AnnotationType.VERIFY
                         || !verified && annotationType == AnnotationType.VERIFY_ABSENT;
-                annotationsSeen.add(annotation.typeInfo);
+                annotationsSeen.add(annotation.typeInfo());
                 if (ok) {
                     sb.append("/*OK*/");
                 } else {
@@ -67,11 +67,11 @@ public interface Analysis {
                 }
             }
         }
-        if (annotationType == AnnotationType.CONTRACT) annotationsSeen.add(annotation.typeInfo);
+        if (annotationType == AnnotationType.CONTRACT) annotationsSeen.add(annotation.typeInfo());
     }
 
     static AnnotationType e2immuAnnotation(AnnotationExpression annotation) {
-        if (annotation.typeInfo.fullyQualifiedName.startsWith("org.e2immu.annotation") && annotation.expressions.isSet()) {
+        if (annotation.typeInfo().fullyQualifiedName.startsWith("org.e2immu.annotation")) {
             return annotation.extract("type", AnnotationType.VERIFY);
         }
         return null;

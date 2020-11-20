@@ -32,7 +32,7 @@ public class ConditionManager {
 
     private static Value checkBoolean(Value v) {
         if (v != UnknownValue.EMPTY && v != UnknownValue.NO_VALUE
-                && (v.type() == null || !Primitives.isBooleanOrBoxedBoolean(v.type()))) {
+                && (v.type() == null || Primitives.isNotBooleanOrBoxedBoolean(v.type()))) {
             throw new UnsupportedOperationException("Need a boolean value in the condition manager; got " + v);
         }
         return v;

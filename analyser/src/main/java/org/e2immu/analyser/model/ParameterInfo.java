@@ -136,7 +136,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
             parameterAnalysis.get().getAnnotationStream().forEach(entry -> {
                 boolean present = entry.getValue();
                 AnnotationExpression annotation = entry.getKey();
-                if (present && !annotationsSeen.contains(annotation.typeInfo)) {
+                if (present && !annotationsSeen.contains(annotation.typeInfo())) {
                     sb.append(annotation.stream()).append(" ");
                 }
             });
@@ -158,7 +158,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     public Optional<AnnotationExpression> hasInspectedAnnotation(Class<?> annotation) {
         String annotationFQN = annotation.getName();
         Optional<AnnotationExpression> fromParameter = getInspection().getAnnotations().stream()
-                .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(annotationFQN))
+                .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(annotationFQN))
                 .findFirst();
         if (fromParameter.isPresent()) return fromParameter;
         if (NotNull.class.equals(annotation)) {

@@ -139,7 +139,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 list = entry.getValue().entrySet().stream().map(e -> new MemberValuePair(e.getKey(),
                         new StringConstant(primitives, e.getValue()))).collect(Collectors.toList());
             }
-            AnnotationExpression expression = AnnotationExpression.fromAnalyserExpressions(
+            AnnotationExpression expression = new AnnotationExpressionImpl(
                     e2ImmuAnnotationExpressions.getFullyQualified(entry.getKey().getCanonicalName()), list);
             annotations.put(expression, true);
         }
@@ -160,7 +160,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         boolean eventual = this instanceof TypeAnalysis && ((TypeAnalysis) this).isEventual();
         if (!eventual) throw new UnsupportedOperationException("??");
         String mark = ((TypeAnalysis) this).allLabelsRequiredForImmutable();
-        AnnotationExpression ae = AnnotationExpression.fromAnalyserExpressions(e2ImmuAnnotationExpressions.independent.get().typeInfo,
+        AnnotationExpression ae = new AnnotationExpressionImpl(e2ImmuAnnotationExpressions.independent.get().typeInfo(),
                 List.of(new MemberValuePair("after", new StringConstant(primitives, mark))));
         annotations.put(ae, true);
     }
@@ -187,65 +187,65 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                 int trueFalse = annotationType == AnnotationType.CONTRACT_ABSENT ? Level.FALSE : Level.TRUE;
                 int falseTrue = annotationType != AnnotationType.CONTRACT_ABSENT ? Level.FALSE : Level.TRUE;
 
-                TypeInfo t = annotationExpression.typeInfo;
-                if (e2ImmuAnnotationExpressions.e1Immutable.get().typeInfo == t) {
+                TypeInfo t = annotationExpression.typeInfo();
+                if (e2ImmuAnnotationExpressions.e1Immutable.get().typeInfo() == t) {
                     immutable = Math.max(0, immutable);
-                } else if (e2ImmuAnnotationExpressions.mutableModifiesArguments.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.mutableModifiesArguments.get().typeInfo() == t) {
                     immutable = -1;
                     container = false;
-                } else if (e2ImmuAnnotationExpressions.e2Immutable.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.e2Immutable.get().typeInfo() == t) {
                     immutable = 1;
-                } else if (e2ImmuAnnotationExpressions.e2Container.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.e2Container.get().typeInfo() == t) {
                     immutable = 1;
                     container = true;
-                } else if (e2ImmuAnnotationExpressions.e1Container.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.e1Container.get().typeInfo() == t) {
                     immutable = Math.max(0, immutable);
                     container = true;
-                } else if (e2ImmuAnnotationExpressions.container.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.container.get().typeInfo() == t) {
                     container = true;
-                } else if (e2ImmuAnnotationExpressions.nullable.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.nullable.get().typeInfo() == t) {
                     notNull = MultiLevel.NULLABLE;
-                } else if (e2ImmuAnnotationExpressions.notNull.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.notNull.get().typeInfo() == t) {
                     notNull = MultiLevel.EFFECTIVELY_NOT_NULL;
-                } else if (e2ImmuAnnotationExpressions.notNull1.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.notNull1.get().typeInfo() == t) {
                     notNull = MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
-                } else if (e2ImmuAnnotationExpressions.notNull2.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.notNull2.get().typeInfo() == t) {
                     notNull = MultiLevel.EFFECTIVELY_CONTENT2_NOT_NULL;
-                } else if (e2ImmuAnnotationExpressions.notModified.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.notModified.get().typeInfo() == t) {
                     properties.put(VariableProperty.MODIFIED, falseTrue);
-                } else if (e2ImmuAnnotationExpressions.modified.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.modified.get().typeInfo() == t) {
                     properties.put(VariableProperty.MODIFIED, trueFalse);
-                } else if (e2ImmuAnnotationExpressions.effectivelyFinal.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.effectivelyFinal.get().typeInfo() == t) {
                     properties.put(VariableProperty.FINAL, trueFalse);
-                } else if (e2ImmuAnnotationExpressions.variableField.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.variableField.get().typeInfo() == t) {
                     properties.put(VariableProperty.FINAL, falseTrue);
-                } else if (e2ImmuAnnotationExpressions.constant.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.constant.get().typeInfo() == t) {
                     properties.put(VariableProperty.CONSTANT, trueFalse);
-                } else if (e2ImmuAnnotationExpressions.extensionClass.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.extensionClass.get().typeInfo() == t) {
                     properties.put(VariableProperty.EXTENSION_CLASS, trueFalse);
-                } else if (e2ImmuAnnotationExpressions.fluent.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.fluent.get().typeInfo() == t) {
                     properties.put(VariableProperty.FLUENT, trueFalse);
-                } else if (e2ImmuAnnotationExpressions.identity.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.identity.get().typeInfo() == t) {
                     properties.put(VariableProperty.IDENTITY, trueFalse);
-                } else if (e2ImmuAnnotationExpressions.ignoreModifications.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.ignoreModifications.get().typeInfo() == t) {
                     properties.put(VariableProperty.IGNORE_MODIFICATIONS, trueFalse);
-                } else if (e2ImmuAnnotationExpressions.independent.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.independent.get().typeInfo() == t) {
                     properties.put(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
-                } else if (e2ImmuAnnotationExpressions.dependent.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.dependent.get().typeInfo() == t) {
                     properties.put(VariableProperty.INDEPENDENT, MultiLevel.FALSE);
-                } else if (e2ImmuAnnotationExpressions.mark.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.mark.get().typeInfo() == t) {
                     mark = annotationExpression;
-                } else if (e2ImmuAnnotationExpressions.only.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.only.get().typeInfo() == t) {
                     only = annotationExpression;
-                } else if (e2ImmuAnnotationExpressions.singleton.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.singleton.get().typeInfo() == t) {
                     properties.put(VariableProperty.SINGLETON, trueFalse);
-                } else if (e2ImmuAnnotationExpressions.utilityClass.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.utilityClass.get().typeInfo() == t) {
                     properties.put(VariableProperty.UTILITY_CLASS, trueFalse);
-                } else if (e2ImmuAnnotationExpressions.linked.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.linked.get().typeInfo() == t) {
                     properties.put(VariableProperty.LINKED, trueFalse);
-                } else if (e2ImmuAnnotationExpressions.notModified1.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.notModified1.get().typeInfo() == t) {
                     properties.put(VariableProperty.NOT_MODIFIED_1, trueFalse);
-                } else if (e2ImmuAnnotationExpressions.precondition.get().typeInfo == t) {
+                } else if (e2ImmuAnnotationExpressions.precondition.get().typeInfo() == t) {
                     //String value = annotationExpression.extract("value", "");
                     throw new UnsupportedOperationException("Not yet implemented");
                 } else throw new UnsupportedOperationException("TODO: " + t.fullyQualifiedName);

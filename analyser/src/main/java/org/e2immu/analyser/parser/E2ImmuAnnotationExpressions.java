@@ -1,14 +1,13 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.FieldReference;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.FieldAccess;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.util.Lazy;
 import org.e2immu.annotation.*;
+import org.e2immu.annotation.Constant;
+import org.e2immu.annotation.Variable;
 
 import java.util.List;
 import java.util.Objects;
@@ -71,7 +70,7 @@ public class E2ImmuAnnotationExpressions {
         FieldReference computedRef = new FieldReference(annotationTypeComputed, null);
         FieldAccess computedAccess = new FieldAccess(new TypeExpression(annotationType.asParameterizedType()), computedRef);
         // NOTE: we've added an import statement in TypeInfo.imports() for this...
-        return AnnotationExpression.fromAnalyserExpressions(typeStore.get(clazz.getCanonicalName()),
+        return new AnnotationExpressionImpl(typeStore.get(clazz.getCanonicalName()),
                 List.of(new MemberValuePair("type", computedAccess)));
     }
 

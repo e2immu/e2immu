@@ -36,7 +36,6 @@ public abstract class HasAnnotations {
     @Mark("freeze")
     void freeze() {
         annotations = ImmutableList.copyOf(annotations);
-        annotations.forEach(Annotation::freeze);
     }
 
     public List<Annotation> getAnnotations() {
@@ -46,19 +45,19 @@ public abstract class HasAnnotations {
     protected void addAnnotations(List<AnnotationExpression> inspected, List<AnnotationExpression> analysed) {
         Set<String> e2immuAnnotationsWritten = new HashSet<>();
         for (AnnotationExpression ae : inspected) {
-            boolean accept = ae.typeInfo.fullyQualifiedName.startsWith(AnnotationType.class.getPackageName())
+            boolean accept = ae.typeInfo().fullyQualifiedName.startsWith(AnnotationType.class.getPackageName())
                     && !ae.isVerifyAbsent();
             if (accept) {
-                e2immuAnnotationsWritten.add(ae.typeInfo.fullyQualifiedName);
-                Annotation annotation = new Annotation(ae);
+                e2immuAnnotationsWritten.add(ae.typeInfo().fullyQualifiedName);
+                Annotation annotation = Annotation.from(ae);
                 annotations.add(annotation);
             }
         }
         // these are always our annotations, typically of type COMPUTED
         // but the reader will make them CONTRACT...
         for (AnnotationExpression ae : analysed) {
-            if (!e2immuAnnotationsWritten.contains(ae.typeInfo.fullyQualifiedName)) {
-                Annotation annotation = new Annotation(ae);
+            if (!e2immuAnnotationsWritten.contains(ae.typeInfo().fullyQualifiedName)) {
+                Annotation annotation = Annotation.from(ae);
                 annotations.add(annotation);
             }
         }

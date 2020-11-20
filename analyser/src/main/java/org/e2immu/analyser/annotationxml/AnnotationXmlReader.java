@@ -148,8 +148,8 @@ public class AnnotationXmlReader implements AnnotationStore {
                         Node nameAttribute = annotationNode.getAttributes() == null ? null : annotationNode.getAttributes().getNamedItem("name");
                         if (nameAttribute != null) {
                             String annotationType = nameAttribute.getNodeValue();
-                            Annotation annotation = new Annotation(annotationType);
-                            theType.getAnnotations().add(annotation);
+                            Annotation.Builder annotationBuilder = new Annotation.Builder(annotationType);
+
                             countAnnotations++;
                             NodeList valueNodes = annotationNode.getChildNodes();
                             for (int k = 0; k < valueNodes.getLength(); k++) {
@@ -162,14 +162,14 @@ public class AnnotationXmlReader implements AnnotationStore {
                                         String valValue = valValNode.getNodeValue();
                                         if (valValue != null) {
                                             Value value = new Value(valName, valValue);
-                                            annotation.getValues().add(value);
+                                            annotationBuilder.addValue(value);
                                         }
                                     } else {
                                         LOGGER.warn("Have value tag without value? " + valueNode);
                                     }
                                 }
                             }
-
+                            theType.getAnnotations().add(annotationBuilder.build());
                         } else {
                             LOGGER.warn("Attribute 'name' missing?");
                         }
@@ -221,17 +221,17 @@ public class AnnotationXmlReader implements AnnotationStore {
     public Map<String, Integer> summary() {
         Map<String, Integer> annotationCounts = new HashMap<>();
         typeItemMap.values().forEach(typeItem -> {
-            typeItem.getAnnotations().forEach(annotation -> increment(annotationCounts, "T " + annotation.name));
+            typeItem.getAnnotations().forEach(annotation -> increment(annotationCounts, "T " + annotation.name()));
 
             typeItem.getMethodItems().values().forEach(methodItem -> {
-                methodItem.getAnnotations().forEach(annotation -> increment(annotationCounts, "M " + annotation.name));
+                methodItem.getAnnotations().forEach(annotation -> increment(annotationCounts, "M " + annotation.name()));
 
                 methodItem.getParameterItems().forEach(parameterItem -> {
-                    parameterItem.getAnnotations().forEach(annotation -> increment(annotationCounts, "P " + annotation.name));
+                    parameterItem.getAnnotations().forEach(annotation -> increment(annotationCounts, "P " + annotation.name()));
                 });
             });
             typeItem.getFieldItems().values().forEach(fieldItem -> {
-                fieldItem.getAnnotations().forEach(annotation -> increment(annotationCounts, "F " + annotation.name));
+                fieldItem.getAnnotations().forEach(annotation -> increment(annotationCounts, "F " + annotation.name()));
             });
         });
         return annotationCounts;

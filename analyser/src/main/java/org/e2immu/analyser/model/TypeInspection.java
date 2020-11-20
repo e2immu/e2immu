@@ -49,7 +49,6 @@ public interface TypeInspection extends Inspection {
     List<TypeParameter> typeParameters();
     List<ParameterizedType> interfacesImplemented();
 
-    Set<MethodInfo> overrides(MethodInfo methodInfo);
     List<TypeInfo> superTypes();
 
     // only valid for types that have been defined, and empty when not the primary type
@@ -98,5 +97,17 @@ public interface TypeInspection extends Inspection {
     Stream<MethodInfo> methodsInFieldInitializers(boolean alsoArtificial);
 
     Set<ParameterizedType> explicitTypes();
-    
+
+
+    default boolean haveNonStaticNonDefaultMethods() {
+        if (methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                .anyMatch(m -> !m.isStatic && !m.isDefaultImplementation)) return true;
+        for (ParameterizedType superInterface : interfacesImplemented()) {
+            assert superInterface.typeInfo != null && superInterface.typeInfo.hasBeenInspected();
+            if (superInterface.typeInfo.typeInspection.get().haveNonStaticNonDefaultMethods()) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

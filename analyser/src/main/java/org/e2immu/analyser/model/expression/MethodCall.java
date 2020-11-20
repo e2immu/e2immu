@@ -60,7 +60,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                       @NotNull Expression computedScope,
                       @NotNull MethodTypeParameterMap methodTypeParameterMap,
                       @NotNull List<Expression> parameterExpressions) {
-        super(methodTypeParameterMap.methodInfo, methodTypeParameterMap.getConcreteReturnType());
+        super(methodTypeParameterMap.methodInspectionBuilder.getMethodInfo(), methodTypeParameterMap.getConcreteReturnType());
         this.object = object;
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         this.computedScope = Objects.requireNonNull(computedScope);
@@ -247,7 +247,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Objects.requireNonNull(instance, "Modifying method on constant or primitive? Impossible");
 
         AtomicReference<Value> newState = new AtomicReference<>(instance.state);
-        methodInfo.methodInspection.get().companionMethods.keySet().stream()
+        methodInfo.methodInspection.get().getCompanionMethods().keySet().stream()
                 .filter(e -> e.action() == CompanionMethodName.Action.MODIFICATION || e.action() == CompanionMethodName.Action.POSTCONDITION)
                 .forEach(companionMethodName -> {
                     CompanionAnalysis companionAnalysis = methodAnalysis.getCompanionAnalyses().get(companionMethodName);
@@ -356,8 +356,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private void checkOnly(EvaluationResult.Builder builder, ObjectFlow objectFlow) {
-        Optional<AnnotationExpression> oOnly = methodInfo.methodInspection.get().annotations.stream()
-                .filter(ae -> ae.typeInfo.fullyQualifiedName.equals(Only.class.getName())).findFirst();
+        Optional<AnnotationExpression> oOnly = methodInfo.methodInspection.get().getAnnotations().stream()
+                .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(Only.class.getName())).findFirst();
         if (oOnly.isPresent()) {
             AnnotationExpression ae = oOnly.get();
             String before = ae.extract("before", "");
@@ -559,7 +559,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     boolean isNotNull = MultiLevel.isEffectivelyNotNull(methodNotNull);
                     if (!isNotNull) {
                         builder.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION,
-                                "Result of method call " + methodInspection.distinguishingName);
+                                "Result of method call " + methodInspection.getFullyQualifiedName());
                     }
                 } // else: delaying is fine
             }

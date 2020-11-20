@@ -100,14 +100,14 @@ public class Test_13_MethodOverloadAndSuperTypes {
         TypeInfo methodOverload = types.get(0).primaryType;
         Assert.assertSame(methodOverload, methodOverloadOrig);
 
-        MethodInfo hashCode = methodOverload.typeInspection.getPotentiallyRun().methods
+        MethodInfo hashCode = methodOverload.typeInspection.get().methods()
                 .stream().filter(m -> m.name.equals("hashCode")).findFirst().orElseThrow();
         Set<MethodInfo> overloadsOfHashCode = methodOverload.overrides(hashCode, true);
         LOGGER.info("Overloads of hashCode: {}", overloadsOfHashCode);
         Assert.assertEquals("[java.lang.Object.hashCode()]", overloadsOfHashCode.toString());
 
         // method: C1.method(int)
-        TypeInfo c1 = methodOverload.typeInspection.getPotentiallyRun().subTypes.stream().filter(t -> t.simpleName.equals("C1")).findFirst().orElseThrow();
+        TypeInfo c1 = methodOverload.typeInspection.get().subTypes().stream().filter(t -> t.simpleName.equals("C1")).findFirst().orElseThrow();
 
         List<TypeInfo> superTypesC1 = c1.superTypesExcludingJavaLangObject();
         Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.I1]", superTypesC1.toString());
@@ -116,17 +116,17 @@ public class Test_13_MethodOverloadAndSuperTypes {
 
 
         LOGGER.info("Distinguishing names of C1 methods: " +
-                c1.typeInspection.getPotentiallyRun().methods.stream().map(MethodInfo::distinguishingName).collect(Collectors.joining(", ")));
-        MethodInfo m1 = c1.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.distinguishingName()
+                c1.typeInspection.get().methods().stream().map(MethodInfo::distinguishingName).collect(Collectors.joining(", ")));
+        MethodInfo m1 = c1.typeInspection.get().methods().stream().filter(m -> m.distinguishingName()
                 .equals("org.e2immu.analyser.testexample.MethodOverload.C1.method(int)")).findFirst().orElseThrow();
         Set<MethodInfo> overloadsOfM1 = c1.overrides(m1, true);
         LOGGER.info("Overloads of m1: {}", overloadsOfM1);
         Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.I1.method(int)]", overloadsOfM1.toString());
 
         // method C2.toString()
-        TypeInfo c2 = methodOverload.typeInspection.getPotentiallyRun().subTypes.stream().filter(t -> t.simpleName.equals("C2")).findFirst().orElseThrow();
+        TypeInfo c2 = methodOverload.typeInspection.get().subTypes().stream().filter(t -> t.simpleName.equals("C2")).findFirst().orElseThrow();
         LOGGER.info("Distinguishing names of C2 methods: " +
-                c2.typeInspection.getPotentiallyRun().methods.stream().map(MethodInfo::distinguishingName).collect(Collectors.joining(", ")));
+                c2.typeInspection.get().methods().stream().map(MethodInfo::distinguishingName).collect(Collectors.joining(", ")));
 
         List<TypeInfo> superTypesC2 = c2.superTypesExcludingJavaLangObject();
         Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.C1, org.e2immu.analyser.testexample.MethodOverload.I1]", superTypesC2.toString());

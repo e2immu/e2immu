@@ -27,7 +27,7 @@ import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.ExpressionContext;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.VariableContext;
 
 import java.util.ArrayList;
@@ -52,7 +52,7 @@ public class ParseLambdaExpr {
         boolean allDefined = true;
         List<ParameterizedType> types = new ArrayList<>();
 
-        MethodInfo owner = createAnonymousTypeAndApplyMethod(singleAbstractMethod.methodInfo.name,
+        MethodInfo owner = createAnonymousTypeAndApplyMethod(singleAbstractMethod.methodInspectionBuilder.getMethodInfo().name,
                 expressionContext.enclosingType, expressionContext.topLevel.newIndex(expressionContext.enclosingType));
 
         for (Parameter parameter : lambdaExpr.getParameters()) {
@@ -71,7 +71,6 @@ public class ParseLambdaExpr {
             }
             types.add(parameterType);
             ParameterInfo parameterInfo = new ParameterInfo(owner, parameterType, parameter.getName().asString(), cnt++);
-            parameterInfo.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
             // parameter analysis will be set later
             parameters.add(parameterInfo);
             newVariableContext.add(parameterInfo);
@@ -96,10 +95,10 @@ public class ParseLambdaExpr {
             block = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expr)).build();
         } else {
             block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());
-            inferredReturnType = block.mostSpecificReturnType(expressionContext.typeContext.getPrimitives());
+            inferredReturnType = block.mostSpecificReturnType(expressionContext.typeContext);
         }
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, inferredReturnType);
-        TypeInfo anonymousType = continueCreationOfAnonymousType(expressionContext.typeContext.getPrimitives(),
+        TypeInfo anonymousType = continueCreationOfAnonymousType(expressionContext.typeContext,
                 expressionContext.enclosingType, functionalType, owner, parameters, block, inferredReturnType);
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}", functionalType, anonymousType.fullyQualifiedName);
 
@@ -119,30 +118,32 @@ public class ParseLambdaExpr {
         return new MethodInfo(typeInfo, name, false);
     }
 
-    private static TypeInfo continueCreationOfAnonymousType(Primitives primitives,
+    private static TypeInfo continueCreationOfAnonymousType(InspectionProvider inspectionProvider,
                                                             TypeInfo enclosingType,
                                                             ParameterizedType functionalInterfaceType,
                                                             MethodInfo methodInfo,
                                                             List<ParameterInfo> parameters,
                                                             Block block,
                                                             ParameterizedType returnType) {
-        MethodInspection.MethodInspectionBuilder methodInspectionBuilder = new MethodInspection.MethodInspectionBuilder();
-        ParameterizedType bestReturnType = returnType.mostSpecific(primitives,
-                functionalInterfaceType.findSingleAbstractMethodOfInterface().methodInfo.returnType());
+        MethodInspectionImpl.Builder methodInspectionBuilder = new MethodInspectionImpl.Builder(methodInfo);
+        MethodTypeParameterMap sam = functionalInterfaceType.findSingleAbstractMethodOfInterface(inspectionProvider);
+        ParameterizedType bestReturnType = returnType.mostSpecific(inspectionProvider,
+                sam.methodInspectionBuilder.getMethodInfo().returnType());
         methodInspectionBuilder.setReturnType(Objects.requireNonNull(bestReturnType));
         methodInspectionBuilder.addParameters(parameters);
         methodInspectionBuilder.setBlock(block);
-        methodInfo.methodInspection.set(methodInspectionBuilder.build(methodInfo));
+        methodInfo.methodInspection.set(methodInspectionBuilder.build());
 
-        TypeInspection.TypeInspectionBuilder typeInspectionBuilder = new TypeInspection.TypeInspectionBuilder();
-        typeInspectionBuilder.setParentClass(primitives.objectParameterizedType);
+        TypeInfo typeInfo = methodInfo.typeInfo;
+        TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo);
+        typeInspectionBuilder.setParentClass(inspectionProvider.getPrimitives().objectParameterizedType);
         typeInspectionBuilder.setTypeNature(TypeNature.CLASS);
         typeInspectionBuilder.addInterfaceImplemented(functionalInterfaceType);
         typeInspectionBuilder.setEnclosingType(enclosingType);
         typeInspectionBuilder.addMethod(methodInfo);
 
-        TypeInfo typeInfo = methodInfo.typeInfo;
-        typeInfo.typeInspection.set(typeInspectionBuilder.build(typeInfo));
+
+        typeInfo.typeInspection.set(typeInspectionBuilder.build());
         return typeInfo;
     }
 }

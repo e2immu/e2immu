@@ -37,7 +37,7 @@ import java.util.stream.Stream;
  * Defaults because of tests
  */
 public interface EvaluationContext {
-    static final Logger LOGGER = LoggerFactory.getLogger(EvaluationContext.class);
+    Logger LOGGER = LoggerFactory.getLogger(EvaluationContext.class);
 
     default int getIteration() {
         return 0;
@@ -98,7 +98,7 @@ public interface EvaluationContext {
     default Stream<ParameterAnalysis> getParameterAnalyses(MethodInfo methodInfo) {
         MethodAnalyser methodAnalyser = getAnalyserContext().getMethodAnalysers().get(methodInfo);
         return methodAnalyser != null ? methodAnalyser.getParameterAnalysers().stream().map(ParameterAnalyser::getParameterAnalysis)
-                : methodInfo.methodInspection.get().parameters.stream().map(parameterInfo -> parameterInfo.parameterAnalysis.get());
+                : methodInfo.methodInspection.get().getParameters().stream().map(parameterInfo -> parameterInfo.parameterAnalysis.get());
     }
 
     default ParameterAnalysis getParameterAnalysis(ParameterInfo parameterInfo) {

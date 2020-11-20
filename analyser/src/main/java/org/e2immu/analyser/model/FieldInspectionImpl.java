@@ -23,10 +23,11 @@ import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.annotation.NotNull;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class FieldInspectionImpl extends InspectionImpl {
+public class FieldInspectionImpl extends InspectionImpl implements FieldInspection {
 
     public static final com.github.javaparser.ast.expr.Expression EMPTY = new com.github.javaparser.ast.expr.Expression() {
         @Override
@@ -40,40 +41,38 @@ public class FieldInspectionImpl extends InspectionImpl {
         }
     };
 
-    @NotNull
-    public final List<FieldModifier> modifiers;
-    public final FieldInspection.FieldInitialiser initialiser;
-    @NotNull
-    public final FieldModifier access;
-
-    @NotNull
-    public final List<AnnotationExpression> annotations;
+    private final List<FieldModifier> modifiers;
+    private final FieldInspection.FieldInitialiser initialiser;
+    private final FieldModifier access;
 
     private FieldInspectionImpl(@NotNull List<FieldModifier> modifiers,
                                 @NotNull FieldInspection.FieldInitialiser initialiser,
-                                @NotNull List<AnnotationExpression> annotations) {
+                                @NotNull List<AnnotationExpression> annotations,
+                                @NotNull FieldModifier access) {
         super(annotations);
         Objects.requireNonNull(modifiers);
-        this.annotations = annotations;
         this.initialiser = initialiser;
         this.modifiers = modifiers;
-        access = computeAccess();
+        this.access = Objects.requireNonNull(access);
     }
 
-    private FieldModifier computeAccess() {
-        if (modifiers.contains(FieldModifier.PRIVATE)) return FieldModifier.PRIVATE;
-        if (modifiers.contains(FieldModifier.PROTECTED)) return FieldModifier.PROTECTED;
-        if (modifiers.contains(FieldModifier.PUBLIC)) return FieldModifier.PUBLIC;
-        return FieldModifier.PACKAGE;
+    @Override
+    public List<FieldModifier> getModifiers() {
+        return modifiers;
     }
 
-    public FieldInspectionImpl copy(List<AnnotationExpression> alternativeAnnotations) {
-        return new FieldInspectionImpl(modifiers, initialiser, ImmutableList.copyOf(alternativeAnnotations));
+    @Override
+    public FieldInitialiser getInitialiser() {
+        return initialiser;
     }
 
-    public static class Builder implements BuilderWithAnnotations<Builder> {
-        private final ImmutableList.Builder<FieldModifier> modifiers = new ImmutableList.Builder<>();
-        private final ImmutableList.Builder<AnnotationExpression> annotations = new ImmutableList.Builder<>();
+    @Override
+    public FieldModifier getAccess() {
+        return access;
+    }
+
+    public static class Builder extends AbstractInspectionBuilder<Builder> implements FieldInspection {
+        private final List<FieldModifier> modifiers = new ArrayList<>();
         private com.github.javaparser.ast.expr.Expression initializer;
         private Expression inspectedInitialiser;
         private FieldInspection.FieldInitialiser fieldInitialiser;
@@ -92,14 +91,8 @@ public class FieldInspectionImpl extends InspectionImpl {
             return this;
         }
 
-        @Override
-        public Builder addAnnotation(AnnotationExpression annotation) {
-            this.annotations.add(annotation);
-            return this;
-        }
-
         public Builder addAnnotations(List<AnnotationExpression> annotations) {
-            this.annotations.addAll(annotations);
+            annotations.forEach(this::addAnnotation);
             return this;
         }
 
@@ -119,10 +112,33 @@ public class FieldInspectionImpl extends InspectionImpl {
 
         @NotNull
         public FieldInspectionImpl build() {
-            return new FieldInspectionImpl(modifiers.build(),
+            return new FieldInspectionImpl(getModifiers(),
                     fieldInitialiser != null ? fieldInitialiser :
                             new FieldInspection.FieldInitialiser(inspectedInitialiser, null, false),
-                    annotations.build());
+                    getAnnotations(), getAccess());
+        }
+
+        @Override
+        public List<FieldModifier> getModifiers() {
+            return ImmutableList.copyOf(modifiers);
+        }
+
+        @Override
+        public FieldInitialiser getInitialiser() {
+            return fieldInitialiser;
+        }
+
+        @Override
+        public FieldModifier getAccess() {
+            if (modifiers.contains(FieldModifier.PRIVATE)) return FieldModifier.PRIVATE;
+            if (modifiers.contains(FieldModifier.PROTECTED)) return FieldModifier.PROTECTED;
+            if (modifiers.contains(FieldModifier.PUBLIC)) return FieldModifier.PUBLIC;
+            return FieldModifier.PACKAGE;
+        }
+
+        @Override
+        public List<AnnotationExpression> getAnnotations() {
+            return null;
         }
     }
 }

@@ -31,11 +31,12 @@ public class ParseSwitchExpr {
     public static Expression parse(ExpressionContext expressionContext, SwitchExpr switchExpr) {
         Expression selector = expressionContext.parseExpression(switchExpr.getSelector());
         ExpressionContext newExpressionContext;
-        TypeInfo enumType = ExpressionContext.selectorIsEnumType(selector);
+        TypeInfo enumType = expressionContext.selectorIsEnumType(selector);
+        TypeInspection enumInspection = expressionContext.typeContext.getTypeInspection(enumType);
         if (enumType != null) {
             newExpressionContext = expressionContext.newVariableContext("switch-expression");
             Variable scope = new This(enumType);
-            enumType.typeInspection.getPotentiallyRun().fields
+            enumInspection.fields()
                     .forEach(fieldInfo -> newExpressionContext.variableContext.add(new FieldReference(fieldInfo, scope)));
         } else {
             newExpressionContext = expressionContext;

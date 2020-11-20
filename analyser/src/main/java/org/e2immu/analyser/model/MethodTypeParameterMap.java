@@ -47,11 +47,11 @@ import java.util.stream.Collectors;
 //
 public class MethodTypeParameterMap {
 
-    public final MethodInspectionImpl.Builder methodInspectionBuilder;
+    public final MethodInspection methodInspectionBuilder;
     @NotNull
     public final Map<NamedType, ParameterizedType> concreteTypes;
 
-    public MethodTypeParameterMap(MethodInspectionImpl.Builder methodInspectionBuilder, @NotNull Map<NamedType, ParameterizedType> concreteTypes) {
+    public MethodTypeParameterMap(MethodInspection methodInspectionBuilder, @NotNull Map<NamedType, ParameterizedType> concreteTypes) {
         this.methodInspectionBuilder = methodInspectionBuilder; // can be null, for SAMs
         this.concreteTypes = ImmutableMap.copyOf(concreteTypes);
     }

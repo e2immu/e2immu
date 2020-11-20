@@ -45,7 +45,7 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
         String parameters;
         if (methodInfo.methodInspection.isSet()) {
             List<String> parameterTypes = new ArrayList<>();
-            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().getParameters()) {
                 ParameterItem parameterItem = new ParameterItem(parameterInfo);
                 parameterItems.add(parameterItem);
                 parameterTypes.add(parameterInfo.parameterizedType.stream());
@@ -55,7 +55,7 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
             parameters = "";
         }
         name = methodInfo.name + "(" + parameters + ")";
-        addAnnotations(methodInfo.methodInspection.isSet() ? methodInfo.methodInspection.get().annotations : List.of(),
+        addAnnotations(methodInfo.methodInspection.isSet() ? methodInfo.methodInspection.get().getAnnotations() : List.of(),
                 methodInfo.methodAnalysis.isSet() ?
                         methodInfo.methodAnalysis.get().getAnnotationStream().filter(e -> e.getValue() == Boolean.TRUE)
                                 .map(Map.Entry::getKey)

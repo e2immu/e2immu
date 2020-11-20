@@ -520,7 +520,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         Set<MethodInfo> result = recursiveOverridesCall(methodInfo, Map.of());
         Set<MethodInfo> immutable = ImmutableSet.copyOf(result);
         if (ourOwnLevel && cacheResult) {
-            typeInspection.get().overrides.put(methodInfo, immutable);
+            typeInspection.get().overrides().put(methodInfo, immutable);
         }
         return immutable;
     }
@@ -566,13 +566,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public FieldInfo getFieldByName(String name, boolean complain) {
-        Optional<FieldInfo> result = typeInspection.get().fields.stream().filter(fieldInfo -> fieldInfo.name.equals(name)).findFirst();
+        Optional<FieldInfo> result = typeInspection.get().fields().stream().filter(fieldInfo -> fieldInfo.name.equals(name)).findFirst();
         return complain ? result.orElseThrow() : result.orElse(null);
     }
 
     public TypeInfo primaryType() {
         if (typeInspection.isSet()) {
-            Either<String, TypeInfo> packageNameOrEnclosingType = typeInspection.get().packageNameOrEnclosingType;
+            Either<String, TypeInfo> packageNameOrEnclosingType = typeInspection.get().packageNameOrEnclosingType();
             if (packageNameOrEnclosingType.isLeft()) return this;
             return packageNameOrEnclosingType.getRight().primaryType();
         }
@@ -660,21 +660,21 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public boolean isNestedType() {
-        return typeInspection.get().packageNameOrEnclosingType.isRight();
+        return typeInspection.get().packageNameOrEnclosingType().isRight();
     }
 
     public List<TypeInfo> allTypesInPrimaryType() {
-        return primaryType().typeInspection.get().allTypesInPrimaryType;
+        return primaryType().typeInspection.get().allTypesInPrimaryType();
     }
 
     public boolean isPrivate() {
-        return typeInspection.get().modifiers.contains(TypeModifier.PRIVATE);
+        return typeInspection.get().modifiers().contains(TypeModifier.PRIVATE);
     }
 
     public boolean isAnEnclosingTypeOf(TypeInfo typeInfo) {
         if (typeInfo == this) return true;
-        if (typeInfo.typeInspection.get().packageNameOrEnclosingType.isLeft()) return false;
-        return isAnEnclosingTypeOf(typeInfo.typeInspection.get().packageNameOrEnclosingType.getRight());
+        if (typeInfo.typeInspection.get().packageNameOrEnclosingType().isLeft()) return false;
+        return isAnEnclosingTypeOf(typeInfo.typeInspection.get().packageNameOrEnclosingType().getRight());
     }
 
     public boolean isRecord() {
@@ -682,11 +682,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public boolean isInterface() {
-        return typeInspection.get().typeNature == TypeNature.INTERFACE;
+        return typeInspection.get().typeNature() == TypeNature.INTERFACE;
     }
 
     public boolean isFunctionalInterface() {
-        if (typeInspection.get("isFunctionalInterface on " + fullyQualifiedName).typeNature != TypeNature.INTERFACE) {
+        if (typeInspection.get("isFunctionalInterface on " + fullyQualifiedName).typeNature() != TypeNature.INTERFACE) {
             return false;
         }
         return typeInspection.get().getAnnotations().stream()
@@ -708,7 +708,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             }
         }
         // for fields we only add those owned by the field itself (i.e. with an initialiser)
-        for (FieldInfo fieldInfo : typeInspection.get().fields) {
+        for (FieldInfo fieldInfo : typeInspection.get().fields()) {
             FieldAnalysis fieldAnalysis = analysisProvider.getFieldAnalysis(fieldInfo);
             ObjectFlow objectFlow = fieldAnalysis.getObjectFlow();
             if (objectFlow != null && objectFlow.location.info == fieldInfo) {
@@ -716,7 +716,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             }
             result.addAll(fieldAnalysis.getInternalObjectFlows());
         }
-        for (TypeInfo subType : typeInspection.get().subTypes) {
+        for (TypeInfo subType : typeInspection.get().subTypes()) {
             result.addAll(subType.objectFlows(analysisProvider));
         }
         return result;
@@ -750,9 +750,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             // it's too late now
             return computePackageName();
         }
-        if (typeInspection.get().packageNameOrEnclosingType.isLeft())
-            return typeInspection.get().packageNameOrEnclosingType.getLeft();
-        return typeInspection.get().packageNameOrEnclosingType.getRight().packageName();
+        if (typeInspection.get().packageNameOrEnclosingType().isLeft())
+            return typeInspection.get().packageNameOrEnclosingType().getLeft();
+        return typeInspection.get().packageNameOrEnclosingType().getRight().packageName();
     }
 
     // this type implements a functional interface, and we need to find the single abstract method
@@ -763,13 +763,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public MethodInfo findConstructor(int parameters) {
-        return typeInspection.get().constructors.stream()
+        return typeInspection.get().constructors().stream()
                 .filter(c -> c.methodInspection.get().getParameters().size() == parameters)
                 .findFirst().orElseThrow();
     }
 
     public boolean isPrimaryType() {
-        return typeInspection.isSet() && typeInspection.get().packageNameOrEnclosingType.isLeft();
+        return typeInspection.isSet() && typeInspection.get().packageNameOrEnclosingType().isLeft();
     }
 
     /**
@@ -781,7 +781,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (!typeInspection.isSet()) throw new UnsupportedOperationException();
         TypeInspection inspection = typeInspection.get();
         // we don't analyse annotations at the moment
-        if (inspection.typeNature == TypeNature.ANNOTATION) return true;
+        if (inspection.typeNature() == TypeNature.ANNOTATION) return true;
         return inspection.methodsAndConstructors(TypeInspection.Methods.INCLUDE_SUBTYPES).allMatch(MethodInfo::shallowAnalysis);
     }
 }

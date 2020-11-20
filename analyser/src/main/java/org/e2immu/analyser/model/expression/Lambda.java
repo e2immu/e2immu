@@ -18,9 +18,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.AnalyserContext;
-import org.e2immu.analyser.analyser.MethodAnalyser;
-import org.e2immu.analyser.analyser.TypeAnalyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.e2immu.analyser.model.abstractvalue.Instance;
@@ -29,7 +26,6 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
-import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
@@ -50,13 +46,18 @@ public class Lambda implements Expression {
      */
     public Lambda(@NotNull ParameterizedType abstractFunctionalType,
                   @NotNull ParameterizedType implementation) {
-        methodInfo = implementation.typeInfo.typeInspection.getPotentiallyRun().methods.get(0);
-        this.block = methodInfo.methodInspection.get().methodBody.get();
-        this.parameters = methodInfo.methodInspection.get().parameters;
+        methodInfo = implementation.typeInfo.typeInspection.get().methods().get(0);
+        this.block = methodInfo.methodInspection.get().getMethodBody();
+        this.parameters = methodInfo.methodInspection.get().getParameters();
         if (!abstractFunctionalType.isFunctionalInterface()) throw new UnsupportedOperationException();
         this.abstractFunctionalType = Objects.requireNonNull(abstractFunctionalType);
-        if (!implementation.implementsFunctionalInterface()) throw new UnsupportedOperationException();
+        if (!implementsFunctionalInterface(implementation)) throw new UnsupportedOperationException();
         this.implementation = Objects.requireNonNull(implementation);
+    }
+
+    private static boolean implementsFunctionalInterface(ParameterizedType parameterizedType) {
+        if (parameterizedType.typeInfo == null) return false;
+        return parameterizedType.typeInfo.typeInspection.get().interfacesImplemented().stream().anyMatch(ParameterizedType::isFunctionalInterface);
     }
 
     @Override

@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class ParameterNameFactory {
-    private Set<String> names = new HashSet<>();
+    private final Set<String> names = new HashSet<>();
 
     public String next(ParameterizedType type) {
         String base;

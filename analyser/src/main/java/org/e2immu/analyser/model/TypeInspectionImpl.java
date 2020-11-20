@@ -33,9 +33,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * all the fields are deeply immutable or in the case of TypeInfo, eventually immutable.
- */
 public class TypeInspectionImpl extends InspectionImpl implements TypeInspection {
     // the type that this inspection object belongs to
     public final TypeInfo typeInfo;
@@ -56,8 +53,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public final List<TypeParameter> typeParameters;
     public final List<ParameterizedType> interfacesImplemented;
 
-    public final SetOnceMap<MethodInfo, Set<MethodInfo>> overrides = new SetOnceMap<>();
-    public final SetOnce<List<TypeInfo>> superTypes = new SetOnce<>();
+    public final List<TypeInfo> superTypes ;
 
     // only valid for types that have been defined, and empty when not the primary type
     // it does include the primary type itself
@@ -78,6 +74,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                List<FieldInfo> fields,
                                List<TypeModifier> modifiers,
                                List<TypeInfo> subTypes,
+                               List<TypeInfo> superTypes,
                                List<AnnotationExpression> annotations) {
         super(annotations);
         this.allTypesInPrimaryType = allTypesInPrimaryType;
@@ -96,7 +93,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         else if (modifiers.contains(TypeModifier.PROTECTED)) access = TypeModifier.PROTECTED;
         else if (modifiers.contains(TypeModifier.PRIVATE)) access = TypeModifier.PRIVATE;
         else access = TypeModifier.PACKAGE;
-
+        this.superTypes = superTypes;
         annotationMode = annotationMode(annotations);
     }
 
@@ -109,7 +106,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
     private static AnnotationMode annotationMode(List<AnnotationExpression> annotations) {
         for (AnnotationExpression ae : annotations) {
-            String fqn = ae.typeInfo.fullyQualifiedName;
+            String fqn = ae.typeInfo().fullyQualifiedName;
             if (OFFENSIVE_ANNOTATIONS.contains(fqn)) return AnnotationMode.OFFENSIVE;
         }
         return AnnotationMode.DEFENSIVE;
@@ -171,11 +168,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     }
 
     @Override
-    public Set<MethodInfo> overrides(MethodInfo methodInfo) {
-        return overrides;
-    }
-
-    @Override
     public List<TypeInfo> superTypes() {
         return superTypes;
     }
@@ -212,29 +204,17 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public Stream<MethodInfo> constructorStream(Methods methodsMode) {
         if (methodsMode.recurse) {
             return Stream.concat(constructors.stream(), subTypes.stream()
-                    .flatMap(subType -> subType.typeInspection.getPotentiallyRun().constructorStream(methodsMode)));
+                    .flatMap(subType -> subType.typeInspection.get().constructorStream(methodsMode)));
         }
         return constructors.stream();
     }
 
     public Stream<MethodInfo> methodsInFieldInitializers(boolean alsoArtificial) {
         return fields.stream()
-                .filter(fieldInfo -> fieldInfo.fieldInspection.get().initialiser.isSet())
-                .map(fieldInfo -> fieldInfo.fieldInspection.get().initialiser.get())
-                .filter(initialiser -> initialiser.implementationOfSingleAbstractMethod != null && (alsoArtificial || !initialiser.artificial))
-                .map(initialiser -> initialiser.implementationOfSingleAbstractMethod);
-    }
-
-    public TypeInspectionImpl copy(List<AnnotationExpression> alternativeAnnotations,
-                                   List<MethodInfo> extraConstructors, // exist identically in super types, but with different annotations
-                                   List<MethodInfo> extraMethods) { // ditto
-        return new TypeInspectionImpl(typeInfo, packageNameOrEnclosingType, allTypesInPrimaryType,
-                typeNature, typeParameters,
-                parentClass, interfacesImplemented,
-                ListUtil.immutableConcat(constructors, extraConstructors),
-                ListUtil.immutableConcat(methods, extraMethods),
-                fields, modifiers, subTypes,
-                ImmutableList.copyOf(alternativeAnnotations));
+                .filter(fieldInfo -> fieldInfo.fieldInspection.get().initialiserIsSet())
+                .map(fieldInfo -> fieldInfo.fieldInspection.get().getInitialiser())
+                .filter(initialiser -> initialiser.implementationOfSingleAbstractMethod() != null && (alsoArtificial || !initialiser.artificial()))
+                .map(FieldInspection.FieldInitialiser::implementationOfSingleAbstractMethod);
     }
 
     public Set<ParameterizedType> explicitTypes() {
@@ -246,7 +226,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     }
 
     @Container(builds = TypeInspectionImpl.class)
-    public static class Builder implements BuilderWithAnnotations<Builder>, TypeInspection {
+    public static class Builder extends AbstractInspectionBuilder<Builder> implements TypeInspection {
         private String packageName;
         private TypeInfo enclosingType;
         private TypeNature typeNature = TypeNature.CLASS;
@@ -255,10 +235,14 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         private final List<FieldInfo> fields = new ArrayList<>();
         private final List<TypeModifier> modifiers = new ArrayList<>();
         private final List<TypeInfo> subTypes = new ArrayList<>();
-        private final List<AnnotationExpression> annotations = new ArrayList<>();
         private final List<TypeParameter> typeParameters = new ArrayList<>();
         private ParameterizedType parentClass;
         private final List<ParameterizedType> interfacesImplemented = new ArrayList<>();
+        private final TypeInfo typeInfo;
+
+        public Builder(TypeInfo typeInfo) {
+            this.typeInfo = typeInfo;
+        }
 
         public Builder setPackageName(String packageName) {
             this.packageName = packageName;
@@ -319,13 +303,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             return interfacesImplemented;
         }
 
-        @Override
-        public Builder addAnnotation(AnnotationExpression annotation) {
-            annotations.add(annotation);
-            return this;
-        }
-
-        public TypeInspectionImpl build(TypeInfo typeInfo) {
+        public TypeInspectionImpl build() {
             Objects.requireNonNull(typeNature);
             if (!Primitives.isJavaLangObject(typeInfo)) {
                 Objects.requireNonNull(parentClass);
@@ -338,15 +316,16 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                     packageNameOrEnclosingType,
                     allTypesInPrimaryType,
                     typeNature,
-                    ImmutableList.copyOf(typeParameters),
+                    typeParameters(),
                     parentClass,
-                    ImmutableList.copyOf(interfacesImplemented),
-                    ImmutableList.copyOf(constructors),
-                    ImmutableList.copyOf(methods),
-                    ImmutableList.copyOf(fields),
-                    ImmutableList.copyOf(modifiers),
-                    ImmutableList.copyOf(subTypes),
-                    ImmutableList.copyOf(annotations));
+                    interfacesImplemented(),
+                    constructors(),
+                    methods(),
+                    fields(),
+                    modifiers(),
+                    subTypes(),
+                    superTypes(),
+                    ImmutableList.copyOf(getAnnotations()));
         }
 
         private List<TypeInfo> allTypes(TypeInfo typeInfo) {
@@ -360,14 +339,14 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         private void recursivelyCollectSubTypes(TypeInfo typeInfo, List<TypeInfo> result) {
             result.add(typeInfo);
-            for (TypeInfo sub : typeInfo.typeInspection.getPotentiallyRun().subTypes) {
+            for (TypeInfo sub : typeInfo.typeInspection.get().subTypes()) {
                 recursivelyCollectSubTypes(sub, result);
             }
         }
 
         @Override
         public TypeInfo typeInfo() {
-            return null;
+            return typeInfo;
         }
 
         @Override
@@ -377,57 +356,52 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         @Override
         public TypeNature typeNature() {
-            return null;
+            return typeNature;
         }
 
         @Override
         public ParameterizedType parentClass() {
-            return null;
+            return parentClass;
         }
 
         @Override
         public List<MethodInfo> constructors() {
-            return null;
+            return ImmutableList.copyOf(constructors);
         }
 
         @Override
         public List<MethodInfo> methods() {
-            return null;
+            return ImmutableList.copyOf(methods);
         }
 
         @Override
         public List<FieldInfo> fields() {
-            return null;
+            return ImmutableList.copyOf(fields);
         }
 
         @Override
         public List<TypeModifier> modifiers() {
-            return null;
+            return ImmutableList.copyOf(modifiers);
         }
 
         @Override
         public List<TypeInfo> subTypes() {
-            return null;
+            return ImmutableList.copyOf(subTypes);
         }
 
         @Override
         public List<TypeParameter> typeParameters() {
-            return null;
+            return ImmutableList.copyOf(typeParameters);
         }
 
         @Override
         public List<ParameterizedType> interfacesImplemented() {
-            return null;
-        }
-
-        @Override
-        public Set<MethodInfo> overrides(MethodInfo methodInfo) {
-            return null;
+            return ImmutableList.copyOf(interfacesImplemented);
         }
 
         @Override
         public List<TypeInfo> superTypes() {
-            return null;
+            return;
         }
 
         @Override
@@ -442,7 +416,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         @Override
         public AnnotationMode annotationMode() {
-            return null;
+            return ;
         }
 
         @Override
@@ -462,11 +436,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         @Override
         public Set<ParameterizedType> explicitTypes() {
-            return null;
-        }
-
-        @Override
-        public List<AnnotationExpression> getAnnotations() {
             return null;
         }
     }

@@ -52,20 +52,18 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
     private final Map<MethodInfo, MethodAnalyser> methodAnalysers;
     private final Map<FieldInfo, FieldAnalyser> fieldAnalysers;
     private final Map<ParameterInfo, ParameterAnalyser> parameterAnalysers;
-    private final TypeContext typeContext;
     private final Messages messages = new Messages();
+    private final Primitives primitives;
 
     public PrimaryTypeAnalyser(@NotNull SortedType sortedType,
                                @NotNull Configuration configuration,
-                               @NotNull TypeContext typeContext,
+                               @NotNull Primitives primitives,
                                @NotNull E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
-        Objects.requireNonNull(typeContext);
-        Objects.requireNonNull(typeContext.getPrimitives());
-        this.typeContext = typeContext;
+        Objects.requireNonNull(primitives);
         patternMatcher = configuration.analyserConfiguration.newPatternMatcher();
-
+        this.primitives = primitives;
         this.primaryType = Objects.requireNonNull(sortedType.primaryType);
         assert this.primaryType.isPrimaryType();
 
@@ -167,7 +165,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
 
     @Override
     public Primitives getPrimitives() {
-        return typeContext.getPrimitives();
+        return primitives;
     }
 
     private static Set<MethodAnalysis> overrides(MethodInfo methodInfo, Map<MethodInfo, MethodAnalyser> methodAnalysers) {

@@ -24,6 +24,7 @@ import org.e2immu.analyser.util.FirstThen;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface MethodInspection extends Inspection {
 
@@ -55,6 +56,8 @@ public interface MethodInspection extends Inspection {
     // this is used to check inherited annotations on methods
     //@Immutable
     List<MethodInfo> getImplementationOf();
+
+    Set<MethodInfo> getOverrides();
 
     Map<CompanionMethodName, MethodInfo> getCompanionMethods();
 

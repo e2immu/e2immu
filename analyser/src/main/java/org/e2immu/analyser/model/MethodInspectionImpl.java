@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Fluent;
@@ -32,31 +33,33 @@ import java.util.stream.Collectors;
 
 public class MethodInspectionImpl extends InspectionImpl implements MethodInspection {
 
-    public final String fullyQualifiedName;
-    public final String distinguishingName;
+    private final String fullyQualifiedName;
+    private final String distinguishingName;
 
-    public final MethodInfo methodInfo; // backlink, container... will become contextclass+immutable eventually
-    public final ParameterizedType returnType; // ContextClass
+    private final MethodInfo methodInfo; // backlink, container... will become contextclass+immutable eventually
+    private final ParameterizedType returnType; // ContextClass
     //@Immutable(after="??")
-    public final Block methodBody; // if empty, Block.EMPTY_BLOCK
+    private final Block methodBody; // if empty, Block.EMPTY_BLOCK
 
     //@Immutable(level = 2, after="MethodAnalyzer.analyse()")
     //@Immutable
-    public final List<ParameterInfo> parameters;
+    private final List<ParameterInfo> parameters;
     //@Immutable
-    public final List<MethodModifier> modifiers;
+    private final List<MethodModifier> modifiers;
 
     //@Immutable
-    public final List<TypeParameter> typeParameters;
+    private final List<TypeParameter> typeParameters;
     //@Immutable
-    public final List<ParameterizedType> exceptionTypes;
+    private final List<ParameterizedType> exceptionTypes;
 
     // if our type implements a number of interfaces, then the method definitions in these interfaces
     // that this method implements, are represented in this variable
     // this is used to check inherited annotations on methods
     //@Immutable
-    public final List<MethodInfo> implementationOf;
-    public final Map<CompanionMethodName, MethodInfo> companionMethods;
+    private final List<MethodInfo> implementationOf;
+    private final Map<CompanionMethodName, MethodInfo> companionMethods;
+
+    private final Set<MethodInfo> overrides;
 
     private MethodInspectionImpl(MethodInfo methodInfo,
                                  String fullyQualifiedName,
@@ -68,9 +71,11 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                                  List<TypeParameter> typeParameters,
                                  List<ParameterizedType> exceptionTypes,
                                  List<MethodInfo> implementationOf,
+                                 Set<MethodInfo> overrides,
                                  Map<CompanionMethodName, MethodInfo> companionMethods,
                                  Block methodBody) {
         super(annotations);
+        this.overrides = overrides;
         this.fullyQualifiedName = fullyQualifiedName;
         this.distinguishingName = distinguishingName;
         this.companionMethods = companionMethods;
@@ -82,6 +87,11 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         this.methodBody = methodBody;
         this.exceptionTypes = exceptionTypes;
         this.implementationOf = implementationOf;
+    }
+
+    @Override
+    public Set<MethodInfo> getOverrides() {
+        return overrides;
     }
 
     @Override
@@ -140,7 +150,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     }
 
     @Container(builds = MethodInspectionImpl.class)
-    public static class Builder extends AbstractInspectionBuilder implements BuilderWithAnnotations<Builder>, MethodInspection {
+    public static class Builder extends AbstractInspectionBuilder<Builder> implements MethodInspection {
         private final MethodInfo methodInfo;
         private final List<ParameterInfo> parameters = new ArrayList<>();
         private final List<MethodModifier> modifiers = new ArrayList<>();
@@ -153,9 +163,19 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         private final List<ParameterizedType> exceptionTypes = new ArrayList<>();
         private ParameterizedType returnType;
         private final Map<ParameterInfo, ParameterInspectionImpl.Builder> parameterInspectionBuilders = new HashMap<>();
+        private Set<MethodInfo> overrides;
 
         public Builder(MethodInfo methodInfo) {
             this.methodInfo = methodInfo;
+        }
+
+        @Override
+        public Set<MethodInfo> getOverrides() {
+            return overrides;
+        }
+
+        public void setOverrides(Set<MethodInfo> overrides) {
+            this.overrides = overrides;
         }
 
         @Fluent
@@ -193,6 +213,11 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             return builder;
         }
 
+        public Builder addParameterFluently(@NotNull ParameterInfo parameterInfo) {
+            addParameter(parameterInfo);
+            return this;
+        }
+
         @Fluent
         public Builder addParameters(@NotNull Collection<ParameterInfo> parameters) {
             parameters.forEach(this::addParameter);
@@ -215,13 +240,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         public Builder addTypeParameter(@NotNull TypeParameter typeParameter) {
             typeParameters.add(typeParameter);
             if (!typeParameter.isMethodTypeParameter()) throw new IllegalArgumentException();
-            return this;
-        }
-
-        @Fluent
-        @Override
-        public Builder addAnnotation(@NotNull AnnotationExpression annotation) {
-            annotations.add(annotation);
             return this;
         }
 
@@ -269,6 +287,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                     ImmutableList.copyOf(typeParameters),
                     ImmutableList.copyOf(exceptionTypes),
                     ImmutableList.copyOf(implementationsOf),
+                    ImmutableSet.copyOf(overrides),
                     ImmutableMap.copyOf(getCompanionMethods()),
                     inspectedBlock
             );

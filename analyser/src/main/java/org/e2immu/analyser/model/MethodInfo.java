@@ -25,8 +25,11 @@ import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.SwitchStatement;
-import org.e2immu.analyser.parser.*;
-import org.e2immu.analyser.util.*;
+import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetTwice;
+import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
@@ -156,8 +159,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         UpgradableBooleanMap<TypeInfo> exceptionTypes = hasBeenInspected() ?
                 methodInspection.get().getExceptionTypes().stream().flatMap(et -> et.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()) :
                 UpgradableBooleanMap.of();
-        UpgradableBooleanMap<TypeInfo> bodyTypes = hasBeenInspected() && methodInspection.get().getMethodBody().isSet() ?
-                methodInspection.get().getMethodBody().get().typesReferenced() : UpgradableBooleanMap.of();
+        UpgradableBooleanMap<TypeInfo> bodyTypes = hasBeenInspected() ?
+                methodInspection.get().getMethodBody().typesReferenced() : UpgradableBooleanMap.of();
         UpgradableBooleanMap<TypeInfo> companionMethodTypes = hasBeenInspected() ? methodInspection.get().getCompanionMethods().values().stream()
                 .flatMap(cm -> cm.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()) : UpgradableBooleanMap.of();
         return UpgradableBooleanMap.of(constructorTypes, parameterTypes, annotationTypes, exceptionTypes, companionMethodTypes, bodyTypes);
@@ -238,11 +241,11 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             sb.append(methodInspection.get().getExceptionTypes().stream()
                     .map(ParameterizedType::stream).collect(Collectors.joining(", ")));
         }
-        if (hasBeenInspected() && methodInspection.get().getMethodBody().isSet()) {
+        if (hasBeenInspected()) {
             if (methodAnalysis.isSet() && methodAnalysis.get().getFirstStatement() != null) {
-                sb.append(methodInspection.get().getMethodBody().get().statementString(indent, methodAnalysis.get().getFirstStatement()));
+                sb.append(methodInspection.get().getMethodBody().statementString(indent, methodAnalysis.get().getFirstStatement()));
             } else {
-                sb.append(methodInspection.get().getMethodBody().get().statementString(indent, null));
+                sb.append(methodInspection.get().getMethodBody().statementString(indent, null));
             }
         } else {
             sb.append(" { }");
@@ -291,8 +294,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     // given R accept(T t), and types={string}, returnType=string, deduce that R=string, T=string, and we have Function<String, String>
     public List<ParameterizedType> typeParametersComputed(List<ParameterizedType> types, ParameterizedType inferredReturnType) {
-        if (typeInfo.typeInspection.get().typeParameters.isEmpty()) return List.of();
-        return typeInfo.typeInspection.get().typeParameters.stream().map(typeParameter -> {
+        if (typeInfo.typeInspection.get().typeParameters().isEmpty()) return List.of();
+        return typeInfo.typeInspection.get().typeParameters().stream().map(typeParameter -> {
             int cnt = 0;
             for (ParameterInfo parameterInfo : methodInspection.get().getParameters()) {
                 if (parameterInfo.parameterizedType.typeParameter == typeParameter) {
@@ -414,7 +417,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return isStatic ||
                 methodInspection.get().getModifiers().contains(MethodModifier.FINAL)
                 || methodInspection.get().getModifiers().contains(MethodModifier.PRIVATE)
-                || typeInfo.typeInspection.get().modifiers.contains(TypeModifier.FINAL);
+                || typeInfo.typeInspection.get().modifiers().contains(TypeModifier.FINAL);
     }
 
     public boolean isPrivate() {
@@ -426,12 +429,12 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean isCalledFromConstructors() {
-        for (MethodInfo other : typeInfo.typeInspection.get().constructors) {
+        for (MethodInfo other : typeInfo.typeInspection.get().constructors()) {
             if (other.methodResolution.get().methodsOfOwnClassReached.get().contains(this)) {
                 return true;
             }
         }
-        for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
+        for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields()) {
             if (fieldInfo.fieldInspection.get().initialiserIsSet()) {
                 FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getInitialiser();
                 if (fieldInitialiser.implementationOfSingleAbstractMethod() == null) {
@@ -458,12 +461,12 @@ public class MethodInfo implements WithInspectionAndAnalysis {
      * @return true if there is a non-private method in this class which calls this private method.
      */
     public boolean isCalledFromNonPrivateMethod() {
-        for (MethodInfo other : typeInfo.typeInspection.get().methods) {
+        for (MethodInfo other : typeInfo.typeInspection.get().methods()) {
             if (!other.isPrivate() && other.methodResolution.get().methodsOfOwnClassReached.get().contains(this)) {
                 return true;
             }
         }
-        for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields) {
+        for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields()) {
             if (!fieldInfo.isPrivate() && fieldInfo.fieldInspection.get().initialiserIsSet()) {
                 FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getInitialiser();
                 if (fieldInitialiser.implementationOfSingleAbstractMethod() != null &&
@@ -488,7 +491,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public Set<ParameterizedType> explicitTypes() {
-        return explicitTypes(methodInspection.get().getMethodBody().get());
+        return explicitTypes(methodInspection.get().getMethodBody());
     }
 
     public static Set<ParameterizedType> explicitTypes(Element start) {
@@ -558,12 +561,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
      * @return true when we can skip the analysers
      */
     public boolean shallowAnalysis() {
-        MethodInspection inspection = methodInspection.get();
-        return !inspection.getMethodBody().isSet() || inspection.getMethodBody().get() == Block.EMPTY_BLOCK;
+        return methodInspection.get().getMethodBody() == Block.EMPTY_BLOCK;
     }
 
     public boolean hasStatements() {
-        MethodInspection inspection = methodInspection.get();
-        return inspection.getMethodBody().isSet() && inspection.getMethodBody().get().structure.statements.size() > 0;
+        return methodInspection.get().getMethodBody().structure.statements.size() > 0;
     }
 }

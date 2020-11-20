@@ -113,6 +113,7 @@ public class Resolver {
         DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph = new DependencyGraph<>();
         doType(typeInfo, typeContextOfType, methodFieldSubTypeGraph);
 
+        // FROM HERE ON, ALL INSPECTION HAS BEEN SET!
 
         fillInternalMethodCalls(methodFieldSubTypeGraph);
 
@@ -146,16 +147,16 @@ public class Resolver {
         try {
             TypeInspection typeInspection = typeContextOfType.getTypeInspection(typeInfo);
 
-            typeInspection.subTypes.forEach(typeContextOfType::addToContext);
+            typeInspection.subTypes().forEach(typeContextOfType::addToContext);
 
             // recursion, do sub-types first
-            typeInspection.subTypes.forEach(subType -> doType(subType, typeContextOfType, methodFieldSubTypeGraph));
+            typeInspection.subTypes().forEach(subType -> doType(subType, typeContextOfType, methodFieldSubTypeGraph));
 
             log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
             ExpressionContext expressionContext = ExpressionContext.forBodyParsing(typeInfo, typeInfo.primaryType(), typeContextOfType);
 
             expressionContext.typeContext.addToContext(typeInfo);
-            typeInspection.typeParameters.forEach(expressionContext.typeContext::addToContext);
+            typeInspection.typeParameters().forEach(expressionContext.typeContext::addToContext);
 
             // add visible types to the type context
             typeInfo.accessibleBySimpleNameTypeInfoStream().forEach(expressionContext.typeContext::addToContext);
@@ -182,7 +183,7 @@ public class Resolver {
     private void doFields(TypeInspection typeInspection,
                           ExpressionContext expressionContext,
                           DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
-        typeInspection.fields.forEach(fieldInfo -> {
+        typeInspection.fields().forEach(fieldInfo -> {
 
             if (!fieldInfo.fieldInspection.get().initialiserIsSet()) {
                 doFieldInitialiser(fieldInfo, expressionContext, methodFieldSubTypeGraph);
@@ -193,7 +194,8 @@ public class Resolver {
     private void doFieldInitialiser(FieldInfo fieldInfo,
                                     ExpressionContext expressionContext,
                                     DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
-        FieldInspectionImpl.Builder fieldInspection = expressionContext.typeContext.getFieldInspection(fieldInfo);
+        // we can cast here: no point in resolving if inspection has been set.
+        FieldInspectionImpl.Builder fieldInspection = (FieldInspectionImpl.Builder) expressionContext.typeContext.getFieldInspection(fieldInfo);
 
         Expression expression = fieldInspection.getInitializer();
         FieldInspection.FieldInitialiser fieldInitialiser;
@@ -203,7 +205,7 @@ public class Resolver {
             ExpressionContext subContext = expressionContext.newTypeContext("new field dependencies");
 
             // fieldInfo.type can have concrete types; but the abstract method will not have them filled in
-            MethodTypeParameterMap singleAbstractMethod = fieldInfo.type.findSingleAbstractMethodOfInterface();
+            MethodTypeParameterMap singleAbstractMethod = fieldInfo.type.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
             if (singleAbstractMethod != null) {
                 singleAbstractMethod = singleAbstractMethod.expand(fieldInfo.type.initialTypeParameterMap());
                 log(RESOLVE, "Passing on functional interface method to field initializer of {}: {}", fieldInfo.fullyQualifiedName(), singleAbstractMethod);
@@ -240,7 +242,7 @@ public class Resolver {
                 artificial = false;
             }
             fieldInitialiser = new FieldInspection.FieldInitialiser(parsedExpression, sam, artificial);
-            Element toVisit = sam != null ? sam.methodInspection.get().getMethodBody().get() : parsedExpression;
+            Element toVisit = sam != null ? sam.methodInspection.get().getMethodBody() : parsedExpression;
             MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited();
             methodsAndFieldsVisited.visit(toVisit);
             dependencies = ImmutableList.copyOf(methodsAndFieldsVisited.methodsAndFields);
@@ -257,11 +259,11 @@ public class Resolver {
         // METHOD AND CONSTRUCTOR, without the SAMs in FIELDS
         typeInspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
             try {
-                MethodInspectionImpl.Builder methodInspection = expressionContext.typeContext.getMethodInspection(methodInfo);
-                doMethodOrConstructor(methodInfo, methodInspection, expressionContext, methodFieldSubTypeGraph);
+                MethodInspection methodInspection = expressionContext.typeContext.getMethodInspection(methodInfo);
+                doMethodOrConstructor(methodInfo, (MethodInspectionImpl.Builder) methodInspection, expressionContext, methodFieldSubTypeGraph);
                 methodInspection.getCompanionMethods().values().forEach(companionMethod -> {
-                    MethodInspectionImpl.Builder companionMethodInspection = expressionContext.typeContext.getMethodInspection(companionMethod);
-                    doMethodOrConstructor(companionMethod, companionMethodInspection, expressionContext, methodFieldSubTypeGraph);
+                    MethodInspection companionMethodInspection = expressionContext.typeContext.getMethodInspection(companionMethod);
+                    doMethodOrConstructor(companionMethod, (MethodInspectionImpl.Builder) companionMethodInspection, expressionContext, methodFieldSubTypeGraph);
                 });
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while resolving method {}", methodInfo.fullyQualifiedName());
@@ -288,18 +290,18 @@ public class Resolver {
 
         // BODY
 
-        boolean doBlock = !methodInspection.methodBody.isSet();
+        boolean doBlock = !methodInspection.methodBodyIsSet();
         if (doBlock) {
-            BlockStmt block = methodInspection.methodBody.getFirst();
+            BlockStmt block = methodInspection.getBlock();
             if (!block.getStatements().isEmpty()) {
                 log(RESOLVE, "Parsing block of method {}", methodInfo.name);
-                doBlock(subContext, methodInfo, block, methodFieldSubTypeGraph);
+                doBlock(subContext, methodInfo, methodInspection, block, methodFieldSubTypeGraph);
             } else {
-                methodInspection.methodBody.set(Block.EMPTY_BLOCK);
+                methodInspection.setBlock(Block.EMPTY_BLOCK);
             }
         }
         MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited();
-        methodsAndFieldsVisited.visit(methodInspection.methodBody.get());
+        methodsAndFieldsVisited.visit(methodInspection.getMethodBody());
         methodFieldSubTypeGraph.addNode(methodInfo, ImmutableList.copyOf(methodsAndFieldsVisited.methodsAndFields));
     }
 
@@ -337,7 +339,7 @@ public class Resolver {
             methodInspection.getParameters().forEach(newContext.variableContext::add);
             log(RESOLVE, "Parsing block with variable context {}", newContext.variableContext);
             Block parsedBlock = newContext.parseBlockOrStatement(block);
-            methodInspection.methodBody.set(parsedBlock);
+            methodInspection.setBlock(parsedBlock);
 
             newContext.streamNewlyCreatedTypes().forEach(anonymousType -> doType(anonymousType, newContext.typeContext, methodFieldSubTypeGraph));
 
@@ -377,9 +379,9 @@ public class Resolver {
 
 
     // part of @UtilityClass computation in the type analyser
-    private static void methodCreatesObjectOfSelf(MethodInfo methodInfo, MethodInspection methodInspection, MethodResolution methodResolution) {
+    private static void methodCreatesObjectOfSelf(MethodInfo methodInfo, MethodResolution methodResolution) {
         AtomicBoolean createSelf = new AtomicBoolean();
-        methodInspection.methodBody.get().visit(element -> {
+        methodInfo.methodInspection.get().getMethodBody().visit(element -> {
             if (element instanceof NewObject newObject) {
                 if (newObject.parameterizedType.typeInfo == methodInfo.typeInfo) {
                     createSelf.set(true);
@@ -389,13 +391,13 @@ public class Resolver {
         methodResolution.createObjectOfSelf.set(createSelf.get());
     }
 
-    private static void computeStaticMethodCallsOnly(@NotModified MethodInfo methodInfo, MethodInspection methodInspection, MethodResolution methodResolution) {
+    private static void computeStaticMethodCallsOnly(@NotModified MethodInfo methodInfo, MethodResolution methodResolution) {
         if (!methodResolution.staticMethodCallsOnly.isSet()) {
             if (methodInfo.isStatic) {
                 methodResolution.staticMethodCallsOnly.set(true);
             } else {
                 AtomicBoolean atLeastOneCallOnThis = new AtomicBoolean(false);
-                Block block = methodInspection.methodBody.get();
+                Block block = methodInfo.methodInspection.get().getMethodBody();
                 block.visit(element -> {
                     if (element instanceof MethodCall methodCall) {
                         boolean callOnThis = !methodCall.methodInfo.isStatic &&

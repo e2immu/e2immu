@@ -25,6 +25,7 @@ import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.UnionType;
+import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
@@ -164,7 +165,7 @@ public class ExpressionContext {
             org.e2immu.analyser.model.Statement newStatement;
             if (statement.isReturnStmt()) {
                 newStatement = new ReturnStatement(false, parseExpression(((ReturnStmt) statement).getExpression()));
-            } else if(statement.isYieldStmt()) {
+            } else if (statement.isYieldStmt()) {
                 newStatement = new ReturnStatement(true, parseExpression(((ReturnStmt) statement).getExpression()));
             } else if (statement.isExpressionStmt()) {
                 Expression expression = parseExpression(((ExpressionStmt) statement).getExpression());
@@ -225,10 +226,11 @@ public class ExpressionContext {
         Expression selector = parseExpression(switchStmt.getSelector());
         ExpressionContext newExpressionContext;
         TypeInfo enumType = selectorIsEnumType(selector);
+        TypeInspection enumInspection = typeContext.getTypeInspection(enumType);
         if (enumType != null) {
             newExpressionContext = newVariableContext("switch-statement");
             Variable scope = new This(enumType);
-            enumType.typeInspection.getPotentiallyRun().fields.forEach(fieldInfo -> newExpressionContext.variableContext.add(new FieldReference(fieldInfo, scope)));
+            enumInspection.fields().forEach(fieldInfo -> newExpressionContext.variableContext.add(new FieldReference(fieldInfo, scope)));
         } else {
             newExpressionContext = this;
         }
@@ -239,9 +241,9 @@ public class ExpressionContext {
         return new SwitchStatement(selector, entries);
     }
 
-    public static TypeInfo selectorIsEnumType(@NotNull Expression selector) {
+    public TypeInfo selectorIsEnumType(@NotNull Expression selector) {
         TypeInfo typeInfo = selector.returnType().typeInfo;
-        if (typeInfo != null && typeInfo.typeInspection.getPotentiallyRun().typeNature == TypeNature.ENUM) {
+        if (typeInfo != null && typeContext.getTypeInspection(typeInfo).typeNature() == TypeNature.ENUM) {
             return typeInfo;
         }
         return null;
@@ -345,7 +347,9 @@ public class ExpressionContext {
     private org.e2immu.analyser.model.Statement localClassDeclaration(LocalClassDeclarationStmt statement) {
         String localName = statement.getClassDeclaration().getNameAsString();
         TypeInfo typeInfo = TypeInfo.fromFqn(localName);
-        typeInfo.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
+        TypeInspector typeInspector = new TypeInspector(typeInfo);
+        typeInspector.inspectLocalClassDeclaration(this, typeInfo, statement.getClassDeclaration());
+        typeInfo.typeInspection.set(typeInspector.build());
         typeContext.addToContext(typeInfo);
         addNewlyCreatedType(typeInfo);
         return new LocalClassDeclaration(typeInfo);
@@ -519,17 +523,18 @@ public class ExpressionContext {
                 LocalVariable.LocalVariableBuilder localVariable = new LocalVariable.LocalVariableBuilder()
                         .setName(var.getNameAsString())
                         .setParameterizedType(parameterizedType);
-                vde.getAnnotations().forEach(ae -> localVariable.addAnnotation(AnnotationExpression.from(ae, this)));
+                vde.getAnnotations().forEach(ae -> localVariable.addAnnotation(AnnotationExpressionImpl.inspect(this, ae)));
                 vde.getModifiers().forEach(m -> localVariable.addModifier(LocalVariableModifier.from(m)));
                 org.e2immu.analyser.model.Expression initializer = var.getInitializer()
-                        .map(i -> parseExpression(i, parameterizedType.findSingleAbstractMethodOfInterface()))
+                        .map(i -> parseExpression(i, parameterizedType.findSingleAbstractMethodOfInterface(typeContext)))
                         .orElse(EmptyExpression.EMPTY_EXPRESSION);
                 return new LocalVariableCreation(typeContext.getPrimitives(), localVariable.build(), initializer);
             }
             if (expression.isAssignExpr()) {
                 AssignExpr assignExpr = (AssignExpr) expression;
                 org.e2immu.analyser.model.Expression target = parseExpression(assignExpr.getTarget());
-                org.e2immu.analyser.model.Expression value = parseExpression(assignExpr.getValue(), target.returnType().findSingleAbstractMethodOfInterface());
+                org.e2immu.analyser.model.Expression value = parseExpression(assignExpr.getValue(),
+                        target.returnType().findSingleAbstractMethodOfInterface(typeContext));
                 if (value.returnType().isType() && Primitives.isPrimitiveExcludingVoid(value.returnType()) &&
                         target.returnType().isType() && Primitives.isPrimitiveExcludingVoid(target.returnType())) {
                     ParameterizedType widestType = typeContext.getPrimitives().widestType(value.returnType(), target.returnType());
@@ -557,7 +562,7 @@ public class ExpressionContext {
             if (expression.isLambdaExpr()) {
                 return ParseLambdaExpr.parse(this, expression.asLambdaExpr(), singleAbstractMethod);
             }
-            if(expression.isSwitchExpr()) {
+            if (expression.isSwitchExpr()) {
                 return ParseSwitchExpr.parse(this, expression.asSwitchExpr());
             }
             if (expression.isArrayCreationExpr()) {

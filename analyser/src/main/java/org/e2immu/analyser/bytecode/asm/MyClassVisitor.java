@@ -59,7 +59,7 @@ public class MyClassVisitor extends ClassVisitor {
     private TypeInfo currentType;
     private String currentTypePath;
     private boolean currentTypeIsInterface;
-    private TypeInspection.TypeInspectionBuilder typeInspectionBuilder;
+    private TypeInspectionImpl.Builder typeInspectionBuilder;
 
     public MyClassVisitor(OnDemandInspection onDemandInspection,
                           AnnotationStore annotationStore,
@@ -136,7 +136,7 @@ public class MyClassVisitor extends ClassVisitor {
         }
         inProcess.add(currentType);
         currentTypePath = name;
-        typeInspectionBuilder = new TypeInspection.TypeInspectionBuilder();
+        typeInspectionBuilder = new TypeInspectionImpl.Builder(currentType);
 
         // may be overwritten, but this is the default
         typeInspectionBuilder.setParentClass(typeContext.getPrimitives().objectParameterizedType);
@@ -362,7 +362,7 @@ public class MyClassVisitor extends ClassVisitor {
                 signature != null ? signature : descriptor).parameterizedType;
 
         FieldInfo fieldInfo = new FieldInfo(type, name, currentType);
-        FieldInspection.FieldInspectionBuilder fieldInspectionBuilder = new FieldInspection.FieldInspectionBuilder();
+        FieldInspectionImpl.Builder fieldInspectionBuilder = new FieldInspectionImpl.Builder();
 
         if ((access & Opcodes.ACC_STATIC) != 0) fieldInspectionBuilder.addModifier(FieldModifier.STATIC);
         if ((access & Opcodes.ACC_PUBLIC) != 0) fieldInspectionBuilder.addModifier(FieldModifier.PUBLIC);
@@ -374,7 +374,7 @@ public class MyClassVisitor extends ClassVisitor {
         if (value != null) {
             Expression expression = ExpressionFactory.from(typeContext, value);
             if (expression != EmptyExpression.EMPTY_EXPRESSION) {
-                fieldInspectionBuilder.setInitializer(expression);
+                fieldInspectionBuilder.setInspectedInitializer(expression);
             }
         }
 
@@ -410,7 +410,7 @@ public class MyClassVisitor extends ClassVisitor {
         } else {
             methodInfo = new MethodInfo(currentType, name, isStatic);
         }
-        MethodInspection.MethodInspectionBuilder methodInspectionBuilder = new MethodInspection.MethodInspectionBuilder();
+        MethodInspectionImpl.Builder methodInspectionBuilder = new MethodInspectionImpl.Builder(methodInfo);
 
         if ((access & Opcodes.ACC_PUBLIC) != 0 && !currentTypeIsInterface) {
             methodInspectionBuilder.addModifier(MethodModifier.PUBLIC);
@@ -461,7 +461,7 @@ public class MyClassVisitor extends ClassVisitor {
 
     private int parseMethodGenerics(String signature,
                                     MethodInfo methodInfo,
-                                    MethodInspection.MethodInspectionBuilder methodInspectionBuilder,
+                                    MethodInspectionImpl.Builder methodInspectionBuilder,
                                     TypeContext methodContext) {
         IterativeParsing iterativeParsing = new IterativeParsing();
         while (true) {
@@ -594,13 +594,10 @@ public class MyClassVisitor extends ClassVisitor {
     }
 
     private void errorStateForType(String pathCausingFailure) {
-        if (currentType == null || currentType.typeInspection.isSet())
-            throw new UnsupportedOperationException();
+        if (currentType == null || currentType.typeInspection.isSet()) throw new UnsupportedOperationException();
         String message = "Unable to inspect " + currentType.fullyQualifiedName + ": Cannot load " + pathCausingFailure;
+        currentType.typeInspection.set(null); // this will cause problems
         log(BYTECODE_INSPECTOR, message);
-        currentType.typeInspection.setRunnable(() -> {
-            throw new RuntimeException(message);
-        });
         inProcess.remove(currentType);
         currentType = null;
         typeInspectionBuilder = null;

@@ -35,7 +35,7 @@ import java.util.stream.IntStream;
 public interface MethodAnalysis extends Analysis {
 
     static MethodAnalysis createEmpty(MethodInfo methodInfo) {
-        List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().parameters.stream()
+        List<ParameterAnalysis> parameterAnalyses = methodInfo.methodInspection.get().getParameters().stream()
                 .map(ParameterAnalysis::createEmpty).collect(Collectors.toList());
         return new MethodAnalysis() {
             @Override

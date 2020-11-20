@@ -161,9 +161,9 @@ public class AnnotationXmlWriter {
         root.appendChild(item);
         for (Annotation annotation : annotations) {
             Element annotationElement = document.createElement("annotation");
-            annotationElement.setAttribute("name", annotation.name);
+            annotationElement.setAttribute("name", annotation.name());
             item.appendChild(annotationElement);
-            for (Value value : annotation.getValues()) {
+            for (Value value : annotation.values()) {
                 Element val = document.createElement("val");
                 if (value.name != null) val.setAttribute("name", value.name);
                 val.setAttribute("val", value.val);

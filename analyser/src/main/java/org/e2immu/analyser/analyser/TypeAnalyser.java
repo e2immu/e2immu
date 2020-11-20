@@ -28,10 +28,7 @@ import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.annotation.*;
 import org.slf4j.Logger;
@@ -320,7 +317,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             boolean self = type.typeInfo == typeInfo;
             if (self || Primitives.isPrimitiveExcludingVoid(typeInfo) || Primitives.isBoxedExcludingVoid(typeInfo))
                 return true;
-            return explicitTypes.contains(type) || explicitTypes.stream().anyMatch(t -> type.isAssignableFrom(primitives, t));
+            return explicitTypes.contains(type) || explicitTypes.stream().anyMatch(t -> type.isAssignableFrom(analyserContext, t));
         });
 
         // e2immu is more work, we need to check delays

@@ -310,7 +310,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public void updateStatements(AnalyserContext analyserContext, MethodInfo currentMethod,
                                  StatementAnalysis previous) {
         if (previous == null && parent == null) {
-            for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().parameters) {
+            for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().getParameters()) {
                 VariableInfoContainer vic = findForWriting(analyserContext, parameterInfo);
                 ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                 for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {

@@ -40,7 +40,7 @@ public class ParameterInspectionImpl extends InspectionImpl implements Parameter
     }
 
     @Container(builds = ParameterInspectionImpl.class)
-    public static class Builder extends AbstractInspectionBuilder implements BuilderWithAnnotations<Builder>, ParameterInspection {
+    public static class Builder extends AbstractInspectionBuilder<Builder> implements ParameterInspection {
 
         private boolean varArgs;
 
@@ -53,13 +53,6 @@ public class ParameterInspectionImpl extends InspectionImpl implements Parameter
         @Override
         public boolean isVarArgs() {
             return varArgs;
-        }
-
-        @Override
-        @Fluent
-        public Builder addAnnotation(@NotNull AnnotationExpression annotationExpression) {
-            annotations.add(annotationExpression);
-            return this;
         }
 
         @Fluent

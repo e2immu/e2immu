@@ -44,27 +44,6 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
         TypeInfo list = typeContext.getFullyQualified(List.class);
         MethodInfo listOf2 = list.findUniqueMethod("of", 2);
         Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, listOf2.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-
-        Primitives primitives = typeContext.getPrimitives();
-        
-        ParameterizedType setString = new ParameterizedType(set, List.of(primitives.stringParameterizedType));
-        ParameterizedType stringArray = new ParameterizedType(primitives.stringTypeInfo, 1, ParameterizedType.WildCard.NONE, List.of());
-        TypeInfo freezableSet = typeContext.typeStore.get(ImmutabilityAnnotations.class.getCanonicalName() + ".FreezableSet");
-
-        // Set<String> contains Set
-        Assert.assertTrue(setString.containsComponent(primitives, primitives.stringParameterizedType));
-
-        // FreezableSet contains boolean
-        Assert.assertTrue(freezableSet.asParameterizedType().containsComponent(primitives, primitives.booleanParameterizedType));
-
-        // String[] contains String
-        Assert.assertTrue(stringArray.containsComponent(primitives, primitives.stringParameterizedType));
-
-        // some negative cases
-        Assert.assertFalse(primitives.booleanParameterizedType.containsComponent(primitives, primitives.stringParameterizedType));
-
-        // interesting... String is a complex type, it contains boolean
-        Assert.assertTrue(stringArray.containsComponent(primitives, primitives.booleanParameterizedType));
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {

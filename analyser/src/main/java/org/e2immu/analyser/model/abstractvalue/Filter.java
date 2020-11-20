@@ -215,7 +215,7 @@ public class Filter {
 
     private static boolean compatibleMethod(MethodInfo methodInfo, MethodInfo methodInClause) {
         if (methodInClause == methodInfo) return true;
-        if (methodInClause.methodInspection.get().parameters.size() != methodInfo.methodInspection.get().parameters.size())
+        if (methodInClause.methodInspection.get().getParameters().size() != methodInfo.methodInspection.get().getParameters().size())
             return false;
         Set<MethodInfo> overrides = methodInClause.typeInfo.overrides(methodInClause, true);
         return overrides.contains(methodInfo);

@@ -81,7 +81,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     @Override
     public AnnotationMode annotationMode() {
-        return typeInfo.typeInspection.get().annotationMode;
+        return typeInfo.typeInspection.get().annotationMode();
     }
 
     @Override
@@ -142,7 +142,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
         @Override
         public AnnotationMode annotationMode() {
-            return typeInfo.typeInspection.get().annotationMode;
+            return typeInfo.typeInspection.get().annotationMode();
         }
 
         @Override

@@ -171,7 +171,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
     @Override
     public AnnotationMode annotationMode() {
-        return methodInfo.typeInfo.typeInspection.get().annotationMode;
+        return methodInfo.typeInfo.typeInspection.get().annotationMode();
     }
 
     public static class Builder extends AbstractAnalysisBuilder implements MethodAnalysis {
@@ -293,7 +293,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public AnnotationMode annotationMode() {
-            return methodInfo.typeInfo.typeInspection.get().annotationMode;
+            return methodInfo.typeInfo.typeInspection.get().annotationMode();
         }
 
         @Override

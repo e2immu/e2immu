@@ -39,28 +39,26 @@ public class JetBrainsAnnotationTranslator {
         this.primitives = primitives;
     }
 
-    public <T> void mapAnnotations(List<Annotation> annotations, BuilderWithAnnotations<T> builderWithAnnotations) {
+    public <T> void mapAnnotations(List<Annotation> annotations, AbstractInspectionBuilder inspectionBuilder) {
         for (Annotation annotation : annotations) {
-            mapAnnotation(annotation, builderWithAnnotations);
+            mapAnnotation(annotation, inspectionBuilder);
         }
     }
 
-    private <T> void mapAnnotation(Annotation annotation, BuilderWithAnnotations<T> builderWithAnnotations) {
+    private <T> void mapAnnotation(Annotation annotation, AbstractInspectionBuilder inspectionBuilder) {
         if (ORG_JETBRAINS_ANNOTATIONS_NOTNULL.equals(annotation.name)) {
-            if (builderWithAnnotations instanceof ParameterInspection.ParameterInspectionBuilder) {
-                builderWithAnnotations.addAnnotation(e2ImmuAnnotationExpressions.notNull.get());
+            if (inspectionBuilder instanceof ParameterInspectionImpl.Builder) {
+                inspectionBuilder.addAnnotation(e2ImmuAnnotationExpressions.notNull.get());
             }
         } else if (annotation.name.startsWith(E2IMMU)) {
-            builderWithAnnotations.addAnnotation(toAnnotationExpression(annotation));
+            inspectionBuilder.addAnnotation(toAnnotationExpression(annotation));
         }
     }
 
     private AnnotationExpression toAnnotationExpression(Annotation annotation) {
         TypeInfo typeInfo = e2ImmuAnnotationExpressions.getFullyQualified(annotation.name);
         MemberValuePair contractExpression = new MemberValuePair("type",
-                new VariableExpression(
-                        new FieldReference(
-                                primitives.annotationTypeContract, null)));
-        return AnnotationExpression.fromAnalyserExpressions(typeInfo, List.of(contractExpression));
+                new VariableExpression(new FieldReference(primitives.annotationTypeContract, null)));
+        return new AnnotationExpressionImpl(typeInfo, List.of(contractExpression));
     }
 }
