@@ -274,7 +274,7 @@ public class MyClassVisitor extends ClassVisitor {
         Matcher m = ILLEGAL_IN_FQN.matcher(fqn);
         if (m.find()) throw new UnsupportedOperationException("Illegal FQN: " + fqn + "; path is " + path);
         // this causes really heavy recursions: return mustFindTypeInfo(fqn, path);
-        return typeContext.typeMapBuilder.getOrCreate(fqn, TypeInspectionImpl.CREATED);
+        return typeContext.typeMapBuilder.getOrCreate(fqn, TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION);
     }
 
     private TypeInfo inEnclosingTypes(String parentFqName) {
@@ -548,8 +548,8 @@ public class MyClassVisitor extends ClassVisitor {
         } else if (innerName != null && currentTypePath.equals(outerName)) {
             log(BYTECODE_INSPECTOR_DEBUG, "Processing sub-type {} of {}", name, currentType.fullyQualifiedName);
             TypeInfo subTypeInMap = typeContext.typeMapBuilder.get(pathToFqn(name));
-            TypeInspection subTypeInspection = subTypeInMap == null ? null: typeContext.getTypeInspection(subTypeInMap);
-            if (subTypeInMap == null || subTypeInspection.getInspectionState() == TypeInspectionImpl.CREATED) {
+            TypeInspection subTypeInspection = subTypeInMap == null ? null : typeContext.getTypeInspection(subTypeInMap);
+            if (subTypeInMap == null || subTypeInspection.getInspectionState() < TypeInspectionImpl.STARTING_BYTECODE) {
                 enclosingTypes.push(currentType);
                 TypeInfo subType = onDemandInspection.inspectFromPath(name, enclosingTypes, typeContext);
                 enclosingTypes.pop();

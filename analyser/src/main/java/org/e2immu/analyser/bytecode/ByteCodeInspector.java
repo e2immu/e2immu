@@ -69,11 +69,11 @@ public class ByteCodeInspector implements OnDemandInspection {
             String fqnPrimaryType = pathOfPrimaryType.replace('/', '.');
             TypeInfo primaryType = typeContext.typeMapBuilder.get(fqnPrimaryType);
             TypeInspection primaryTypeInspection = primaryType == null ? null : typeContext.getTypeInspection(primaryType);
-            if (primaryTypeInspection == null || primaryTypeInspection.getInspectionState() == TypeInspectionImpl.CREATED) {
+            if (primaryTypeInspection == null || primaryTypeInspection.getInspectionState() < TypeInspectionImpl.STARTING_BYTECODE) {
                 inspectFromPath(pathOfPrimaryType);
             }
             String fqn = MyClassVisitor.pathToFqn(path);
-            return List.of(typeContext.typeMapBuilder.getOrCreate(fqn, TypeInspectionImpl.CREATED));
+            return List.of(typeContext.typeMapBuilder.getOrCreate(fqn, TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION));
             // NOTE that is is quite possible that even after the inspectFromPath, the type has not been created
             // yet... cycles are allowed in the use of sub-types as interface or parent
         }

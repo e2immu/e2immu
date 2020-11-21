@@ -25,19 +25,15 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ReferenceType;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.ExpressionContext;
-import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.parser.TypeMapImpl;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
@@ -46,10 +42,18 @@ public class MethodInspector {
 
     private final MethodInfo methodInfo;
     private final MethodInspectionImpl.Builder builder;
+    private final boolean fullInspection;
 
-    public MethodInspector(MethodInfo methodInfo) {
+    public MethodInspector(TypeMapImpl.Builder typeMapBuilder, MethodInfo methodInfo) {
         this.methodInfo = methodInfo;
-        builder = new MethodInspectionImpl.Builder(methodInfo);
+        MethodInspection methodInspection = typeMapBuilder.getMethodInspection(methodInfo);
+        fullInspection = methodInspection == null;
+        if (fullInspection) {
+            builder = new MethodInspectionImpl.Builder(methodInfo);
+            typeMapBuilder.registerMethodInspection(builder);
+        } else {
+            builder = (MethodInspectionImpl.Builder) methodInspection;
+        }
     }
 
     public MethodInspection build() {
@@ -57,33 +61,31 @@ public class MethodInspector {
     }
 
     public MethodInspectionImpl.Builder getBuilder() {
-        return builder;
+        return Objects.requireNonNull(builder);
     }
+
+
+
+    /*
+    Inspection of a method inside an annotation type.
+    Example:
+
+    public @interface Dependent {
+      AnnotationType type() default AnnotationType.VERIFY;
+    }
+     */
 
     public void inspect(AnnotationMemberDeclaration amd, ExpressionContext expressionContext) {
         log(INSPECT, "Inspecting annotation member {}", methodInfo.fullyQualifiedName());
         addAnnotations(amd.getAnnotations(), expressionContext);
-        addModifiers(amd.getModifiers());
-        Expression expression = expressionContext.parseExpression(amd.getDefaultValue());
-        Block body = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expression)).build();
-        builder.setBlock(body);
-        ParameterizedType returnType = ParameterizedType.from(expressionContext.typeContext, amd.getType());
-        builder.setReturnType(returnType);
-    }
-
-    public void inspect(ConstructorDeclaration cd,
-                        ExpressionContext expressionContext,
-                        Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
-                        TypeInspector.DollarResolver dollarResolver) {
-        log(INSPECT, "Inspecting constructor {}", methodInfo.fullyQualifiedName());
-        builder.addCompanionMethods(companionMethods);
-        checkCompanionMethods(companionMethods);
-
-        addAnnotations(cd.getAnnotations(), expressionContext);
-        addModifiers(cd.getModifiers());
-        addParameters(cd.getParameters(), expressionContext, dollarResolver);
-        addExceptionTypes(cd.getThrownExceptions(), expressionContext.typeContext);
-        builder.setBlock(cd.getBody());
+        if (fullInspection) {
+            addModifiers(amd.getModifiers());
+            Expression expression = expressionContext.parseExpression(amd.getDefaultValue());
+            Block body = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expression)).build();
+            builder.setBlock(body);
+            ParameterizedType returnType = ParameterizedType.from(expressionContext.typeContext, amd.getType());
+            builder.setReturnType(returnType);
+        }
     }
 
     private void checkCompanionMethods(Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods) {
@@ -102,8 +104,33 @@ public class MethodInspector {
                 throw new UnsupportedOperationException("Companion methods must have only one statement when non-void: a return statement! " + companionMethodName);
             }
         }
-
     }
+
+    /*
+    Inspection of a constructor.
+    Code block will be handled later.
+     */
+
+    public void inspect(ConstructorDeclaration cd,
+                        ExpressionContext expressionContext,
+                        Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
+                        TypeInspector.DollarResolver dollarResolver) {
+        log(INSPECT, "Inspecting constructor {}", methodInfo.fullyQualifiedName());
+        builder.addCompanionMethods(companionMethods);
+        checkCompanionMethods(companionMethods);
+        addAnnotations(cd.getAnnotations(), expressionContext);
+        if (fullInspection) {
+            addModifiers(cd.getModifiers());
+            addParameters(cd.getParameters(), expressionContext, dollarResolver);
+            addExceptionTypes(cd.getThrownExceptions(), expressionContext.typeContext);
+            builder.setBlock(cd.getBody());
+        }
+    }
+
+    /*
+    Inspection of a method.
+    Code block will be handled later.
+     */
 
     public void inspect(boolean isInterface,
                         MethodDeclaration md,
@@ -125,14 +152,16 @@ public class MethodInspector {
             tp.inspect(newContext.typeContext, typeParameter);
         }
         addAnnotations(md.getAnnotations(), newContext);
-        addModifiers(md.getModifiers());
-        if (isInterface) builder.addModifier(MethodModifier.PUBLIC);
-        addParameters(md.getParameters(), newContext, dollarResolver);
-        addExceptionTypes(md.getThrownExceptions(), newContext.typeContext);
-        ParameterizedType pt = ParameterizedType.from(newContext.typeContext, md.getType());
-        builder.setReturnType(pt);
-        if (md.getBody().isPresent()) {
-            builder.setBlock(md.getBody().get());
+        if (fullInspection) {
+            addModifiers(md.getModifiers());
+            if (isInterface) builder.addModifier(MethodModifier.PUBLIC);
+            addParameters(md.getParameters(), newContext, dollarResolver);
+            addExceptionTypes(md.getThrownExceptions(), newContext.typeContext);
+            ParameterizedType pt = ParameterizedType.from(newContext.typeContext, md.getType());
+            builder.setReturnType(pt);
+            if (md.getBody().isPresent()) {
+                builder.setBlock(md.getBody().get());
+            }
         }
     }
 

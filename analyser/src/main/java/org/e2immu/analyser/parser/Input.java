@@ -67,6 +67,8 @@ public class Input {
         AnnotationStore annotationStore = new AnnotationXmlReader(classPath);
         LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
         byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext, e2ImmuAnnotationExpressions);
+        globalTypeContext.typeMapBuilder.setByteCodeInspector(byteCodeInspector);
+
         preload(classPath, "org.e2immu.annotation"); // needed for our own stuff
         preload(classPath, "java.lang"); // there are needed to help with implicit imports
         preload(classPath, "java.util.function"); // they are needed for functional interfaces that lurk in the background
@@ -89,7 +91,7 @@ public class Input {
                     String packageName = Arrays.stream(parts).limit(parts.length - 1).collect(Collectors.joining("."));
                     if (acceptSource(packageName, typeName, restrictions)) {
                         TypeInfo typeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName(packageName, typeName);
-                        globalTypeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.CREATED);
+                        globalTypeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.TRIGGER_JAVA_PARSER);
                         URL url = list.get(0);
                         sourceURLs.put(typeInfo, url);
                     } else {
@@ -115,7 +117,7 @@ public class Input {
 
     private void loadPrimitivesIntoGlobalTypeContext() {
         for (TypeInfo typeInfo : globalTypeContext.getPrimitives().typeByName.values()) {
-            globalTypeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.CREATED);
+            globalTypeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION);
             globalTypeContext.addToContext(typeInfo);
         }
         for (TypeInfo typeInfo : globalTypeContext.getPrimitives().primitiveByName.values()) {

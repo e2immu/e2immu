@@ -17,6 +17,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.Trie;
 
@@ -25,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
+
+import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
+import static org.e2immu.analyser.util.Logger.log;
 
 public class TypeMapImpl implements TypeMap {
 
@@ -109,6 +113,8 @@ public class TypeMapImpl implements TypeMap {
         private final Map<FieldInfo, FieldInspectionImpl.Builder> fieldInspections = new HashMap<>();
         private final Map<MethodInfo, MethodInspectionImpl.Builder> methodInspections = new HashMap<>();
 
+        private ByteCodeInspector byteCodeInspector;
+
         public TypeMapImpl build() {
             trie.freeze();
             return new TypeMapImpl(trie, primitives);
@@ -175,7 +181,17 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public TypeInspection getTypeInspection(TypeInfo typeInfo) {
-            return typeInspections.get(typeInfo);
+            TypeInspection typeInspection = typeInspections.get(typeInfo);
+            if (typeInspection == null) {
+                return null;
+            }
+            if (typeInspection.getInspectionState() == TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION) {
+                inspectWithByteCodeInspector(typeInfo);
+                if (typeInspection.getInspectionState() < TypeInspectionImpl.FINISHED_BYTECODE) {
+                    throw new UnsupportedOperationException("? expected the bytecode inspector to do its job");
+                }
+            }
+            return typeInspection;
         }
 
         @Override
@@ -190,6 +206,25 @@ public class TypeMapImpl implements TypeMap {
 
         public Stream<Map.Entry<TypeInfo, TypeInspectionImpl.Builder>> streamTypes() {
             return typeInspections.entrySet().stream();
+        }
+
+
+        // inspect from class path
+        private void inspectWithByteCodeInspector(TypeInfo typeInfo) {
+            String pathInClassPath = byteCodeInspector.getClassPath().fqnToPath(typeInfo.fullyQualifiedName, ".class");
+            byteCodeInspector.inspectFromPath(pathInClassPath);
+        }
+
+        private TypeInfo inspectWithByteCodeInspector(String fqn, TypeContext typeContext) {
+            String pathInClassPath = byteCodeInspector.getClassPath().fqnToPath(fqn, ".class");
+            byteCodeInspector.inspectFromPath(pathInClassPath);
+            TypeInfo typeInfo = typeContext.getFullyQualified(fqn, true);
+            log(INSPECT, "Add to type context: {}", typeInfo.fullyQualifiedName);
+            return typeInfo;
+        }
+
+        public void setByteCodeInspector(ByteCodeInspector byteCodeInspector) {
+            this.byteCodeInspector = byteCodeInspector;
         }
     }
 }

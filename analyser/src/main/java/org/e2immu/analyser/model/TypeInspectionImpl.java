@@ -204,13 +204,14 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         return Stream.concat(methodTypes, fieldTypes).collect(Collectors.toSet());
     }
 
-    public static final int CREATED = 0;
-    public static final int STARTING_BYTECODE = 1;
-    public static final int FINISHED_BYTECODE = 2;
-    public static final int STARTING_JAVA_PARSER = 3;
-    public static final int FINISHED_JAVA_PARSER = 4;
-    public static final int BY_HAND = 5;
-    public static final int BUILT = 6;
+    public static final int TRIGGER_BYTECODE_INSPECTION = 1;
+    public static final int STARTING_BYTECODE = 2;
+    public static final int FINISHED_BYTECODE = 3;
+    public static final int TRIGGER_JAVA_PARSER = 4;
+    public static final int STARTING_JAVA_PARSER = 5;
+    public static final int FINISHED_JAVA_PARSER = 6;
+    public static final int BY_HAND = 7;
+    public static final int BUILT = 8;
 
     @Container(builds = TypeInspectionImpl.class)
     public static class Builder extends AbstractInspectionBuilder<Builder> implements TypeInspection {

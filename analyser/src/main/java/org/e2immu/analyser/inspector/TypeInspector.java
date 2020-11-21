@@ -46,10 +46,18 @@ public class TypeInspector {
 
     private final TypeInfo typeInfo;
     private final TypeInspectionImpl.Builder builder;
+    private final boolean fullInspection;
 
-    public TypeInspector(TypeInfo typeInfo) {
+    public TypeInspector(TypeMapImpl.Builder typeMapBuilder, TypeInfo typeInfo) {
         this.typeInfo = typeInfo;
-        builder = new TypeInspectionImpl.Builder(typeInfo, TypeInspectionImpl.STARTING_JAVA_PARSER);
+
+        TypeInspection typeInspection = typeMapBuilder.getTypeInspection(typeInfo);
+        if (typeInspection == null || typeInspection.getInspectionState() >= TypeInspectionImpl.FINISHED_JAVA_PARSER) {
+            throw new UnsupportedOperationException();
+        }
+        fullInspection = typeInspection.getInspectionState() >= TypeInspectionImpl.TRIGGER_JAVA_PARSER;
+        builder = (TypeInspectionImpl.Builder) typeInspection;
+        builder.setInspectionState(TypeInspectionImpl.STARTING_JAVA_PARSER);
     }
 
     public TypeInspection build() {
@@ -59,6 +67,7 @@ public class TypeInspector {
     public void inspectAnonymousType(ParameterizedType classImplemented,
                                      ExpressionContext expressionContext,
                                      NodeList<BodyDeclaration<?>> members) {
+        assert fullInspection; // no way we could reach this otherwise
         builder.setEnclosingType(expressionContext.enclosingType);
         builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
         assert classImplemented.typeInfo != null && classImplemented.typeInfo.hasBeenInspected();
@@ -115,18 +124,18 @@ public class TypeInspector {
                 return null;
             };
         }
-        builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
-        expressionContext.typeContext.addToContext(typeInfo);
-
-        TypeNature typeNature = typeNature(typeDeclaration);
-        builder.setTypeNature(typeNature);
-
-        if (enclosingTypeIsInterface) {
-            builder.addTypeModifier(TypeModifier.PUBLIC);
-            if (typeNature == TypeNature.INTERFACE) {
-                builder.addTypeModifier(TypeModifier.STATIC);
+        if(fullInspection) {
+            builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
+            TypeNature typeNature = typeNature(typeDeclaration);
+            builder.setTypeNature(typeNature);
+            if (enclosingTypeIsInterface) {
+                builder.addTypeModifier(TypeModifier.PUBLIC);
+                if (typeNature == TypeNature.INTERFACE) {
+                    builder.addTypeModifier(TypeModifier.STATIC);
+                }
             }
         }
+        expressionContext.typeContext.addToContext(typeInfo);
 
         if (typeDeclaration instanceof EnumDeclaration) {
             doEnumDeclaration(expressionContext, (EnumDeclaration) typeDeclaration);
@@ -135,7 +144,7 @@ public class TypeInspector {
             doAnnotationDeclaration(expressionContext, (AnnotationDeclaration) typeDeclaration);
         }
         if (typeDeclaration instanceof ClassOrInterfaceDeclaration) {
-            doClassOrInterfaceDeclaration(hasBeenDefined, expressionContext, typeNature, (ClassOrInterfaceDeclaration) typeDeclaration);
+            doClassOrInterfaceDeclaration(hasBeenDefined, expressionContext,  (ClassOrInterfaceDeclaration) typeDeclaration);
         }
         boolean haveFunctionalInterface = false;
         for (AnnotationExpr annotationExpr : typeDeclaration.getAnnotations()) {
@@ -143,12 +152,14 @@ public class TypeInspector {
             haveFunctionalInterface |= "java.lang.FunctionalInterface".equals(ae.typeInfo().fullyQualifiedName);
             builder.addAnnotation(ae);
         }
-        for (Modifier modifier : typeDeclaration.getModifiers()) {
-            builder.addTypeModifier(TypeModifier.from(modifier));
+        if(fullInspection) {
+            for (Modifier modifier : typeDeclaration.getModifiers()) {
+                builder.addTypeModifier(TypeModifier.from(modifier));
+            }
         }
         return continueInspection(hasBeenDefined, expressionContext,
                 typeDeclaration.getMembers(),
-                typeNature == TypeNature.INTERFACE, haveFunctionalInterface,
+                builder.typeNature() == TypeNature.INTERFACE, haveFunctionalInterface,
                 dollarResolver);
     }
 
@@ -163,7 +174,7 @@ public class TypeInspector {
                 String methodName = amd.getName().getIdentifier();
                 MethodInfo methodInfo = new MethodInfo(typeInfo, methodName, List.of(),
                         expressionContext.typeContext.getPrimitives().voidParameterizedType, true, true);
-                MethodInspector methodInspector = new MethodInspector(methodInfo);
+                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, methodInfo);
                 methodInspector.inspect(amd, subContext);
                 methodInfo.methodInspection.set(methodInspector.build());
                 builder.addMethod(methodInfo);
@@ -209,7 +220,6 @@ public class TypeInspector {
     private void doClassOrInterfaceDeclaration(
             boolean hasBeenDefined,
             ExpressionContext expressionContext,
-            TypeNature typeNature,
             ClassOrInterfaceDeclaration cid) {
         int tpIndex = 0;
         for (com.github.javaparser.ast.type.TypeParameter typeParameter : cid.getTypeParameters()) {
@@ -218,7 +228,7 @@ public class TypeInspector {
             tp.inspect(expressionContext.typeContext, typeParameter);
             builder.addTypeParameter(tp);
         }
-        if (typeNature == TypeNature.CLASS) {
+        if (builder.typeNature() == TypeNature.CLASS) {
             if (!cid.getExtendedTypes().isEmpty()) {
                 ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, cid.getExtendedTypes(0));
                 // why this check? hasBeenDefined == true signifies Java parsing; == false is annotated APIs.
@@ -233,7 +243,7 @@ public class TypeInspector {
                 builder.addInterfaceImplemented(parameterizedType);
             }
         } else {
-            if (typeNature != TypeNature.INTERFACE) throw new UnsupportedOperationException();
+            if (builder.typeNature() != TypeNature.INTERFACE) throw new UnsupportedOperationException();
             for (ClassOrInterfaceType extended : cid.getExtendedTypes()) {
                 ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, extended);
                 if (hasBeenDefined) ensureLoaded(expressionContext, parameterizedType);
@@ -336,19 +346,22 @@ public class TypeInspector {
 
                     String name = vd.getNameAsString();
                     FieldInfo fieldInfo = new FieldInfo(pt, name, typeInfo);
-                    FieldInspectionImpl.Builder fieldInspectionBuilder =
-                            new FieldInspectionImpl.Builder().addAnnotations(annotations).addModifiers(modifiers);
-                    if (isInterface) {
-                        fieldInspectionBuilder
-                                .addModifier(FieldModifier.STATIC)
-                                .addModifier(FieldModifier.FINAL)
-                                .addModifier(FieldModifier.PUBLIC);
-                    }
-                    if (vd.getInitializer().isPresent()) {
-                        fieldInspectionBuilder.setInitializer(vd.getInitializer().get());
-                    }
-                    fieldInfo.fieldInspection.set(fieldInspectionBuilder.build());
-                    builder.addField(fieldInfo);
+                    FieldInspection inMap = expressionContext.typeContext.getFieldInspection(fieldInfo);
+                    if (inMap == null) {
+                        FieldInspectionImpl.Builder fieldInspectionBuilder =
+                                new FieldInspectionImpl.Builder().addAnnotations(annotations).addModifiers(modifiers);
+                        if (isInterface) {
+                            fieldInspectionBuilder
+                                    .addModifier(FieldModifier.STATIC)
+                                    .addModifier(FieldModifier.FINAL)
+                                    .addModifier(FieldModifier.PUBLIC);
+                        }
+                        if (vd.getInitializer().isPresent()) {
+                            fieldInspectionBuilder.setInitializer(vd.getInitializer().get());
+                        }
+                        fieldInfo.fieldInspection.set(fieldInspectionBuilder.build());
+                        builder.addField(fieldInfo);
+                    } // else: NOT inspecting this field, we've already byte-code loaded it.
                 }
             });
         }
@@ -363,7 +376,7 @@ public class TypeInspector {
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifConstructorDeclaration(cd -> {
                 MethodInfo methodInfo = new MethodInfo(typeInfo, List.of());
-                MethodInspector methodInspector = new MethodInspector(methodInfo);
+                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext, methodInfo);
                 methodInspector.inspect(cd, subContext, companionMethodsWaiting, dollarResolver);
                 methodInfo.methodInspection.set(methodInspector.build());
                 builder.addConstructor(methodInfo);
@@ -377,7 +390,7 @@ public class TypeInspector {
 
                 MethodInfo methodInfo = new MethodInfo(typeInfo, methodName, List.of(),
                         expressionContext.typeContext.getPrimitives().voidParameterizedType, md.isStatic(), md.isDefault());
-                MethodInspector methodInspector = new MethodInspector(methodInfo);
+                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext, methodInfo);
                 methodInspector.inspect(isInterface, md, subContext,
                         companionMethodName != null ? Map.of() : companionMethodsWaiting, dollarResolver);
                 if (isInterface && !methodInfo.isStatic && !methodInfo.isDefaultImplementation) {

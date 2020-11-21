@@ -120,7 +120,7 @@ public class ParameterizedType {
                     }
                     // we're going to assume that we're creating a subtype
                     String subTypeFqn = scopePt.typeInfo.fullyQualifiedName + "." + name;
-                    TypeInfo subType = context.typeMapBuilder.getOrCreate(subTypeFqn, TypeInspectionImpl.CREATED);
+                    TypeInfo subType = context.typeMapBuilder.getOrCreate(subTypeFqn, TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION);
                     return parameters.isEmpty() ? new ParameterizedType(subType, arrays) : new ParameterizedType(subType, parameters);
                 }
             }// else {

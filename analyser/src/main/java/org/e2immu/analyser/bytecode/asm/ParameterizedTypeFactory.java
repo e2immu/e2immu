@@ -43,7 +43,8 @@ public class ParameterizedTypeFactory {
 
     // for testing
     static Result from(TypeContext typeContext, String signature) {
-        return from(typeContext, (fqn, path) -> typeContext.typeMapBuilder.getOrCreate(fqn, TypeInspectionImpl.CREATED), signature);
+        return from(typeContext, (fqn, path) -> typeContext.typeMapBuilder.getOrCreate(fqn,
+                TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION), signature);
     }
 
     static Result from(TypeContext typeContext, FindType findType, String signature) {
