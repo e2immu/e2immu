@@ -65,16 +65,16 @@ public class TestModifiedThis extends CommonTestRunner {
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         TypeInfo typeInfo = d.typeInfo();
         if ("ParentClass".equals(typeInfo.simpleName)) {
-            Assert.assertEquals("ModifiedThis", typeInfo.typeInspection.get().packageNameOrEnclosingType.getRight().simpleName);
+            Assert.assertEquals("ModifiedThis", typeInfo.typeInspection.get().packageNameOrEnclosingType().getRight().simpleName);
         }
         if ("ChildClass".equals(typeInfo.simpleName)) {
-            Assert.assertEquals("ModifiedThis", typeInfo.typeInspection.get().packageNameOrEnclosingType.getRight().simpleName);
+            Assert.assertEquals("ModifiedThis", typeInfo.typeInspection.get().packageNameOrEnclosingType().getRight().simpleName);
         }
         if ("InnerOfChild".equals(typeInfo.simpleName)) {
-            Assert.assertEquals("ChildClass", typeInfo.typeInspection.get().packageNameOrEnclosingType.getRight().simpleName);
+            Assert.assertEquals("ChildClass", typeInfo.typeInspection.get().packageNameOrEnclosingType().getRight().simpleName);
         }
         if ("ModifiedThis".equals(typeInfo.simpleName)) {
-            Assert.assertEquals("org.e2immu.analyser.testexample", typeInfo.typeInspection.get().packageNameOrEnclosingType.getLeft());
+            Assert.assertEquals("org.e2immu.analyser.testexample", typeInfo.typeInspection.get().packageNameOrEnclosingType().getLeft());
         }
     };
 

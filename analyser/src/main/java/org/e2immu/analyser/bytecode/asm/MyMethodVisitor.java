@@ -126,12 +126,13 @@ public class MyMethodVisitor extends MethodVisitor {
                 }
             }
         }
-        // the build() on methodInspectionBuilder also builds the parameters
-        methodInfo.methodInspection.set(methodInspectionBuilder.build());
         if (methodInfo.isConstructor) {
             typeInspectionBuilder.addConstructor(methodInfo);
         } else {
             typeInspectionBuilder.addMethod(methodInfo);
         }
+        // note that we do NOT YET execute methodInfo.methodInspection.set(methodInspectionBuilder.build())
+        // this will take place after potential AnnotatedAPI inspection.
+        // The methodInspectionBuilder has been registered with the TypeMapImpl.
     }
 }

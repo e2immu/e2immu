@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeNature;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -47,11 +48,11 @@ public class TestByteCodeInspector {
 
     private TypeInfo parseFromJar(String path) throws IOException {
         Resources resources = new Resources();
-        resources.addJar(new URL("jar:file:build/libs/analyser-"+VERSION+".jar!/"));
+        resources.addJar(new URL("jar:file:build/libs/analyser-" + VERSION + ".jar!/"));
         resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
-        TypeContext typeContext = new TypeContext();
+        TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder());
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, typeContext,
                 new E2ImmuAnnotationExpressions(typeContext));
         List<TypeInfo> types = byteCodeInspector.inspectFromPath(path);
@@ -64,7 +65,7 @@ public class TestByteCodeInspector {
         resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
         Resources annotationResources = new Resources();
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
-        TypeContext typeContext = new TypeContext();
+        TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder());
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, typeContext,
                 new E2ImmuAnnotationExpressions(typeContext));
         List<TypeInfo> types = byteCodeInspector.inspectFromPath(path);
@@ -75,7 +76,7 @@ public class TestByteCodeInspector {
     @Test
     public void test() throws IOException {
         TypeInfo typeInfo = parseFromJar("org/e2immu/analyser/parser/Parser");
-        Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.getPotentiallyRun().typeNature);
+        Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.stream(0));
     }
 
@@ -83,67 +84,67 @@ public class TestByteCodeInspector {
     public void testInterface() throws IOException {
         TypeInfo typeInfo = parseFromJar("org/e2immu/analyser/model/EvaluationContext");
         LOGGER.info("Stream is\n{}", typeInfo.stream(0));
-        Assert.assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.getPotentiallyRun().typeNature);
+        Assert.assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature());
     }
 
     @Test
     public void testSubTypes() throws IOException {
         TypeInfo typeInfo = parseFromDirectory("org/e2immu/analyser/testexample/SubTypes");
         Assert.assertEquals("org.e2immu.analyser.testexample.SubTypes", typeInfo.fullyQualifiedName);
-        Assert.assertEquals(3, typeInfo.typeInspection.getPotentiallyRun().subTypes.size());
+        Assert.assertEquals(3, typeInfo.typeInspection.get().subTypes().size());
 
-        TypeInfo staticSubType = typeInfo.typeInspection.getPotentiallyRun().subTypes.stream()
+        TypeInfo staticSubType = typeInfo.typeInspection.get().subTypes().stream()
                 .filter(st -> st.simpleName.equals("StaticSubType")).findFirst().orElseThrow();
-        Assert.assertEquals("org.e2immu.analyser.testexample.SubTypes.StaticSubType",
+        Assert.assertEquals("org.e2immu.analyser.testexample.subTypes().StaticSubType",
                 staticSubType.fullyQualifiedName);
-        Assert.assertEquals(1, staticSubType.typeInspection.getPotentiallyRun().subTypes.size());
+        Assert.assertEquals(1, staticSubType.typeInspection.get().subTypes().size());
 
-        TypeInfo subSubType = staticSubType.typeInspection.getPotentiallyRun().subTypes.stream()
+        TypeInfo subSubType = staticSubType.typeInspection.get().subTypes().stream()
                 .filter(st -> st.simpleName.equals("SubTypeOfStaticSubType")).findFirst().orElseThrow();
-        Assert.assertEquals("org.e2immu.analyser.testexample.SubTypes.StaticSubType.SubTypeOfStaticSubType",
+        Assert.assertEquals("org.e2immu.analyser.testexample.subTypes().StaticSubType.SubTypeOfStaticSubType",
                 subSubType.fullyQualifiedName);
-        Assert.assertEquals(0, subSubType.typeInspection.getPotentiallyRun().subTypes.size());
+        Assert.assertEquals(0, subSubType.typeInspection.get().subTypes().size());
     }
 
     @Test
     public void testGenerics() throws IOException {
         TypeInfo type = parseFromJar("org/e2immu/analyser/util/Lazy.class");
-        Assert.assertEquals(TypeNature.CLASS, type.typeInspection.getPotentiallyRun().typeNature);
+        Assert.assertEquals(TypeNature.CLASS, type.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", type.stream(0));
     }
 
     @Test
     public void testGenerics2() throws IOException {
         TypeInfo typeInfo = parseFromJar("org/e2immu/analyser/util/Either");
-        Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.getPotentiallyRun().typeNature);
+        Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.stream(0));
     }
 
     @Test
     public void testStringArray() throws IOException {
         TypeInfo typeInfo = parseFromJar("org/e2immu/analyser/model/PackagePrefix");
-        Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.getPotentiallyRun().typeNature);
+        Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.stream(0));
     }
 
     @Test
     public void testSetOnce() throws IOException {
         TypeInfo type = parseFromJar("org/e2immu/analyser/util/SetOnce.class");
-        Assert.assertEquals(TypeNature.CLASS, type.typeInspection.getPotentiallyRun().typeNature);
+        Assert.assertEquals(TypeNature.CLASS, type.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", type.stream(0));
     }
 
     @Test
     public void testEnum() throws IOException {
         TypeInfo type = parseFromJar("org/e2immu/analyser/model/SideEffect.class");
-        Assert.assertEquals(TypeNature.ENUM, type.typeInspection.getPotentiallyRun().typeNature);
+        Assert.assertEquals(TypeNature.ENUM, type.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", type.stream(0));
     }
 
     @Test
     public void testImplements() throws IOException {
         TypeInfo type = parseFromJar("org/e2immu/analyser/analyser/StatementAnalyser.class");
-        Assert.assertEquals(TypeNature.CLASS, type.typeInspection.getPotentiallyRun().typeNature);
+        Assert.assertEquals(TypeNature.CLASS, type.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", type.stream(0));
     }
 }

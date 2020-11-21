@@ -20,13 +20,14 @@ package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.parser.TypeMapImpl;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Objects;
 
 public class TestParameterizedTypeFactory {
-    private final TypeContext typeContext = new TypeContext();
+    private final TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder());
 
     @Test
     public void testInt() {

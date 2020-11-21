@@ -368,6 +368,7 @@ public class MyClassVisitor extends ClassVisitor {
 
         FieldInfo fieldInfo = new FieldInfo(type, name, currentType);
         FieldInspectionImpl.Builder fieldInspectionBuilder = new FieldInspectionImpl.Builder();
+        typeContext.typeMapBuilder.registerFieldInspection(fieldInfo, fieldInspectionBuilder);
 
         if ((access & Opcodes.ACC_STATIC) != 0) fieldInspectionBuilder.addModifier(FieldModifier.STATIC);
         if ((access & Opcodes.ACC_PUBLIC) != 0) fieldInspectionBuilder.addModifier(FieldModifier.PUBLIC);
@@ -416,6 +417,7 @@ public class MyClassVisitor extends ClassVisitor {
             methodInfo = new MethodInfo(currentType, name, isStatic);
         }
         MethodInspectionImpl.Builder methodInspectionBuilder = new MethodInspectionImpl.Builder(methodInfo);
+        typeContext.typeMapBuilder.registerMethodInspection(methodInspectionBuilder);
 
         if ((access & Opcodes.ACC_PUBLIC) != 0 && !currentTypeIsInterface) {
             methodInspectionBuilder.addModifier(MethodModifier.PUBLIC);

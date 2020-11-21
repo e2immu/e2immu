@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Logger;
 import org.junit.BeforeClass;
 
@@ -33,7 +34,7 @@ import java.util.List;
 import java.util.Set;
 
 public abstract class CommonAbstractValue {
-
+    protected static TypeMapImpl.Builder TYPE_MAP_BUILDER;
     protected static Primitives PRIMITIVES;
     protected static BoolValue TRUE;
     protected static BoolValue FALSE;
@@ -60,7 +61,8 @@ public abstract class CommonAbstractValue {
 
     @BeforeClass
     public static void beforeClass() {
-        PRIMITIVES = new Primitives();
+        TYPE_MAP_BUILDER = new TypeMapImpl.Builder();
+        PRIMITIVES = TYPE_MAP_BUILDER.getPrimitives();
         TRUE = new BoolValue(PRIMITIVES, true);
         FALSE = new BoolValue(PRIMITIVES, false);
         Logger.activate(Logger.LogTarget.CNF);
@@ -151,7 +153,7 @@ public abstract class CommonAbstractValue {
     static ParameterInfo createParameter(String name) {
         assert PRIMITIVES != null;
         if (!PRIMITIVES.objectTypeInfo.typeInspection.isSet()) {
-            PRIMITIVES.objectTypeInfo.typeInspection.set(new TypeInspectionImpl.Builder(PRIMITIVES.objectTypeInfo)
+            PRIMITIVES.objectTypeInfo.typeInspection.set(new TypeInspectionImpl.Builder(PRIMITIVES.objectTypeInfo, TypeInspectionImpl.BY_HAND)
                     .setPackageName("java.lang")
                     .setParentClass(PRIMITIVES.objectParameterizedType)
                     .build());
@@ -164,7 +166,7 @@ public abstract class CommonAbstractValue {
         methodInfo.methodInspection.set(new MethodInspectionImpl.Builder(methodInfo)
                 .addParameterFluently(pi)
                 .build());
-        someType.typeInspection.set(new TypeInspectionImpl.Builder(someType)
+        someType.typeInspection.set(new TypeInspectionImpl.Builder(someType, TypeInspectionImpl.BY_HAND)
                 .setPackageName("org.e2immu.test")
                 .setParentClass(PRIMITIVES.objectParameterizedType)
                 .addMethod(methodInfo)

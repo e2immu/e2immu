@@ -179,9 +179,9 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
 
         TypeInfo myself = typeContext.getFullyQualified(UnusedLocalVariableChecks.class);
         MethodInfo constructor = myself.findConstructor(0);
-        Assert.assertEquals(MethodResolution.CallStatus.PART_OF_CONSTRUCTION, constructor.methodResolution.get().partOfConstruction.get());
+        Assert.assertEquals(MethodResolution.CallStatus.PART_OF_CONSTRUCTION, constructor.methodResolution.get().partOfConstruction());
         MethodInfo method1 = myself.findUniqueMethod("method1", 1);
-        Assert.assertEquals(MethodResolution.CallStatus.NOT_CALLED_AT_ALL, method1.methodResolution.get().partOfConstruction.get());
+        Assert.assertEquals(MethodResolution.CallStatus.NOT_CALLED_AT_ALL, method1.methodResolution.get().partOfConstruction());
     };
 
     @Test

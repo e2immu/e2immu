@@ -114,6 +114,7 @@ public class TypeMapImpl implements TypeMap {
         private final Map<MethodInfo, MethodInspectionImpl.Builder> methodInspections = new HashMap<>();
 
         private ByteCodeInspector byteCodeInspector;
+        private InspectWIthJavaParser inspectWithJavaParser;
 
         public TypeMapImpl build() {
             trie.freeze();
@@ -190,6 +191,11 @@ public class TypeMapImpl implements TypeMap {
                 if (typeInspection.getInspectionState() < TypeInspectionImpl.FINISHED_BYTECODE) {
                     throw new UnsupportedOperationException("? expected the bytecode inspector to do its job");
                 }
+            } else if (typeInspection.getInspectionState() == TypeInspectionImpl.TRIGGER_JAVA_PARSER) {
+                inspectWithJavaParser.inspect(typeInfo);
+                if (typeInspection.getInspectionState() < TypeInspectionImpl.FINISHED_JAVA_PARSER) {
+                    throw new UnsupportedOperationException("? expected the java parser to do its job");
+                }
             }
             return typeInspection;
         }
@@ -225,6 +231,10 @@ public class TypeMapImpl implements TypeMap {
 
         public void setByteCodeInspector(ByteCodeInspector byteCodeInspector) {
             this.byteCodeInspector = byteCodeInspector;
+        }
+
+        public void setInspectWithJavaParser(InspectWIthJavaParser inspectWithJavaParser) {
+            this.inspectWithJavaParser = inspectWithJavaParser;
         }
     }
 }

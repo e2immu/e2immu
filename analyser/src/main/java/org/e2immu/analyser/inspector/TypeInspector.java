@@ -76,22 +76,20 @@ public class TypeInspector {
         } else {
             builder.setParentClass(classImplemented);
         }
-        continueInspection(true, expressionContext, members, false, false, null);
+        continueInspection(expressionContext, members, false, false, null);
     }
 
     /**
-     * @param hasBeenDefined           when true, parsing .java; otherwise, parsing .annotated_api
      * @param enclosingTypeIsInterface when true, the enclosing type is an interface, and we need to add PUBLIC
      * @param enclosingType            when not null, denotes the parent type; otherwise, this is a primary type
      * @param typeDeclaration          the JavaParser object to inspect
      * @param expressionContext        the context to inspect in
      */
-    public List<TypeInfo> inspect(boolean hasBeenDefined,
-                                  boolean enclosingTypeIsInterface,
+    public List<TypeInfo> inspect(boolean enclosingTypeIsInterface,
                                   TypeInfo enclosingType,
                                   TypeDeclaration<?> typeDeclaration,
                                   ExpressionContext expressionContext) {
-        List<TypeInfo> dollarTypes = inspect(hasBeenDefined, enclosingTypeIsInterface, enclosingType, typeDeclaration, expressionContext, null);
+        List<TypeInfo> dollarTypes = inspect(enclosingTypeIsInterface, enclosingType, typeDeclaration, expressionContext, null);
         if (enclosingType == null) {
             dollarTypes.add(0, typeInfo);
         }
@@ -101,8 +99,7 @@ public class TypeInspector {
     /*
     returns the primary type in normal cases, and primary types in case of $ types
      */
-    private List<TypeInfo> inspect(boolean hasBeenDefined,
-                                   boolean enclosingTypeIsInterface,
+    private List<TypeInfo> inspect(boolean enclosingTypeIsInterface,
                                    TypeInfo enclosingType,
                                    TypeDeclaration<?> typeDeclaration,
                                    ExpressionContext expressionContext,
@@ -124,7 +121,7 @@ public class TypeInspector {
                 return null;
             };
         }
-        if(fullInspection) {
+        if (fullInspection) {
             builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
             TypeNature typeNature = typeNature(typeDeclaration);
             builder.setTypeNature(typeNature);
@@ -137,30 +134,30 @@ public class TypeInspector {
         }
         expressionContext.typeContext.addToContext(typeInfo);
 
-        if (typeDeclaration instanceof EnumDeclaration) {
-            doEnumDeclaration(expressionContext, (EnumDeclaration) typeDeclaration);
-        }
-        if (typeDeclaration instanceof AnnotationDeclaration) {
-            doAnnotationDeclaration(expressionContext, (AnnotationDeclaration) typeDeclaration);
-        }
-        if (typeDeclaration instanceof ClassOrInterfaceDeclaration) {
-            doClassOrInterfaceDeclaration(hasBeenDefined, expressionContext,  (ClassOrInterfaceDeclaration) typeDeclaration);
-        }
+
         boolean haveFunctionalInterface = false;
         for (AnnotationExpr annotationExpr : typeDeclaration.getAnnotations()) {
             AnnotationExpression ae = AnnotationExpressionImpl.inspect(expressionContext, annotationExpr);
             haveFunctionalInterface |= "java.lang.FunctionalInterface".equals(ae.typeInfo().fullyQualifiedName);
             builder.addAnnotation(ae);
         }
-        if(fullInspection) {
+        if (fullInspection) {
+            if (typeDeclaration instanceof EnumDeclaration) {
+                doEnumDeclaration(expressionContext, (EnumDeclaration) typeDeclaration);
+            }
+            if (typeDeclaration instanceof AnnotationDeclaration) {
+                doAnnotationDeclaration(expressionContext, (AnnotationDeclaration) typeDeclaration);
+            }
+            if (typeDeclaration instanceof ClassOrInterfaceDeclaration) {
+                doClassOrInterfaceDeclaration(expressionContext, (ClassOrInterfaceDeclaration) typeDeclaration);
+            }
+
             for (Modifier modifier : typeDeclaration.getModifiers()) {
                 builder.addTypeModifier(TypeModifier.from(modifier));
             }
         }
-        return continueInspection(hasBeenDefined, expressionContext,
-                typeDeclaration.getMembers(),
-                builder.typeNature() == TypeNature.INTERFACE, haveFunctionalInterface,
-                dollarResolver);
+        return continueInspection(expressionContext, typeDeclaration.getMembers(),
+                builder.typeNature() == TypeNature.INTERFACE, haveFunctionalInterface, dollarResolver);
     }
 
     private void doAnnotationDeclaration(ExpressionContext expressionContext, AnnotationDeclaration annotationDeclaration) {
@@ -217,10 +214,7 @@ public class TypeInspector {
         builder.addMethod(nameMethodInfo).addMethod(valueOfMethodInfo);
     }
 
-    private void doClassOrInterfaceDeclaration(
-            boolean hasBeenDefined,
-            ExpressionContext expressionContext,
-            ClassOrInterfaceDeclaration cid) {
+    private void doClassOrInterfaceDeclaration(ExpressionContext expressionContext, ClassOrInterfaceDeclaration cid) {
         int tpIndex = 0;
         for (com.github.javaparser.ast.type.TypeParameter typeParameter : cid.getTypeParameters()) {
             TypeParameter tp = new TypeParameter(typeInfo, typeParameter.getNameAsString(), tpIndex++);
@@ -234,19 +228,19 @@ public class TypeInspector {
                 // why this check? hasBeenDefined == true signifies Java parsing; == false is annotated APIs.
                 // the annotated APIs are backed by .class files, which can be inspected with byte code; there, we only have
                 // fully qualified names. In Java, we must add type names of parent's subtypes etc.
-                if (hasBeenDefined) ensureLoaded(expressionContext, parameterizedType);
+                if (fullInspection) ensureLoaded(expressionContext, parameterizedType);
                 builder.setParentClass(parameterizedType);
             }
             for (ClassOrInterfaceType extended : cid.getImplementedTypes()) {
                 ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, extended);
-                if (hasBeenDefined) ensureLoaded(expressionContext, parameterizedType);
+                if (fullInspection) ensureLoaded(expressionContext, parameterizedType);
                 builder.addInterfaceImplemented(parameterizedType);
             }
         } else {
             if (builder.typeNature() != TypeNature.INTERFACE) throw new UnsupportedOperationException();
             for (ClassOrInterfaceType extended : cid.getExtendedTypes()) {
                 ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, extended);
-                if (hasBeenDefined) ensureLoaded(expressionContext, parameterizedType);
+                if (fullInspection) ensureLoaded(expressionContext, parameterizedType);
                 builder.addInterfaceImplemented(parameterizedType);
             }
         }
@@ -255,17 +249,17 @@ public class TypeInspector {
     /**
      * calling "get" on the typeInspection of the parameterizedType will trigger recursive parsing.
      * But we should not do that when we're inside the same compilation unit: the primary type and all its subtypes.
-     * <p>
-     * We should be wary of loops here; we may have to extend this whole system, and somehow keep track of
-     * all types currently under inspection, as we do with the bytecode inspector.
      */
     private void ensureLoaded(ExpressionContext expressionContext, ParameterizedType parameterizedType) {
         assert parameterizedType.typeInfo != null;
         boolean insideCompilationUnit = parameterizedType.typeInfo.fullyQualifiedName.startsWith(expressionContext.primaryType.fullyQualifiedName);
         if (!insideCompilationUnit) {
-            InspectionProvider inspectionProvider = expressionContext.typeContext;
-
+            InspectionProvider inspectionProvider = expressionContext.typeContext.typeMapBuilder;
+            // getting the type inspection should trigger either byte-code or java inspection
             TypeInspection typeInspection = inspectionProvider.getTypeInspection(parameterizedType.typeInfo);
+            if (typeInspection == null) {
+                throw new UnsupportedOperationException("The type " + parameterizedType.typeInfo.fullyQualifiedName + " should already have a type inspection");
+            }
             // now that we're sure it has been inspected, we add all its top-level subtypes to the type context
             for (TypeInfo subType : typeInspection.subTypes()) {
                 expressionContext.typeContext.addToContext(subType);
@@ -281,8 +275,8 @@ public class TypeInspector {
         TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(localType, TypeInspectionImpl.STARTING_JAVA_PARSER);
         builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
         builder.setEnclosingType(expressionContext.enclosingType);
-        doClassOrInterfaceDeclaration(true, expressionContext, TypeNature.CLASS, cid);
-        continueInspection(true, expressionContext, cid.getMembers(), false, false, null);
+        doClassOrInterfaceDeclaration(expressionContext, cid);
+        continueInspection(expressionContext, cid.getMembers(), false, false, null);
     }
 
     // only to be called on primary types
@@ -308,7 +302,6 @@ public class TypeInspector {
     }
 
     private List<TypeInfo> continueInspection(
-            boolean hasBeenDefined,
             ExpressionContext expressionContext,
             NodeList<BodyDeclaration<?>> members,
             boolean isInterface,
@@ -327,29 +320,36 @@ public class TypeInspector {
         List<TypeInfo> dollarTypes = new ArrayList<>();
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> inspectSubType(dollarResolver, dollarTypes, expressionContext, isInterface,
-                    hasBeenDefined, cid.getNameAsString(), cid.asTypeDeclaration()));
+                    cid.getNameAsString(), cid.asTypeDeclaration()));
             bodyDeclaration.ifEnumDeclaration(ed -> inspectSubType(dollarResolver, dollarTypes, expressionContext, isInterface,
-                    hasBeenDefined, ed.getNameAsString(), ed.asTypeDeclaration()));
+                    ed.getNameAsString(), ed.asTypeDeclaration()));
         }
 
         // then, do fields
 
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifFieldDeclaration(fd -> {
+                List<AnnotationExpression> annotations = fd.getAnnotations().stream()
+                        .map(ae -> AnnotationExpressionImpl.inspect(expressionContext, ae)).collect(Collectors.toList());
                 List<FieldModifier> modifiers = fd.getModifiers().stream()
                         .map(FieldModifier::from)
                         .collect(Collectors.toList());
-                List<AnnotationExpression> annotations = fd.getAnnotations().stream()
-                        .map(ae -> AnnotationExpressionImpl.inspect(expressionContext, ae)).collect(Collectors.toList());
                 for (VariableDeclarator vd : fd.getVariables()) {
                     ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, vd.getType());
 
                     String name = vd.getNameAsString();
                     FieldInfo fieldInfo = new FieldInfo(pt, name, typeInfo);
                     FieldInspection inMap = expressionContext.typeContext.getFieldInspection(fieldInfo);
+                    FieldInspectionImpl.Builder fieldInspectionBuilder;
                     if (inMap == null) {
-                        FieldInspectionImpl.Builder fieldInspectionBuilder =
-                                new FieldInspectionImpl.Builder().addAnnotations(annotations).addModifiers(modifiers);
+                        fieldInspectionBuilder = new FieldInspectionImpl.Builder();
+                        expressionContext.typeContext.typeMapBuilder.registerFieldInspection(fieldInfo, fieldInspectionBuilder);
+                    } else if (inMap instanceof FieldInspectionImpl.Builder builder) fieldInspectionBuilder = builder;
+                    else throw new UnsupportedOperationException();
+
+                    fieldInspectionBuilder.addAnnotations(annotations);
+                    if (fullInspection) {
+                        fieldInspectionBuilder.addModifiers(modifiers);
                         if (isInterface) {
                             fieldInspectionBuilder
                                     .addModifier(FieldModifier.STATIC)
@@ -361,7 +361,7 @@ public class TypeInspector {
                         }
                         fieldInfo.fieldInspection.set(fieldInspectionBuilder.build());
                         builder.addField(fieldInfo);
-                    } // else: NOT inspecting this field, we've already byte-code loaded it.
+                    }
                 }
             });
         }
@@ -376,7 +376,7 @@ public class TypeInspector {
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifConstructorDeclaration(cd -> {
                 MethodInfo methodInfo = new MethodInfo(typeInfo, List.of());
-                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext, methodInfo);
+                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, methodInfo);
                 methodInspector.inspect(cd, subContext, companionMethodsWaiting, dollarResolver);
                 methodInfo.methodInspection.set(methodInspector.build());
                 builder.addConstructor(methodInfo);
@@ -390,7 +390,7 @@ public class TypeInspector {
 
                 MethodInfo methodInfo = new MethodInfo(typeInfo, methodName, List.of(),
                         expressionContext.typeContext.getPrimitives().voidParameterizedType, md.isStatic(), md.isDefault());
-                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext, methodInfo);
+                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, methodInfo);
                 methodInspector.inspect(isInterface, md, subContext,
                         companionMethodName != null ? Map.of() : companionMethodsWaiting, dollarResolver);
                 if (isInterface && !methodInfo.isStatic && !methodInfo.isDefaultImplementation) {
@@ -406,7 +406,7 @@ public class TypeInspector {
             });
         }
 
-        if (countNonStaticNonDefaultIfInterface.get() == 1 && !haveFunctionalInterface && hasBeenDefined) {
+        if (countNonStaticNonDefaultIfInterface.get() == 1 && !haveFunctionalInterface && fullInspection) {
             boolean haveNonStaticNonDefaultsInSuperType = false;
             for (ParameterizedType superInterface : builder.getInterfacesImplemented()) {
                 assert superInterface.typeInfo != null;
@@ -435,15 +435,14 @@ public class TypeInspector {
                                 List<TypeInfo> dollarTypes,
                                 ExpressionContext expressionContext,
                                 boolean isInterface,
-                                boolean hasBeenDefined,
                                 String nameAsString,
                                 TypeDeclaration<?> asTypeDeclaration) {
         Pair<Boolean, TypeInfo> pair = subType(expressionContext, dollarResolver, nameAsString);
         TypeInfo subType = pair.v;
         ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
         TypeInfo enclosingType = pair.k ? null : typeInfo;
-        TypeInspector subTypeInspector = new TypeInspector(subType);
-        subTypeInspector.inspect(hasBeenDefined, isInterface, enclosingType, asTypeDeclaration, newExpressionContext, dollarResolver);
+        TypeInspector subTypeInspector = new TypeInspector(expressionContext.typeContext.typeMapBuilder, subType);
+        subTypeInspector.inspect(isInterface, enclosingType, asTypeDeclaration, newExpressionContext, dollarResolver);
         subType.typeInspection.set(subTypeInspector.build());
         if (pair.k) {
             dollarTypes.add(subType);

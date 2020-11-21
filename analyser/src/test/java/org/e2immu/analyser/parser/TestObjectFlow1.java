@@ -48,7 +48,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("useKv".equals(d.methodInfo().name)) {
-            ParameterAnalysis p0 = d.methodInfo().methodInspection.get().parameters.get(0).parameterAnalysis.get();
+            ParameterAnalysis p0 = d.methodInfo().methodInspection.get().getParameters().get(0).parameterAnalysis.get();
             ObjectFlow objectFlowP0 = p0.getObjectFlow();
             Assert.assertNotNull(objectFlowP0);
             Assert.assertSame(Origin.PARAMETER, objectFlowP0.origin);
@@ -92,7 +92,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
             } else {
                 Assert.assertTrue(objectFlow.location.info instanceof ParameterInfo);
             }
-            ParameterInfo key = d.fieldInfo().owner.typeInspection.getPotentiallyRun().constructors.get(0).methodInspection.get().parameters.get(0);
+            ParameterInfo key = d.fieldInfo().owner.typeInspection.get().constructors().get(0).methodInspection.get().getParameters().get(0);
             ObjectFlow objectFlowPI = key.parameterAnalysis.get().getObjectFlow();
             if (iteration > 0) {
                 Assert.assertSame(objectFlow, objectFlowPI);
@@ -123,8 +123,8 @@ public class TestObjectFlow1 extends CommonTestRunner {
                 .build());
 
         TypeInfo keyValue = typeContext.typeMapBuilder.get("org.e2immu.analyser.testexample.ObjectFlow1.KeyValue");
-        MethodInfo keyValueConstructor = keyValue.typeInspection.getPotentiallyRun().constructors.get(0);
-        ParameterInfo key = keyValueConstructor.methodInspection.get().parameters.get(0);
+        MethodInfo keyValueConstructor = keyValue.typeInspection.get().constructors().get(0);
+        ParameterInfo key = keyValueConstructor.methodInspection.get().getParameters().get(0);
         ObjectFlow objectFlowKey = key.parameterAnalysis.get().getObjectFlow();
         Assert.assertNotNull(objectFlowKey);
         Assert.assertSame(Origin.PARAMETER, objectFlowKey.getOrigin());
@@ -137,12 +137,12 @@ public class TestObjectFlow1 extends CommonTestRunner {
         Assert.assertSame(inType, keyConstant);
         Assert.assertSame(Origin.LITERAL, inType.origin);
 
-        ParameterInfo value = keyValueConstructor.methodInspection.get().parameters.get(1);
+        ParameterInfo value = keyValueConstructor.methodInspection.get().getParameters().get(1);
         ObjectFlow objectFlowValue = value.parameterAnalysis.get().getObjectFlow();
         Assert.assertSame(Origin.PARAMETER, objectFlowValue.getOrigin());
 
-        MethodInfo useKv = objectFlow1.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("useKv")).findAny().orElseThrow();
-        ParameterInfo k = useKv.methodInspection.get().parameters.get(0);
+        MethodInfo useKv = objectFlow1.typeInspection.get().methods().stream().filter(m -> m.name.equals("useKv")).findAny().orElseThrow();
+        ParameterInfo k = useKv.methodInspection.get().getParameters().get(0);
         ObjectFlow objectFlowK = k.parameterAnalysis.get().getObjectFlow();
         Assert.assertSame(Origin.PARAMETER, objectFlowK.origin);
 
@@ -153,7 +153,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
                 .filter(of -> Origin.FIELD_ACCESS == of.origin).findAny().orElseThrow();
 
 
-        MethodInfo getKeyMethod = keyValue.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "getKey".equals(m.name)).findAny().orElseThrow();
+        MethodInfo getKeyMethod = keyValue.typeInspection.get().methods().stream().filter(m -> "getKey".equals(m.name)).findAny().orElseThrow();
         ObjectFlow returnFlowGetKey = getKeyMethod.methodAnalysis.get().getObjectFlow();
         Assert.assertSame(Origin.FIELD_ACCESS, returnFlowGetKey.origin);
 

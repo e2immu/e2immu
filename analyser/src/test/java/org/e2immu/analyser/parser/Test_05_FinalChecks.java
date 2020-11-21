@@ -70,7 +70,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
             } else Assert.fail();
         }
 
-        if (FINAL_CHECKS.equals(d.methodInfo().name) && d.methodInfo().methodInspection.get().parameters.size() == 2) {
+        if (FINAL_CHECKS.equals(d.methodInfo().name) && d.methodInfo().methodInspection.get().getParameters().size() == 2) {
             if (S1.equals(d.variableName())) {
                 Assert.assertEquals(S1_P0 + " + abc", d.currentValue().toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));

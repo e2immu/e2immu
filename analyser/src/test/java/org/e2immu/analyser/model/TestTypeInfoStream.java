@@ -130,7 +130,7 @@ public class TestTypeInfoStream {
                 .setInspectedInitializer(new NullConstant())
                 .build());
 
-        TypeInspection containerTypeInspection = new TypeInspectionImpl.Builder(containerTypeInfo)
+        TypeInspection containerTypeInspection = new TypeInspectionImpl.Builder(containerTypeInfo, TypeInspectionImpl.BY_HAND)
                 .setTypeNature(TypeNature.CLASS)
                 .setParentClass(primitives.objectParameterizedType)
                 .setEnclosingType(typeInfo)
@@ -153,7 +153,7 @@ public class TestTypeInfoStream {
                 .setReturnType(primitives.stringTypeInfo)
                 .setBlock(new Block.BlockBuilder().build())
                 .build());
-        testEquivalent.typeInspection.set(new TypeInspectionImpl.Builder(testEquivalent)
+        testEquivalent.typeInspection.set(new TypeInspectionImpl.Builder(testEquivalent, TypeInspectionImpl.BY_HAND)
                 .setParentClass(primitives.objectParameterizedType)
                 .setPackageName(TEST_PACKAGE)
                 .setTypeNature(TypeNature.ANNOTATION)
@@ -184,7 +184,7 @@ public class TestTypeInfoStream {
                         ).build())
                 .build());
 
-        TypeInspection typeInspection = new TypeInspectionImpl.Builder(typeInfo)
+        TypeInspection typeInspection = new TypeInspectionImpl.Builder(typeInfo, TypeInspectionImpl.BY_HAND)
                 .addTypeModifier(TypeModifier.PUBLIC)
                 .setParentClass(primitives.objectParameterizedType)
                 .setPackageName("org.e2immu.analyser.model")

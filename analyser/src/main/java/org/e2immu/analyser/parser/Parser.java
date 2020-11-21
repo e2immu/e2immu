@@ -68,7 +68,7 @@ public class Parser {
     // method result only used separately in tests
     public void runAnnotatedAPIs(Collection<URL> annotatedAPIs) throws IOException {
         InspectAnnotatedAPIs inspectAnnotatedAPIs = new InspectAnnotatedAPIs(getTypeContext(), getByteCodeInspector());
-        List<SortedType> sortedTypes = inspectAnnotatedAPIs.inspectResolvePossiblyMerge(annotatedAPIs, configuration.inputConfiguration.sourceEncoding);
+        List<SortedType> sortedTypes = inspectAnnotatedAPIs.inspectAndResolve(annotatedAPIs, configuration.inputConfiguration.sourceEncoding);
         if (!configuration.skipAnalysis) {
             ensureShallowAnalysisOfLoadedObjects(sortedTypes);
         }

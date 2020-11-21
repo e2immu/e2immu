@@ -27,16 +27,6 @@ public class Level {
     public static final int READ_ASSIGN_ONCE = TRUE;
     public static final int READ_ASSIGN_MULTIPLE_TIMES = 2;
 
-    // SIZE SYSTEM
-    public static final int SIZE_COPY_MIN_TRUE = 1;
-    public static final int SIZE_COPY_TRUE = 3;
-
-    public static final int NOT_A_SIZE = 0;
-    public static final int IS_A_SIZE = 1; //  >=0
-    public static final int SIZE_EMPTY = 2; // =0
-    public static final int SIZE_NOT_EMPTY = 3; // >= 1
-
-
     // be careful, assumes the same level everywhere
     public static final IntBinaryOperator OR = (i, j) -> i == DELAY || j == DELAY ? DELAY : Math.max(i, j);
 
@@ -71,44 +61,7 @@ public class Level {
         return b ? TRUE : FALSE;
     }
 
-    public static boolean compatibleSizes(int value, int required) {
-        if (haveEquals(required)) return value == required;
-        return value >= required;
-    }
-
-    public static int joinSizeRestrictions(int v1, int v2) {
-        if (v1 == v2) return v1;
-        int min = Math.min(v1, v2);
-        if (haveEquals(min)) return min - 1;
-        return Math.min(v1, v2);
-    }
-
-    public static boolean haveEquals(int size) {
-        if (size == Integer.MAX_VALUE) return false;
-        return size >= 2 && size % 2 == 0;
-    }
-
-    public static int decodeSizeEquals(int size) {
-        return size / 2 - 1;
-    }
-
-    public static int decodeSizeMin(int size) {
-        return size / 2;
-    }
-
-    public static int encodeSizeEquals(int size) {
-        return (1 + size) * 2;
-    }
-
-    public static int encodeSizeMin(int size) {
-        return size * 2 + 1;
-    }
-
     public static int incrementReadAssigned(int read) {
         return Math.max(Math.min(Level.READ_ASSIGN_MULTIPLE_TIMES, read + 1), Level.READ_ASSIGN_ONCE);
-    }
-
-    public static int bestSize(int i, int j) {
-        return Math.max(i, j);
     }
 }

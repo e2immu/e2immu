@@ -97,7 +97,7 @@ public class Test_01_SizeCopy extends CommonTestRunner {
 
     TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
-        Assert.assertSame(AnnotationMode.DEFENSIVE, collection.typeInspection.get().annotationMode);
+        Assert.assertSame(AnnotationMode.DEFENSIVE, collection.typeInspection.get().annotationMode());
 
         Assert.assertTrue(collection.shallowAnalysis());
         Assert.assertEquals(Level.TRUE, collection.typeAnalysis.get().getProperty(VariableProperty.CONTAINER));
@@ -105,8 +105,8 @@ public class Test_01_SizeCopy extends CommonTestRunner {
         // looking at java.util.Collection.stream()
         // has one companion method, $Transfer$Size
         MethodInfo stream = collection.findUniqueMethod("stream", 0);
-        Assert.assertEquals(1, stream.methodInspection.get().companionMethods.size());
-        CompanionMethodName streamCmn = stream.methodInspection.get().companionMethods.keySet().stream().findFirst().orElseThrow();
+        Assert.assertEquals(1, stream.methodInspection.get().getCompanionMethods().size());
+        CompanionMethodName streamCmn = stream.methodInspection.get().getCompanionMethods().keySet().stream().findFirst().orElseThrow();
         Assert.assertEquals("Size", streamCmn.aspect());
         Assert.assertSame(CompanionMethodName.Action.TRANSFER, streamCmn.action());
         // the result of the transfer size should be the size of the collection, by contract
@@ -126,18 +126,18 @@ public class Test_01_SizeCopy extends CommonTestRunner {
         Assert.assertEquals(1, overrides.size());
 
         // ensure that in Set.addAll(p0), p0 is not modified (implicitly, because type is container!)
-        ParameterInfo param0Set = addAllSet.methodInspection.get().parameters.get(0);
+        ParameterInfo param0Set = addAllSet.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(Level.FALSE, param0Set.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
     };
 
     private void checkAdd(TypeInfo collection) {
         // looking at java.util.Collection.add()
         MethodInfo add = collection.findUniqueMethod("add", 1);
-        ParameterInfo param0Add = add.methodInspection.get().parameters.get(0);
+        ParameterInfo param0Add = add.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(Level.FALSE, param0Add.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
-        Assert.assertEquals(3, add.methodInspection.get().companionMethods.size());
-        CompanionMethodName addModificationCmn = add.methodInspection.get().companionMethods.keySet().stream()
+        Assert.assertEquals(3, add.methodInspection.get().getCompanionMethods().size());
+        CompanionMethodName addModificationCmn = add.methodInspection.get().getCompanionMethods().keySet().stream()
                 .filter(cmn -> cmn.action() == CompanionMethodName.Action.MODIFICATION).findFirst().orElseThrow();
         CompanionAnalysis addModification = add.methodAnalysis.get().getCompanionAnalyses().get(addModificationCmn);
 
@@ -148,7 +148,7 @@ public class Test_01_SizeCopy extends CommonTestRunner {
         Assert.assertEquals(IS_FACT + "(" + CONTAINS + "(" + PARAM + "))?" + CONTAINS + "(" + PARAM + ")?" + SIZE + " == pre:" +
                 "(1 + pre) == " + SIZE + ":(((1 + pre) + (-" + SIZE + ")) >= 0 and (" + SIZE + " + (-pre)) >= 0)", addModification.getValue().toString());
 
-        CompanionMethodName addValueCmn = add.methodInspection.get().companionMethods.keySet().stream()
+        CompanionMethodName addValueCmn = add.methodInspection.get().getCompanionMethods().keySet().stream()
                 .filter(cmn -> cmn.action() == CompanionMethodName.Action.VALUE).findFirst().orElseThrow();
         CompanionAnalysis addValue = add.methodAnalysis.get().getCompanionAnalyses().get(addValueCmn);
 
@@ -160,10 +160,10 @@ public class Test_01_SizeCopy extends CommonTestRunner {
     private void checkAddAll(TypeInfo collection) {
         // looking at java.util.Collection.addAll()
         MethodInfo addAll = collection.findUniqueMethod("addAll", 1);
-        ParameterInfo param0 = addAll.methodInspection.get().parameters.get(0);
+        ParameterInfo param0 = addAll.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(Level.FALSE, param0.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
-        Assert.assertEquals(2, addAll.methodInspection.get().companionMethods.size());
-        CompanionMethodName addAllModificationCmn = addAll.methodInspection.get().companionMethods.keySet().stream()
+        Assert.assertEquals(2, addAll.methodInspection.get().getCompanionMethods().size());
+        CompanionMethodName addAllModificationCmn = addAll.methodInspection.get().getCompanionMethods().keySet().stream()
                 .filter(cmn -> cmn.action() == CompanionMethodName.Action.MODIFICATION).findFirst().orElseThrow();
         CompanionAnalysis addAllModification = addAll.methodAnalysis.get().getCompanionAnalyses().get(addAllModificationCmn);
         final String PARAM = "java.util.Collection.addAll(Collection<? extends E>):0:collection";

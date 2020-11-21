@@ -38,7 +38,7 @@ public class ParseObjectCreationExpr {
         if (objectCreationExpr.getAnonymousClassBody().isPresent()) {
             // TODO parameterizedType can be Iterator<>, we will need to detect the correct type from context if needed
             TypeInfo anonymousType = new TypeInfo(expressionContext.enclosingType, expressionContext.topLevel.newIndex(expressionContext.enclosingType));
-            TypeInspector typeInspector = new TypeInspector(anonymousType);
+            TypeInspector typeInspector = new TypeInspector(expressionContext.typeContext.typeMapBuilder, anonymousType);
             typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
             anonymousType.typeInspection.set(typeInspector.build());

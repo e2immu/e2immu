@@ -52,7 +52,7 @@ public class TestInspectAnnotatedAPIs {
 
     @Test
     public void testLoadSources() throws IOException {
-        TypeContext globalTypeContext = new TypeContext();
+        TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder());
         E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions(globalTypeContext);
         URL url = new URL("file:src/main/resources/annotatedAPIs/java.util.annotated_api");
         Resources classPath = new Resources();
@@ -61,7 +61,7 @@ public class TestInspectAnnotatedAPIs {
         //inspectAnnotatedAPIs.inspectResolvePossiblyMerge()
         // FIXME update test
         AtomicInteger counter = new AtomicInteger(0);
-        inspectAnnotatedAPIs.getLocalTypeStore().visit(new String[0], (s, types) -> {
+        globalTypeContext.typeMapBuilder.visit(new String[0], (s, types) -> {
             for (TypeInfo typeInfo : types) {
                 LOGGER.info("Have type {} in path {}", typeInfo.fullyQualifiedName, Arrays.toString(s));
                 counter.incrementAndGet();

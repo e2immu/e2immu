@@ -61,7 +61,7 @@ public class TestObjectFlow2 extends CommonTestRunner {
         TypeInfo set = typeContext.typeMapBuilder.get(Set.class.getCanonicalName());
 
         TypeInfo objectFlow2 = typeContext.typeMapBuilder.get(ObjectFlow2.class.getCanonicalName());
-        MethodInfo ofMethod = objectFlow2.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "of".equals(m.name)).findAny().orElseThrow();
+        MethodInfo ofMethod = objectFlow2.typeInspection.get().methods().stream().filter(m -> "of".equals(m.name)).findAny().orElseThrow();
         ObjectFlow newHashSet = ofMethod.methodAnalysis.get().getInternalObjectFlows().stream()
                 .filter(of -> of.type.typeInfo == hashSet)
                 .filter(of -> of.origin == Origin.NEW_OBJECT_CREATION)
@@ -70,9 +70,9 @@ public class TestObjectFlow2 extends CommonTestRunner {
         ObjectFlow newHashSet2 = newHashSet.getNext().findFirst().orElseThrow();
         Assert.assertSame(newHashSet2, ofMethod.methodAnalysis.get().getObjectFlow());
 
-        ObjectFlow ofParam = ofMethod.methodInspection.get().parameters.get(0).parameterAnalysis.get().getObjectFlow();
+        ObjectFlow ofParam = ofMethod.methodInspection.get().getParameters().get(0).parameterAnalysis.get().getObjectFlow();
 
-        MethodInfo useOf = objectFlow2.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "useOf".equals(m.name)).findAny().orElseThrow();
+        MethodInfo useOf = objectFlow2.typeInspection.get().methods().stream().filter(m -> "useOf".equals(m.name)).findAny().orElseThrow();
 
         ObjectFlow constantX = objectFlow2.typeAnalysis.get().getConstantObjectFlows().stream()
                 .filter(of -> of.type.typeInfo == typeContext.getPrimitives().stringTypeInfo).findFirst().orElseThrow();
@@ -85,7 +85,7 @@ public class TestObjectFlow2 extends CommonTestRunner {
         Assert.assertTrue(useOfFlow.containsPrevious(newHashSet2));
         Assert.assertTrue(newHashSet2.getNext().collect(Collectors.toSet()).contains(useOfFlow));
 
-        FieldInfo set1 = objectFlow2.typeInspection.getPotentiallyRun().fields.stream().filter(f -> "set1".equals(f.name)).findAny().orElseThrow();
+        FieldInfo set1 = objectFlow2.typeInspection.get().fields().stream().filter(f -> "set1".equals(f.name)).findAny().orElseThrow();
         ObjectFlow set1ObjectFlow = set1.fieldAnalysis.get().getObjectFlow();
 
         Assert.assertSame(Origin.RESULT_OF_METHOD, set1ObjectFlow.origin);

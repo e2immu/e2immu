@@ -91,7 +91,7 @@ public class TestObjectFlow3 extends CommonTestRunner {
 
         // there are 2 flows in the 'main' method
         TypeInfo objectFlow3 = typeContext.typeMapBuilder.get("org.e2immu.analyser.testexample.ObjectFlow3");
-        MethodInfo mainMethod = objectFlow3.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "main".equals(m.name)).findAny().orElseThrow();
+        MethodInfo mainMethod = objectFlow3.typeInspection.get().methods().stream().filter(m -> "main".equals(m.name)).findAny().orElseThrow();
         mainMethod.methodAnalysis.get().getInternalObjectFlows().forEach(of ->
                 LOGGER.info("internal object flows of static 'main': {}", of.detailed()));
         Assert.assertEquals(4L, mainMethod.methodAnalysis.get().getInternalObjectFlows().size());
@@ -109,13 +109,13 @@ public class TestObjectFlow3 extends CommonTestRunner {
         Assert.assertEquals("go", newMainCallGo.methodInfo.name);
 
         // the Config flow in Main is linked to the creation in the main method
-        MethodInfo mainConstructor = main.typeInspection.getPotentiallyRun().constructors.get(0);
-        ObjectFlow mainConstructorParamObjectFlow = mainConstructor.methodInspection.get().parameters.get(0).parameterAnalysis.get().getObjectFlow();
+        MethodInfo mainConstructor = main.typeInspection.get().constructors().get(0);
+        ObjectFlow mainConstructorParamObjectFlow = mainConstructor.methodInspection.get().getParameters().get(0).parameterAnalysis.get().getObjectFlow();
         Assert.assertSame(Origin.PARAMETER, mainConstructorParamObjectFlow.origin);
         Assert.assertTrue(mainConstructorParamObjectFlow.containsPrevious(newConfig));
 
         // The go() method in main creates an InBetween flow
-        MethodInfo goMethodMain = main.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "go".equals(m.name)).findAny().orElseThrow();
+        MethodInfo goMethodMain = main.typeInspection.get().methods().stream().filter(m -> "go".equals(m.name)).findAny().orElseThrow();
         MethodAnalysis goMethodAnalysis =  goMethodMain.methodAnalysis.get();
         Set<ObjectFlow> goMethodObjectFlows = goMethodAnalysis.getInternalObjectFlows();
         goMethodObjectFlows.forEach(of -> LOGGER.info("internal object flows in Main.go(): {}", of.detailed()));
@@ -132,13 +132,13 @@ public class TestObjectFlow3 extends CommonTestRunner {
         Assert.assertEquals(0L, mainConstructorParamObjectFlow.getNonModifyingCallouts().count());
         Assert.assertEquals(1L, mainConstructorParamObjectFlow.getLocalAssignments().count());
 
-        MethodInfo inBetweenConstructor = inBetween.typeInspection.getPotentiallyRun().constructors.get(0);
-        ObjectFlow inBetweenConstructorParamObjectFlow = inBetweenConstructor.methodInspection.get().parameters.get(0).parameterAnalysis.get().getObjectFlow();
+        MethodInfo inBetweenConstructor = inBetween.typeInspection.get().constructors().get(0);
+        ObjectFlow inBetweenConstructorParamObjectFlow = inBetweenConstructor.methodInspection.get().getParameters().get(0).parameterAnalysis.get().getObjectFlow();
         Assert.assertEquals(0L, inBetweenConstructorParamObjectFlow.getNonModifyingCallouts().count());
         Assert.assertEquals(1L, inBetweenConstructorParamObjectFlow.getLocalAssignments().count());
 
         // The go() method in inBetween creates a DoSomeWork flow
-        MethodInfo goMethodInBetween = inBetween.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "go".equals(m.name)).findAny().orElseThrow();
+        MethodInfo goMethodInBetween = inBetween.typeInspection.get().methods().stream().filter(m -> "go".equals(m.name)).findAny().orElseThrow();
         goMethodInBetween.methodAnalysis.get().getInternalObjectFlows().forEach(of -> LOGGER.info(of.detailed()));
         TypeInfo doSomeWork = typeContext.typeMapBuilder.get("org.e2immu.analyser.testexample.ObjectFlow3.DoSomeWork");
         ObjectFlow newDoSomeWork = goMethodInBetween.methodAnalysis.get().getInternalObjectFlows().stream().filter(of -> of.type.typeInfo == doSomeWork).findAny().orElseThrow();
@@ -148,8 +148,8 @@ public class TestObjectFlow3 extends CommonTestRunner {
         MethodAccess newDoSomeWorkCallGo = (MethodAccess) newDoSomeWork.getNonModifyingAccesses().findFirst().orElseThrow();
         Assert.assertEquals("go", newDoSomeWorkCallGo.methodInfo.name);
 
-        MethodInfo doSomeWorkConstructor = doSomeWork.typeInspection.getPotentiallyRun().constructors.get(0);
-        ObjectFlow doSomeWorkConstructorParamObjectFlow = doSomeWorkConstructor.methodInspection.get().parameters.get(0).parameterAnalysis.get().getObjectFlow();
+        MethodInfo doSomeWorkConstructor = doSomeWork.typeInspection.get().constructors().get(0);
+        ObjectFlow doSomeWorkConstructorParamObjectFlow = doSomeWorkConstructor.methodInspection.get().getParameters().get(0).parameterAnalysis.get().getObjectFlow();
         Assert.assertEquals(0L, doSomeWorkConstructorParamObjectFlow.getNonModifyingCallouts().count());
         Assert.assertEquals(1L, doSomeWorkConstructorParamObjectFlow.getLocalAssignments().count());
 

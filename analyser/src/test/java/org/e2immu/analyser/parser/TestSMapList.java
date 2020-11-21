@@ -75,8 +75,8 @@ public class TestSMapList extends CommonTestRunner {
             VariableInfo returnValue = d.getReturnAsVariable();
             Assert.assertEquals(MultiLevel.MUTABLE, returnValue.getProperty(VariableProperty.IMMUTABLE));
         }
-        if ("add".equals(name) && d.methodInfo().methodInspection.get().parameters.size() == 3) {
-            ParameterInfo parameterInfo = d.methodInfo().methodInspection.get().parameters.get(2);
+        if ("add".equals(name) && d.methodInfo().methodInspection.get().getParameters().size() == 3) {
+            ParameterInfo parameterInfo = d.methodInfo().methodInspection.get().getParameters().get(2);
             if ("bs".equals(parameterInfo.name)) {
                 int modified = d.parameterAnalyses().get(2).getProperty(VariableProperty.MODIFIED);
                 Assert.assertEquals(Level.FALSE, modified);

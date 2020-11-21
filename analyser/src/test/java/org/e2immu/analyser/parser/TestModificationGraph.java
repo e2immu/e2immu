@@ -54,7 +54,7 @@ public class TestModificationGraph extends CommonTestRunner {
                     .getCallsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod());
         }
         if ("C2".equals(name)) {
-            ParameterInfo c1 = d.methodInfo().methodInspection.get().parameters.get(1);
+            ParameterInfo c1 = d.methodInfo().methodInspection.get().getParameters().get(1);
             if (d.iteration() > 0) {
                 Assert.assertEquals("c1", c1.parameterAnalysis.get().getAssignedToField().name);
                 if (d.iteration() > 1) {
@@ -66,10 +66,10 @@ public class TestModificationGraph extends CommonTestRunner {
 
     TypeAnalyserVisitor typeAnalyserVisitor = d -> {
         if ("C1".equals(d.typeInfo().simpleName)) {
-            Assert.assertEquals(2, d.typeInfo().typeResolution.get().getCircularDependencies().size());
+            Assert.assertEquals(2, d.typeInfo().typeResolution.get().circularDependencies().size());
         }
         if ("C2".equals(d.typeInfo().simpleName)) {
-            Assert.assertEquals(2, d.typeInfo().typeResolution.get().getCircularDependencies().size());
+            Assert.assertEquals(2, d.typeInfo().typeResolution.get().circularDependencies().size());
             Assert.assertEquals("[]", d.typeAnalysis().getImplicitlyImmutableDataTypes().toString());
         }
     };
