@@ -52,7 +52,7 @@ public class ParseLambdaExpr {
         boolean allDefined = true;
         List<ParameterizedType> types = new ArrayList<>();
 
-        MethodInfo owner = createAnonymousTypeAndApplyMethod(singleAbstractMethod.methodInspectionBuilder.getMethodInfo().name,
+        MethodInfo owner = createAnonymousTypeAndApplyMethod(singleAbstractMethod.methodInspection.getMethodInfo().name,
                 expressionContext.enclosingType, expressionContext.topLevel.newIndex(expressionContext.enclosingType));
 
         for (Parameter parameter : lambdaExpr.getParameters()) {
@@ -128,7 +128,7 @@ public class ParseLambdaExpr {
         MethodInspectionImpl.Builder methodInspectionBuilder = new MethodInspectionImpl.Builder(methodInfo);
         MethodTypeParameterMap sam = functionalInterfaceType.findSingleAbstractMethodOfInterface(inspectionProvider);
         ParameterizedType bestReturnType = returnType.mostSpecific(inspectionProvider,
-                sam.methodInspectionBuilder.getMethodInfo().returnType());
+                sam.methodInspection.getMethodInfo().returnType());
         methodInspectionBuilder.setReturnType(Objects.requireNonNull(bestReturnType));
         methodInspectionBuilder.addParameters(parameters);
         methodInspectionBuilder.setBlock(block);

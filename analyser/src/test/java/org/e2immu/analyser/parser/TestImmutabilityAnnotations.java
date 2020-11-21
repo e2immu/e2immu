@@ -23,7 +23,6 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.testexample.ImmutabilityAnnotations;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -36,7 +35,7 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
         super(true);
     }
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo set = typeContext.getFullyQualified(Set.class);
         MethodInfo setOf2 = set.findUniqueMethod("of", 2);
         Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, setOf2.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
@@ -76,7 +75,7 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("ImmutabilityAnnotations", 0, 1, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

@@ -143,7 +143,7 @@ public class TestNotModifiedChecks extends CommonTestRunner {
         }
     };
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo set = typeContext.getFullyQualified(Set.class);
 
         MethodInfo addAll = set.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("addAll")).findFirst().orElseThrow();
@@ -158,7 +158,7 @@ public class TestNotModifiedChecks extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("NotModifiedChecks", 0, 0, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

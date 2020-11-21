@@ -94,7 +94,7 @@ public class This implements Variable {
     public UpgradableBooleanMap<TypeInfo> typesReferenced(boolean explicit) {
         boolean b = explicit && explicitlyWriteType;
         if (writeSuper) {
-            return UpgradableBooleanMap.of(typeInfo, b, typeInfo.typeInspection.get().parentClass.bestTypeInfo(), false);
+            return UpgradableBooleanMap.of(typeInfo, b, typeInfo.typeInspection.get().parentClass().bestTypeInfo(), false);
         }
         return UpgradableBooleanMap.of(typeInfo, b);
     }

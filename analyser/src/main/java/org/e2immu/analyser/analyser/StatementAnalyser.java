@@ -1070,7 +1070,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public Set<String> allUnqualifiedVariableNames() {
-            return statementAnalysis.allUnqualifiedVariableNames(getCurrentType());
+            return statementAnalysis.allUnqualifiedVariableNames(analyserContext, getCurrentType());
         }
 
         @Override

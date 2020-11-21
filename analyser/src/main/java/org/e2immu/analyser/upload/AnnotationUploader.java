@@ -139,7 +139,7 @@ public class AnnotationUploader {
                 break;
             }
         }
-        type.typeInspection.getPotentiallyRun().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM).forEach(methodInfo -> {
+        type.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM).forEach(methodInfo -> {
             String methodQn = methodInfo.distinguishingName();
             for (Pair<String, AnnotationExpression> pair : methodPairs) {
                 if (methodInfo.annotatedWith(methodInfo.methodAnalysis.get(), pair.v) == Boolean.TRUE) {
@@ -149,7 +149,7 @@ public class AnnotationUploader {
                 }
             }
             int i = 0;
-            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().parameters) {
+            for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().getParameters()) {
                 String parameterQn = methodQn + "#" + i;
                 for (Pair<String, AnnotationExpression> pair : parameterPairs) {
                     if (parameterInfo.annotatedWith(parameterInfo.parameterAnalysis.get(), pair.v) == Boolean.TRUE) {
@@ -172,7 +172,7 @@ public class AnnotationUploader {
                 }
             }
         });
-        for (FieldInfo fieldInfo : type.typeInspection.getPotentiallyRun().fields) {
+        for (FieldInfo fieldInfo : type.typeInspection.get().fields()) {
             String fieldQn = typeQn + ":" + fieldInfo.name;
             TypeInfo bestType = fieldInfo.type.bestTypeInfo();
 

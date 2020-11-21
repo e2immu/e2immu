@@ -60,7 +60,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                       @NotNull Expression computedScope,
                       @NotNull MethodTypeParameterMap methodTypeParameterMap,
                       @NotNull List<Expression> parameterExpressions) {
-        super(methodTypeParameterMap.methodInspectionBuilder.getMethodInfo(), methodTypeParameterMap.getConcreteReturnType());
+        super(methodTypeParameterMap.methodInspection.getMethodInfo(), methodTypeParameterMap.getConcreteReturnType());
         this.object = object;
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         this.computedScope = Objects.requireNonNull(computedScope);

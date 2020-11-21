@@ -239,7 +239,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         }
     };
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo set = typeContext.getFullyQualified(Set.class);
         Assert.assertEquals(AnnotationMode.DEFENSIVE, set.typeInspection.getPotentiallyRun().annotationMode);
         MethodInfo add = set.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("add")).findFirst().orElseThrow();
@@ -274,7 +274,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }

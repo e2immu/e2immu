@@ -425,7 +425,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
     private static Set<MethodAnalysis> overrides(AnalysisProvider analysisProvider, MethodInfo methodInfo) {
         try {
-            return methodInfo.typeInfo.overrides(methodInfo, true).stream()
+            return methodInfo.methodResolution.get().overrides().stream()
                     .map(mi -> analysisProvider.getMethodAnalysis(methodInfo))
                     .collect(Collectors.toSet());
         } catch (RuntimeException rte) {

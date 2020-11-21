@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.model.expression.MethodCall;
@@ -30,6 +29,7 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.ExpressionContext;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.NotNull;
@@ -105,65 +105,85 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.isSet();
     }
 
-    public Stream<TypeInfo> accessibleBySimpleNameTypeInfoStream() {
-        return accessibleBySimpleNameTypeInfoStream(this, new HashSet<>());
+    public Stream<TypeInfo> accessibleBySimpleNameTypeInfoStream(InspectionProvider inspectionProvider) {
+        return accessibleBySimpleNameTypeInfoStream(inspectionProvider, this,
+                inspectionProvider.getTypeInspection(primaryType()).packageNameOrEnclosingType().getLeft(),
+                new HashSet<>());
     }
 
-    private Stream<TypeInfo> accessibleBySimpleNameTypeInfoStream(TypeInfo startingPoint, Set<TypeInfo> visited) {
+    private Stream<TypeInfo> accessibleBySimpleNameTypeInfoStream(InspectionProvider inspectionProvider,
+                                                                  TypeInfo startingPoint,
+                                                                  String startingPointPackageName,
+                                                                  Set<TypeInfo> visited) {
         if (visited.contains(this)) return Stream.empty();
         visited.add(this);
         Stream<TypeInfo> mySelf = Stream.of(this);
 
-        TypeInspection typeInspection = this.typeInspection.get();
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(this);
         boolean inSameCompilationUnit = this == startingPoint || primaryType() == startingPoint.primaryType();
+        TypeInspection primaryTypeInspection = inspectionProvider.getTypeInspection(primaryType());
         boolean inSamePackage = !inSameCompilationUnit &&
-                primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft().equals(
-                        startingPoint.primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft());
+                primaryTypeInspection.packageNameOrEnclosingType().getLeft().equals(startingPointPackageName);
 
-        Stream<TypeInfo> localStream = typeInspection.subTypes
-                .stream()
-                .filter(typeInfo -> inSameCompilationUnit ||
-                        typeInfo.typeInspection.get().access == TypeModifier.PUBLIC ||
-                        inSamePackage && typeInfo.typeInspection.get().access == TypeModifier.PACKAGE ||
-                        !inSamePackage && typeInfo.typeInspection.get().access == TypeModifier.PROTECTED);
+        Stream<TypeInfo> localStream = typeInspection.subTypes().stream()
+                .filter(typeInfo -> acceptSubType(inspectionProvider, typeInfo, inSameCompilationUnit, inSamePackage));
         Stream<TypeInfo> parentStream;
-        if (!Primitives.isJavaLangObject(typeInspection.parentClass)) {
-            assert typeInspection.parentClass.typeInfo != null;
-            parentStream = typeInspection.parentClass.typeInfo.accessibleBySimpleNameTypeInfoStream(startingPoint, visited);
+        if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
+            assert typeInspection.parentClass().typeInfo != null;
+            parentStream = typeInspection.parentClass().typeInfo.accessibleBySimpleNameTypeInfoStream(inspectionProvider,
+                    startingPoint, startingPointPackageName, visited);
         } else parentStream = Stream.empty();
 
         Stream<TypeInfo> joint = Stream.concat(Stream.concat(mySelf, localStream), parentStream);
-        for (ParameterizedType interfaceType : typeInspection.interfacesImplemented) {
+        for (ParameterizedType interfaceType : typeInspection.interfacesImplemented()) {
             assert interfaceType.typeInfo != null;
-            Stream<TypeInfo> fromInterface = interfaceType.typeInfo.accessibleBySimpleNameTypeInfoStream(startingPoint, visited);
+            Stream<TypeInfo> fromInterface = interfaceType.typeInfo.accessibleBySimpleNameTypeInfoStream(inspectionProvider,
+                    startingPoint, startingPointPackageName, visited);
             joint = Stream.concat(joint, fromInterface);
         }
         return joint;
     }
 
-    public Stream<FieldInfo> accessibleFieldsStream() {
-        return accessibleFieldsStream(this);
+    private static boolean acceptSubType(InspectionProvider inspectionProvider, TypeInfo typeInfo,
+                                         boolean inSameCompilationUnit, boolean inSamePackage) {
+        if (inSameCompilationUnit) return true;
+        TypeInspection inspection = inspectionProvider.getTypeInspection(typeInfo);
+        return inspection.access() == TypeModifier.PUBLIC ||
+                inSamePackage && inspection.access() == TypeModifier.PACKAGE ||
+                !inSamePackage && inspection.access() == TypeModifier.PROTECTED;
     }
 
-    private Stream<FieldInfo> accessibleFieldsStream(TypeInfo startingPoint) {
-        TypeInspection typeInspection = this.typeInspection.get("Inspection of " + fullyQualifiedName);
+    private static boolean acceptField(InspectionProvider inspectionProvider, FieldInfo fieldInfo,
+                                       boolean inSameCompilationUnit, boolean inSamePackage) {
+        if (inSameCompilationUnit) return true;
+        FieldInspection inspection = inspectionProvider.getFieldInspection(fieldInfo);
+        return inspection.getAccess() == FieldModifier.PUBLIC ||
+                inSamePackage && inspection.getAccess() == FieldModifier.PACKAGE ||
+                !inSamePackage && inspection.getAccess() == FieldModifier.PROTECTED;
+    }
+
+    public Stream<FieldInfo> accessibleFieldsStream(InspectionProvider inspectionProvider) {
+        return accessibleFieldsStream(inspectionProvider, this,
+                inspectionProvider.getTypeInspection(primaryType()).packageNameOrEnclosingType().getLeft());
+    }
+
+    private Stream<FieldInfo> accessibleFieldsStream(InspectionProvider inspectionProvider, TypeInfo startingPoint,
+                                                     String startingPointPackageName) {
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(this);
         boolean inSameCompilationUnit = this == startingPoint || primaryType() == startingPoint.primaryType();
+        TypeInspection primaryTypeInspection = inspectionProvider.getTypeInspection(primaryType());
         boolean inSamePackage = !inSameCompilationUnit &&
-                primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft().equals(
-                        startingPoint.primaryType().typeInspection.get().packageNameOrEnclosingType.getLeft());
+                primaryTypeInspection.packageNameOrEnclosingType().getLeft().equals(startingPointPackageName);
 
         // my own field
-        Stream<FieldInfo> localStream = typeInspection.fields
-                .stream()
-                .filter(fieldInfo -> inSameCompilationUnit ||
-                        fieldInfo.fieldInspection.get().getAccess() == FieldModifier.PUBLIC ||
-                        inSamePackage && fieldInfo.fieldInspection.get().getAccess() == FieldModifier.PACKAGE ||
-                        !inSamePackage && fieldInfo.fieldInspection.get().getAccess() == FieldModifier.PROTECTED);
+        Stream<FieldInfo> localStream = typeInspection.fields().stream()
+                .filter(fieldInfo -> acceptField(inspectionProvider, fieldInfo, inSameCompilationUnit, inSamePackage));
 
         // my enclosing type's fields
         Stream<FieldInfo> enclosingStream;
-        if (typeInspection.packageNameOrEnclosingType.isRight()) {
-            enclosingStream = typeInspection.packageNameOrEnclosingType.getRight().accessibleFieldsStream(startingPoint);
+        if (typeInspection.packageNameOrEnclosingType().isRight()) {
+            enclosingStream = typeInspection.packageNameOrEnclosingType().getRight()
+                    .accessibleFieldsStream(inspectionProvider, startingPoint, startingPointPackageName);
         } else {
             enclosingStream = Stream.empty();
         }
@@ -171,16 +191,18 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         // my parent's fields
         Stream<FieldInfo> parentStream;
-        if (!Primitives.isJavaLangObject(typeInspection.parentClass)) {
-            assert typeInspection.parentClass.typeInfo != null;
-            parentStream = typeInspection.parentClass.typeInfo.accessibleFieldsStream(startingPoint);
+        if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
+            assert typeInspection.parentClass().typeInfo != null;
+            parentStream = typeInspection.parentClass().typeInfo.accessibleFieldsStream(inspectionProvider,
+                    startingPoint, startingPointPackageName);
         } else parentStream = Stream.empty();
         joint = Stream.concat(joint, parentStream);
 
         // my interfaces' fields
-        for (ParameterizedType interfaceType : typeInspection.interfacesImplemented) {
+        for (ParameterizedType interfaceType : typeInspection.interfacesImplemented()) {
             assert interfaceType.typeInfo != null;
-            Stream<FieldInfo> fromInterface = interfaceType.typeInfo.accessibleFieldsStream(startingPoint);
+            Stream<FieldInfo> fromInterface = interfaceType.typeInfo.accessibleFieldsStream(inspectionProvider,
+                    startingPoint, startingPointPackageName);
             joint = Stream.concat(joint, fromInterface);
         }
 
@@ -220,18 +242,18 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         if (hasBeenInspected()) {
             TypeInspection typeInspection = this.typeInspection.get();
-            typeNature = typeInspection.typeNature.toJava();
-            typeModifiers = typeInspection.modifiers.stream().map(TypeModifier::toJava);
-            packageName = typeInspection.packageNameOrEnclosingType.getLeftOrElse("");
+            typeNature = typeInspection.typeNature().toJava();
+            typeModifiers = typeInspection.modifiers().stream().map(TypeModifier::toJava);
+            packageName = typeInspection.packageNameOrEnclosingType().getLeftOrElse("");
             annotations.addAll(typeInspection.getAnnotations());
-            fields = typeInspection.fields;
-            constructors = typeInspection.constructors;
-            methods = typeInspection.methods;
-            subTypes = typeInspection.subTypes;
-            parentClass = parentIsNotJavaLangObject() ? typeInspection.parentClass.stream() : "";
-            interfacesCsv = typeInspection.interfacesImplemented.stream()
+            fields = typeInspection.fields();
+            constructors = typeInspection.constructors();
+            methods = typeInspection.methods();
+            subTypes = typeInspection.subTypes();
+            parentClass = parentIsNotJavaLangObject() ? typeInspection.parentClass().stream() : "";
+            interfacesCsv = typeInspection.interfacesImplemented().stream()
                     .map(ParameterizedType::stream).collect(Collectors.joining(", "));
-            typeParametersCsv = typeInspection.typeParameters.stream()
+            typeParametersCsv = typeInspection.typeParameters().stream()
                     .map(TypeParameter::stream).collect(Collectors.joining(", "));
         } else {
             packageName = computePackageName();
@@ -371,16 +393,16 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         TypeInspection ti = typeInspection.get();
         return UpgradableBooleanMap.of(
-                ti.parentClass.typesReferenced(true),
-                ti.packageNameOrEnclosingType.isRight() && !isStatic() && !isInterface() ?
-                        UpgradableBooleanMap.of(ti.packageNameOrEnclosingType.getRight(), false) :
+                ti.parentClass().typesReferenced(true),
+                ti.packageNameOrEnclosingType().isRight() && !isStatic() && !isInterface() ?
+                        UpgradableBooleanMap.of(ti.packageNameOrEnclosingType().getRight(), false) :
                         UpgradableBooleanMap.of(),
-                ti.interfacesImplemented.stream().flatMap(i -> i.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()),
+                ti.interfacesImplemented().stream().flatMap(i -> i.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()),
                 ti.getAnnotations().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
                 //ti.subTypes.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
                 ti.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
                         .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                ti.fields.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
+                ti.fields().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
         );
     }
 
@@ -411,7 +433,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 .findFirst();
         if (fromType.isPresent()) return fromType;
         if (parentIsNotJavaLangObject()) {
-            Optional<AnnotationExpression> fromParent = Objects.requireNonNull(typeInspection.get().parentClass.typeInfo).hasInspectedAnnotation(annotation);
+            Optional<AnnotationExpression> fromParent = Objects.requireNonNull(typeInspection.get().parentClass().typeInfo)
+                    .hasInspectedAnnotation(annotation);
             if (fromParent.isPresent()) return fromParent;
         }
         return Optional.empty();
@@ -422,19 +445,19 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public boolean parentIsNotJavaLangObject() {
-        return !Primitives.isJavaLangObject(typeInspection.get().parentClass);
+        return !Primitives.isJavaLangObject(typeInspection.get().parentClass());
     }
 
     private Optional<TypeInfo> inTypeInnerOuterHierarchy(TypeInfo typeInfo, Set<TypeInfo> visited) {
         if (typeInfo == this) return Optional.of(this);
         if (visited.contains(this)) return Optional.empty();
         visited.add(this);
-        if (typeInspection.get().packageNameOrEnclosingType.isRight()) {
-            TypeInfo parentClass = typeInspection.get().packageNameOrEnclosingType.getRight();
+        if (typeInspection.get().packageNameOrEnclosingType().isRight()) {
+            TypeInfo parentClass = typeInspection.get().packageNameOrEnclosingType().getRight();
             Optional<TypeInfo> viaParent = parentClass.inTypeInnerOuterHierarchy(typeInfo, visited);
             if (viaParent.isPresent()) return viaParent;
         }
-        for (TypeInfo subType : typeInspection.get().subTypes) {
+        for (TypeInfo subType : typeInspection.get().subTypes()) {
             Optional<TypeInfo> viaSubType = subType.inTypeInnerOuterHierarchy(typeInfo, visited);
             if (viaSubType.isPresent()) return viaSubType;
         }
@@ -445,114 +468,16 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (!typeInspection.isSet()) {
             return new ParameterizedType(this, List.of());
         }
-        return new ParameterizedType(this, typeInspection.get().typeParameters
+        return new ParameterizedType(this, typeInspection.get().typeParameters()
                 .stream().map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toList()));
     }
 
     public boolean isStatic() {
-        if (!typeInspection.isSet()) throw new UnsupportedOperationException();
-        if (typeInspection.get().packageNameOrEnclosingType.isLeft()) return true; // independent type
-        return typeInspection.get().modifiers.contains(TypeModifier.STATIC); // static sub type
+        assert typeInspection.isSet();
+        if (typeInspection.get().packageNameOrEnclosingType().isLeft()) return true; // independent type
+        return typeInspection.get().modifiers().contains(TypeModifier.STATIC); // static sub type
     }
 
-    /**
-     * Find a method, given a translation map
-     *
-     * @param target         the method to find (typically from a sub type)
-     * @param translationMap from the type parameters of this to the concrete types of the sub-type
-     * @return the method of this, if deemed the same
-     */
-    private MethodInfo findUniqueMethod(MethodInfo target, Map<NamedType, ParameterizedType> translationMap) {
-        for (MethodInfo methodInfo : typeInspection.get(fullyQualifiedName).methodsAndConstructors()) {
-            if (methodInfo.sameMethod(target, translationMap)) {
-                return methodInfo;
-            }
-        }
-        return null;
-    }
-
-    public List<ParameterizedType> directSuperTypes() {
-        if (Primitives.isJavaLangObject(this)) return List.of();
-        List<ParameterizedType> list = new ArrayList<>();
-        list.add(typeInspection.get().parentClass);
-        list.addAll(typeInspection.get().interfacesImplemented);
-        return list;
-    }
-
-    public List<TypeInfo> superTypesExcludingJavaLangObject() {
-        if (Primitives.isJavaLangObject(this)) return List.of();
-        if (typeInspection.get().superTypes.isSet())
-            return typeInspection.get().superTypes.get();
-        List<TypeInfo> list = new ArrayList<>();
-        ParameterizedType parentPt = typeInspection.get().parentClass;
-        TypeInfo parent;
-        boolean parentIsNotJLO = !Primitives.isJavaLangObject(parentPt);
-        if (parentIsNotJLO) {
-            parent = Objects.requireNonNull(parentPt.typeInfo);
-            list.add(parent);
-            list.addAll(parent.superTypesExcludingJavaLangObject());
-        }
-
-        typeInspection.get().interfacesImplemented.forEach(i -> {
-            list.add(i.typeInfo);
-            assert i.typeInfo != null;
-            list.addAll(i.typeInfo.superTypesExcludingJavaLangObject());
-        });
-        List<TypeInfo> immutable = ImmutableList.copyOf(list);
-        typeInspection.get().superTypes.set(immutable);
-        return immutable;
-    }
-
-    /**
-     * What does it do: look into my super types, and see if you find a method like the one specified
-     * NOTE: it does not look "sideways: methods of the same type but where implicit type conversion can take place
-     *
-     * @param methodInfo: the method for which we're looking for overrides
-     * @return all super methods
-     */
-    public Set<MethodInfo> overrides(MethodInfo methodInfo, boolean cacheResult) {
-        // NOTE: we cache, but only at our own level
-        boolean ourOwnLevel = methodInfo.typeInfo == this;
-        if (cacheResult) {
-            Set<MethodInfo> myOverrides = ourOwnLevel ? typeInspection.get().overrides.getOtherwiseNull(methodInfo) : null;
-            if (myOverrides != null) return myOverrides;
-        }
-        Set<MethodInfo> result = recursiveOverridesCall(methodInfo, Map.of());
-        Set<MethodInfo> immutable = ImmutableSet.copyOf(result);
-        if (ourOwnLevel && cacheResult) {
-            typeInspection.get().overrides().put(methodInfo, immutable);
-        }
-        return immutable;
-    }
-
-    private Set<MethodInfo> recursiveOverridesCall(MethodInfo methodInfo, Map<NamedType, ParameterizedType> translationMap) {
-        Set<MethodInfo> result = new HashSet<>();
-        for (ParameterizedType superType : directSuperTypes()) {
-            Map<NamedType, ParameterizedType> translationMapOfSuperType;
-            if (superType.parameters.isEmpty()) {
-                translationMapOfSuperType = translationMap;
-            } else {
-                assert superType.typeInfo != null;
-                ParameterizedType formalType = superType.typeInfo.asParameterizedType();
-                translationMapOfSuperType = new HashMap<>(translationMap);
-                int index = 0;
-                for (ParameterizedType parameter : formalType.parameters) {
-                    ParameterizedType concreteParameter = superType.parameters.get(index);
-                    translationMapOfSuperType.put(parameter.typeParameter, concreteParameter);
-                    index++;
-                }
-            }
-            assert superType.typeInfo != null;
-            MethodInfo override = superType.typeInfo.findUniqueMethod(methodInfo, translationMapOfSuperType);
-            if (override != null) {
-                result.add(override);
-            }
-            if (!Primitives.isJavaLangObject(superType.typeInfo)) {
-                result.addAll(superType.typeInfo.recursiveOverridesCall(methodInfo, translationMapOfSuperType));
-            }
-        }
-        return result;
-    }
 
     @Override
     public String toString() {
@@ -598,9 +523,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                                                        TypeInfo enclosingType,
                                                        MethodReference methodReference,
                                                        ExpressionContext expressionContext) {
-        MethodTypeParameterMap method = functionalInterfaceType.findSingleAbstractMethodOfInterface();
+        MethodTypeParameterMap method = functionalInterfaceType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
         TypeInfo typeInfo = new TypeInfo(enclosingType, expressionContext.topLevel.newIndex(enclosingType));
-        TypeInspection.TypeInspectionBuilder builder = new TypeInspection.TypeInspectionBuilder();
+        TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(typeInfo);
         builder.setEnclosingType(this);
         builder.setTypeNature(TypeNature.CLASS);
         builder.addInterfaceImplemented(functionalInterfaceType);
@@ -608,18 +533,19 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         // there are no extra type parameters; only those of the enclosing type(s) can be in 'type'
 
-        MethodInfo methodInfo = method.buildCopy(typeInfo);
+        MethodInspectionImpl.Builder methodBuilder = method.buildCopy(typeInfo);
+        MethodInfo methodInfo = methodBuilder.getMethodInfo();
         builder.addMethod(methodInfo);
 
         // compose the content of the method...
-
+        MethodInspection methodReferenceInspection = expressionContext.typeContext.getMethodInspection(methodReference.methodInfo);
         Expression newReturnExpression;
         if (methodReference.methodInfo.isStatic || !(methodReference.scope instanceof TypeExpression)) {
-            newReturnExpression = methodCallCopyAllParameters(methodReference.scope, methodReference.methodInfo, methodInfo);
+            newReturnExpression = methodCallCopyAllParameters(methodReference.scope, methodReferenceInspection, methodBuilder);
         } else {
-            if (methodInfo.methodInspection.get().getParameters().size() != 1)
+            if (methodBuilder.getParameters().size() != 1)
                 throw new UnsupportedOperationException("Referenced method has multiple parameters");
-            newReturnExpression = methodCallNoParameters(methodInfo, methodReference.methodInfo);
+            newReturnExpression = methodCallNoParameters(methodInfo, methodReferenceInspection);
         }
         Statement statement;
         if (methodInfo.isVoid()) {
@@ -630,26 +556,27 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         Block block = new Block.BlockBuilder().addStatement(statement).build();
 
         log(LAMBDA, "Result of translating block: {}", block.statementString(0, null));
-        methodInfo.methodInspection.get().getMethodBody().set(block);
-        typeInfo.typeInspection.set(builder.build(typeInfo));
+        methodBuilder.setBlock(block);
+        methodInfo.methodInspection.set(methodBuilder.build());
+        typeInfo.typeInspection.set(builder.build());
         expressionContext.addNewlyCreatedType(typeInfo);
         return methodInfo;
     }
 
 
-    private Expression methodCallNoParameters(MethodInfo interfaceMethod, MethodInfo concreteMethod) {
+    private Expression methodCallNoParameters(MethodInfo interfaceMethod, MethodInspection concreteMethod) {
         Expression newScope = new VariableExpression(interfaceMethod.methodInspection.get().getParameters().get(0));
         MethodTypeParameterMap methodTypeParameterMap = new MethodTypeParameterMap(concreteMethod, Map.of());
         return new MethodCall(newScope, newScope, methodTypeParameterMap, List.of());
     }
 
-    private Expression methodCallCopyAllParameters(Expression scope, MethodInfo concreteMethod, MethodInfo interfaceMethod) {
-        List<Expression> parameterExpressions = interfaceMethod.methodInspection.get()
+    private Expression methodCallCopyAllParameters(Expression scope, MethodInspection concreteMethod, MethodInspection interfaceMethod) {
+        List<Expression> parameterExpressions = interfaceMethod
                 .getParameters().stream().map(VariableExpression::new).collect(Collectors.toList());
         Map<NamedType, ParameterizedType> concreteTypes = new HashMap<>();
         int i = 0;
-        for (ParameterInfo parameterInfo : concreteMethod.methodInspection.get().getParameters()) {
-            ParameterInfo interfaceParameter = interfaceMethod.methodInspection.get().getParameters().get(i);
+        for (ParameterInfo parameterInfo : concreteMethod.getParameters()) {
+            ParameterInfo interfaceParameter = interfaceMethod.getParameters().get(i);
             if (interfaceParameter.parameterizedType.isTypeParameter()) {
                 concreteTypes.put(interfaceParameter.parameterizedType.typeParameter, parameterInfo.parameterizedType);
             }

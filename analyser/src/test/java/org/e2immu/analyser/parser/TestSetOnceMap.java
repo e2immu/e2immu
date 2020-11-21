@@ -24,7 +24,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
-import org.e2immu.analyser.config.TypeContextVisitor;
+import org.e2immu.analyser.config.TypeMapVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.InlineValue;
 import org.e2immu.analyser.model.abstractvalue.PropertyWrapper;
@@ -114,7 +114,7 @@ public class TestSetOnceMap extends CommonTestRunner {
     // TODO: Accepting one error now: we have not inferred @Size(min = 1) for put (modifying method)
     // This is work for later
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo map = typeContext.getFullyQualified(Map.class);
         MethodInfo put = map.findUniqueMethod("put", 2);
         for (ParameterInfo parameterInfo : put.methodInspection.get().parameters) {
@@ -131,7 +131,7 @@ public class TestSetOnceMap extends CommonTestRunner {
         testUtilClass(List.of("Freezable", "SetOnceMap"), 1, 1, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .build());
     }
 

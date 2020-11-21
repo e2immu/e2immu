@@ -23,7 +23,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.TypeContextVisitor;
+import org.e2immu.analyser.config.TypeMapVisitor;
 import org.e2immu.analyser.model.FieldAnalysis;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
@@ -31,8 +31,6 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.value.StringValue;
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -83,7 +81,7 @@ public class Test_00_Basics extends CommonTestRunner {
                 ", statement id " + d.statementId());
     };
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         // check that the XML annotations have been read properly, and copied into the correct place
         TypeInfo stringType = typeContext.getPrimitives().stringTypeInfo;
         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
@@ -94,7 +92,7 @@ public class Test_00_Basics extends CommonTestRunner {
         testClass("Basics", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVisitor)
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .build());
     }
 

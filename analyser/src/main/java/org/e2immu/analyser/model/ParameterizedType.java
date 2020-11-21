@@ -419,15 +419,15 @@ public class ParameterizedType {
 
         if (iAmFunctionalInterface && concreteTypeIsFunctionalInterface) {
             MethodTypeParameterMap methodTypeParameterMap = findSingleAbstractMethodOfInterface(inspectionProvider);
-            List<ParameterInfo> methodParams = methodTypeParameterMap.methodInspectionBuilder.getParameters();
+            List<ParameterInfo> methodParams = methodTypeParameterMap.methodInspection.getParameters();
             MethodTypeParameterMap concreteTypeMap = concreteType.findSingleAbstractMethodOfInterface(inspectionProvider);
-            List<ParameterInfo> concreteTypeAbstractParams = concreteTypeMap.methodInspectionBuilder.getParameters();
+            List<ParameterInfo> concreteTypeAbstractParams = concreteTypeMap.methodInspection.getParameters();
 
             if (methodParams.size() != concreteTypeAbstractParams.size()) {
                 throw new UnsupportedOperationException("Have different param sizes for functional interface " +
                         detailedString() + " method " +
-                        methodTypeParameterMap.methodInspectionBuilder.getFullyQualifiedName() + " and " +
-                        concreteTypeMap.methodInspectionBuilder.getFullyQualifiedName());
+                        methodTypeParameterMap.methodInspection.getFullyQualifiedName() + " and " +
+                        concreteTypeMap.methodInspection.getFullyQualifiedName());
             }
             for (int i = 0; i < methodParams.size(); i++) {
                 ParameterizedType abstractTypeParameter = methodParams.get(i).parameterizedType;

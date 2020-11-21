@@ -217,8 +217,7 @@ public class Filter {
         if (methodInClause == methodInfo) return true;
         if (methodInClause.methodInspection.get().getParameters().size() != methodInfo.methodInspection.get().getParameters().size())
             return false;
-        Set<MethodInfo> overrides = methodInClause.typeInfo.overrides(methodInClause, true);
-        return overrides.contains(methodInfo);
+        return methodInClause.methodResolution.get().overrides().contains(methodInfo);
     }
 
     // EXAMPLE: java.util.List.contains("a")

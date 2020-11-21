@@ -21,9 +21,6 @@ package org.e2immu.analyser.model;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Either;
-import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetOnceMap;
 import org.e2immu.annotation.*;
 
 import java.util.ArrayList;
@@ -53,7 +50,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public final List<TypeParameter> typeParameters;
     public final List<ParameterizedType> interfacesImplemented;
 
-    public final List<TypeInfo> superTypes ;
+    public final List<TypeInfo> superTypes;
 
     // only valid for types that have been defined, and empty when not the primary type
     // it does include the primary type itself
@@ -89,7 +86,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         this.fields = fields;
         this.modifiers = modifiers;
         this.subTypes = subTypes;
-         if (modifiers.contains(TypeModifier.PUBLIC)) access = TypeModifier.PUBLIC;
+        if (modifiers.contains(TypeModifier.PUBLIC)) access = TypeModifier.PUBLIC;
         else if (modifiers.contains(TypeModifier.PROTECTED)) access = TypeModifier.PROTECTED;
         else if (modifiers.contains(TypeModifier.PRIVATE)) access = TypeModifier.PRIVATE;
         else access = TypeModifier.PACKAGE;
@@ -309,12 +306,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                 Objects.requireNonNull(parentClass);
             }
             Either<String, TypeInfo> packageNameOrEnclosingType = packageName == null ? Either.right(enclosingType) : Either.left(packageName);
-            List<TypeInfo> allTypesInPrimaryType = packageName != null ? allTypes(typeInfo) : List.of();
 
             return new TypeInspectionImpl(
                     typeInfo,
                     packageNameOrEnclosingType,
-                    allTypesInPrimaryType,
+                    allTypesInPrimaryType(),
                     typeNature,
                     typeParameters(),
                     parentClass,
@@ -406,7 +402,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         @Override
         public List<TypeInfo> allTypesInPrimaryType() {
-            return null;
+            return  packageName != null ? allTypes(typeInfo) : List.of();
         }
 
         @Override
@@ -416,7 +412,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         @Override
         public AnnotationMode annotationMode() {
-            return ;
+            return;
         }
 
         @Override
@@ -437,6 +433,29 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         @Override
         public Set<ParameterizedType> explicitTypes() {
             return null;
+        }
+
+
+        // FIXME need a different solution
+        public List<TypeInfo> superTypesExcludingJavaLangObject() {
+            if (Primitives.isJavaLangObject(typeInfo)) return List.of();
+            List<TypeInfo> list = new ArrayList<>();
+            TypeInfo parent;
+            boolean parentIsNotJLO = !Primitives.isJavaLangObject(parentClass);
+            if (parentIsNotJLO) {
+                parent = Objects.requireNonNull(parentClass.typeInfo);
+                list.add(parent);
+                // FIXME this assumes that the parent has been inspected -- not necessarily the case!
+                list.addAll(parent.typeInspection.get().superTypes());
+            }
+
+            interfacesImplemented.forEach(i -> {
+                list.add(i.typeInfo);
+                assert i.typeInfo != null;
+                list.addAll(i.typeInfo.typeInspection.get().superTypes());
+            });
+            List<TypeInfo> immutable = ImmutableList.copyOf(list);
+            return immutable;
         }
     }
 

@@ -21,6 +21,7 @@ package org.e2immu.analyser.parser;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
@@ -115,7 +116,9 @@ public class Resolver {
 
         // FROM HERE ON, ALL INSPECTION HAS BEEN SET!
 
-        fillInternalMethodCalls(methodFieldSubTypeGraph);
+        methodResolution(typeContextOfFile, methodFieldSubTypeGraph);
+
+        // NOW, ALL METHODS IN THIS PRIMARY TYPE HAVE METHOD RESOLUTION SET
 
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
         Set<TypeInfo> typeDependencies = typeInfo.typesReferenced().stream().map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
@@ -159,10 +162,10 @@ public class Resolver {
             typeInspection.typeParameters().forEach(expressionContext.typeContext::addToContext);
 
             // add visible types to the type context
-            typeInfo.accessibleBySimpleNameTypeInfoStream().forEach(expressionContext.typeContext::addToContext);
+            typeInfo.accessibleBySimpleNameTypeInfoStream(expressionContext.typeContext).forEach(expressionContext.typeContext::addToContext);
 
             // add visible fields to variable context
-            typeInfo.accessibleFieldsStream().forEach(fieldInfo -> expressionContext.variableContext.add(new FieldReference(fieldInfo,
+            typeInfo.accessibleFieldsStream(expressionContext.typeContext).forEach(fieldInfo -> expressionContext.variableContext.add(new FieldReference(fieldInfo,
                     fieldInfo.isStatic() ? null : new This(fieldInfo.owner))));
 
             doFields(typeInspection, expressionContext, methodFieldSubTypeGraph);
@@ -350,20 +353,23 @@ public class Resolver {
     }
 
 
-    private static void fillInternalMethodCalls(DependencyGraph<WithInspectionAndAnalysis> methodGraph) {
+    private static void methodResolution(InspectionProvider inspectionProvider, DependencyGraph<WithInspectionAndAnalysis> methodGraph) {
+        // iterate twice, because we partial results on all MethodInfo objects for the setCallStatus computation
+        Map<MethodInfo, MethodResolution.Builder> builders = new HashMap<>();
         methodGraph.visit((from, toList) -> {
             try {
                 if (from instanceof MethodInfo methodInfo) {
                     Set<WithInspectionAndAnalysis> dependencies = methodGraph.dependenciesOnlyTerminals(from);
                     Set<MethodInfo> methodsReached = dependencies.stream().filter(w -> w instanceof MethodInfo).map(w -> (MethodInfo) w).collect(Collectors.toSet());
 
-                    MethodResolution methodResolution = new MethodResolution();
-                    methodResolution.methodsOfOwnClassReached.set(methodsReached);
-                    methodInfo.methodResolution.set(methodResolution);
+                    MethodResolution.Builder methodResolutionBuilder = new MethodResolution.Builder();
+                    methodResolutionBuilder.methodsOfOwnClassReached.set(methodsReached);
 
-                    methodCreatesObjectOfSelf(methodInfo, methodResolution);
-                    computeStaticMethodCallsOnly(methodInfo, methodResolution);
+                    methodCreatesObjectOfSelf(methodInfo, methodResolutionBuilder);
+                    computeStaticMethodCallsOnly(methodInfo, methodResolutionBuilder);
+                    methodResolutionBuilder.overrides.set(overrides(inspectionProvider, methodInfo));
 
+                    builders.put(methodInfo, methodResolutionBuilder);
                 }
             } catch (RuntimeException e) {
                 LOGGER.error("Caught runtime exception while filling {} to {} ", from.fullyQualifiedName(), toList);
@@ -372,14 +378,17 @@ public class Resolver {
         });
         methodGraph.visit((from, toList) -> {
             if (from instanceof MethodInfo methodInfo) {
-                methodInfo.methodResolution.get().setCallStatus(methodInfo);
+                MethodResolution.Builder builder = builders.get(methodInfo);
+                builder.partOfConstruction.set(computeCallStatus(builders, methodInfo));
+
+                methodInfo.methodResolution.set(builder.build());
             }
         });
     }
 
 
     // part of @UtilityClass computation in the type analyser
-    private static void methodCreatesObjectOfSelf(MethodInfo methodInfo, MethodResolution methodResolution) {
+    private static void methodCreatesObjectOfSelf(MethodInfo methodInfo, MethodResolution.Builder methodResolution) {
         AtomicBoolean createSelf = new AtomicBoolean();
         methodInfo.methodInspection.get().getMethodBody().visit(element -> {
             if (element instanceof NewObject newObject) {
@@ -391,7 +400,7 @@ public class Resolver {
         methodResolution.createObjectOfSelf.set(createSelf.get());
     }
 
-    private static void computeStaticMethodCallsOnly(@NotModified MethodInfo methodInfo, MethodResolution methodResolution) {
+    private static void computeStaticMethodCallsOnly(@NotModified MethodInfo methodInfo, MethodResolution.Builder methodResolution) {
         if (!methodResolution.staticMethodCallsOnly.isSet()) {
             if (methodInfo.isStatic) {
                 methodResolution.staticMethodCallsOnly.set(true);
@@ -414,4 +423,140 @@ public class Resolver {
     }
 
 
+    /**
+     * What does it do: look into my super types, and see if you find a method like the one specified
+     * NOTE: it does not look "sideways: methods of the same type but where implicit type conversion can take place
+     *
+     * @param methodInfo: the method for which we're looking for overrides
+     * @return all super methods
+     */
+    private static Set<MethodInfo> overrides(InspectionProvider inspectionProvider, MethodInfo methodInfo) {
+        return ImmutableSet.copyOf(recursiveOverridesCall(inspectionProvider, methodInfo.typeInfo, methodInfo, Map.of()));
+    }
+
+    private static Set<MethodInfo> recursiveOverridesCall(InspectionProvider inspectionProvider,
+                                                          TypeInfo typeToSearch,
+                                                          MethodInfo methodInfo,
+                                                          Map<NamedType, ParameterizedType> translationMap) {
+        Set<MethodInfo> result = new HashSet<>();
+        for (ParameterizedType superType : directSuperTypes(inspectionProvider, typeToSearch)) {
+            Map<NamedType, ParameterizedType> translationMapOfSuperType;
+            if (superType.parameters.isEmpty()) {
+                translationMapOfSuperType = translationMap;
+            } else {
+                assert superType.typeInfo != null;
+                ParameterizedType formalType = superType.typeInfo.asParameterizedType();
+                translationMapOfSuperType = new HashMap<>(translationMap);
+                int index = 0;
+                for (ParameterizedType parameter : formalType.parameters) {
+                    ParameterizedType concreteParameter = superType.parameters.get(index);
+                    translationMapOfSuperType.put(parameter.typeParameter, concreteParameter);
+                    index++;
+                }
+            }
+            assert superType.typeInfo != null;
+            MethodInfo override = findUniqueMethod(inspectionProvider.getTypeInspection(superType.typeInfo), methodInfo, translationMapOfSuperType);
+            if (override != null) {
+                result.add(override);
+            }
+            if (!Primitives.isJavaLangObject(superType.typeInfo)) {
+                result.addAll(recursiveOverridesCall(inspectionProvider, superType.typeInfo, methodInfo, translationMapOfSuperType));
+            }
+        }
+        return result;
+    }
+
+
+    /**
+     * Find a method, given a translation map
+     *
+     * @param target         the method to find (typically from a sub type)
+     * @param translationMap from the type parameters of this to the concrete types of the sub-type
+     * @return the method of this, if deemed the same
+     */
+    private static MethodInfo findUniqueMethod(TypeInspection typeInspection, MethodInfo target, Map<NamedType, ParameterizedType> translationMap) {
+        for (MethodInfo methodInfo : typeInspection.methodsAndConstructors()) {
+            if (methodInfo.sameMethod(target, translationMap)) {
+                return methodInfo;
+            }
+        }
+        return null;
+    }
+
+    public static List<ParameterizedType> directSuperTypes(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
+        if (Primitives.isJavaLangObject(typeInfo)) return List.of();
+        List<ParameterizedType> list = new ArrayList<>();
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
+        list.add(typeInspection.parentClass());
+        list.addAll(typeInspection.interfacesImplemented());
+        return list;
+    }
+
+
+    /**
+     * Note that this computation has to contain transitive calls.
+     *
+     * @return true if there is a non-private method in this class which calls this private method.
+     */
+    private static boolean isCalledFromNonPrivateMethod(Map<MethodInfo, MethodResolution.Builder> builders, MethodInfo methodInfo) {
+        for (MethodInfo other : methodInfo.typeInfo.typeInspection.get().methods()) {
+            if (!other.isPrivate() && builders.get(other).methodsOfOwnClassReached.get().contains(methodInfo)) {
+                return true;
+            }
+        }
+        for (FieldInfo fieldInfo : methodInfo.typeInfo.typeInspection.get().fields()) {
+            if (!fieldInfo.isPrivate() && fieldInfo.fieldInspection.get().initialiserIsSet()) {
+                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getInitialiser();
+                if (fieldInitialiser.implementationOfSingleAbstractMethod() != null &&
+                        builders.get(fieldInitialiser.implementationOfSingleAbstractMethod()).methodsOfOwnClassReached.get().contains(methodInfo)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean isCalledFromConstructors(Map<MethodInfo, MethodResolution.Builder> builders, MethodInfo methodInfo) {
+        for (MethodInfo other : methodInfo.typeInfo.typeInspection.get().constructors()) {
+            if (builders.get(other).methodsOfOwnClassReached.get().contains(methodInfo)) {
+                return true;
+            }
+        }
+        for (FieldInfo fieldInfo : methodInfo.typeInfo.typeInspection.get().fields()) {
+            if (fieldInfo.fieldInspection.get().initialiserIsSet()) {
+                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getInitialiser();
+                if (fieldInitialiser.implementationOfSingleAbstractMethod() == null) {
+                    // return true when the method is part of the expression
+                    AtomicBoolean found = new AtomicBoolean();
+                    fieldInitialiser.initialiser().visit(elt -> {
+                        if (elt instanceof MethodCall methodCall) {
+                            if (methodCall.methodInfo == methodInfo ||
+                                    builders.get(methodCall.methodInfo).methodsOfOwnClassReached.get().contains(methodInfo)) {
+                                found.set(true);
+                            }
+                        }
+                    });
+                    return found.get();
+                }
+            }
+        }
+        return false;
+    }
+
+
+    private static MethodResolution.CallStatus computeCallStatus(Map<MethodInfo, MethodResolution.Builder> builders, MethodInfo methodInfo) {
+        if (methodInfo.isConstructor) {
+            return MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
+        }
+        if (!methodInfo.isPrivate()) {
+            return MethodResolution.CallStatus.NON_PRIVATE;
+        }
+        if (isCalledFromNonPrivateMethod(builders, methodInfo)) {
+            return MethodResolution.CallStatus.CALLED_FROM_NON_PRIVATE_METHOD;
+        }
+        if (isCalledFromConstructors(builders, methodInfo)) {
+            return MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
+        }
+        return MethodResolution.CallStatus.NOT_CALLED_AT_ALL;
+    }
 }

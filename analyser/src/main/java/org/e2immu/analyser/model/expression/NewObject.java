@@ -164,7 +164,7 @@ public class NewObject implements HasParameterExpressions {
 
     public static Value stateFromCompanionOfConstructor(MethodInfo constructor, EvaluationContext evaluationContext) {
         if (constructor != null) {
-            Optional<CompanionMethodName> optEntry = constructor.methodInspection.get().companionMethods.keySet().stream()
+            Optional<CompanionMethodName> optEntry = constructor.methodInspection.get().getCompanionMethods().keySet().stream()
                     .filter(e -> e.aspect() != null && e.action() == CompanionMethodName.Action.MODIFICATION).findFirst();
             if (optEntry.isPresent()) {
                 MethodAnalysis constructorAnalysis = evaluationContext.getMethodAnalysis(constructor);

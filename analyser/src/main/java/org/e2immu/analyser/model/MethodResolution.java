@@ -17,11 +17,19 @@
 
 package org.e2immu.analyser.model;
 
+import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.util.SetOnce;
 
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class MethodResolution {
+public record MethodResolution(Set<MethodInfo> overrides,
+                               Set<MethodInfo> methodsOfOwnClassReached,
+                               CallStatus partOfConstruction,
+                               boolean createObjectOfSelf,
+                               boolean staticMethodCallsOnly) {
 
     public enum CallStatus {
         PART_OF_CONSTRUCTION,
@@ -34,39 +42,57 @@ public class MethodResolution {
         }
     }
 
-    /**
-     * this one contains all own methods called from this method, and the transitive closure.
-     * we use this to compute effective finality: some methods are only called from constructors,
-     * they form part of the construction aspect of the class
-     */
-    public final SetOnce<Set<MethodInfo>> methodsOfOwnClassReached = new SetOnce<>();
+    public static class Builder {
 
-    public final SetOnce<CallStatus> partOfConstruction = new SetOnce<>();
-    // ************** VARIOUS ODDS AND ENDS
-    // used to check that in a utility class, no objects of the class itself are created
-
-    public final SetOnce<Boolean> createObjectOfSelf = new SetOnce<>();
-    // if true, the method has no (non-static) method calls on the "this" scope
-
-    public final SetOnce<Boolean> staticMethodCallsOnly = new SetOnce<>();
-
-    // ***************
-
-    public void setCallStatus(MethodInfo methodInfo) {
-        MethodResolution.CallStatus callStatus;
-        if (methodInfo.isConstructor) {
-            callStatus = MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
-        } else if (!methodInfo.isPrivate()) {
-            callStatus = MethodResolution.CallStatus.NON_PRIVATE;
-        } else if (methodInfo.isCalledFromNonPrivateMethod()) {
-            callStatus = MethodResolution.CallStatus.CALLED_FROM_NON_PRIVATE_METHOD;
-        } else if (methodInfo.isCalledFromConstructors()) {
-            callStatus = MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
-        } else {
-            callStatus = MethodResolution.CallStatus.NOT_CALLED_AT_ALL;
+        public MethodResolution build() {
+            return new MethodResolution(
+                    getOverrides(),
+                    getMethodsOfOwnClassReached(),
+                    getPartOfConstruction(),
+                    isCreateObjectOfSelf(),
+                    isStaticMethodCallsOnly());
         }
-        partOfConstruction.set(callStatus);
-    }
 
+        public final SetOnce<Set<MethodInfo>> overrides = new SetOnce<>();
+
+        public Set<MethodInfo> getOverrides() {
+            return overrides.isSet() ? ImmutableSet.copyOf(overrides.get()) : Set.of();
+        }
+
+        /**
+         * this one contains all own methods called from this method, and the transitive closure.
+         * we use this to compute effective finality: some methods are only called from constructors,
+         * they form part of the construction aspect of the class
+         */
+        public final SetOnce<Set<MethodInfo>> methodsOfOwnClassReached = new SetOnce<>();
+
+        public Set<MethodInfo> getMethodsOfOwnClassReached() {
+            return methodsOfOwnClassReached.isSet() ? ImmutableSet.copyOf(methodsOfOwnClassReached.get()) : Set.of();
+        }
+
+        public final SetOnce<CallStatus> partOfConstruction = new SetOnce<>();
+
+        public CallStatus getPartOfConstruction() {
+            return partOfConstruction.getOrElse(null);
+        }
+
+        // ************** VARIOUS ODDS AND ENDS
+        // used to check that in a utility class, no objects of the class itself are created
+
+        public final SetOnce<Boolean> createObjectOfSelf = new SetOnce<>();
+        // if true, the method has no (non-static) method calls on the "this" scope
+
+        public boolean isCreateObjectOfSelf() {
+            return createObjectOfSelf.getOrElse(false);
+        }
+
+        public final SetOnce<Boolean> staticMethodCallsOnly = new SetOnce<>();
+
+        public boolean isStaticMethodCallsOnly() {
+            return staticMethodCallsOnly.getOrElse(false);
+        }
+        // ***************
+
+    }
 
 }

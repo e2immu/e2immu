@@ -129,7 +129,7 @@ public class TestContainerChecks extends CommonTestRunner {
         }
     };
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
         MethodInfo forEach = collection.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "forEach".equals(m.name)).findAny().orElseThrow();
         Assert.assertSame(typeContext.getPrimitives().voidTypeInfo, forEach.returnType().typeInfo);
@@ -152,7 +152,7 @@ public class TestContainerChecks extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .build());
     }
 

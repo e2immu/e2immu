@@ -25,13 +25,19 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ReferenceType;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.ExpressionContext;
+import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;

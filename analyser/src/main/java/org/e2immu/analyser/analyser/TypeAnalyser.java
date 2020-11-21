@@ -888,12 +888,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         // and there should be no means of generating an object
         for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
-            if (!methodAnalyser.methodInfo.methodResolution.get().createObjectOfSelf.isSet()) {
-                log(DELAYED, "Not yet deciding on @Utility class for {}, createObjectOfSelf not yet set on method {}",
-                        typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
-                return DELAYS;
-            }
-            if (methodAnalyser.methodInfo.methodResolution.get().createObjectOfSelf.get()) {
+           if (methodAnalyser.methodInfo.methodResolution.get().createObjectOfSelf()) {
                 log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                         " looks like a @UtilityClass, but an object of the class is created in method "
                         + methodAnalyser.methodInfo.fullyQualifiedName());

@@ -619,7 +619,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             isFinal = false;
         } else {
             int isAssignedOutsideConstructors = allMethodsAndConstructors.stream()
-                    .filter(m -> m.methodInfo.methodResolution.get().partOfConstruction.get().accessibleFromTheOutside())
+                    .filter(m -> m.methodInfo.methodResolution.get().partOfConstruction().accessibleFromTheOutside())
                     .filter(m -> m.haveFieldAsVariable(fieldInfo))
                     .mapToInt(m -> m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.ASSIGNED))
                     .max().orElse(Level.DELAY);

@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.ArrayValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
@@ -73,7 +74,7 @@ public class ArrayInitializer implements Expression {
             if (expression != NullConstant.NULL_CONSTANT) {
                 ParameterizedType parameterizedType = expression.returnType();
                 if (commonType == null) commonType = parameterizedType;
-                else commonType = commonType.commonType(primitives, parameterizedType);
+                else commonType = commonType.commonType(InspectionProvider.defaultFrom(primitives), parameterizedType);
             }
         }
         return commonType == null ? primitives.objectParameterizedType : commonType;

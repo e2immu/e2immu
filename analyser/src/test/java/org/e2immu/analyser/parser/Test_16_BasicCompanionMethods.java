@@ -80,7 +80,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
             }
         };
 
-        TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeMapVisitor typeMapVisitor = typeContext -> {
             TypeInfo charSequence = typeContext.getFullyQualified(CharSequence.class);
             MethodInfo length = charSequence.findUniqueMethod("length", 0);
             int modified = length.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
@@ -93,7 +93,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .build());
     }
 
@@ -192,19 +192,19 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
 
     @Test
     public void test3() throws IOException {
-        TypeContextVisitor typeContextVisitor = typeContext -> {
+        TypeMapVisitor typeMapVisitor = typeContext -> {
             TypeInfo string = typeContext.getFullyQualified(String.class);
             MethodInfo length = string.findUniqueMethod("length", 0);
             Assert.assertTrue(length.methodAnalysis.isSet());
             Assert.assertEquals(Set.of(CompanionMethodName.Action.ASPECT, CompanionMethodName.Action.INVARIANT),
-                    length.methodInspection.get().companionMethods.keySet().stream().map(CompanionMethodName::action).collect(Collectors.toSet()));
+                    length.methodInspection.get().getCompanionMethods().keySet().stream().map(CompanionMethodName::action).collect(Collectors.toSet()));
 
             TypeInfo intTypeInfo = typeContext.getPrimitives().intTypeInfo;
             TypeInfo stringBuilder = typeContext.getFullyQualified(StringBuilder.class);
-            MethodInfo appendInt = stringBuilder.typeInspection.get().methods.stream().filter(methodInfo -> "append".equals(methodInfo.name) &&
-                    intTypeInfo == methodInfo.methodInspection.get().parameters.get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
-            MethodInfo appendIntCompanion = appendInt.methodInspection.get().companionMethods.values().stream().findFirst().orElseThrow();
-            ReturnStatement returnStatement = (ReturnStatement) appendIntCompanion.methodInspection.get().methodBody.get().structure.statements.get(0);
+            MethodInfo appendInt = stringBuilder.typeInspection.get().methods().stream().filter(methodInfo -> "append".equals(methodInfo.name) &&
+                    intTypeInfo == methodInfo.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
+            MethodInfo appendIntCompanion = appendInt.methodInspection.get().getCompanionMethods().values().stream().findFirst().orElseThrow();
+            ReturnStatement returnStatement = (ReturnStatement) appendIntCompanion.methodInspection.get().getMethodBody().structure.statements.get(0);
             Assert.assertEquals("return post == prev + Integer.toString(i).length();\n", returnStatement.statementString(0, null));
 
             if (returnStatement.expression instanceof BinaryOperator eq &&
@@ -226,10 +226,10 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
             } else Assert.fail();
 
             TypeInfo stringTypeInfo = typeContext.getPrimitives().stringTypeInfo;
-            MethodInfo appendStr = stringBuilder.typeInspection.get().methods.stream().filter(methodInfo -> "append".equals(methodInfo.name) &&
-                    string == methodInfo.methodInspection.get().parameters.get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
-            MethodInfo appendStringCompanion = appendStr.methodInspection.get().companionMethods.values().stream().findFirst().orElseThrow();
-            ReturnStatement returnStatementStr = (ReturnStatement) appendStringCompanion.methodInspection.get().methodBody.get().structure.statements.get(0);
+            MethodInfo appendStr = stringBuilder.typeInspection.get().methods().stream().filter(methodInfo -> "append".equals(methodInfo.name) &&
+                    string == methodInfo.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
+            MethodInfo appendStringCompanion = appendStr.methodInspection.get().getCompanionMethods().values().stream().findFirst().orElseThrow();
+            ReturnStatement returnStatementStr = (ReturnStatement) appendStringCompanion.methodInspection.get().getMethodBody().structure.statements.get(0);
             Assert.assertEquals("return post == prev + str.length();\n", returnStatementStr.statementString(0, null));
 
             if (returnStatementStr.expression instanceof BinaryOperator eq &&
@@ -242,7 +242,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
         };
 
         testClass("BasicCompanionMethods_3", 0, 0, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .build());
     }
 

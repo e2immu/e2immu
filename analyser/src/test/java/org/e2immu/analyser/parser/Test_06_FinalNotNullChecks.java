@@ -73,7 +73,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         }
     };
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo objects = typeContext.getFullyQualified(Objects.class);
         MethodInfo requireNonNull = objects.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("requireNonNull") &&
                 1 == mi.methodInspection.get().parameters.size()).findFirst().orElseThrow();
@@ -120,7 +120,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("FinalNotNullChecks", 0, 0, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

@@ -24,7 +24,7 @@ import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
 import org.e2immu.analyser.annotationxml.AnnotationXmlWriter;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.config.TypeContextVisitor;
+import org.e2immu.analyser.config.TypeMapVisitor;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.upload.AnnotationUploader;
@@ -112,8 +112,8 @@ public class Parser {
 
         ensureShallowAnalysisOfLoadedObjects();
 
-        for (TypeContextVisitor typeContextVisitor : configuration.debugConfiguration.typeContextVisitors) {
-            typeContextVisitor.visit(getTypeContext());
+        for (TypeMapVisitor typeMapVisitor : configuration.debugConfiguration.typeMapVisitors) {
+            typeMapVisitor.visit(getTypeContext());
         }
         log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Analysing primary types:\n{}",
                 sortedPrimaryTypes.stream().map(t -> t.primaryType.fullyQualifiedName).collect(Collectors.joining("\n")));

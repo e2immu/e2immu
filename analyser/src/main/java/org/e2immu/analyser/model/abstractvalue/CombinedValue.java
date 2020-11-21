@@ -5,6 +5,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -38,15 +39,15 @@ public class CombinedValue implements Value {
 
     public static Value create(Primitives primitives, List<Value> values) {
         if (values.isEmpty()) throw new UnsupportedOperationException();
-        ParameterizedType commonType = commonType(primitives, values);
+        ParameterizedType commonType = commonType(InspectionProvider.defaultFrom(primitives), values);
         return new CombinedValue(commonType, ImmutableList.copyOf(values));
     }
 
-    private static ParameterizedType commonType(Primitives primitives, List<Value> values) {
+    private static ParameterizedType commonType(InspectionProvider inspectionProvider, List<Value> values) {
         ParameterizedType commonType = values.get(0).type();
         for (int i = 1; i < values.size(); i++) {
             if (commonType == null) return null;
-            commonType = commonType.commonType(primitives, values.get(i).type());
+            commonType = commonType.commonType(inspectionProvider, values.get(i).type());
         }
         return commonType;
     }

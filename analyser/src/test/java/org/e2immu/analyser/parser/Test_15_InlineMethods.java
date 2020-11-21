@@ -1,7 +1,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.TypeContextVisitor;
+import org.e2immu.analyser.config.TypeMapVisitor;
 import org.e2immu.analyser.model.MethodInfo;
 import org.junit.Assert;
 import org.junit.Test;
@@ -13,7 +13,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
         super(false);
     }
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         MethodInfo unaryMinusInt = typeContext.getPrimitives().unaryMinusOperatorInt;
         Assert.assertEquals("int.-(int)", unaryMinusInt.fullyQualifiedName());
     };
@@ -21,7 +21,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("InlineMethods", 0, 0, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .build());
     }
 

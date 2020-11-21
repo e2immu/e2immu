@@ -72,7 +72,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         }
     };
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo list = typeContext.getFullyQualified(List.class);
         Assert.assertSame(AnnotationMode.DEFENSIVE, list.typeInspection.getPotentiallyRun().annotationMode);
         MethodInfo size = list.findUniqueMethod("size", 0);
@@ -135,7 +135,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         testClass("ExampleManualIterator1", 1, 0, new DebugConfiguration.Builder()
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)

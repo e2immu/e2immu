@@ -97,7 +97,7 @@ public class TestFirstThen extends CommonTestRunner {
         }
     };
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo objects = typeContext.getFullyQualified(Objects.class);
         MethodInfo hash = objects.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("hash")).findFirst().orElseThrow();
         ParameterInfo objectsParam = hash.methodInspection.get().parameters.get(0);
@@ -108,7 +108,7 @@ public class TestFirstThen extends CommonTestRunner {
     public void test() throws IOException {
         testUtilClass(List.of("FirstThen"), 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());

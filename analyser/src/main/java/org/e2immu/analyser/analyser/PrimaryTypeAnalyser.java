@@ -169,7 +169,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
     }
 
     private static Set<MethodAnalysis> overrides(MethodInfo methodInfo, Map<MethodInfo, MethodAnalyser> methodAnalysers) {
-        return methodInfo.typeInfo.overrides(methodInfo, true)
+        return methodInfo.methodResolution.get().overrides()
                 .stream().map(mi -> {
                     MethodAnalyser methodAnalyser = methodAnalysers.get(mi);
                     assert methodAnalyser != null || mi.methodAnalysis.isSet() : "No analysis known for " + mi.fullyQualifiedName();

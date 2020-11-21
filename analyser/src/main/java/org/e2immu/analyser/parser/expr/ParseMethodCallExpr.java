@@ -23,6 +23,7 @@ import com.github.javaparser.ast.expr.MethodCallExpr;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.ExpressionContext;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
@@ -89,8 +90,8 @@ public class ParseMethodCallExpr {
 
         Expression computedScope;
         if (scope == null) {
-            if (method.methodInspectionBuilder.getMethodInfo().isStatic) {
-                computedScope = new TypeExpression(method.methodInspectionBuilder.getMethodInfo().typeInfo.asParameterizedType());
+            if (method.methodInspection.getMethodInfo().isStatic) {
+                computedScope = new TypeExpression(method.methodInspection.getMethodInfo().typeInfo.asParameterizedType());
             } else {
                 Variable thisVariable = new This(expressionContext.enclosingType);
                 computedScope = new VariableExpression(thisVariable);
@@ -112,21 +113,22 @@ public class ParseMethodCallExpr {
                                                                  Position positionForErrorReporting) {
         Map<Integer, Expression> evaluatedExpressions = new HashMap<>();
         Map<MethodInfo, Integer> compatibilityScore = new HashMap<>();
+        InspectionProvider inspectionProvider = expressionContext.typeContext;
         if (!expressions.isEmpty()) {
             while (true) {
                 Expression evaluatedExpression = null;
                 // we know that all method candidates have an identical amount of parameters
                 Integer pos = findParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate(methodCandidates, evaluatedExpressions.keySet());
                 if (pos == null) {
-                    pos = findParameterWhereUnevaluatedLambdaWillHelp(expressions, methodCandidates, evaluatedExpressions.keySet());
+                    pos = findParameterWhereUnevaluatedLambdaWillHelp(inspectionProvider, expressions, methodCandidates, evaluatedExpressions.keySet());
                 }
                 if (pos != null) {
                     evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), singleAbstractMethod == null ? null : singleAbstractMethod.copyWithoutMethod());
                 } else {
-                    Pair<MethodTypeParameterMap, Integer> pair = findParameterWithASingleFunctionalInterfaceType(methodCandidates, evaluatedExpressions.keySet());
+                    Pair<MethodTypeParameterMap, Integer> pair = findParameterWithASingleFunctionalInterfaceType(inspectionProvider, methodCandidates, evaluatedExpressions.keySet());
                     if (pair != null) {
                         pos = pair.v;
-                        MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(pair.k, pos, singleAbstractMethod);
+                        MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(inspectionProvider, pair.k, pos, singleAbstractMethod);
                         evaluatedExpression = expressionContext.parseExpression(expressions.get(pos), abstractInterfaceMethod);
                     }
                 }
@@ -155,13 +157,13 @@ public class ParseMethodCallExpr {
                 if (methodCandidates.size() > 1) {
                     //methodCandidates.sort(expressionContext.typeContext::compareMethodCandidates);
                     TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
-                    Set<MethodInfo> overrides = mc0.method.methodInspectionBuilder.getOverrides();
+                    Set<MethodInfo> overrides = mc0.method.methodInspection.getOverrides();
                     for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
-                        if (!overrides.contains(mcN.method.methodInspectionBuilder.getMethodInfo()) &&
-                                mcN.method.methodInspectionBuilder.getMethodInfo() != mc0.method.methodInspectionBuilder.getMethodInfo()) {
+                        if (!overrides.contains(mcN.method.methodInspection.getMethodInfo()) &&
+                                mcN.method.methodInspection.getMethodInfo() != mc0.method.methodInspection.getMethodInfo()) {
                             for (TypeContext.MethodCandidate mc : methodCandidates) {
-                                log(METHOD_CALL, "Candidate: {} score {}", mc.method.methodInspectionBuilder.getFullyQualifiedName(),
-                                        compatibilityScore.get(mc.method.methodInspectionBuilder.getMethodInfo()));
+                                log(METHOD_CALL, "Candidate: {} score {}", mc.method.methodInspection.getFullyQualifiedName(),
+                                        compatibilityScore.get(mc.method.methodInspection.getMethodInfo()));
                             }
                             for (MethodInfo override : overrides) {
                                 log(METHOD_CALL, "Overrides of 1st: {}", override.distinguishingName());
@@ -176,7 +178,7 @@ public class ParseMethodCallExpr {
         }
         MethodTypeParameterMap method = methodCandidates.get(0).method;
         // now parse the lambda's with our new info
-        log(METHOD_CALL, "Found method {}", method.methodInspectionBuilder.getFullyQualifiedName());
+        log(METHOD_CALL, "Found method {}", method.methodInspection.getFullyQualifiedName());
 
         for (int i = 0; i < expressions.size(); i++) {
             Expression e = evaluatedExpressions.get(i);
@@ -185,10 +187,11 @@ public class ParseMethodCallExpr {
                         methodNameForErrorReporting, i, singleAbstractMethod);
                 MethodTypeParameterMap mapForEvaluation;
 
-                MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(method, i, singleAbstractMethod);
+                MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(expressionContext.typeContext,
+                        method, i, singleAbstractMethod);
                 if (abstractInterfaceMethod != null) {
                     if (singleAbstractMethod != null) {
-                        ParameterizedType returnTypeOfMethod = method.methodInspectionBuilder.getReturnType();
+                        ParameterizedType returnTypeOfMethod = method.methodInspection.getReturnType();
                         if (returnTypeOfMethod.typeInfo != null) {
                             // a type with its own formal parameters, we try to jump from the concrete value in the AIM (entry.getValue) to
                             // the type parameter in the method's return type (tpInReturnType) to the type parameter in the method's formal return type (tpInFormalReturnType)
@@ -209,7 +212,7 @@ public class ParseMethodCallExpr {
                                 }
                                 newMap.put(entry.getKey(), best);
                             }
-                            mapForEvaluation = new MethodTypeParameterMap(abstractInterfaceMethod.methodInspectionBuilder, newMap);
+                            mapForEvaluation = new MethodTypeParameterMap(abstractInterfaceMethod.methodInspection, newMap);
                         } else {
                             mapForEvaluation = abstractInterfaceMethod;
                         }
@@ -238,11 +241,12 @@ public class ParseMethodCallExpr {
 
         // fill in the map expansion
         int i = 0;
-        List<ParameterInfo> formalParameters = method.methodInspectionBuilder.getParameters();
+        List<ParameterInfo> formalParameters = method.methodInspection.getParameters();
         for (Expression expression : newParameterExpressions) {
             log(METHOD_CALL, "Examine parameter {}", i);
             ParameterizedType concreteParameterType = expression.returnType();
-            Map<NamedType, ParameterizedType> translated = formalParameters.get(i).parameterizedType.translateMap(concreteParameterType);
+            Map<NamedType, ParameterizedType> translated = formalParameters.get(i).parameterizedType
+                    .translateMap(expressionContext.typeContext, concreteParameterType);
             ParameterizedType concreteTypeInMethod = method.getConcreteTypeOfParameter(i);
 
             translated.forEach((k, v) -> {
@@ -265,7 +269,7 @@ public class ParseMethodCallExpr {
     }
 
     private static Map<NamedType, ParameterizedType> makeTranslationMap(MethodTypeParameterMap method, int i, MethodTypeParameterMap singleAbstractMethod) {
-        ParameterInfo parameterInfo = method.methodInspectionBuilder.getParameters().get(i);
+        ParameterInfo parameterInfo = method.methodInspection.getParameters().get(i);
         ParameterizedType parameterizedType = parameterInfo.parameterizedType; // Collector<T,A,R>, with T linked to T0 of Stream
         ParameterizedType formalParameterizedType = parameterizedType.typeInfo.asParameterizedType();
         Map<NamedType, ParameterizedType> newMap = new HashMap<>();
@@ -279,9 +283,9 @@ public class ParseMethodCallExpr {
     }
 
     private static void trimMethodsWithBestScore(List<TypeContext.MethodCandidate> methodCandidates, Map<MethodInfo, Integer> compatibilityScore) {
-        int min = methodCandidates.stream().mapToInt(mc -> compatibilityScore.getOrDefault(mc.method.methodInspectionBuilder.getMethodInfo(), 0)).min().orElseThrow();
+        int min = methodCandidates.stream().mapToInt(mc -> compatibilityScore.getOrDefault(mc.method.methodInspection.getMethodInfo(), 0)).min().orElseThrow();
         if (min == NOT_ASSIGNABLE) throw new UnsupportedOperationException();
-        methodCandidates.removeIf(mc -> compatibilityScore.getOrDefault(mc.method.methodInspectionBuilder.getMethodInfo(), 0) > min);
+        methodCandidates.removeIf(mc -> compatibilityScore.getOrDefault(mc.method.methodInspection.getMethodInfo(), 0) > min);
     }
 
     // remove varargs if there's also non-varargs solutions
@@ -289,31 +293,33 @@ public class ParseMethodCallExpr {
     // this step if AFTER the score step, so we've already dealt with type conversions.
     // we still have to deal with overloads in supertypes, methods with the same type signature
     private static void trimVarargsVsMethodsWithFewerParameters(List<TypeContext.MethodCandidate> methodCandidates) {
-        int countVarargs = (int) methodCandidates.stream().filter(mc -> mc.method.methodInspectionBuilder.getMethodInfo().isVarargs()).count();
+        int countVarargs = (int) methodCandidates.stream().filter(mc -> mc.method.methodInspection.getMethodInfo().isVarargs()).count();
         if (countVarargs > 0 && countVarargs < methodCandidates.size()) {
-            methodCandidates.removeIf(mc -> mc.method.methodInspectionBuilder.getMethodInfo().isVarargs());
+            methodCandidates.removeIf(mc -> mc.method.methodInspection.getMethodInfo().isVarargs());
         }
     }
 
     // File.listFiles(FileNameFilter) vs File.listFiles(FileFilter): both types take a functional interface with a different number of parameters
     // (fileFilter takes 1, fileNameFilter takes 2)
-    private static Integer findParameterWhereUnevaluatedLambdaWillHelp(List<com.github.javaparser.ast.expr.Expression> expressions,
-                                                                       List<TypeContext.MethodCandidate> methodCandidates,
-                                                                       Set<Integer> ignore) {
+    private static Integer findParameterWhereUnevaluatedLambdaWillHelp(
+            InspectionProvider inspectionProvider,
+            List<com.github.javaparser.ast.expr.Expression> expressions,
+            List<TypeContext.MethodCandidate> methodCandidates,
+            Set<Integer> ignore) {
         if (methodCandidates.isEmpty()) return null;
-        MethodInspection mi0 = methodCandidates.get(0).method.methodInspectionBuilder;
+        MethodInspection mi0 = methodCandidates.get(0).method.methodInspection;
         outer:
         for (int i = 0; i < mi0.getParameters().size(); i++) {
             com.github.javaparser.ast.expr.Expression expression = expressions.get(i);
             if (!ignore.contains(i) && (expression.isLambdaExpr() || expression.isMethodReferenceExpr())) {
                 Set<Integer> numberOfParametersInFunctionalInterface = new HashSet<>();
                 for (TypeContext.MethodCandidate mc : methodCandidates) {
-                    MethodInspection mi = mc.method.methodInspectionBuilder;
+                    MethodInspection mi = mc.method.methodInspection;
                     ParameterInfo pi = mi.getParameters().get(i);
                     boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface();
                     if (isFunctionalInterface) {
-                        MethodTypeParameterMap singleAbstractMethod = pi.parameterizedType.findSingleAbstractMethodOfInterface();
-                        int numberOfParameters = singleAbstractMethod.methodInspectionBuilder.getParameters().size();
+                        MethodTypeParameterMap singleAbstractMethod = pi.parameterizedType.findSingleAbstractMethodOfInterface(inspectionProvider);
+                        int numberOfParameters = singleAbstractMethod.methodInspection.getParameters().size();
                         boolean added = numberOfParametersInFunctionalInterface.add(numberOfParameters);
                         if (!added) {
                             continue outer;
@@ -326,17 +332,19 @@ public class ParseMethodCallExpr {
         return null;
     }
 
-    private static Pair<MethodTypeParameterMap, Integer> findParameterWithASingleFunctionalInterfaceType
-            (List<TypeContext.MethodCandidate> methodCandidates, Set<Integer> ignore) {
+    private static Pair<MethodTypeParameterMap, Integer> findParameterWithASingleFunctionalInterfaceType(
+            InspectionProvider inspectionProvider,
+            List<TypeContext.MethodCandidate> methodCandidates,
+            Set<Integer> ignore) {
         if (methodCandidates.isEmpty()) return null;
-        MethodInspection mi0 = methodCandidates.get(0).method.methodInspectionBuilder;
+        MethodInspection mi0 = methodCandidates.get(0).method.methodInspection;
         for (int i = 0; i < mi0.getParameters().size(); i++) {
             if (!ignore.contains(i)) {
                 ParameterizedType functionalInterface = null;
                 TypeContext.MethodCandidate mcOfFunctionalInterface = null;
                 MethodTypeParameterMap singleAbstractMethod = null;
                 for (TypeContext.MethodCandidate mc : methodCandidates) {
-                    MethodInspection mi = mc.method.methodInspectionBuilder;
+                    MethodInspection mi = mc.method.methodInspection;
                     if (i < mi.getParameters().size()) {
                         ParameterInfo pi = mi.getParameters().get(i);
                         boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface();
@@ -344,13 +352,13 @@ public class ParseMethodCallExpr {
                             if (functionalInterface == null) {
                                 functionalInterface = pi.parameterizedType;
                                 mcOfFunctionalInterface = mc;
-                                singleAbstractMethod = pi.parameterizedType.findSingleAbstractMethodOfInterface();
+                                singleAbstractMethod = pi.parameterizedType.findSingleAbstractMethodOfInterface(inspectionProvider);
                             } else {
-                                MethodTypeParameterMap sam2 = pi.parameterizedType.findSingleAbstractMethodOfInterface();
+                                MethodTypeParameterMap sam2 = pi.parameterizedType.findSingleAbstractMethodOfInterface(inspectionProvider);
                                 if (!singleAbstractMethod.isAssignableFrom(sam2)) {
                                     log(METHOD_CALL, "Incompatible functional interfaces {} and {} on method overloads {} and {}",
                                             pi.parameterizedType.detailedString(), functionalInterface.detailedString(),
-                                            mi.getDistinguishingName(), mcOfFunctionalInterface.method.methodInspectionBuilder.getDistinguishingName());
+                                            mi.getDistinguishingName(), mcOfFunctionalInterface.method.methodInspection.getDistinguishingName());
                                     functionalInterface = null;
                                     break;
                                 }
@@ -367,12 +375,12 @@ public class ParseMethodCallExpr {
     private static Integer findParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate
             (List<TypeContext.MethodCandidate> methodCandidates, Set<Integer> ignore) {
         if (methodCandidates.isEmpty()) return null;
-        MethodInspection mi0 = methodCandidates.get(0).method.methodInspectionBuilder;
+        MethodInspection mi0 = methodCandidates.get(0).method.methodInspection;
         for (int i = 0; i < mi0.getParameters().size(); i++) {
             if (!ignore.contains(i)) {
                 boolean ok = true;
                 for (TypeContext.MethodCandidate mc : methodCandidates) {
-                    MethodInspection mi = mc.method.methodInspectionBuilder;
+                    MethodInspection mi = mc.method.methodInspection;
                     if (i < mi.getParameters().size()) {
                         ParameterInfo pi = mi.getParameters().get(i);
                         boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface();
@@ -397,11 +405,11 @@ public class ParseMethodCallExpr {
                                                List<TypeContext.MethodCandidate> methodCandidates,
                                                Map<MethodInfo, Integer> compatibilityScore) {
         methodCandidates.removeIf(mc -> {
-            int score = compatibleParameter(expressionContext, evaluatedExpression, pos, mc.method.methodInspectionBuilder);
+            int score = compatibleParameter(expressionContext, evaluatedExpression, pos, mc.method.methodInspection);
             if (score >= 0) {
-                Integer inMap = compatibilityScore.get(mc.method.methodInspectionBuilder.getMethodInfo());
+                Integer inMap = compatibilityScore.get(mc.method.methodInspection.getMethodInfo());
                 inMap = inMap == null ? score : score + inMap;
-                compatibilityScore.put(mc.method.methodInspectionBuilder.getMethodInfo(), inMap);
+                compatibilityScore.put(mc.method.methodInspection.getMethodInfo(), inMap);
             }
             return score < 0;
         });
@@ -443,18 +451,18 @@ public class ParseMethodCallExpr {
             return 1; // we'll just have to redo this
         }
         if (evaluatedExpression instanceof UnevaluatedLambdaExpression) {
-            MethodTypeParameterMap sam = typeOfParameter.findSingleAbstractMethodOfInterface();
+            MethodTypeParameterMap sam = typeOfParameter.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
             if (sam == null) return NOT_ASSIGNABLE;
-            int numberOfParametersInSam = sam.methodInspectionBuilder.getParameters().size();
+            int numberOfParametersInSam = sam.methodInspection.getParameters().size();
             return ((UnevaluatedLambdaExpression) evaluatedExpression).numberOfParameters.contains(numberOfParametersInSam) ? 0 : NOT_ASSIGNABLE;
         }
         ParameterizedType returnType = evaluatedExpression.returnType();
         if (typeOfParameter.isFunctionalInterface() && returnType.isFunctionalInterface()) {
-            MethodTypeParameterMap sam1 = typeOfParameter.findSingleAbstractMethodOfInterface();
-            MethodTypeParameterMap sam2 = returnType.findSingleAbstractMethodOfInterface();
+            MethodTypeParameterMap sam1 = typeOfParameter.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
+            MethodTypeParameterMap sam2 = returnType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
             return sam1.isAssignableFrom(sam2) ? 0 : NOT_ASSIGNABLE;
         }
-        return typeOfParameter.numericIsAssignableFrom(expressionContext.typeContext.getPrimitives(), returnType);
+        return typeOfParameter.numericIsAssignableFrom(expressionContext.typeContext, returnType);
     }
 
     /*
@@ -471,20 +479,22 @@ public class ParseMethodCallExpr {
 
     This method here ensures that the U in comparingInt is linked to the result of Stream, so that e -> e.getValue can be evaluated on the Map.Entry type
      */
-    private static MethodTypeParameterMap determineAbstractInterfaceMethod(MethodTypeParameterMap method,
-                                                                           int p,
-                                                                           MethodTypeParameterMap singleAbstractMethod) {
+    private static MethodTypeParameterMap determineAbstractInterfaceMethod(
+            InspectionProvider inspectionProvider,
+            MethodTypeParameterMap method,
+            int p,
+            MethodTypeParameterMap singleAbstractMethod) {
         Objects.requireNonNull(method);
-        MethodTypeParameterMap abstractInterfaceMethod = method.getConcreteTypeOfParameter(p).findSingleAbstractMethodOfInterface();
-        log(METHOD_CALL, "Abstract interface method of parameter {} of method {} is {}", p, method.methodInspectionBuilder.getFullyQualifiedName(), abstractInterfaceMethod);
+        MethodTypeParameterMap abstractInterfaceMethod = method.getConcreteTypeOfParameter(p).findSingleAbstractMethodOfInterface(inspectionProvider);
+        log(METHOD_CALL, "Abstract interface method of parameter {} of method {} is {}", p, method.methodInspection.getFullyQualifiedName(), abstractInterfaceMethod);
         if (abstractInterfaceMethod == null || singleAbstractMethod == null) return abstractInterfaceMethod;
 
-        if (singleAbstractMethod.isSingleAbstractMethod() && singleAbstractMethod.methodInspectionBuilder.getMethodInfo().typeInfo
-                .equals(method.methodInspectionBuilder.getMethodInfo().typeInfo)) {
+        if (singleAbstractMethod.isSingleAbstractMethod() && singleAbstractMethod.methodInspection.getMethodInfo().typeInfo
+                .equals(method.methodInspection.getMethodInfo().typeInfo)) {
             Map<NamedType, ParameterizedType> links = new HashMap<>();
             int pos = 0;
-            for (TypeParameter key : singleAbstractMethod.methodInspectionBuilder.getMethodInfo().typeInfo.typeInspection.get().typeParameters()) {
-                NamedType abstractTypeInCandidate = method.methodInspectionBuilder.getMethodInfo().methodInspection.get().getReturnType().parameters.get(pos).typeParameter;
+            for (TypeParameter key : singleAbstractMethod.methodInspection.getMethodInfo().typeInfo.typeInspection.get().typeParameters()) {
+                NamedType abstractTypeInCandidate = method.methodInspection.getMethodInfo().methodInspection.get().getReturnType().parameters.get(pos).typeParameter;
                 ParameterizedType valueOfKey = singleAbstractMethod.applyMap(key);
                 links.put(abstractTypeInCandidate, valueOfKey);
                 pos++;

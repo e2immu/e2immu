@@ -19,7 +19,6 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableMap;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
@@ -47,17 +46,17 @@ import java.util.stream.Collectors;
 //
 public class MethodTypeParameterMap {
 
-    public final MethodInspection methodInspectionBuilder;
+    public final MethodInspection methodInspection;
     @NotNull
     public final Map<NamedType, ParameterizedType> concreteTypes;
 
-    public MethodTypeParameterMap(MethodInspection methodInspectionBuilder, @NotNull Map<NamedType, ParameterizedType> concreteTypes) {
-        this.methodInspectionBuilder = methodInspectionBuilder; // can be null, for SAMs
+    public MethodTypeParameterMap(MethodInspection methodInspection, @NotNull Map<NamedType, ParameterizedType> concreteTypes) {
+        this.methodInspection = methodInspection; // can be null, for SAMs
         this.concreteTypes = ImmutableMap.copyOf(concreteTypes);
     }
 
     public boolean isSingleAbstractMethod() {
-        return methodInspectionBuilder != null;
+        return methodInspection != null;
     }
 
     public MethodTypeParameterMap copyWithoutMethod() {
@@ -67,25 +66,25 @@ public class MethodTypeParameterMap {
     public ParameterizedType getConcreteReturnType() {
         if (!isSingleAbstractMethod())
             throw new UnsupportedOperationException("Can only be called on a single abstract method");
-        ParameterizedType returnType = methodInspectionBuilder.getReturnType();
+        ParameterizedType returnType = methodInspection.getReturnType();
         return apply(concreteTypes, returnType);
     }
 
     public ParameterizedType getConcreteTypeOfParameter(int i) {
         if (!isSingleAbstractMethod())
             throw new UnsupportedOperationException("Can only be called on a single abstract method");
-        int n = methodInspectionBuilder.getParameters().size();
+        int n = methodInspection.getParameters().size();
         if (i >= n) {
             // varargs
-            return apply(concreteTypes, methodInspectionBuilder.getParameters().get(n - 1).parameterizedType);
+            return apply(concreteTypes, methodInspection.getParameters().get(n - 1).parameterizedType);
         }
-        return apply(concreteTypes, methodInspectionBuilder.getParameters().get(i).parameterizedType);
+        return apply(concreteTypes, methodInspection.getParameters().get(i).parameterizedType);
     }
 
     public MethodTypeParameterMap expand(Map<NamedType, ParameterizedType> mapExpansion) {
         Map<NamedType, ParameterizedType> join = new HashMap<>(concreteTypes);
         join.putAll(mapExpansion);
-        return new MethodTypeParameterMap(methodInspectionBuilder, ImmutableMap.copyOf(join));
+        return new MethodTypeParameterMap(methodInspection, ImmutableMap.copyOf(join));
     }
 
     public ParameterizedType applyMap(TypeParameter typeParameter) {
@@ -117,7 +116,7 @@ public class MethodTypeParameterMap {
 
     @Override
     public String toString() {
-        return (isSingleAbstractMethod() ? ("method " + methodInspectionBuilder.getFullyQualifiedName()) : "No method") + ", map " + concreteTypes;
+        return (isSingleAbstractMethod() ? ("method " + methodInspection.getFullyQualifiedName()) : "No method") + ", map " + concreteTypes;
     }
 
     public ParameterizedType inferFunctionalType(List<ParameterizedType> types, ParameterizedType inferredReturnType) {
@@ -126,32 +125,32 @@ public class MethodTypeParameterMap {
         if (!isSingleAbstractMethod())
             throw new UnsupportedOperationException("Can only be called on a single abstract method");
 
-        MethodInfo methodInfo = methodInspectionBuilder.getMethodInfo();
+        MethodInfo methodInfo = methodInspection.getMethodInfo();
         return new ParameterizedType(methodInfo.typeInfo, methodInfo.typeParametersComputed(types, inferredReturnType));
     }
 
     public boolean isAssignableFrom(MethodTypeParameterMap other) {
         if (!isSingleAbstractMethod() || !other.isSingleAbstractMethod()) throw new UnsupportedOperationException();
-        MethodInfo methodInfo = methodInspectionBuilder.getMethodInfo();
-        MethodInfo otherMethodInfo = other.methodInspectionBuilder.getMethodInfo();
+        MethodInfo methodInfo = methodInspection.getMethodInfo();
+        MethodInfo otherMethodInfo = other.methodInspection.getMethodInfo();
         if (methodInfo.equals(otherMethodInfo)) return true;
-        if (methodInspectionBuilder.getParameters().size() != other.methodInspectionBuilder.getParameters().size())
+        if (methodInspection.getParameters().size() != other.methodInspection.getParameters().size())
             return false;
         int i = 0;
-        for (ParameterInfo pi : methodInspectionBuilder.getParameters()) {
-            ParameterInfo piOther = other.methodInspectionBuilder.getParameters().get(i);
+        for (ParameterInfo pi : methodInspection.getParameters()) {
+            ParameterInfo piOther = other.methodInspection.getParameters().get(i);
             i++;
         }
         // TODO
-        return Primitives.isVoid(methodInspectionBuilder.getReturnType()) == Primitives.isVoid(other.methodInspectionBuilder.getReturnType());
+        return Primitives.isVoid(methodInspection.getReturnType()) == Primitives.isVoid(other.methodInspection.getReturnType());
     }
 
-    public MethodInspectionImpl.Builder buildCopy(TypeInfo typeInfo, InspectionProvider inspectionProvider) {
-        MethodInfo copy = new MethodInfo(typeInfo, methodInspectionBuilder.getMethodInfo().name, false);
+    public MethodInspectionImpl.Builder buildCopy(TypeInfo typeInfo) {
+        MethodInfo copy = new MethodInfo(typeInfo, methodInspection.getMethodInfo().name, false);
         MethodInspectionImpl.Builder mib = new MethodInspectionImpl.Builder(copy);
         mib.addModifier(MethodModifier.PUBLIC);
 
-        for (ParameterInfo p : methodInspectionBuilder.getParameters()) {
+        for (ParameterInfo p : methodInspection.getParameters()) {
             ParameterInfo newParameter = new ParameterInfo(copy, getConcreteTypeOfParameter(p.index), p.name, p.index);
             mib.addParameter(newParameter);
             ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder();
@@ -165,7 +164,7 @@ public class MethodTypeParameterMap {
     }
 
     public MethodTypeParameterMap translate(TranslationMap translationMap) {
-        return new MethodTypeParameterMap(methodInspectionBuilder, concreteTypes.entrySet().stream()
+        return new MethodTypeParameterMap(methodInspection, concreteTypes.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         e -> translationMap.translateType(e.getValue()))));
     }

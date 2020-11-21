@@ -95,7 +95,7 @@ public class Test_01_SizeCopy extends CommonTestRunner {
         }
     };
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
         Assert.assertSame(AnnotationMode.DEFENSIVE, collection.typeInspection.get().annotationMode);
 
@@ -176,7 +176,7 @@ public class Test_01_SizeCopy extends CommonTestRunner {
     public void test() throws IOException {
         // two errors: two unused parameters
         testClass(SIZE_COPY, 0, 0, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

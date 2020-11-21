@@ -305,7 +305,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                     methodInfo.isNotOverridingAnyOtherMethod() &&
                     !methodInfo.isDefaultImplementation) {
                 MethodResolution methodResolution = methodInfo.methodResolution.get();
-                if (methodResolution.staticMethodCallsOnly.isSet() && methodResolution.staticMethodCallsOnly.get()) {
+                if (methodResolution.staticMethodCallsOnly()) {
                     messages.add(Message.newMessage(new Location(methodInfo), Message.METHOD_SHOULD_BE_MARKED_STATIC));
                     methodAnalysis.complainedAboutMissingStaticModifier.set(true);
                     return DONE;

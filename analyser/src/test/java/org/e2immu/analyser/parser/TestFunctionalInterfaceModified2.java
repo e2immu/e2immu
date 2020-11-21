@@ -43,7 +43,7 @@ public class TestFunctionalInterfaceModified2 extends CommonTestRunner {
         }
     };
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo consumer = typeContext.getFullyQualified(Consumer.class);
         MethodInfo accept = consumer.findUniqueMethod("accept", 1);
         Assert.assertEquals(Level.TRUE, accept.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
@@ -55,7 +55,7 @@ public class TestFunctionalInterfaceModified2 extends CommonTestRunner {
     public void test() throws IOException {
         testClass("FunctionalInterfaceModified2", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());

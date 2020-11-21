@@ -142,7 +142,7 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
         }
     };
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         // check that the XML annotations have been read properly, and copied into the correct place
         TypeInfo stringType = typeContext.getPrimitives().stringTypeInfo;
         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
@@ -155,7 +155,7 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .build());
     }
 

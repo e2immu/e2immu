@@ -21,6 +21,30 @@ import org.e2immu.analyser.model.*;
 
 public interface InspectionProvider {
 
+    static InspectionProvider defaultFrom(Primitives primitives) {
+        return new InspectionProvider() {
+            @Override
+            public FieldInspection getFieldInspection(FieldInfo fieldInfo) {
+                return fieldInfo.fieldInspection.get();
+            }
+
+            @Override
+            public TypeInspection getTypeInspection(TypeInfo typeInfo) {
+                return typeInfo.typeInspection.get();
+            }
+
+            @Override
+            public MethodInspection getMethodInspection(MethodInfo methodInfo) {
+                return methodInfo.methodInspection.get();
+            }
+
+            @Override
+            public Primitives getPrimitives() {
+                return primitives;
+            }
+        };
+    }
+
     FieldInspection getFieldInspection(FieldInfo fieldInfo);
 
     TypeInspection getTypeInspection(TypeInfo typeInfo);

@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.value.ClassValue;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
@@ -96,7 +97,8 @@ public class InstanceOf implements Expression {
         }
         if (value instanceof Instance) {
             Primitives primitives = evaluationContext.getPrimitives();
-            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(primitives, ((Instance) value).parameterizedType),
+            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
+                    ((Instance) value).parameterizedType),
                     evaluationContext.getLocation(this), evaluationContext, Origin.RESULT_OF_OPERATOR);
             return builder.compose(er).setValue(er.value).build();
         }
@@ -105,7 +107,8 @@ public class InstanceOf implements Expression {
         }
         if (value instanceof ClassValue) {
             Primitives primitives = evaluationContext.getPrimitives();
-            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(primitives, ((ClassValue) value).value),
+            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
+                    ((ClassValue) value).value),
                     evaluationContext.getLocation(this), evaluationContext, Origin.RESULT_OF_OPERATOR);
             return builder.compose(er).setValue(er.value).build();
         }

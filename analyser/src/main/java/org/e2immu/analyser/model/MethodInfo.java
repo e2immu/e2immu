@@ -409,9 +409,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean isNotOverridingAnyOtherMethod() {
-        return typeInfo.overrides(this, true).isEmpty();
+        return methodResolution.get().overrides().isEmpty();
     }
-
 
     public boolean cannotBeOverridden() {
         return isStatic ||
@@ -426,56 +425,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public boolean isVoid() {
         return Primitives.isVoid(returnType());
-    }
-
-    public boolean isCalledFromConstructors() {
-        for (MethodInfo other : typeInfo.typeInspection.get().constructors()) {
-            if (other.methodResolution.get().methodsOfOwnClassReached.get().contains(this)) {
-                return true;
-            }
-        }
-        for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields()) {
-            if (fieldInfo.fieldInspection.get().initialiserIsSet()) {
-                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getInitialiser();
-                if (fieldInitialiser.implementationOfSingleAbstractMethod() == null) {
-                    // return true when the method is part of the expression
-                    AtomicBoolean found = new AtomicBoolean();
-                    fieldInitialiser.initialiser().visit(elt -> {
-                        if (elt instanceof MethodCall methodCall) {
-                            if (methodCall.methodInfo == this ||
-                                    methodCall.methodInfo.methodResolution.get().methodsOfOwnClassReached.get().contains(this)) {
-                                found.set(true);
-                            }
-                        }
-                    });
-                    return found.get();
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Note that this computation has to contain transitive calls.
-     *
-     * @return true if there is a non-private method in this class which calls this private method.
-     */
-    public boolean isCalledFromNonPrivateMethod() {
-        for (MethodInfo other : typeInfo.typeInspection.get().methods()) {
-            if (!other.isPrivate() && other.methodResolution.get().methodsOfOwnClassReached.get().contains(this)) {
-                return true;
-            }
-        }
-        for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields()) {
-            if (!fieldInfo.isPrivate() && fieldInfo.fieldInspection.get().initialiserIsSet()) {
-                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getInitialiser();
-                if (fieldInitialiser.implementationOfSingleAbstractMethod() != null &&
-                        fieldInitialiser.implementationOfSingleAbstractMethod().methodResolution.get().methodsOfOwnClassReached.get().contains(this)) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     public boolean isSynchronized() {

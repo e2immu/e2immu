@@ -4,7 +4,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.config.TypeContextVisitor;
+import org.e2immu.analyser.config.TypeMapVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
@@ -89,7 +89,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
         }
     };
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo objects = typeContext.typeStore.get("java.util.Objects");
         MethodInfo requireNonNull = objects.typeInspection.getPotentiallyRun()
                 .methods.stream().filter(mi -> "requireNonNull".equals(mi.name) &&
@@ -102,7 +102,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("NullParameterChecks", 0, 1, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());

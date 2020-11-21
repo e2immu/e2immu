@@ -22,7 +22,6 @@ import com.github.javaparser.ast.expr.MethodReferenceExpr;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.ExpressionContext;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 
 import java.util.*;
@@ -46,7 +45,7 @@ public class ParseMethodReferenceExpr {
         String methodName = methodReferenceExpr.getIdentifier();
         boolean constructor = "new".equals(methodName);
 
-        int parametersPresented = singleAbstractMethod.methodInfo.methodInspection.get().parameters.size();
+        int parametersPresented = singleAbstractMethod.methodInspection.getParameters().size();
         List<TypeContext.MethodCandidate> methodCandidates;
         String methodNameForErrorReporting;
         if (constructor) {
@@ -73,10 +72,9 @@ public class ParseMethodReferenceExpr {
             throw new UnsupportedOperationException("Cannot find a candidate for " + methodNameForErrorReporting + " at " + methodReferenceExpr.getBegin());
         }
         if (methodCandidates.size() > 1) {
-            Primitives primitives = expressionContext.typeContext.getPrimitives();
             // check types of parameters in SAM
             // see if the method candidate's type fits the SAMs
-            for (int i = 0; i < singleAbstractMethod.methodInfo.methodInspection.get().parameters.size(); i++) {
+            for (int i = 0; i < singleAbstractMethod.methodInspection.getParameters().size(); i++) {
                 final int index = i;
                 ParameterizedType concreteType = singleAbstractMethod.getConcreteTypeOfParameter(i);
                 log(METHOD_CALL, "Have {} candidates, try to weed out based on compatibility of {} with parameter {}",
@@ -84,7 +82,7 @@ public class ParseMethodReferenceExpr {
                 List<TypeContext.MethodCandidate> copy = new LinkedList<>(methodCandidates);
                 copy.removeIf(mc -> {
                     ParameterizedType typeOfMethodCandidate = typeOfMethodCandidate(mc, index, scopeIsAType, constructor);
-                    boolean isAssignable = typeOfMethodCandidate.isAssignableFrom(primitives, concreteType);
+                    boolean isAssignable = typeOfMethodCandidate.isAssignableFrom(expressionContext.typeContext, concreteType);
                     return !isAssignable;
                 });
                 // only accept of this is an improvement
@@ -98,7 +96,7 @@ public class ParseMethodReferenceExpr {
                     ParameterizedType typeOfMc1 = typeOfMethodCandidate(mc1, index, scopeIsAType, constructor);
                     ParameterizedType typeOfMc2 = typeOfMethodCandidate(mc2, index, scopeIsAType, constructor);
                     if (typeOfMc1.equals(typeOfMc2)) return 0;
-                    return typeOfMc2.isAssignableFrom(primitives, typeOfMc1) ? -1 : 1;
+                    return typeOfMc2.isAssignableFrom(expressionContext.typeContext, typeOfMc1) ? -1 : 1;
                 });
             }
             if (methodCandidates.size() > 1) {
@@ -107,7 +105,7 @@ public class ParseMethodReferenceExpr {
                 if (methodCandidates.size() > 1) {
                     if (isLogEnabled(METHOD_CALL)) {
                         log(METHOD_CALL, "Still have {}", methodCandidates.size());
-                        methodCandidates.forEach(mc -> log(METHOD_CALL, "- {}", mc.method.methodInfo.distinguishingName()));
+                        methodCandidates.forEach(mc -> log(METHOD_CALL, "- {}", mc.method.methodInspection.getDistinguishingName()));
                     }
                     // method candidates have been sorted; the first one should be the one we're after and others should be
                     // higher in the hierarchy (interfaces, parent classes)
@@ -120,25 +118,30 @@ public class ParseMethodReferenceExpr {
         MethodTypeParameterMap method = methodCandidates.get(0).method;
         List<ParameterizedType> types = new ArrayList<>();
         types.add(parameterizedType);
-        method.methodInfo.methodInspection.get().parameters.stream().map(p -> p.parameterizedType).forEach(types::add);
+        method.methodInspection.getParameters().stream().map(p -> p.parameterizedType).forEach(types::add);
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, method.getConcreteReturnType());
-        log(METHOD_CALL, "End parsing method reference {}, found {}", methodNameForErrorReporting, method.methodInfo.distinguishingName());
-        return new MethodReference(scope, method.methodInfo, functionalType);
+        log(METHOD_CALL, "End parsing method reference {}, found {}", methodNameForErrorReporting, method.methodInspection.getDistinguishingName());
+        return new MethodReference(scope, method.methodInspection.getMethodInfo(), functionalType);
     }
 
     private static ParameterizedType typeOfMethodCandidate(TypeContext.MethodCandidate mc, int index, boolean scopeIsAType, boolean constructor) {
-        int param = scopeIsAType && !constructor && !mc.method.methodInfo.isStatic ? index - 1 : index;
+        MethodInfo methodInfo = mc.method.methodInspection.getMethodInfo();
+        int param = scopeIsAType && !constructor && !methodInfo.isStatic ? index - 1 : index;
         if (param == -1) {
-            return mc.method.methodInfo.typeInfo.asParameterizedType();
+            return methodInfo.typeInfo.asParameterizedType();
         } else {
-            return mc.method.methodInfo.methodInspection.get().parameters.get(index).parameterizedType;
+            return mc.method.methodInspection.getParameters().get(index).parameterizedType;
         }
     }
 
     private static void staticVsInstance(List<TypeContext.MethodCandidate> methodCandidates) {
         Set<TypeInfo> haveInstance = new HashSet<>();
-        methodCandidates.stream().filter(mc -> !mc.method.methodInfo.isStatic).forEach(mc -> haveInstance.add(mc.method.methodInfo.typeInfo));
-        methodCandidates.removeIf(mc -> mc.method.methodInfo.isStatic && haveInstance.contains(mc.method.methodInfo.typeInfo));
+
+        methodCandidates.stream()
+                .filter(mc -> !mc.method.methodInspection.getMethodInfo().isStatic)
+                .forEach(mc -> haveInstance.add(mc.method.methodInspection.getMethodInfo().typeInfo));
+        methodCandidates.removeIf(mc -> mc.method.methodInspection.getMethodInfo().isStatic &&
+                haveInstance.contains(mc.method.methodInspection.getMethodInfo().typeInfo));
     }
 
     private static Expression unevaluated(ExpressionContext expressionContext, MethodReferenceExpr methodReferenceExpr) {
@@ -163,11 +166,11 @@ public class ParseMethodReferenceExpr {
         }
         Set<Integer> numberOfParameters = new HashSet<>();
         for (TypeContext.MethodCandidate methodCandidate : methodCandidates) {
-            log(METHOD_CALL, "Found method reference candidate, this can work: {}", methodCandidate.method.methodInfo.distinguishingName());
-            MethodInspection methodInspection = methodCandidate.method.methodInfo.methodInspection.get();
+            log(METHOD_CALL, "Found method reference candidate, this can work: {}", methodCandidate.method.methodInspection.getDistinguishingName());
+            MethodInspection methodInspection = methodCandidate.method.methodInspection;
             boolean scopeIsType = scopeIsAType(scope);
-            boolean addOne = scopeIsType && !methodCandidate.method.methodInfo.isConstructor && !methodCandidate.method.methodInfo.isStatic; // && !methodInspection.returnType.isPrimitive();
-            int n = methodInspection.parameters.size() + (addOne ? 1 : 0);
+            boolean addOne = scopeIsType && !methodInspection.getMethodInfo().isConstructor && !methodInspection.getMethodInfo().isStatic; // && !methodInspection.returnType.isPrimitive();
+            int n = methodInspection.getParameters().size() + (addOne ? 1 : 0);
             if (!numberOfParameters.add(n)) {
                 // throw new UnsupportedOperationException("Multiple candidates with the same amount of parameters");
             }

@@ -128,7 +128,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         }
     };
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
         TypeInfo hashSet = typeContext.getFullyQualified(HashSet.class);
         MethodInfo constructor1 = hashSet.typeInspection.getPotentiallyRun().constructors.stream()
@@ -188,7 +188,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }

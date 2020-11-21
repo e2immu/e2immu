@@ -23,7 +23,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.TypeContextVisitor;
+import org.e2immu.analyser.config.TypeMapVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.TypeInfo;
 import org.junit.Assert;
@@ -68,7 +68,7 @@ public class TestSetTwiceSupply extends CommonTestRunner {
         }
     };
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo runnable = typeContext.getFullyQualified(Runnable.class);
         Assert.assertTrue(runnable.isFunctionalInterface());
     };
@@ -76,7 +76,7 @@ public class TestSetTwiceSupply extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testUtilClass(List.of("SetTwice", "SetTwiceSupply"), 0, 0, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());

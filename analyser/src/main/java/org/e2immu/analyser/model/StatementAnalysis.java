@@ -31,6 +31,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.AddOnceSet;
@@ -533,7 +534,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @return the initial value computed
      */
     private Value initialValueOfField(AnalyserContext analyserContext, FieldReference fieldReference) {
-        boolean inPartOfConstruction = methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction.get() ==
+        boolean inPartOfConstruction = methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction() ==
                 MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         if (inPartOfConstruction && fieldReference.scope instanceof This thisVariable
                 && thisVariable.typeInfo.equals(methodAnalysis.getMethodInfo().typeInfo)) { // field that must be initialised
@@ -727,8 +728,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return parent.internalLevelAtWhichVariableIsDefined(variableName, sum + 1);
     }
 
-    public Set<String> allUnqualifiedVariableNames(TypeInfo currentType) {
-        Set<String> fromFields = currentType.accessibleFieldsStream().map(fieldInfo -> fieldInfo.name).collect(Collectors.toSet());
+    public Set<String> allUnqualifiedVariableNames(InspectionProvider inspectionProvider, TypeInfo currentType) {
+        Set<String> fromFields = currentType.accessibleFieldsStream(inspectionProvider).map(fieldInfo -> fieldInfo.name).collect(Collectors.toSet());
         Set<String> local = variableStream().map(vi -> vi.variable().simpleName()).collect(Collectors.toSet());
         return SetUtil.immutableUnion(fromFields, local);
     }

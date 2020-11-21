@@ -57,11 +57,13 @@ public class ParseFieldAccessExpr {
             return new ArrayLengthExpression(expressionContext.typeContext.getPrimitives(), object);
         }
         if (objectType.typeInfo != null) {
-            Optional<FieldInfo> oFieldInfo = objectType.typeInfo.accessibleFieldsStream().filter(f -> name.equals(f.name)).findFirst();
+            Optional<FieldInfo> oFieldInfo = objectType.typeInfo.accessibleFieldsStream(expressionContext.typeContext)
+                    .filter(f -> name.equals(f.name)).findFirst();
             if (oFieldInfo.isPresent()) {
                 return fieldAccess(expressionContext, oFieldInfo.get(), object);
             }
-            Optional<TypeInfo> oSubType = objectType.typeInfo.typeInspection.getPotentiallyRun().subTypes.stream().filter(s -> name.equals(s.name())).findFirst();
+            TypeInspection objectTypeInspection = expressionContext.typeContext.getTypeInspection(objectType.typeInfo);
+            Optional<TypeInfo> oSubType = objectTypeInspection.subTypes().stream().filter(s -> name.equals(s.name())).findFirst();
             if (oSubType.isPresent()) {
                 return new TypeExpression(oSubType.get().asParameterizedType());
             }

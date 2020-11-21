@@ -170,7 +170,7 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
         }
     };
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo system = typeContext.getFullyQualified(System.class);
         FieldInfo out = system.getFieldByName("out", true);
         int notNull = out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL);
@@ -191,7 +191,7 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addTypeContextVisitor(typeContextVisitor)
+                        .addTypeContextVisitor(typeMapVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }

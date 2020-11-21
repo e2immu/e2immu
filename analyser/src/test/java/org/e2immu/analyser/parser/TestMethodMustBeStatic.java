@@ -2,7 +2,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.TypeContextVisitor;
+import org.e2immu.analyser.config.TypeMapVisitor;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
@@ -17,7 +17,7 @@ public class TestMethodMustBeStatic extends CommonTestRunner {
         super(false);
     }
 
-    TypeContextVisitor typeContextVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo stream = typeContext.getFullyQualified(Stream.class);
         Assert.assertNotNull(stream);
         MethodInfo of = stream.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("of")).findAny().orElseThrow();
@@ -27,7 +27,7 @@ public class TestMethodMustBeStatic extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("MethodMustBeStatic", 0, 1, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeContextVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
                 .build());
     }
 

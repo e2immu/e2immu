@@ -581,7 +581,7 @@ public class MyClassVisitor extends ClassVisitor {
                 log(BYTECODE_INSPECTOR_DEBUG, "Visit end of class " + currentType.fullyQualifiedName);
                 if (typeInspectionBuilder == null)
                     throw new UnsupportedOperationException("? was expecting a type inspection builder");
-                currentType.typeInspection.set(typeInspectionBuilder.build(currentType));
+                currentType.typeInspection.set(typeInspectionBuilder.build());
                 types.add(currentType);
                 inProcess.remove(currentType);
                 currentType = null;

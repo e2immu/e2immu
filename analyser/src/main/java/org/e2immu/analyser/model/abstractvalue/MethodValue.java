@@ -65,9 +65,9 @@ public class MethodValue implements Value {
      the interface and the implementation, or the interface and sub-interface
      */
     private boolean checkSpecialCasesWhereDifferentMethodsAreEquals(MethodInfo m1, MethodInfo m2) {
-        Set<MethodInfo> overrides1 = m1.typeInfo.overrides(m1, true);
+        Set<MethodInfo> overrides1 = m1.methodResolution.get().overrides();
         if (m2.typeInfo.isInterface() && overrides1.contains(m2)) return true;
-        Set<MethodInfo> overrides2 = m2.typeInfo.overrides(m2, true);
+        Set<MethodInfo> overrides2 = m2.methodResolution.get().overrides();
         return m1.typeInfo.isInterface() && overrides2.contains(m1);
 
         // any other?

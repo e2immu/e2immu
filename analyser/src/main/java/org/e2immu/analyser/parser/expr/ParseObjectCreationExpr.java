@@ -19,14 +19,17 @@
 package org.e2immu.analyser.parser.expr;
 
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.parser.ExpressionContext;
-import org.e2immu.analyser.parser.Resolver;
 import org.e2immu.analyser.parser.TypeContext;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ParseObjectCreationExpr {
     public static Expression parse(ExpressionContext expressionContext, ObjectCreationExpr objectCreationExpr, MethodTypeParameterMap singleAbstractMethod) {
@@ -35,8 +38,10 @@ public class ParseObjectCreationExpr {
         if (objectCreationExpr.getAnonymousClassBody().isPresent()) {
             // TODO parameterizedType can be Iterator<>, we will need to detect the correct type from context if needed
             TypeInfo anonymousType = new TypeInfo(expressionContext.enclosingType, expressionContext.topLevel.newIndex(expressionContext.enclosingType));
-            anonymousType.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
+            TypeInspector typeInspector = new TypeInspector(anonymousType);
+            typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
+            anonymousType.typeInspection.set(typeInspector.build());
             expressionContext.addNewlyCreatedType(anonymousType);
             return new NewObject(parameterizedType, anonymousType);
         }
@@ -48,6 +53,6 @@ public class ParseObjectCreationExpr {
                 newParameterExpressions, singleAbstractMethod, new HashMap<>(), "constructor",
                 parameterizedType, objectCreationExpr.getBegin().orElseThrow());
         if (method == null) return new UnevaluatedMethodCall(parameterizedType.detailedString() + "::new");
-        return new NewObject(method.methodInfo, parameterizedType, newParameterExpressions, null);
+        return new NewObject(method.methodInspection.getMethodInfo(), parameterizedType, newParameterExpressions, null);
     }
 }
