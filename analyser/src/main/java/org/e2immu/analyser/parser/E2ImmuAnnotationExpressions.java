@@ -20,11 +20,11 @@ import java.util.Objects;
 public class E2ImmuAnnotationExpressions {
 
     @NotModified
-    private final TypeStore typeStore;
+    private final TypeMapImpl.Builder typeMapBuilder;
     private final FieldInfo annotationTypeComputed;
 
     public E2ImmuAnnotationExpressions(@NotNull TypeContext typeContext) {
-        this.typeStore = typeContext.typeStore;
+        this.typeMapBuilder = typeContext.typeMapBuilder;
         annotationTypeComputed = typeContext.getPrimitives().annotationTypeComputed;
     }
 
@@ -66,17 +66,17 @@ public class E2ImmuAnnotationExpressions {
      */
     @NotModified
     private AnnotationExpression create(Class<?> clazz) {
-        TypeInfo annotationType = typeStore.get(AnnotationType.class.getCanonicalName());
+        TypeInfo annotationType = typeMapBuilder.get(AnnotationType.class.getCanonicalName());
         FieldReference computedRef = new FieldReference(annotationTypeComputed, null);
         FieldAccess computedAccess = new FieldAccess(new TypeExpression(annotationType.asParameterizedType()), computedRef);
         // NOTE: we've added an import statement in TypeInfo.imports() for this...
-        return new AnnotationExpressionImpl(typeStore.get(clazz.getCanonicalName()),
+        return new AnnotationExpressionImpl(typeMapBuilder.get(clazz.getCanonicalName()),
                 List.of(new MemberValuePair("type", computedAccess)));
     }
 
     @NotModified
     @NotNull
     public TypeInfo getFullyQualified(@NotNull String fqn) {
-        return Objects.requireNonNull(typeStore.get(fqn));
+        return Objects.requireNonNull(typeMapBuilder.get(fqn));
     }
 }

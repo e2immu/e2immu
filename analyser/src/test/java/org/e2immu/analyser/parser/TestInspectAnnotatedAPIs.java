@@ -86,7 +86,7 @@ public class TestInspectAnnotatedAPIs {
         URL url = new URL("file:src/main/resources/annotatedAPIs/java.util.annotated_api");
         Parser parser = new Parser(configuration);
         parser.runAnnotatedAPIs(List.of(url));
-        TypeInfo optional = parser.getTypeContext().typeStore.get("java.util.Optional");
+        TypeInfo optional = parser.getTypeContext().typeMapBuilder.get("java.util.Optional");
         Assert.assertNotNull(optional);
         Assert.assertEquals(Level.TRUE, MultiLevel.value(optional.typeAnalysis.get().getProperty(VariableProperty.CONTAINER), 0));
         LOGGER.info("Source of Optional: " + optional.stream());

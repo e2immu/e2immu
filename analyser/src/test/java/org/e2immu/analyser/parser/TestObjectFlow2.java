@@ -57,10 +57,10 @@ public class TestObjectFlow2 extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
 
-        TypeInfo hashSet = typeContext.typeStore.get(HashSet.class.getCanonicalName());
-        TypeInfo set = typeContext.typeStore.get(Set.class.getCanonicalName());
+        TypeInfo hashSet = typeContext.typeMapBuilder.get(HashSet.class.getCanonicalName());
+        TypeInfo set = typeContext.typeMapBuilder.get(Set.class.getCanonicalName());
 
-        TypeInfo objectFlow2 = typeContext.typeStore.get(ObjectFlow2.class.getCanonicalName());
+        TypeInfo objectFlow2 = typeContext.typeMapBuilder.get(ObjectFlow2.class.getCanonicalName());
         MethodInfo ofMethod = objectFlow2.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "of".equals(m.name)).findAny().orElseThrow();
         ObjectFlow newHashSet = ofMethod.methodAnalysis.get().getInternalObjectFlows().stream()
                 .filter(of -> of.type.typeInfo == hashSet)

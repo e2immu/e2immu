@@ -525,7 +525,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                                                        ExpressionContext expressionContext) {
         MethodTypeParameterMap method = functionalInterfaceType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
         TypeInfo typeInfo = new TypeInfo(enclosingType, expressionContext.topLevel.newIndex(enclosingType));
-        TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(typeInfo);
+        TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(typeInfo, TypeInspectionImpl.BY_HAND);
         builder.setEnclosingType(this);
         builder.setTypeNature(TypeNature.CLASS);
         builder.addInterfaceImplemented(functionalInterfaceType);

@@ -96,6 +96,7 @@ public interface TypeInspection extends Inspection {
 
     Set<ParameterizedType> explicitTypes();
 
+    int getInspectionState();
 
     default boolean haveNonStaticNonDefaultMethods() {
         if (methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)

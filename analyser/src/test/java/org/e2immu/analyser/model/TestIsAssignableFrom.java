@@ -28,8 +28,8 @@ public class TestIsAssignableFrom {
     // int <- String should fail, int <- Integer should not
     @Test
     public void test() {
-        ParameterizedType stringPt = Objects.requireNonNull(typeContext.typeStore.get("java.lang.String").asParameterizedType());
-        ParameterizedType integerPt = Objects.requireNonNull(typeContext.typeStore.get("java.lang.Integer").asParameterizedType());
+        ParameterizedType stringPt = Objects.requireNonNull(typeContext.typeMapBuilder.get("java.lang.String").asParameterizedType());
+        ParameterizedType integerPt = Objects.requireNonNull(typeContext.typeMapBuilder.get("java.lang.Integer").asParameterizedType());
 
         Assert.assertTrue(integerPt.isAssignableFrom(primitives, primitives.intParameterizedType));
         Assert.assertTrue(primitives.intParameterizedType.isAssignableFrom(primitives, primitives.intParameterizedType));
@@ -42,8 +42,8 @@ public class TestIsAssignableFrom {
     // CharSequence[] <- String[] should be allowed
     @Test
     public void testArray() {
-        ParameterizedType stringArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeStore.get("java.lang.String")), 1);
-        ParameterizedType charSeqArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeStore.get("java.lang.CharSequence")), 1);
+        ParameterizedType stringArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMapBuilder.get("java.lang.String")), 1);
+        ParameterizedType charSeqArrayPt = new ParameterizedType(Objects.requireNonNull(typeContext.typeMapBuilder.get("java.lang.CharSequence")), 1);
 
         String[] strings = {"a", "b"};
         CharSequence[] sequences = strings;
@@ -57,7 +57,7 @@ public class TestIsAssignableFrom {
     // String <- null should be allowed, but int <- null should fail
     @Test
     public void testNull() {
-        ParameterizedType stringPt = Objects.requireNonNull(typeContext.typeStore.get("java.lang.String").asParameterizedType());
+        ParameterizedType stringPt = Objects.requireNonNull(typeContext.typeMapBuilder.get("java.lang.String").asParameterizedType());
 
         Assert.assertFalse(ParameterizedType.NULL_CONSTANT.isAssignableFrom(primitives, stringPt));
         Assert.assertTrue(stringPt.isAssignableFrom(primitives, ParameterizedType.NULL_CONSTANT));
@@ -69,9 +69,9 @@ public class TestIsAssignableFrom {
     // E <- String, E <- Integer, E <- int, E <- int[] should work
     @Test
     public void testBoxing() {
-        ParameterizedType stringPt = Objects.requireNonNull(typeContext.typeStore.get("java.lang.String").asParameterizedType());
-        ParameterizedType integerPt = Objects.requireNonNull(typeContext.typeStore.get("java.lang.Integer").asParameterizedType());
-        ParameterizedType listPt = Objects.requireNonNull(typeContext.typeStore.get("java.util.List").asParameterizedType());
+        ParameterizedType stringPt = Objects.requireNonNull(typeContext.typeMapBuilder.get("java.lang.String").asParameterizedType());
+        ParameterizedType integerPt = Objects.requireNonNull(typeContext.typeMapBuilder.get("java.lang.Integer").asParameterizedType());
+        ParameterizedType listPt = Objects.requireNonNull(typeContext.typeMapBuilder.get("java.util.List").asParameterizedType());
         ParameterizedType typeParam = listPt.parameters.get(0);
         Assert.assertNotNull(typeParam);
 

@@ -34,7 +34,10 @@ import org.objectweb.asm.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -55,7 +58,6 @@ public class MyClassVisitor extends ClassVisitor {
     private final AnnotationStore annotationStore;
     private final JetBrainsAnnotationTranslator jetBrainsAnnotationTranslator;
     private final Stack<TypeInfo> enclosingTypes;
-    private final Set<TypeInfo> inProcess;
     private TypeInfo currentType;
     private String currentTypePath;
     private boolean currentTypeIsInterface;
@@ -66,12 +68,10 @@ public class MyClassVisitor extends ClassVisitor {
                           TypeContext typeContext,
                           E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                           List<TypeInfo> types,
-                          Set<TypeInfo> inProcess,
                           Stack<TypeInfo> enclosingTypes) {
         super(ASM7);
         this.types = types;
         this.enclosingTypes = enclosingTypes;
-        this.inProcess = inProcess;
         this.typeContext = typeContext;
         this.onDemandInspection = onDemandInspection;
         this.annotationStore = annotationStore;
@@ -123,20 +123,27 @@ public class MyClassVisitor extends ClassVisitor {
             return;
         }
         String fqName = pathToFqn(name);
-        currentType = typeContext.typeStore.get(fqName);
+        currentType = typeContext.typeMapBuilder.get(fqName);
         if (currentType == null) {
             currentType = TypeInfo.fromFqn(fqName);
-            typeContext.typeStore.add(currentType);
-        } else if (currentType.typeInspection.isSet()) {
-            log(BYTECODE_INSPECTOR_DEBUG, "Inspection of " + fqName + " has been set already");
-            types.add(currentType);
-            currentType = null;
-            currentTypePath = null;
-            return;
+            typeInspectionBuilder = typeContext.typeMapBuilder.add(currentType, TypeInspectionImpl.STARTING_BYTECODE);
+        } else {
+            TypeInspection typeInspection = typeContext.typeMapBuilder.getTypeInspection(currentType);
+            if (typeInspection != null) {
+                if (typeInspection.getInspectionState() >= TypeInspectionImpl.FINISHED_BYTECODE) {
+                    log(BYTECODE_INSPECTOR_DEBUG, "Inspection of " + fqName + " has been set already");
+                    types.add(currentType);
+                    currentType = null;
+                    currentTypePath = null;
+                    return;
+                }
+                typeInspectionBuilder = (TypeInspectionImpl.Builder) typeInspection;
+                typeInspectionBuilder.setInspectionState(TypeInspectionImpl.STARTING_BYTECODE);
+            } else {
+                typeInspectionBuilder = new TypeInspectionImpl.Builder(currentType, TypeInspectionImpl.STARTING_BYTECODE);
+            }
         }
-        inProcess.add(currentType);
         currentTypePath = name;
-        typeInspectionBuilder = new TypeInspectionImpl.Builder(currentType);
 
         // may be overwritten, but this is the default
         typeInspectionBuilder.setParentClass(typeContext.getPrimitives().objectParameterizedType);
@@ -240,12 +247,10 @@ public class MyClassVisitor extends ClassVisitor {
      */
     private TypeInfo mustFindTypeInfo(String fqn, String path) {
         if (path.equals(currentTypePath)) return currentType;
-        TypeInfo alreadyKnown = typeContext.typeStore.get(fqn);
-        if (alreadyKnown != null && alreadyKnown.typeInspection.isSet()) {
+        TypeInfo alreadyKnown = typeContext.typeMapBuilder.get(fqn);
+        TypeInspection alreadyKnownInspection = alreadyKnown == null ? null : typeContext.getTypeInspection(alreadyKnown);
+        if (alreadyKnownInspection != null && alreadyKnownInspection.getInspectionState() >= TypeInspectionImpl.STARTING_BYTECODE) {
             return alreadyKnown;
-        }
-        if (alreadyKnown != null) {
-            if (inProcess.contains(alreadyKnown)) return alreadyKnown;
         }
 
         // let's look at the super-name... is it part of the same primary type?
@@ -256,12 +261,12 @@ public class MyClassVisitor extends ClassVisitor {
             if (inHierarchy != null) return inHierarchy;
         }
         if (parentType != null && isDirectChildOf(fqn, parentType.fullyQualifiedName)) {
-            onDemandInspection.inspectFromPath(path, inProcess, enclosingTypes, typeContext);
+            onDemandInspection.inspectFromPath(path, enclosingTypes, typeContext);
         } else {
-            onDemandInspection.inspectFromPath(path, inProcess);
+            onDemandInspection.inspectFromPath(path);
         }
         // try again... result can be null or not inspected, in case the path is not on the classpath
-        TypeInfo result = typeContext.typeStore.get(fqn);
+        TypeInfo result = typeContext.typeMapBuilder.get(fqn);
         return result != null && result.typeInspection.isSet() ? result : null;
     }
 
@@ -269,7 +274,7 @@ public class MyClassVisitor extends ClassVisitor {
         Matcher m = ILLEGAL_IN_FQN.matcher(fqn);
         if (m.find()) throw new UnsupportedOperationException("Illegal FQN: " + fqn + "; path is " + path);
         // this causes really heavy recursions: return mustFindTypeInfo(fqn, path);
-        return typeContext.typeStore.getOrCreate(fqn);
+        return typeContext.typeMapBuilder.getOrCreate(fqn, TypeInspectionImpl.CREATED);
     }
 
     private TypeInfo inEnclosingTypes(String parentFqName) {
@@ -542,10 +547,11 @@ public class MyClassVisitor extends ClassVisitor {
             }
         } else if (innerName != null && currentTypePath.equals(outerName)) {
             log(BYTECODE_INSPECTOR_DEBUG, "Processing sub-type {} of {}", name, currentType.fullyQualifiedName);
-            TypeInfo subTypeInMap = typeContext.typeStore.get(pathToFqn(name));
-            if (subTypeInMap == null || !subTypeInMap.typeInspection.isSet() && !inProcess.contains(subTypeInMap)) {
+            TypeInfo subTypeInMap = typeContext.typeMapBuilder.get(pathToFqn(name));
+            TypeInspection subTypeInspection = subTypeInMap == null ? null: typeContext.getTypeInspection(subTypeInMap);
+            if (subTypeInMap == null || subTypeInspection.getInspectionState() == TypeInspectionImpl.CREATED) {
                 enclosingTypes.push(currentType);
-                TypeInfo subType = onDemandInspection.inspectFromPath(name, inProcess, enclosingTypes, typeContext);
+                TypeInfo subType = onDemandInspection.inspectFromPath(name, enclosingTypes, typeContext);
                 enclosingTypes.pop();
                 if (subType != null) {
                     typeInspectionBuilder.addSubType(subType);
@@ -581,9 +587,8 @@ public class MyClassVisitor extends ClassVisitor {
                 log(BYTECODE_INSPECTOR_DEBUG, "Visit end of class " + currentType.fullyQualifiedName);
                 if (typeInspectionBuilder == null)
                     throw new UnsupportedOperationException("? was expecting a type inspection builder");
-                currentType.typeInspection.set(typeInspectionBuilder.build());
+                typeInspectionBuilder.setInspectionState(TypeInspectionImpl.FINISHED_BYTECODE);
                 types.add(currentType);
-                inProcess.remove(currentType);
                 currentType = null;
                 typeInspectionBuilder = null;
             } catch (RuntimeException rte) {
@@ -596,9 +601,8 @@ public class MyClassVisitor extends ClassVisitor {
     private void errorStateForType(String pathCausingFailure) {
         if (currentType == null || currentType.typeInspection.isSet()) throw new UnsupportedOperationException();
         String message = "Unable to inspect " + currentType.fullyQualifiedName + ": Cannot load " + pathCausingFailure;
-        currentType.typeInspection.set(null); // this will cause problems
+        typeInspectionBuilder.setInspectionState(TypeInspectionImpl.FINISHED_BYTECODE);
         log(BYTECODE_INSPECTOR, message);
-        inProcess.remove(currentType);
         currentType = null;
         typeInspectionBuilder = null;
     }

@@ -27,7 +27,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.TypeStore;
+import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,7 @@ public class TypeInspector {
 
     public TypeInspector(TypeInfo typeInfo) {
         this.typeInfo = typeInfo;
-        builder = new TypeInspectionImpl.Builder(typeInfo);
+        builder = new TypeInspectionImpl.Builder(typeInfo, TypeInspectionImpl.STARTING_JAVA_PARSER);
     }
 
     public TypeInspection build() {
@@ -110,7 +110,7 @@ public class TypeInspector {
             String dollarPackageName = packageName(packageNameField);
             dollarResolver = name -> {
                 if (name.endsWith("$") && dollarPackageName != null) {
-                    return expressionContext.typeContext.typeStore.get(dollarPackageName + "." + name.substring(0, name.length() - 1));
+                    return expressionContext.typeContext.typeMapBuilder.get(dollarPackageName + "." + name.substring(0, name.length() - 1));
                 }
                 return null;
             };
@@ -268,7 +268,7 @@ public class TypeInspector {
     }
 
     public void inspectLocalClassDeclaration(ExpressionContext expressionContext, TypeInfo localType, ClassOrInterfaceDeclaration cid) {
-        TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(localType);
+        TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(localType, TypeInspectionImpl.STARTING_JAVA_PARSER);
         builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
         builder.setEnclosingType(expressionContext.enclosingType);
         doClassOrInterfaceDeclaration(true, expressionContext, TypeNature.CLASS, cid);
@@ -276,21 +276,21 @@ public class TypeInspector {
     }
 
     // only to be called on primary types
-    public void recursivelyAddToTypeStore(TypeStore typeStore, TypeDeclaration<?> typeDeclaration) {
+    public void recursivelyAddToTypeStore(TypeMapImpl.Builder typeStore, TypeDeclaration<?> typeDeclaration) {
         recursivelyAddToTypeStore(typeInfo, true, typeStore, typeDeclaration);
     }
 
-    private static void recursivelyAddToTypeStore(TypeInfo typeInfo, boolean parentIsPrimaryType, TypeStore typeStore, TypeDeclaration<?> typeDeclaration) {
+    private static void recursivelyAddToTypeStore(TypeInfo typeInfo, boolean parentIsPrimaryType, TypeMapImpl.Builder typeStore, TypeDeclaration<?> typeDeclaration) {
         typeDeclaration.getMembers().forEach(bodyDeclaration -> {
             bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> {
                 TypeInfo subType = subTypeInfo(typeInfo.fullyQualifiedName, cid.getName().asString(), typeDeclaration, parentIsPrimaryType);
-                typeStore.add(subType);
+                typeStore.add(subType, TypeInspectionImpl.STARTING_JAVA_PARSER);
                 log(INSPECT, "Added to type store: " + subType.fullyQualifiedName);
                 recursivelyAddToTypeStore(subType, false, typeStore, cid);
             });
             bodyDeclaration.ifEnumDeclaration(ed -> {
                 TypeInfo subType = subTypeInfo(typeInfo.fullyQualifiedName, ed.getName().asString(), typeDeclaration, parentIsPrimaryType);
-                typeStore.add(subType);
+                typeStore.add(subType, TypeInspectionImpl.STARTING_JAVA_PARSER);
                 log(INSPECT, "Added enum to type store: " + subType.fullyQualifiedName);
                 recursivelyAddToTypeStore(subType, false, typeStore, ed);
             });
@@ -442,7 +442,7 @@ public class TypeInspector {
     private Pair<Boolean, TypeInfo> subType(ExpressionContext expressionContext, DollarResolver dollarResolver, String name) {
         TypeInfo subType = dollarResolver == null ? null : dollarResolver.apply(name);
         if (subType != null) return new Pair<>(true, subType);
-        TypeInfo fromStore = expressionContext.typeContext.typeStore.get(typeInfo.fullyQualifiedName + "." + name);
+        TypeInfo fromStore = expressionContext.typeContext.typeMapBuilder.get(typeInfo.fullyQualifiedName + "." + name);
         if (fromStore == null)
             throw new UnsupportedOperationException("I should already know type " + name + " inside " + typeInfo.fullyQualifiedName);
         return new Pair<>(false, fromStore);

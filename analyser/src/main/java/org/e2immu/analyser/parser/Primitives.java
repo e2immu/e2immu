@@ -274,7 +274,7 @@ public class Primitives {
 
     public Primitives() {
         for (TypeInfo ti : primitives) {
-            ti.typeInspection.set(new TypeInspectionImpl.Builder(ti)
+            ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, TypeInspectionImpl.BY_HAND)
                     .setPackageName(JAVA_LANG)
                     .setTypeNature(TypeNature.PRIMITIVE)
                     .setParentClass(objectParameterizedType)
@@ -300,7 +300,7 @@ public class Primitives {
                 annotationTypeVerify, annotationTypeVerifyAbsent));
         processEnum(annotationModeTypeInfo, List.of(annotationModeDefensive, annotationModeOffensive));
 
-        functionalInterface.typeInspection.set(new TypeInspectionImpl.Builder(functionalInterface)
+        functionalInterface.typeInspection.set(new TypeInspectionImpl.Builder(functionalInterface, TypeInspectionImpl.BY_HAND)
                 .setPackageName("java.lang")
                 .setTypeNature(TypeNature.ANNOTATION)
                 .setParentClass(objectParameterizedType)
@@ -334,7 +334,7 @@ public class Primitives {
                 .setReturnType(stringTypeInfo)
                 .addModifier(MethodModifier.PUBLIC)
                 .build());
-        TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo)
+        TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, TypeInspectionImpl.BY_HAND)
                 .setPackageName(ORG_E2IMMU_ANNOTATION)
                 .setTypeNature(TypeNature.ENUM)
                 .addTypeModifier(TypeModifier.PUBLIC)

@@ -96,9 +96,9 @@ public class ParseAndInspect {
         classPath.expandLeaves(packageName, ".class", (expansion, urls) -> {
             if (!expansion[expansion.length - 1].contains("$")) {
                 String fqn = fqnOfClassFile(packageName, expansion);
-                TypeInfo typeInfo = typeContextOfFile.typeStore.get(fqn);
+                TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.get(fqn);
                 if (typeInfo == null) {
-                    TypeInfo newTypeInfo = typeContextOfFile.typeStore.getOrCreate(fqn);
+                    TypeInfo newTypeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(fqn);
                     log(INSPECT, "Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
                     newTypeInfo.typeInspection.setRunnable(() -> inspectWithByteCodeInspector(newTypeInfo));
                     typeContextOfFile.addToContext(newTypeInfo);
@@ -140,7 +140,7 @@ public class ParseAndInspect {
                                 String fqn = fqnOfClassFile(fullyQualified, expansion);
                                 TypeInfo typeInfo = typeContextOfFile.getFullyQualified(fqn, false);
                                 if (typeInfo == null) {
-                                    TypeInfo newTypeInfo = typeContextOfFile.typeStore.getOrCreate(fqn);
+                                    TypeInfo newTypeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(fqn);
                                     log(INSPECT, "Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
                                     newTypeInfo.typeInspection.setRunnable(() -> inspectWithByteCodeInspector(newTypeInfo));
                                     typeContextOfFile.addToContext(newTypeInfo, false);
@@ -158,7 +158,7 @@ public class ParseAndInspect {
                 }
             }
         }
-        typeContextOfFile.typeStore.visitAllNewlyCreatedTypes(typeInfo -> {
+        typeContextOfFile.typeMapBuilder.visitAllNewlyCreatedTypes(typeInfo -> {
             if (!typeInfo.typeInspection.hasRunnable() &&
                     !typeInfo.typeInspection.isSet() &&
                     // this is to check that we're not talking about a subtype of a source type
@@ -171,16 +171,16 @@ public class ParseAndInspect {
         // we first add the types to the type context, so that they're all known
         compilationUnit.getTypes().forEach(td -> {
             String name = td.getName().asString();
-            TypeInfo typeInfo = typeContextOfFile.typeStore.getOrCreate(packageName + "." + name);
+            TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(packageName + "." + name);
             typeContextOfFile.addToContext(typeInfo);
-            typeInfo.recursivelyAddToTypeStore(true, typeContextOfFile.typeStore, td);
+            typeInfo.recursivelyAddToTypeStore(true, typeContextOfFile.typeMapBuilder, td);
         });
 
         // only then do we start inspection
         List<TypeInfo> allPrimaryTypesInspected = new ArrayList<>();
         for (TypeDeclaration<?> td : compilationUnit.getTypes()) {
             String name = td.getName().asString();
-            TypeInfo primaryType = typeContextOfFile.typeStore.get(packageName + "." + name);
+            TypeInfo primaryType = typeContextOfFile.typeMapBuilder.get(packageName + "." + name);
             // because we have a single Primitives.PRIMITIVES object, it is possible that java.lang.Object and java.lang.String
             // have already been inspected (AnnotationType as well)
             if (!primaryType.typeInspection.isSet()) {

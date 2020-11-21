@@ -31,53 +31,37 @@ import static org.e2immu.analyser.util.Logger.log;
  * Inside a compilation unit, there is a context in which names are known.
  * This context is inherently recursive, dependent on the container.
  * <p>
- * TODO Should become eventual @E2Container
+ * All type contexts share the same type map.
  */
 public class TypeContext implements InspectionProvider {
     private final TypeContext parentContext;
-    private final Primitives primitives;
 
-    public final TypeStore typeStore;
+    public final TypeMapImpl.Builder typeMapBuilder;
     public final String packageName; // this one is filled in UNLESS parentContext == null, because that is the root level
     private final List<TypeInfo> importStaticAsterisk;
     private final Map<String, TypeInfo> importStaticMemberToTypeInfo;
+    private final Map<String, NamedType> map = new HashMap<>();
 
-    public TypeContext() {
-        typeStore = new MapBasedTypeStore();
-        primitives = new Primitives();
+
+    public TypeContext(TypeMapImpl.Builder typeMapBuilder) {
+        this.typeMapBuilder = typeMapBuilder;
         parentContext = null;
         packageName = null;
         importStaticAsterisk = new ArrayList<>();
         importStaticMemberToTypeInfo = new HashMap<>();
     }
 
+    public TypeContext(TypeContext parentContext) {
+        this(parentContext.packageName, parentContext);
+    }
+
     public TypeContext(String packageName, @NotNull TypeContext parentContext) {
         this.parentContext = Objects.requireNonNull(parentContext);
-        typeStore = parentContext.typeStore;
+        typeMapBuilder = parentContext.typeMapBuilder;
         importStaticMemberToTypeInfo = new HashMap<>(parentContext.importStaticMemberToTypeInfo);
         importStaticAsterisk = new ArrayList<>(parentContext.importStaticAsterisk);
         this.packageName = packageName;
-        this.primitives = parentContext.primitives;
     }
-
-    public TypeContext(@NotNull TypeContext parentContext) {
-        this(parentContext, parentContext.packageName, parentContext.typeStore);
-    }
-
-    public TypeContext(@NotNull TypeContext parentContext, TypeStore typeStore) {
-        this(parentContext, parentContext.packageName, typeStore);
-    }
-
-    public TypeContext(@NotNull TypeContext parentContext, String packageName, TypeStore typeStore) {
-        this.parentContext = Objects.requireNonNull(parentContext);
-        this.typeStore = typeStore;
-        importStaticMemberToTypeInfo = new HashMap<>(parentContext.importStaticMemberToTypeInfo);
-        importStaticAsterisk = new ArrayList<>(parentContext.importStaticAsterisk);
-        this.packageName = packageName;
-        this.primitives = parentContext.primitives;
-    }
-
-    private final Map<String, NamedType> map = new HashMap<>();
 
     /**
      * used for: Annotation types, ParameterizedTypes (general types)
@@ -92,14 +76,14 @@ public class TypeContext implements InspectionProvider {
             namedType = parentContext.get(name, false);
             if (namedType == null) {
                 // in same package
-                namedType = typeStore.get(packageName + "." + name);
+                namedType = typeMapBuilder.get(packageName + "." + name);
             }
         }
         if (namedType == null && parentContext == null) {
             if (name.contains(".")) {
                 throw new UnsupportedOperationException("We should not get FQNs or Type.SubType here, there's other methods for that");
             }
-            namedType = typeStore.get("java.lang." + name);
+            namedType = typeMapBuilder.get("java.lang." + name);
         }
         if (namedType == null && complain) {
             throw new UnsupportedOperationException("Unknown type in context: " + name);
@@ -112,7 +96,7 @@ public class TypeContext implements InspectionProvider {
     }
 
     public TypeInfo getFullyQualified(String fullyQualifiedName, boolean complain) {
-        TypeInfo typeInfo = typeStore.get(fullyQualifiedName);
+        TypeInfo typeInfo = typeMapBuilder.get(fullyQualifiedName);
         if (typeInfo == null && complain) {
             throw new UnsupportedOperationException("Unknown fully qualified name " + fullyQualifiedName);
         }
@@ -136,13 +120,12 @@ public class TypeContext implements InspectionProvider {
         }
     }
 
-    @NotNull
-    private static MethodInfo emptyConstructor(@NotNull TypeInfo typeInfo) {
+    private static MethodInspection createEmptyConstructor(@NotNull TypeInfo typeInfo) {
         MethodInfo constructor = new MethodInfo(typeInfo, List.of());
-        constructor.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
-                .addModifier(MethodModifier.PUBLIC)
-                .build(constructor));
-        return constructor;
+        MethodInspection methodInspection = new MethodInspectionImpl.Builder(constructor)
+                .addModifier(MethodModifier.PUBLIC).build();
+        constructor.methodInspection.set(methodInspection);
+        return methodInspection;
     }
 
     private List<TypeInfo> extractTypeInfo(ParameterizedType typeOfObject, Map<NamedType, ParameterizedType> typeMap) {
@@ -157,7 +140,7 @@ public class TypeContext implements InspectionProvider {
                 if (!typeBounds.isEmpty()) {
                     return typeBounds.stream().flatMap(bound -> extractTypeInfo(bound, typeMap).stream()).collect(Collectors.toList());
                 } else {
-                    typeInfo = primitives.objectTypeInfo;
+                    typeInfo = getPrimitives().objectTypeInfo;
                 }
             } else {
                 typeInfo = pt.typeInfo;
@@ -184,14 +167,16 @@ public class TypeContext implements InspectionProvider {
         for (Map.Entry<String, TypeInfo> entry : importStaticMemberToTypeInfo.entrySet()) {
             TypeInfo typeInfo = entry.getValue();
             String memberName = entry.getKey();
-            typeInfo.typeInspection.getPotentiallyRun().fields.stream()
+            TypeInspection typeInspection = getTypeInspection(typeInfo);
+            typeInspection.fields().stream()
                     .filter(FieldInfo::isStatic)
                     .filter(f -> f.name.equals(memberName))
                     .findFirst()
                     .ifPresent(fieldInfo -> map.put(memberName, new FieldReference(fieldInfo, null)));
         }
         for (TypeInfo typeInfo : importStaticAsterisk) {
-            typeInfo.typeInspection.getPotentiallyRun().fields.stream()
+            TypeInspection typeInspection = getTypeInspection(typeInfo);
+            typeInspection.fields().stream()
                     .filter(FieldInfo::isStatic)
                     .forEach(fieldInfo -> map.put(fieldInfo.name, new FieldReference(fieldInfo, null)));
         }
@@ -200,21 +185,21 @@ public class TypeContext implements InspectionProvider {
 
     @Override
     public FieldInspection getFieldInspection(FieldInfo fieldInfo) {
-        return null;
+        return typeMapBuilder.getFieldInspection(fieldInfo);
     }
 
     @Override
     public TypeInspection getTypeInspection(TypeInfo typeInfo) {
-        return null;
+        return typeMapBuilder.getTypeInspection(typeInfo);
     }
 
     @Override
     public MethodInspection getMethodInspection(MethodInfo methodInfo) {
-        return null;
+        return typeMapBuilder.getMethodInspection(methodInfo);
     }
 
     public Primitives getPrimitives() {
-        return primitives;
+        return typeMapBuilder.getPrimitives();
     }
 
     // TODO: this would be a good candidate to make into a non-static inner class, so that it can be made
@@ -238,12 +223,18 @@ public class TypeContext implements InspectionProvider {
         List<TypeInfo> types = extractTypeInfo(typeOfObject, typeMap);
         // there's only one situation where we can have multiple types; that's multiple type bounds; only the first one can be a class
         TypeInfo typeInfo = types.get(0);
-        if (parametersPresented == 0 && typeInfo.typeInspection.getPotentiallyRun().constructors.isEmpty()) {
-            return List.of(new MethodCandidate(new MethodTypeParameterMap(emptyConstructor(typeInfo), Map.of()), Set.of()));
+        TypeInspection typeInspection = getTypeInspection(typeInfo);
+        if (parametersPresented == 0) {
+            if (typeInspection.constructors().isEmpty()) {
+                return List.of(new MethodCandidate(new MethodTypeParameterMap(createEmptyConstructor(typeInfo), Map.of()), Set.of()));
+            }
         }
-        return typeInfo.typeInspection.getPotentiallyRun().constructors.stream()
-                .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS || compatibleNumberOfParameters(m, parametersPresented))
-                .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), findIndicesOfFunctionalInterfaces(m)))
+        return typeInspection.constructors().stream()
+                .filter(methodInfo -> parametersPresented == IGNORE_PARAMETER_NUMBERS ||
+                        compatibleNumberOfParameters(methodInfo, parametersPresented))
+                .map(methodInfo -> new MethodCandidate(new MethodTypeParameterMap(
+                        Objects.requireNonNull(getMethodInspection(methodInfo)), typeMap),
+                        findIndicesOfFunctionalInterfaces(methodInfo)))
                 .collect(Collectors.toList());
     }
 
@@ -295,44 +286,50 @@ public class TypeContext implements InspectionProvider {
                                                     Map<NamedType, ParameterizedType> typeMap,
                                                     List<MethodCandidate> result,
                                                     Set<TypeInfo> visited) {
-        if (!typeInfo.typeInspection.isSetPotentiallyRun()) {
-            throw new UnsupportedOperationException("Type " + typeInfo.fullyQualifiedName + " has not been inspected yet");
-        }
-        typeInfo.typeInspection.getPotentiallyRun().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+        TypeInspection typeInspection = Objects.requireNonNull(getTypeInspection(typeInfo));
+        typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(m -> m.name.equals(methodName))
                 .peek(m -> log(METHOD_CALL, "Considering {}", m.distinguishingName()))
                 .filter(m -> !staticOnly || m.isStatic)
-                .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS || compatibleNumberOfParameters(m, parametersPresented +
-                        (!m.isStatic && decrementWhenNotStatic ? -1 : 0)))
-                .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap), findIndicesOfFunctionalInterfaces(m)))
+                .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS ||
+                        compatibleNumberOfParameters(m, parametersPresented +
+                                (!m.isStatic && decrementWhenNotStatic ? -1 : 0)))
+                .map(m -> new MethodCandidate(new MethodTypeParameterMap(Objects.requireNonNull(getMethodInspection(m)), typeMap),
+                        findIndicesOfFunctionalInterfaces(m)))
                 .forEach(result::add);
 
-        ParameterizedType parentClass = typeInfo.typeInspection.getPotentiallyRun().parentClass;
+        ParameterizedType parentClass = typeInspection.parentClass();
         if (!Primitives.isJavaLangObject(parentClass)) {
-            recursivelyResolveOverloadedMethods(parentClass, methodName, parametersPresented, decrementWhenNotStatic, joinMaps(typeMap, parentClass), result, visited, staticOnly);
+            recursivelyResolveOverloadedMethods(parentClass, methodName, parametersPresented, decrementWhenNotStatic,
+                    joinMaps(typeMap, parentClass), result, visited, staticOnly);
         }
-        for (ParameterizedType interfaceImplemented : typeInfo.typeInspection.getPotentiallyRun().interfacesImplemented) {
-            recursivelyResolveOverloadedMethods(interfaceImplemented, methodName, parametersPresented, decrementWhenNotStatic, joinMaps(typeMap, interfaceImplemented), result, visited, staticOnly);
+        for (ParameterizedType interfaceImplemented : typeInspection.interfacesImplemented()) {
+            recursivelyResolveOverloadedMethods(interfaceImplemented, methodName, parametersPresented,
+                    decrementWhenNotStatic, joinMaps(typeMap, interfaceImplemented), result, visited, staticOnly);
         }
-        if (!staticOnly && typeInfo != primitives.objectTypeInfo) {
-            recursivelyResolveOverloadedMethods(primitives.objectParameterizedType, methodName, parametersPresented, decrementWhenNotStatic, typeMap, result, visited, false);
+        if (!staticOnly && typeInfo != getPrimitives().objectTypeInfo) {
+            recursivelyResolveOverloadedMethods(getPrimitives().objectParameterizedType, methodName,
+                    parametersPresented, decrementWhenNotStatic, typeMap, result, visited, false);
         }
-        if (typeInfo.typeInspection.getPotentiallyRun().packageNameOrEnclosingType.isRight()) {
+        if (typeInspection.packageNameOrEnclosingType().isRight()) {
             // if I'm in a static subtype, I can only access the static methods of the enclosing type
-            ParameterizedType enclosingType = typeInfo.typeInspection.getPotentiallyRun().packageNameOrEnclosingType.getRight().asParameterizedType();
+            ParameterizedType enclosingType = typeInspection.packageNameOrEnclosingType().getRight().asParameterizedType();
             boolean onlyStatic = staticOnly || typeInfo.isStatic();
-            recursivelyResolveOverloadedMethods(enclosingType, methodName, parametersPresented, decrementWhenNotStatic, joinMaps(typeMap, enclosingType), result, visited, onlyStatic);
+            recursivelyResolveOverloadedMethods(enclosingType, methodName, parametersPresented, decrementWhenNotStatic,
+                    joinMaps(typeMap, enclosingType), result, visited, onlyStatic);
         }
     }
 
     private Set<Integer> findIndicesOfFunctionalInterfaces(MethodInfo m) {
         Set<Integer> res = new HashSet<>();
         int i = 0;
-        for (ParameterInfo parameterInfo : m.methodInspection.get().parameters) {
-            if (parameterInfo.parameterizedType.typeInfo != null && parameterInfo.parameterizedType.typeInfo.typeInspection.isSetPotentiallyRun()) {
-                TypeInspection typeInspection = parameterInfo.parameterizedType.typeInfo.typeInspection.getPotentiallyRun();
-                if (typeInspection.typeNature == TypeNature.INTERFACE && typeInspection.annotations.contains(
-                        primitives.functionalInterfaceAnnotationExpression)) {
+        MethodInspection methodInspection = Objects.requireNonNull(getMethodInspection(m));
+        for (ParameterInfo parameterInfo : methodInspection.getParameters()) {
+            if (parameterInfo.parameterizedType.typeInfo != null) {
+                // FIXME seems like the place to recursively ensure type inspection
+                TypeInspection typeInspection = Objects.requireNonNull(getTypeInspection(parameterInfo.parameterizedType.typeInfo));
+                if (typeInspection.typeNature() == TypeNature.INTERFACE && typeInspection.hasAnnotation(
+                        getPrimitives().functionalInterfaceAnnotationExpression)) {
                     res.add(i);
                 }
             }
@@ -341,10 +338,11 @@ public class TypeContext implements InspectionProvider {
         return res;
     }
 
-    private static boolean compatibleNumberOfParameters(MethodInfo m, int parametersPresented) {
-        int declared = m.methodInspection.get().parameters.size();
+    private boolean compatibleNumberOfParameters(MethodInfo m, int parametersPresented) {
+        MethodInspection methodInspection = Objects.requireNonNull(getMethodInspection(m));
+        int declared = methodInspection.getParameters().size();
         if (declared == 0) return parametersPresented == 0;
-        boolean lastIsVarArgs = m.methodInspection.get().parameters.get(declared - 1).parameterInspection.get().varArgs;
+        boolean lastIsVarArgs = methodInspection.getParameters().get(declared - 1).parameterInspection.get().isVarArgs();
         if (lastIsVarArgs) return parametersPresented >= declared - 1;
         return parametersPresented == declared;
     }
@@ -357,7 +355,7 @@ public class TypeContext implements InspectionProvider {
     }
 
     public boolean isPackagePrefix(PackagePrefix packagePrefix) {
-        return typeStore.isPackagePrefix(packagePrefix);
+        return typeMapBuilder.isPackagePrefix(packagePrefix);
     }
 
 }

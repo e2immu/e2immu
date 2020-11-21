@@ -21,7 +21,7 @@ package org.e2immu.analyser.annotationxml;
 import org.e2immu.analyser.annotationxml.model.*;
 import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.parser.TypeStore;
+import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.util.SMapList;
 import org.e2immu.annotation.UtilityClass;
 import org.slf4j.Logger;
@@ -53,7 +53,7 @@ public class AnnotationXmlWriter {
         // nothing here
     }
 
-    public static void write(AnnotationXmlConfiguration configuration, TypeStore typeStore) throws IOException {
+    public static void write(AnnotationXmlConfiguration configuration, TypeMap typeMap) throws IOException {
         File base;
         if (configuration.writeAnnotationXmlDir != null) {
             base = new File(configuration.writeAnnotationXmlDir);
@@ -67,7 +67,7 @@ public class AnnotationXmlWriter {
             base = new File(System.getProperty("user.dir"));
         }
         Set<TypeInfo> typesToWrite = new HashSet<>();
-        typeStore.visit(new String[0], (packageSplit, types) -> {
+        typeMap.visit(new String[0], (packageSplit, types) -> {
             typesToWrite.addAll(types);
         });
         Map<String, List<TypeItem>> typeItemsPerPackage = new HashMap<>();

@@ -120,7 +120,7 @@ public class ParameterizedType {
                     }
                     // we're going to assume that we're creating a subtype
                     String subTypeFqn = scopePt.typeInfo.fullyQualifiedName + "." + name;
-                    TypeInfo subType = context.typeStore.getOrCreate(subTypeFqn);
+                    TypeInfo subType = context.typeMapBuilder.getOrCreate(subTypeFqn, TypeInspectionImpl.CREATED);
                     return parameters.isEmpty() ? new ParameterizedType(subType, arrays) : new ParameterizedType(subType, parameters);
                 }
             }// else {
@@ -250,7 +250,7 @@ public class ParameterizedType {
         if (typeInfo == null || Primitives.isPrimitiveExcludingVoid(typeInfo)) {
             newTypeInfo = typeInfo;
         } else {
-            newTypeInfo = Objects.requireNonNull(localTypeContext.typeStore.get(typeInfo.fullyQualifiedName),
+            newTypeInfo = Objects.requireNonNull(localTypeContext.typeMapBuilder.get(typeInfo.fullyQualifiedName),
                     "Cannot find " + typeInfo.fullyQualifiedName + " in typeStore");
         }
         List<ParameterizedType> newParameters = parameters.stream().map(pt -> pt.copy(localTypeContext)).collect(Collectors.toList());
@@ -526,7 +526,7 @@ public class ParameterizedType {
         if (typeParameter != null) {
             // T extends Comparable<...> & Serializable
             try {
-               List<ParameterizedType> typeBounds = typeParameter.typeParameterInspection.get().typeBounds;
+                List<ParameterizedType> typeBounds = typeParameter.typeParameterInspection.get().typeBounds;
                 if (!typeBounds.isEmpty()) {
                     if (wildCard == WildCard.EXTENDS) {
                         return typeBounds.stream().mapToInt(pt -> numericIsAssignableFrom(inspectionProvider, pt)).reduce(IN_HIERARCHY, REDUCER);

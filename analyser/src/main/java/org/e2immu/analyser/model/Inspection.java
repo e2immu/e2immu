@@ -25,4 +25,5 @@ public interface Inspection {
 
     List<AnnotationExpression> getAnnotations();
 
+    boolean hasAnnotation(AnnotationExpression annotationExpression);
 }

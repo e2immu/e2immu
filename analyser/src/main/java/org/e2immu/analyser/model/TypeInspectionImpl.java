@@ -161,6 +161,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         return annotationMode;
     }
 
+    @Override
+    public int getInspectionState() {
+        return BUILT;
+    }
+
     public Stream<MethodInfo> methodStream(Methods methodsMode) {
         if (methodsMode.recurse) {
             return Stream.concat(nonRecursiveMethodStream(methodsMode.nonRecursiveVariant),
@@ -199,6 +204,14 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         return Stream.concat(methodTypes, fieldTypes).collect(Collectors.toSet());
     }
 
+    public static final int CREATED = 0;
+    public static final int STARTING_BYTECODE = 1;
+    public static final int FINISHED_BYTECODE = 2;
+    public static final int STARTING_JAVA_PARSER = 3;
+    public static final int FINISHED_JAVA_PARSER = 4;
+    public static final int BY_HAND = 5;
+    public static final int BUILT = 6;
+
     @Container(builds = TypeInspectionImpl.class)
     public static class Builder extends AbstractInspectionBuilder<Builder> implements TypeInspection {
         private String packageName;
@@ -214,8 +227,19 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         private final List<ParameterizedType> interfacesImplemented = new ArrayList<>();
         private final TypeInfo typeInfo;
 
-        public Builder(TypeInfo typeInfo) {
+        private int inspectionState;
+
+        public Builder(TypeInfo typeInfo, int inspectionState) {
             this.typeInfo = typeInfo;
+            this.inspectionState = inspectionState;
+        }
+
+        public int getInspectionState() {
+            return inspectionState;
+        }
+
+        public void setInspectionState(int inspectionState) {
+            this.inspectionState = inspectionState;
         }
 
         public Builder setPackageName(String packageName) {

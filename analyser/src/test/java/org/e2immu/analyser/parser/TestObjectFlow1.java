@@ -122,7 +122,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
                 .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
 
-        TypeInfo keyValue = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow1.KeyValue");
+        TypeInfo keyValue = typeContext.typeMapBuilder.get("org.e2immu.analyser.testexample.ObjectFlow1.KeyValue");
         MethodInfo keyValueConstructor = keyValue.typeInspection.getPotentiallyRun().constructors.get(0);
         ParameterInfo key = keyValueConstructor.methodInspection.get().parameters.get(0);
         ObjectFlow objectFlowKey = key.parameterAnalysis.get().getObjectFlow();
@@ -132,7 +132,7 @@ public class TestObjectFlow1 extends CommonTestRunner {
         Assert.assertEquals(1L, objectFlowKey.getPrevious().count());
         ObjectFlow keyConstant = objectFlowKey.getPrevious().findAny().orElseThrow();
 
-        TypeInfo objectFlow1 = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow1");
+        TypeInfo objectFlow1 = typeContext.typeMapBuilder.get("org.e2immu.analyser.testexample.ObjectFlow1");
         ObjectFlow inType = objectFlow1.typeAnalysis.get().getConstantObjectFlows().stream().findFirst().orElseThrow();
         Assert.assertSame(inType, keyConstant);
         Assert.assertSame(Origin.LITERAL, inType.origin);

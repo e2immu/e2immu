@@ -90,18 +90,18 @@ public class TestObjectFlow3 extends CommonTestRunner {
                 .build());
 
         // there are 2 flows in the 'main' method
-        TypeInfo objectFlow3 = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3");
+        TypeInfo objectFlow3 = typeContext.typeMapBuilder.get("org.e2immu.analyser.testexample.ObjectFlow3");
         MethodInfo mainMethod = objectFlow3.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "main".equals(m.name)).findAny().orElseThrow();
         mainMethod.methodAnalysis.get().getInternalObjectFlows().forEach(of ->
                 LOGGER.info("internal object flows of static 'main': {}", of.detailed()));
         Assert.assertEquals(4L, mainMethod.methodAnalysis.get().getInternalObjectFlows().size());
 
         // the Config flow is used to initiate the Main flow
-        TypeInfo config = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.Config");
+        TypeInfo config = typeContext.typeMapBuilder.get("org.e2immu.analyser.testexample.ObjectFlow3.Config");
         ObjectFlow newConfig = mainMethod.methodAnalysis.get().getInternalObjectFlows().stream().filter(of -> of.type.typeInfo == config).findAny().orElseThrow();
         Assert.assertEquals(1L, newConfig.getNonModifyingCallouts().count());
 
-        TypeInfo main = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.Main");
+        TypeInfo main = typeContext.typeMapBuilder.get("org.e2immu.analyser.testexample.ObjectFlow3.Main");
         ObjectFlow newMain = mainMethod.methodAnalysis.get().getInternalObjectFlows().stream().filter(of -> of.type.typeInfo == main).findAny().orElseThrow();
         // test object access "go" method
         Assert.assertEquals(1L, newMain.getNonModifyingAccesses().count());
@@ -119,7 +119,7 @@ public class TestObjectFlow3 extends CommonTestRunner {
         MethodAnalysis goMethodAnalysis =  goMethodMain.methodAnalysis.get();
         Set<ObjectFlow> goMethodObjectFlows = goMethodAnalysis.getInternalObjectFlows();
         goMethodObjectFlows.forEach(of -> LOGGER.info("internal object flows in Main.go(): {}", of.detailed()));
-        TypeInfo inBetween = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.InBetween");
+        TypeInfo inBetween = typeContext.typeMapBuilder.get("org.e2immu.analyser.testexample.ObjectFlow3.InBetween");
         Assert.assertEquals(2L, goMethodMain.methodAnalysis.get().getInternalObjectFlows().size());
         ObjectFlow newInBetween = goMethodMain.methodAnalysis.get().getInternalObjectFlows().stream().filter(of -> of.type.typeInfo == inBetween).findAny().orElseThrow();
         Assert.assertSame(Origin.NEW_OBJECT_CREATION, newInBetween.origin);
@@ -140,7 +140,7 @@ public class TestObjectFlow3 extends CommonTestRunner {
         // The go() method in inBetween creates a DoSomeWork flow
         MethodInfo goMethodInBetween = inBetween.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "go".equals(m.name)).findAny().orElseThrow();
         goMethodInBetween.methodAnalysis.get().getInternalObjectFlows().forEach(of -> LOGGER.info(of.detailed()));
-        TypeInfo doSomeWork = typeContext.typeStore.get("org.e2immu.analyser.testexample.ObjectFlow3.DoSomeWork");
+        TypeInfo doSomeWork = typeContext.typeMapBuilder.get("org.e2immu.analyser.testexample.ObjectFlow3.DoSomeWork");
         ObjectFlow newDoSomeWork = goMethodInBetween.methodAnalysis.get().getInternalObjectFlows().stream().filter(of -> of.type.typeInfo == doSomeWork).findAny().orElseThrow();
 
         // test object access "go" method

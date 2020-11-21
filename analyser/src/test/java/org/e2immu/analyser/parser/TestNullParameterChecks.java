@@ -90,7 +90,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
     };
 
     TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo objects = typeContext.typeStore.get("java.util.Objects");
+        TypeInfo objects = typeContext.typeMapBuilder.get("java.util.Objects");
         MethodInfo requireNonNull = objects.typeInspection.get()
                 .methods().stream().filter(mi -> "requireNonNull".equals(mi.name) &&
                         1 == mi.methodInspection.get().getParameters().size()).findFirst().orElseThrow();

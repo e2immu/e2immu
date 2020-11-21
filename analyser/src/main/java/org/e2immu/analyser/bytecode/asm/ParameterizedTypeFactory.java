@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.bytecode.asm;
 
-import org.e2immu.analyser.model.NamedType;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeParameter;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 
@@ -46,7 +43,7 @@ public class ParameterizedTypeFactory {
 
     // for testing
     static Result from(TypeContext typeContext, String signature) {
-        return from(typeContext, (fqn, path) -> typeContext.typeStore.getOrCreate(fqn), signature);
+        return from(typeContext, (fqn, path) -> typeContext.typeMapBuilder.getOrCreate(fqn, TypeInspectionImpl.CREATED), signature);
     }
 
     static Result from(TypeContext typeContext, FindType findType, String signature) {

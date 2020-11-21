@@ -48,11 +48,11 @@ public class Test_13_MethodOverloadAndSuperTypes {
     public void testSetCollection() throws IOException {
         Parser parser = new Parser();
         TypeContext typeContext = parser.getTypeContext();
-        TypeInfo set = typeContext.typeStore.get("java.util.Set");
+        TypeInfo set = typeContext.typeMapBuilder.get("java.util.Set");
         Assert.assertNotNull(set);
         MethodInfo containsAll = set.findUniqueMethod("containsAll", 1);
         Set<MethodInfo> overloads = containsAll.methodResolution.get().overrides();
-        TypeInfo collection = typeContext.typeStore.get("java.util.Collection");
+        TypeInfo collection = typeContext.typeMapBuilder.get("java.util.Collection");
         Assert.assertNotNull(collection);
         MethodInfo containsAllInCollection = collection.findUniqueMethod("containsAll", 1);
         Assert.assertTrue(overloads.contains(containsAllInCollection));
@@ -62,7 +62,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
     public void testThrowable() throws IOException {
         Parser parser = new Parser();
         TypeContext typeContext = parser.getTypeContext();
-        TypeInfo throwable = typeContext.typeStore.get("java.lang.Throwable");
+        TypeInfo throwable = typeContext.typeMapBuilder.get("java.lang.Throwable");
         Assert.assertNotNull(throwable);
         Set<TypeInfo> superTypes = throwable.typeResolution.get().superTypesExcludingJavaLangObject();
         Assert.assertEquals("[java.io.Serializable]", superTypes.toString());
@@ -73,15 +73,15 @@ public class Test_13_MethodOverloadAndSuperTypes {
         Parser parser = new Parser();
         TypeContext typeContext = parser.getTypeContext();
 
-        TypeInfo set = typeContext.typeStore.get("java.util.Set");
+        TypeInfo set = typeContext.typeMapBuilder.get("java.util.Set");
         Assert.assertNotNull(set);
         MethodInfo equalsInSet = set.findUniqueMethod("equals", 1);
         Set<MethodInfo> overloads = equalsInSet.methodResolution.get().overrides();
-        TypeInfo collection = typeContext.typeStore.get("java.util.Collection");
+        TypeInfo collection = typeContext.typeMapBuilder.get("java.util.Collection");
         Assert.assertNotNull(collection);
         MethodInfo equalsInCollection = collection.findUniqueMethod("equals", 1);
         Assert.assertTrue(overloads.contains(equalsInCollection));
-        TypeInfo object = typeContext.typeStore.get("java.lang.Object");
+        TypeInfo object = typeContext.typeMapBuilder.get("java.lang.Object");
         Assert.assertNotNull(object);
         MethodInfo equalsInObject = object.findUniqueMethod("equals", 1);
         Assert.assertTrue(overloads.contains(equalsInObject));
@@ -91,7 +91,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
     public void test() throws IOException {
         Parser parser = new Parser();
 
-        TypeInfo methodOverloadOrig = parser.getTypeContext().typeStore.getOrCreate("org.e2immu.analyser.testexample.MethodOverload");
+        TypeInfo methodOverloadOrig = parser.getTypeContext().typeMapBuilder.getOrCreate("org.e2immu.analyser.testexample.MethodOverload");
         URL url = new File(SRC_TEST_JAVA_ORG_E2IMMU_ANALYSER + "testexample/MethodOverload.java").toURI().toURL();
         List<SortedType> types = parser.parseJavaFiles(Map.of(methodOverloadOrig, url));
         LOGGER.info("Have {} types", types.size());

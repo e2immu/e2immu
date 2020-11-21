@@ -35,4 +35,9 @@ public abstract class InspectionImpl implements Inspection {
     public List<AnnotationExpression> getAnnotations() {
         return annotations;
     }
+
+    @Override
+    public boolean hasAnnotation(AnnotationExpression annotationExpression) {
+        return annotations.contains(annotationExpression);
+    }
 }

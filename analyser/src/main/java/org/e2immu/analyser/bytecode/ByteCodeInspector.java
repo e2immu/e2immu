@@ -21,14 +21,16 @@ package org.e2immu.analyser.bytecode;
 import org.e2immu.analyser.annotationxml.AnnotationStore;
 import org.e2immu.analyser.bytecode.asm.MyClassVisitor;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspection;
+import org.e2immu.analyser.model.TypeInspectionImpl;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Resources;
 import org.objectweb.asm.ClassReader;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
@@ -41,6 +43,7 @@ public class ByteCodeInspector implements OnDemandInspection {
     private final TypeContext typeContext;
     private final AnnotationStore annotationStore;
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
+
     public ByteCodeInspector(Resources classPath, AnnotationStore annotationStore, TypeContext typeContext,
                              E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.classPath = classPath;
@@ -56,7 +59,7 @@ public class ByteCodeInspector implements OnDemandInspection {
      * @return one or more types; the first one is the main type of the .class file
      */
     @Override
-    public List<TypeInfo> inspectFromPath(String path, Set<TypeInfo> inProcess) {
+    public List<TypeInfo> inspectFromPath(String path) {
         if (classPath == null) {
             throw new UnsupportedOperationException("No on-demand parsing if no classpath! Failed to load " + path);
         }
@@ -64,43 +67,51 @@ public class ByteCodeInspector implements OnDemandInspection {
         if (dollar > 0) {
             String pathOfPrimaryType = path.substring(0, dollar);
             String fqnPrimaryType = pathOfPrimaryType.replace('/', '.');
-            TypeInfo primaryType = typeContext.typeStore.get(fqnPrimaryType);
-            if (primaryType == null || (!primaryType.typeInspection.isSet() && !inProcess.contains(primaryType))) {
-                inspectFromPath(pathOfPrimaryType, inProcess);
+            TypeInfo primaryType = typeContext.typeMapBuilder.get(fqnPrimaryType);
+            TypeInspection primaryTypeInspection = primaryType == null ? null : typeContext.getTypeInspection(primaryType);
+            if (primaryTypeInspection == null || primaryTypeInspection.getInspectionState() == TypeInspectionImpl.CREATED) {
+                inspectFromPath(pathOfPrimaryType);
             }
             String fqn = MyClassVisitor.pathToFqn(path);
-            return List.of(typeContext.typeStore.getOrCreate(fqn));
+            return List.of(typeContext.typeMapBuilder.getOrCreate(fqn, TypeInspectionImpl.CREATED));
             // NOTE that is is quite possible that even after the inspectFromPath, the type has not been created
             // yet... cycles are allowed in the use of sub-types as interface or parent
         }
-        log(BYTECODE_INSPECTOR, "Parsing {}, in process [{}]", path,
-                inProcess.stream().map(ti -> ti.fullyQualifiedName).collect(Collectors.joining(", ")));
+        if (Logger.isLogEnabled(BYTECODE_INSPECTOR)) {
+            logTypesInProcess(path);
+        }
         String pathWithDotClass = path.endsWith(".class") ? path : path + ".class";
         byte[] classBytes = classPath.loadBytes(pathWithDotClass);
         if (classBytes == null) return List.of();
-        return inspectByteArray(classBytes, inProcess, new Stack<>(), typeContext);
+        return inspectByteArray(classBytes, new Stack<>(), typeContext);
+    }
+
+    private void logTypesInProcess(String path) {
+        log(BYTECODE_INSPECTOR, "Parsing {}, in process [{}]", path,
+                typeContext.typeMapBuilder.streamTypes()
+                        .filter(e -> e.getValue().getInspectionState() == TypeInspectionImpl.STARTING_BYTECODE)
+                        .map(e -> e.getKey().fullyQualifiedName).collect(Collectors.joining(", ")));
     }
 
     @Override
     public TypeInfo inspectFromPath(String path,
-                                    Set<TypeInfo> inProcess,
                                     Stack<TypeInfo> enclosingTypes,
                                     TypeContext parentTypeContext) {
         if (classPath == null) {
             throw new UnsupportedOperationException("No on-demand parsing if no classpath! Failed to load " + path);
         }
-        log(BYTECODE_INSPECTOR, "Parsing {}, in process [{}], enclosing types [{}]", path,
-                inProcess.stream().map(ti -> ti.fullyQualifiedName).collect(Collectors.joining(", ")),
-                enclosingTypes.stream().map(ti -> ti.fullyQualifiedName).collect(Collectors.joining(" -> ")));
+        if (Logger.isLogEnabled(BYTECODE_INSPECTOR)) {
+            logTypesInProcess(path);
+            log(BYTECODE_INSPECTOR, enclosingTypes.stream().map(ti -> ti.fullyQualifiedName).collect(Collectors.joining(" -> ")));
+        }
         byte[] classBytes = classPath.loadBytes(path + ".class");
         if (classBytes == null) return null;
-        List<TypeInfo> result = inspectByteArray(classBytes, inProcess, enclosingTypes, parentTypeContext);
-        if(result.isEmpty()) return null;
+        List<TypeInfo> result = inspectByteArray(classBytes, enclosingTypes, parentTypeContext);
+        if (result.isEmpty()) return null;
         return result.get(0);
     }
 
     public List<TypeInfo> inspectByteArray(byte[] classBytes,
-                                           Set<TypeInfo> inProcess,
                                            Stack<TypeInfo> enclosingTypes,
                                            TypeContext parentTypeContext) {
         ClassReader classReader = new ClassReader(classBytes);
@@ -112,7 +123,6 @@ public class ByteCodeInspector implements OnDemandInspection {
                 new TypeContext(parentTypeContext),
                 e2ImmuAnnotationExpressions,
                 types,
-                inProcess,
                 enclosingTypes);
         classReader.accept(myClassVisitor, 0);
         return types;

@@ -127,7 +127,7 @@ public class Parser {
         }
         if (configuration.annotationXmlConfiguration.writeAnnotationXml) {
             try {
-                AnnotationXmlWriter.write(configuration.annotationXmlConfiguration, getTypeContext().typeStore);
+                AnnotationXmlWriter.write(configuration.annotationXmlConfiguration, getTypeContext().typeMapBuilder);
             } catch (IOException ioe) {
                 LOGGER.error("Caught ioe exception writing annotation XMLs");
                 throw new RuntimeException(ioe);
@@ -168,7 +168,7 @@ public class Parser {
         sortedTypes.forEach(st -> types.add(st.primaryType));
         Set<TypeInfo> alreadyIncluded = new HashSet<>(types);
 
-        getTypeContext().typeStore.visit(new String[0], (s, list) -> {
+        getTypeContext().typeMapBuilder.visit(new String[0], (s, list) -> {
             for (TypeInfo typeInfo : list) {
                 if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() && !alreadyIncluded.contains(typeInfo)) {
                     types.add(typeInfo);
@@ -180,7 +180,7 @@ public class Parser {
 
     private void ensureShallowAnalysisOfLoadedObjects() {
         List<TypeInfo> types = new LinkedList<>();
-        getTypeContext().typeStore.visit(new String[0], (s, list) -> {
+        getTypeContext().typeMapBuilder.visit(new String[0], (s, list) -> {
             for (TypeInfo typeInfo : list) {
                 if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() && typeInfo.shallowAnalysis()) {
                     types.add(typeInfo);

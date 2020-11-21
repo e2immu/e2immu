@@ -309,7 +309,7 @@ public class ExpressionContext {
                 unionOfTypes = unionType.getElements()
                         .stream()
                         .map(rt -> ParameterizedType.from(typeContext, rt)).collect(Collectors.toList());
-                typeOfVariable = typeContext.typeStore.get("java.lang.Exception").asParameterizedType();
+                typeOfVariable = typeContext.typeMapBuilder.get("java.lang.Exception").asParameterizedType();
             } else {
                 typeOfVariable = ParameterizedType.from(typeContext, parameter.getType());
                 unionOfTypes = List.of(typeOfVariable);

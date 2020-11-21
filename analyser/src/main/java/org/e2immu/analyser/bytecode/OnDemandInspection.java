@@ -21,19 +21,12 @@ package org.e2immu.analyser.bytecode;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.TypeContext;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.Stack;
 
 public interface OnDemandInspection {
 
-    default List<TypeInfo> inspectFromPath(String path) {
-        return inspectFromPath(path, new HashSet<>());
-    }
+    List<TypeInfo> inspectFromPath(String path); // org/junit/Assert
 
-    List<TypeInfo> inspectFromPath(String path, Set<TypeInfo> inProcess); // org/junit/Assert
-
-    TypeInfo inspectFromPath(String name, Set<TypeInfo> inProcess,
-                             Stack<TypeInfo> enclosingTypes, TypeContext typeContext);
+    TypeInfo inspectFromPath(String name, Stack<TypeInfo> enclosingTypes, TypeContext typeContext);
 }

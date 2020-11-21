@@ -23,6 +23,7 @@ import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspectionImpl;
 import org.e2immu.analyser.util.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,9 +54,7 @@ public class Input {
     public static final String JAR_WITH_PATH_PREFIX = "jar-on-classpath:";
 
     private final Configuration configuration;
-    private final TypeContext globalTypeContext = new TypeContext();
-    private final TypeStore sourceTypeStore = new MapBasedTypeStore(); // to deal with * imports
-    private final TypeStore annotatedAPIsTypeStore = new MapBasedTypeStore(); // to deal with * imports
+    private final TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder());
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions(globalTypeContext);
     private final ByteCodeInspector byteCodeInspector;
     private final Map<TypeInfo, URL> annotatedAPIs;
@@ -73,13 +72,13 @@ public class Input {
         preload(classPath, "java.util.function"); // they are needed for functional interfaces that lurk in the background
 
         Resources sourcePath = assemblePath(false, "Source path", configuration.inputConfiguration.sources);
-        sourceURLs = computeSourceURLs(sourcePath, sourceTypeStore, configuration.inputConfiguration.restrictSourceToPackages, "source path");
+        sourceURLs = computeSourceURLs(sourcePath, configuration.inputConfiguration.restrictSourceToPackages, "source path");
 
         Resources annotatedAPIsPath = assemblePath(false, "Annotated APIs path", configuration.inputConfiguration.sourcesAnnotatedAPIs);
-        annotatedAPIs = computeSourceURLs(annotatedAPIsPath, annotatedAPIsTypeStore, List.of(), "annotated API path");
+        annotatedAPIs = computeSourceURLs(annotatedAPIsPath, List.of(), "annotated API path");
     }
 
-    private Map<TypeInfo, URL> computeSourceURLs(Resources sourcePath, TypeStore sourceTypeStore, List<String> restrictions, String what) {
+    private Map<TypeInfo, URL> computeSourceURLs(Resources sourcePath, List<String> restrictions, String what) {
         Map<TypeInfo, URL> sourceURLs = new HashMap<>();
         AtomicInteger ignored = new AtomicInteger();
         sourcePath.visit(new String[0], (parts, list) -> {
@@ -90,8 +89,7 @@ public class Input {
                     String packageName = Arrays.stream(parts).limit(parts.length - 1).collect(Collectors.joining("."));
                     if (acceptSource(packageName, typeName, restrictions)) {
                         TypeInfo typeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName(packageName, typeName);
-                        sourceTypeStore.add(typeInfo);
-                        globalTypeContext.typeStore.add(typeInfo);
+                        globalTypeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.CREATED);
                         URL url = list.get(0);
                         sourceURLs.put(typeInfo, url);
                     } else {
@@ -115,13 +113,13 @@ public class Input {
         return false;
     }
 
-    private void loadPrimitivesIntoGlobalTypeContext() throws IOException {
+    private void loadPrimitivesIntoGlobalTypeContext() {
         for (TypeInfo typeInfo : globalTypeContext.getPrimitives().typeByName.values()) {
-            globalTypeContext.typeStore.add(typeInfo);
+            globalTypeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.CREATED);
             globalTypeContext.addToContext(typeInfo);
         }
         for (TypeInfo typeInfo : globalTypeContext.getPrimitives().primitiveByName.values()) {
-            globalTypeContext.typeStore.add(typeInfo);
+            globalTypeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.BY_HAND);
             globalTypeContext.addToContext(typeInfo);
         }
     }
@@ -213,14 +211,6 @@ public class Input {
 
     public ByteCodeInspector getByteCodeInspector() {
         return byteCodeInspector;
-    }
-
-    public TypeStore getSourceTypeStore() {
-        return sourceTypeStore;
-    }
-
-    public TypeStore getAnnotatedAPIsTypeStore() {
-        return annotatedAPIsTypeStore;
     }
 
     public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {

@@ -36,4 +36,9 @@ public abstract class AbstractInspectionBuilder<B> implements Inspection {
     public List<AnnotationExpression> getAnnotations() {
         return List.copyOf(annotations.toImmutableSet());
     }
+
+    @Override
+    public boolean hasAnnotation(AnnotationExpression annotationExpression) {
+        return annotations.contains(annotationExpression);
+    }
 }

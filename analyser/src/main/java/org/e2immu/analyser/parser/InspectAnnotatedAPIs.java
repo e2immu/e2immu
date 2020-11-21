@@ -18,8 +18,6 @@
 
 package org.e2immu.analyser.parser;
 
-import com.github.javaparser.StaticJavaParser;
-import com.github.javaparser.ast.CompilationUnit;
 import org.apache.commons.io.IOUtils;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.model.*;
@@ -52,7 +50,7 @@ public class InspectAnnotatedAPIs {
     private static final Logger LOGGER = LoggerFactory.getLogger(InspectAnnotatedAPIs.class);
 
     private final TypeContext globalTypeContext;
-    private final TypeStore localTypeStore = new MapBasedTypeStore();
+    private final TypeStore localTypeStore = new TypeMapBuilder();
     private final ByteCodeInspector byteCodeInspector;
     private final Messages messages = new Messages();
 
@@ -68,7 +66,7 @@ public class InspectAnnotatedAPIs {
        // for (URL url : annotatedAPIs) load(url);
 
         // then, inspect in the normal way using a delegating type store
-        DelegatingTypeStore delegatingTypeStore = new DelegatingTypeStore(localTypeStore, globalTypeContext.typeStore);
+        DelegatingTypeStore delegatingTypeStore = new DelegatingTypeStore(localTypeStore, globalTypeContext.typeMapBuilder);
         ParseAndInspect parseAndInspect = new ParseAndInspect(byteCodeInspector, false, localTypeStore);
         Map<TypeInfo, TypeContext> inspectedTypes = new HashMap<>();
         Map<TypeInfo, TypeContext> primarySourceTypesNotInByteCode = new HashMap<>();
