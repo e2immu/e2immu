@@ -50,8 +50,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public final List<TypeParameter> typeParameters;
     public final List<ParameterizedType> interfacesImplemented;
 
-    public final List<TypeInfo> superTypes;
-
     // only valid for types that have been defined, and empty when not the primary type
     // it does include the primary type itself
     public final List<TypeInfo> allTypesInPrimaryType;
@@ -71,8 +69,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                List<FieldInfo> fields,
                                List<TypeModifier> modifiers,
                                List<TypeInfo> subTypes,
-                               List<TypeInfo> superTypes,
-                               List<AnnotationExpression> annotations) {
+                               List<AnnotationExpression> annotations,
+                               AnnotationMode annotationMode) {
         super(annotations);
         this.allTypesInPrimaryType = allTypesInPrimaryType;
         this.packageNameOrEnclosingType = packageNameOrEnclosingType;
@@ -90,23 +88,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         else if (modifiers.contains(TypeModifier.PROTECTED)) access = TypeModifier.PROTECTED;
         else if (modifiers.contains(TypeModifier.PRIVATE)) access = TypeModifier.PRIVATE;
         else access = TypeModifier.PACKAGE;
-        this.superTypes = superTypes;
-        annotationMode = annotationMode(annotations);
-    }
-
-    private static final Set<String> OFFENSIVE_ANNOTATIONS = Set.of(
-            Modified.class.getCanonicalName(),
-            Nullable.class.getCanonicalName(),
-            Dependent.class.getCanonicalName(),
-            MutableModifiesArguments.class.getCanonicalName(),
-            org.e2immu.annotation.Variable.class.getCanonicalName());
-
-    private static AnnotationMode annotationMode(List<AnnotationExpression> annotations) {
-        for (AnnotationExpression ae : annotations) {
-            String fqn = ae.typeInfo().fullyQualifiedName;
-            if (OFFENSIVE_ANNOTATIONS.contains(fqn)) return AnnotationMode.OFFENSIVE;
-        }
-        return AnnotationMode.DEFENSIVE;
+        this.annotationMode = annotationMode;
     }
 
     @Override
@@ -162,11 +144,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     @Override
     public List<ParameterizedType> interfacesImplemented() {
         return interfacesImplemented;
-    }
-
-    @Override
-    public List<TypeInfo> superTypes() {
-        return superTypes;
     }
 
     @Override
@@ -320,8 +297,22 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                     fields(),
                     modifiers(),
                     subTypes(),
-                    superTypes(),
-                    ImmutableList.copyOf(getAnnotations()));
+                    ImmutableList.copyOf(getAnnotations()),
+                    annotationMode());
+        }
+
+        private static final Set<String> OFFENSIVE_ANNOTATIONS = Set.of(
+                Modified.class.getCanonicalName(),
+                Nullable.class.getCanonicalName(),
+                Dependent.class.getCanonicalName(),
+                MutableModifiesArguments.class.getCanonicalName(),
+                org.e2immu.annotation.Variable.class.getCanonicalName());
+
+        private AnnotationMode computeAnnotationMode() {
+            return annotations.stream()
+                    .filter(ae -> OFFENSIVE_ANNOTATIONS.contains(ae.typeInfo().fullyQualifiedName))
+                    .map(ae -> AnnotationMode.OFFENSIVE)
+                    .findFirst().orElse(AnnotationMode.DEFENSIVE);
         }
 
         private List<TypeInfo> allTypes(TypeInfo typeInfo) {
@@ -396,13 +387,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         }
 
         @Override
-        public List<TypeInfo> superTypes() {
-            return;
-        }
-
-        @Override
         public List<TypeInfo> allTypesInPrimaryType() {
-            return  packageName != null ? allTypes(typeInfo) : List.of();
+            return packageName != null ? allTypes(typeInfo) : List.of();
         }
 
         @Override
@@ -412,7 +398,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         @Override
         public AnnotationMode annotationMode() {
-            return;
+            return computeAnnotationMode();
         }
 
         @Override
@@ -435,28 +421,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             return null;
         }
 
-
-        // FIXME need a different solution
-        public List<TypeInfo> superTypesExcludingJavaLangObject() {
-            if (Primitives.isJavaLangObject(typeInfo)) return List.of();
-            List<TypeInfo> list = new ArrayList<>();
-            TypeInfo parent;
-            boolean parentIsNotJLO = !Primitives.isJavaLangObject(parentClass);
-            if (parentIsNotJLO) {
-                parent = Objects.requireNonNull(parentClass.typeInfo);
-                list.add(parent);
-                // FIXME this assumes that the parent has been inspected -- not necessarily the case!
-                list.addAll(parent.typeInspection.get().superTypes());
-            }
-
-            interfacesImplemented.forEach(i -> {
-                list.add(i.typeInfo);
-                assert i.typeInfo != null;
-                list.addAll(i.typeInfo.typeInspection.get().superTypes());
-            });
-            List<TypeInfo> immutable = ImmutableList.copyOf(list);
-            return immutable;
-        }
     }
 
 }

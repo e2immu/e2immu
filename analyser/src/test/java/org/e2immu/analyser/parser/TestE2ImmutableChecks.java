@@ -61,11 +61,11 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
             Assert.assertTrue("Got: " + transferValue.getLinkedVariables(), transferValue.getLinkedVariables().isEmpty());
         }
         if ("E2Container1".equals(name) && iteration > 1) {
-            ParameterInfo value = d.methodInfo().methodInspection.get().parameters.get(0);
+            ParameterInfo value = d.methodInfo().methodInspection.get().getParameters().get(0);
             Assert.assertEquals("value", value.name);
             Assert.assertNotNull(value.parameterAnalysis.get().getAssignedToField());
         }
-        if ("E2Container2".equals(name) && 2 == d.methodInfo().methodInspection.get().parameters.size()) {
+        if ("E2Container2".equals(name) && 2 == d.methodInfo().methodInspection.get().getParameters().size()) {
             if (iteration > 2) {
                 FieldInfo parent2 = d.methodInfo().typeInfo.getFieldByName("parent2", true);
                 VariableInfo transferValue = d.getFieldAsVariable(parent2);
@@ -131,23 +131,23 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
     TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
         TypeInfo hashSet = typeContext.getFullyQualified(HashSet.class);
-        MethodInfo constructor1 = hashSet.typeInspection.getPotentiallyRun().constructors.stream()
-                .filter(m -> m.methodInspection.get().parameters.size() == 1)
-                .filter(m -> m.methodInspection.get().parameters.get(0).parameterizedType.typeInfo == collection)
+        MethodInfo constructor1 = hashSet.typeInspection.get().constructors().stream()
+                .filter(m -> m.methodInspection.get().getParameters().size() == 1)
+                .filter(m -> m.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo == collection)
                 .findAny().orElseThrow();
         Assert.assertEquals(MultiLevel.EFFECTIVE, constructor1.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
 
         // result of copyOf is @E2Immutable (and therefore the method is independent)
         TypeInfo immutableSet = typeContext.getFullyQualified(ImmutableSet.class);
-        MethodInfo copyOf = immutableSet.typeInspection.getPotentiallyRun().methods.stream()
-                .filter(m -> "copyOf".equals(m.name) && m.methodInspection.get().parameters.size() == 1)
-                .filter(m -> m.methodInspection.get().parameters.get(0).parameterizedType.typeInfo == collection)
+        MethodInfo copyOf = immutableSet.typeInspection.get().methods().stream()
+                .filter(m -> "copyOf".equals(m.name) && m.methodInspection.get().getParameters().size() == 1)
+                .filter(m -> m.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo == collection)
                 .findAny().orElseThrow();
         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, copyOf.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
 
         TypeInfo set = typeContext.getFullyQualified(Set.class);
         MethodInfo addAll = set.findUniqueMethod("addAll", 1);
-        ParameterInfo addAllP0 = addAll.methodInspection.get().parameters.get(0);
+        ParameterInfo addAllP0 = addAll.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, addAllP0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
     };
 
@@ -169,7 +169,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
 
             // a bit of inspection check... was a temporary bug during a refactoring.
             MethodInfo getMap7 = d.typeInfo().findUniqueMethod("getMap7", 0);
-            Block block = getMap7.methodInspection.get().methodBody.get();
+            Block block = getMap7.methodInspection.get().getMethodBody();
             Assert.assertEquals(3, block.structure.statements.size());
             Statement statement1 = block.structure.statements.get(0);
 

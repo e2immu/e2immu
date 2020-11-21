@@ -193,7 +193,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
 
         if ("size".equals(name) && "Example2".equals(methodInfo.typeInfo.simpleName)) {
             if (iteration > 0) {
-                FieldInfo set2 = methodInfo.typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
+                FieldInfo set2 = methodInfo.typeInfo.typeInspection.get().fields().get(0);
                 Assert.assertEquals("set2", set2.name);
                 VariableInfo tv = d.getFieldAsVariable(set2);
                 Assert.assertEquals(0, tv.getProperty(VariableProperty.MODIFIED));
@@ -203,7 +203,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             }
         }
         if ("Example4".equals(name)) {
-            ParameterInfo in4 = methodInfo.methodInspection.get().parameters.get(0);
+            ParameterInfo in4 = methodInfo.methodInspection.get().getParameters().get(0);
             if (iteration >= 2) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, in4.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.TRUE, in4.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
@@ -219,7 +219,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             }
         }
         if ("Example6".equals(name)) {
-            ParameterInfo in6 = methodInfo.methodInspection.get().parameters.get(0);
+            ParameterInfo in6 = methodInfo.methodInspection.get().getParameters().get(0);
             if (iteration == 0 || iteration == 1) {
                 Assert.assertEquals(Level.DELAY, in6.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
                 // NOTE: an "improvement from FALSE to TRUE" will be made from iteration 1 to iteration 2
@@ -241,17 +241,17 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
 
     TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo set = typeContext.getFullyQualified(Set.class);
-        Assert.assertEquals(AnnotationMode.DEFENSIVE, set.typeInspection.getPotentiallyRun().annotationMode);
-        MethodInfo add = set.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("add")).findFirst().orElseThrow();
+        Assert.assertEquals(AnnotationMode.DEFENSIVE, set.typeInspection.get().annotationMode());
+        MethodInfo add = set.typeInspection.get().methods().stream().filter(mi -> mi.name.equals("add")).findFirst().orElseThrow();
         Assert.assertFalse(add.methodAnalysis.get().getMethodInfo().shallowAnalysis());
         Assert.assertEquals(Level.TRUE, add.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
-        MethodInfo addAll = set.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("addAll")).findFirst().orElseThrow();
+        MethodInfo addAll = set.typeInspection.get().methods().stream().filter(mi -> mi.name.equals("addAll")).findFirst().orElseThrow();
         Assert.assertEquals(Level.TRUE, addAll.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
-        ParameterInfo first = addAll.methodInspection.get().parameters.get(0);
+        ParameterInfo first = addAll.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(Level.FALSE, first.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
-        MethodInfo size = set.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("size")).findFirst().orElseThrow();
+        MethodInfo size = set.typeInspection.get().methods().stream().filter(mi -> mi.name.equals("size")).findFirst().orElseThrow();
         Assert.assertEquals(Level.FALSE, size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
         TypeInfo hashSet = typeContext.getFullyQualified(Set.class);

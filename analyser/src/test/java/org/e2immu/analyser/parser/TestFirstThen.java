@@ -92,15 +92,15 @@ public class TestFirstThen extends CommonTestRunner {
             }
         }
         if ("equals".equals(name)) {
-            ParameterInfo o = d.methodInfo().methodInspection.get().parameters.get(0);
+            ParameterInfo o = d.methodInfo().methodInspection.get().getParameters().get(0);
             Assert.assertEquals(Level.FALSE, o.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
     };
 
     TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo objects = typeContext.getFullyQualified(Objects.class);
-        MethodInfo hash = objects.typeInspection.getPotentiallyRun().methods.stream().filter(m -> m.name.equals("hash")).findFirst().orElseThrow();
-        ParameterInfo objectsParam = hash.methodInspection.get().parameters.get(0);
+        MethodInfo hash = objects.typeInspection.get().methods().stream().filter(m -> m.name.equals("hash")).findFirst().orElseThrow();
+        ParameterInfo objectsParam = hash.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(Level.FALSE, objectsParam.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
     };
 

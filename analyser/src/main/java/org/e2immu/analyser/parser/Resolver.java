@@ -58,7 +58,7 @@ public class Resolver {
      * @return A list of sorted primary types, each with their sub-elements (sub-types, fields, methods) sorted.
      */
 
-    public List<SortedType> sortTypes(Map<TypeInfo, TypeContext> inspectedTypes) {
+    public List<SortedType> sortTypes(InspectionProvider inspectionProvider, Map<TypeInfo, TypeContext> inspectedTypes) {
         DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
         Map<TypeInfo, SortedType> toSortedType = new HashMap<>();
         Set<TypeInfo> stayWithin = inspectedTypes.keySet().stream()
@@ -78,12 +78,12 @@ public class Resolver {
                 throw rte;
             }
         }
-        List<SortedType> result = sortWarnForCircularDependencies(typeGraph).stream().map(toSortedType::get).collect(Collectors.toList());
+        List<SortedType> result = sortWarnForCircularDependencies(inspectionProvider, typeGraph).stream().map(toSortedType::get).collect(Collectors.toList());
         log(RESOLVE, "Result of type sorting: {}", result);
         return result;
     }
 
-    private List<TypeInfo> sortWarnForCircularDependencies(DependencyGraph<TypeInfo> typeGraph) {
+    private List<TypeInfo> sortWarnForCircularDependencies(InspectionProvider inspectionProvider, DependencyGraph<TypeInfo> typeGraph) {
         Map<TypeInfo, Set<TypeInfo>> participatesInCycles = new HashMap<>();
         List<TypeInfo> sorted = typeGraph.sorted(typeInfo -> {
             // typeInfo is part of a cycle, dependencies are:
@@ -98,7 +98,8 @@ public class Resolver {
         });
         for (TypeInfo typeInfo : sorted) {
             Set<TypeInfo> circularDependencies = participatesInCycles.get(typeInfo);
-            TypeResolution typeResolution = new TypeResolution(circularDependencies == null ? Set.of() : circularDependencies);
+            TypeResolution typeResolution = new TypeResolution(circularDependencies == null ? Set.of() : circularDependencies,
+                    superTypesExcludingJavaLangObject(inspectionProvider, typeInfo));
             typeInfo.typeResolution.set(typeResolution);
         }
         return sorted;
@@ -558,5 +559,24 @@ public class Resolver {
             return MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         }
         return MethodResolution.CallStatus.NOT_CALLED_AT_ALL;
+    }
+
+    private static Set<TypeInfo> superTypesExcludingJavaLangObject(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
+        if (Primitives.isJavaLangObject(typeInfo)) return Set.of();
+        List<TypeInfo> list = new ArrayList<>();
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
+        boolean parentIsNotJLO = !Primitives.isJavaLangObject(typeInspection.parentClass());
+        if (parentIsNotJLO) {
+            TypeInfo parent = Objects.requireNonNull(typeInspection.parentClass().typeInfo);
+            list.add(parent);
+            list.addAll(superTypesExcludingJavaLangObject(inspectionProvider, parent));
+        }
+
+        typeInspection.interfacesImplemented().forEach(i -> {
+            list.add(i.typeInfo);
+            assert i.typeInfo != null;
+            list.addAll(superTypesExcludingJavaLangObject(inspectionProvider, i.typeInfo));
+        });
+        return ImmutableSet.copyOf(list);
     }
 }

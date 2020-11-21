@@ -86,17 +86,17 @@ public class TestContainerChecks extends CommonTestRunner {
         }
 
         if ("setStrings2".equals(name)) {
-            ParameterInfo strings2 = d.methodInfo().methodInspection.get().parameters.get(0);
+            ParameterInfo strings2 = d.methodInfo().methodInspection.get().getParameters().get(0);
             Assert.assertEquals("strings2param", strings2.name);
         }
         if ("add2".equals(name) && d.iteration() >= 1) {
-            FieldInfo strings = typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
+            FieldInfo strings = typeInfo.typeInspection.get().fields().get(0);
             Assert.assertEquals("strings2", strings.name);
             VariableInfo transferValue = d.getFieldAsVariable(strings);
             Assert.assertFalse(transferValue.hasProperty(VariableProperty.NOT_NULL));
         }
         if ("add2b".equals(name)) {
-            FieldInfo strings = typeInfo.typeInspection.getPotentiallyRun().fields.get(0);
+            FieldInfo strings = typeInfo.typeInspection.get().fields().get(0);
             Assert.assertEquals("strings2b", strings.name);
             VariableInfo transferValue = d.getFieldAsVariable(strings);
             Assert.assertEquals(Level.DELAY, transferValue.getProperty(VariableProperty.ASSIGNED));
@@ -131,15 +131,15 @@ public class TestContainerChecks extends CommonTestRunner {
 
     TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo collection = typeContext.getFullyQualified(Collection.class);
-        MethodInfo forEach = collection.typeInspection.getPotentiallyRun().methods.stream().filter(m -> "forEach".equals(m.name)).findAny().orElseThrow();
+        MethodInfo forEach = collection.typeInspection.get().methods().stream().filter(m -> "forEach".equals(m.name)).findAny().orElseThrow();
         Assert.assertSame(typeContext.getPrimitives().voidTypeInfo, forEach.returnType().typeInfo);
 
         TypeInfo hashSet = typeContext.getFullyQualified(HashSet.class);
-        MethodInfo constructor1 = hashSet.typeInspection.getPotentiallyRun().constructors.stream()
-                .filter(m -> m.methodInspection.get().parameters.size() == 1)
-                .filter(m -> m.methodInspection.get().parameters.get(0).parameterizedType.typeInfo == collection)
+        MethodInfo constructor1 = hashSet.typeInspection.get().constructors().stream()
+                .filter(m -> m.methodInspection.get().getParameters().size() == 1)
+                .filter(m -> m.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo == collection)
                 .findAny().orElseThrow();
-        ParameterInfo param1Constructor1 = constructor1.methodInspection.get().parameters.get(0);
+        ParameterInfo param1Constructor1 = constructor1.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(Level.FALSE, param1Constructor1.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
     };
 

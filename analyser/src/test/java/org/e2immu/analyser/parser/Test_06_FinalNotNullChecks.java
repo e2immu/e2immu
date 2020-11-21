@@ -75,11 +75,11 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
 
     TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo objects = typeContext.getFullyQualified(Objects.class);
-        MethodInfo requireNonNull = objects.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("requireNonNull") &&
-                1 == mi.methodInspection.get().parameters.size()).findFirst().orElseThrow();
+        MethodInfo requireNonNull = objects.typeInspection.get().methods().stream().filter(mi -> mi.name.equals("requireNonNull") &&
+                1 == mi.methodInspection.get().getParameters().size()).findFirst().orElseThrow();
         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
         Assert.assertEquals(Level.TRUE, requireNonNull.methodAnalysis.get().getProperty(VariableProperty.IDENTITY));
-        ParameterInfo parameterInfo = requireNonNull.methodInspection.get().parameters.get(0);
+        ParameterInfo parameterInfo = requireNonNull.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
     };
 

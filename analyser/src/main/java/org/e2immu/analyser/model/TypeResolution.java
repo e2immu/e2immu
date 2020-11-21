@@ -17,23 +17,15 @@
 
 package org.e2immu.analyser.model;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.parser.Primitives;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
-public class TypeResolution {
+public record TypeResolution(Set<TypeInfo> circularDependencies, Set<TypeInfo> superTypesExcludingJavaLangObject) {
 
-    private final Set<TypeInfo> circularDependencies;
-
-    public TypeResolution(Set<TypeInfo> circularDependencies) {
-        this.circularDependencies = ImmutableSet.copyOf(circularDependencies);
-    }
-
-    public boolean isPartOfDependencyCycle(TypeInfo methodPrimaryType) {
-        return circularDependencies.contains(methodPrimaryType);
-    }
-
-    public Set<TypeInfo> getCircularDependencies() {
-        return circularDependencies;
-    }
 }

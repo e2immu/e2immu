@@ -57,10 +57,10 @@ public class TestSetTwiceSupply extends CommonTestRunner {
         if ("set".equals(name) && "SetTwiceSupply".equals(d.methodInfo().typeInfo.simpleName) && iteration > 0) {
             Assert.assertEquals("null == this.t", d.methodAnalysis().getPrecondition().toString());
         }
-        if ("getPotentiallyRun".equals(name) && d.methodInfo().methodInspection.get().parameters.size() == 0 && iteration > 0) {
+        if ("getPotentiallyRun".equals(name) && d.methodInfo().methodInspection.get().getParameters().size() == 0 && iteration > 0) {
             Assert.assertEquals("not (null == this.t)", d.methodAnalysis().getPrecondition().toString());
         }
-        if ("getPotentiallyRun".equals(name) && d.methodInfo().methodInspection.get().parameters.size() == 1) {
+        if ("getPotentiallyRun".equals(name) && d.methodInfo().methodInspection.get().getParameters().size() == 1) {
             Assert.assertEquals("not (null == this.t)", d.methodAnalysis().getPrecondition().toString());
         }
         if ("setRunnable".equals(name) && iteration > 0) {

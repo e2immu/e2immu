@@ -47,7 +47,7 @@ public class TestFunctionalInterfaceModified2 extends CommonTestRunner {
         TypeInfo consumer = typeContext.getFullyQualified(Consumer.class);
         MethodInfo accept = consumer.findUniqueMethod("accept", 1);
         Assert.assertEquals(Level.TRUE, accept.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
-        ParameterInfo t = accept.methodInspection.get().parameters.get(0);
+        ParameterInfo t = accept.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(Level.TRUE, t.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
     };
 

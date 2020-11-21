@@ -49,8 +49,6 @@ public interface TypeInspection extends Inspection {
     List<TypeParameter> typeParameters();
     List<ParameterizedType> interfacesImplemented();
 
-    List<TypeInfo> superTypes();
-
     // only valid for types that have been defined, and empty when not the primary type
     // it does include the primary type itself
     List<TypeInfo> allTypesInPrimaryType();

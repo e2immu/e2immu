@@ -117,12 +117,12 @@ public class TestSetOnceMap extends CommonTestRunner {
     TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo map = typeContext.getFullyQualified(Map.class);
         MethodInfo put = map.findUniqueMethod("put", 2);
-        for (ParameterInfo parameterInfo : put.methodInspection.get().parameters) {
+        for (ParameterInfo parameterInfo : put.methodInspection.get().getParameters()) {
             Assert.assertEquals(Level.FALSE, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
         TypeInfo objects = typeContext.getFullyQualified(Objects.class);
         MethodInfo rnn = objects.findUniqueMethod("requireNonNull", 1);
-        ParameterInfo p = rnn.methodInspection.get().parameters.get(0);
+        ParameterInfo p = rnn.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(Level.FALSE, p.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
     };
 

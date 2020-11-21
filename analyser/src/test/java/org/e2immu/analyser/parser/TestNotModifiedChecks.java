@@ -93,11 +93,11 @@ public class TestNotModifiedChecks extends CommonTestRunner {
                 Set<Variable> s2links = d.getFieldAsVariable(s2).getLinkedVariables();
                 Assert.assertEquals("[1:set2]", s2links.toString());
             }
-            FieldInfo set = d.methodInfo().typeInfo.typeInspection.get().subTypes.get(0).getFieldByName("set", true);
+            FieldInfo set = d.methodInfo().typeInfo.typeInspection.get().subTypes().get(0).getFieldByName("set", true);
             Assert.assertFalse(d.methodAnalysis().getLastStatement().variables.isSet(set.fullyQualifiedName()));
         }
         if ("addAllOnC".equals(name)) {
-            ParameterInfo c1 = d.methodInfo().methodInspection.get().parameters.get(0);
+            ParameterInfo c1 = d.methodInfo().methodInspection.get().getParameters().get(0);
             Assert.assertEquals("c1", c1.name);
             Assert.assertEquals(Level.TRUE, c1.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
@@ -146,10 +146,10 @@ public class TestNotModifiedChecks extends CommonTestRunner {
     TypeMapVisitor typeMapVisitor = typeContext -> {
         TypeInfo set = typeContext.getFullyQualified(Set.class);
 
-        MethodInfo addAll = set.typeInspection.getPotentiallyRun().methods.stream().filter(mi -> mi.name.equals("addAll")).findFirst().orElseThrow();
+        MethodInfo addAll = set.typeInspection.get().methods().stream().filter(mi -> mi.name.equals("addAll")).findFirst().orElseThrow();
         Assert.assertEquals(Level.TRUE, addAll.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
-        ParameterInfo first = addAll.methodInspection.get().parameters.get(0);
+        ParameterInfo first = addAll.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(Level.FALSE, first.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
     };

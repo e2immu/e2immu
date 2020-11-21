@@ -65,7 +65,7 @@ public class TestTypeInfoStream {
         final TypeInfo map = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_UTIL, "Map");
         final TypeInfo mapEntry = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_UTIL, "Entry");
 
-        logger.fieldInspection.set(new FieldInspection.FieldInspectionBuilder()
+        logger.fieldInspection.set(new FieldInspectionImpl.Builder()
                 .addModifier(FieldModifier.PRIVATE)
                 .addModifier(FieldModifier.STATIC)
                 .addModifier(FieldModifier.FINAL)
@@ -77,10 +77,9 @@ public class TestTypeInfoStream {
         MethodInfo hashMapConstructor = new MethodInfo(hashMap, List.of());
         Expression creationExpression = new NewObject(hashMapConstructor, hashMapParameterizedType, List.of(), null);
         ParameterInfo p0 = new ParameterInfo(hashMapConstructor, typeT, "value", 0);
-        p0.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
-        genericContainerPutMethod.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
+        genericContainerPutMethod.methodInspection.set(new MethodInspectionImpl.Builder(genericContainerPutMethod)
                 .setReturnType(typeT)
-                .addParameter(p0)
+                .addParameterFluently(p0)
                 //.addAnnotation(new AnnotationExpression(jdk.override))
                 //.addExceptionType(new ParameterizedType(jdk.ioException))
                 .setBlock(
@@ -109,29 +108,29 @@ public class TestTypeInfoStream {
                                         )
                                 )
                                 .build())
-                .build(genericContainerPutMethod));
+                .build());
 
         FieldInfo intFieldInContainer = new FieldInfo(primitives.intTypeInfo, "i", containerTypeInfo);
-        intFieldInContainer.fieldInspection.set(new FieldInspection.FieldInspectionBuilder()
-                .setInitializer(new IntConstant(primitives, 27))
+        intFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
+                .setInspectedInitializer(new IntConstant(primitives, 27))
                 .build());
 
         FieldInfo doubleFieldInContainer = new FieldInfo(primitives.doubleTypeInfo, "d", containerTypeInfo);
-        doubleFieldInContainer.fieldInspection.set(new FieldInspection.FieldInspectionBuilder()
+        doubleFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
                 .addModifier(FieldModifier.PRIVATE).build());
 
         FieldInfo stringFieldInContainer = new FieldInfo(primitives.stringTypeInfo, "s", containerTypeInfo);
-        stringFieldInContainer.fieldInspection.set(new FieldInspection.FieldInspectionBuilder()
+        stringFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
                 .addModifier(FieldModifier.FINAL)
-                .setInitializer(new StringConstant(primitives, "first value"))
+                .setInspectedInitializer(new StringConstant(primitives, "first value"))
                 .build());
 
         FieldInfo tInContainer = new FieldInfo(typeT, "t", containerTypeInfo);
-        tInContainer.fieldInspection.set(new FieldInspection.FieldInspectionBuilder()
-                .setInitializer(new NullConstant())
+        tInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
+                .setInspectedInitializer(new NullConstant())
                 .build());
 
-        TypeInspection containerTypeInspection = new TypeInspection.TypeInspectionBuilder()
+        TypeInspection containerTypeInspection = new TypeInspectionImpl.Builder(containerTypeInfo)
                 .setTypeNature(TypeNature.CLASS)
                 .setParentClass(primitives.objectParameterizedType)
                 .setEnclosingType(typeInfo)
@@ -143,41 +142,39 @@ public class TestTypeInfoStream {
                 .addMethod(genericContainerPutMethod)
                 .addTypeParameter(typeParameterT)
                 .addInterfaceImplemented(new ParameterizedType(genericContainer, List.of(typeT)))
-                .build(containerTypeInfo);
+                .build();
         containerTypeInfo.typeInspection.set(containerTypeInspection);
 
         TypeInfo commutative = TypeInfo.createFqnOrPackageNameDotSimpleName(GENERATED_PACKAGE, "Commutative");
         TypeInfo testEquivalent = TypeInfo.createFqnOrPackageNameDotSimpleName(TEST_PACKAGE, "TestEquivalent");
         MethodInfo referenceMethodInfo = new MethodInfo(testEquivalent, "reference", List.of(),
                 primitives.stringParameterizedType, false);
-        referenceMethodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
+        referenceMethodInfo.methodInspection.set(new MethodInspectionImpl.Builder(referenceMethodInfo)
                 .setReturnType(primitives.stringTypeInfo)
                 .setBlock(new Block.BlockBuilder().build())
-                .build(referenceMethodInfo));
-        testEquivalent.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
+                .build());
+        testEquivalent.typeInspection.set(new TypeInspectionImpl.Builder(testEquivalent)
                 .setParentClass(primitives.objectParameterizedType)
                 .setPackageName(TEST_PACKAGE)
                 .setTypeNature(TypeNature.ANNOTATION)
                 .addMethod(referenceMethodInfo)
-                .build(testEquivalent));
+                .build());
 
-        toStringMethodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
+        toStringMethodInfo.methodInspection.set(new MethodInspectionImpl.Builder(toStringMethodInfo)
                 .addModifier(MethodModifier.PUBLIC)
                 .setReturnType(primitives.stringTypeInfo)
-                .build(toStringMethodInfo));
-        emptyConstructor.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
-                .build(emptyConstructor));
+                .build());
+        emptyConstructor.methodInspection.set(new MethodInspectionImpl.Builder(emptyConstructor)
+                .build());
         ParameterInfo x = new ParameterInfo(intSum, primitives.intTypeInfo, "x", 0);
-        x.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
         ParameterInfo y = new ParameterInfo(intSum, primitives.intTypeInfo, "y", 1);
-        y.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
-        intSum.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
+        intSum.methodInspection.set(new MethodInspectionImpl.Builder(intSum)
                 .addModifier(MethodModifier.PUBLIC)
                 .setReturnType(primitives.intTypeInfo)
-                .addParameter(x)
-                .addParameter(y)
-                .addAnnotation(AnnotationExpression.fromAnalyserExpressions(commutative, List.of()))
-                .addAnnotation(AnnotationExpression.fromAnalyserExpressions(testEquivalent, List.of(new StringConstant(primitives, "hello"))))
+                .addParameterFluently(x)
+                .addParameterFluently(y)
+                .addAnnotation(new AnnotationExpressionImpl(commutative, List.of()))
+                .addAnnotation(new AnnotationExpressionImpl(testEquivalent, List.of(new StringConstant(primitives, "hello"))))
                 .setBlock(
                         new Block.BlockBuilder().addStatement(
                                 new ReturnStatement(false,
@@ -185,9 +182,9 @@ public class TestTypeInfoStream {
                                                 new VariableExpression(x), primitives.plusOperatorInt, new VariableExpression(y), BinaryOperator.ADDITIVE_PRECEDENCE
                                         ))
                         ).build())
-                .build(intSum));
+                .build());
 
-        TypeInspection typeInspection = new TypeInspection.TypeInspectionBuilder()
+        TypeInspection typeInspection = new TypeInspectionImpl.Builder(typeInfo)
                 .addTypeModifier(TypeModifier.PUBLIC)
                 .setParentClass(primitives.objectParameterizedType)
                 .setPackageName("org.e2immu.analyser.model")
@@ -196,7 +193,7 @@ public class TestTypeInfoStream {
                 .addConstructor(emptyConstructor)
                 .addMethod(toStringMethodInfo)
                 .addMethod(intSum)
-                .build(typeInfo);
+                .build();
         typeInfo.typeInspection.set(typeInspection);
 
         String stream = typeInfo.stream();

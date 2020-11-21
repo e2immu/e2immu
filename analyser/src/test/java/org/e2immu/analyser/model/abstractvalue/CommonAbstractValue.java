@@ -150,26 +150,25 @@ public abstract class CommonAbstractValue {
 
     static ParameterInfo createParameter(String name) {
         assert PRIMITIVES != null;
-        if (!PRIMITIVES.objectTypeInfo.typeInspection.isSetPotentiallyRun()) {
-            PRIMITIVES.objectTypeInfo.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
+        if (!PRIMITIVES.objectTypeInfo.typeInspection.isSet()) {
+            PRIMITIVES.objectTypeInfo.typeInspection.set(new TypeInspectionImpl.Builder(PRIMITIVES.objectTypeInfo)
                     .setPackageName("java.lang")
                     .setParentClass(PRIMITIVES.objectParameterizedType)
-                    .build(PRIMITIVES.objectTypeInfo));
+                    .build());
         }
         TypeInfo someType = TypeInfo.fromFqn("some.type");
         someType.typeAnalysis.set(new TypeAnalysisImpl.Builder(PRIMITIVES, someType).build());
         MethodInfo methodInfo = new MethodInfo(someType, List.of());
         ParameterInfo pi = new ParameterInfo(methodInfo, PRIMITIVES.stringParameterizedType, name, 0);
-        pi.parameterInspection.set(new ParameterInspection.ParameterInspectionBuilder().build());
         pi.setAnalysis(new ParameterAnalysisImpl.Builder(PRIMITIVES, null, pi));
-        methodInfo.methodInspection.set(new MethodInspection.MethodInspectionBuilder()
-                .addParameter(pi)
-                .build(methodInfo));
-        someType.typeInspection.set(new TypeInspection.TypeInspectionBuilder()
+        methodInfo.methodInspection.set(new MethodInspectionImpl.Builder(methodInfo)
+                .addParameterFluently(pi)
+                .build());
+        someType.typeInspection.set(new TypeInspectionImpl.Builder(someType)
                 .setPackageName("org.e2immu.test")
                 .setParentClass(PRIMITIVES.objectParameterizedType)
                 .addMethod(methodInfo)
-                .build(someType));
+                .build());
         //methodInfo.methodAnalysis.set(new MethodAnalysis(methodInfo));
         return pi;
     }

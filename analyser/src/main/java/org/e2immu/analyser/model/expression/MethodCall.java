@@ -113,7 +113,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             TypeInfo methodPrimaryType = methodInfo.typeInfo.primaryType();
 
             boolean circularCall = methodPrimaryType != currentPrimaryType &&
-                    currentPrimaryType.typeResolution.get().isPartOfDependencyCycle(methodPrimaryType) &&
+                    currentPrimaryType.typeResolution.get().circularDependencies().contains(methodPrimaryType) &&
                     !ShallowTypeAnalyser.IS_FACT_FQN.equals(methodInfo.fullyQualifiedName());
 
             boolean undeclaredFunctionalInterface;
