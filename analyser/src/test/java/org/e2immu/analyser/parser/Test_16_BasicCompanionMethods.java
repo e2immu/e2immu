@@ -80,8 +80,8 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeContext -> {
-            TypeInfo charSequence = typeContext.getFullyQualified(CharSequence.class);
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo charSequence = typeMap.get(CharSequence.class);
             MethodInfo length = charSequence.findUniqueMethod("length", 0);
             int modified = length.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
             Assert.assertEquals(Level.FALSE, modified);
@@ -192,15 +192,15 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
 
     @Test
     public void test3() throws IOException {
-        TypeMapVisitor typeMapVisitor = typeContext -> {
-            TypeInfo string = typeContext.getFullyQualified(String.class);
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo string = typeMap.get(String.class);
             MethodInfo length = string.findUniqueMethod("length", 0);
             Assert.assertTrue(length.methodAnalysis.isSet());
             Assert.assertEquals(Set.of(CompanionMethodName.Action.ASPECT, CompanionMethodName.Action.INVARIANT),
                     length.methodInspection.get().getCompanionMethods().keySet().stream().map(CompanionMethodName::action).collect(Collectors.toSet()));
 
-            TypeInfo intTypeInfo = typeContext.getPrimitives().intTypeInfo;
-            TypeInfo stringBuilder = typeContext.getFullyQualified(StringBuilder.class);
+            TypeInfo intTypeInfo = typeMap.getPrimitives().intTypeInfo;
+            TypeInfo stringBuilder = typeMap.get(StringBuilder.class);
             MethodInfo appendInt = stringBuilder.typeInspection.get().methods().stream().filter(methodInfo -> "append".equals(methodInfo.name) &&
                     intTypeInfo == methodInfo.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
             MethodInfo appendIntCompanion = appendInt.methodInspection.get().getCompanionMethods().values().stream().findFirst().orElseThrow();
@@ -213,7 +213,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                     lengthCall.object instanceof MethodCall toString &&
                     toString.object instanceof TypeExpression integer) {
                 // check we have the same Integer type
-                Assert.assertSame(integer.parameterizedType.typeInfo, typeContext.getPrimitives().integerTypeInfo);
+                Assert.assertSame(integer.parameterizedType.typeInfo, typeMap.getPrimitives().integerTypeInfo);
                 // check the length method
                 Assert.assertSame(lengthCall.methodInfo, length);
             }
@@ -225,7 +225,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                 Assert.assertSame(lengthCall.methodInfo, length);
             } else Assert.fail();
 
-            TypeInfo stringTypeInfo = typeContext.getPrimitives().stringTypeInfo;
+            TypeInfo stringTypeInfo = typeMap.getPrimitives().stringTypeInfo;
             MethodInfo appendStr = stringBuilder.typeInspection.get().methods().stream().filter(methodInfo -> "append".equals(methodInfo.name) &&
                     string == methodInfo.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
             MethodInfo appendStringCompanion = appendStr.methodInspection.get().getCompanionMethods().values().stream().findFirst().orElseThrow();

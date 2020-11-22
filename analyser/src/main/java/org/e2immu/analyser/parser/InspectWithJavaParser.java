@@ -25,7 +25,7 @@ import org.e2immu.analyser.model.TypeInfo;
  * <p>
  * In a similar way, the byte code inspector is known to the TypeMapImpl.Builder, whilst the ByteCodeInspector needs the TypeMapImpl.Builder.
  */
-public interface InspectWIthJavaParser {
+public interface InspectWithJavaParser {
 
     void inspect(TypeInfo typeInfo);
 }

@@ -35,12 +35,12 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
         super(true);
     }
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo set = typeContext.getFullyQualified(Set.class);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo set = typeMap.get(Set.class);
         MethodInfo setOf2 = set.findUniqueMethod("of", 2);
         Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, setOf2.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
 
-        TypeInfo list = typeContext.getFullyQualified(List.class);
+        TypeInfo list = typeMap.get(List.class);
         MethodInfo listOf2 = list.findUniqueMethod("of", 2);
         Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, listOf2.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
     };

@@ -128,9 +128,9 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         }
     };
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
-        TypeInfo hashSet = typeContext.getFullyQualified(HashSet.class);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo collection = typeMap.get(Collection.class);
+        TypeInfo hashSet = typeMap.get(HashSet.class);
         MethodInfo constructor1 = hashSet.typeInspection.get().constructors().stream()
                 .filter(m -> m.methodInspection.get().getParameters().size() == 1)
                 .filter(m -> m.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo == collection)
@@ -138,14 +138,14 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
         Assert.assertEquals(MultiLevel.EFFECTIVE, constructor1.methodAnalysis.get().getProperty(VariableProperty.INDEPENDENT));
 
         // result of copyOf is @E2Immutable (and therefore the method is independent)
-        TypeInfo immutableSet = typeContext.getFullyQualified(ImmutableSet.class);
+        TypeInfo immutableSet = typeMap.get(ImmutableSet.class);
         MethodInfo copyOf = immutableSet.typeInspection.get().methods().stream()
                 .filter(m -> "copyOf".equals(m.name) && m.methodInspection.get().getParameters().size() == 1)
                 .filter(m -> m.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo == collection)
                 .findAny().orElseThrow();
         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, copyOf.methodAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
 
-        TypeInfo set = typeContext.getFullyQualified(Set.class);
+        TypeInfo set = typeMap.get(Set.class);
         MethodInfo addAll = set.findUniqueMethod("addAll", 1);
         ParameterInfo addAllP0 = addAll.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, addAllP0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));

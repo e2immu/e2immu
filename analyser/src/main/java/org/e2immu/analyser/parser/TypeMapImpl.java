@@ -27,9 +27,6 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
-import static org.e2immu.analyser.util.Logger.log;
-
 public class TypeMapImpl implements TypeMap {
 
     private final Trie<TypeInfo> trie;
@@ -39,6 +36,11 @@ public class TypeMapImpl implements TypeMap {
         this.primitives = primitives;
         this.trie = trie;
         assert trie.isFrozen();
+    }
+
+    @Override
+    public TypeInfo get(Class<?> clazz) {
+        return get(clazz.getCanonicalName());
     }
 
     @Override
@@ -67,12 +69,7 @@ public class TypeMapImpl implements TypeMap {
         trie.visitLeaves(prefix, consumer);
     }
 
-    @Override
-    public boolean containsPrefix(String fullyQualifiedName) {
-        return containsPrefix(trie, fullyQualifiedName);
-    }
-
-    static boolean containsPrefix(Trie<TypeInfo> trie, String fullyQualifiedName) {
+    public static boolean containsPrefix(Trie<TypeInfo> trie, String fullyQualifiedName) {
         String[] split = fullyQualifiedName.split("\\.");
         // we believe it is going to be a lot faster if we go from 1 to max length rather than the other way round
         // (there'll be more hits outside the source than inside the source dir)
@@ -114,7 +111,7 @@ public class TypeMapImpl implements TypeMap {
         private final Map<MethodInfo, MethodInspectionImpl.Builder> methodInspections = new HashMap<>();
 
         private ByteCodeInspector byteCodeInspector;
-        private InspectWIthJavaParser inspectWithJavaParser;
+        private InspectWithJavaParser inspectWithJavaParser;
 
         public TypeMapImpl build() {
             trie.freeze();
@@ -151,6 +148,11 @@ public class TypeMapImpl implements TypeMap {
         }
 
         @Override
+        public TypeInfo get(Class<?> clazz) {
+            return get(clazz.getCanonicalName());
+        }
+
+        @Override
         public TypeInfo get(String fullyQualifiedName) {
             return TypeMapImpl.get(trie, fullyQualifiedName);
         }
@@ -168,11 +170,6 @@ public class TypeMapImpl implements TypeMap {
         @Override
         public void visitLeaves(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer) {
             trie.visitLeaves(prefix, consumer);
-        }
-
-        @Override
-        public boolean containsPrefix(String fullyQualifiedName) {
-            return TypeMapImpl.containsPrefix(trie, fullyQualifiedName);
         }
 
         @Override
@@ -221,19 +218,11 @@ public class TypeMapImpl implements TypeMap {
             byteCodeInspector.inspectFromPath(pathInClassPath);
         }
 
-        private TypeInfo inspectWithByteCodeInspector(String fqn, TypeContext typeContext) {
-            String pathInClassPath = byteCodeInspector.getClassPath().fqnToPath(fqn, ".class");
-            byteCodeInspector.inspectFromPath(pathInClassPath);
-            TypeInfo typeInfo = typeContext.getFullyQualified(fqn, true);
-            log(INSPECT, "Add to type context: {}", typeInfo.fullyQualifiedName);
-            return typeInfo;
-        }
-
         public void setByteCodeInspector(ByteCodeInspector byteCodeInspector) {
             this.byteCodeInspector = byteCodeInspector;
         }
 
-        public void setInspectWithJavaParser(InspectWIthJavaParser inspectWithJavaParser) {
+        public void setInspectWithJavaParser(InspectWithJavaParser inspectWithJavaParser) {
             this.inspectWithJavaParser = inspectWithJavaParser;
         }
     }

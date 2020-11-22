@@ -57,8 +57,7 @@ public class TestInspectAnnotatedAPIs {
         URL url = new URL("file:src/main/resources/annotatedAPIs/java.util.annotated_api");
         Resources classPath = new Resources();
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(classPath, null, globalTypeContext, e2ImmuAnnotationExpressions);
-        InspectAnnotatedAPIs inspectAnnotatedAPIs = new InspectAnnotatedAPIs(globalTypeContext, byteCodeInspector);
-        //inspectAnnotatedAPIs.inspectResolvePossiblyMerge()
+        //ParseAndInspect parseAndInspect
         // FIXME update test
         AtomicInteger counter = new AtomicInteger(0);
         globalTypeContext.typeMapBuilder.visit(new String[0], (s, types) -> {
@@ -85,7 +84,7 @@ public class TestInspectAnnotatedAPIs {
                 .build();
         URL url = new URL("file:src/main/resources/annotatedAPIs/java.util.annotated_api");
         Parser parser = new Parser(configuration);
-        parser.runAnnotatedAPIs(List.of(url));
+        //parser.runAnnotatedAPIs(List.of(url));
         TypeInfo optional = parser.getTypeContext().typeMapBuilder.get("java.util.Optional");
         Assert.assertNotNull(optional);
         Assert.assertEquals(Level.TRUE, MultiLevel.value(optional.typeAnalysis.get().getProperty(VariableProperty.CONTAINER), 0));

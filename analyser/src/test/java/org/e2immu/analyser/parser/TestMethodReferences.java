@@ -17,8 +17,8 @@ public class TestMethodReferences extends CommonTestRunner {
         super(false);
     }
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo collection = typeMap.get(Collection.class);
         Assert.assertNotNull(collection);
         MethodInfo stream = collection.typeInspection.get().methods().stream().filter(m -> m.name.equals("stream")).findAny().orElseThrow();
 

@@ -21,17 +21,16 @@ package org.e2immu.analyser.parser;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
-import com.github.javaparser.ast.body.TypeDeclaration;
-import org.e2immu.analyser.bytecode.ByteCodeInspector;
+import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspectionImpl;
 import org.e2immu.analyser.util.Resources;
-import org.e2immu.annotation.NotNull;
+import org.e2immu.analyser.util.Trie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
@@ -39,23 +38,14 @@ import static org.e2immu.analyser.util.Logger.log;
 public class ParseAndInspect {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParseAndInspect.class);
 
-    @NotNull
-    private final ByteCodeInspector byteCodeInspector;
-    @NotNull
-    private final TypeStore sourceTypeStore;
-    private final boolean hasBeenDefined;
+    private final TypeMapImpl.Builder typeMapBuilder;
+    private final Trie<TypeInfo> sourceTypes;
+    private final Resources classPath;
 
-    /**
-     * @param byteCodeInspector required to inspect dependencies
-     * @param hasBeenDefined    true for normal Java source code that has bodies; false for annotated API files
-     * @param sourceTypeStore   required, to deal with asterisk imports in the sources
-     */
-    public ParseAndInspect(@NotNull ByteCodeInspector byteCodeInspector,
-                           boolean hasBeenDefined,
-                           @NotNull TypeStore sourceTypeStore) {
-        this.byteCodeInspector = Objects.requireNonNull(byteCodeInspector);
-        this.hasBeenDefined = hasBeenDefined;
-        this.sourceTypeStore = Objects.requireNonNull(sourceTypeStore);
+    public ParseAndInspect(Resources classPath, TypeMapImpl.Builder typeMapBuilder, Trie<TypeInfo> sourceTypes) {
+        this.typeMapBuilder = typeMapBuilder;
+        this.sourceTypes = sourceTypes;
+        this.classPath = classPath;
     }
 
     // NOTE: there is a bit of optimization we can do if we parse/analyse per package
@@ -67,7 +57,7 @@ public class ParseAndInspect {
      * @param sourceCode        the source code to parse
      * @return the list of primary types found in the source code
      */
-    public List<TypeInfo> phase1ParseAndInspect(TypeContext typeContextOfFile, String fileName, String sourceCode) {
+    public List<TypeInfo> run(TypeContext typeContextOfFile, String fileName, String sourceCode) {
         log(INSPECT, "Parsing compilation unit {}", fileName);
 
         CompilationUnit compilationUnit = StaticJavaParser.parse(sourceCode);
@@ -80,7 +70,7 @@ public class ParseAndInspect {
                 .orElseThrow(() -> new UnsupportedOperationException("Expect package declaration in file " + fileName));
 
         // add all types from the current package that we can find in the source path
-        sourceTypeStore.visitLeaves(packageName.split("\\."), (expansion, typeInfoList) -> {
+        sourceTypes.visitLeaves(packageName.split("\\."), (expansion, typeInfoList) -> {
             for (TypeInfo typeInfo : typeInfoList) {
                 if (typeInfo.fullyQualifiedName.equals(packageName + "." + typeInfo.simpleName)) {
                     typeContextOfFile.addToContext(typeInfo);
@@ -89,20 +79,13 @@ public class ParseAndInspect {
         });
 
         // add all types from the current package that we can find in the class path, but ONLY
-        // if it doesn't exist already in the source path!
+        // if it doesn't exist already in the source path! (we don't overwrite, and don't create if not needed)
 
-        // TODO: we should not add them AND inspect them; only add them with a delayed inspection runnable!
-        Resources classPath = byteCodeInspector.getClassPath();
         classPath.expandLeaves(packageName, ".class", (expansion, urls) -> {
             if (!expansion[expansion.length - 1].contains("$")) {
                 String fqn = fqnOfClassFile(packageName, expansion);
-                TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.get(fqn);
-                if (typeInfo == null) {
-                    TypeInfo newTypeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(fqn);
-                    log(INSPECT, "Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
-                    newTypeInfo.typeInspection.setRunnable(() -> inspectWithByteCodeInspector(newTypeInfo));
-                    typeContextOfFile.addToContext(newTypeInfo);
-                }
+                TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(fqn, TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION);
+                typeContextOfFile.addToContext(typeInfo, false);
             }
         });
 
@@ -111,14 +94,14 @@ public class ParseAndInspect {
             if (importDeclaration.isStatic()) {
                 // fields and methods; important: we do NOT add the type itself to the type context
                 if (importDeclaration.isAsterisk()) {
-                    TypeInfo typeInfo = importType(fullyQualified, typeContextOfFile);
+                    TypeInfo typeInfo = importType(fullyQualified);
                     log(INSPECT, "Add import static wildcard {}", typeInfo.fullyQualifiedName);
                     typeContextOfFile.addImportStaticWildcard(typeInfo);
                 } else {
                     int dot = fullyQualified.lastIndexOf('.');
                     String typeName = fullyQualified.substring(0, dot);
                     String member = fullyQualified.substring(dot + 1);
-                    TypeInfo typeInfo = importType(typeName, typeContextOfFile);
+                    TypeInfo typeInfo = importType(typeName);
                     log(INSPECT, "Add import static member {} on class {}", typeName, member);
                     typeContextOfFile.addImportStatic(typeInfo, member);
                 }
@@ -128,7 +111,7 @@ public class ParseAndInspect {
                     // lower priority names (so allowOverwrite = false
                     log(INSPECT, "Need to parse folder {}", fullyQualified);
                     if (!fullyQualified.equals(packageName)) { // would be our own package; they are already there
-                        sourceTypeStore.visit(fullyQualified.split("\\."), (expansion, typeInfoList) -> {
+                        sourceTypes.visit(fullyQualified.split("\\."), (expansion, typeInfoList) -> {
                             for (TypeInfo typeInfo : typeInfoList) {
                                 if (typeInfo.fullyQualifiedName.equals(fullyQualified + "." + typeInfo.simpleName)) {
                                     typeContextOfFile.addToContext(typeInfo, false);
@@ -140,9 +123,9 @@ public class ParseAndInspect {
                                 String fqn = fqnOfClassFile(fullyQualified, expansion);
                                 TypeInfo typeInfo = typeContextOfFile.getFullyQualified(fqn, false);
                                 if (typeInfo == null) {
-                                    TypeInfo newTypeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(fqn);
+                                    TypeInfo newTypeInfo = typeContextOfFile.typeMapBuilder
+                                            .getOrCreate(fqn, TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION);
                                     log(INSPECT, "Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
-                                    newTypeInfo.typeInspection.setRunnable(() -> inspectWithByteCodeInspector(newTypeInfo));
                                     typeContextOfFile.addToContext(newTypeInfo, false);
                                 } else {
                                     typeContextOfFile.addToContext(typeInfo, false);
@@ -153,73 +136,43 @@ public class ParseAndInspect {
                 } else {
                     // higher priority names, allowOverwrite = true
                     log(INSPECT, "Import of {}", fullyQualified);
-                    TypeInfo typeInfo = importType(fullyQualified, typeContextOfFile);
+                    TypeInfo typeInfo = importType(fullyQualified);
                     typeContextOfFile.addToContext(typeInfo, true);
                 }
             }
         }
-        typeContextOfFile.typeMapBuilder.visitAllNewlyCreatedTypes(typeInfo -> {
-            if (!typeInfo.typeInspection.hasRunnable() &&
-                    !typeInfo.typeInspection.isSet() &&
-                    // this is to check that we're not talking about a subtype of a source type
-                    !sourceTypeStore.containsPrefix(typeInfo.fullyQualifiedName)) {
-                log(INSPECT, "Registering inspection handler for {}", typeInfo.fullyQualifiedName);
-                typeInfo.typeInspection.setRunnable(() -> inspectWithByteCodeInspector(typeInfo));
-            }
-        });
+
+        // this list in current Java will only contain one element, UNLESS we're processing
+        // and AnnotatedAPI file with $ types
+
+        List<TypeInfo> allPrimaryTypesInspected = new ArrayList<>();
 
         // we first add the types to the type context, so that they're all known
         compilationUnit.getTypes().forEach(td -> {
             String name = td.getName().asString();
-            TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(packageName + "." + name);
+            TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(packageName + "." + name,
+                    TypeInspectionImpl.TRIGGER_JAVA_PARSER);
             typeContextOfFile.addToContext(typeInfo);
-            typeInfo.recursivelyAddToTypeStore(true, typeContextOfFile.typeMapBuilder, td);
+            TypeInspector typeInspector = new TypeInspector(typeMapBuilder, typeInfo);
+            typeInspector.recursivelyAddToTypeStore(typeMapBuilder, td);
+            ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInfo,
+                    new TypeContext(packageName, typeContextOfFile));
+            try {
+                List<TypeInfo> primaryTypes = typeInspector.inspect(false, null, td, expressionContext);
+                allPrimaryTypesInspected.addAll(primaryTypes);
+            } catch (RuntimeException rte) {
+                LOGGER.error("Caught runtime exception inspecting type {}", typeInfo.fullyQualifiedName);
+                throw rte;
+            }
         });
 
-        // only then do we start inspection
-        List<TypeInfo> allPrimaryTypesInspected = new ArrayList<>();
-        for (TypeDeclaration<?> td : compilationUnit.getTypes()) {
-            String name = td.getName().asString();
-            TypeInfo primaryType = typeContextOfFile.typeMapBuilder.get(packageName + "." + name);
-            // because we have a single Primitives.PRIMITIVES object, it is possible that java.lang.Object and java.lang.String
-            // have already been inspected (AnnotationType as well)
-            if (!primaryType.typeInspection.isSet()) {
-                try {
-                    ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(primaryType,
-                            new TypeContext(packageName, typeContextOfFile));
-                    List<TypeInfo> primaryTypes = primaryType.inspect(hasBeenDefined, false, null, td, expressionContext);
-                    allPrimaryTypesInspected.addAll(primaryTypes);
-                } catch (RuntimeException rte) {
-                    LOGGER.error("Caught runtime exception inspecting type {}", primaryType.fullyQualifiedName);
-                    throw rte;
-                }
-            } else {
-                allPrimaryTypesInspected.add(primaryType);
-            }
-        }
         return allPrimaryTypesInspected;
     }
 
-    private TypeInfo importType(String fqn, TypeContext typeContext) {
-        TypeInfo typeInfo = typeContext.getFullyQualified(fqn, false);
-        if (typeInfo == null || !typeInfo.typeInspection.isSet() && !sourceTypeStore.containsPrefix(fqn)) {
-            return inspectWithByteCodeInspector(fqn, typeContext);
-        }
-        return typeInfo;
-    }
-
-    // inspect from class path
-    private void inspectWithByteCodeInspector(TypeInfo typeInfo) {
-        String pathInClassPath = byteCodeInspector.getClassPath().fqnToPath(typeInfo.fullyQualifiedName, ".class");
-        byteCodeInspector.inspectFromPath(pathInClassPath);
-    }
-
-    private TypeInfo inspectWithByteCodeInspector(String fqn, TypeContext typeContext) {
-        String pathInClassPath = byteCodeInspector.getClassPath().fqnToPath(fqn, ".class");
-        byteCodeInspector.inspectFromPath(pathInClassPath);
-        TypeInfo typeInfo = typeContext.getFullyQualified(fqn, true);
-        log(INSPECT, "Add to type context: {}", typeInfo.fullyQualifiedName);
-        return typeInfo;
+    private TypeInfo importType(String fqn) {
+        boolean source = TypeMapImpl.containsPrefix(sourceTypes, fqn);
+        int inspectionState = source ? TypeInspectionImpl.TRIGGER_JAVA_PARSER: TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION;
+        return typeMapBuilder.getOrCreate(fqn, inspectionState);
     }
 
     static String fqnOfClassFile(String prefix, String[] suffixes) {

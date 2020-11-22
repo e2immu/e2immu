@@ -25,6 +25,7 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspectionImpl;
 import org.e2immu.analyser.util.Resources;
+import org.e2immu.analyser.util.Trie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,11 +60,14 @@ public class Input {
     private final ByteCodeInspector byteCodeInspector;
     private final Map<TypeInfo, URL> annotatedAPIs;
     private final Map<TypeInfo, URL> sourceURLs;
+    private final Trie<TypeInfo> sourceTypes = new Trie<>(); // for * imports
+    private final Trie<TypeInfo> annotatedAPITypes = new Trie<>(); // for * imports
+    private final Resources classPath;
 
     public Input(Configuration configuration) throws IOException {
         this.configuration = configuration;
         loadPrimitivesIntoGlobalTypeContext();
-        Resources classPath = assemblePath(true, "Classpath", configuration.inputConfiguration.classPathParts);
+        classPath = assemblePath(true, "Classpath", configuration.inputConfiguration.classPathParts);
         AnnotationStore annotationStore = new AnnotationXmlReader(classPath);
         LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
         byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext, e2ImmuAnnotationExpressions);
@@ -74,13 +78,13 @@ public class Input {
         preload(classPath, "java.util.function"); // they are needed for functional interfaces that lurk in the background
 
         Resources sourcePath = assemblePath(false, "Source path", configuration.inputConfiguration.sources);
-        sourceURLs = computeSourceURLs(sourcePath, configuration.inputConfiguration.restrictSourceToPackages, "source path");
+        sourceURLs = computeSourceURLs(sourcePath, configuration.inputConfiguration.restrictSourceToPackages, sourceTypes, "source path");
 
         Resources annotatedAPIsPath = assemblePath(false, "Annotated APIs path", configuration.inputConfiguration.sourcesAnnotatedAPIs);
-        annotatedAPIs = computeSourceURLs(annotatedAPIsPath, List.of(), "annotated API path");
+        annotatedAPIs = computeSourceURLs(annotatedAPIsPath, List.of(), annotatedAPITypes, "annotated API path");
     }
 
-    private Map<TypeInfo, URL> computeSourceURLs(Resources sourcePath, List<String> restrictions, String what) {
+    private Map<TypeInfo, URL> computeSourceURLs(Resources sourcePath, List<String> restrictions, Trie<TypeInfo> trie, String what) {
         Map<TypeInfo, URL> sourceURLs = new HashMap<>();
         AtomicInteger ignored = new AtomicInteger();
         sourcePath.visit(new String[0], (parts, list) -> {
@@ -94,6 +98,7 @@ public class Input {
                         globalTypeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.TRIGGER_JAVA_PARSER);
                         URL url = list.get(0);
                         sourceURLs.put(typeInfo, url);
+                        trie.add(parts, typeInfo);
                     } else {
                         ignored.incrementAndGet();
                     }
@@ -101,6 +106,7 @@ public class Input {
             }
         });
         LOGGER.info("Found {} .java files in {}, skipped {}", sourceURLs.size(), what, ignored);
+        trie.freeze();
         return sourceURLs;
     }
 
@@ -197,6 +203,18 @@ public class Input {
             }
         }
         return resources;
+    }
+
+    public Resources getClassPath() {
+        return classPath;
+    }
+
+    public Trie<TypeInfo> getSourceTypes() {
+        return sourceTypes;
+    }
+
+    public Trie<TypeInfo> getAnnotatedAPITypes() {
+        return annotatedAPITypes;
     }
 
     public Map<TypeInfo, URL> getAnnotatedAPIs() {

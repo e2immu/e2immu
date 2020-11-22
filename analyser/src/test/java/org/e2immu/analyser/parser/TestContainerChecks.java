@@ -129,12 +129,12 @@ public class TestContainerChecks extends CommonTestRunner {
         }
     };
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo collection = typeMap.get(Collection.class);
         MethodInfo forEach = collection.typeInspection.get().methods().stream().filter(m -> "forEach".equals(m.name)).findAny().orElseThrow();
-        Assert.assertSame(typeContext.getPrimitives().voidTypeInfo, forEach.returnType().typeInfo);
+        Assert.assertSame(typeMap.getPrimitives().voidTypeInfo, forEach.returnType().typeInfo);
 
-        TypeInfo hashSet = typeContext.getFullyQualified(HashSet.class);
+        TypeInfo hashSet = typeMap.get(HashSet.class);
         MethodInfo constructor1 = hashSet.typeInspection.get().constructors().stream()
                 .filter(m -> m.methodInspection.get().getParameters().size() == 1)
                 .filter(m -> m.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo == collection)

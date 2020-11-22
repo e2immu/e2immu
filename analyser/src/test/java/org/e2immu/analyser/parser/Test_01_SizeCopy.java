@@ -95,8 +95,8 @@ public class Test_01_SizeCopy extends CommonTestRunner {
         }
     };
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo collection = typeMap.get(Collection.class);
         Assert.assertSame(AnnotationMode.DEFENSIVE, collection.typeInspection.get().annotationMode());
 
         Assert.assertTrue(collection.shallowAnalysis());
@@ -119,7 +119,7 @@ public class Test_01_SizeCopy extends CommonTestRunner {
 
 
         // looking at java.util.Set.addAll(), check inheritance
-        TypeInfo set = typeContext.getFullyQualified(Set.class);
+        TypeInfo set = typeMap.get(Set.class);
         MethodInfo addAllSet = set.findUniqueMethod("addAll", 1);
 
         Set<MethodAnalysis> overrides = addAllSet.methodAnalysis.get().getOverrides();

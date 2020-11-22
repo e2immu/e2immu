@@ -178,8 +178,8 @@ public class TestObjectFlowFreezableSet extends CommonTestRunner {
         }
     };
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo collection = typeContext.getFullyQualified(Collection.class);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo collection = typeMap.get(Collection.class);
         MethodInfo stream = collection.findUniqueMethod("stream", 0);
         Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, stream.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
     };

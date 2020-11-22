@@ -170,14 +170,14 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
         }
     };
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo system = typeContext.getFullyQualified(System.class);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo system = typeMap.get(System.class);
         FieldInfo out = system.getFieldByName("out", true);
         int notNull = out.fieldAnalysis.get().getProperty(VariableProperty.NOT_NULL);
         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
         Assert.assertEquals(Level.TRUE, out.fieldAnalysis.get().getProperty(VariableProperty.IGNORE_MODIFICATIONS));
 
-        TypeInfo myself = typeContext.getFullyQualified(UnusedLocalVariableChecks.class);
+        TypeInfo myself = typeMap.get(UnusedLocalVariableChecks.class);
         MethodInfo constructor = myself.findConstructor(0);
         Assert.assertEquals(MethodResolution.CallStatus.PART_OF_CONSTRUCTION, constructor.methodResolution.get().partOfConstruction());
         MethodInfo method1 = myself.findUniqueMethod("method1", 1);

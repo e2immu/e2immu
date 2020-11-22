@@ -13,8 +13,8 @@ public class Test_15_InlineMethods extends CommonTestRunner {
         super(false);
     }
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        MethodInfo unaryMinusInt = typeContext.getPrimitives().unaryMinusOperatorInt;
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        MethodInfo unaryMinusInt = typeMap.getPrimitives().unaryMinusOperatorInt;
         Assert.assertEquals("int.-(int)", unaryMinusInt.fullyQualifiedName());
     };
 

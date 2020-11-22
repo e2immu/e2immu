@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspectionImpl;
+import org.e2immu.analyser.util.Trie;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -95,7 +96,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
         TypeInfo methodOverloadOrig = parser.getTypeContext().typeMapBuilder.getOrCreate(
                 "org.e2immu.analyser.testexample.MethodOverload", TypeInspectionImpl.TRIGGER_JAVA_PARSER);
         URL url = new File(SRC_TEST_JAVA_ORG_E2IMMU_ANALYSER + "testexample/MethodOverload.java").toURI().toURL();
-        List<SortedType> types = parser.parseJavaFiles(Map.of(methodOverloadOrig, url));
+        List<SortedType> types = parser.inspectAndResolve(Map.of(methodOverloadOrig, url), new Trie<>());
         LOGGER.info("Have {} types", types.size());
 
         // method: hashCode

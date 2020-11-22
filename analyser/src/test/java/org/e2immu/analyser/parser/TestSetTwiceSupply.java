@@ -68,8 +68,8 @@ public class TestSetTwiceSupply extends CommonTestRunner {
         }
     };
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo runnable = typeContext.getFullyQualified(Runnable.class);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo runnable = typeMap.get(Runnable.class);
         Assert.assertTrue(runnable.isFunctionalInterface());
     };
 

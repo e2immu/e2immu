@@ -72,8 +72,8 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
         }
     };
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo list = typeContext.getFullyQualified(List.class);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo list = typeMap.get(List.class);
         Assert.assertSame(AnnotationMode.DEFENSIVE, list.typeInspection.get().annotationMode());
         MethodInfo size = list.findUniqueMethod("size", 0);
         Assert.assertEquals(Level.FALSE, size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));

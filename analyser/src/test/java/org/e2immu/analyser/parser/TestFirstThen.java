@@ -97,8 +97,8 @@ public class TestFirstThen extends CommonTestRunner {
         }
     };
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo objects = typeContext.getFullyQualified(Objects.class);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo objects = typeMap.get(Objects.class);
         MethodInfo hash = objects.typeInspection.get().methods().stream().filter(m -> m.name.equals("hash")).findFirst().orElseThrow();
         ParameterInfo objectsParam = hash.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(Level.FALSE, objectsParam.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));

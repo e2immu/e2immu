@@ -43,8 +43,8 @@ public class TestFunctionalInterfaceModified2 extends CommonTestRunner {
         }
     };
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo consumer = typeContext.getFullyQualified(Consumer.class);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo consumer = typeMap.get(Consumer.class);
         MethodInfo accept = consumer.findUniqueMethod("accept", 1);
         Assert.assertEquals(Level.TRUE, accept.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
         ParameterInfo t = accept.methodInspection.get().getParameters().get(0);

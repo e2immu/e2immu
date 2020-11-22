@@ -239,8 +239,8 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         }
     };
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo set = typeContext.getFullyQualified(Set.class);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo set = typeMap.get(Set.class);
         Assert.assertEquals(AnnotationMode.DEFENSIVE, set.typeInspection.get().annotationMode());
         MethodInfo add = set.typeInspection.get().methods().stream().filter(mi -> mi.name.equals("add")).findFirst().orElseThrow();
         Assert.assertFalse(add.methodAnalysis.get().getMethodInfo().shallowAnalysis());
@@ -254,7 +254,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         MethodInfo size = set.typeInspection.get().methods().stream().filter(mi -> mi.name.equals("size")).findFirst().orElseThrow();
         Assert.assertEquals(Level.FALSE, size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
-        TypeInfo hashSet = typeContext.getFullyQualified(Set.class);
+        TypeInfo hashSet = typeMap.get(Set.class);
         Assert.assertEquals(Level.TRUE, hashSet.typeAnalysis.get().getProperty(VariableProperty.CONTAINER));
     };
 

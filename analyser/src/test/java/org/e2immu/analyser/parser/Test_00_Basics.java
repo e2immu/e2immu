@@ -81,9 +81,9 @@ public class Test_00_Basics extends CommonTestRunner {
                 ", statement id " + d.statementId());
     };
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
+    TypeMapVisitor typeMapVisitor = typeMap -> {
         // check that the XML annotations have been read properly, and copied into the correct place
-        TypeInfo stringType = typeContext.getPrimitives().stringTypeInfo;
+        TypeInfo stringType = typeMap.getPrimitives().stringTypeInfo;
         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
     };
 

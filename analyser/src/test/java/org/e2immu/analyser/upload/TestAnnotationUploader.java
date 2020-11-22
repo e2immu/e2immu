@@ -62,7 +62,7 @@ public class TestAnnotationUploader {
         parser.run();
         TypeContext typeContext = parser.getTypeContext();
 
-        TypeInfo basics = typeContext.getFullyQualified(Basics.class);
+        TypeInfo basics = typeContext.typeMapBuilder.get(Basics.class);
         UpgradableBooleanMap<TypeInfo> typesReferredTo = basics.typesReferenced();
         Assert.assertTrue(typesReferredTo.get(typeContext.getPrimitives().stringTypeInfo));
 

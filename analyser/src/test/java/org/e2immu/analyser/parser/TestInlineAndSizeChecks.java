@@ -34,9 +34,9 @@ public class TestInlineAndSizeChecks extends CommonTestRunner {
         }
     };
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo stringTypeInfo = typeContext.getFullyQualified(String.class);
-        Assert.assertSame(stringTypeInfo, typeContext.getPrimitives().stringTypeInfo);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo stringTypeInfo = typeMap.get(String.class);
+        Assert.assertSame(stringTypeInfo, typeMap.getPrimitives().stringTypeInfo);
         MethodInfo length = stringTypeInfo.findUniqueMethod("length", 0);
         int modified = length.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
         Assert.assertEquals(0, modified);

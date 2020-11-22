@@ -143,8 +143,8 @@ public class TestNotModifiedChecks extends CommonTestRunner {
         }
     };
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo set = typeContext.getFullyQualified(Set.class);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo set = typeMap.get(Set.class);
 
         MethodInfo addAll = set.typeInspection.get().methods().stream().filter(mi -> mi.name.equals("addAll")).findFirst().orElseThrow();
         Assert.assertEquals(Level.TRUE, addAll.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));

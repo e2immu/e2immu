@@ -114,13 +114,13 @@ public class TestSetOnceMap extends CommonTestRunner {
     // TODO: Accepting one error now: we have not inferred @Size(min = 1) for put (modifying method)
     // This is work for later
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo map = typeContext.getFullyQualified(Map.class);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo map = typeMap.get(Map.class);
         MethodInfo put = map.findUniqueMethod("put", 2);
         for (ParameterInfo parameterInfo : put.methodInspection.get().getParameters()) {
             Assert.assertEquals(Level.FALSE, parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
         }
-        TypeInfo objects = typeContext.getFullyQualified(Objects.class);
+        TypeInfo objects = typeMap.get(Objects.class);
         MethodInfo rnn = objects.findUniqueMethod("requireNonNull", 1);
         ParameterInfo p = rnn.methodInspection.get().getParameters().get(0);
         Assert.assertEquals(Level.FALSE, p.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));

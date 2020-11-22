@@ -17,8 +17,8 @@ public class TestMethodMustBeStatic extends CommonTestRunner {
         super(false);
     }
 
-    TypeMapVisitor typeMapVisitor = typeContext -> {
-        TypeInfo stream = typeContext.getFullyQualified(Stream.class);
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo stream = typeMap.get(Stream.class);
         Assert.assertNotNull(stream);
         MethodInfo of = stream.typeInspection.get().methods().stream().filter(m -> m.name.equals("of")).findAny().orElseThrow();
         Assert.assertEquals(MultiLevel.NULLABLE, of.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));

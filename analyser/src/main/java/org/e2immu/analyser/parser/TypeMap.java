@@ -28,6 +28,8 @@ import java.util.function.Consumer;
 
 public interface TypeMap extends  InspectionProvider {
 
+    TypeInfo get(Class<?> clazz);
+
     TypeInfo get(String fullyQualifiedName);
 
     boolean isPackagePrefix(PackagePrefix packagePrefix);
@@ -35,7 +37,5 @@ public interface TypeMap extends  InspectionProvider {
     void visit(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer);
 
     void visitLeaves(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer);
-
-    boolean containsPrefix(String fullyQualifiedName);
 
 }
