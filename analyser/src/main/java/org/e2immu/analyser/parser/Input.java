@@ -66,12 +66,12 @@ public class Input {
 
     public Input(Configuration configuration) throws IOException {
         this.configuration = configuration;
-        loadPrimitivesIntoGlobalTypeContext();
         classPath = assemblePath(true, "Classpath", configuration.inputConfiguration.classPathParts);
         AnnotationStore annotationStore = new AnnotationXmlReader(classPath);
         LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
         byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext, e2ImmuAnnotationExpressions);
         globalTypeContext.typeMapBuilder.setByteCodeInspector(byteCodeInspector);
+        globalTypeContext.loadPrimitives();
 
         preload(classPath, "org.e2immu.annotation"); // needed for our own stuff
         preload(classPath, "java.lang"); // there are needed to help with implicit imports
@@ -119,17 +119,6 @@ public class Input {
                 return true;
         }
         return false;
-    }
-
-    private void loadPrimitivesIntoGlobalTypeContext() {
-        for (TypeInfo typeInfo : globalTypeContext.getPrimitives().typeByName.values()) {
-            globalTypeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION);
-            globalTypeContext.addToContext(typeInfo);
-        }
-        for (TypeInfo typeInfo : globalTypeContext.getPrimitives().primitiveByName.values()) {
-            globalTypeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.BY_HAND);
-            globalTypeContext.addToContext(typeInfo);
-        }
     }
 
     /**

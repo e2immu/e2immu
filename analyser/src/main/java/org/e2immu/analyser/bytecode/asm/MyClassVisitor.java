@@ -28,7 +28,6 @@ import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.objectweb.asm.*;
 import org.slf4j.Logger;
@@ -167,10 +166,8 @@ public class MyClassVisitor extends ClassVisitor {
         }
 
         String parentFqName = superName == null ? null : pathToFqn(superName);
-        boolean haveParentType = superName != null && !Primitives.JAVA_LANG_OBJECT.equals(parentFqName);
-
         if (signature == null) {
-            if (haveParentType) {
+            if (superName != null) {
                 TypeInfo typeInfo = mustFindTypeInfo(parentFqName, superName);
                 if (typeInfo == null) {
                     log(BYTECODE_INSPECTOR_DEBUG, "Stop inspection of {}, parent type {} unknown",
@@ -179,6 +176,8 @@ public class MyClassVisitor extends ClassVisitor {
                     return;
                 }
                 typeInspectionBuilder.setParentClass(typeInfo.asParameterizedType());
+            } else {
+                log(BYTECODE_INSPECTOR_DEBUG, "No parent name for {}", fqName);
             }
             if (interfaces != null) {
                 for (String interfaceName : interfaces) {
@@ -207,9 +206,7 @@ public class MyClassVisitor extends ClassVisitor {
                     errorStateForType(parentFqName);
                     return;
                 }
-                if (typeContext.getPrimitives().objectTypeInfo != res.parameterizedType.typeInfo) {
-                    typeInspectionBuilder.setParentClass(res.parameterizedType);
-                }
+                typeInspectionBuilder.setParentClass(res.parameterizedType);
                 pos += res.nextPos;
             }
             if (interfaces != null) {
@@ -417,7 +414,6 @@ public class MyClassVisitor extends ClassVisitor {
             methodInfo = new MethodInfo(currentType, name, isStatic);
         }
         MethodInspectionImpl.Builder methodInspectionBuilder = new MethodInspectionImpl.Builder(methodInfo);
-        typeContext.typeMapBuilder.registerMethodInspection(methodInspectionBuilder);
 
         if ((access & Opcodes.ACC_PUBLIC) != 0 && !currentTypeIsInterface) {
             methodInspectionBuilder.addModifier(MethodModifier.PUBLIC);
@@ -456,6 +452,7 @@ public class MyClassVisitor extends ClassVisitor {
                 }
             }
         }
+
         return new MyMethodVisitor(methodContext, methodInfo, methodInspectionBuilder, typeInspectionBuilder, types,
                 lastParameterIsVarargs, methodItem, jetBrainsAnnotationTranslator);
     }

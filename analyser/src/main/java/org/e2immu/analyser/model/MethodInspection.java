@@ -57,8 +57,6 @@ public interface MethodInspection extends Inspection {
     //@Immutable
     List<MethodInfo> getImplementationOf();
 
-    Set<MethodInfo> getOverrides();
-
     Map<CompanionMethodName, MethodInfo> getCompanionMethods();
 
 }

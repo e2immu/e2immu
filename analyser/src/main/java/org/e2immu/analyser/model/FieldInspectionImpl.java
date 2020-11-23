@@ -114,7 +114,8 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
         public FieldInspectionImpl build() {
             return new FieldInspectionImpl(getModifiers(),
                     fieldInitialiser != null ? fieldInitialiser :
-                            new FieldInspection.FieldInitialiser(inspectedInitialiser, null, false),
+                            inspectedInitialiser == null ? null :
+                                    new FieldInspection.FieldInitialiser(inspectedInitialiser, null, false),
                     getAnnotations(), getAccess());
         }
 
@@ -134,11 +135,6 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
             if (modifiers.contains(FieldModifier.PROTECTED)) return FieldModifier.PROTECTED;
             if (modifiers.contains(FieldModifier.PUBLIC)) return FieldModifier.PUBLIC;
             return FieldModifier.PACKAGE;
-        }
-
-        @Override
-        public List<AnnotationExpression> getAnnotations() {
-            return null;
         }
     }
 }

@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.model.TypeInspectionImpl.*;
+
 public class TypeMapImpl implements TypeMap {
 
     private final Trie<TypeInfo> trie;
@@ -108,13 +110,34 @@ public class TypeMapImpl implements TypeMap {
 
         private final Map<TypeInfo, TypeInspectionImpl.Builder> typeInspections = new HashMap<>();
         private final Map<FieldInfo, FieldInspectionImpl.Builder> fieldInspections = new HashMap<>();
-        private final Map<MethodInfo, MethodInspectionImpl.Builder> methodInspections = new HashMap<>();
+        private final Map<String, MethodInspectionImpl.Builder> methodInspections = new HashMap<>();
 
         private ByteCodeInspector byteCodeInspector;
         private InspectWithJavaParser inspectWithJavaParser;
 
         public TypeMapImpl build() {
             trie.freeze();
+
+            typeInspections.forEach((typeInfo, typeInspectionBuilder) -> {
+                if (typeInspectionBuilder.finishedInspection()) {
+                    if (!typeInfo.typeInspection.isSet()) {
+                        typeInfo.typeInspection.set(typeInspectionBuilder.build());
+                    }
+                }
+            });
+
+            methodInspections.values().forEach(methodInspectionBuilder -> {
+                MethodInfo methodInfo = methodInspectionBuilder.getMethodInfo();
+                if (!methodInfo.methodInspection.isSet() && methodInfo.typeInfo.typeInspection.isSet()) {
+                    methodInfo.methodInspection.set(methodInspectionBuilder.build());
+                }
+            });
+            fieldInspections.forEach((fieldInfo, fieldInspectionBuilder) -> {
+                if (!fieldInfo.fieldInspection.isSet() && fieldInfo.owner.typeInspection.isSet()) {
+                    fieldInfo.fieldInspection.set(fieldInspectionBuilder.build());
+                }
+            });
+
             return new TypeMapImpl(trie, primitives);
         }
 
@@ -142,7 +165,7 @@ public class TypeMapImpl implements TypeMap {
         }
 
         public void registerMethodInspection(MethodInspectionImpl.Builder builder) {
-            if (methodInspections.put(builder.getMethodInfo(), builder) != null) {
+            if (methodInspections.put(builder.getFullyQualifiedName(), builder) != null) {
                 throw new IllegalArgumentException("Re-registering method " + builder.getFullyQualifiedName());
             }
         }
@@ -179,18 +202,20 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public TypeInspection getTypeInspection(TypeInfo typeInfo) {
-            TypeInspection typeInspection = typeInspections.get(typeInfo);
+            TypeInspectionImpl.Builder typeInspection = typeInspections.get(typeInfo);
             if (typeInspection == null) {
                 return null;
             }
-            if (typeInspection.getInspectionState() == TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION) {
+            if (typeInspection.getInspectionState() == TRIGGER_BYTECODE_INSPECTION) {
+                typeInspection.setInspectionState(STARTING_BYTECODE);
                 inspectWithByteCodeInspector(typeInfo);
-                if (typeInspection.getInspectionState() < TypeInspectionImpl.FINISHED_BYTECODE) {
+                if (typeInspection.getInspectionState() < FINISHED_BYTECODE) {
                     throw new UnsupportedOperationException("? expected the bytecode inspector to do its job");
                 }
-            } else if (typeInspection.getInspectionState() == TypeInspectionImpl.TRIGGER_JAVA_PARSER) {
+            } else if (typeInspection.getInspectionState() == TRIGGER_JAVA_PARSER) {
+                typeInspection.setInspectionState(STARTING_JAVA_PARSER);
                 inspectWithJavaParser.inspect(typeInfo);
-                if (typeInspection.getInspectionState() < TypeInspectionImpl.FINISHED_JAVA_PARSER) {
+                if (typeInspection.getInspectionState() < FINISHED_JAVA_PARSER) {
                     throw new UnsupportedOperationException("? expected the java parser to do its job");
                 }
             }
@@ -199,7 +224,7 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public MethodInspection getMethodInspection(MethodInfo methodInfo) {
-            return methodInspections.get(methodInfo);
+            return methodInspections.get(methodInfo.fullyQualifiedName());
         }
 
         @Override

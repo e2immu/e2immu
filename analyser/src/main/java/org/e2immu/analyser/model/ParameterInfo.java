@@ -42,7 +42,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
     public final int index;
 
     public final SetOnce<ParameterAnalysis> parameterAnalysis = new SetOnce<>();
-    public final SetTwice<ParameterInspection> parameterInspection = new SetTwice<>();
+    public final SetOnce<ParameterInspection> parameterInspection = new SetOnce<>();
     public final MethodInfo owner;
 
     public ParameterInfo(MethodInfo owner, TypeInfo typeInfo, String name, int index) {

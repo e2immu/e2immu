@@ -195,6 +195,10 @@ public class Primitives {
         return parameterizedType.typeInfo != null && isJavaLangObject(parameterizedType.typeInfo);
     }
 
+    public static boolean needsParent(TypeInfo typeInfo) {
+        return !isJavaLangObject(typeInfo) && !typeInfo.fullyQualifiedName.startsWith("jdk.internal");
+    }
+
     private MethodInfo createOperator(TypeInfo owner, String name, List<ParameterizedType> parameterizedTypes, ParameterizedType returnType) {
         MethodInfo methodInfo = new MethodInfo(owner, name, true);
         int i = 0;

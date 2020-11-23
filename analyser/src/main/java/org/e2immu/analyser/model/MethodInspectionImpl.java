@@ -21,7 +21,6 @@ package org.e2immu.analyser.model;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Fluent;
@@ -59,8 +58,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     private final List<MethodInfo> implementationOf;
     private final Map<CompanionMethodName, MethodInfo> companionMethods;
 
-    private final Set<MethodInfo> overrides;
-
     private MethodInspectionImpl(MethodInfo methodInfo,
                                  String fullyQualifiedName,
                                  String distinguishingName,
@@ -71,11 +68,9 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                                  List<TypeParameter> typeParameters,
                                  List<ParameterizedType> exceptionTypes,
                                  List<MethodInfo> implementationOf,
-                                 Set<MethodInfo> overrides,
                                  Map<CompanionMethodName, MethodInfo> companionMethods,
                                  Block methodBody) {
         super(annotations);
-        this.overrides = overrides;
         this.fullyQualifiedName = fullyQualifiedName;
         this.distinguishingName = distinguishingName;
         this.companionMethods = companionMethods;
@@ -87,11 +82,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         this.methodBody = methodBody;
         this.exceptionTypes = exceptionTypes;
         this.implementationOf = implementationOf;
-    }
-
-    @Override
-    public Set<MethodInfo> getOverrides() {
-        return overrides;
     }
 
     @Override
@@ -163,19 +153,11 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         private final List<ParameterizedType> exceptionTypes = new ArrayList<>();
         private ParameterizedType returnType;
         private final Map<ParameterInfo, ParameterInspectionImpl.Builder> parameterInspectionBuilders = new HashMap<>();
-        private Set<MethodInfo> overrides;
+        private String fullyQualifiedName;
+        private String distinguishingName;
 
         public Builder(MethodInfo methodInfo) {
             this.methodInfo = methodInfo;
-        }
-
-        @Override
-        public Set<MethodInfo> getOverrides() {
-            return overrides;
-        }
-
-        public void setOverrides(Set<MethodInfo> overrides) {
-            this.overrides = overrides;
         }
 
         @Fluent
@@ -277,6 +259,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             // that's not correct, lambdas can have a method parameter type belonging to the enclosing method.
             // we cannot easily check for that because anonymous types cannot (ATM) refer to their owning field/method.
 
+            if(fullyQualifiedName == null) readyToComputeFQN();
+
             return new MethodInspectionImpl(methodInfo,
                     getFullyQualifiedName(), // the builders have not been invalidated yet
                     getDistinguishingName(),
@@ -287,24 +271,30 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                     ImmutableList.copyOf(typeParameters),
                     ImmutableList.copyOf(exceptionTypes),
                     ImmutableList.copyOf(implementationsOf),
-                    ImmutableSet.copyOf(overrides),
                     ImmutableMap.copyOf(getCompanionMethods()),
                     inspectedBlock
             );
         }
 
-        @Override
-        public String getFullyQualifiedName() {
-            return methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
+        public void readyToComputeFQN() {
+            this.fullyQualifiedName = methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
                     .map(p -> p.parameterizedType.stream(parameterInspectionBuilders.get(p).isVarArgs()))
+                    .collect(Collectors.joining(",")) + ")";
+            this.distinguishingName = methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
+                    .map(p -> p.parameterizedType.distinguishingStream(parameterInspectionBuilders.get(p).isVarArgs()))
                     .collect(Collectors.joining(",")) + ")";
         }
 
         @Override
+        public String getFullyQualifiedName() {
+            if (fullyQualifiedName == null) throw new UnsupportedOperationException("Not ready");
+            return fullyQualifiedName;
+        }
+
+        @Override
         public String getDistinguishingName() {
-            return methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
-                    .map(p -> p.parameterizedType.distinguishingStream(parameterInspectionBuilders.get(p).isVarArgs()))
-                    .collect(Collectors.joining(",")) + ")";
+            if (distinguishingName == null) throw new UnsupportedOperationException("Not ready");
+            return distinguishingName;
         }
 
         @Override

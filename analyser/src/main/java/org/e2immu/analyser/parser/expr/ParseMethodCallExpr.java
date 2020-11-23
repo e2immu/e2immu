@@ -157,7 +157,7 @@ public class ParseMethodCallExpr {
                 if (methodCandidates.size() > 1) {
                     //methodCandidates.sort(expressionContext.typeContext::compareMethodCandidates);
                     TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
-                    Set<MethodInfo> overrides = mc0.method.methodInspection.getOverrides();
+                    Set<MethodInfo> overrides = mc0.method.methodInspection.getMethodInfo().methodResolution.get().overrides();
                     for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
                         if (!overrides.contains(mcN.method.methodInspection.getMethodInfo()) &&
                                 mcN.method.methodInspection.getMethodInfo() != mc0.method.methodInspection.getMethodInfo()) {

@@ -39,7 +39,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     public final String name;
 
     public final TypeInfo owner;
-    public final SetTwice<FieldInspection> fieldInspection = new SetTwice<>();
+    public final SetOnce<FieldInspection> fieldInspection = new SetOnce<>();
     public final SetOnce<FieldAnalysis> fieldAnalysis = new SetOnce<>();
 
     public FieldInfo(TypeInfo type, String name, TypeInfo owner) {

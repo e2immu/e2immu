@@ -35,7 +35,6 @@ import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -51,7 +50,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     public final boolean isStatic;
     public final boolean isDefaultImplementation;
 
-    public final SetTwice<MethodInspection> methodInspection = new SetTwice<>();
+    public final SetOnce<MethodInspection> methodInspection = new SetOnce<>();
     public final SetOnce<MethodAnalysis> methodAnalysis = new SetOnce<>();
     public final SetOnce<MethodResolution> methodResolution = new SetOnce<>();
 
@@ -119,12 +118,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MethodInfo that = (MethodInfo) o;
-        if (hasBeenInspected()) {
-            return methodInspection.get().getFullyQualifiedName().equals(that.methodInspection.get().getFullyQualifiedName());
-        }
-        return typeInfo.equals(that.typeInfo) &&
-                name.equals(that.name) &&
-                parametersAsObserved.equals(that.parametersAsObserved);
+        return methodInspection.get().getFullyQualifiedName().equals(that.methodInspection.get().getFullyQualifiedName());
     }
 
     @Override

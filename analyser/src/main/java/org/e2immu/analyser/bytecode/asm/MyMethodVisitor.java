@@ -133,6 +133,9 @@ public class MyMethodVisitor extends MethodVisitor {
         }
         // note that we do NOT YET execute methodInfo.methodInspection.set(methodInspectionBuilder.build())
         // this will take place after potential AnnotatedAPI inspection.
-        // The methodInspectionBuilder has been registered with the TypeMapImpl.
+        // can't do this too early: we need all parameters parsed properly
+        methodInspectionBuilder.readyToComputeFQN();
+        typeContext.typeMapBuilder.registerMethodInspection(methodInspectionBuilder);
+
     }
 }

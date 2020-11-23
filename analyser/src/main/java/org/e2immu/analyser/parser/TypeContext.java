@@ -63,6 +63,20 @@ public class TypeContext implements InspectionProvider {
         this.packageName = packageName;
     }
 
+    /*
+    must be called AFTER the typeMapBuilder has the ByteCodeInspector set.
+     */
+    public void loadPrimitives() {
+        for (TypeInfo typeInfo : getPrimitives().typeByName.values()) {
+            typeMapBuilder.add(typeInfo, TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION);
+            addToContext(typeInfo);
+        }
+        for (TypeInfo typeInfo : getPrimitives().primitiveByName.values()) {
+            typeMapBuilder.add(typeInfo, TypeInspectionImpl.BY_HAND);
+            addToContext(typeInfo);
+        }
+    }
+
     /**
      * used for: Annotation types, ParameterizedTypes (general types)
      *

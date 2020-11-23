@@ -43,14 +43,15 @@ public class MethodInspector {
     private final MethodInfo methodInfo;
     private final MethodInspectionImpl.Builder builder;
     private final boolean fullInspection;
+    private final TypeMapImpl.Builder typeMapBuilder;
 
     public MethodInspector(TypeMapImpl.Builder typeMapBuilder, MethodInfo methodInfo) {
         this.methodInfo = methodInfo;
+        this.typeMapBuilder = typeMapBuilder;
         MethodInspection methodInspection = typeMapBuilder.getMethodInspection(methodInfo);
         fullInspection = methodInspection == null;
         if (fullInspection) {
             builder = new MethodInspectionImpl.Builder(methodInfo);
-            typeMapBuilder.registerMethodInspection(builder);
         } else {
             builder = (MethodInspectionImpl.Builder) methodInspection;
         }
@@ -123,6 +124,10 @@ public class MethodInspector {
             addModifiers(cd.getModifiers());
             addParameters(cd.getParameters(), expressionContext, dollarResolver);
             addExceptionTypes(cd.getThrownExceptions(), expressionContext.typeContext);
+
+            builder.readyToComputeFQN();
+            typeMapBuilder.registerMethodInspection(builder);
+
             builder.setBlock(cd.getBody());
         }
     }
@@ -159,6 +164,10 @@ public class MethodInspector {
             addExceptionTypes(md.getThrownExceptions(), newContext.typeContext);
             ParameterizedType pt = ParameterizedType.from(newContext.typeContext, md.getType());
             builder.setReturnType(pt);
+
+            builder.readyToComputeFQN();
+            typeMapBuilder.registerMethodInspection(builder);
+
             if (md.getBody().isPresent()) {
                 builder.setBlock(md.getBody().get());
             }

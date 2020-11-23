@@ -235,6 +235,9 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             this.inspectionState = inspectionState;
         }
 
+        public boolean finishedInspection() {
+            return inspectionState == FINISHED_BYTECODE || inspectionState >= FINISHED_JAVA_PARSER;
+        }
         public int getInspectionState() {
             return inspectionState;
         }
@@ -259,7 +262,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         }
 
         public Builder setParentClass(ParameterizedType parentClass) {
-            this.parentClass = parentClass;
+            this.parentClass = Objects.requireNonNull(parentClass);
             return this;
         }
 
@@ -304,8 +307,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         public TypeInspectionImpl build() {
             Objects.requireNonNull(typeNature);
-            if (!Primitives.isJavaLangObject(typeInfo)) {
-                Objects.requireNonNull(parentClass);
+            if (Primitives.needsParent(typeInfo) && parentClass == null) {
+                throw new UnsupportedOperationException("Need a parent class for "+typeInfo.fullyQualifiedName);
             }
             Either<String, TypeInfo> packageNameOrEnclosingType = packageName == null ? Either.right(enclosingType) : Either.left(packageName);
 
