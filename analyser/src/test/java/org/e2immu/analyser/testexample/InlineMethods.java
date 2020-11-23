@@ -17,11 +17,11 @@ public class InlineMethods {
         return sum * diff;
     }
 
-    @Constant(intValue = 6)
+    @Constant("6")
     public static final int m1 = product(2, 3);
-    @Constant(intValue = 16)
+    @Constant("16")
     public static final int m2 = square(4);
 
-    @Constant(intValue = -24)
+    @Constant("-24")
     public static final int m3 = withIntermediateVariables(5, 7);
 }

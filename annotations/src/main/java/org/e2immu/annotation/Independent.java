@@ -28,7 +28,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.CONSTRUCTOR, ElementType.METHOD, ElementType.TYPE})
 public @interface Independent {
-    AnnotationType type() default AnnotationType.VERIFY;
+    boolean absent() default false;
+
+    boolean contract() default false;
+
     /**
      * @return when a type is effectively independent, set the empty string.
      * When it is eventually independent, return a boolean expression of strings from <code>@Mark</code>

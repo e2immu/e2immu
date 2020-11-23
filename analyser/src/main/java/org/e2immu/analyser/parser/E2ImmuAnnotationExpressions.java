@@ -1,13 +1,11 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.FieldAccess;
-import org.e2immu.analyser.model.expression.MemberValuePair;
-import org.e2immu.analyser.model.expression.TypeExpression;
+import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.AnnotationExpressionImpl;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.util.Lazy;
 import org.e2immu.annotation.*;
-import org.e2immu.annotation.Constant;
-import org.e2immu.annotation.Variable;
 
 import java.util.List;
 import java.util.Objects;
@@ -21,11 +19,9 @@ public class E2ImmuAnnotationExpressions {
 
     @NotModified
     private final TypeMapImpl.Builder typeMapBuilder;
-    private final FieldInfo annotationTypeComputed;
 
     public E2ImmuAnnotationExpressions(@NotNull TypeContext typeContext) {
         this.typeMapBuilder = typeContext.typeMapBuilder;
-        annotationTypeComputed = typeContext.getPrimitives().annotationTypeComputed;
     }
 
     public final Lazy<AnnotationExpression> beforeMark = new Lazy<>(() -> create(BeforeMark.class));
@@ -59,19 +55,14 @@ public class E2ImmuAnnotationExpressions {
     public final Lazy<AnnotationExpression> variableField = new Lazy<>(() -> create(Variable.class));
 
     /**
-     * create an annotation for a given class, with a type=AnnotationType.COMPUTED parameter
+     * create an annotation for a given class, without parameters (contract=false, absent=false)
      *
      * @param clazz must have a method called type of Enum type AnnotationType
      * @return an annotation expression
      */
     @NotModified
     private AnnotationExpression create(Class<?> clazz) {
-        TypeInfo annotationType = typeMapBuilder.get(AnnotationType.class.getCanonicalName());
-        FieldReference computedRef = new FieldReference(annotationTypeComputed, null);
-        FieldAccess computedAccess = new FieldAccess(new TypeExpression(annotationType.asParameterizedType()), computedRef);
-        // NOTE: we've added an import statement in TypeInfo.imports() for this...
-        return new AnnotationExpressionImpl(typeMapBuilder.get(clazz.getCanonicalName()),
-                List.of(new MemberValuePair("type", computedAccess)));
+        return new AnnotationExpressionImpl(typeMapBuilder.get(clazz.getCanonicalName()), List.of());
     }
 
     @NotModified

@@ -82,7 +82,7 @@ public class E2ImmutableChecks {
     // 4. constructor and method are independent
     @E2Container
     static class E2Container3 {
-        @Linked(type = AnnotationType.VERIFY_ABSENT)
+        @Linked(absent = true)
         @NotModified
         private final Set<String> set3;
 
@@ -114,14 +114,14 @@ public class E2ImmutableChecks {
 
         @E2Container
         @NotNull1
-        @Constant(type = AnnotationType.VERIFY_ABSENT)
+        @Constant(absent = true)
         public Set<String> getStrings4() {
             return strings4;
         }
 
         @Identity
-        @Linked(type = AnnotationType.VERIFY_ABSENT)
-        @Constant(type = AnnotationType.VERIFY_ABSENT)
+        @Linked(absent = true)
+        @Constant(absent = true)
         public Set<String> mingle(@NotNull @Modified Set<String> input4) {
             input4.addAll(strings4);
             return input4;
@@ -130,7 +130,7 @@ public class E2ImmutableChecks {
 
     @E2Container
     static class E2Container4 {
-        @Linked(type = AnnotationType.VERIFY_ABSENT)
+        @Linked(absent = true)
         private final Map<String, String> map4;
 
         public E2Container4(Map<String, String> map4Param) {
@@ -150,7 +150,7 @@ public class E2ImmutableChecks {
 
     @E2Container
     static class E2Container5<T> {
-        @Linked(type = AnnotationType.VERIFY_ABSENT)
+        @Linked(absent = true)
         private final Map<String, T> map5;
 
         public E2Container5(Map<String, T> map5Param) {
@@ -226,7 +226,7 @@ public class E2ImmutableChecks {
 
     // here, SimpleContainer cannot be replaced by T or Object, map8 is linked to the parameter
     @E1Container
-    @Independent(type = AnnotationType.VERIFY_ABSENT)
+    @Independent(absent = true)
     static class E1Container8 {
         @NotModified
         private final Map<String, SimpleContainer> map8;

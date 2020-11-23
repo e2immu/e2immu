@@ -29,7 +29,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
 public @interface E1Container {
-    AnnotationType type() default AnnotationType.VERIFY;
+    boolean absent() default false;
+
+    boolean contract() default false;
 
     /**
      * @return when the type is effectively level 1 immutable, set the empty string.

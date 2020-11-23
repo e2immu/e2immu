@@ -46,7 +46,7 @@ public class FunctionalInterfaceModified5<T> {
     // both consumers are allowed to modify T elements;
 
     // these consumers are NOT allowed to call incrementAndGet
-    @NotModified(type = AnnotationType.CONTRACT)
+    @NotModified(contract = true)
     public void nonModifyingVisitor(Consumer<T> consumer) {
         for (T t : ts) {
             consumer.accept(t);

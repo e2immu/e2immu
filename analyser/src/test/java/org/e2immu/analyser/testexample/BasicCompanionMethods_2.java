@@ -24,7 +24,7 @@ import java.util.List;
 
 public class BasicCompanionMethods_2 {
 
-    @Constant(boolValue = true)
+    @Constant("true")
     static boolean test() {
         List<String> list = new ArrayList<>();
         list.add("a");

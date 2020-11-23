@@ -20,6 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.analyser.CompanionAnalysis;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -27,7 +28,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.abstractvalue.Instance;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.annotation.AnnotationMode;
-import org.e2immu.annotation.AnnotationType;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -111,7 +111,7 @@ public class Test_01_SizeCopy extends CommonTestRunner {
         Assert.assertSame(CompanionMethodName.Action.TRANSFER, streamCmn.action());
         // the result of the transfer size should be the size of the collection, by contract
         CompanionAnalysis streamCompanionAnalysis = stream.methodAnalysis.get().getCompanionAnalyses().get(streamCmn);
-        Assert.assertSame(AnnotationType.CONTRACT, streamCompanionAnalysis.getAnnotationType());
+        Assert.assertSame(AnnotationParameters.CONTRACT, streamCompanionAnalysis.getAnnotationType());
         Assert.assertEquals("java.util.Collection.this.size()", streamCompanionAnalysis.getValue().toString());
 
         checkAddAll(collection);

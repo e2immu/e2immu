@@ -27,7 +27,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
     //        this.s = Objects.requireNonNull(s);
     //    }
 
-    //  public void method8Implicit(@NotNull(type = AnnotationType.VERIFY_ABSENT) String s) {
+    //  public void method8Implicit(@NotNull(absent = true) String s) {
     //    if (s != null) { // 0
     //        this.s = s.strip(); // 0.0.0
     //   } else {

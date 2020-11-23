@@ -21,8 +21,6 @@ import org.e2immu.annotation.*;
 
 import java.util.function.Consumer;
 
-import static org.e2immu.annotation.AnnotationType.CONTRACT;
-
 public class FunctionalInterfaceModified2 {
 
     @Container
@@ -77,7 +75,7 @@ public class FunctionalInterfaceModified2 {
     private final Counter myCounter2 = new Counter();
 
     @Modified
-    void acceptMyCounter2(@NotModified1(type = CONTRACT) Consumer<Counter> consumer) {
+    void acceptMyCounter2(@NotModified1(contract = true) Consumer<Counter> consumer) {
         consumer.accept(myCounter2);
     }
 

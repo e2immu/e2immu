@@ -30,7 +30,6 @@ import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.Either;
-import org.e2immu.annotation.AnnotationType;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -216,7 +215,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                             log(ANALYSER, "Starting companion analyser for {}", cmn);
 
                             CompanionAnalyser companionAnalyser = new CompanionAnalyser(this, methodInfo.typeInfo.typeAnalysis.get(),
-                                    cmn, companionMethod, methodInfo, AnnotationType.CONTRACT);
+                                    cmn, companionMethod, methodInfo, AnnotationParameters.CONTRACT);
                             AnalysisStatus analysisStatus = companionAnalyser.analyse(effectivelyFinalIteration);
                             if (analysisStatus == AnalysisStatus.DONE) {
                                 CompanionAnalysis companionAnalysis = companionAnalyser.companionAnalysis.build();

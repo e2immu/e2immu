@@ -20,7 +20,7 @@ package org.e2immu.analyser.model;
 
 import com.google.common.collect.Iterables;
 import org.e2immu.analyser.util.Either;
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.AnnotationMode;
 
 import java.util.List;
 import java.util.Set;

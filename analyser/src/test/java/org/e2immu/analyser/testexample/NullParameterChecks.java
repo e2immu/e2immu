@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +69,7 @@ public class NullParameterChecks {
         this.s = s.strip();
     }
 
-    public void method8Implicit(@NotNull(type = AnnotationType.VERIFY_ABSENT) String s) {
+    public void method8Implicit(@NotNull(absent = true) String s) {
         if (s != null) {
             this.s = s.strip();
         } else {
@@ -95,7 +94,7 @@ public class NullParameterChecks {
         return s == null ? k.length() : s.length();
     }
 
-    public static int method10(@NotNull(type = AnnotationType.VERIFY_ABSENT) String t, @NotNull String k) {
+    public static int method10(@NotNull(absent = true) String t, @NotNull String k) {
         return t == null ? k.length() : t.length();
     }
 

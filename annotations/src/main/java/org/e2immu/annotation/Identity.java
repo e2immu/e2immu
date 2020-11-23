@@ -28,5 +28,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.METHOD)
 public @interface Identity {
-    AnnotationType type() default AnnotationType.VERIFY;
+    boolean absent() default false;
+
+    boolean contract() default false;
 }

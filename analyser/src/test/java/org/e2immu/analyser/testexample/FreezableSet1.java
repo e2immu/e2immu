@@ -48,7 +48,7 @@ public class FreezableSet1 {
     }
 
     @NotModified
-    @Only(type = AnnotationType.VERIFY_ABSENT)
+    @Only(absent = true)
     public boolean isFrozen() {
         return frozen;
     }

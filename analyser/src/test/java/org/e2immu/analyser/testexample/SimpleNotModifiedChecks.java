@@ -23,8 +23,6 @@ import org.e2immu.annotation.*;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
-
 public class SimpleNotModifiedChecks {
 
     // first example shows direct modification
@@ -32,11 +30,11 @@ public class SimpleNotModifiedChecks {
     @E1Container
     static class Example1 {
 
-        @NotModified(type = VERIFY_ABSENT)
+        @NotModified(absent = true)
         @Modified
         public final Set<String> set1 = new HashSet<>();
 
-        @NotModified(type = VERIFY_ABSENT)
+        @NotModified(absent = true)
         @Modified
         public void add(@NotNull String v) {
             set1.add(v);
@@ -101,7 +99,7 @@ public class SimpleNotModifiedChecks {
         @Final
         private Set<String> set3 = new HashSet<>();
 
-        @NotModified(type = VERIFY_ABSENT)
+        @NotModified(absent = true)
         public void add3(@NotNull String v) {
             Set<String> local3 = set3;
             local3.add(v);
@@ -113,13 +111,13 @@ public class SimpleNotModifiedChecks {
 
     // in4 can be modified by calling add4, so not a container
     @E1Immutable
-    @Container(type = VERIFY_ABSENT)
+    @Container(absent = true)
     static class Example4 {
         @Modified
         @NotNull
         private final Set<String> set4;
 
-        public Example4(@NotModified(type = VERIFY_ABSENT) @NotNull Set<String> in4) {
+        public Example4(@NotModified(absent = true) @NotNull Set<String> in4) {
             this.set4 = in4;
         }
 
@@ -142,7 +140,7 @@ public class SimpleNotModifiedChecks {
             this.set5 = new HashSet<>(in5);
         }
 
-        @NotModified(type = VERIFY_ABSENT)
+        @NotModified(absent = true)
         public void add5(String v) {
             Set<String> local5 = set5;
             local5.add(v);
@@ -152,7 +150,7 @@ public class SimpleNotModifiedChecks {
     // sixth example is direct modification, but indirectly on an instance variable of the class
 
     @E1Immutable
-    @Container(type = VERIFY_ABSENT)
+    @Container(absent = true)
     static class Example6 {
         @Modified
         @NotNull
@@ -162,7 +160,7 @@ public class SimpleNotModifiedChecks {
             this.set6 = in6;
         }
 
-        @NotModified(type = VERIFY_ABSENT)
+        @NotModified(absent = true)
         public static void add6(@NotNull Example6 example6, @NotNull @NotModified Set<String> values6) {
             example6.set6.addAll(values6);
         }

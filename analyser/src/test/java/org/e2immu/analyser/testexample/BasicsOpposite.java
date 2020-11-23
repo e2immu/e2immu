@@ -9,8 +9,8 @@ public class BasicsOpposite {
 
     @Variable
     @Nullable
-    @Modified(type = AnnotationType.VERIFY_ABSENT)
-    @NotModified(type = AnnotationType.VERIFY_ABSENT)
+    @Modified(absent = true)
+    @NotModified(absent = true)
     private String string;
 
     @Nullable
@@ -24,8 +24,8 @@ public class BasicsOpposite {
         this.string = string;
     }
 
-    @Nullable(type = AnnotationType.VERIFY_ABSENT)
-    @NotNull(type = AnnotationType.VERIFY_ABSENT)
+    @Nullable(absent = true)
+    @NotNull(absent = true)
     @NotModified
     public void add(@Modified @NotNull Collection<String> collection) {
         collection.add(string); // expect potential null pointer exception here

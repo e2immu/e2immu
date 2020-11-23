@@ -15,27 +15,14 @@
  * limitations under the License.
  */
 
-package org.e2immu.annotation;
+package org.e2immu.analyser.analyser;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+public record AnnotationParameters(boolean absent, boolean contract) {
 
-/**
- * On a method, indicates that it never returns null.
- * On a field, indicates that its value is never null.
- * On a parameter, indicates that it is illegal to pass null.
- */
-@Retention(RetentionPolicy.CLASS)
-@Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})
-public @interface NotNull {
-    boolean absent() default false;
+    public static final AnnotationParameters DEFAULT = new AnnotationParameters(false, false);
+    public static final AnnotationParameters CONTRACT = new AnnotationParameters(false, true);
 
-    boolean contract() default false;
-
-    /**
-     * @return when the type is effectively not null.
-     */
-    String after() default "";
+    public boolean isVerifyAbsent() {
+        return absent && !contract;
+    }
 }

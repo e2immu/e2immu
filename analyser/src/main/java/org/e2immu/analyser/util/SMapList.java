@@ -37,7 +37,7 @@ public class SMapList {
     }
 
     @NotModified
-    @Constant(type = AnnotationType.VERIFY_ABSENT)
+    @Constant(absent = true)
     public static <A, B> boolean addAll(@NotModified Map<A, List<B>> src, @NotNull Map<A, List<B>> dest) {
         boolean change = false;
         for (Entry<A, List<B>> e : src.entrySet()) {
@@ -89,8 +89,8 @@ public class SMapList {
 
     @NotNull1
     @NotModified
-    @Linked(type = AnnotationType.VERIFY_ABSENT) // NULL_KEY is E2Immu
-    @Constant(type = AnnotationType.VERIFY_ABSENT)
+    @Linked(absent = true) // NULL_KEY is E2Immu
+    @Constant(absent = true)
     public static <A, B> List<B> list(@NotNull @NotModified Map<A, List<B>> map, @NotNull A a) {
         if (a == null) {
             throw new IllegalArgumentException(NULL_KEY);

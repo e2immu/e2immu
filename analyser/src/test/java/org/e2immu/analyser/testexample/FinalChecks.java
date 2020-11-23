@@ -26,7 +26,7 @@ import org.e2immu.annotation.*;
  ERROR in F:s5: Private field not read outside constructors
  */
 
-@E1Immutable(type = AnnotationType.VERIFY_ABSENT)
+@E1Immutable(absent = true)
 @Container
 public class FinalChecks {
 
@@ -39,7 +39,7 @@ public class FinalChecks {
     private String s2;
 
     // because this one is NOT final, the type is not @E1Immutable
-    @Final(type = AnnotationType.VERIFY_ABSENT)
+    @Final(absent = true)
     private String s4;
 
     @Final

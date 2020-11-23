@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotModified1;
@@ -64,7 +63,7 @@ public class DifferentConsumers {
         }
 
         static void doSomethingNonModifying(@NotModified Collection<Counter> counters,
-                                            @NotModified1(type = AnnotationType.CONTRACT) Consumer<Counter> consumer) {
+                                            @NotModified1(contract = true) Consumer<Counter> consumer) {
             counters.forEach(consumer);
         }
 

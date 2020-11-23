@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.model.abstractvalue.VariableValue;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.annotation.AnnotationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,12 +53,12 @@ public class CompanionAnalyser {
                              CompanionMethodName companionMethodName,
                              MethodInfo companionMethod,
                              MethodInfo mainMethod,
-                             AnnotationType annotationType) {
+                             AnnotationParameters annotationParameters) {
         this.analyserContext = analyserContext;
         this.companionMethod = companionMethod;
         this.companionMethodName = companionMethodName;
         this.mainMethod = mainMethod;
-        companionAnalysis = new CompanionAnalysisImpl.Builder(annotationType);
+        companionAnalysis = new CompanionAnalysisImpl.Builder(annotationParameters);
         this.typeAnalysis = typeAnalysis;
     }
 

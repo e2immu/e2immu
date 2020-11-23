@@ -28,5 +28,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.CONSTRUCTOR, ElementType.METHOD})
 public @interface Dependent {
-    AnnotationType type() default AnnotationType.VERIFY;
+    boolean absent() default false;
+
+    boolean contract() default false;
 }

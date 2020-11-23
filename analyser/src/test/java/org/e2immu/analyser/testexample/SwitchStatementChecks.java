@@ -1,13 +1,12 @@
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.NotNull;
 
 public class SwitchStatementChecks {
 
     @NotNull
-    @Constant(type = AnnotationType.VERIFY_ABSENT)
+    @Constant(absent = true)
     public static String method1(char c) {
         switch (c) {
             case 'a':
@@ -19,8 +18,8 @@ public class SwitchStatementChecks {
         }
     }
 
-    @NotNull(type = AnnotationType.VERIFY_ABSENT)
-    @Constant(type = AnnotationType.VERIFY_ABSENT)
+    @NotNull(absent = true)
+    @Constant(absent = true)
     public static String method1(char c, String b) {
         switch (c) {
             case 'a':
@@ -33,7 +32,7 @@ public class SwitchStatementChecks {
     }
 
     @NotNull
-    @Constant(type = AnnotationType.VERIFY_ABSENT)
+    @Constant(absent = true)
     public static String method3(char c, String b) {
         switch (c) {
             case 'a':
@@ -47,8 +46,8 @@ public class SwitchStatementChecks {
         }
     }
 
-    @NotNull(type = AnnotationType.VERIFY_ABSENT)
-    @Constant(type = AnnotationType.VERIFY_ABSENT)
+    @NotNull(absent = true)
+    @Constant(absent = true)
     public static String method4(char c, String b) {
         switch (c) {
             default:
@@ -57,7 +56,7 @@ public class SwitchStatementChecks {
     }
 
     @NotNull
-    @Constant(type = AnnotationType.VERIFY_ABSENT)
+    @Constant(absent = true)
     public static String method5(char c) {
         String res;
         switch (c) {
@@ -76,7 +75,7 @@ public class SwitchStatementChecks {
     // TODO this one works like method5 at the moment, we don't have any support for
     // not having break statements... or should we block this?
     @NotNull
-    @Constant(type = AnnotationType.VERIFY_ABSENT)
+    @Constant(absent = true)
     public static String method6(char c) {
         String res;
         switch (c) {
@@ -92,7 +91,7 @@ public class SwitchStatementChecks {
 
 
     @NotNull
-    @Constant(stringValue = "a")
+    @Constant("a")
     public static String method7(char c) {
         String res;
         char d = 'a';

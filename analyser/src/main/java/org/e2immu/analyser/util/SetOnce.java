@@ -44,7 +44,7 @@ public class SetOnce<T> {
     @Only(after = "t")
     @NotNull
     @NotModified
-    @Independent(type = AnnotationType.VERIFY_ABSENT) // note: independent of the support data, which is not present!
+    @Independent(absent = true) // note: independent of the support data, which is not present!
     @Precondition("not (null == this.t)")
     public T get() {
         if (t == null) {
@@ -56,7 +56,7 @@ public class SetOnce<T> {
     @Only(after = "t")
     @NotNull
     @NotModified
-    @Independent(type = AnnotationType.VERIFY_ABSENT) // note: independent of the support data, which is not present!
+    @Independent(absent = true) // note: independent of the support data, which is not present!
     @Precondition("not (null == this.t)")
     public T get(String message) {
         if (t == null) {

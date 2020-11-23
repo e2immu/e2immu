@@ -4,7 +4,7 @@ import org.e2immu.annotation.Constant;
 
 public class DependentVariables {
 
-    @Constant(intValue = 56)
+    @Constant("56")
     static int method1(int a) {
         int[] array = new int[3];
         array[0] = 12;
@@ -13,7 +13,7 @@ public class DependentVariables {
         return array[0] + array[1] + array[2];
     }
 
-    @Constant(intValue = 12)
+    @Constant("12")
     static int method2(int a) {
         int[] array = new int[3];
         int b = a;

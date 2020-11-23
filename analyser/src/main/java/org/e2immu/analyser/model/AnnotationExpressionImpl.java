@@ -21,11 +21,11 @@ package org.e2immu.analyser.model;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
 import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.AnnotationType;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -161,18 +161,20 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
             return ((Constant<?>) expression).getValue();
         }
 
-        // VERIFY_ABSENT -> direct reference with import static AnnotationType.VERIFY_ABSENT
+        // direct reference with import static
         if (expression instanceof VariableExpression && ((VariableExpression) expression).variable instanceof FieldReference) {
             FieldInfo fieldInfo = ((FieldReference) (((VariableExpression) expression).variable)).fieldInfo;
             return enumInstance(returnType, fieldInfo.owner, fieldInfo.name);
         }
 
-        // AnnotationType.VERIFY_ABSENT
+        // Type.CONSTANT
         if (expression instanceof FieldAccess fieldAccess) {
             if (fieldAccess.expression instanceof TypeExpression typeExpression) {
                 return enumInstance(returnType, typeExpression.parameterizedType.typeInfo, fieldAccess.variable.simpleName());
             } else throw new UnsupportedOperationException("? did not expect " + fieldAccess.expression.getClass());
         }
+
+        // -123
         if (expression instanceof UnaryOperator unaryOperator) {
             if (Primitives.isUnaryMinusOperatorInt(unaryOperator.operator) &&
                     unaryOperator.expression instanceof IntConstant intConstant) {
@@ -205,17 +207,6 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     }
 
     @Override
-    public boolean isVerifyAbsent() {
-        AnnotationType annotationType = extract("type", null);
-        return annotationType == AnnotationType.VERIFY_ABSENT;
-    }
-
-    @Override
-    public boolean test() {
-        return extract("test", false);
-    }
-
-    @Override
     public AnnotationExpression copyWith(Primitives primitives, String parameter, int value) {
         MemberValuePair memberValuePair = new MemberValuePair(parameter, new IntConstant(primitives, value));
         return new AnnotationExpressionImpl(typeInfo, List.of(memberValuePair));
@@ -236,6 +227,13 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(typeInfo, true);
+    }
+
+    @Override
+    public AnnotationParameters parameters() {
+        boolean absent = extract("absent", false);
+        boolean contract = extract("contract", false);
+        return new AnnotationParameters(absent, contract);
     }
 
 }

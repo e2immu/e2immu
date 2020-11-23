@@ -17,6 +17,9 @@
 
 package org.e2immu.annotation;
 
+/**
+ * In this package, because it is used in the highlighter as well
+ */
 public enum AnnotationMode {
     DEFENSIVE, // @NotModified, @NotNull, @Independent, @Container, @Final
 

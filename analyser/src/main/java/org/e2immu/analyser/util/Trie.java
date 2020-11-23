@@ -94,7 +94,7 @@ public class Trie<T> extends Freezable {
         return node.data;
     }
 
-    @NotModified(type = AnnotationType.CONTRACT)
+    @NotModified(contract = true)
     public void visitLeaves(String[] strings, BiConsumer<String[], List<T>> visitor) {
         TrieNode<T> node = goTo(strings);
         if (node == null) return;
@@ -107,7 +107,7 @@ public class Trie<T> extends Freezable {
         }
     }
 
-    @NotModified(type = AnnotationType.CONTRACT)
+    @NotModified(contract = true)
     public void visit(String[] strings,
                       BiConsumer<String[], List<T>> visitor) {
         TrieNode<T> node = goTo(strings);

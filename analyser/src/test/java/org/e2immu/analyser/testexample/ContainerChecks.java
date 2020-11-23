@@ -23,15 +23,13 @@ import org.e2immu.annotation.*;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
-
 public class ContainerChecks {
 
     // the definition of Container is that the parameters of publicly available methods
     // are @NotModified (not modifiable) or effectively immutable (@ContextClass)
 
     // first example: the setter itself breaks the contract
-    @Container(type = VERIFY_ABSENT)
+    @Container(absent = true)
     static class Container1 {
 
         @Nullable
@@ -50,7 +48,7 @@ public class ContainerChecks {
     // second example: the add method breaks the contract
     // however, the setter may never be called
     // the @Size problem we've observed here is replicated in SizeChecks2
-    @Container(type = VERIFY_ABSENT)
+    @Container(absent = true)
     static class Container2 {
 
         @Linked(to = "strings2param")
@@ -77,7 +75,7 @@ public class ContainerChecks {
 
     // variant of the second example: the add method breaks the contract;
     // this works easily because strings2b is final
-    @Container(type = VERIFY_ABSENT)
+    @Container(absent = true)
     @E1Immutable // which implies NOT container
     static class Container2b {
 
@@ -111,7 +109,7 @@ public class ContainerChecks {
     @Container
     static class Container3 {
 
-        @NotModified(type = VERIFY_ABSENT)
+        @NotModified(absent = true)
         @Modified
         @Variable
         @Nullable
@@ -132,7 +130,7 @@ public class ContainerChecks {
         }
     }
 
-    @Container(type = VERIFY_ABSENT)
+    @Container(absent = true)
     static class Container4 {
 
         @NotNull1
@@ -148,28 +146,28 @@ public class ContainerChecks {
         }
 
         // there should be a link from the field (or the source link, the input parameter 'strings', to 'modified'
-        public void m1(@NotModified(type = VERIFY_ABSENT) @NotNull Set<String> modified) {
+        public void m1(@NotModified(absent = true) @NotNull Set<String> modified) {
             Set<String> sourceM1 = strings4;
             modified.addAll(sourceM1);
         }
 
         // there should be a link from modified2 to strings
-        public void m2(@NotModified(type = VERIFY_ABSENT) @NotNull Set<String> modified2) {
+        public void m2(@NotModified(absent = true) @NotNull Set<String> modified2) {
             Set<String> toModifyM2 = modified2;
             toModifyM2.addAll(strings4);
         }
 
         // we link the set 'out' to the set 'in', but who cares about this? how can we use this linkage later?
-        public static void crossModify(@NotNull @NotModified Set<String> in, @NotNull @NotModified(type = VERIFY_ABSENT) Set<String> out) {
+        public static void crossModify(@NotNull @NotModified Set<String> in, @NotNull @NotModified(absent = true) Set<String> out) {
             out.addAll(in);
         }
     }
 
     @E1Container
     static class Container5 {
-        @NotModified(type = VERIFY_ABSENT)
+        @NotModified(absent = true)
         @Modified
-        @Linked(type = VERIFY_ABSENT)
+        @Linked(absent = true)
         @NotNull
         private final List<String> list;
 
@@ -189,7 +187,7 @@ public class ContainerChecks {
             this.list.add(string);
         }
 
-        @NotModified(type = VERIFY_ABSENT)
+        @NotModified(absent = true)
         public void addAll5(@NotNull1 Collection<String> collection) {
             list.addAll(collection);
         }

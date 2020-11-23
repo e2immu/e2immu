@@ -1,13 +1,12 @@
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.NotNull;
 
 public class TryStatementChecks {
 
     @NotNull
-    @Constant(type = AnnotationType.VERIFY_ABSENT)
+    @Constant(absent = true)
     public static String method1(String s) {
         try {
             return "Hi" + Integer.parseInt(s);
@@ -19,7 +18,7 @@ public class TryStatementChecks {
     }
 
     @NotNull
-    @Constant(type = AnnotationType.VERIFY_ABSENT)
+    @Constant(absent = true)
     public static String method2(String s) {
         String res;
         try {
@@ -33,7 +32,7 @@ public class TryStatementChecks {
     }
 
     @NotNull
-    @Constant(stringValue = "Hi")
+    @Constant("Hi")
     public static String method3(String s) {
         String res;
         try {
@@ -49,7 +48,7 @@ public class TryStatementChecks {
         return res;
     }
 
-    @NotNull(type = AnnotationType.VERIFY_ABSENT)
+    @NotNull(absent = true)
     @Constant
     public static String method4(String s) {
         String res;
@@ -65,8 +64,8 @@ public class TryStatementChecks {
         return res;
     }
 
-    @NotNull(type = AnnotationType.VERIFY_ABSENT)
-    @Constant(type = AnnotationType.VERIFY_ABSENT)
+    @NotNull(absent = true)
+    @Constant(absent = true)
     public static String method5(String s) {
         String res;
         try {

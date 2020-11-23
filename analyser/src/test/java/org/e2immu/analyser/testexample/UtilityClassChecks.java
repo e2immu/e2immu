@@ -23,14 +23,12 @@ import org.e2immu.annotation.ExtensionClass;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.UtilityClass;
 
-import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
-
 @ExtensionClass(of = String.class)
 @E2Container
 public class UtilityClassChecks {
 
     @NotModified
-    static void print(@NotModified(type=VERIFY_ABSENT) String toPrint) {
+    static void print(@NotModified(absent = true) String toPrint) {
         System.out.println(toPrint);
     }
 
@@ -50,14 +48,14 @@ public class UtilityClassChecks {
         }
     }
 
-    @UtilityClass(type = VERIFY_ABSENT)
+    @UtilityClass(absent = true)
     static class NotAUtilityClass {
         static void hello(String s) {
             print(s);
         }
     }
 
-    @UtilityClass(type = VERIFY_ABSENT)
+    @UtilityClass(absent = true)
     static class NotAUtilityClass2 {
         static void hello(String s) {
             print(s);

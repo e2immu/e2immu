@@ -33,5 +33,5 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.FIELD)
 public @interface IgnoreModifications {
-    AnnotationType type() default AnnotationType.CONTRACT;
+    // contract: true, absent: false
 }

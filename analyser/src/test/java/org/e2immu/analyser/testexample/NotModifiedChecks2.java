@@ -25,15 +25,14 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
 
 public class NotModifiedChecks2 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NotModifiedChecks2.class);
 
-    @NotModified(type = VERIFY_ABSENT) // modified by add method
+    @NotModified(absent = true) // modified by add method
     final Set<String> s2 = new HashSet<>();
 
-    @NotModified(type = VERIFY_ABSENT) // modifies s2
+    @NotModified(absent = true) // modifies s2
     public int add(String s) {
         Set<String> theSet = s2; // linked to s2, which is linked to set2
         LOGGER.debug("The set has {} elements before adding {}", theSet.size(), s);

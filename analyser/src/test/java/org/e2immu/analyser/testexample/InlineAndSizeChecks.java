@@ -61,19 +61,19 @@ public class InlineAndSizeChecks {
         return t;
     }
 
-    @Constant(intValue = 3)
+    @Constant("3")
     public static final int m0 = "abc".length();
 
-    @Constant(intValue = 3)
+    @Constant("3")
     public static final int m1 = len("abc");
 
-    @Constant(intValue = -1)
+    @Constant("-1")
     public static final int m2 = len(null);
 
-    @Constant(intValue = -1)
+    @Constant("-1")
     public static final int m2_2 = len2(null);
 
-    @Constant(intValue = -1)
+    @Constant("-1")
     public static final int m2_3 = len3(null);
 
 

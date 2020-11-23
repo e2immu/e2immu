@@ -42,11 +42,11 @@ public class NotModified1Checks {
     private final Counter myCounter = new Counter();
 
     @NotModified
-    @NotModified1(type = AnnotationType.VERIFY_ABSENT)
+    @NotModified1(absent = true)
     private static final Consumer<Counter> incrementer = Counter::increment;
 
     @NotModified
-    @NotModified1(type = AnnotationType.VERIFY_ABSENT)
+    @NotModified1(absent = true)
     private static final Consumer<Counter> explicitIncrementer = new Consumer<Counter>() {
         @Override
         @NotModified
@@ -69,7 +69,7 @@ public class NotModified1Checks {
         }
     };
 
-    private void apply(@NotModified1(type = AnnotationType.CONTRACT) Consumer<Counter> consumer) {
+    private void apply(@NotModified1(contract = true) Consumer<Counter> consumer) {
         consumer.accept(myCounter);
     }
 

@@ -53,7 +53,7 @@ public class UnusedLocalVariableChecks {
         t.trim();
     }
 
-    @Constant(intValue = 1)
+    @Constant("1")
     private static int checkArray() {
         int[] integers = {1, 2, 3};
         int i = 0;

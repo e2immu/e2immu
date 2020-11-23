@@ -83,7 +83,7 @@ public class ObjectFlowFreezableSet {
     static final FreezableSet SET5 = method4();
 
     // not frozen yet
-    @E2Container(type = AnnotationType.VERIFY_ABSENT)
+    @E2Container(absent = true)
     @BeforeMark
     @NotModified
     static FreezableSet method6() {
@@ -114,7 +114,7 @@ public class ObjectFlowFreezableSet {
         SET8.add("xx"); // should throw ERROR!!
     }
 
-    @E2Container(type = AnnotationType.VERIFY_ABSENT)
+    @E2Container(absent = true)
     @NotNull
     static final FreezableSet SET10 = method6();
 

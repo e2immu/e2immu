@@ -72,7 +72,7 @@ public class MethodInspector {
     Example:
 
     public @interface Dependent {
-      AnnotationType type() default AnnotationType.VERIFY;
+      boolean absent() default false; boolean contract() default false;
     }
      */
 

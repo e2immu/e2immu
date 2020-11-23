@@ -1,12 +1,12 @@
 package org.e2immu.analyser.analyser.check;
 
+import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
-import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.Mark;
 import org.e2immu.annotation.Only;
 
@@ -17,10 +17,9 @@ public class CheckOnly {
         AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(Only.class).orElse(null);
         if (annotationExpression == null) return; // nothing to verify
 
-        AnnotationType annotationType = annotationExpression.extract("type", null);
-        boolean mustBeAbsent = annotationType == AnnotationType.VERIFY_ABSENT;
+        AnnotationParameters parameters = annotationExpression.parameters();
         boolean noData = markAndOnly == null || markAndOnly.mark;
-        if (mustBeAbsent) {
+        if (parameters.absent()) {
             if (noData) return; // fine!
             messages.add(Message.newMessage(new Location(methodInfo),
                     Message.ANNOTATION_UNEXPECTEDLY_PRESENT, "@Only"));
@@ -67,10 +66,9 @@ public class CheckOnly {
         AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(Mark.class).orElse(null);
         if (annotationExpression == null) return; // nothing to verify
 
-        AnnotationType annotationType = annotationExpression.extract("type", null);
-        boolean mustBeAbsent = annotationType == AnnotationType.VERIFY_ABSENT;
+        AnnotationParameters parameters = annotationExpression.parameters();
         boolean noData = markAndOnly == null || !markAndOnly.mark;
-        if (mustBeAbsent) {
+        if (parameters.absent()) {
             if (noData) return; // fine!
             messages.add(Message.newMessage(new Location(methodInfo),
                     Message.ANNOTATION_UNEXPECTEDLY_PRESENT, "@Mark"));

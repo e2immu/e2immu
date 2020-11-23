@@ -6,20 +6,20 @@ import org.e2immu.annotation.*;
 public class Basics {
 
     // we don't want @Final here, because it is explicitly so...
-    @Final(type = AnnotationType.VERIFY_ABSENT)
+    @Final(absent = true)
     // again, String is @E2Container by definition, we don't want that plastered all around
-    @E2Container(type = AnnotationType.VERIFY_ABSENT)
+    @E2Container(absent = true)
 
-    @Constant(stringValue = "abc")
+    @Constant("abc")
     private final String explicitlyFinal = "abc";
 
     // again, String is @E2Container by definition, we don't want that plastered all around
-    @E2Container(type = AnnotationType.VERIFY_ABSENT)
+    @E2Container(absent = true)
     // a method returning an @E2Immutable type is always @Independent
-    @Independent(type = AnnotationType.VERIFY_ABSENT)
+    @Independent(absent = true)
 
     @NotNull
-    @Constant(stringValue = "abc")
+    @Constant("abc")
     public String getExplicitlyFinal() {
         return explicitlyFinal;
     }

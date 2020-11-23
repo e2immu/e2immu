@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.abstractvalue.UnknownValue;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.annotation.AnnotationType;
 
 import java.util.List;
 import java.util.Map;
@@ -30,11 +29,11 @@ import java.util.Objects;
 public class CompanionAnalysisImpl implements CompanionAnalysis {
 
     private final Value value;
-    private final AnnotationType annotationType;
+    private final AnnotationParameters annotationType;
     private final Value preAspectVariableValue;
     private final List<Value> parameterValues;
 
-    private CompanionAnalysisImpl(AnnotationType annotationType, Value value, Value preAspectVariableValue,  List<Value> parameterValues) {
+    private CompanionAnalysisImpl(AnnotationParameters annotationType, Value value, Value preAspectVariableValue, List<Value> parameterValues) {
         Objects.requireNonNull(value);
         this.value = value;
         this.annotationType = annotationType;
@@ -52,7 +51,7 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
     }
 
     @Override
-    public AnnotationType getAnnotationType() {
+    public AnnotationParameters getAnnotationType() {
         return annotationType;
     }
 
@@ -63,12 +62,12 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
 
     public static class Builder implements CompanionAnalysis {
 
-        private final AnnotationType annotationType;
+        private final AnnotationParameters annotationType;
         public final SetOnce<Value> value = new SetOnce<>();
         public final SetOnce<Map<String, Value>> remapParameters = new SetOnce<>();
         public final SetOnce<Value> preAspectVariableValue = new SetOnce<>();
         public final SetOnce<List<Value>> parameterValues = new SetOnce<>();
-        public Builder(AnnotationType annotationType) {
+        public Builder(AnnotationParameters annotationType) {
             this.annotationType = annotationType;
         }
 
@@ -88,7 +87,7 @@ public class CompanionAnalysisImpl implements CompanionAnalysis {
         }
 
         @Override
-        public AnnotationType getAnnotationType() {
+        public AnnotationParameters getAnnotationType() {
             return annotationType;
         }
 

@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.abstractvalue.ContractMark;
 import org.e2immu.analyser.model.expression.MemberValuePair;
@@ -27,7 +28,6 @@ import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnceMap;
-import org.e2immu.annotation.AnnotationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -179,13 +179,10 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         AnnotationExpression mark = null;
 
         for (AnnotationExpression annotationExpression : annotations) {
-            AnnotationType annotationType = Analysis.e2immuAnnotation(annotationExpression);
-            if (annotationType == AnnotationType.CONTRACT ||
-                    annotationType == AnnotationType.CONTRACT_ABSENT ||
-                    // VERIFY is the default in annotated APIs, and non-default method declarations in interfaces...
-                    acceptVerify && annotationType == AnnotationType.VERIFY) {
-                int trueFalse = annotationType == AnnotationType.CONTRACT_ABSENT ? Level.FALSE : Level.TRUE;
-                int falseTrue = annotationType != AnnotationType.CONTRACT_ABSENT ? Level.FALSE : Level.TRUE;
+            AnnotationParameters parameters = annotationExpression.parameters();
+            if (parameters.contract() || acceptVerify && !parameters.absent()) {
+                int trueFalse = parameters.absent() ? Level.FALSE : Level.TRUE;
+                int falseTrue = !parameters.absent() ? Level.FALSE : Level.TRUE;
 
                 TypeInfo t = annotationExpression.typeInfo();
                 if (e2ImmuAnnotationExpressions.e1Immutable.get().typeInfo() == t) {

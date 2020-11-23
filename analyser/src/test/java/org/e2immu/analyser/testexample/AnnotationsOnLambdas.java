@@ -9,8 +9,6 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
-
 public class AnnotationsOnLambdas {
     // here we come in the
 
@@ -24,7 +22,7 @@ public class AnnotationsOnLambdas {
     @FunctionalInterface
     interface RemoveOne {
         @Identity
-        Set<String> go(@NotNull @NotModified(type = VERIFY_ABSENT) Set<String> in);
+        Set<String> go(@NotNull @NotModified(absent = true) Set<String> in);
     }
 
     final static RemoveOne removeOne = set -> {

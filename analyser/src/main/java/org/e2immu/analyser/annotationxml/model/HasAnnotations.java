@@ -20,20 +20,16 @@ package org.e2immu.analyser.annotationxml.model;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.AnnotationExpression;
-import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.Mark;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@E2Immutable(after = "freeze")
 public abstract class HasAnnotations {
     private List<Annotation> annotations = new ArrayList<>();
 
-    @Mark("freeze")
     void freeze() {
         annotations = ImmutableList.copyOf(annotations);
     }
@@ -45,8 +41,8 @@ public abstract class HasAnnotations {
     protected void addAnnotations(List<AnnotationExpression> inspected, List<AnnotationExpression> analysed) {
         Set<String> e2immuAnnotationsWritten = new HashSet<>();
         for (AnnotationExpression ae : inspected) {
-            boolean accept = ae.typeInfo().fullyQualifiedName.startsWith(AnnotationType.class.getPackageName())
-                    && !ae.isVerifyAbsent();
+            boolean accept = ae.typeInfo().fullyQualifiedName.startsWith(E2Immutable.class.getPackageName())
+                    && !ae.parameters().isVerifyAbsent();
             if (accept) {
                 e2immuAnnotationsWritten.add(ae.typeInfo().fullyQualifiedName);
                 Annotation annotation = Annotation.from(ae);

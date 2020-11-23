@@ -28,13 +28,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.METHOD, ElementType.FIELD})
 public @interface Constant {
-    AnnotationType type() default AnnotationType.VERIFY;
+    boolean absent() default false;
 
-    // if test is true, then the value of int, string or bool will be verified
-    // the same will happen when the value is different from the default.
-    boolean test() default false;
+    boolean contract() default false;
 
-    int intValue() default 0;
-    String stringValue() default "";
-    boolean boolValue() default false;
+    String value() default "";
 }

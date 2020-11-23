@@ -7,10 +7,7 @@ import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NumericValue;
-import org.e2immu.analyser.model.value.StringValue;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -28,37 +25,16 @@ public class CheckConstant {
         this.primitives = primitives;
     }
 
-    private static class ToTest {
-        Value valueToTest; // can be null, then we will not test a value, but test Constant
-        boolean verifyAbsent;
+    private static record ToTest(String value, boolean verifyAbsent) {
     }
 
     private ToTest constantAnnotationToVerify(List<AnnotationExpression> annotationExpressions) {
         Optional<AnnotationExpression> oConstant = annotationExpressions.stream()
                 .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(Constant.class.getName())).findFirst();
         return oConstant.map(constant -> {
-            ToTest toTest = new ToTest();
-            toTest.verifyAbsent = constant.isVerifyAbsent();
-            boolean testExplicitly = constant.test();
-            Boolean testBoolean = constant.extract("boolValue", null);
-            if (testBoolean != null) {
-                toTest.valueToTest = new BoolValue(primitives, testBoolean);
-                if (testBoolean) testExplicitly = true;
-            } else {
-                Integer testInteger = constant.extract("intValue", null);
-                if (testInteger != null) {
-                    toTest.valueToTest = new IntValue(primitives, testInteger, ObjectFlow.NO_FLOW);
-                    if (testInteger != 0) testExplicitly = true;
-                } else {
-                    String testString = constant.extract("stringValue", null);
-                    if (testString != null) {
-                        toTest.valueToTest = new StringValue(primitives, testString, ObjectFlow.NO_FLOW);
-                        if (!testString.isEmpty()) testExplicitly = true;
-                    }
-                }
-            }
-            if (!testExplicitly) toTest.valueToTest = null;
-            return toTest;
+            boolean verifyAbsent = constant.parameters().isVerifyAbsent();
+            String value = constant.extract("value", "");
+            return new ToTest(value, verifyAbsent);
         }).orElse(null);
     }
 
@@ -99,10 +75,9 @@ public class CheckConstant {
             messages.add(Message.newMessage(where, Message.ANNOTATION_ABSENT, "Constant"));
             return;
         }
-        if (toTest.valueToTest != null && !toTest.valueToTest.equals(singleReturnValue)) {
+        if (toTest.value.equals(singleReturnValue.toString())) {
             messages.add(Message.newMessage(where, Message.WRONG_CONSTANT, "required " +
-                    toTest.valueToTest + "' of type " + toTest.valueToTest.getClass().getSimpleName() +
-                    ", found " + singleReturnValue));
+                    toTest.value + ", found " + singleReturnValue));
         }
     }
 

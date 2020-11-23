@@ -18,13 +18,12 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Value;
-import org.e2immu.annotation.AnnotationType;
 
 import java.util.List;
 
 public interface CompanionAnalysis {
 
-    AnnotationType getAnnotationType();
+    AnnotationParameters getAnnotationType();
 
     /**
      * @return the value that represents the companion.

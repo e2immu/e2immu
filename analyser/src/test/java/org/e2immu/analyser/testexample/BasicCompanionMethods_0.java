@@ -24,7 +24,7 @@ import java.util.List;
 
 public class BasicCompanionMethods_0 {
 
-    @Constant(intValue = 4)
+    @Constant("4")
     static int test() {
         List<String> list = new ArrayList<>();
         if (list.size() > 0) { // evaluates to constant

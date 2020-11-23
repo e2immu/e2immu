@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
@@ -49,7 +50,7 @@ public interface WithInspectionAndAnalysis {
     }
 
     default Optional<Boolean> error(AbstractAnalysisBuilder analysisBuilder, Class<?> annotation, AnnotationExpression expression) {
-        Optional<Boolean> mustBeAbsent = hasInspectedAnnotation(annotation).map(AnnotationExpression::isVerifyAbsent);
+        Optional<Boolean> mustBeAbsent = hasInspectedAnnotation(annotation).map(AnnotationExpression::parameters).map(AnnotationParameters::isVerifyAbsent);
         if (mustBeAbsent.isEmpty()) return Optional.empty(); // no error, no check!
         Boolean actual = analysisBuilder.annotations.getOtherwiseNull(expression);
         if (actual == null && !mustBeAbsent.get() || mustBeAbsent.get() == actual) {
@@ -59,7 +60,7 @@ public interface WithInspectionAndAnalysis {
     }
 
     default Optional<Boolean> error(AbstractAnalysisBuilder analysisBuilder, Class<?> annotation, List<AnnotationExpression> expressions) {
-        Optional<Boolean> mustBeAbsent = hasInspectedAnnotation(annotation).map(AnnotationExpression::isVerifyAbsent);
+        Optional<Boolean> mustBeAbsent = hasInspectedAnnotation(annotation).map(AnnotationExpression::parameters).map(AnnotationParameters::isVerifyAbsent);
         if (mustBeAbsent.isEmpty()) return Optional.empty(); // no error, no check!
         for (AnnotationExpression expression : expressions) {
             Boolean actual = analysisBuilder.annotations.getOtherwiseNull(expression);

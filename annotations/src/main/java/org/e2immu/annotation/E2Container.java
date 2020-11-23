@@ -25,7 +25,10 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.METHOD, ElementType.TYPE})
 public @interface E2Container {
-    AnnotationType type() default AnnotationType.VERIFY;
+    boolean absent() default false;
+
+    boolean contract() default false;
+
     /**
      * @return when the type is effectively immutable, set the empty string.
      * When it is eventually immutable, return a boolean expression of strings from <code>@Mark</code>

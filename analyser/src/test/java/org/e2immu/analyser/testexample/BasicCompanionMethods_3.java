@@ -21,7 +21,7 @@ import org.e2immu.annotation.Constant;
 
 public class BasicCompanionMethods_3 {
 
-    @Constant(boolValue = true)
+    @Constant("true")
     static boolean test() {
         StringBuilder sb = new StringBuilder("abc").append(3).append("-");
         if (sb.length() == 3) { //evaluates to constant

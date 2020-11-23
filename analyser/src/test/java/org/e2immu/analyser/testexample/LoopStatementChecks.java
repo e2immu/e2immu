@@ -1,13 +1,12 @@
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.Constant;
 import org.e2immu.annotation.NotNull;
 
 public class LoopStatementChecks {
 
-    @Constant(type = AnnotationType.VERIFY_ABSENT) // TODO for later
-    @NotNull(type = AnnotationType.VERIFY_ABSENT) // TODO for later
+    @Constant(absent = true) // TODO for later
+    @NotNull(absent = true) // TODO for later
     public static String method1(int n) {
         String res1;
         int i = 0;
@@ -19,8 +18,8 @@ public class LoopStatementChecks {
         return res1;
     }
 
-    @Constant(type = AnnotationType.VERIFY_ABSENT)
-    @NotNull(type = AnnotationType.VERIFY_ABSENT)
+    @Constant(absent = true)
+    @NotNull(absent = true)
     public static String method2(int n) {
         String res2 = null; // = null forced upon us by compiler!
         int i = 0;
@@ -42,7 +41,7 @@ public class LoopStatementChecks {
         return res;
     }
 
-    @NotNull(type = AnnotationType.VERIFY_ABSENT)
+    @NotNull(absent = true)
     public static String method3bis() {
         String res = null; // = null forced upon us by compiler
         for (String s : new String[]{}) {

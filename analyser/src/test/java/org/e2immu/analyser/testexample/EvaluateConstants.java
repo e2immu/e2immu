@@ -25,23 +25,23 @@ public class EvaluateConstants {
     final static boolean a = true;
     final static boolean b = false;
 
-    @Constant(boolValue = false, test = true)
+    @Constant("false")
     final static boolean c = !a;
     final static boolean d = a || b;
 
-    @Constant(boolValue = false, test = true)
+    @Constant("false")
     final static boolean e = c && !d;
 
     @NotNull
     @NotModified
-    @Constant(boolValue = false)
+    @Constant("false")
     public static Boolean ee() {
         return e;
     }
 
     @NotNull
     @NotModified
-    @Constant(stringValue = "b")
+    @Constant("b")
     public static String print() {
         // ERROR: if statement evaluates to constant
         if (ee()) return "a";
@@ -56,35 +56,35 @@ public class EvaluateConstants {
         return ee() ? "a" : "b";
     }
 
-    @Constant(intValue = 3)
+    @Constant("3")
     final int i = 3;
     final int j = 233;
 
-    @Constant(intValue = 699)
+    @Constant("699")
     final int k = i * j;
 
-    @Constant(boolValue = true)
+    @Constant("true")
     final boolean l = k > 400;
 
     @NotModified
-    @Constant(intValue = 162870)
+    @Constant("162870")
     public int allThree() {
         return i + j * k;
     }
 
     @NotNull
-    @Constant(stringValue = "hello")
+    @Constant("hello")
     final static String s = "hello";
 
     @NotNull
-    @Constant(stringValue = "world")
+    @Constant("world")
     final static String w = "world";
 
     @NotNull
-    @Constant(stringValue = "hello world")
+    @Constant("hello world")
     final static String t = s + " " + w;
 
-    @Constant(intValue = 0, test = true)
+    @Constant("0")
     public int someCalculation(int p) {
         int q = 1 * p + p + 0 * i; // this should be evaluated as 2*p
         return q - p * 2;
@@ -92,12 +92,12 @@ public class EvaluateConstants {
 
     @NotNull
     @Final
-    @Linked(type = AnnotationType.VERIFY_ABSENT)
+    @Linked(absent = true)
     private String effectivelyFinal;
 
     @NotNull
     @Final
-    @Constant(stringValue = "abc")
+    @Constant("abc")
     private String constant;
 
     public EvaluateConstants(@NotNull String in) {
@@ -112,7 +112,7 @@ public class EvaluateConstants {
     }
 
     @NotNull
-    @Constant(stringValue = "abc")
+    @Constant("abc")
     public String getConstant() {
         return constant;
     }

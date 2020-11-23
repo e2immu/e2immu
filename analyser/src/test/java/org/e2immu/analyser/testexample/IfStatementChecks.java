@@ -7,7 +7,7 @@ import org.e2immu.annotation.*;
 public class IfStatementChecks {
 
     @NotNull
-    @Identity(type = AnnotationType.VERIFY_ABSENT)
+    @Identity(absent = true)
     public static String method1(String a) {
         if (a == null) return "b";
         return a;
@@ -20,13 +20,13 @@ public class IfStatementChecks {
     }
 
     @NotNull
-    @Constant(type = AnnotationType.VERIFY_ABSENT)
+    @Constant(absent = true)
     public static String method3(String c) {
         if (c != null) return c;
         return "abc";
     }
 
-    @Constant(type = AnnotationType.VERIFY_ABSENT)
+    @Constant(absent = true)
     @NotNull
     public static String method4(String c) {
         String res;

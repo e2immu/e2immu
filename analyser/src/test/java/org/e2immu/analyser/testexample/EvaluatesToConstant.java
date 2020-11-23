@@ -44,7 +44,7 @@ public class EvaluatesToConstant {
         return a.toLowerCase();
     }
 
-    @Constant(stringValue = "c")
+    @Constant("c")
     private static String method2(String param) {
         String b = someMethod(param);
         // ERROR: if statement evaluates to constant
@@ -54,7 +54,7 @@ public class EvaluatesToConstant {
         return "c";
     }
 
-    @Constant(stringValue = "c")
+    @Constant("c")
     private static String method3(String param) {
         String b = someMethod(param);
         if (param.contains("a")) {

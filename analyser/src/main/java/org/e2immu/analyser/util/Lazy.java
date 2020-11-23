@@ -19,7 +19,6 @@
 package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
-import static org.e2immu.annotation.AnnotationType.*;
 
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -61,7 +60,7 @@ public class Lazy<T> {
      */
     @NotNull
     @Modified
-    @Mark(value = "get", type = CONTRACT)
+    @Mark(value = "get", contract = true)
     public T get() {
         T localT = t;
         if (localT != null) return localT;

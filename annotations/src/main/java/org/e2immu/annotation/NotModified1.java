@@ -29,5 +29,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})
 public @interface NotModified1 {
-    AnnotationType type() default AnnotationType.VERIFY;
+    boolean absent() default false;
+
+    // not computed at the moment
+    boolean contract() default true;
 }

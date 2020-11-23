@@ -1,6 +1,5 @@
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.AnnotationType;
 import org.e2immu.annotation.NotModified;
 
 import java.util.HashSet;
@@ -29,14 +28,14 @@ public class SizeOnThis {
 
     // annotation is about the object
     boolean clear$Modification$Size(int post, int pre) { return post == 0; }
-    @NotModified(type = AnnotationType.VERIFY_ABSENT)
+    @NotModified(absent = true)
     private void clear() {
         strings.clear();
     }
 
     // this annotation is about the object, not the return value
     boolean add$Modification$Size(int post, int pre) { return pre == 0 ? post == 1: post >= pre && post <= pre+1; }
-    @NotModified(type = AnnotationType.VERIFY_ABSENT)
+    @NotModified(absent = true)
     public boolean add(String a) {
         return strings.add(a);
     }
@@ -44,7 +43,7 @@ public class SizeOnThis {
     // this annotation is about the object, not the return value (even though in this particular case,
     // they could be the same.)
     boolean method1$Modification$Size(int post, int pre) { return post >= 1; }
-    @NotModified(type = AnnotationType.VERIFY_ABSENT)
+    @NotModified(absent = true)
     public int method1(String s) {
         clear();
         if (isEmpty()) { // ERROR, constant evaluation
@@ -61,7 +60,7 @@ public class SizeOnThis {
     }
 
     boolean method2$Modification$Size(int post, int pre) { return post >= 1; }
-    @NotModified(type = AnnotationType.VERIFY_ABSENT)
+    @NotModified(absent = true)
     public void method2() {
         int n = method1("a");
         if(n >= 1) { // ERROR constant evaluation

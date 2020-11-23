@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
@@ -37,10 +38,6 @@ public interface AnnotationExpression {
 
     <T> T extract(String fieldName, T defaultValue);
 
-    boolean isVerifyAbsent();
-
-    boolean test();
-
     AnnotationExpression copyWith(Primitives primitives, String parameter, int value);
 
     AnnotationExpression copyWith(Primitives primitives, String parameter, boolean value);
@@ -48,4 +45,6 @@ public interface AnnotationExpression {
     AnnotationExpression copyWith(Primitives primitives, String parameter, String value);
 
     UpgradableBooleanMap<TypeInfo> typesReferenced();
+
+    AnnotationParameters parameters();
 }

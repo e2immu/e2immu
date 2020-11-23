@@ -17,9 +17,9 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.annotation.AnnotationMode;
-import org.e2immu.annotation.AnnotationType;
 
 import java.util.Map;
 import java.util.Set;
@@ -46,13 +46,13 @@ public interface Analysis {
     }
 
     default void peekIntoAnnotations(AnnotationExpression annotation, Set<TypeInfo> annotationsSeen, StringBuilder sb) {
-        AnnotationType annotationType = e2immuAnnotation(annotation);
-        if (annotationType != null && annotationType != AnnotationType.CONTRACT) {
+        AnnotationParameters parameters = annotation.parameters();
+        if (parameters == null) return;
+        if (!parameters.contract()) {
             // so we have one of our own annotations, and we know its type
             Boolean verified = getAnnotation(annotation);
             if (verified != null) {
-                boolean ok = verified && annotationType == AnnotationType.VERIFY
-                        || !verified && annotationType == AnnotationType.VERIFY_ABSENT;
+                boolean ok = verified && !parameters.absent() || !verified && parameters.absent();
                 annotationsSeen.add(annotation.typeInfo());
                 if (ok) {
                     sb.append("/*OK*/");
@@ -60,21 +60,15 @@ public interface Analysis {
                     sb.append("/*FAIL*/");
                 }
             } else {
-                if (annotationType == AnnotationType.VERIFY) {
+                if (!parameters.absent()) {
                     sb.append("/*FAIL:DELAYED*/");
-                } else if (annotationType == AnnotationType.VERIFY_ABSENT) {
+                } else {
                     sb.append("/*OK:DELAYED*/");
                 }
             }
+        } else {
+            if (!parameters.absent()) annotationsSeen.add(annotation.typeInfo());
         }
-        if (annotationType == AnnotationType.CONTRACT) annotationsSeen.add(annotation.typeInfo());
-    }
-
-    static AnnotationType e2immuAnnotation(AnnotationExpression annotation) {
-        if (annotation.typeInfo().fullyQualifiedName.startsWith("org.e2immu.annotation")) {
-            return annotation.extract("type", AnnotationType.VERIFY);
-        }
-        return null;
     }
 
     default Analysis build() {

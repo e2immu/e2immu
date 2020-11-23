@@ -22,10 +22,8 @@ import org.e2immu.annotation.*;
 
 import java.util.*;
 
-import static org.e2immu.annotation.AnnotationType.VERIFY_ABSENT;
-
-@Container(type = VERIFY_ABSENT)
-@E1Container(type = VERIFY_ABSENT)
+@Container(absent = true)
+@E1Container(absent = true)
 @E1Immutable
 public class NotModifiedChecks {
     @NotModified
@@ -36,39 +34,39 @@ public class NotModifiedChecks {
     @Linked(to = {"NotModifiedChecks.list"})
     final Collection<String> c1;
 
-    @NotModified(type = VERIFY_ABSENT)
+    @NotModified(absent = true)
     @Modified
     @Linked(to = {"NotModifiedChecks.set3"})
     final Set<String> s0;
 
     @NotModified
-    @Modified(type = VERIFY_ABSENT)
-    @Linked(type = VERIFY_ABSENT)
+    @Modified(absent = true)
+    @Linked(absent = true)
     final Set<String> s1;
 
-    @NotModified(type = VERIFY_ABSENT)
+    @NotModified(absent = true)
     @Modified
     @Linked(to = {"NotModifiedChecks.set2"})
     final Set<String> s2;
 
-    @NotModified(type = VERIFY_ABSENT)
+    @NotModified(absent = true)
     @Modified
     @Linked(to = {"NotModifiedChecks.set4"})
     final C1 c4;
 
-    @Linked(type = VERIFY_ABSENT)
+    @Linked(absent = true)
     final int l0;
 
-    @Linked(type = VERIFY_ABSENT)
+    @Linked(absent = true)
     final int l1;
 
-    @Linked(type = VERIFY_ABSENT)
+    @Linked(absent = true)
     final int l2;
 
     public NotModifiedChecks(@NotModified @NotNull List<String> list,
-                             @Modified @NotModified(type = VERIFY_ABSENT) Set<String> set2,
-                             @Modified @NotModified(type = VERIFY_ABSENT) Set<String> set3,
-                             @Modified @NotModified(type = VERIFY_ABSENT) Set<String> set4) {
+                             @Modified @NotModified(absent = true) Set<String> set2,
+                             @Modified @NotModified(absent = true) Set<String> set3,
+                             @Modified @NotModified(absent = true) Set<String> set4) {
         c0 = list;
         c1 = list.subList(0, list.size() / 2);
         s0 = set3;
@@ -94,7 +92,7 @@ public class NotModifiedChecks {
         @NotNull1
         @NotModified // do not change the fields
         @Linked(to = {"C1.set1"})
-        @Independent(type = VERIFY_ABSENT)
+        @Independent(absent = true)
         Set<String> getSet() {
             return set;
         }
@@ -111,8 +109,8 @@ public class NotModifiedChecks {
         return c0;
     }
 
-    @NotModified(type = VERIFY_ABSENT)
-    @Linked(type = VERIFY_ABSENT) // primitive
+    @NotModified(absent = true)
+    @Linked(absent = true) // primitive
     public int add(@NotNull String s) {
         Set<String> theSet = s2; // linked to s2, which is linked to set2
         System.out.println("The set has " + theSet.size() + " elements before adding " + s);
@@ -120,28 +118,28 @@ public class NotModifiedChecks {
         return example1() || example2() ? 1 : 0; // this one modifies set3!
     }
 
-    @Linked(type = VERIFY_ABSENT) // primitive
+    @Linked(absent = true) // primitive
     private boolean example1() {
         C1 c = new C1(s0); // c.set is linked to s0 which is linked to set3
         C1 localD = new C1(Set.of("a", "b", "c"));
         return addAll(c.set, localD.set); // c cannot be @NotModified because of the addAll call
     }
 
-    @Linked(type = VERIFY_ABSENT) // primitive
+    @Linked(absent = true) // primitive
     private boolean example2() {
         C1 d = new C1(Set.of("d"));
         return addAllOnC(c4, d);
     }
 
     // this is an extension function on Set
-    @Linked(type = VERIFY_ABSENT) // primitive
+    @Linked(absent = true) // primitive
     private static boolean addAll(@NotNull @Modified Set<String> c, @NotNull1 @NotModified Set<String> d) {
         return c.addAll(d);
     }
 
     // this is an extension function on C1
     // not modified applies to sub-fields as well.
-    @Linked(type = VERIFY_ABSENT) // primitive
+    @Linked(absent = true) // primitive
     private static boolean addAllOnC(@NotNull @Modified C1 c1, @NotNull @NotModified C1 d1) {
         return c1.set.addAll(d1.set);
     }

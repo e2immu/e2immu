@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
-import org.e2immu.annotation.AnnotationType;
 import org.objectweb.asm.Type;
 
 public class ExpressionFactory {
@@ -41,11 +40,6 @@ public class ExpressionFactory {
         if (value instanceof Boolean b) return new BooleanConstant(primitives, b);
         if (value instanceof Type t)
             return new TypeExpression(typeContext.getFullyQualified(t.getClassName(), true).asParameterizedType());
-
-        if (value instanceof AnnotationType) {
-            // TODO
-            return NullConstant.NULL_CONSTANT;
-        }
         throw new UnsupportedOperationException("Value " + value + " is of " + value.getClass());
     }
 }

@@ -112,7 +112,7 @@ public class DependencyGraph<T> extends Freezable {
         return node;
     }
 
-    @NotModified(type = AnnotationType.CONTRACT)
+    @NotModified(contract = true)
     public void visit(@NotNull BiConsumer<T, List<T>> consumer) {
         nodeMap.values().forEach(n -> consumer.accept(n.t, n.dependsOn));
     }
