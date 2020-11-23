@@ -550,7 +550,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         Block block = new Block.BlockBuilder().addStatement(statement).build();
 
         log(LAMBDA, "Result of translating block: {}", block.statementString(0, null));
-        methodBuilder.setBlock(block);
+        methodBuilder.setInspectedBlock(block);
         methodInfo.methodInspection.set(methodBuilder.build());
         typeInfo.typeInspection.set(builder.build());
         expressionContext.addNewlyCreatedType(typeInfo);

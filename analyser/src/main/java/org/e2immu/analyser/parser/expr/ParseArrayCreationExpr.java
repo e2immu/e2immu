@@ -48,7 +48,7 @@ public class ParseArrayCreationExpr {
     static MethodInfo createArrayCreationConstructor(TypeContext typeContext, ParameterizedType parameterizedType) {
         MethodInfo constructor = new MethodInfo(parameterizedType.typeInfo, List.of());
         MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(constructor)
-                .setBlock(Block.EMPTY_BLOCK)
+                .setInspectedBlock(Block.EMPTY_BLOCK)
                 .setReturnType(parameterizedType)
                 .addModifier(MethodModifier.PUBLIC);
         for (int i = 0; i < parameterizedType.arrays; i++) {

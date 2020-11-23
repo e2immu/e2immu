@@ -57,10 +57,6 @@ public class MethodInspector {
         }
     }
 
-    public MethodInspection build() {
-        return builder.build();
-    }
-
     public MethodInspectionImpl.Builder getBuilder() {
         return Objects.requireNonNull(builder);
     }
@@ -83,7 +79,7 @@ public class MethodInspector {
             addModifiers(amd.getModifiers());
             Expression expression = expressionContext.parseExpression(amd.getDefaultValue());
             Block body = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expression)).build();
-            builder.setBlock(body);
+            builder.setInspectedBlock(body);
             ParameterizedType returnType = ParameterizedType.from(expressionContext.typeContext, amd.getType());
             builder.setReturnType(returnType);
         }

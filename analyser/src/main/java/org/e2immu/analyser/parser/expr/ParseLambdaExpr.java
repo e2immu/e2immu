@@ -131,7 +131,7 @@ public class ParseLambdaExpr {
                 sam.methodInspection.getMethodInfo().returnType());
         methodInspectionBuilder.setReturnType(Objects.requireNonNull(bestReturnType));
         methodInspectionBuilder.addParameters(parameters);
-        methodInspectionBuilder.setBlock(block);
+        methodInspectionBuilder.setInspectedBlock(block);
         methodInfo.methodInspection.set(methodInspectionBuilder.build());
 
         TypeInfo typeInfo = methodInfo.typeInfo;

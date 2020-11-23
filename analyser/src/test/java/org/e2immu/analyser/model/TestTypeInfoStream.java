@@ -82,7 +82,7 @@ public class TestTypeInfoStream {
                 .addParameterFluently(p0)
                 //.addAnnotation(new AnnotationExpression(jdk.override))
                 //.addExceptionType(new ParameterizedType(jdk.ioException))
-                .setBlock(
+                .setInspectedBlock(
                         new Block.BlockBuilder()
                                 .addStatement(
                                         new ExpressionAsStatement(
@@ -151,7 +151,7 @@ public class TestTypeInfoStream {
                 primitives.stringParameterizedType, false);
         referenceMethodInfo.methodInspection.set(new MethodInspectionImpl.Builder(referenceMethodInfo)
                 .setReturnType(primitives.stringTypeInfo)
-                .setBlock(new Block.BlockBuilder().build())
+                .setInspectedBlock(new Block.BlockBuilder().build())
                 .build());
         testEquivalent.typeInspection.set(new TypeInspectionImpl.Builder(testEquivalent, TypeInspectionImpl.BY_HAND)
                 .setParentClass(primitives.objectParameterizedType)
@@ -180,7 +180,7 @@ public class TestTypeInfoStream {
                 .addParameterFluently(y)
                 .addAnnotation(new AnnotationExpressionImpl(commutative, List.of()))
                 .addAnnotation(new AnnotationExpressionImpl(testEquivalent, List.of(new StringConstant(primitives, "hello"))))
-                .setBlock(
+                .setInspectedBlock(
                         new Block.BlockBuilder().addStatement(
                                 new ReturnStatement(false,
                                         new BinaryOperator(

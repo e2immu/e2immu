@@ -214,7 +214,9 @@ public class Parser {
 
         typeMap.visit(new String[0], (s, list) -> {
             for (TypeInfo typeInfo : list) {
-                if (typeInfo.typeInspection.isSet() && !typeInfo.typeAnalysis.isSet() &&
+                if (typeInfo.typeInspection.isSet() &&
+                        !typeInfo.typeAnalysis.isSet() &&
+                        typeInfo.shallowAnalysis() &&
                         !alreadyIncluded.contains(typeInfo)) {
                     types.add(typeInfo);
                 }

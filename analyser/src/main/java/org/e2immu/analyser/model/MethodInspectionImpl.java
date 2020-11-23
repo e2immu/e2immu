@@ -183,7 +183,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         }
 
         @Fluent
-        public Builder setBlock(Block inspectedBlock) {
+        public Builder setInspectedBlock(Block inspectedBlock) {
             this.inspectedBlock = inspectedBlock;
             return this;
         }
@@ -356,7 +356,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             return companionMethods.entrySet().stream().collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> e.getValue().methodInfo));
         }
 
-        public boolean methodBodyIsSet() {
+        public boolean inspectedBlockIsSet() {
             return inspectedBlock != null;
         }
     }

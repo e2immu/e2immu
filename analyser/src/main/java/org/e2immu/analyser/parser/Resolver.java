@@ -202,20 +202,21 @@ public class Resolver {
                           ExpressionContext expressionContext,
                           DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         typeInspection.fields().forEach(fieldInfo -> {
-
-            if (!fieldInfo.fieldInspection.get().initialiserIsSet()) {
-                doFieldInitialiser(fieldInfo, expressionContext, methodFieldSubTypeGraph);
+            FieldInspectionImpl.Builder fieldInspection = (FieldInspectionImpl.Builder)
+                    expressionContext.typeContext.getFieldInspection(fieldInfo);
+            if (!fieldInspection.initialiserIsSet()) {
+                doFieldInitialiser(fieldInfo, fieldInspection, expressionContext, methodFieldSubTypeGraph);
             }
         });
     }
 
     private void doFieldInitialiser(FieldInfo fieldInfo,
+                                    FieldInspectionImpl.Builder fieldInspectionBuilder,
                                     ExpressionContext expressionContext,
                                     DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         // we can cast here: no point in resolving if inspection has been set.
-        FieldInspectionImpl.Builder fieldInspection = (FieldInspectionImpl.Builder) expressionContext.typeContext.getFieldInspection(fieldInfo);
 
-        Expression expression = fieldInspection.getInitializer();
+        Expression expression = fieldInspectionBuilder.getInitializer();
         FieldInspection.FieldInitialiser fieldInitialiser;
         List<WithInspectionAndAnalysis> dependencies;
 
@@ -269,7 +270,9 @@ public class Resolver {
             dependencies = List.of();
         }
         methodFieldSubTypeGraph.addNode(fieldInfo, dependencies);
-        fieldInspection.setFieldInitializer(fieldInitialiser);
+        fieldInspectionBuilder.setFieldInitializer(fieldInitialiser);
+
+        fieldInfo.fieldInspection.set(fieldInspectionBuilder.build());
     }
 
     private void doMethodsAndConstructors(TypeInspection typeInspection, ExpressionContext expressionContext,
@@ -308,19 +311,22 @@ public class Resolver {
 
         // BODY
 
-        boolean doBlock = !methodInspection.methodBodyIsSet();
+        boolean doBlock = !methodInspection.inspectedBlockIsSet();
         if (doBlock) {
             BlockStmt block = methodInspection.getBlock();
             if (!block.getStatements().isEmpty()) {
                 log(RESOLVE, "Parsing block of method {}", methodInfo.name);
                 doBlock(subContext, methodInfo, methodInspection, block, methodFieldSubTypeGraph);
             } else {
-                methodInspection.setBlock(Block.EMPTY_BLOCK);
+                methodInspection.setInspectedBlock(Block.EMPTY_BLOCK);
             }
         }
         MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited();
         methodsAndFieldsVisited.visit(methodInspection.getMethodBody());
         methodFieldSubTypeGraph.addNode(methodInfo, ImmutableList.copyOf(methodsAndFieldsVisited.methodsAndFields));
+
+        // finally, we build the method inspection
+        methodInfo.methodInspection.set(methodInspection.build());
     }
 
     private static class MethodsAndFieldsVisited {
@@ -357,7 +363,7 @@ public class Resolver {
             methodInspection.getParameters().forEach(newContext.variableContext::add);
             log(RESOLVE, "Parsing block with variable context {}", newContext.variableContext);
             Block parsedBlock = newContext.parseBlockOrStatement(block);
-            methodInspection.setBlock(parsedBlock);
+            methodInspection.setInspectedBlock(parsedBlock);
 
             newContext.streamNewlyCreatedTypes().forEach(anonymousType -> doType(anonymousType, newContext.typeContext, methodFieldSubTypeGraph));
 

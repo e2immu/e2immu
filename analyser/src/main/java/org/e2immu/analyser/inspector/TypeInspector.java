@@ -170,7 +170,6 @@ public class TypeInspector {
                         expressionContext.typeContext.getPrimitives().voidParameterizedType, true, true);
                 MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, methodInfo);
                 methodInspector.inspect(amd, subContext);
-                methodInfo.methodInspection.set(methodInspector.build());
                 builder.addMethod(methodInfo);
             }
         }
@@ -356,7 +355,6 @@ public class TypeInspector {
                         if (vd.getInitializer().isPresent()) {
                             fieldInspectionBuilder.setInitializer(vd.getInitializer().get());
                         }
-                        fieldInfo.fieldInspection.set(fieldInspectionBuilder.build());
                         builder.addField(fieldInfo);
                     }
                 }
@@ -375,7 +373,6 @@ public class TypeInspector {
                 MethodInfo methodInfo = new MethodInfo(typeInfo, List.of());
                 MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, methodInfo);
                 methodInspector.inspect(cd, subContext, companionMethodsWaiting, dollarResolver);
-                methodInfo.methodInspection.set(methodInspector.build());
                 builder.addConstructor(methodInfo);
                 companionMethodsWaiting.clear();
             });
@@ -396,7 +393,6 @@ public class TypeInspector {
                 if (companionMethodName != null) {
                     companionMethodsWaiting.put(companionMethodName, methodInspector.getBuilder()); // will be built with its main method
                 } else {
-                    methodInfo.methodInspection.set(methodInspector.build()); // companions built here
                     builder.addMethod(methodInfo);
                     companionMethodsWaiting.clear();
                 }
