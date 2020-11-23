@@ -68,13 +68,12 @@ public class TypeContext implements InspectionProvider {
      */
     public void loadPrimitives() {
         for (TypeInfo typeInfo : getPrimitives().typeByName.values()) {
-            typeMapBuilder.add(typeInfo, TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION);
             addToContext(typeInfo);
         }
         for (TypeInfo typeInfo : getPrimitives().primitiveByName.values()) {
-            typeMapBuilder.add(typeInfo, TypeInspectionImpl.BY_HAND);
             addToContext(typeInfo);
         }
+        typeMapBuilder.getE2ImmuAnnotationExpressions().streamTypes().forEach(this::addToContext);
     }
 
     /**

@@ -57,7 +57,7 @@ public class Parser {
 
     public Parser(Configuration configuration) throws IOException {
         this.configuration = configuration;
-        input = new Input(configuration);
+        input = Input.create(configuration);
     }
 
     public List<SortedType> run() {
@@ -68,16 +68,16 @@ public class Parser {
         // other bytecode inspection will take place on-demand, in the background.
 
         // we start the inspection and resolution of AnnotatedAPIs (Java parser, but with $ classes)
-        Collection<URL> annotatedAPIs = input.getAnnotatedAPIs().values();
+        Collection<URL> annotatedAPIs = input.annotatedAPIs().values();
         List<SortedType> sortedAnnotatedAPITypes;
         if (annotatedAPIs.isEmpty()) {
             sortedAnnotatedAPITypes = List.of();
         } else {
-            sortedAnnotatedAPITypes = inspectAndResolve(input.getAnnotatedAPIs(), input.getAnnotatedAPITypes());
+            sortedAnnotatedAPITypes = inspectAndResolve(input.annotatedAPIs(), input.annotatedAPITypes());
         }
 
         // and the the inspection and resolution of Java sources (Java parser)
-        List<SortedType> resolvedSourceTypes = inspectAndResolve(input.getSourceURLs(), input.getSourceTypes());
+        List<SortedType> resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), input.sourceTypes());
 
         // finally, there is an analysis step
 
@@ -85,7 +85,7 @@ public class Parser {
             // we pass on the Java sources for the PrimaryTypeAnalyser, while all other loaded types
             // will be sent to the ShallowAnalyser
 
-            TypeMap typeMap = input.getGlobalTypeContext().typeMapBuilder.build();
+            TypeMap typeMap = input.globalTypeContext().typeMapBuilder.build();
 
             runShallowAnalyser(typeMap, sortedAnnotatedAPITypes);
             runPrimaryTypeAnalyser(typeMap, resolvedSourceTypes);
@@ -95,17 +95,17 @@ public class Parser {
     }
 
     public List<SortedType> inspectAndResolve(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport) {
-        TypeMapImpl.Builder typeMapBuilder = input.getGlobalTypeContext().typeMapBuilder;
+        TypeMapImpl.Builder typeMapBuilder = input.globalTypeContext().typeMapBuilder;
         InspectWithJavaParserImpl onDemandSourceInspection = new InspectWithJavaParserImpl(urls, typesForWildcardImport);
         typeMapBuilder.setInspectWithJavaParser(onDemandSourceInspection);
 
         // trigger the on-demand detection
-        input.getSourceURLs().entrySet().stream().sorted(Comparator.comparing(e -> e.getValue().toString())).forEach(e ->
-                input.getGlobalTypeContext().getTypeInspection(e.getKey()));
+        input.sourceURLs().entrySet().stream().sorted(Comparator.comparing(e -> e.getValue().toString())).forEach(e ->
+                input.globalTypeContext().getTypeInspection(e.getKey()));
 
         // phase 2: resolve methods and fields
         Resolver resolver = new Resolver();
-        List<SortedType> sortedPrimaryTypes = resolver.sortTypes(input.getGlobalTypeContext(),
+        List<SortedType> sortedPrimaryTypes = resolver.sortTypes(input.globalTypeContext(),
                 onDemandSourceInspection.typeContexts);
         messages.addAll(resolver.getMessageStream());
         return sortedPrimaryTypes;
@@ -122,23 +122,26 @@ public class Parser {
         }
 
         @Override
-        public void inspect(TypeInfo typeInfo) {
-            TypeInspection typeInspection = input.getGlobalTypeContext().getTypeInspection(typeInfo);
-            if (typeInspection.getInspectionState() != TypeInspectionImpl.TRIGGER_JAVA_PARSER) {
+        public void inspect(TypeInfo typeInfo, TypeInspectionImpl.Builder typeInspectionBuilder) {
+            if (typeInspectionBuilder.getInspectionState() != TypeInspectionImpl.TRIGGER_JAVA_PARSER) {
                 return; // already done, or started
             }
             URL url = Objects.requireNonNull(urls.get(typeInfo));
             try {
                 LOGGER.info("Starting Java parser inspection of {}", url);
+                typeInspectionBuilder.setInspectionState(TypeInspectionImpl.STARTING_JAVA_PARSER);
 
                 TypeContext inspectionTypeContext = new TypeContext(getTypeContext());
 
                 InputStreamReader isr = new InputStreamReader(url.openStream(), configuration.inputConfiguration.sourceEncoding);
                 String source = IOUtils.toString(isr);
-                ParseAndInspect parseAndInspect = new ParseAndInspect(input.getClassPath(),
-                        input.getGlobalTypeContext().typeMapBuilder, typesForWildcardImport);
+                ParseAndInspect parseAndInspect = new ParseAndInspect(input.classPath(),
+                        input.globalTypeContext().typeMapBuilder, typesForWildcardImport);
                 List<TypeInfo> primaryTypes = parseAndInspect.run(inspectionTypeContext, url.toString(), source);
                 primaryTypes.forEach(t -> typeContexts.put(t, inspectionTypeContext));
+
+                typeInspectionBuilder.setInspectionState(TypeInspectionImpl.FINISHED_JAVA_PARSER);
+
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception parsing and inspecting URL {}", url);
                 throw rte;
@@ -232,12 +235,12 @@ public class Parser {
 
     // only meant to be used in tests!!
     public TypeContext getTypeContext() {
-        return input.getGlobalTypeContext();
+        return input.globalTypeContext();
     }
 
     // only meant to be used in tests!
     public ByteCodeInspector getByteCodeInspector() {
-        return input.getByteCodeInspector();
+        return input.byteCodeInspector();
     }
 
     public Stream<Message> getMessages() {

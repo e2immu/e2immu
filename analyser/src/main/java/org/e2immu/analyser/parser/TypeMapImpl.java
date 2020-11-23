@@ -118,6 +118,17 @@ public class TypeMapImpl implements TypeMap {
         private ByteCodeInspector byteCodeInspector;
         private InspectWithJavaParser inspectWithJavaParser;
 
+
+        public Builder() {
+            for (TypeInfo typeInfo : getPrimitives().typeByName.values()) {
+                add(typeInfo, TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION);
+            }
+            for (TypeInfo typeInfo : getPrimitives().primitiveByName.values()) {
+                add(typeInfo, TypeInspectionImpl.BY_HAND);
+            }
+            e2ImmuAnnotationExpressions.streamTypes().forEach(typeInfo -> add(typeInfo, TRIGGER_BYTECODE_INSPECTION));
+        }
+
         public TypeMapImpl build() {
             trie.freeze();
 
@@ -213,11 +224,11 @@ public class TypeMapImpl implements TypeMap {
                 typeInspection.setInspectionState(STARTING_BYTECODE);
                 inspectWithByteCodeInspector(typeInfo);
                 if (typeInspection.getInspectionState() < FINISHED_BYTECODE) {
-                    throw new UnsupportedOperationException("? expected the bytecode inspector to do its job");
+                    // trying to avoid cycles... we'll try again later
+                    typeInspection.setInspectionState(TRIGGER_BYTECODE_INSPECTION);
                 }
             } else if (typeInspection.getInspectionState() == TRIGGER_JAVA_PARSER) {
-                typeInspection.setInspectionState(STARTING_JAVA_PARSER);
-                inspectWithJavaParser.inspect(typeInfo);
+                inspectWithJavaParser.inspect(typeInfo, typeInspection);
                 if (typeInspection.getInspectionState() < FINISHED_JAVA_PARSER) {
                     throw new UnsupportedOperationException("? expected the java parser to do its job");
                 }

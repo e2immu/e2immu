@@ -19,11 +19,13 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.Iterables;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.annotation.AnnotationMode;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -42,22 +44,32 @@ public interface TypeInspection extends Inspection {
 
     //@Immutable(level = 2, after="TypeAnalyser.analyse()")
     List<MethodInfo> constructors();
+
     List<MethodInfo> methods();
+
     List<FieldInfo> fields();
+
     List<TypeModifier> modifiers();
+
     List<TypeInfo> subTypes();
+
     List<TypeParameter> typeParameters();
+
     List<ParameterizedType> interfacesImplemented();
 
-    // only valid for types that have been defined, and empty when not the primary type
-    // it does include the primary type itself
-    List<TypeInfo> allTypesInPrimaryType();
     TypeModifier access();
 
     AnnotationMode annotationMode();
 
     default boolean isClass() {
         return typeNature() == TypeNature.CLASS;
+    }
+
+    default boolean isFunctionalInterface() {
+        if (typeNature() != TypeNature.INTERFACE) {
+            return false;
+        }
+        return getAnnotations().stream().anyMatch(ann -> Primitives.isFunctionalInterfaceAnnotation(ann.typeInfo()));
     }
 
     enum Methods {
@@ -80,10 +92,28 @@ public interface TypeInspection extends Inspection {
         return Stream.concat(constructorStream(methodsMode), methodStream(methodsMode));
     }
 
-    Stream<MethodInfo> methodStream(Methods methodsMode);
+    default Stream<MethodInfo> methodStream(Methods methodsMode) {
+        if (methodsMode.recurse) {
+            return Stream.concat(nonRecursiveMethodStream(methodsMode.nonRecursiveVariant),
+                    subTypes().stream().flatMap(subType -> subType.typeInspection.get().methodStream(methodsMode)));
+        }
+        return nonRecursiveMethodStream(methodsMode);
+    }
 
-    Stream<MethodInfo> constructorStream(Methods methodsMode);
-    
+    private Stream<MethodInfo> nonRecursiveMethodStream(Methods methodsMode) {
+        if (methodsMode == Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM) return methods().stream();
+        return Stream.concat(methods().stream(),
+                methodsInFieldInitializers(methodsMode != Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM));
+    }
+
+    default Stream<MethodInfo> constructorStream(Methods methodsMode) {
+        if (methodsMode.recurse) {
+            return Stream.concat(constructors().stream(), subTypes().stream()
+                    .flatMap(subType -> subType.typeInspection.get().constructorStream(methodsMode)));
+        }
+        return constructors().stream();
+    }
+
     default Iterable<MethodInfo> methods(Methods methodsMode) {
         return () -> methodStream(methodsMode).iterator();
     }
@@ -92,9 +122,21 @@ public interface TypeInspection extends Inspection {
         return Iterables.concat(methods(), constructors());
     }
 
-    Stream<MethodInfo> methodsInFieldInitializers(boolean alsoArtificial);
+    default Stream<MethodInfo> methodsInFieldInitializers(boolean alsoArtificial) {
+        return fields().stream()
+                .filter(fieldInfo -> fieldInfo.fieldInspection.get().initialiserIsSet())
+                .map(fieldInfo -> fieldInfo.fieldInspection.get().getInitialiser())
+                .filter(initialiser -> initialiser.implementationOfSingleAbstractMethod() != null && (alsoArtificial || !initialiser.artificial()))
+                .map(FieldInspection.FieldInitialiser::implementationOfSingleAbstractMethod);
+    }
 
-    Set<ParameterizedType> explicitTypes();
+    default Set<ParameterizedType> explicitTypes() {
+        // handles SAMs of fields as well
+        Stream<ParameterizedType> methodTypes = methodsAndConstructors(TypeInspectionImpl.Methods.THIS_TYPE_ONLY)
+                .flatMap(methodInfo -> methodInfo.explicitTypes().stream());
+        Stream<ParameterizedType> fieldTypes = fields().stream().flatMap(fieldInfo -> fieldInfo.explicitTypes().stream());
+        return Stream.concat(methodTypes, fieldTypes).collect(Collectors.toSet());
+    }
 
     int getInspectionState();
 

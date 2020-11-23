@@ -42,7 +42,7 @@ public abstract class HasAnnotations {
         Set<String> e2immuAnnotationsWritten = new HashSet<>();
         for (AnnotationExpression ae : inspected) {
             boolean accept = ae.typeInfo().fullyQualifiedName.startsWith(E2Immutable.class.getPackageName())
-                    && !ae.parameters().isVerifyAbsent();
+                    && !ae.e2ImmuAnnotationParameters().isVerifyAbsent();
             if (accept) {
                 e2immuAnnotationsWritten.add(ae.typeInfo().fullyQualifiedName);
                 Annotation annotation = Annotation.from(ae);

@@ -12,7 +12,7 @@ public class CheckPrecondition {
     public static void checkPrecondition(Messages messages, MethodInfo methodInfo) {
         AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(Precondition.class).orElse(null);
         if (annotationExpression == null) return; // nothing to verify
-        AnnotationParameters parameters = annotationExpression.parameters();
+        AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
 
         MethodAnalysis methodAnalysis = methodInfo.methodAnalysis.get();
         Value precondition = methodAnalysis.getPrecondition();

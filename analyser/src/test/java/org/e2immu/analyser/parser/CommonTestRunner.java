@@ -72,13 +72,15 @@ public abstract class CommonTestRunner {
         // test runner's classpath to ours
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
                 .addSources("src/test/java")
-                .addAnnotatedAPISources("../annotatedAPIs/src/main/java")
                 .addClassPath(withAnnotatedAPIs ? InputConfiguration.DEFAULT_CLASSPATH : InputConfiguration.CLASSPATH_WITHOUT_ANNOTATED_APIS)
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
                 .addClassPath(Input.JAR_WITH_PATH_PREFIX + "io/vertx/core");
+        if (withAnnotatedAPIs) {
+            inputConfigurationBuilder.addAnnotatedAPISources("../annotatedAPIs/src/main/java");
+        }
         classNames.forEach(className -> inputConfigurationBuilder.addRestrictSourceToPackages("org.e2immu.analyser.testexample." + className));
 
         Configuration configuration = new Configuration.Builder()
@@ -105,7 +107,7 @@ public abstract class CommonTestRunner {
                         NOT_MODIFIED,
                         PATTERN,
                         MARK
-                       // OBJECT_FLOW
+                        // OBJECT_FLOW
                 ).stream().map(Enum::toString).collect(Collectors.joining(",")))
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .build();

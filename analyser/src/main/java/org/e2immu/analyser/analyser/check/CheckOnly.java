@@ -17,7 +17,7 @@ public class CheckOnly {
         AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(Only.class).orElse(null);
         if (annotationExpression == null) return; // nothing to verify
 
-        AnnotationParameters parameters = annotationExpression.parameters();
+        AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
         boolean noData = markAndOnly == null || markAndOnly.mark;
         if (parameters.absent()) {
             if (noData) return; // fine!
@@ -66,7 +66,7 @@ public class CheckOnly {
         AnnotationExpression annotationExpression = methodInfo.hasInspectedAnnotation(Mark.class).orElse(null);
         if (annotationExpression == null) return; // nothing to verify
 
-        AnnotationParameters parameters = annotationExpression.parameters();
+        AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
         boolean noData = markAndOnly == null || !markAndOnly.mark;
         if (parameters.absent()) {
             if (noData) return; // fine!

@@ -26,7 +26,6 @@ import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnceMap;
 import org.slf4j.Logger;
@@ -179,8 +178,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         AnnotationExpression mark = null;
 
         for (AnnotationExpression annotationExpression : annotations) {
-            AnnotationParameters parameters = annotationExpression.parameters();
-            if (parameters.contract() || acceptVerify && !parameters.absent()) {
+            AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
+            if (parameters != null && (parameters.contract() || acceptVerify && !parameters.absent())) {
                 int trueFalse = parameters.absent() ? Level.FALSE : Level.TRUE;
                 int falseTrue = !parameters.absent() ? Level.FALSE : Level.TRUE;
 

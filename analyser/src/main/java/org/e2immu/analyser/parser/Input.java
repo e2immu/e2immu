@@ -39,7 +39,15 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-public class Input {
+public record Input(Configuration configuration,
+                    TypeContext globalTypeContext,
+                    ByteCodeInspector byteCodeInspector,
+                    Map<TypeInfo, URL> annotatedAPIs,
+                    Map<TypeInfo, URL> sourceURLs,
+                    Trie<TypeInfo> sourceTypes,
+                    Trie<TypeInfo> annotatedAPITypes,
+                    Resources classPath) {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(Input.class);
 
     /**
@@ -54,36 +62,35 @@ public class Input {
      */
     public static final String JAR_WITH_PATH_PREFIX = "jar-on-classpath:";
 
-    private final Configuration configuration;
-    private final TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder());
-    private final ByteCodeInspector byteCodeInspector;
-    private final Map<TypeInfo, URL> annotatedAPIs;
-    private final Map<TypeInfo, URL> sourceURLs;
-    private final Trie<TypeInfo> sourceTypes = new Trie<>(); // for * imports
-    private final Trie<TypeInfo> annotatedAPITypes = new Trie<>(); // for * imports
-    private final Resources classPath;
-
-    public Input(Configuration configuration) throws IOException {
-        this.configuration = configuration;
-        classPath = assemblePath(true, "Classpath", configuration.inputConfiguration.classPathParts);
+    public static Input create(Configuration configuration) throws IOException {
+        Resources classPath = assemblePath(configuration, true, "Classpath", configuration.inputConfiguration.classPathParts);
         AnnotationStore annotationStore = new AnnotationXmlReader(classPath);
         LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
-        byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);
+        TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder());
+        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);
         globalTypeContext.typeMapBuilder.setByteCodeInspector(byteCodeInspector);
         globalTypeContext.loadPrimitives();
 
-        preload(classPath, "org.e2immu.annotation"); // needed for our own stuff
-        preload(classPath, "java.lang"); // there are needed to help with implicit imports
-        preload(classPath, "java.util.function"); // they are needed for functional interfaces that lurk in the background
+        for (String packageName : new String[]{"org.e2immu.annotation", "java.lang", "java.util.function"}) {
+            preload(globalTypeContext, byteCodeInspector, classPath, packageName); // needed for our own stuff
+        }
 
-        Resources sourcePath = assemblePath(false, "Source path", configuration.inputConfiguration.sources);
-        sourceURLs = computeSourceURLs(sourcePath, configuration.inputConfiguration.restrictSourceToPackages, sourceTypes, "source path");
+        Resources sourcePath = assemblePath(configuration, false, "Source path", configuration.inputConfiguration.sources);
+        Trie<TypeInfo> sourceTypes = new Trie<>();
+        Map<TypeInfo, URL> sourceURLs = computeSourceURLs(sourcePath, globalTypeContext, configuration.inputConfiguration.restrictSourceToPackages, sourceTypes, "source path");
 
-        Resources annotatedAPIsPath = assemblePath(false, "Annotated APIs path", configuration.inputConfiguration.sourcesAnnotatedAPIs);
-        annotatedAPIs = computeSourceURLs(annotatedAPIsPath, List.of(), annotatedAPITypes, "annotated API path");
+        Resources annotatedAPIsPath = assemblePath(configuration, false, "Annotated APIs path", configuration.inputConfiguration.sourcesAnnotatedAPIs);
+        Trie<TypeInfo> annotatedAPITypes = new Trie<>();
+        Map<TypeInfo, URL> annotatedAPIs = computeSourceURLs(annotatedAPIsPath, globalTypeContext, List.of(), annotatedAPITypes, "annotated API path");
+
+        return new Input(configuration, globalTypeContext, byteCodeInspector, annotatedAPIs, sourceURLs, sourceTypes, annotatedAPITypes, classPath);
     }
 
-    private Map<TypeInfo, URL> computeSourceURLs(Resources sourcePath, List<String> restrictions, Trie<TypeInfo> trie, String what) {
+    private static Map<TypeInfo, URL> computeSourceURLs(Resources sourcePath,
+                                                        TypeContext globalTypeContext,
+                                                        List<String> restrictions,
+                                                        Trie<TypeInfo> trie,
+                                                        String what) {
         Map<TypeInfo, URL> sourceURLs = new HashMap<>();
         AtomicInteger ignored = new AtomicInteger();
         sourcePath.visit(new String[0], (parts, list) -> {
@@ -125,7 +132,10 @@ public class Input {
      * if not, the method will have little effect and no classes beyond the ones from
      * <code>initializeClassPath</code> will be present
      */
-    private void preload(Resources classPath, String thePackage) {
+    private static void preload(TypeContext globalTypeContext,
+                                ByteCodeInspector byteCodeInspector,
+                                Resources classPath,
+                                String thePackage) {
         LOGGER.info("Start pre-loading {}", thePackage);
         AtomicInteger inspected = new AtomicInteger();
         classPath.expandLeaves(thePackage, ".class", (expansion, list) -> {
@@ -143,7 +153,10 @@ public class Input {
         LOGGER.info("... inspected {} paths", inspected);
     }
 
-    private Resources assemblePath(boolean isClassPath, String msg, List<String> parts) throws IOException {
+    private static Resources assemblePath(Configuration configuration,
+                                          boolean isClassPath,
+                                          String msg,
+                                          List<String> parts) throws IOException {
         Resources resources = new Resources();
         if (isClassPath) {
             int entriesAdded = resources.addJarFromClassPath("org/e2immu/annotation");
@@ -191,33 +204,5 @@ public class Input {
             }
         }
         return resources;
-    }
-
-    public Resources getClassPath() {
-        return classPath;
-    }
-
-    public Trie<TypeInfo> getSourceTypes() {
-        return sourceTypes;
-    }
-
-    public Trie<TypeInfo> getAnnotatedAPITypes() {
-        return annotatedAPITypes;
-    }
-
-    public Map<TypeInfo, URL> getAnnotatedAPIs() {
-        return annotatedAPIs;
-    }
-
-    public Map<TypeInfo, URL> getSourceURLs() {
-        return sourceURLs;
-    }
-
-    public TypeContext getGlobalTypeContext() {
-        return globalTypeContext;
-    }
-
-    public ByteCodeInspector getByteCodeInspector() {
-        return byteCodeInspector;
     }
 }

@@ -62,8 +62,8 @@ public class Resolver {
         DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
         Map<TypeInfo, SortedType> toSortedType = new HashMap<>();
         Set<TypeInfo> stayWithin = inspectedTypes.keySet().stream()
-                .flatMap(typeInfo -> typeInfo.allTypesInPrimaryType().stream())
-                .collect(Collectors.toSet());
+                .flatMap(typeInfo -> typeAndAllSubTypes(inspectionProvider, typeInfo).stream())
+                .collect(Collectors.toUnmodifiableSet());
 
         for (Map.Entry<TypeInfo, TypeContext> entry : inspectedTypes.entrySet()) {
             try {
@@ -81,6 +81,20 @@ public class Resolver {
         List<SortedType> result = sortWarnForCircularDependencies(inspectionProvider, typeGraph).stream().map(toSortedType::get).collect(Collectors.toList());
         log(RESOLVE, "Result of type sorting: {}", result);
         return result;
+    }
+
+    private static List<TypeInfo> typeAndAllSubTypes(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
+        List<TypeInfo> result = new ArrayList<>();
+        recursivelyCollectSubTypes(inspectionProvider, typeInfo, result);
+        return ImmutableList.copyOf(result);
+    }
+
+    private static void recursivelyCollectSubTypes(InspectionProvider inspectionProvider, TypeInfo typeInfo, List<TypeInfo> result) {
+        result.add(typeInfo);
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
+        for (TypeInfo sub : typeInspection.subTypes()) {
+            recursivelyCollectSubTypes(inspectionProvider, sub, result);
+        }
     }
 
     private List<TypeInfo> sortWarnForCircularDependencies(InspectionProvider inspectionProvider, DependencyGraph<TypeInfo> typeGraph) {
@@ -113,7 +127,7 @@ public class Resolver {
         // main call
         TypeContext typeContextOfType = new TypeContext(typeContextOfFile);
         DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph = new DependencyGraph<>();
-        doType(typeInfo, typeContextOfType, methodFieldSubTypeGraph);
+        List<TypeInfo> typeAndAllSubTypes = doType(typeInfo, typeContextOfType, methodFieldSubTypeGraph);
 
         // FROM HERE ON, ALL INSPECTION HAS BEEN SET!
 
@@ -127,8 +141,7 @@ public class Resolver {
         if (Primitives.isJavaLangObject(typeInfo)) {
             typeDependencies.clear(); // removes a gigantic circular dependency on Object -> String
         } else {
-            List<TypeInfo> allTypesInPrimaryType = typeInfo.allTypesInPrimaryType();
-            typeDependencies.removeAll(allTypesInPrimaryType);
+            typeDependencies.removeAll(typeAndAllSubTypes);
             typeDependencies.remove(typeInfo);
             typeDependencies.retainAll(stayWithin);
         }
@@ -146,8 +159,8 @@ public class Resolver {
         return new SortedType(typeInfo, methodFieldSubTypeOrder);
     }
 
-    private void doType(TypeInfo typeInfo, TypeContext typeContextOfType,
-                        DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+    private List<TypeInfo> doType(TypeInfo typeInfo, TypeContext typeContextOfType,
+                                  DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         try {
             TypeInspection typeInspection = typeContextOfType.getTypeInspection(typeInfo);
 
@@ -175,9 +188,10 @@ public class Resolver {
             // dependencies of the type
 
             Set<TypeInfo> typeDependencies = typeInfo.typesReferenced().stream().map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
-            List<TypeInfo> allTypesInPrimaryType = typeInfo.allTypesInPrimaryType();
-            typeDependencies.retainAll(allTypesInPrimaryType);
+            List<TypeInfo> typeAndAllSubTypes = typeAndAllSubTypes(typeContextOfType, typeInfo);
+            typeDependencies.retainAll(typeAndAllSubTypes);
             methodFieldSubTypeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
+            return typeAndAllSubTypes;
         } catch (RuntimeException re) {
             LOGGER.warn("Caught exception resolving type {}", typeInfo.fullyQualifiedName);
             throw re;
@@ -219,7 +233,7 @@ public class Resolver {
 
             MethodInfo sam;
             boolean artificial;
-            if (fieldInfo.type.isFunctionalInterface()) {
+            if (fieldInfo.type.isFunctionalInterface(subContext.typeContext)) {
                 List<NewObject> newObjects = parsedExpression.collect(NewObject.class);
                 artificial = newObjects.stream().filter(no -> no.parameterizedType.isFunctionalInterface()).count() != 1L;
 

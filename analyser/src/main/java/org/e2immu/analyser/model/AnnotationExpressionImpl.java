@@ -34,6 +34,8 @@ import java.util.*;
 public record AnnotationExpressionImpl(TypeInfo typeInfo,
                                        List<Expression> expressions) implements AnnotationExpression {
 
+    public static final String ORG_E_2_IMMU_ANNOTATION = "org.e2immu.annotation";
+
     public AnnotationExpressionImpl {
         Objects.requireNonNull(typeInfo);
         Objects.requireNonNull(expressions);
@@ -207,18 +209,6 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     }
 
     @Override
-    public AnnotationExpression copyWith(Primitives primitives, String parameter, int value) {
-        MemberValuePair memberValuePair = new MemberValuePair(parameter, new IntConstant(primitives, value));
-        return new AnnotationExpressionImpl(typeInfo, List.of(memberValuePair));
-    }
-
-    @Override
-    public AnnotationExpression copyWith(Primitives primitives, String parameter, boolean value) {
-        MemberValuePair memberValuePair = new MemberValuePair(parameter, new BooleanConstant(primitives, value));
-        return new AnnotationExpressionImpl(typeInfo, List.of(memberValuePair));
-    }
-
-    @Override
     public AnnotationExpression copyWith(Primitives primitives, String parameter, String value) {
         MemberValuePair memberValuePair = new MemberValuePair(parameter, new StringConstant(primitives, value));
         return new AnnotationExpressionImpl(typeInfo, List.of(memberValuePair));
@@ -230,7 +220,8 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     }
 
     @Override
-    public AnnotationParameters parameters() {
+    public AnnotationParameters e2ImmuAnnotationParameters() {
+        if (!typeInfo.fullyQualifiedName.startsWith(ORG_E_2_IMMU_ANNOTATION)) return null;
         boolean absent = extract("absent", false);
         boolean contract = extract("contract", false);
         return new AnnotationParameters(absent, contract);

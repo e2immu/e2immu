@@ -42,7 +42,7 @@ public class TestInput {
 
     @Test
     public void testInput() throws IOException, URISyntaxException {
-        Input input = new Input(new Configuration.Builder()
+        Input input = Input.create(new Configuration.Builder()
                 .setInputConfiguration(new InputConfiguration.Builder()
                         .addSources("src/main/java")
                         .addAnnotatedAPISources("../annotatedAPIs/src/main/java")
@@ -50,17 +50,17 @@ public class TestInput {
                         .addClassPath("jmods/java.base.jmod")
                         .build())
                 .build());
-        Assert.assertTrue("Have at least 15 classes in util package", 15 <= input.getSourceURLs().size());
+        Assert.assertTrue("Have at least 15 classes in util package", 15 <= input.sourceURLs().size());
 
-        for (URL url : input.getSourceURLs().values()) {
+        for (URL url : input.sourceURLs().values()) {
             LOGGER.info("Have source URL {}", url);
             File file = new File(url.toURI());
             Assert.assertTrue(file.canRead());
         }
 
-        Assert.assertTrue("Have at least 3 annotated API sources", 3 <= input.getAnnotatedAPIs().size());
+        Assert.assertTrue("Have at least 3 annotated API sources", 3 <= input.annotatedAPIs().size());
 
-        for (URL url : input.getAnnotatedAPIs().values()) {
+        for (URL url : input.annotatedAPIs().values()) {
             LOGGER.info("Have annotated API URL {}", url);
             File file = new File(url.toURI());
             Assert.assertTrue(file.canRead());

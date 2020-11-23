@@ -38,13 +38,9 @@ public interface AnnotationExpression {
 
     <T> T extract(String fieldName, T defaultValue);
 
-    AnnotationExpression copyWith(Primitives primitives, String parameter, int value);
-
-    AnnotationExpression copyWith(Primitives primitives, String parameter, boolean value);
-
     AnnotationExpression copyWith(Primitives primitives, String parameter, String value);
 
     UpgradableBooleanMap<TypeInfo> typesReferenced();
 
-    AnnotationParameters parameters();
+    AnnotationParameters e2ImmuAnnotationParameters();
 }

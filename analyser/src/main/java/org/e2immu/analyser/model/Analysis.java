@@ -46,7 +46,7 @@ public interface Analysis {
     }
 
     default void peekIntoAnnotations(AnnotationExpression annotation, Set<TypeInfo> annotationsSeen, StringBuilder sb) {
-        AnnotationParameters parameters = annotation.parameters();
+        AnnotationParameters parameters = annotation.e2ImmuAnnotationParameters();
         if (parameters == null) return;
         if (!parameters.contract()) {
             // so we have one of our own annotations, and we know its type

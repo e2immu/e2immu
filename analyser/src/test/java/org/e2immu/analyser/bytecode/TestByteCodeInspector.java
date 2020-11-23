@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 
 public class TestByteCodeInspector {
     public static final String VERSION = "0.0.1"; // TODO determine dynamically
@@ -56,7 +57,9 @@ public class TestByteCodeInspector {
         typeContext.typeMapBuilder.setByteCodeInspector(byteCodeInspector);
         typeContext.loadPrimitives();
 
-        byteCodeInspector.inspectFromPath(path);
+        List<TypeInfo> types = byteCodeInspector.inspectFromPath(path);
+        // in case the path is a subType, we need to inspect it explicitly
+        types.forEach(typeContext.typeMapBuilder::getTypeInspection);
         return typeContext.typeMapBuilder.build();
     }
 

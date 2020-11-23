@@ -41,7 +41,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
     public final ParameterizedType parentClass;
 
-    //@Immutable(level = 2, after="TypeAnalyser.analyse()")
     public final List<MethodInfo> constructors;
     public final List<MethodInfo> methods;
     public final List<FieldInfo> fields;
@@ -49,18 +48,14 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public final List<TypeInfo> subTypes;
     public final List<TypeParameter> typeParameters;
     public final List<ParameterizedType> interfacesImplemented;
-
-    // only valid for types that have been defined, and empty when not the primary type
-    // it does include the primary type itself
-    public final List<TypeInfo> allTypesInPrimaryType;
     public final TypeModifier access;
 
     public final AnnotationMode annotationMode;
 
     private TypeInspectionImpl(TypeInfo typeInfo,
                                Either<String, TypeInfo> packageNameOrEnclosingType,
-                               List<TypeInfo> allTypesInPrimaryType,
                                TypeNature typeNature,
+                               TypeModifier access,
                                List<TypeParameter> typeParameters,
                                ParameterizedType parentClass,
                                List<ParameterizedType> interfacesImplemented,
@@ -72,7 +67,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                List<AnnotationExpression> annotations,
                                AnnotationMode annotationMode) {
         super(annotations);
-        this.allTypesInPrimaryType = allTypesInPrimaryType;
         this.packageNameOrEnclosingType = packageNameOrEnclosingType;
         this.parentClass = parentClass;
         this.interfacesImplemented = interfacesImplemented;
@@ -84,10 +78,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         this.fields = fields;
         this.modifiers = modifiers;
         this.subTypes = subTypes;
-        if (modifiers.contains(TypeModifier.PUBLIC)) access = TypeModifier.PUBLIC;
-        else if (modifiers.contains(TypeModifier.PROTECTED)) access = TypeModifier.PROTECTED;
-        else if (modifiers.contains(TypeModifier.PRIVATE)) access = TypeModifier.PRIVATE;
-        else access = TypeModifier.PACKAGE;
+        this.access = access;
         this.annotationMode = annotationMode;
     }
 
@@ -147,11 +138,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     }
 
     @Override
-    public List<TypeInfo> allTypesInPrimaryType() {
-        return allTypesInPrimaryType;
-    }
-
-    @Override
     public TypeModifier access() {
         return access;
     }
@@ -165,45 +151,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public int getInspectionState() {
         return BUILT;
     }
-
-    public Stream<MethodInfo> methodStream(Methods methodsMode) {
-        if (methodsMode.recurse) {
-            return Stream.concat(nonRecursiveMethodStream(methodsMode.nonRecursiveVariant),
-                    subTypes.stream().flatMap(subType -> subType.typeInspection.get().methodStream(methodsMode)));
-        }
-        return nonRecursiveMethodStream(methodsMode);
-    }
-
-    private Stream<MethodInfo> nonRecursiveMethodStream(Methods methodsMode) {
-        if (methodsMode == Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM) return methods.stream();
-        return Stream.concat(methods.stream(),
-                methodsInFieldInitializers(methodsMode != Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_ARTIFICIAL_SAM));
-    }
-
-    public Stream<MethodInfo> constructorStream(Methods methodsMode) {
-        if (methodsMode.recurse) {
-            return Stream.concat(constructors.stream(), subTypes.stream()
-                    .flatMap(subType -> subType.typeInspection.get().constructorStream(methodsMode)));
-        }
-        return constructors.stream();
-    }
-
-    public Stream<MethodInfo> methodsInFieldInitializers(boolean alsoArtificial) {
-        return fields.stream()
-                .filter(fieldInfo -> fieldInfo.fieldInspection.get().initialiserIsSet())
-                .map(fieldInfo -> fieldInfo.fieldInspection.get().getInitialiser())
-                .filter(initialiser -> initialiser.implementationOfSingleAbstractMethod() != null && (alsoArtificial || !initialiser.artificial()))
-                .map(FieldInspection.FieldInitialiser::implementationOfSingleAbstractMethod);
-    }
-
-    public Set<ParameterizedType> explicitTypes() {
-        // handles SAMs of fields as well
-        Stream<ParameterizedType> methodTypes = methodsAndConstructors(TypeInspectionImpl.Methods.THIS_TYPE_ONLY)
-                .flatMap(methodInfo -> methodInfo.explicitTypes().stream());
-        Stream<ParameterizedType> fieldTypes = fields.stream().flatMap(fieldInfo -> fieldInfo.explicitTypes().stream());
-        return Stream.concat(methodTypes, fieldTypes).collect(Collectors.toSet());
-    }
-
+    
     public static final int TRIGGER_BYTECODE_INSPECTION = 1;
     public static final int STARTING_BYTECODE = 2;
     public static final int FINISHED_BYTECODE = 3;
@@ -238,6 +186,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         public boolean finishedInspection() {
             return inspectionState == FINISHED_BYTECODE || inspectionState >= FINISHED_JAVA_PARSER;
         }
+
         public int getInspectionState() {
             return inspectionState;
         }
@@ -308,15 +257,14 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         public TypeInspectionImpl build() {
             Objects.requireNonNull(typeNature);
             if (Primitives.needsParent(typeInfo) && parentClass == null) {
-                throw new UnsupportedOperationException("Need a parent class for "+typeInfo.fullyQualifiedName);
+                throw new UnsupportedOperationException("Need a parent class for " + typeInfo.fullyQualifiedName);
             }
-            Either<String, TypeInfo> packageNameOrEnclosingType = packageName == null ? Either.right(enclosingType) : Either.left(packageName);
 
             return new TypeInspectionImpl(
                     typeInfo,
-                    packageNameOrEnclosingType,
-                    allTypesInPrimaryType(),
+                    packageNameOrEnclosingType(),
                     typeNature,
+                    access(),
                     typeParameters(),
                     parentClass,
                     interfacesImplemented(),
@@ -343,22 +291,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                     .findFirst().orElse(AnnotationMode.DEFENSIVE);
         }
 
-        private List<TypeInfo> allTypes(TypeInfo typeInfo) {
-            List<TypeInfo> result = new ArrayList<>();
-            result.add(typeInfo);
-            for (TypeInfo sub : subTypes) {
-                recursivelyCollectSubTypes(sub, result);
-            }
-            return ImmutableList.copyOf(result);
-        }
-
-        private void recursivelyCollectSubTypes(TypeInfo typeInfo, List<TypeInfo> result) {
-            result.add(typeInfo);
-            for (TypeInfo sub : typeInfo.typeInspection.get().subTypes()) {
-                recursivelyCollectSubTypes(sub, result);
-            }
-        }
-
         @Override
         public TypeInfo typeInfo() {
             return typeInfo;
@@ -366,7 +298,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         @Override
         public Either<String, TypeInfo> packageNameOrEnclosingType() {
-            return null;
+            return packageName == null ? Either.right(enclosingType) : Either.left(packageName);
         }
 
         @Override
@@ -415,38 +347,16 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         }
 
         @Override
-        public List<TypeInfo> allTypesInPrimaryType() {
-            return packageName != null ? allTypes(typeInfo) : List.of();
-        }
-
-        @Override
         public TypeModifier access() {
-            return null;
+            if (modifiers.contains(TypeModifier.PUBLIC)) return TypeModifier.PUBLIC;
+            if (modifiers.contains(TypeModifier.PROTECTED)) return TypeModifier.PROTECTED;
+            if (modifiers.contains(TypeModifier.PRIVATE)) return TypeModifier.PRIVATE;
+            return TypeModifier.PACKAGE;
         }
 
         @Override
         public AnnotationMode annotationMode() {
             return computeAnnotationMode();
-        }
-
-        @Override
-        public Stream<MethodInfo> methodStream(Methods methodsMode) {
-            return null;
-        }
-
-        @Override
-        public Stream<MethodInfo> constructorStream(Methods methodsMode) {
-            return null;
-        }
-
-        @Override
-        public Stream<MethodInfo> methodsInFieldInitializers(boolean alsoArtificial) {
-            return null;
-        }
-
-        @Override
-        public Set<ParameterizedType> explicitTypes() {
-            return null;
         }
 
     }

@@ -32,7 +32,7 @@ public class CheckConstant {
         Optional<AnnotationExpression> oConstant = annotationExpressions.stream()
                 .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(Constant.class.getName())).findFirst();
         return oConstant.map(constant -> {
-            boolean verifyAbsent = constant.parameters().isVerifyAbsent();
+            boolean verifyAbsent = constant.e2ImmuAnnotationParameters().isVerifyAbsent();
             String value = constant.extract("value", "");
             return new ToTest(value, verifyAbsent);
         }).orElse(null);

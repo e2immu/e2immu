@@ -9,6 +9,7 @@ import org.e2immu.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 /*
   See discussion in manual for why the type is eventually an @E2Container.
@@ -81,5 +82,9 @@ public class E2ImmuAnnotationExpressions {
 
     public TypeInfo get(String name) {
         return Objects.requireNonNull(annotationTypes.get(name));
+    }
+
+    public Stream<TypeInfo> streamTypes() {
+        return annotationTypes.values().stream();
     }
 }

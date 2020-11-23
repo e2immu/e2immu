@@ -430,7 +430,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean isSingleAbstractMethod() {
-        return typeInfo.isFunctionalInterface() && !isStatic && !isDefaultImplementation;
+        return typeInfo.typeInspection.get().isFunctionalInterface() && !isStatic && !isDefaultImplementation;
     }
 
     public Set<ParameterizedType> explicitTypes() {

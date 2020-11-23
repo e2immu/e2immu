@@ -349,7 +349,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
 
     private int notNullRequirementOnScope(int notNullRequirement) {
-        if (methodInfo.typeInfo.isFunctionalInterface() && MultiLevel.isEffectivelyNotNull(notNullRequirement)) {
+        if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() && MultiLevel.isEffectivelyNotNull(notNullRequirement)) {
             return MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL; // @NotNull1
         }
         return MultiLevel.EFFECTIVELY_NOT_NULL;
@@ -447,7 +447,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         InlineValue inlineValue;
-        if (methodInfo.typeInfo.isFunctionalInterface() &&
+        if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
                 (inlineValue = objectValue.asInstanceOf(InlineValue.class)) != null &&
                 inlineValue.canBeApplied(evaluationContext)) {
             Map<Value, Value> translationMap = EvaluateParameters.translationMap(evaluationContext, methodInfo, parameters);

@@ -32,10 +32,7 @@ import org.objectweb.asm.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -245,7 +242,7 @@ public class MyClassVisitor extends ClassVisitor {
         TypeInfo alreadyKnown = typeContext.typeMapBuilder.get(fqn);
         TypeInspection alreadyKnownInspection = alreadyKnown == null ? null : typeContext.getTypeInspection(alreadyKnown);
         if (alreadyKnownInspection != null && alreadyKnownInspection.getInspectionState() >= TypeInspectionImpl.STARTING_BYTECODE) {
-            return alreadyKnown;
+            return Objects.requireNonNull(alreadyKnown);
         }
 
         // let's look at the super-name... is it part of the same primary type?
@@ -261,8 +258,7 @@ public class MyClassVisitor extends ClassVisitor {
             onDemandInspection.inspectFromPath(path);
         }
         // try again... result can be null or not inspected, in case the path is not on the classpath
-        TypeInfo result = typeContext.typeMapBuilder.get(fqn);
-        return result != null && result.typeInspection.isSet() ? result : null;
+        return typeContext.typeMapBuilder.get(fqn);
     }
 
     private TypeInfo getOrCreateTypeInfo(String fqn, String path) {

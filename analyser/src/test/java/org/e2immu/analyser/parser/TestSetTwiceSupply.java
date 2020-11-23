@@ -70,7 +70,7 @@ public class TestSetTwiceSupply extends CommonTestRunner {
 
     TypeMapVisitor typeMapVisitor = typeMap -> {
         TypeInfo runnable = typeMap.get(Runnable.class);
-        Assert.assertTrue(runnable.isFunctionalInterface());
+        Assert.assertTrue(runnable.typeInspection.get().isFunctionalInterface());
     };
 
     @Test

@@ -552,7 +552,13 @@ public class ParameterizedType {
 
     public boolean isFunctionalInterface() {
         if (typeInfo == null) return false;
-        return typeInfo.isFunctionalInterface();
+        return typeInfo.typeInspection.get().isFunctionalInterface();
+    }
+
+    public boolean isFunctionalInterface(InspectionProvider inspectionProvider) {
+        if (typeInfo == null) return false;
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
+        return typeInspection.isFunctionalInterface();
     }
 
     public boolean isUnboundParameterType() {
@@ -564,7 +570,7 @@ public class ParameterizedType {
     }
 
     private MethodTypeParameterMap findSingleAbstractMethodOfInterface(InspectionProvider inspectionProvider, boolean complain) {
-        if (!isFunctionalInterface()) return null;
+        if (!isFunctionalInterface(inspectionProvider)) return null;
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         Optional<MethodInfo> theMethod = typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(m -> !m.isStatic && !m.isDefaultImplementation).findFirst();

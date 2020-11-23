@@ -142,7 +142,7 @@ public class EvaluateParameters {
                 i > 0 &&
                 methodInfo != null &&
                 scopeObject != null &&
-                methodInfo.typeInfo.isFunctionalInterface() &&
+                methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
                 (scopeVariable = scopeObject.asInstanceOf(VariableValue.class)) != null) {
             builder.setProperty(scopeVariable.variable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL);
         }

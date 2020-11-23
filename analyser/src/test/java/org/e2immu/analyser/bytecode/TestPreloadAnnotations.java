@@ -50,14 +50,19 @@ public class TestPreloadAnnotations {
                 .addClassPath(InputConfiguration.CLASSPATH_WITHOUT_ANNOTATED_APIS);
 
         Configuration configuration = new Configuration.Builder()
-                .addDebugLogTargets(List.of(BYTECODE_INSPECTOR, BYTECODE_INSPECTOR_DEBUG).stream().map(Enum::toString).collect(Collectors.joining(",")))
+                .addDebugLogTargets(List.of(BYTECODE_INSPECTOR, BYTECODE_INSPECTOR_DEBUG)
+                        .stream().map(Enum::toString).collect(Collectors.joining(",")))
                 .setInputConfiguration(inputConfigurationBuilder.build())
                 .build();
         configuration.initializeLoggers();
 
-        Input input = new Input(configuration);
+        Input input = Input.create(configuration);
 
-        TypeInfo e2Immu = input.getGlobalTypeContext().getFullyQualified(E2Immutable.class);
+        TypeInfo e2Immu = input.globalTypeContext().getFullyQualified(E2Immutable.class);
         Assert.assertNotNull(e2Immu);
+
+        TypeInfo objectTypeInfo = input.globalTypeContext().getFullyQualified(Object.class);
+        Assert.assertNotNull(objectTypeInfo);
+        Assert.assertSame(objectTypeInfo, input.globalTypeContext().getPrimitives().objectTypeInfo);
     }
 }

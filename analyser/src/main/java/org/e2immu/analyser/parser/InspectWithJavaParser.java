@@ -18,6 +18,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspectionImpl;
 
 /**
  * Interface to avoid a circular dependency between the ParseAndInspect type and the TypeMapImpl.Builder.
@@ -27,5 +28,5 @@ import org.e2immu.analyser.model.TypeInfo;
  */
 public interface InspectWithJavaParser {
 
-    void inspect(TypeInfo typeInfo);
+    void inspect(TypeInfo typeInfo, TypeInspectionImpl.Builder typeInspectionBuilder);
 }

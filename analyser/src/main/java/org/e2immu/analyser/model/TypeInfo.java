@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model;
 
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.MethodReference;
@@ -106,8 +105,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public Stream<TypeInfo> accessibleBySimpleNameTypeInfoStream(InspectionProvider inspectionProvider) {
+        TypeInspection primaryTypeInspection = inspectionProvider.getTypeInspection(primaryType());
         return accessibleBySimpleNameTypeInfoStream(inspectionProvider, this,
-                inspectionProvider.getTypeInspection(primaryType()).packageNameOrEnclosingType().getLeft(),
+                primaryTypeInspection.packageNameOrEnclosingType().getLeft(),
                 new HashSet<>());
     }
 
@@ -484,12 +484,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return fullyQualifiedName;
     }
 
-    public MethodInfo getMethodOrConstructorByDistinguishingName(String distinguishingName) {
-        return typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .filter(methodInfo -> methodInfo.distinguishingName().equals(distinguishingName))
-                .findFirst().orElse(null);
-    }
-
     public FieldInfo getFieldByName(String name, boolean complain) {
         Optional<FieldInfo> result = typeInspection.get().fields().stream().filter(fieldInfo -> fieldInfo.name.equals(name)).findFirst();
         return complain ? result.orElseThrow() : result.orElse(null);
@@ -590,10 +584,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.get().packageNameOrEnclosingType().isRight();
     }
 
-    public List<TypeInfo> allTypesInPrimaryType() {
-        return primaryType().typeInspection.get().allTypesInPrimaryType();
-    }
-
     public boolean isPrivate() {
         return typeInspection.get().modifiers().contains(TypeModifier.PRIVATE);
     }
@@ -610,14 +600,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public boolean isInterface() {
         return typeInspection.get().typeNature() == TypeNature.INTERFACE;
-    }
-
-    public boolean isFunctionalInterface() {
-        if (typeInspection.get("isFunctionalInterface on " + fullyQualifiedName).typeNature() != TypeNature.INTERFACE) {
-            return false;
-        }
-        return typeInspection.get().getAnnotations().stream()
-                .anyMatch(ann -> Primitives.isFunctionalInterfaceAnnotation(ann.typeInfo()));
     }
 
     public Set<ObjectFlow> objectFlows(AnalysisProvider analysisProvider) {
