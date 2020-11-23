@@ -23,12 +23,12 @@ public class CheckLinks {
     }
 
     public AnnotationExpression createLinkAnnotation(E2ImmuAnnotationExpressions typeContext, Set<Variable> links) {
-        Expression computed = typeContext.constant.get().expressions().get(0);
+        Expression computed = typeContext.constant.expressions().get(0);
         List<Expression> linkNameList = links.stream().map(variable -> new StringConstant(primitives,
                 variable.simpleName())).collect(Collectors.toList());
         Expression linksStringArray = new MemberValuePair("to", new ArrayInitializer(primitives, linkNameList));
         List<Expression> expressions = List.of(computed, linksStringArray);
-        return new AnnotationExpressionImpl(typeContext.linked.get().typeInfo(), expressions);
+        return new AnnotationExpressionImpl(typeContext.linked.typeInfo(), expressions);
     }
 
 }

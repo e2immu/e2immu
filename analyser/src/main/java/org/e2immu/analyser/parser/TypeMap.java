@@ -36,6 +36,5 @@ public interface TypeMap extends  InspectionProvider {
 
     void visit(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer);
 
-    void visitLeaves(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer);
-
+    E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions();
 }

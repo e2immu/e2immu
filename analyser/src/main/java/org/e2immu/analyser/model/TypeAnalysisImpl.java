@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.util.AddOnceSet;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
@@ -165,17 +166,17 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
             // @ExtensionClass
             if (getProperty(VariableProperty.EXTENSION_CLASS) == Level.TRUE) {
-                annotations.put(e2ImmuAnnotationExpressions.extensionClass.get(), true);
+                annotations.put(e2ImmuAnnotationExpressions.extensionClass, true);
             }
 
             // @UtilityClass
             if (getProperty(VariableProperty.UTILITY_CLASS) == Level.TRUE) {
-                annotations.put(e2ImmuAnnotationExpressions.utilityClass.get(), true);
+                annotations.put(e2ImmuAnnotationExpressions.utilityClass, true);
             }
 
             // @Singleton
             if (getProperty(VariableProperty.SINGLETON) == Level.TRUE) {
-                annotations.put(e2ImmuAnnotationExpressions.singleton.get(), true);
+                annotations.put(e2ImmuAnnotationExpressions.singleton, true);
             }
 
             int immutable = getProperty(VariableProperty.IMMUTABLE);

@@ -24,10 +24,7 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.ExpressionContext;
-import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.TypeMapImpl;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -194,20 +191,20 @@ public class TypeInspector {
         Primitives primitives = expressionContext.typeContext.getPrimitives();
         MethodInfo nameMethodInfo = new MethodInfo(typeInfo, "name", List.of(),
                 primitives.stringParameterizedType, false);
+        E2ImmuAnnotationExpressions e2 = expressionContext.typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions();
         nameMethodInfo.methodInspection.set(new MethodInspectionImpl.Builder(nameMethodInfo)
-                .addAnnotation(expressionContext.e2ImmuAnnotationExpressions.notModified.get())
+                .addAnnotation(e2.notModified)
                 .setReturnType(primitives.stringParameterizedType)
                 .build());
 
         MethodInfo valueOfMethodInfo = new MethodInfo(typeInfo, "valueOf", List.of(),
                 primitives.stringParameterizedType, true);
         MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(valueOfMethodInfo)
-                .addAnnotation(expressionContext.e2ImmuAnnotationExpressions.notModified.get())
-                .setReturnType(typeInfo.asParameterizedType());
+                .addAnnotation(e2.notModified).setReturnType(typeInfo.asParameterizedType());
 
         ParameterInfo valueOfP0 = new ParameterInfo(valueOfMethodInfo, primitives.stringParameterizedType, "name", 0);
         ParameterInspectionImpl.Builder valueOfP0B = valueOfBuilder.addParameterCreateBuilder(valueOfP0);
-        valueOfP0B.addAnnotation(expressionContext.e2ImmuAnnotationExpressions.notNull.get());
+        valueOfP0B.addAnnotation(e2.notNull);
 
         valueOfMethodInfo.methodInspection.set(valueOfBuilder.build());
 

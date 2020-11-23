@@ -48,7 +48,7 @@ public class JetBrainsAnnotationTranslator {
     private <T> void mapAnnotation(Annotation annotation, AbstractInspectionBuilder inspectionBuilder) {
         if (ORG_JETBRAINS_ANNOTATIONS_NOTNULL.equals(annotation.name())) {
             if (inspectionBuilder instanceof ParameterInspectionImpl.Builder) {
-                inspectionBuilder.addAnnotation(e2ImmuAnnotationExpressions.notNull.get());
+                inspectionBuilder.addAnnotation(e2ImmuAnnotationExpressions.notNull);
             }
         } else if (annotation.name().startsWith(E2IMMU)) {
             inspectionBuilder.addAnnotation(toAnnotationExpression(annotation));
@@ -56,7 +56,7 @@ public class JetBrainsAnnotationTranslator {
     }
 
     private AnnotationExpression toAnnotationExpression(Annotation annotation) {
-        TypeInfo typeInfo = e2ImmuAnnotationExpressions.getFullyQualified(annotation.name());
+        TypeInfo typeInfo = e2ImmuAnnotationExpressions.get(annotation.name());
         MemberValuePair contractExpression = new MemberValuePair("type",
                 new VariableExpression(new FieldReference(primitives.annotationTypeContract, null)));
         return new AnnotationExpressionImpl(typeInfo, List.of(contractExpression));

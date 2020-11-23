@@ -529,7 +529,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             log(CONSTANT, "Added @Constant annotation on field {}", fieldInfo.fullyQualifiedName());
         } else {
             log(CONSTANT, "Marked that field {} cannot be @Constant", fieldInfo.fullyQualifiedName());
-            fieldAnalysis.annotations.put(e2.constant.get(), false);
+            fieldAnalysis.annotations.put(e2.constant, false);
         }
 
         log(CONSTANT, "Setting initial value of effectively final of field {} to {}",
@@ -732,25 +732,25 @@ public class FieldAnalyser extends AbstractAnalyser {
         log(ANALYSER, "Checking field {}", fieldInfo.fullyQualifiedName());
 
         // TODO check the correct field name in @Linked(to="")
-        check(Linked.class, e2.linked.get());
-        check(NotModified.class, e2.notModified.get());
-        check(NotNull.class, e2.notNull.get());
-        check(Final.class, e2.effectivelyFinal.get());
+        check(Linked.class, e2.linked);
+        check(NotModified.class, e2.notModified);
+        check(NotNull.class, e2.notNull);
+        check(Final.class, e2.effectivelyFinal);
 
         // dynamic type annotations
-        check(E1Immutable.class, e2.e1Immutable.get());
-        check(E2Immutable.class, e2.e2Immutable.get());
-        check(Container.class, e2.container.get());
-        check(E1Container.class, e2.e1Container.get());
-        check(E2Container.class, e2.e2Container.get());
+        check(E1Immutable.class, e2.e1Immutable);
+        check(E2Immutable.class, e2.e2Immutable);
+        check(Container.class, e2.container);
+        check(E1Container.class, e2.e1Container);
+        check(E2Container.class, e2.e2Container);
 
         // checks for dynamic properties of functional interface types
-        check(NotModified1.class, e2.notModified1.get());
+        check(NotModified1.class, e2.notModified1);
 
         // opposites
-        check(org.e2immu.annotation.Variable.class, e2.variableField.get());
-        check(Modified.class, e2.modified.get());
-        check(Nullable.class, e2.nullable.get());
+        check(org.e2immu.annotation.Variable.class, e2.variableField);
+        check(Modified.class, e2.modified);
+        check(Nullable.class, e2.nullable);
 
         checkConstant.checkConstantForFields(messages, fieldInfo, fieldAnalysis);
     }

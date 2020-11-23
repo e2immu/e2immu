@@ -61,17 +61,15 @@ public class ParameterAnalyser {
     public void check() {
         log(ANALYSER, "Checking parameter {}", parameterInfo.fullyQualifiedName());
 
-        check(NotModified.class, e2.notModified.get());
-        check(NotNull.class, List.of(e2.notNull.get(),
-                e2.notNull1.get(),
-                e2.notNull2.get()));
-        check(NotNull1.class, List.of(e2.notNull1.get(), e2.notNull2.get()));
-        check(NotNull2.class, e2.notNull2.get());
-        check(NotModified1.class, e2.notModified1.get());
+        check(NotModified.class, e2.notModified);
+        check(NotNull.class, List.of(e2.notNull, e2.notNull1, e2.notNull2));
+        check(NotNull1.class, List.of(e2.notNull1, e2.notNull2));
+        check(NotNull2.class, e2.notNull2);
+        check(NotModified1.class, e2.notModified1);
 
         // opposites
-        check(Nullable.class, e2.nullable.get());
-        check(Modified.class, e2.modified.get());
+        check(Nullable.class, e2.nullable);
+        check(Modified.class, e2.modified);
 
         checkWorseThanParent();
     }

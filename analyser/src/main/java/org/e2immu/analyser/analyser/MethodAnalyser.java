@@ -204,32 +204,32 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         log(ANALYSER, "Checking method {}", methodInfo.fullyQualifiedName());
 
-        check(Independent.class, e2.independent.get());
+        check(Independent.class, e2.independent);
 
         if (!methodInfo.isConstructor) {
             if (!methodInfo.isVoid()) {
-                check(NotNull.class, e2.notNull.get());
-                check(Fluent.class, e2.fluent.get());
-                check(Identity.class, e2.identity.get());
-                check(E1Immutable.class, e2.e1Immutable.get());
-                check(E1Container.class, e2.e1Container.get());
-                check(Container.class, e2.container.get());
-                check(E2Immutable.class, e2.e2Immutable.get());
-                check(E2Container.class, e2.e2Container.get());
-                check(BeforeMark.class, e2.beforeMark.get());
+                check(NotNull.class, e2.notNull);
+                check(Fluent.class, e2.fluent);
+                check(Identity.class, e2.identity);
+                check(E1Immutable.class, e2.e1Immutable);
+                check(E1Container.class, e2.e1Container);
+                check(Container.class, e2.container);
+                check(E2Immutable.class, e2.e2Immutable);
+                check(E2Container.class, e2.e2Container);
+                check(BeforeMark.class, e2.beforeMark);
                 checkConstant.checkConstantForMethods(messages, methodInfo, methodAnalysis);
 
                 // checks for dynamic properties of functional interface types
-                check(NotModified1.class, e2.notModified1.get());
+                check(NotModified1.class, e2.notModified1);
             }
-            check(NotModified.class, e2.notModified.get());
+            check(NotModified.class, e2.notModified);
 
             // opposites
-            check(Nullable.class, e2.nullable.get());
-            check(Modified.class, e2.modified.get());
+            check(Nullable.class, e2.nullable);
+            check(Modified.class, e2.modified);
         }
         // opposites
-        check(Dependent.class, e2.dependent.get());
+        check(Dependent.class, e2.dependent);
 
         CheckPrecondition.checkPrecondition(messages, methodInfo);
         CheckOnly.checkOnly(messages, methodInfo, methodAnalysis);
@@ -411,11 +411,11 @@ public class MethodAnalyser extends AbstractAnalyser {
                 } else {
                     E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
                     log(MARK, "No approved preconditions for {} in {}", precondition, methodInfo.distinguishingName());
-                    if (!methodAnalysis.annotations.isSet(e2.mark.get())) {
-                        methodAnalysis.annotations.put(e2.mark.get(), false);
+                    if (!methodAnalysis.annotations.isSet(e2.mark)) {
+                        methodAnalysis.annotations.put(e2.mark, false);
                     }
-                    if (!methodAnalysis.annotations.isSet(e2.only.get())) {
-                        methodAnalysis.annotations.put(e2.only.get(), false);
+                    if (!methodAnalysis.annotations.isSet(e2.only)) {
+                        methodAnalysis.annotations.put(e2.only, false);
                     }
                     return DONE;
                 }
@@ -446,17 +446,17 @@ public class MethodAnalyser extends AbstractAnalyser {
         log(MARK, "Marking {} with only data {}", methodInfo.distinguishingName(), markAndOnly);
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         if (mark) {
-            AnnotationExpression markAnnotation = new AnnotationExpressionImpl(e2.mark.get().typeInfo(),
+            AnnotationExpression markAnnotation = new AnnotationExpressionImpl(e2.mark.typeInfo(),
                     List.of(new MemberValuePair("value",
                             new StringConstant(analyserContext.getPrimitives(), jointMarkLabel))));
             methodAnalysis.annotations.put(markAnnotation, true);
-            methodAnalysis.annotations.put(e2.only.get(), false);
+            methodAnalysis.annotations.put(e2.only, false);
         } else {
-            AnnotationExpression onlyAnnotation = new AnnotationExpressionImpl(e2.only.get().typeInfo(),
+            AnnotationExpression onlyAnnotation = new AnnotationExpressionImpl(e2.only.typeInfo(),
                     List.of(new MemberValuePair(after ? "after" : "before",
                             new StringConstant(analyserContext.getPrimitives(), jointMarkLabel))));
             methodAnalysis.annotations.put(onlyAnnotation, true);
-            methodAnalysis.annotations.put(e2.mark.get(), false);
+            methodAnalysis.annotations.put(e2.mark, false);
         }
         return DONE;
     }
@@ -493,7 +493,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         // we still need to remove other parameter components; what remains can be used for marking/only
 
         EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration, ConditionManager.INITIAL);
-        Filter.FilterResult<FieldReference> filterResult = Filter.filter(evaluationContext, precondition, Filter.FilterMode.ACCEPT,Filter.INDIVIDUAL_FIELD_CLAUSE);
+        Filter.FilterResult<FieldReference> filterResult = Filter.filter(evaluationContext, precondition, Filter.FilterMode.ACCEPT, Filter.INDIVIDUAL_FIELD_CLAUSE);
         if (filterResult.accepted().isEmpty()) {
             log(MARK, "No @Mark/@Only annotation in {}: found no individual field preconditions", methodInfo.distinguishingName());
             methodAnalysis.preconditionForMarkAndOnly.set(List.of());
@@ -557,7 +557,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             AnnotationExpression constantAnnotation = checkConstant.createConstantAnnotation(e2, value);
             methodAnalysis.annotations.put(constantAnnotation, true);
         } else {
-            methodAnalysis.annotations.put(e2.constant.get(), false);
+            methodAnalysis.annotations.put(e2.constant, false);
         }
         methodAnalysis.setProperty(VariableProperty.CONSTANT, Level.fromBool(isConstant));
         log(CONSTANT, "Mark method {} as @Constant? {}", methodInfo.fullyQualifiedName(), isConstant);

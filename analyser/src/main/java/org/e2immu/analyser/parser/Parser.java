@@ -160,7 +160,7 @@ public class Parser {
         }
         if (configuration.uploadConfiguration.upload) {
             AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration,
-                    getE2ImmuAnnotationExpressions());
+                    typeMap.getE2ImmuAnnotationExpressions());
             Map<String, String> map = annotationUploader.createMap(sortedPrimaryTypes.stream()
                     .map(sortedType -> sortedType.primaryType).collect(Collectors.toSet()));
             annotationUploader.writeMap(map);
@@ -177,7 +177,7 @@ public class Parser {
 
     private void analyseSortedType(SortedType sortedType) {
         PrimaryTypeAnalyser primaryTypeAnalyser = new PrimaryTypeAnalyser(sortedType, configuration,
-                getTypeContext().getPrimitives(), getE2ImmuAnnotationExpressions());
+                getTypeContext().getPrimitives(), getTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
         try {
             primaryTypeAnalyser.analyse();
         } catch (RuntimeException rte) {
@@ -221,7 +221,7 @@ public class Parser {
         assert types.size() == new HashSet<>(types).size() : "Duplicates?";
 
         ShallowTypeAnalyser shallowTypeAnalyser = new ShallowTypeAnalyser(types, configuration,
-                getTypeContext().getPrimitives(), getE2ImmuAnnotationExpressions());
+                getTypeContext().getPrimitives(), typeMap.getE2ImmuAnnotationExpressions());
         messages.addAll(shallowTypeAnalyser.analyse());
 
         assert types.stream().allMatch(typeInfo -> typeInfo.typeAnalysis.isSet() &&
@@ -242,9 +242,5 @@ public class Parser {
 
     public Stream<Message> getMessages() {
         return messages.getMessageStream();
-    }
-
-    public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
-        return input.getE2ImmuAnnotationExpressions();
     }
 }

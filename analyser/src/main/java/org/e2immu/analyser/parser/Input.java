@@ -56,7 +56,6 @@ public class Input {
 
     private final Configuration configuration;
     private final TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder());
-    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions(globalTypeContext);
     private final ByteCodeInspector byteCodeInspector;
     private final Map<TypeInfo, URL> annotatedAPIs;
     private final Map<TypeInfo, URL> sourceURLs;
@@ -69,7 +68,7 @@ public class Input {
         classPath = assemblePath(true, "Classpath", configuration.inputConfiguration.classPathParts);
         AnnotationStore annotationStore = new AnnotationXmlReader(classPath);
         LOGGER.info("Read {} annotations from 'annotation.xml' files in classpath", annotationStore.getNumberOfAnnotations());
-        byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext, e2ImmuAnnotationExpressions);
+        byteCodeInspector = new ByteCodeInspector(classPath, annotationStore, globalTypeContext);
         globalTypeContext.typeMapBuilder.setByteCodeInspector(byteCodeInspector);
         globalTypeContext.loadPrimitives();
 
@@ -220,9 +219,5 @@ public class Input {
 
     public ByteCodeInspector getByteCodeInspector() {
         return byteCodeInspector;
-    }
-
-    public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
-        return e2ImmuAnnotationExpressions;
     }
 }

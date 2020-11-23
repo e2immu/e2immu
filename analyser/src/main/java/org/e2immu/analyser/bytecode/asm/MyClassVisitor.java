@@ -27,7 +27,6 @@ import org.e2immu.analyser.bytecode.JetBrainsAnnotationTranslator;
 import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.TypeContext;
 import org.objectweb.asm.*;
 import org.slf4j.Logger;
@@ -65,7 +64,6 @@ public class MyClassVisitor extends ClassVisitor {
     public MyClassVisitor(OnDemandInspection onDemandInspection,
                           AnnotationStore annotationStore,
                           TypeContext typeContext,
-                          E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
                           List<TypeInfo> types,
                           Stack<TypeInfo> enclosingTypes) {
         super(ASM7);
@@ -75,7 +73,7 @@ public class MyClassVisitor extends ClassVisitor {
         this.onDemandInspection = onDemandInspection;
         this.annotationStore = annotationStore;
         jetBrainsAnnotationTranslator = annotationStore != null ? new JetBrainsAnnotationTranslator(typeContext.getPrimitives(),
-                e2ImmuAnnotationExpressions) : null;
+                typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions()) : null;
     }
 
     // return true when child = parent + $ + somethingWithoutDollars

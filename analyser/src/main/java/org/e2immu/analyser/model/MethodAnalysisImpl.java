@@ -29,6 +29,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMap;
@@ -319,7 +320,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             if (precondition.isSet()) {
                 Value value = precondition.get();
                 if (value != UnknownValue.EMPTY) {
-                    AnnotationExpression ae = e2ImmuAnnotationExpressions.precondition.get()
+                    AnnotationExpression ae = e2ImmuAnnotationExpressions.precondition
                             .copyWith(primitives, "value", value.toString());
                     annotations.put(ae, true);
                 }
@@ -334,15 +335,15 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             if (methodInfo.isConstructor) return;
 
             // @NotModified, @Modified
-            AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
-                    e2ImmuAnnotationExpressions.modified.get();
+            AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified :
+                    e2ImmuAnnotationExpressions.modified;
             annotations.put(ae, true);
 
             if (Primitives.isVoid(returnType)) return;
 
             // @Identity
             if (getProperty(VariableProperty.IDENTITY) == Level.TRUE) {
-                annotations.put(e2ImmuAnnotationExpressions.identity.get(), true);
+                annotations.put(e2ImmuAnnotationExpressions.identity, true);
             }
 
             // all other annotations cannot be added to primitives
@@ -350,7 +351,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // @Fluent
             if (getProperty(VariableProperty.FLUENT) == Level.TRUE) {
-                annotations.put(e2ImmuAnnotationExpressions.fluent.get(), true);
+                annotations.put(e2ImmuAnnotationExpressions.fluent, true);
             }
 
             // @NotNull

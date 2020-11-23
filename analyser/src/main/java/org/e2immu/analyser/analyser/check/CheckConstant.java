@@ -85,7 +85,7 @@ public class CheckConstant {
     public AnnotationExpression createConstantAnnotation(E2ImmuAnnotationExpressions typeContext, Value value) {
         Expression test;
         Expression valueExpression;
-        Expression computed = typeContext.constant.get().expressions().get(0);
+        Expression computed = typeContext.constant.expressions().get(0);
         if (value instanceof NumericValue || value instanceof StringConstant || value instanceof BoolValue) {
             test = new MemberValuePair("test", new BooleanConstant(primitives, true));
             if (value instanceof NumericValue) {
@@ -103,6 +103,6 @@ public class CheckConstant {
             valueExpression = null;
         }
         List<Expression> expressions = test == null ? List.of(computed) : List.of(computed, test, valueExpression);
-        return new AnnotationExpressionImpl(typeContext.constant.get().typeInfo(), expressions);
+        return new AnnotationExpressionImpl(typeContext.constant.typeInfo(), expressions);
     }
 }

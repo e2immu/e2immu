@@ -50,7 +50,6 @@ import static org.e2immu.analyser.util.Logger.log;
 public class ExpressionContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExpressionContext.class);
 
-    public final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     public final TypeContext typeContext;
     public final TypeInfo enclosingType;
     public final TypeInfo primaryType;
@@ -106,7 +105,6 @@ public class ExpressionContext {
         this.enclosingType = enclosingType;
         this.topLevel = topLevel;
         this.variableContext = variableContext;
-        this.e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions(typeContext);
     }
 
     public ExpressionContext newVariableContext(@NotNull String reason) {

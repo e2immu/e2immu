@@ -69,39 +69,39 @@ public class AnnotationUploader {
         this.configuration = configuration;
 
         typePairs = List.of(
-                new Pair<>(lc(E2Container.class), e2ImmuAnnotationExpressions.e2Container.get()),
-                new Pair<>(lc(E2Immutable.class), e2ImmuAnnotationExpressions.e2Immutable.get()),
-                new Pair<>(lc(E1Container.class), e2ImmuAnnotationExpressions.e1Container.get()),
-                new Pair<>(lc(E1Immutable.class), e2ImmuAnnotationExpressions.e1Immutable.get()),
-                new Pair<>(lc(Container.class), e2ImmuAnnotationExpressions.container.get()),
-                new Pair<>(lc(MutableModifiesArguments.class), e2ImmuAnnotationExpressions.mutableModifiesArguments.get())
+                new Pair<>(lc(E2Container.class), e2ImmuAnnotationExpressions.e2Container),
+                new Pair<>(lc(E2Immutable.class), e2ImmuAnnotationExpressions.e2Immutable),
+                new Pair<>(lc(E1Container.class), e2ImmuAnnotationExpressions.e1Container),
+                new Pair<>(lc(E1Immutable.class), e2ImmuAnnotationExpressions.e1Immutable),
+                new Pair<>(lc(Container.class), e2ImmuAnnotationExpressions.container),
+                new Pair<>(lc(MutableModifiesArguments.class), e2ImmuAnnotationExpressions.mutableModifiesArguments)
         );
 
         methodPairs = List.of(
-                new Pair<>(lc(Independent.class), e2ImmuAnnotationExpressions.independent.get()),
-                new Pair<>(lc(Dependent.class), e2ImmuAnnotationExpressions.dependent.get()),
-                new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified.get()),
-                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.notModified.get())
+                new Pair<>(lc(Independent.class), e2ImmuAnnotationExpressions.independent),
+                new Pair<>(lc(Dependent.class), e2ImmuAnnotationExpressions.dependent),
+                new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified),
+                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.notModified)
         );
 
         fieldPairs = List.of(
-                new Pair<>(lc(Variable.class), e2ImmuAnnotationExpressions.variableField.get()),
-                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.modified.get()),
-                new Pair<>(lc(Final.class), e2ImmuAnnotationExpressions.modified.get()),
-                new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified.get())
+                new Pair<>(lc(Variable.class), e2ImmuAnnotationExpressions.variableField),
+                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.modified),
+                new Pair<>(lc(Final.class), e2ImmuAnnotationExpressions.modified),
+                new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified)
         );
 
         parameterPairs = List.of(
-                new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified.get()),
-                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.modified.get())
+                new Pair<>(lc(NotModified.class), e2ImmuAnnotationExpressions.notModified),
+                new Pair<>(lc(Modified.class), e2ImmuAnnotationExpressions.modified)
         );
 
         dynamicTypeAnnotations = List.of(
-                new Pair<>(lc(E2Container.class), e2ImmuAnnotationExpressions.e2Container.get()),
-                new Pair<>(lc(E2Immutable.class), e2ImmuAnnotationExpressions.e2Immutable.get()),
-                new Pair<>(lc(E1Container.class), e2ImmuAnnotationExpressions.e1Container.get()),
-                new Pair<>(lc(E1Immutable.class), e2ImmuAnnotationExpressions.e1Immutable.get()),
-                new Pair<>(lc(BeforeMark.class), e2ImmuAnnotationExpressions.e1Immutable.get())
+                new Pair<>(lc(E2Container.class), e2ImmuAnnotationExpressions.e2Container),
+                new Pair<>(lc(E2Immutable.class), e2ImmuAnnotationExpressions.e2Immutable),
+                new Pair<>(lc(E1Container.class), e2ImmuAnnotationExpressions.e1Container),
+                new Pair<>(lc(E1Immutable.class), e2ImmuAnnotationExpressions.e1Immutable),
+                new Pair<>(lc(BeforeMark.class), e2ImmuAnnotationExpressions.e1Immutable)
         );
     }
 

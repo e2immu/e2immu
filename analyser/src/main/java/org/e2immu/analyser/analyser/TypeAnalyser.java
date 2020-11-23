@@ -188,17 +188,17 @@ public class TypeAnalyser extends AbstractAnalyser {
         // before we check, we copy the properties into annotations
         log(ANALYSER, "\n******\nAnnotation validation on type {}\n******", typeInfo.fullyQualifiedName);
 
-        check(typeInfo, UtilityClass.class, e2.utilityClass.get());
-        check(typeInfo, E1Immutable.class, e2.e1Immutable.get());
-        check(typeInfo, E1Container.class, e2.e1Container.get());
-        check(typeInfo, ExtensionClass.class, e2.extensionClass.get());
-        check(typeInfo, Container.class, e2.container.get());
-        check(typeInfo, E2Immutable.class, e2.e2Immutable.get());
-        check(typeInfo, E2Container.class, e2.e2Container.get());
-        check(typeInfo, Independent.class, e2.independent.get());
+        check(typeInfo, UtilityClass.class, e2.utilityClass);
+        check(typeInfo, E1Immutable.class, e2.e1Immutable);
+        check(typeInfo, E1Container.class, e2.e1Container);
+        check(typeInfo, ExtensionClass.class, e2.extensionClass);
+        check(typeInfo, Container.class, e2.container);
+        check(typeInfo, E2Immutable.class, e2.e2Immutable);
+        check(typeInfo, E2Container.class, e2.e2Container);
+        check(typeInfo, Independent.class, e2.independent);
 
         // opposites
-        check(typeInfo, MutableModifiesArguments.class, e2.mutableModifiesArguments.get());
+        check(typeInfo, MutableModifiesArguments.class, e2.mutableModifiesArguments);
     }
 
     private void check(TypeInfo typeInfo, Class<?> annotation, AnnotationExpression annotationExpression) {

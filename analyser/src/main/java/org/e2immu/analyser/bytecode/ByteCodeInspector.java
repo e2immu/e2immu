@@ -42,14 +42,11 @@ public class ByteCodeInspector implements OnDemandInspection {
     private final Resources classPath;
     private final TypeContext typeContext;
     private final AnnotationStore annotationStore;
-    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
 
-    public ByteCodeInspector(Resources classPath, AnnotationStore annotationStore, TypeContext typeContext,
-                             E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    public ByteCodeInspector(Resources classPath, AnnotationStore annotationStore, TypeContext typeContext) {
         this.classPath = classPath;
         this.typeContext = typeContext;
         this.annotationStore = annotationStore;
-        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
     }
 
     /**
@@ -121,7 +118,6 @@ public class ByteCodeInspector implements OnDemandInspection {
         MyClassVisitor myClassVisitor = new MyClassVisitor(this,
                 annotationStore,
                 new TypeContext(parentTypeContext),
-                e2ImmuAnnotationExpressions,
                 types,
                 enclosingTypes);
         classReader.accept(myClassVisitor, 0);

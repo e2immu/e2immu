@@ -52,8 +52,7 @@ public class TestByteCodeInspector {
         Resources annotationResources = new Resources();
         AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
         TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder());
-        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, typeContext,
-                new E2ImmuAnnotationExpressions(typeContext));
+        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, typeContext);
         typeContext.typeMapBuilder.setByteCodeInspector(byteCodeInspector);
         typeContext.loadPrimitives();
 

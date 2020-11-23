@@ -33,10 +33,12 @@ public class TypeMapImpl implements TypeMap {
 
     private final Trie<TypeInfo> trie;
     private final Primitives primitives;
+    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
 
-    private TypeMapImpl(Trie<TypeInfo> trie, Primitives primitives) {
+    private TypeMapImpl(Trie<TypeInfo> trie, Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         this.primitives = primitives;
         this.trie = trie;
+        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
         assert trie.isFrozen();
     }
 
@@ -66,11 +68,6 @@ public class TypeMapImpl implements TypeMap {
         trie.visit(prefix, consumer);
     }
 
-    @Override
-    public void visitLeaves(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer) {
-        trie.visitLeaves(prefix, consumer);
-    }
-
     public static boolean containsPrefix(Trie<TypeInfo> trie, String fullyQualifiedName) {
         String[] split = fullyQualifiedName.split("\\.");
         // we believe it is going to be a lot faster if we go from 1 to max length rather than the other way round
@@ -81,6 +78,11 @@ public class TypeMapImpl implements TypeMap {
             if (!typeInfoList.isEmpty()) return true;
         }
         return false;
+    }
+
+    @Override
+    public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
+        return e2ImmuAnnotationExpressions;
     }
 
     @Override
@@ -107,6 +109,7 @@ public class TypeMapImpl implements TypeMap {
 
         private final Trie<TypeInfo> trie = new Trie<>();
         private final Primitives primitives = new Primitives();
+        private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions();
 
         private final Map<TypeInfo, TypeInspectionImpl.Builder> typeInspections = new HashMap<>();
         private final Map<FieldInfo, FieldInspectionImpl.Builder> fieldInspections = new HashMap<>();
@@ -138,7 +141,7 @@ public class TypeMapImpl implements TypeMap {
                 }
             });
 
-            return new TypeMapImpl(trie, primitives);
+            return new TypeMapImpl(trie, primitives, e2ImmuAnnotationExpressions);
         }
 
         public TypeInfo getOrCreate(String fullyQualifiedName, int inspectionState) {
@@ -171,6 +174,11 @@ public class TypeMapImpl implements TypeMap {
         }
 
         @Override
+        public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
+            return e2ImmuAnnotationExpressions;
+        }
+
+        @Override
         public TypeInfo get(Class<?> clazz) {
             return get(clazz.getCanonicalName());
         }
@@ -188,11 +196,6 @@ public class TypeMapImpl implements TypeMap {
         @Override
         public void visit(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer) {
             trie.visit(prefix, consumer);
-        }
-
-        @Override
-        public void visitLeaves(String[] prefix, BiConsumer<String[], List<TypeInfo>> consumer) {
-            trie.visitLeaves(prefix, consumer);
         }
 
         @Override

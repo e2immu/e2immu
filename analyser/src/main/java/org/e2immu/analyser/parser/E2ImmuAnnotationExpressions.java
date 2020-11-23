@@ -1,12 +1,13 @@
 package org.e2immu.analyser.parser;
 
+import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.util.Lazy;
 import org.e2immu.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /*
@@ -16,42 +17,52 @@ import java.util.Objects;
 @E2Container(after = "fields")
 public class E2ImmuAnnotationExpressions {
 
-    @NotModified
-    private final TypeMapImpl.Builder typeMapBuilder;
+    public final AnnotationExpression beforeMark = create(BeforeMark.class);
+    public final AnnotationExpression constant = create(Constant.class);
+    public final AnnotationExpression container = create(Container.class);
+    public final AnnotationExpression dependent = create(Dependent.class);
+    public final AnnotationExpression e1Container = create(E1Container.class);
+    public final AnnotationExpression e2Container = create(E2Container.class);
+    public final AnnotationExpression extensionClass = create(ExtensionClass.class);
+    public final AnnotationExpression e1Immutable = create(E1Immutable.class);
+    public final AnnotationExpression e2Immutable = create(E2Immutable.class);
+    public final AnnotationExpression effectivelyFinal = create(Final.class);
+    public final AnnotationExpression fluent = create(Fluent.class);
+    public final AnnotationExpression identity = create(Identity.class);
+    public final AnnotationExpression ignoreModifications = create(IgnoreModifications.class);
+    public final AnnotationExpression independent = create(Independent.class);
+    public final AnnotationExpression linked = create(Linked.class);
+    public final AnnotationExpression mark = create(Mark.class);
+    public final AnnotationExpression modified = create(Modified.class);
+    public final AnnotationExpression mutableModifiesArguments = create(MutableModifiesArguments.class);
+    public final AnnotationExpression notModified = create(NotModified.class);
+    public final AnnotationExpression notModified1 = create(NotModified1.class);
+    public final AnnotationExpression notNull = create(NotNull.class);
+    public final AnnotationExpression notNull1 = create(NotNull1.class);
+    public final AnnotationExpression notNull2 = create(NotNull2.class);
+    public final AnnotationExpression nullable = create(Nullable.class);
+    public final AnnotationExpression only = create(Only.class);
+    public final AnnotationExpression precondition = create(Precondition.class);
+    public final AnnotationExpression singleton = create(Singleton.class);
+    public final AnnotationExpression utilityClass = create(UtilityClass.class);
+    public final AnnotationExpression variableField = create(Variable.class);
 
-    public E2ImmuAnnotationExpressions(@NotNull TypeContext typeContext) {
-        this.typeMapBuilder = typeContext.typeMapBuilder;
+    private final Map<String, TypeInfo> annotationTypes;
+
+    public E2ImmuAnnotationExpressions() {
+        ImmutableMap.Builder<String, TypeInfo> builder = new ImmutableMap.Builder<>();
+        add(builder, beforeMark, constant, container, dependent, e1Container, e2Container, extensionClass, e1Immutable, e2Immutable,
+                effectivelyFinal, fluent, identity, ignoreModifications, independent, linked, mark, modified, mutableModifiesArguments);
+        add(builder, notModified, notModified1, notNull, notNull1, notNull2, nullable, only, precondition, singleton
+                , utilityClass, variableField);
+        annotationTypes = builder.build();
     }
 
-    public final Lazy<AnnotationExpression> beforeMark = new Lazy<>(() -> create(BeforeMark.class));
-    public final Lazy<AnnotationExpression> constant = new Lazy<>(() -> create(Constant.class));
-    public final Lazy<AnnotationExpression> container = new Lazy<>(() -> create(Container.class));
-    public final Lazy<AnnotationExpression> dependent = new Lazy<>(() -> create(Dependent.class));
-    public final Lazy<AnnotationExpression> e1Container = new Lazy<>(() -> create(E1Container.class));
-    public final Lazy<AnnotationExpression> e2Container = new Lazy<>(() -> create(E2Container.class));
-    public final Lazy<AnnotationExpression> extensionClass = new Lazy<>(() -> create(ExtensionClass.class));
-    public final Lazy<AnnotationExpression> e1Immutable = new Lazy<>(() -> create(E1Immutable.class));
-    public final Lazy<AnnotationExpression> e2Immutable = new Lazy<>(() -> create(E2Immutable.class));
-    public final Lazy<AnnotationExpression> effectivelyFinal = new Lazy<>(() -> create(Final.class));
-    public final Lazy<AnnotationExpression> fluent = new Lazy<>(() -> create(Fluent.class));
-    public final Lazy<AnnotationExpression> identity = new Lazy<>(() -> create(Identity.class));
-    public final Lazy<AnnotationExpression> ignoreModifications = new Lazy<>(() -> create(IgnoreModifications.class));
-    public final Lazy<AnnotationExpression> independent = new Lazy<>(() -> create(Independent.class));
-    public final Lazy<AnnotationExpression> linked = new Lazy<>(() -> create(Linked.class));
-    public final Lazy<AnnotationExpression> mark = new Lazy<>(() -> create(Mark.class));
-    public final Lazy<AnnotationExpression> modified = new Lazy<>(() -> create(Modified.class));
-    public final Lazy<AnnotationExpression> mutableModifiesArguments = new Lazy<>(() -> create(MutableModifiesArguments.class));
-    public final Lazy<AnnotationExpression> notModified = new Lazy<>(() -> create(NotModified.class));
-    public final Lazy<AnnotationExpression> notModified1 = new Lazy<>(() -> create(NotModified1.class));
-    public final Lazy<AnnotationExpression> notNull = new Lazy<>(() -> create(NotNull.class));
-    public final Lazy<AnnotationExpression> notNull1 = new Lazy<>(() -> create(NotNull1.class));
-    public final Lazy<AnnotationExpression> notNull2 = new Lazy<>(() -> create(NotNull2.class));
-    public final Lazy<AnnotationExpression> nullable = new Lazy<>(() -> create(Nullable.class));
-    public final Lazy<AnnotationExpression> only = new Lazy<>(() -> create(Only.class));
-    public final Lazy<AnnotationExpression> precondition = new Lazy<>(() -> create(Precondition.class));
-    public final Lazy<AnnotationExpression> singleton = new Lazy<>(() -> create(Singleton.class));
-    public final Lazy<AnnotationExpression> utilityClass = new Lazy<>(() -> create(UtilityClass.class));
-    public final Lazy<AnnotationExpression> variableField = new Lazy<>(() -> create(Variable.class));
+    private static void add(ImmutableMap.Builder<String, TypeInfo> builder, AnnotationExpression... aes) {
+        for (AnnotationExpression ae : aes) {
+            builder.put(ae.typeInfo().fullyQualifiedName, ae.typeInfo());
+        }
+    }
 
     /**
      * create an annotation for a given class, without parameters (contract=false, absent=false)
@@ -61,12 +72,14 @@ public class E2ImmuAnnotationExpressions {
      */
     @NotModified
     private AnnotationExpression create(Class<?> clazz) {
-        return new AnnotationExpressionImpl(typeMapBuilder.get(clazz.getCanonicalName()), List.of());
+        return new AnnotationExpressionImpl(TypeInfo.fromFqn(clazz.getCanonicalName()), List.of());
     }
 
-    @NotModified
-    @NotNull
-    public TypeInfo getFullyQualified(@NotNull String fqn) {
-        return Objects.requireNonNull(typeMapBuilder.get(fqn), "Cannot find " + fqn);
+    public TypeInfo immutableAnnotation(Class<?> key) {
+        return Objects.requireNonNull(annotationTypes.get(key.getCanonicalName()));
+    }
+
+    public TypeInfo get(String name) {
+        return Objects.requireNonNull(annotationTypes.get(name));
     }
 }

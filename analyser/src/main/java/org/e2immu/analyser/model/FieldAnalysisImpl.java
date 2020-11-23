@@ -25,6 +25,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationMode;
@@ -233,14 +234,13 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             // @Final(after=), @Final, @Variable
             if (effectivelyFinal == Level.FALSE && MultiLevel.isEventuallyE1Immutable(ownerImmutable)) {
                 String labels = typeAnalysisOfOwner.allLabelsRequiredForImmutable();
-                annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.get()
-                        .copyWith(primitives, "after", labels), true);
+                annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.copyWith(primitives, "after", labels), true);
             } else {
                 if (effectivelyFinal == Level.TRUE && !isExplicitlyFinal) {
-                    annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal.get(), true);
+                    annotations.put(e2ImmuAnnotationExpressions.effectivelyFinal, true);
                 }
                 if (effectivelyFinal == Level.FALSE) {
-                    annotations.put(e2ImmuAnnotationExpressions.variableField.get(), true);
+                    annotations.put(e2ImmuAnnotationExpressions.variableField, true);
                 }
             }
 
@@ -250,11 +250,10 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             // @NotModified(after=), @NotModified, @Modified
             if (modified == Level.TRUE && MultiLevel.isEventuallyE2Immutable(ownerImmutable)) {
                 String marks = String.join(",", typeAnalysisOfOwner.marksRequiredForImmutable());
-                annotations.put(e2ImmuAnnotationExpressions.notModified.get()
-                        .copyWith(primitives, "after", marks), true);
+                annotations.put(e2ImmuAnnotationExpressions.notModified.copyWith(primitives, "after", marks), true);
             } else if (allowModificationAnnotation(effectivelyFinal)) {
-                AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
-                        e2ImmuAnnotationExpressions.modified.get();
+                AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified :
+                        e2ImmuAnnotationExpressions.modified;
                 annotations.put(ae, true);
             }
 

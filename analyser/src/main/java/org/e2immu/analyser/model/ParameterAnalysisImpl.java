@@ -165,8 +165,8 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
             int modified = getProperty(VariableProperty.MODIFIED);
             if (!parameterInfo.parameterizedType.isFunctionalInterface() &&
                     parameterInfo.parameterizedType.isAtLeastEventuallyE2Immutable(analysisProvider) != Boolean.TRUE) {
-                AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified.get() :
-                        e2ImmuAnnotationExpressions.modified.get();
+                AnnotationExpression ae = modified == Level.FALSE ? e2ImmuAnnotationExpressions.notModified :
+                        e2ImmuAnnotationExpressions.modified;
                 annotations.put(ae, true);
             }
 

@@ -53,10 +53,9 @@ public class TestInspectAnnotatedAPIs {
     @Test
     public void testLoadSources() throws IOException {
         TypeContext globalTypeContext = new TypeContext(new TypeMapImpl.Builder());
-        E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions = new E2ImmuAnnotationExpressions(globalTypeContext);
         URL url = new URL("file:src/main/resources/annotatedAPIs/java.util.annotated_api");
         Resources classPath = new Resources();
-        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(classPath, null, globalTypeContext, e2ImmuAnnotationExpressions);
+        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(classPath, null, globalTypeContext);
         //ParseAndInspect parseAndInspect
         // FIXME update test
         AtomicInteger counter = new AtomicInteger(0);
