@@ -68,7 +68,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testOneOverwrite() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Value x = new VariableValue(viX.variable);
+        Value x =  new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
@@ -98,7 +98,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testOneCisAIfXThenB() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Value x = new VariableValue(viX.variable);
+        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
@@ -121,7 +121,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         Assert.assertNotSame(viC, viC2);
 
         Value res = viC2.getValue();
-        Assert.assertEquals("x?4:3", res.toString());
+        Assert.assertEquals("instance type boolean?4:3", res.toString());
 
         viC2.mergeProperties(true, viA, List.of(viB));
         Assert.assertEquals(MultiLevel.MUTABLE, viC2.getProperty(VariableProperty.NOT_NULL));
@@ -142,7 +142,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         ret.setValue(UnknownValue.RETURN_VALUE);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Value x = new VariableValue(viX.variable);
+        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
         viX.setValue(x);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
@@ -157,7 +157,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         Assert.assertNotSame(ret, ret2);
 
         Value value2 = ret2.getValue();
-        Assert.assertEquals("x?4:<return value>", value2.toString());
+        Assert.assertEquals("instance type boolean?4:<return value>", value2.toString());
         ret2.mergeProperties(false, ret, List.of(viB));
         Assert.assertEquals(MultiLevel.MUTABLE, ret2.getProperty(VariableProperty.NOT_NULL));
 
@@ -174,7 +174,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl ret3 = ret2.merge(minimalEvaluationContext, null, false, List.of(viA));
         Assert.assertNotSame(ret3, ret2);
-        Assert.assertEquals("x?4:3", ret3.getValue().toString());
+        Assert.assertEquals("instance type boolean?4:3", ret3.getValue().toString());
 
         ret3.mergeProperties(false, ret2, List.of(viA));
         Assert.assertEquals(MultiLevel.MUTABLE, ret3.getProperty(VariableProperty.NOT_NULL));
@@ -190,7 +190,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         ret.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalIntVar("x"));
-        Value x = new VariableValue(viX.variable);
+        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
         viX.setValue(x);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
@@ -204,7 +204,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl ret2 = ret.merge(minimalEvaluationContext, null, false, List.of(viB));
         Assert.assertNotSame(ret2, ret);
-        Assert.assertEquals("3 == x?4:<return value>", ret2.getValue().toString());
+        Assert.assertEquals("3 == instance type int?4:<return value>", ret2.getValue().toString());
 
         ret2.mergeProperties(false, ret, List.of(viB));
         Assert.assertEquals(MultiLevel.MUTABLE, ret2.getProperty(VariableProperty.NOT_NULL));
@@ -220,13 +220,14 @@ public class TestVariableInfo extends CommonVariableInfo {
         Value xEquals4 = new AndValue(minimalEvaluationContext.getPrimitives()).append(minimalEvaluationContext,
                 NegatedValue.negate(minimalEvaluationContext, xEquals3),
                 EqualsValue.equals(minimalEvaluationContext, x, four, ObjectFlow.NO_FLOW));
-        Assert.assertEquals("4 == x", xEquals4.toString());
+        Assert.assertEquals("4 == instance type int", xEquals4.toString());
         viA.stateOnAssignment.set(xEquals4);
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         VariableInfoImpl ret3 = ret2.merge(minimalEvaluationContext, null, false, List.of(viA));
         Assert.assertNotSame(ret3, ret2);
-        Assert.assertEquals("4 == x?3:3 == x?4:<return value>", ret3.getValue().toString());
+        Assert.assertEquals("4 == instance type int?3:3 == instance type int?4:<return value>",
+                ret3.getValue().toString());
         ret3.mergeProperties(false, ret2, List.of(viA));
         Assert.assertEquals(MultiLevel.MUTABLE, ret3.getProperty(VariableProperty.NOT_NULL));
 
@@ -247,7 +248,8 @@ public class TestVariableInfo extends CommonVariableInfo {
         VariableInfoImpl ret4 = ret3.merge(minimalEvaluationContext, null, false, List.of(viC));
         Assert.assertNotSame(ret3, ret4);
         // IMPROVE actually the value should be 4 == x?3:3 == x?4:2
-        Assert.assertEquals("(not (3 == x) and not (4 == x))?2:4 == x?3:3 == x?4:<return value>", ret4.getValue().toString());
+        Assert.assertEquals("(not (3 == instance type int) and not (4 == instance type int))?2:" +
+                "4 == instance type int?3:3 == instance type int?4:<return value>", ret4.getValue().toString());
 
         ret4.mergeProperties(false, ret3, List.of(viC));
         Assert.assertEquals(MultiLevel.MUTABLE, ret4.getProperty(VariableProperty.NOT_NULL));
@@ -273,11 +275,11 @@ public class TestVariableInfo extends CommonVariableInfo {
         // if(some obscure condition) c = b;
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
-        viC.setValue(new VariableValue(viA.variable));
+        viC.setValue(new Instance(viA.variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY));
         viC.stateOnAssignment.set(UnknownValue.EMPTY);
         VariableInfoImpl viC2 = viC.merge(minimalEvaluationContext, null, false, List.of(viB));
         Assert.assertNotSame(viA, viC2);
-        Assert.assertEquals("c", viC2.getValue().toString());
+        Assert.assertEquals("instance type int", viC2.getValue().toString());
 
         viC2.mergeProperties(false, viA, List.of(viB));
         Assert.assertEquals(MultiLevel.MUTABLE, viC2.getProperty(VariableProperty.NOT_NULL));
@@ -287,7 +289,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testTwoOverwriteCisIfXThenAElseB() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Value x = new VariableValue(viX.variable);
+        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
@@ -307,7 +309,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
         viC.merge(minimalEvaluationContext, viC, true, List.of(viA, viB));
-        Assert.assertEquals("x?3:4", viC.getValue().toString());
+        Assert.assertEquals("instance type boolean?3:4", viC.getValue().toString());
 
         viC.mergeProperties(true, null, List.of(viA, viB));
         Assert.assertEquals(MultiLevel.MUTABLE, viC.getProperty(VariableProperty.NOT_NULL));
@@ -317,7 +319,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testTwoOverwriteCisIfXThenAElseA() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Value x = new VariableValue(viX.variable);
+        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));

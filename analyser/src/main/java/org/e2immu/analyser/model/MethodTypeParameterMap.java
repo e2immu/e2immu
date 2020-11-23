@@ -152,7 +152,7 @@ public class MethodTypeParameterMap {
 
         for (ParameterInfo p : methodInspection.getParameters()) {
             ParameterInfo newParameter = new ParameterInfo(copy, getConcreteTypeOfParameter(p.index), p.name, p.index);
-            mib.addParameter(newParameter);
+            mib.addParameterCreateBuilder(newParameter);
             ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder();
             if (p.parameterInspection.get().isVarArgs()) {
                 pib.setVarArgs(true);

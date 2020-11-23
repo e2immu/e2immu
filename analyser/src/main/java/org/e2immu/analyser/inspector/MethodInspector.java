@@ -203,7 +203,7 @@ public class MethodInspector {
         for (Parameter parameter : parameters) {
             ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, parameter.getType(), parameter.isVarArgs(), dollarResolver);
             ParameterInfo parameterInfo = new ParameterInfo(methodInfo, pt, parameter.getNameAsString(), i++);
-            ParameterInspectionImpl.Builder parameterInspectionBuilder = builder.addParameter(parameterInfo);
+            ParameterInspectionImpl.Builder parameterInspectionBuilder = builder.addParameterCreateBuilder(parameterInfo);
             parameterInspectionBuilder.inspect(parameter, expressionContext, parameter.isVarArgs());
         }
     }

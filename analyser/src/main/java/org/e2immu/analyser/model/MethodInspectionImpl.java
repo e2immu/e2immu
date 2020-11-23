@@ -152,7 +152,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         private Block inspectedBlock;
         private final List<ParameterizedType> exceptionTypes = new ArrayList<>();
         private ParameterizedType returnType;
-        private final Map<ParameterInfo, ParameterInspectionImpl.Builder> parameterInspectionBuilders = new HashMap<>();
+        private final Map<Integer, ParameterInspectionImpl.Builder> parameterInspectionBuilders = new HashMap<>();
         private String fullyQualifiedName;
         private String distinguishingName;
 
@@ -188,21 +188,36 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             return this;
         }
 
-        public ParameterInspectionImpl.Builder addParameter(@NotNull ParameterInfo parameterInfo) {
-            parameters.add(parameterInfo);
+        // the following two methods are used by the bytecode inspector
+
+        public ParameterInspectionImpl.Builder newParameterInspectionBuilder(int index) {
             ParameterInspectionImpl.Builder builder = new ParameterInspectionImpl.Builder();
-            parameterInspectionBuilders.put(parameterInfo, builder);
+            parameterInspectionBuilders.put(index, builder);
             return builder;
         }
 
+        public void addParameterNoBuilder(ParameterInfo parameterInfo) {
+            parameters.add(parameterInfo);
+            assert parameterInfo.index + 1 == parameters.size();
+        }
+
+        // the following method is used by the method inspector
+
+        public ParameterInspectionImpl.Builder addParameterCreateBuilder(@NotNull ParameterInfo parameterInfo) {
+            parameters.add(parameterInfo);
+            return newParameterInspectionBuilder(parameterInfo.index);
+        }
+
+        // finally, this one is used by hand
+
         public Builder addParameterFluently(@NotNull ParameterInfo parameterInfo) {
-            addParameter(parameterInfo);
+            addParameterCreateBuilder(parameterInfo);
             return this;
         }
 
         @Fluent
         public Builder addParameters(@NotNull Collection<ParameterInfo> parameters) {
-            parameters.forEach(this::addParameter);
+            parameters.forEach(this::addParameterCreateBuilder);
             return this;
         }
 
@@ -231,10 +246,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             return this;
         }
 
-        public Map<ParameterInfo, ParameterInspectionImpl.Builder> getParameterInspectionBuilders() {
-            return parameterInspectionBuilders;
-        }
-
         @NotModified
         @NotNull
         public MethodInspectionImpl build() {
@@ -252,14 +263,17 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                 }
             }
 
-            parameterInspectionBuilders.forEach((parameterInfo, builder) -> parameterInfo.parameterInspection.set(builder.build()));
+            parameterInspectionBuilders.forEach((index, builder) -> {
+                ParameterInfo parameterInfo = parameters.get(index);
+                parameterInfo.parameterInspection.set(builder.build());
+            });
             companionMethods.values().forEach(builder -> builder.methodInfo.methodInspection.set(builder.build()));
 
             // removed a check that the type parameter, if it belonged to a method, had to be this method.
             // that's not correct, lambdas can have a method parameter type belonging to the enclosing method.
             // we cannot easily check for that because anonymous types cannot (ATM) refer to their owning field/method.
 
-            if(fullyQualifiedName == null) readyToComputeFQN();
+            if (fullyQualifiedName == null) readyToComputeFQN();
 
             return new MethodInspectionImpl(methodInfo,
                     getFullyQualifiedName(), // the builders have not been invalidated yet
@@ -278,10 +292,10 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         public void readyToComputeFQN() {
             this.fullyQualifiedName = methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
-                    .map(p -> p.parameterizedType.stream(parameterInspectionBuilders.get(p).isVarArgs()))
+                    .map(p -> p.parameterizedType.stream(parameterInspectionBuilders.get(p.index).isVarArgs()))
                     .collect(Collectors.joining(",")) + ")";
             this.distinguishingName = methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
-                    .map(p -> p.parameterizedType.distinguishingStream(parameterInspectionBuilders.get(p).isVarArgs()))
+                    .map(p -> p.parameterizedType.distinguishingStream(parameterInspectionBuilders.get(p.index).isVarArgs()))
                     .collect(Collectors.joining(",")) + ")";
         }
 

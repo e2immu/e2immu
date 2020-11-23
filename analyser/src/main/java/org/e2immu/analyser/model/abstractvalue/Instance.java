@@ -92,9 +92,10 @@ public class Instance implements Value {
     @Override
     public String print(PrintMode printMode) {
         return "instance type " + parameterizedType.detailedString()
-                + "(" + constructorParameterValues.stream()
-                .map(Value::toString)
-                .collect(Collectors.joining(", ")) + ")"
+                + (constructorParameterValues.isEmpty() ? "" : (
+                "(" + constructorParameterValues.stream()
+                        .map(Value::toString)
+                        .collect(Collectors.joining(", ")) + ")"))
                 + (state == UnknownValue.EMPTY ? "" : "[" + state.print(printMode) + "]");
     }
 

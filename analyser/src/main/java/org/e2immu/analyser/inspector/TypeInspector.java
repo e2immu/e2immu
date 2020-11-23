@@ -206,7 +206,7 @@ public class TypeInspector {
                 .setReturnType(typeInfo.asParameterizedType());
 
         ParameterInfo valueOfP0 = new ParameterInfo(valueOfMethodInfo, primitives.stringParameterizedType, "name", 0);
-        ParameterInspectionImpl.Builder valueOfP0B = valueOfBuilder.addParameter(valueOfP0);
+        ParameterInspectionImpl.Builder valueOfP0B = valueOfBuilder.addParameterCreateBuilder(valueOfP0);
         valueOfP0B.addAnnotation(expressionContext.e2ImmuAnnotationExpressions.notNull.get());
 
         valueOfMethodInfo.methodInspection.set(valueOfBuilder.build());

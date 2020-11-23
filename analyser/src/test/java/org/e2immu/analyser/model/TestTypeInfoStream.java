@@ -59,7 +59,7 @@ public class TestTypeInfoStream {
     final MethodInfo intSum = new MethodInfo(typeInfo, "sum", List.of(), primitives.intParameterizedType, true);
 
     @Test
-    public void test2() {
+    public void test() {
         final TypeInfo hashMap = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_UTIL, "HashMap");
         final ParameterizedType hashMapParameterizedType = hashMap.asParameterizedType();
         final TypeInfo map = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_UTIL, "Map");
@@ -168,8 +168,13 @@ public class TestTypeInfoStream {
                 .build());
         ParameterInfo x = new ParameterInfo(intSum, primitives.intTypeInfo, "x", 0);
         ParameterInfo y = new ParameterInfo(intSum, primitives.intTypeInfo, "y", 1);
+
+        TypeInfo exception = TypeInfo.createFqnOrPackageNameDotSimpleName(GENERATED_PACKAGE, "MyException");
+        ParameterizedType exceptionType = exception.asParameterizedType();
+
         intSum.methodInspection.set(new MethodInspectionImpl.Builder(intSum)
                 .addModifier(MethodModifier.PUBLIC)
+                .addExceptionType(exceptionType)
                 .setReturnType(primitives.intTypeInfo)
                 .addParameterFluently(x)
                 .addParameterFluently(y)
@@ -208,7 +213,7 @@ public class TestTypeInfoStream {
         Assert.assertTrue(stream.contains("final String s"));
         Assert.assertFalse(stream.contains("import java.lang"));
         Assert.assertTrue(stream.contains("  TestTypeInfoStream() {"));
-        Assert.assertTrue(stream.contains("public static int sum(int x, int y) {"));
+        Assert.assertTrue(stream.contains("public static int sum(int x, int y) throws MyException {"));
         Assert.assertTrue(stream.contains("T put(T value)"));// throws IOException {"));
     }
 }

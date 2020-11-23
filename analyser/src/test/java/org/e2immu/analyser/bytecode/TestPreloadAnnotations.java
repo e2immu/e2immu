@@ -17,7 +17,47 @@
 
 package org.e2immu.analyser.bytecode;
 
+import ch.qos.logback.classic.Level;
+import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.parser.Input;
+import org.e2immu.annotation.E2Immutable;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR;
+import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
+
 public class TestPreloadAnnotations {
 
+    @BeforeClass
+    public static void beforeClass() {
+        org.e2immu.analyser.util.Logger.configure(Level.INFO);
+        org.e2immu.analyser.util.Logger.activate();
+    }
 
+    @Test
+    public void test() throws IOException {
+        InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
+                .addSources("src/test/java")
+                .addAnnotatedAPISources("../annotatedAPIs/src/main/java")
+                .addClassPath(InputConfiguration.CLASSPATH_WITHOUT_ANNOTATED_APIS);
+
+        Configuration configuration = new Configuration.Builder()
+                .addDebugLogTargets(List.of(BYTECODE_INSPECTOR, BYTECODE_INSPECTOR_DEBUG).stream().map(Enum::toString).collect(Collectors.joining(",")))
+                .setInputConfiguration(inputConfigurationBuilder.build())
+                .build();
+        configuration.initializeLoggers();
+
+        Input input = new Input(configuration);
+
+        TypeInfo e2Immu = input.getGlobalTypeContext().getFullyQualified(E2Immutable.class);
+        Assert.assertNotNull(e2Immu);
+    }
 }

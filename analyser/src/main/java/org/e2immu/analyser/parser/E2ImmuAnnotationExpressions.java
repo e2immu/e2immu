@@ -2,7 +2,6 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.AnnotationExpressionImpl;
-import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.util.Lazy;
 import org.e2immu.annotation.*;
@@ -68,6 +67,6 @@ public class E2ImmuAnnotationExpressions {
     @NotModified
     @NotNull
     public TypeInfo getFullyQualified(@NotNull String fqn) {
-        return Objects.requireNonNull(typeMapBuilder.get(fqn));
+        return Objects.requireNonNull(typeMapBuilder.get(fqn), "Cannot find " + fqn);
     }
 }

@@ -205,7 +205,7 @@ public class Primitives {
         MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(methodInfo);
         for (ParameterizedType parameterizedType : parameterizedTypes) {
             ParameterInfo parameterInfo = new ParameterInfo(methodInfo, parameterizedType, "p" + i, i++);
-            builder.addParameter(parameterInfo); // inspection built when method is built
+            builder.addParameterCreateBuilder(parameterInfo); // inspection built when method is built
         }
         builder.setReturnType(returnType);
         methodInfo.methodInspection.set(builder.build());

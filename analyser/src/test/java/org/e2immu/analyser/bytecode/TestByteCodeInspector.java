@@ -32,10 +32,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.List;
 
 public class TestByteCodeInspector {
     public static final String VERSION = "0.0.1"; // TODO determine dynamically
@@ -63,37 +61,21 @@ public class TestByteCodeInspector {
         return typeContext.typeMapBuilder.build();
     }
 
-    private TypeInfo parseFromDirectory(String path) throws IOException {
-        Resources resources = new Resources();
-        resources.addDirectoryFromFileSystem(new File("build/classes/java/test"));
-        resources.addJmod(new URL("jar:file:" + System.getProperty("java.home") + "/jmods/java.base.jmod!/"));
-        Resources annotationResources = new Resources();
-        AnnotationXmlReader annotationParser = new AnnotationXmlReader(annotationResources);
-        TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder());
-        ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, typeContext,
-                new E2ImmuAnnotationExpressions(typeContext));
-        List<TypeInfo> types = byteCodeInspector.inspectFromPath(path);
-        if (types.isEmpty()) throw new UnsupportedOperationException("Cannot find path " + path);
-        return types.get(0);
-    }
-
     @Test
     public void test() throws IOException {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/parser/Parser");
         TypeInfo parser = typeMap.get("org.e2immu.analyser.parser.Parser");
         Assert.assertEquals(TypeNature.CLASS, parser.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", parser.stream(0));
+    }
 
-        TypeInfo subTypeInfo = parser.typeInspection.get().subTypes().stream().filter(subType ->
-                "InspectWithJavaParserImpl".equals(subType.simpleName)).findFirst().orElseThrow();
-        Assert.assertTrue(subTypeInfo.typeInspection.isSet());
+    @Test
+    public void testSubTypeParser() throws IOException {
+        TypeMap typeMap = parseFromJar("org/e2immu/analyser/parser/Parser$InspectWithJavaParserImpl");
+        TypeInfo subType = typeMap.get("org.e2immu.analyser.parser.Parser.InspectWithJavaParserImpl");
 
-        TypeInfo object = typeMap.get("java.lang.Object");
-        Assert.assertSame(typeMap.getPrimitives().objectTypeInfo, object);
-        LOGGER.info("Stream is\n{}", object.stream(0));
-        object.typeInspection.get().methods().forEach(methodInfo -> {
-            Assert.assertTrue(methodInfo.methodInspection.isSet());
-        });
+        Assert.assertEquals(TypeNature.CLASS, subType.typeInspection.get().typeNature());
+        LOGGER.info("Stream is\n{}", subType.stream(0));
     }
 
     @Test
@@ -103,25 +85,6 @@ public class TestByteCodeInspector {
 
         LOGGER.info("Stream is\n{}", typeInfo.stream(0));
         Assert.assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature());
-    }
-
-    @Test
-    public void testSubTypes() throws IOException {
-        TypeInfo typeInfo = parseFromDirectory("org/e2immu/analyser/testexample/SubTypes");
-        Assert.assertEquals("org.e2immu.analyser.testexample.SubTypes", typeInfo.fullyQualifiedName);
-        Assert.assertEquals(3, typeInfo.typeInspection.get().subTypes().size());
-
-        TypeInfo staticSubType = typeInfo.typeInspection.get().subTypes().stream()
-                .filter(st -> st.simpleName.equals("StaticSubType")).findFirst().orElseThrow();
-        Assert.assertEquals("org.e2immu.analyser.testexample.subTypes().StaticSubType",
-                staticSubType.fullyQualifiedName);
-        Assert.assertEquals(1, staticSubType.typeInspection.get().subTypes().size());
-
-        TypeInfo subSubType = staticSubType.typeInspection.get().subTypes().stream()
-                .filter(st -> st.simpleName.equals("SubTypeOfStaticSubType")).findFirst().orElseThrow();
-        Assert.assertEquals("org.e2immu.analyser.testexample.subTypes().StaticSubType.SubTypeOfStaticSubType",
-                subSubType.fullyQualifiedName);
-        Assert.assertEquals(0, subSubType.typeInspection.get().subTypes().size());
     }
 
     @Test

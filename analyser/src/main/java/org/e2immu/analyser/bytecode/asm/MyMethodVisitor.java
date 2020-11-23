@@ -66,6 +66,9 @@ public class MyMethodVisitor extends MethodVisitor {
         numberOfParameters = types.size() - 1;
         hasNameFromLocalVar = new boolean[numberOfParameters];
         parameterInspectionBuilders = new ParameterInspectionImpl.Builder[numberOfParameters];
+        for (int i = 0; i < numberOfParameters; i++) {
+            parameterInspectionBuilders[i] = methodInspectionBuilder.newParameterInspectionBuilder(i);
+        }
         this.lastParameterIsVarargs = lastParameterIsVarargs;
     }
 
@@ -87,10 +90,9 @@ public class MyMethodVisitor extends MethodVisitor {
         if (parameterIndex >= 0 && parameterIndex < numberOfParameters) {
             ParameterizedType parameterizedType = types.get(parameterIndex);
             ParameterInfo parameterInfo = new ParameterInfo(methodInfo, parameterizedType, name, parameterIndex);
-            ParameterInspectionImpl.Builder pib = methodInspectionBuilder.addParameter(parameterInfo);
-            parameterInspectionBuilders[parameterIndex] = pib;
+            methodInspectionBuilder.addParameterNoBuilder(parameterInfo);
             if (lastParameterIsVarargs && parameterIndex == numberOfParameters - 1) {
-                pib.setVarArgs(true);
+                parameterInspectionBuilders[parameterIndex].setVarArgs(true);
             }
             hasNameFromLocalVar[parameterIndex] = true;
         }
@@ -105,7 +107,7 @@ public class MyMethodVisitor extends MethodVisitor {
                 ParameterizedType type = types.get(i);
                 String parameterName = factory.next(type);
                 ParameterInfo parameterInfo = new ParameterInfo(methodInfo, type, parameterName, i);
-                ParameterInspectionImpl.Builder pib = methodInspectionBuilder.addParameter(parameterInfo);
+                ParameterInspectionImpl.Builder pib = methodInspectionBuilder.addParameterCreateBuilder(parameterInfo);
                 parameterInspectionBuilders[i] = pib;
                 if (lastParameterIsVarargs && i == numberOfParameters - 1) {
                     pib.setVarArgs(true);

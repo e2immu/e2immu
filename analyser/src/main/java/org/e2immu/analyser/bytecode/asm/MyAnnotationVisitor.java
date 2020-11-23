@@ -24,6 +24,8 @@ import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.parser.TypeContext;
 import org.objectweb.asm.AnnotationVisitor;
 
+import java.util.Objects;
+
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 import static org.e2immu.analyser.util.Logger.log;
 import static org.objectweb.asm.Opcodes.ASM7;
@@ -31,13 +33,13 @@ import static org.objectweb.asm.Opcodes.ASM7;
 
 public class MyAnnotationVisitor<T> extends AnnotationVisitor {
     private final TypeContext typeContext;
-    private final AbstractInspectionBuilder inspectionBuilder;
+    private final AbstractInspectionBuilder<T> inspectionBuilder;
     private final AnnotationExpressionImpl.Builder expressionBuilder;
 
-    public MyAnnotationVisitor(TypeContext typeContext, String descriptor, AbstractInspectionBuilder inspectionBuilder) {
+    public MyAnnotationVisitor(TypeContext typeContext, String descriptor, AbstractInspectionBuilder<T> inspectionBuilder) {
         super(ASM7);
         this.typeContext = typeContext;
-        this.inspectionBuilder = inspectionBuilder;
+        this.inspectionBuilder = Objects.requireNonNull(inspectionBuilder);
         log(BYTECODE_INSPECTOR_DEBUG, "My annotation visitor: {}", descriptor);
         ParameterizedType type = ParameterizedTypeFactory.from(typeContext, descriptor).parameterizedType;
         expressionBuilder = new AnnotationExpressionImpl.Builder().setTypeInfo(type.typeInfo);
