@@ -374,7 +374,7 @@ public class MyClassVisitor extends ClassVisitor {
         if (value != null) {
             Expression expression = ExpressionFactory.from(typeContext, value);
             if (expression != EmptyExpression.EMPTY_EXPRESSION) {
-                fieldInspectionBuilder.setInspectedInitializer(expression);
+                fieldInspectionBuilder.setInspectedInitialiserExpression(expression);
             }
         }
 

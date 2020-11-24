@@ -300,8 +300,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         if (fieldInfo.isExplicitlyFinal()) {
             fieldAnalysisBuilder.setProperty(VariableProperty.FINAL, Level.TRUE);
         }
-        if (fieldAnalysisBuilder.getProperty(VariableProperty.FINAL) == Level.TRUE && fieldInfo.fieldInspection.get().initialiserIsSet()) {
-            Expression initialiser = fieldInfo.fieldInspection.get().getInitialiser().initialiser();
+        if (fieldAnalysisBuilder.getProperty(VariableProperty.FINAL) == Level.TRUE && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
+            Expression initialiser = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser();
             Value value;
             if (initialiser instanceof StringConstant stringConstant) {
                 value = new StringValue(getPrimitives(), stringConstant.constant);

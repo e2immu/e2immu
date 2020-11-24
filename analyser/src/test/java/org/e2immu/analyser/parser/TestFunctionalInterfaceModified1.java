@@ -20,7 +20,7 @@ public class TestFunctionalInterfaceModified1 extends CommonTestRunner {
         int iteration = d.iteration();
 
         if ("getAndAdd".equals(fieldInfo.name) || "getAndAdd2".equals(fieldInfo.name) || "getAndAdd3".equals(fieldInfo.name)) {
-            MethodInfo sam = fieldInfo.fieldInspection.get().getInitialiser().implementationOfSingleAbstractMethod();
+            MethodInfo sam = fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
             Block block = sam.methodInspection.get().getMethodBody();
             Assert.assertEquals(1, block.structure.statements.size());
             ReturnStatement returnStatement = (ReturnStatement) block.structure.statements.get(0);
@@ -28,7 +28,7 @@ public class TestFunctionalInterfaceModified1 extends CommonTestRunner {
         }
 
         if("getAndAdd".equals(fieldInfo.name)) {
-            MethodInfo sam = fieldInfo.fieldInspection.get().getInitialiser().implementationOfSingleAbstractMethod();
+            MethodInfo sam = fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
             int modified = sam.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
             Assert.assertEquals(Level.TRUE, modified); // STEP 1 CHECKED
             if (iteration > 0) {
@@ -38,14 +38,14 @@ public class TestFunctionalInterfaceModified1 extends CommonTestRunner {
         }
 
         if ("getAndIncrement".equals(fieldInfo.name)) {
-            MethodInfo sam = fieldInfo.fieldInspection.get().getInitialiser().implementationOfSingleAbstractMethod();
+            MethodInfo sam = fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
             Block block = sam.methodInspection.get().getMethodBody();
             Assert.assertEquals(1, block.structure.statements.size());
             ReturnStatement returnStatement = (ReturnStatement) block.structure.statements.get(0);
             Assert.assertEquals("myCounter.increment()", returnStatement.structure.expression.expressionString(0));
         }
         if ("explicitGetAndIncrement".equals(fieldInfo.name)) {
-            MethodInfo get = fieldInfo.fieldInspection.get().getInitialiser().implementationOfSingleAbstractMethod();
+            MethodInfo get = fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
             Assert.assertEquals("get", get.name);
             if (iteration > 0) {
                 int getMethodModified = get.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);

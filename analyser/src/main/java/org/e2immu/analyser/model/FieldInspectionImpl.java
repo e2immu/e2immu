@@ -42,16 +42,16 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
     };
 
     private final List<FieldModifier> modifiers;
-    private final FieldInspection.FieldInitialiser initialiser;
+    private final FieldInspection.FieldInitialiser fieldInitialiser;
     private final FieldModifier access;
 
     private FieldInspectionImpl(@NotNull List<FieldModifier> modifiers,
-                                @NotNull FieldInspection.FieldInitialiser initialiser,
+                                @NotNull FieldInspection.FieldInitialiser fieldInitialiser,
                                 @NotNull List<AnnotationExpression> annotations,
                                 @NotNull FieldModifier access) {
         super(annotations);
         Objects.requireNonNull(modifiers);
-        this.initialiser = initialiser;
+        this.fieldInitialiser = fieldInitialiser;
         this.modifiers = modifiers;
         this.access = Objects.requireNonNull(access);
     }
@@ -62,8 +62,8 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
     }
 
     @Override
-    public FieldInitialiser getInitialiser() {
-        return initialiser;
+    public FieldInitialiser getFieldInitialiser() {
+        return fieldInitialiser;
     }
 
     @Override
@@ -73,21 +73,21 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
 
     public static class Builder extends AbstractInspectionBuilder<Builder> implements FieldInspection {
         private final List<FieldModifier> modifiers = new ArrayList<>();
-        private com.github.javaparser.ast.expr.Expression initializer;
-        private Expression inspectedInitialiser;
+        private com.github.javaparser.ast.expr.Expression initialiserExpression;
+        private Expression inspectedInitialiserExpression;
         private FieldInspection.FieldInitialiser fieldInitialiser;
 
-        public com.github.javaparser.ast.expr.Expression getInitializer() {
-            return initializer;
+        public com.github.javaparser.ast.expr.Expression getInitialiserExpression() {
+            return initialiserExpression;
         }
 
-        public Builder setInitializer(com.github.javaparser.ast.expr.Expression initializer) {
-            this.initializer = initializer;
+        public Builder setInitialiserExpression(com.github.javaparser.ast.expr.Expression initialiserExpression) {
+            this.initialiserExpression = initialiserExpression;
             return this;
         }
 
-        public Builder setInspectedInitializer(Expression inspectedInitialiser) {
-            this.inspectedInitialiser = inspectedInitialiser;
+        public Builder setInspectedInitialiserExpression(Expression inspectedInitialiser) {
+            this.inspectedInitialiserExpression = inspectedInitialiser;
             return this;
         }
 
@@ -114,8 +114,8 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
         public FieldInspectionImpl build() {
             return new FieldInspectionImpl(getModifiers(),
                     fieldInitialiser != null ? fieldInitialiser :
-                            inspectedInitialiser == null ? null :
-                                    new FieldInspection.FieldInitialiser(inspectedInitialiser, null, false),
+                            inspectedInitialiserExpression == null ? null : new FieldInspection.FieldInitialiser
+                                    (inspectedInitialiserExpression, null, false),
                     getAnnotations(), getAccess());
         }
 
@@ -125,7 +125,7 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
         }
 
         @Override
-        public FieldInitialiser getInitialiser() {
+        public FieldInitialiser getFieldInitialiser() {
             return fieldInitialiser;
         }
 

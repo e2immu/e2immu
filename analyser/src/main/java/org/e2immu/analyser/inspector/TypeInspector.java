@@ -400,7 +400,7 @@ public class TypeInspector {
                                     .addModifier(FieldModifier.PUBLIC);
                         }
                         if (vd.getInitializer().isPresent()) {
-                            fieldInspectionBuilder.setInitializer(vd.getInitializer().get());
+                            fieldInspectionBuilder.setInitialiserExpression(vd.getInitializer().get());
                         }
                         builder.addField(fieldInfo);
                     }

@@ -108,8 +108,8 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
             Analyser analyser;
             if (mfs instanceof FieldInfo fieldInfo) {
                 MethodAnalyser samAnalyser = null;
-                if (fieldInfo.fieldInspection.get().initialiserIsSet()) {
-                    FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getInitialiser();
+                if (fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
+                    FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
                     MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod();
                     if (sam != null) {
                         samAnalyser = new MethodAnalyser(sam, typeAnalysers.get(fieldInfo.owner).typeAnalysis, true, this);

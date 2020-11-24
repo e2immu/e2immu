@@ -95,7 +95,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         this.primaryType = primaryType;
         this.sam = sam;
         fieldCanBeWrittenFromOutsideThisType = fieldInfo.owner.isRecord() || !fieldInfo.isPrivate() && !fieldInfo.isExplicitlyFinal();
-        haveInitialiser = fieldInspection.initialiserIsSet() && fieldInspection.getInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
+        haveInitialiser = fieldInspection.fieldInitialiserIsSet() && fieldInspection.getFieldInitialiser().initialiser() != EmptyExpression.EMPTY_EXPRESSION;
 
         analyserComponents = new AnalyserComponents.Builder<String, Integer>()
                 .add(COMPUTE_IMPLICITLY_IMMUTABLE_DATA_TYPE, (iteration) -> computeImplicitlyImmutableDataType())
@@ -173,8 +173,8 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus evaluateInitialiser(int iteration) {
-        if (fieldInspection.initialiserIsSet()) {
-            FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.getInitialiser();
+        if (fieldInspection.fieldInitialiserIsSet()) {
+            FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.getFieldInitialiser();
             if (fieldInitialiser.initialiser() != EmptyExpression.EMPTY_EXPRESSION) {
                 EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
                 EvaluationResult evaluationResult = fieldInitialiser.initialiser().evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);

@@ -25,7 +25,6 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationMode;
@@ -133,8 +132,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
             isExplicitlyFinal = fieldInfo.isExplicitlyFinal();
             this.analysisProvider = analysisProvider;
             type = fieldInfo.type;
-            this.sam = !fieldInfo.fieldInspection.get().initialiserIsSet() ? null :
-                    fieldInfo.fieldInspection.get().getInitialiser().implementationOfSingleAbstractMethod();
+            this.sam = !fieldInfo.fieldInspection.get().fieldInitialiserIsSet() ? null :
+                    fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
             ObjectFlow initialObjectFlow = new ObjectFlow(new Location(fieldInfo), type,
                     Origin.INITIAL_FIELD_FLOW);
             objectFlow = new FirstThen<>(initialObjectFlow);

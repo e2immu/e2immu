@@ -124,8 +124,8 @@ public interface TypeInspection extends Inspection {
 
     default Stream<MethodInfo> methodsInFieldInitializers(boolean alsoArtificial) {
         return fields().stream()
-                .filter(fieldInfo -> fieldInfo.fieldInspection.get().initialiserIsSet())
-                .map(fieldInfo -> fieldInfo.fieldInspection.get().getInitialiser())
+                .filter(fieldInfo -> fieldInfo.fieldInspection.get().fieldInitialiserIsSet())
+                .map(fieldInfo -> fieldInfo.fieldInspection.get().getFieldInitialiser())
                 .filter(initialiser -> initialiser.implementationOfSingleAbstractMethod() != null && (alsoArtificial || !initialiser.artificial()))
                 .map(FieldInspection.FieldInitialiser::implementationOfSingleAbstractMethod);
     }

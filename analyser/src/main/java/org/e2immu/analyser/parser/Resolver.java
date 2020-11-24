@@ -171,7 +171,10 @@ public class Resolver {
                                   DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         try {
             TypeInspection typeInspection = typeContextOfType.getTypeInspection(typeInfo);
-
+            if(typeInspection.getInspectionState() <= TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION) {
+                // no need to inspect this method, we'll never use it
+                return List.of(typeInfo);
+            }
             typeInspection.subTypes().forEach(typeContextOfType::addToContext);
 
             // recursion, do sub-types first
@@ -216,9 +219,11 @@ public class Resolver {
         typeInspection.fields().forEach(fieldInfo -> {
             FieldInspectionImpl.Builder fieldInspection = (FieldInspectionImpl.Builder)
                     expressionContext.typeContext.getFieldInspection(fieldInfo);
-            if (!fieldInspection.initialiserIsSet()) {
+            if (!fieldInspection.fieldInitialiserIsSet() && fieldInspection.getInitialiserExpression() != null) {
                 doFieldInitialiser(fieldInfo, fieldInspection, expressionContext, methodFieldSubTypeGraph);
             }
+
+            fieldInfo.fieldInspection.set(fieldInspection.build());
         });
     }
 
@@ -228,7 +233,7 @@ public class Resolver {
                                     DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         // we can cast here: no point in resolving if inspection has been set.
 
-        Expression expression = fieldInspectionBuilder.getInitializer();
+        Expression expression = fieldInspectionBuilder.getInitialiserExpression();
         FieldInspection.FieldInitialiser fieldInitialiser;
         List<WithInspectionAndAnalysis> dependencies;
 
@@ -283,20 +288,22 @@ public class Resolver {
         }
         methodFieldSubTypeGraph.addNode(fieldInfo, dependencies);
         fieldInspectionBuilder.setFieldInitializer(fieldInitialiser);
-
-        fieldInfo.fieldInspection.set(fieldInspectionBuilder.build());
     }
 
-    private void doMethodsAndConstructors(TypeInspection typeInspection, ExpressionContext expressionContext,
+    private void doMethodsAndConstructors(TypeInspection typeInspection,
+                                          ExpressionContext expressionContext,
                                           DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         // METHOD AND CONSTRUCTOR, without the SAMs in FIELDS
         typeInspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
             try {
-                MethodInspection methodInspection = expressionContext.typeContext.getMethodInspection(methodInfo);
-                doMethodOrConstructor(methodInfo, (MethodInspectionImpl.Builder) methodInspection, expressionContext, methodFieldSubTypeGraph);
+                MethodInspection methodInspection = Objects.requireNonNull(expressionContext.typeContext.getMethodInspection(methodInfo),
+                        "Method inspection for "+methodInfo.fullyQualifiedName()+" not found");
+                doMethodOrConstructor(methodInfo, (MethodInspectionImpl.Builder) methodInspection,
+                        expressionContext, methodFieldSubTypeGraph);
                 methodInspection.getCompanionMethods().values().forEach(companionMethod -> {
                     MethodInspection companionMethodInspection = expressionContext.typeContext.getMethodInspection(companionMethod);
-                    doMethodOrConstructor(companionMethod, (MethodInspectionImpl.Builder) companionMethodInspection, expressionContext, methodFieldSubTypeGraph);
+                    doMethodOrConstructor(companionMethod, (MethodInspectionImpl.Builder)
+                            companionMethodInspection, expressionContext, methodFieldSubTypeGraph);
                 });
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while resolving method {}", methodInfo.fullyQualifiedName());
@@ -538,8 +545,8 @@ public class Resolver {
             }
         }
         for (FieldInfo fieldInfo : methodInfo.typeInfo.typeInspection.get().fields()) {
-            if (!fieldInfo.isPrivate() && fieldInfo.fieldInspection.get().initialiserIsSet()) {
-                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getInitialiser();
+            if (!fieldInfo.isPrivate() && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
+                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
                 if (fieldInitialiser.implementationOfSingleAbstractMethod() != null &&
                         builders.get(fieldInitialiser.implementationOfSingleAbstractMethod()).methodsOfOwnClassReached.get().contains(methodInfo)) {
                     return true;
@@ -556,8 +563,8 @@ public class Resolver {
             }
         }
         for (FieldInfo fieldInfo : methodInfo.typeInfo.typeInspection.get().fields()) {
-            if (fieldInfo.fieldInspection.get().initialiserIsSet()) {
-                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getInitialiser();
+            if (fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
+                FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
                 if (fieldInitialiser.implementationOfSingleAbstractMethod() == null) {
                     // return true when the method is part of the expression
                     AtomicBoolean found = new AtomicBoolean();
@@ -676,9 +683,9 @@ public class Resolver {
     }
 
     private static Stream<FieldInfo> accessibleFieldsStream(InspectionProvider inspectionProvider,
-                                                     TypeInfo typeInfo,
-                                                     TypeInfo startingPoint,
-                                                     String startingPointPackageName) {
+                                                            TypeInfo typeInfo,
+                                                            TypeInfo startingPoint,
+                                                            String startingPointPackageName) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         TypeInfo primaryType = primaryType(inspectionProvider, typeInfo);
 

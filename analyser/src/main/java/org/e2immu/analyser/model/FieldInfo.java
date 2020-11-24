@@ -18,14 +18,8 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetTwice;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
@@ -89,8 +83,8 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(
                 type.typesReferenced(true),
-                fieldInspection.isSet() && fieldInspection.get().initialiserIsSet() ?
-                        fieldInspection.get().getInitialiser().initialiser().typesReferenced()
+                fieldInspection.isSet() && fieldInspection.get().fieldInitialiserIsSet() ?
+                        fieldInspection.get().getFieldInitialiser().initialiser().typesReferenced()
                         : UpgradableBooleanMap.of()
         );
     }
@@ -130,8 +124,8 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         sb.append(type.stream())
                 .append(" ")
                 .append(name);
-        if (fieldInspection.isSet() && fieldInspection.get().initialiserIsSet()) {
-            Expression expression = fieldInspection.get().getInitialiser().initialiser();
+        if (fieldInspection.isSet() && fieldInspection.get().fieldInitialiserIsSet()) {
+            Expression expression = fieldInspection.get().getFieldInitialiser().initialiser();
             if (expression != EmptyExpression.EMPTY_EXPRESSION) {
                 sb.append(" = ");
                 sb.append(expression.expressionString(indent));
@@ -175,8 +169,8 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     }
 
     public Set<ParameterizedType> explicitTypes() {
-        if (!fieldInspection.get().initialiserIsSet()) return Set.of();
-        FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.get().getInitialiser();
+        if (!fieldInspection.get().fieldInitialiserIsSet()) return Set.of();
+        FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.get().getFieldInitialiser();
         // SAMs are handled by the method code
         return MethodInfo.explicitTypes(fieldInitialiser.initialiser());
     }

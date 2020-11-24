@@ -25,10 +25,10 @@ public interface FieldInspection extends Inspection {
 
     List<FieldModifier> getModifiers();
 
-    FieldInitialiser getInitialiser();
+    FieldInitialiser getFieldInitialiser();
 
-    default boolean initialiserIsSet() {
-        return getInitialiser() != null;
+    default boolean fieldInitialiserIsSet() {
+        return getFieldInitialiser() != null;
     }
 
     FieldModifier getAccess();

@@ -112,7 +112,7 @@ public class TestTypeInfoStream {
 
         FieldInfo intFieldInContainer = new FieldInfo(primitives.intTypeInfo, "i", containerTypeInfo);
         intFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
-                .setInspectedInitializer(new IntConstant(primitives, 27))
+                .setInspectedInitialiserExpression(new IntConstant(primitives, 27))
                 .build());
 
         FieldInfo doubleFieldInContainer = new FieldInfo(primitives.doubleTypeInfo, "d", containerTypeInfo);
@@ -122,12 +122,12 @@ public class TestTypeInfoStream {
         FieldInfo stringFieldInContainer = new FieldInfo(primitives.stringTypeInfo, "s", containerTypeInfo);
         stringFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
                 .addModifier(FieldModifier.FINAL)
-                .setInspectedInitializer(new StringConstant(primitives, "first value"))
+                .setInspectedInitialiserExpression(new StringConstant(primitives, "first value"))
                 .build());
 
         FieldInfo tInContainer = new FieldInfo(typeT, "t", containerTypeInfo);
         tInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
-                .setInspectedInitializer(new NullConstant())
+                .setInspectedInitialiserExpression(new NullConstant())
                 .build());
 
         TypeInspection containerTypeInspection = new TypeInspectionImpl.Builder(containerTypeInfo, TypeInspectionImpl.BY_HAND)
