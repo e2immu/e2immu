@@ -396,6 +396,10 @@ public class MyClassVisitor extends ClassVisitor {
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
         if (currentType == null) return null;
 
+        if (name.startsWith("lambda$") || name.equals("<clinit>")) {
+            return null;
+        }
+
         boolean synthetic = (access & Opcodes.ACC_SYNTHETIC) != 0;
         log(BYTECODE_INSPECTOR_DEBUG, "Method {} {} desc='{}' sig='{}' {} synthetic? {}", access, name,
                 descriptor, signature, Arrays.toString(exceptions), synthetic);
@@ -404,20 +408,12 @@ public class MyClassVisitor extends ClassVisitor {
         boolean isStatic = (access & Opcodes.ACC_STATIC) != 0;
 
         MethodInfo methodInfo;
-        if ("<init>".equals(name) || "<clinit>".equals(name)) {
+        if ("<init>".equals(name)) {
             methodInfo = new MethodInfo(currentType, List.of());
-        } else if(name.startsWith("lambda$")) {
-            methodInfo = new MethodInfo(currentType, name, isStatic);
         } else {
             methodInfo = new MethodInfo(currentType, name, isStatic);
         }
         MethodInspectionImpl.Builder methodInspectionBuilder = new MethodInspectionImpl.Builder(methodInfo);
-
-        if (name.startsWith("lambda$") || name.equals("<clinit>")) {
-            methodInspectionBuilder.readyToComputeFQN();
-            typeContext.typeMapBuilder.registerMethodInspection(methodInspectionBuilder);
-            return null;
-        }
 
         if ((access & Opcodes.ACC_PUBLIC) != 0 && !currentTypeIsInterface) {
             methodInspectionBuilder.addModifier(MethodModifier.PUBLIC);

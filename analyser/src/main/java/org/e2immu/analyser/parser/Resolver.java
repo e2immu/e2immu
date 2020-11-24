@@ -244,7 +244,7 @@ public class Resolver {
             MethodTypeParameterMap singleAbstractMethod = fieldInfo.type.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
             if (singleAbstractMethod != null) {
                 singleAbstractMethod = singleAbstractMethod.expand(fieldInfo.type.initialTypeParameterMap());
-                log(RESOLVE, "Passing on functional interface method to field initializer of {}: {}", fieldInfo.fullyQualifiedName(), singleAbstractMethod);
+                log(RESOLVE, "Passing on functional interface method to field initializer of {}: {}", fieldInfo.name, singleAbstractMethod);
             }
             org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, singleAbstractMethod);
             subContext.streamNewlyCreatedTypes().forEach(anonymousType -> doType(anonymousType, subContext.typeContext, methodFieldSubTypeGraph));
@@ -306,7 +306,8 @@ public class Resolver {
                             companionMethodInspection, expressionContext, methodFieldSubTypeGraph);
                 });
             } catch (RuntimeException rte) {
-                LOGGER.warn("Caught runtime exception while resolving method {}", methodInfo.fullyQualifiedName());
+                LOGGER.warn("Caught runtime exception while resolving method {} in {}", methodInfo.name,
+                        methodInfo.typeInfo.fullyQualifiedName);
                 throw rte;
             }
         });

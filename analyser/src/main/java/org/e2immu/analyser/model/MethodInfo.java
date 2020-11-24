@@ -27,7 +27,6 @@ import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.SwitchStatement;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetTwice;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
@@ -248,17 +247,11 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public String fullyQualifiedName() {
-        if (methodInspection.isSet()) {
-            return methodInspection.get().getFullyQualifiedName();
-        }
-        return typeInfo.fullyQualifiedName + "." + name + "()";
+        return methodInspection.get("Fully Qualified Name of " + name + " in " + typeInfo.fullyQualifiedName).getFullyQualifiedName();
     }
 
     public String distinguishingName() {
-        if (methodInspection.isSet()) {
-            return methodInspection.get().getDistinguishingName();
-        }
-        return typeInfo.fullyQualifiedName + "." + name + "()";
+        return methodInspection.get("Distinguishing Name of " + name + " in " + typeInfo.fullyQualifiedName).getDistinguishingName();
     }
 
     public ParameterizedType returnType() {
