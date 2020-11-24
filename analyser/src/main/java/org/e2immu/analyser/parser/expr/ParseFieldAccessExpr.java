@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.expression.ArrayLengthExpression;
 import org.e2immu.analyser.model.expression.FieldAccess;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.parser.ExpressionContext;
+import org.e2immu.analyser.parser.Resolver;
 
 import java.util.List;
 import java.util.Optional;
@@ -57,7 +58,8 @@ public class ParseFieldAccessExpr {
             return new ArrayLengthExpression(expressionContext.typeContext.getPrimitives(), object);
         }
         if (objectType.typeInfo != null) {
-            Optional<FieldInfo> oFieldInfo = objectType.typeInfo.accessibleFieldsStream(expressionContext.typeContext)
+            Optional<FieldInfo> oFieldInfo = Resolver.accessibleFieldsStream(expressionContext.typeContext,
+                    objectType.typeInfo, objectType.typeInfo.primaryType())
                     .filter(f -> name.equals(f.name)).findFirst();
             if (oFieldInfo.isPresent()) {
                 return fieldAccess(expressionContext, oFieldInfo.get(), object);

@@ -88,7 +88,7 @@ public class MethodInspector {
     private MethodInspectionImpl.Builder fqnIsKnown(MethodInspectionImpl.Builder builder) {
         builder.readyToComputeFQN();
         log(INSPECT, "Inspecting method " + builder.getFullyQualifiedName());
-        MethodInspection methodInspection = typeMapBuilder.getMethodInspection(methodInfo);
+        MethodInspection methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(builder.getFullyQualifiedName());
         if (methodInspection instanceof MethodInspectionImpl.Builder existing) {
             builderOnceFQNIsKnown.set(existing);
             return existing;
@@ -169,7 +169,7 @@ public class MethodInspector {
 
             builder.addCompanionMethods(companionMethods);
             checkCompanionMethods(companionMethods);
-            
+
             addAnnotations(builder, md.getAnnotations(), newContext);
             if (fullInspection) {
                 addModifiers(builder, md.getModifiers());

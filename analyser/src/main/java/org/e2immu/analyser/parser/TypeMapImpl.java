@@ -262,6 +262,10 @@ public class TypeMapImpl implements TypeMap {
             return methodInspections.get(fqn);
         }
 
+        public MethodInspection getMethodInspectionDoNotTrigger(String fullyQualifiedName) {
+            return methodInspections.get(fullyQualifiedName);
+        }
+
         @Override
         public Primitives getPrimitives() {
             return primitives;

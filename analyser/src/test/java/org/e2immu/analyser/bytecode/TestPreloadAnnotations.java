@@ -21,6 +21,8 @@ import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeInspection;
+import org.e2immu.analyser.model.TypeInspectionImpl;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.annotation.E2Immutable;
 import org.junit.Assert;
@@ -28,6 +30,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -64,5 +67,15 @@ public class TestPreloadAnnotations {
         TypeInfo objectTypeInfo = input.globalTypeContext().getFullyQualified(Object.class);
         Assert.assertNotNull(objectTypeInfo);
         Assert.assertSame(objectTypeInfo, input.globalTypeContext().getPrimitives().objectTypeInfo);
+
+        TypeInfo collection = input.globalTypeContext().getFullyQualified(Collection.class);
+        Assert.assertNotNull(objectTypeInfo);
+        TypeInspection collectionInspection = input.globalTypeContext().getTypeInspection(collection);
+        Assert.assertEquals(TypeInspectionImpl.FINISHED_BYTECODE, collectionInspection.getInspectionState());
+
+        // all toArray methods have a method inspection
+        Assert.assertTrue(collectionInspection.methods().stream()
+                .filter(mi -> mi.name.equals("toArray"))
+                .allMatch(mi -> input.globalTypeContext().getMethodInspection(mi) != null));
     }
 }

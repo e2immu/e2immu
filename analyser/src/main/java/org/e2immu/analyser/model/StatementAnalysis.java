@@ -726,7 +726,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     public Set<String> allUnqualifiedVariableNames(InspectionProvider inspectionProvider, TypeInfo currentType) {
-        Set<String> fromFields = currentType.accessibleFieldsStream(inspectionProvider).map(fieldInfo -> fieldInfo.name).collect(Collectors.toSet());
+        Set<String> fromFields = Resolver.accessibleFieldsStream(inspectionProvider, currentType, currentType.primaryType())
+                .map(fieldInfo -> fieldInfo.name).collect(Collectors.toSet());
         Set<String> local = variableStream().map(vi -> vi.variable().simpleName()).collect(Collectors.toSet());
         return SetUtil.immutableUnion(fromFields, local);
     }

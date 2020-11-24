@@ -26,6 +26,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.util.DependencyGraph;
+import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.SMapSet;
 import org.e2immu.annotation.NotModified;
 import org.slf4j.Logger;
@@ -95,6 +96,13 @@ public class Resolver {
         for (TypeInfo sub : typeInspection.subTypes()) {
             recursivelyCollectSubTypes(inspectionProvider, sub, result);
         }
+    }
+
+    private static TypeInfo primaryType(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
+        Either<String, TypeInfo> packageNameOrEnclosingType = typeInspection.packageNameOrEnclosingType();
+        if (packageNameOrEnclosingType.isLeft()) return typeInfo;
+        return primaryType(inspectionProvider, packageNameOrEnclosingType.getRight());
     }
 
     private List<TypeInfo> sortWarnForCircularDependencies(InspectionProvider inspectionProvider, DependencyGraph<TypeInfo> typeGraph) {
@@ -170,17 +178,21 @@ public class Resolver {
             typeInspection.subTypes().forEach(subType -> doType(subType, typeContextOfType, methodFieldSubTypeGraph));
 
             log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
-            ExpressionContext expressionContext = ExpressionContext.forBodyParsing(typeInfo, typeInfo.primaryType(), typeContextOfType);
+            TypeInfo primaryType = primaryType(typeContextOfType, typeInfo);
+            ExpressionContext expressionContext = ExpressionContext.forBodyParsing(typeInfo,
+                    primaryType, typeContextOfType);
 
             expressionContext.typeContext.addToContext(typeInfo);
             typeInspection.typeParameters().forEach(expressionContext.typeContext::addToContext);
 
             // add visible types to the type context
-            typeInfo.accessibleBySimpleNameTypeInfoStream(expressionContext.typeContext).forEach(expressionContext.typeContext::addToContext);
+            accessibleBySimpleNameTypeInfoStream(expressionContext.typeContext, typeInfo, primaryType)
+                    .forEach(expressionContext.typeContext::addToContext);
 
             // add visible fields to variable context
-            typeInfo.accessibleFieldsStream(expressionContext.typeContext).forEach(fieldInfo -> expressionContext.variableContext.add(new FieldReference(fieldInfo,
-                    fieldInfo.isStatic() ? null : new This(fieldInfo.owner))));
+            accessibleFieldsStream(expressionContext.typeContext, typeInfo, primaryType)
+                    .forEach(fieldInfo -> expressionContext.variableContext.add(new FieldReference(fieldInfo,
+                            fieldInfo.isStatic() ? null : new This(fieldInfo.owner))));
 
             doFields(typeInspection, expressionContext, methodFieldSubTypeGraph);
             doMethodsAndConstructors(typeInspection, expressionContext, methodFieldSubTypeGraph);
@@ -598,5 +610,124 @@ public class Resolver {
             list.addAll(superTypesExcludingJavaLangObject(inspectionProvider, i.typeInfo));
         });
         return ImmutableSet.copyOf(list);
+    }
+
+
+    public static Stream<TypeInfo> accessibleBySimpleNameTypeInfoStream(InspectionProvider inspectionProvider,
+                                                                        TypeInfo typeInfo,
+                                                                        TypeInfo primaryType) {
+        TypeInspection primaryTypeInspection = inspectionProvider.getTypeInspection(primaryType);
+        return accessibleBySimpleNameTypeInfoStream(inspectionProvider, typeInfo, typeInfo,
+                primaryTypeInspection.packageNameOrEnclosingType().getLeft(),
+                new HashSet<>());
+    }
+
+    private static Stream<TypeInfo> accessibleBySimpleNameTypeInfoStream(InspectionProvider inspectionProvider,
+                                                                         TypeInfo typeInfo,
+                                                                         TypeInfo startingPoint,
+                                                                         String startingPointPackageName,
+                                                                         Set<TypeInfo> visited) {
+        if (visited.contains(typeInfo)) return Stream.empty();
+        visited.add(typeInfo);
+        Stream<TypeInfo> mySelf = Stream.of(typeInfo);
+
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
+        TypeInfo primaryType = primaryType(inspectionProvider, typeInfo);
+        boolean inSameCompilationUnit = typeInfo == startingPoint ||
+                primaryType == primaryType(inspectionProvider, startingPoint);
+        TypeInspection primaryTypeInspection = inspectionProvider.getTypeInspection(primaryType);
+        boolean inSamePackage = !inSameCompilationUnit &&
+                primaryTypeInspection.packageNameOrEnclosingType().getLeft().equals(startingPointPackageName);
+
+        Stream<TypeInfo> localStream = typeInspection.subTypes().stream()
+                .filter(ti -> acceptSubType(inspectionProvider, ti, inSameCompilationUnit, inSamePackage));
+        Stream<TypeInfo> parentStream;
+        if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
+            assert typeInspection.parentClass().typeInfo != null;
+            parentStream = accessibleBySimpleNameTypeInfoStream(inspectionProvider,
+                    typeInspection.parentClass().typeInfo, startingPoint, startingPointPackageName, visited);
+        } else parentStream = Stream.empty();
+
+        Stream<TypeInfo> joint = Stream.concat(Stream.concat(mySelf, localStream), parentStream);
+        for (ParameterizedType interfaceType : typeInspection.interfacesImplemented()) {
+            assert interfaceType.typeInfo != null;
+            Stream<TypeInfo> fromInterface = accessibleBySimpleNameTypeInfoStream(inspectionProvider,
+                    interfaceType.typeInfo,
+                    startingPoint, startingPointPackageName, visited);
+            joint = Stream.concat(joint, fromInterface);
+        }
+        return joint;
+    }
+
+    private static boolean acceptSubType(InspectionProvider inspectionProvider, TypeInfo typeInfo,
+                                         boolean inSameCompilationUnit, boolean inSamePackage) {
+        if (inSameCompilationUnit) return true;
+        TypeInspection inspection = inspectionProvider.getTypeInspection(typeInfo);
+        return inspection.access() == TypeModifier.PUBLIC ||
+                inSamePackage && inspection.access() == TypeModifier.PACKAGE ||
+                !inSamePackage && inspection.access() == TypeModifier.PROTECTED;
+    }
+
+
+    public static Stream<FieldInfo> accessibleFieldsStream(InspectionProvider inspectionProvider, TypeInfo typeInfo, TypeInfo primaryType) {
+        TypeInspection primaryTypeInspection = inspectionProvider.getTypeInspection(primaryType);
+        return accessibleFieldsStream(inspectionProvider, typeInfo, typeInfo,
+                primaryTypeInspection.packageNameOrEnclosingType().getLeft());
+    }
+
+    private static Stream<FieldInfo> accessibleFieldsStream(InspectionProvider inspectionProvider,
+                                                     TypeInfo typeInfo,
+                                                     TypeInfo startingPoint,
+                                                     String startingPointPackageName) {
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
+        TypeInfo primaryType = primaryType(inspectionProvider, typeInfo);
+
+        boolean inSameCompilationUnit = typeInfo == startingPoint ||
+                primaryType == primaryType(inspectionProvider, startingPoint);
+        TypeInspection primaryTypeInspection = inspectionProvider.getTypeInspection(primaryType);
+        boolean inSamePackage = !inSameCompilationUnit &&
+                primaryTypeInspection.packageNameOrEnclosingType().getLeft().equals(startingPointPackageName);
+
+        // my own field
+        Stream<FieldInfo> localStream = typeInspection.fields().stream()
+                .filter(fieldInfo -> acceptField(inspectionProvider, fieldInfo, inSameCompilationUnit, inSamePackage));
+
+        // my enclosing type's fields
+        Stream<FieldInfo> enclosingStream;
+        if (typeInspection.packageNameOrEnclosingType().isRight()) {
+            enclosingStream = accessibleFieldsStream(inspectionProvider,
+                    typeInspection.packageNameOrEnclosingType().getRight(), startingPoint, startingPointPackageName);
+        } else {
+            enclosingStream = Stream.empty();
+        }
+        Stream<FieldInfo> joint = Stream.concat(localStream, enclosingStream);
+
+        // my parent's fields
+        Stream<FieldInfo> parentStream;
+        if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
+            assert typeInspection.parentClass().typeInfo != null;
+            parentStream = accessibleFieldsStream(inspectionProvider, typeInspection.parentClass().typeInfo,
+                    startingPoint, startingPointPackageName);
+        } else parentStream = Stream.empty();
+        joint = Stream.concat(joint, parentStream);
+
+        // my interfaces' fields
+        for (ParameterizedType interfaceType : typeInspection.interfacesImplemented()) {
+            assert interfaceType.typeInfo != null;
+            Stream<FieldInfo> fromInterface = accessibleFieldsStream(inspectionProvider, interfaceType.typeInfo,
+                    startingPoint, startingPointPackageName);
+            joint = Stream.concat(joint, fromInterface);
+        }
+
+        return joint;
+    }
+
+    private static boolean acceptField(InspectionProvider inspectionProvider, FieldInfo fieldInfo,
+                                       boolean inSameCompilationUnit, boolean inSamePackage) {
+        if (inSameCompilationUnit) return true;
+        FieldInspection inspection = inspectionProvider.getFieldInspection(fieldInfo);
+        return inspection.getAccess() == FieldModifier.PUBLIC ||
+                inSamePackage && inspection.getAccess() == FieldModifier.PACKAGE ||
+                !inSamePackage && inspection.getAccess() == FieldModifier.PROTECTED;
     }
 }
