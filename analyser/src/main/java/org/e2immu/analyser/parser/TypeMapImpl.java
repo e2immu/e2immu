@@ -167,15 +167,24 @@ public class TypeMapImpl implements TypeMap {
             trie.add(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
             TypeInspectionImpl.Builder inMap = typeInspections.get(typeInfo);
             if (inMap != null) {
-                // technically possible because of $ classes in Annotated API java classes
-                // first import com.google.common.collect.ImmutableList
-                // and then later static class ImmutableList$ { ... }
-                inMap.setInspectionState(inspectionState);
-                return inMap;
+                throw new UnsupportedOperationException();
             }
             TypeInspectionImpl.Builder ti = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
             typeInspections.put(typeInfo, ti);
             return ti;
+        }
+
+        public void ensureTypeAndInspection(TypeInfo typeInfo, int inspectionState) {
+            TypeInfo inMap = get(typeInfo.fullyQualifiedName);
+            if (inMap == null) {
+                add(typeInfo, inspectionState);
+                return;
+            }
+            TypeInspection typeInspection = getTypeInspection(typeInfo);
+            if (typeInspection == null) {
+                TypeInspectionImpl.Builder ti = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
+                typeInspections.put(typeInfo, ti);
+            }
         }
 
         public void registerFieldInspection(FieldInfo fieldInfo, FieldInspectionImpl.Builder builder) {
@@ -244,9 +253,9 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public MethodInspection getMethodInspection(MethodInfo methodInfo) {
-            String fqn =methodInfo.fullyQualifiedName();
+            String fqn = methodInfo.fullyQualifiedName();
             MethodInspection methodInspection = methodInspections.get(fqn);
-            if(methodInspection != null) return methodInspection;
+            if (methodInspection != null) return methodInspection;
             // see if we can trigger an inspection
             getTypeInspection(methodInfo.typeInfo);
             // try again

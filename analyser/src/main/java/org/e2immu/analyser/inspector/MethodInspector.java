@@ -31,6 +31,8 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.parser.TypeMapImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Objects;
@@ -39,6 +41,7 @@ import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class MethodInspector {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MethodInspection.class);
 
     private final MethodInfo methodInfo;
     private final MethodInspectionImpl.Builder builder;
@@ -136,35 +139,40 @@ public class MethodInspector {
                         ExpressionContext expressionContext,
                         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
                         TypeInspector.DollarResolver dollarResolver) {
-        log(INSPECT, "Inspecting method {}", methodInfo.fullyQualifiedName());
-        builder.addCompanionMethods(companionMethods);
-        checkCompanionMethods(companionMethods);
+        try {
+            log(INSPECT, "Inspecting method {}", methodInfo.fullyQualifiedName());
+            builder.addCompanionMethods(companionMethods);
+            checkCompanionMethods(companionMethods);
 
-        int tpIndex = 0;
-        ExpressionContext newContext = md.getTypeParameters().isEmpty() ? expressionContext :
-                expressionContext.newTypeContext("Method type parameters");
-        for (com.github.javaparser.ast.type.TypeParameter typeParameter : md.getTypeParameters()) {
-            org.e2immu.analyser.model.TypeParameter tp = new org.e2immu.analyser.model.TypeParameter(methodInfo,
-                    typeParameter.getNameAsString(), tpIndex++);
-            builder.addTypeParameter(tp);
-            newContext.typeContext.addToContext(tp);
-            tp.inspect(newContext.typeContext, typeParameter);
-        }
-        addAnnotations(md.getAnnotations(), newContext);
-        if (fullInspection) {
-            addModifiers(md.getModifiers());
-            if (isInterface) builder.addModifier(MethodModifier.PUBLIC);
-            addParameters(md.getParameters(), newContext, dollarResolver);
-            addExceptionTypes(md.getThrownExceptions(), newContext.typeContext);
-            ParameterizedType pt = ParameterizedType.from(newContext.typeContext, md.getType());
-            builder.setReturnType(pt);
-
-            builder.readyToComputeFQN();
-            typeMapBuilder.registerMethodInspection(builder);
-
-            if (md.getBody().isPresent()) {
-                builder.setBlock(md.getBody().get());
+            int tpIndex = 0;
+            ExpressionContext newContext = md.getTypeParameters().isEmpty() ? expressionContext :
+                    expressionContext.newTypeContext("Method type parameters");
+            for (com.github.javaparser.ast.type.TypeParameter typeParameter : md.getTypeParameters()) {
+                org.e2immu.analyser.model.TypeParameter tp = new org.e2immu.analyser.model.TypeParameter(methodInfo,
+                        typeParameter.getNameAsString(), tpIndex++);
+                builder.addTypeParameter(tp);
+                newContext.typeContext.addToContext(tp);
+                tp.inspect(newContext.typeContext, typeParameter);
             }
+            addAnnotations(md.getAnnotations(), newContext);
+            if (fullInspection) {
+                addModifiers(md.getModifiers());
+                if (isInterface) builder.addModifier(MethodModifier.PUBLIC);
+                addParameters(md.getParameters(), newContext, dollarResolver);
+                addExceptionTypes(md.getThrownExceptions(), newContext.typeContext);
+                ParameterizedType pt = ParameterizedType.from(newContext.typeContext, md.getType());
+                builder.setReturnType(pt);
+
+                builder.readyToComputeFQN();
+                typeMapBuilder.registerMethodInspection(builder);
+
+                if (md.getBody().isPresent()) {
+                    builder.setBlock(md.getBody().get());
+                }
+            }
+        } catch(RuntimeException e) {
+            LOGGER.error("Caught exception while inspecting method {}", methodInfo.fullyQualifiedName());
+            throw e;
         }
     }
 

@@ -139,7 +139,8 @@ public class TypeInspector {
             String dollarPackageName = packageName(packageNameField);
             dollarResolver = name -> {
                 if (name.endsWith("$") && dollarPackageName != null) {
-                    return expressionContext.typeContext.typeMapBuilder.get(dollarPackageName + "." + name.substring(0, name.length() - 1));
+                    return expressionContext.typeContext.typeMapBuilder
+                            .get(dollarPackageName + "." + name.substring(0, name.length() - 1));
                 }
                 return null;
             };
@@ -177,6 +178,15 @@ public class TypeInspector {
 
             for (Modifier modifier : typeDeclaration.getModifiers()) {
                 builder.addTypeModifier(TypeModifier.from(modifier));
+            }
+        } else if(typeDeclaration instanceof ClassOrInterfaceDeclaration cid) {
+            // even if we're inspecting dollar types (no full inspection), we need to keep track
+            // of the type parameters
+            int tpIndex = 0;
+            for (com.github.javaparser.ast.type.TypeParameter typeParameter : cid.getTypeParameters()) {
+                TypeParameter tp = new TypeParameter(typeInfo, typeParameter.getNameAsString(), tpIndex++);
+                expressionContext.typeContext.addToContext(tp);
+                tp.inspect(expressionContext.typeContext, typeParameter);
             }
         }
         return continueInspection(expressionContext, typeDeclaration.getMembers(),
@@ -330,7 +340,7 @@ public class TypeInspector {
     private static void addToTypeStore(TypeMapImpl.Builder typeStore, DollarResolverResult res, String what) {
         int inspectionState = res.isDollarType ? TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION :
                 TypeInspectionImpl.STARTING_JAVA_PARSER;
-        typeStore.add(res.subType(), inspectionState);
+        typeStore.ensureTypeAndInspection(res.subType(), inspectionState);
         log(INSPECT, "Added {} to type store: {}", what, res.subType.fullyQualifiedName);
     }
 
