@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.BY_HAND;
 import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -414,7 +415,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                                                        ExpressionContext expressionContext) {
         MethodTypeParameterMap method = functionalInterfaceType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
         TypeInfo typeInfo = new TypeInfo(enclosingType, expressionContext.topLevel.newIndex(enclosingType));
-        TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(typeInfo, TypeInspectionImpl.BY_HAND);
+        TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND);
         builder.setEnclosingType(this);
         builder.setTypeNature(TypeNature.CLASS);
         builder.addInterfaceImplemented(functionalInterfaceType);

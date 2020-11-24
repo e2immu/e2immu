@@ -25,6 +25,8 @@ import org.e2immu.analyser.parser.TypeContext;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
+
 // signatures formally defined in https://docs.oracle.com/javase/specs/jvms/se13/html/jvms-4.html
 
 public class ParameterizedTypeFactory {
@@ -44,7 +46,7 @@ public class ParameterizedTypeFactory {
     // for testing
     static Result from(TypeContext typeContext, String signature) {
         return from(typeContext, (fqn, path) -> typeContext.typeMapBuilder.getOrCreate(fqn,
-                TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION), signature);
+                TRIGGER_BYTECODE_INSPECTION), signature);
     }
 
     static Result from(TypeContext typeContext, FindType findType, String signature) {

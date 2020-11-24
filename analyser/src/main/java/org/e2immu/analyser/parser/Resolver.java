@@ -171,7 +171,7 @@ public class Resolver {
                                   DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         try {
             TypeInspection typeInspection = typeContextOfType.getTypeInspection(typeInfo);
-            if(typeInspection.getInspectionState() <= TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION) {
+            if (typeInspection.getInspectionState().le(TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION)) {
                 // no need to inspect this method, we'll never use it
                 return List.of(typeInfo);
             }
@@ -297,7 +297,7 @@ public class Resolver {
         typeInspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
             try {
                 MethodInspection methodInspection = Objects.requireNonNull(expressionContext.typeContext.getMethodInspection(methodInfo),
-                        "Method inspection for "+methodInfo.fullyQualifiedName()+" not found");
+                        "Method inspection for " + methodInfo.fullyQualifiedName() + " not found");
                 doMethodOrConstructor(methodInfo, (MethodInspectionImpl.Builder) methodInspection,
                         expressionContext, methodFieldSubTypeGraph);
                 methodInspection.getCompanionMethods().values().forEach(companionMethod -> {

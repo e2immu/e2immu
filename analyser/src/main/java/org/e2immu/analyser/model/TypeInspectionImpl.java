@@ -27,8 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.*;
 
 public class TypeInspectionImpl extends InspectionImpl implements TypeInspection {
     // the type that this inspection object belongs to
@@ -84,7 +84,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
     @Override
     public String toString() {
-        return "type inspection of "+typeInfo.fullyQualifiedName;
+        return "type inspection of " + typeInfo.fullyQualifiedName;
     }
 
     @Override
@@ -153,18 +153,38 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     }
 
     @Override
-    public int getInspectionState() {
+    public InspectionState getInspectionState() {
         return BUILT;
     }
-    
-    public static final int TRIGGER_BYTECODE_INSPECTION = 1;
-    public static final int STARTING_BYTECODE = 2;
-    public static final int FINISHED_BYTECODE = 3;
-    public static final int TRIGGER_JAVA_PARSER = 4;
-    public static final int STARTING_JAVA_PARSER = 5;
-    public static final int FINISHED_JAVA_PARSER = 6;
-    public static final int BY_HAND = 7;
-    public static final int BUILT = 8;
+
+    public enum InspectionState {
+        TRIGGER_BYTECODE_INSPECTION(1),
+        STARTING_BYTECODE(2),
+        FINISHED_BYTECODE(3),
+        TRIGGER_JAVA_PARSER(4),
+        STARTING_JAVA_PARSER(5),
+        FINISHED_JAVA_PARSER(6),
+        BY_HAND(7),
+        BUILT(8);
+
+        public final int state;
+
+        private InspectionState(int state) {
+            this.state = state;
+        }
+
+        public boolean ge(InspectionState other) {
+            return state >= other.state;
+        }
+
+        public boolean le(InspectionState other) {
+            return state <= other.state;
+        }
+
+        public boolean lt(InspectionState other) {
+            return state < other.state;
+        }
+    }
 
     @Container(builds = TypeInspectionImpl.class)
     public static class Builder extends AbstractInspectionBuilder<Builder> implements TypeInspection {
@@ -181,22 +201,22 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         private final List<ParameterizedType> interfacesImplemented = new ArrayList<>();
         private final TypeInfo typeInfo;
 
-        private int inspectionState;
+        private InspectionState inspectionState;
 
-        public Builder(TypeInfo typeInfo, int inspectionState) {
+        public Builder(TypeInfo typeInfo, InspectionState inspectionState) {
             this.typeInfo = typeInfo;
             this.inspectionState = inspectionState;
         }
 
         public boolean finishedInspection() {
-            return inspectionState == FINISHED_BYTECODE || inspectionState >= FINISHED_JAVA_PARSER;
+            return inspectionState == FINISHED_BYTECODE || inspectionState.ge(FINISHED_JAVA_PARSER);
         }
 
-        public int getInspectionState() {
+        public InspectionState getInspectionState() {
             return inspectionState;
         }
 
-        public void setInspectionState(int inspectionState) {
+        public void setInspectionState(InspectionState inspectionState) {
             this.inspectionState = inspectionState;
         }
 

@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.FINISHED_BYTECODE;
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR;
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 
@@ -71,7 +72,7 @@ public class TestPreloadAnnotations {
         TypeInfo collection = input.globalTypeContext().getFullyQualified(Collection.class);
         Assert.assertNotNull(objectTypeInfo);
         TypeInspection collectionInspection = input.globalTypeContext().getTypeInspection(collection);
-        Assert.assertEquals(TypeInspectionImpl.FINISHED_BYTECODE, collectionInspection.getInspectionState());
+        Assert.assertEquals(FINISHED_BYTECODE, collectionInspection.getInspectionState());
 
         // all toArray methods have a method inspection
         Assert.assertTrue(collectionInspection.methods().stream()

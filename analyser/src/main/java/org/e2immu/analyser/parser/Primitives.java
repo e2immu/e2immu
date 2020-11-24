@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.*;
 import java.util.*;
 
 import static org.e2immu.analyser.model.ParameterizedType.NOT_ASSIGNABLE;
+import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.BY_HAND;
 
 public class Primitives {
     public static final String JAVA_LANG = "java.lang";
@@ -278,7 +279,7 @@ public class Primitives {
 
     public Primitives() {
         for (TypeInfo ti : primitives) {
-            ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, TypeInspectionImpl.BY_HAND)
+            ti.typeInspection.set(new TypeInspectionImpl.Builder(ti, BY_HAND)
                     .setPackageName(JAVA_LANG)
                     .setTypeNature(TypeNature.PRIMITIVE)
                     .setParentClass(objectParameterizedType)
@@ -304,7 +305,7 @@ public class Primitives {
                 annotationTypeVerify, annotationTypeVerifyAbsent));
         processEnum(annotationModeTypeInfo, List.of(annotationModeDefensive, annotationModeOffensive));
 
-        functionalInterface.typeInspection.set(new TypeInspectionImpl.Builder(functionalInterface, TypeInspectionImpl.BY_HAND)
+        functionalInterface.typeInspection.set(new TypeInspectionImpl.Builder(functionalInterface, BY_HAND)
                 .setPackageName("java.lang")
                 .setTypeNature(TypeNature.ANNOTATION)
                 .setParentClass(objectParameterizedType)
@@ -338,7 +339,7 @@ public class Primitives {
                 .setReturnType(stringTypeInfo)
                 .addModifier(MethodModifier.PUBLIC)
                 .build());
-        TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, TypeInspectionImpl.BY_HAND)
+        TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND)
                 .setPackageName(ORG_E2IMMU_ANNOTATION)
                 .setTypeNature(TypeNature.ENUM)
                 .addTypeModifier(TypeModifier.PUBLIC)

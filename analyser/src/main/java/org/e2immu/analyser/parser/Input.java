@@ -39,6 +39,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.TRIGGER_JAVA_PARSER;
+
 public record Input(Configuration configuration,
                     TypeContext globalTypeContext,
                     ByteCodeInspector byteCodeInspector,
@@ -101,7 +103,7 @@ public record Input(Configuration configuration,
                     String packageName = Arrays.stream(parts).limit(parts.length - 1).collect(Collectors.joining("."));
                     if (acceptSource(packageName, typeName, restrictions)) {
                         TypeInfo typeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName(packageName, typeName);
-                        globalTypeContext.typeMapBuilder.add(typeInfo, TypeInspectionImpl.TRIGGER_JAVA_PARSER);
+                        globalTypeContext.typeMapBuilder.add(typeInfo, TRIGGER_JAVA_PARSER);
                         URL url = list.get(0);
                         sourceURLs.put(typeInfo, url);
                         trie.add(parts, typeInfo);

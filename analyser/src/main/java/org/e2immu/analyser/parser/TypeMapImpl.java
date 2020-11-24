@@ -27,7 +27,8 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.model.TypeInspectionImpl.*;
+import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState;
+import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.*;
 
 public class TypeMapImpl implements TypeMap {
 
@@ -121,10 +122,10 @@ public class TypeMapImpl implements TypeMap {
 
         public Builder() {
             for (TypeInfo typeInfo : getPrimitives().typeByName.values()) {
-                add(typeInfo, TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION);
+                add(typeInfo, TRIGGER_BYTECODE_INSPECTION);
             }
             for (TypeInfo typeInfo : getPrimitives().primitiveByName.values()) {
-                add(typeInfo, TypeInspectionImpl.BY_HAND);
+                add(typeInfo, BY_HAND);
             }
             e2ImmuAnnotationExpressions.streamTypes().forEach(typeInfo -> add(typeInfo, TRIGGER_BYTECODE_INSPECTION));
         }
@@ -155,7 +156,7 @@ public class TypeMapImpl implements TypeMap {
             return new TypeMapImpl(trie, primitives, e2ImmuAnnotationExpressions);
         }
 
-        public TypeInfo getOrCreate(String fullyQualifiedName, int inspectionState) {
+        public TypeInfo getOrCreate(String fullyQualifiedName, InspectionState inspectionState) {
             TypeInfo typeInfo = get(fullyQualifiedName);
             if (typeInfo != null) return typeInfo;
             TypeInfo newType = TypeInfo.fromFqn(fullyQualifiedName);
@@ -163,7 +164,7 @@ public class TypeMapImpl implements TypeMap {
             return newType;
         }
 
-        public TypeInspectionImpl.Builder add(TypeInfo typeInfo, int inspectionState) {
+        public TypeInspectionImpl.Builder add(TypeInfo typeInfo, InspectionState inspectionState) {
             trie.add(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
             TypeInspectionImpl.Builder inMap = typeInspections.get(typeInfo);
             if (inMap != null) {
@@ -174,7 +175,7 @@ public class TypeMapImpl implements TypeMap {
             return ti;
         }
 
-        public void ensureTypeAndInspection(TypeInfo typeInfo, int inspectionState) {
+        public void ensureTypeAndInspection(TypeInfo typeInfo, InspectionState inspectionState) {
             TypeInfo inMap = get(typeInfo.fullyQualifiedName);
             if (inMap == null) {
                 add(typeInfo, inspectionState);
@@ -238,13 +239,13 @@ public class TypeMapImpl implements TypeMap {
             if (typeInspection.getInspectionState() == TRIGGER_BYTECODE_INSPECTION) {
                 typeInspection.setInspectionState(STARTING_BYTECODE);
                 inspectWithByteCodeInspector(typeInfo);
-                if (typeInspection.getInspectionState() < FINISHED_BYTECODE) {
+                if (typeInspection.getInspectionState().lt(FINISHED_BYTECODE)) {
                     // trying to avoid cycles... we'll try again later
                     typeInspection.setInspectionState(TRIGGER_BYTECODE_INSPECTION);
                 }
             } else if (typeInspection.getInspectionState() == TRIGGER_JAVA_PARSER) {
                 inspectWithJavaParser.inspect(typeInfo, typeInspection);
-                if (typeInspection.getInspectionState() < FINISHED_JAVA_PARSER) {
+                if (typeInspection.getInspectionState().lt(FINISHED_JAVA_PARSER)) {
                     throw new UnsupportedOperationException("? expected the java parser to do its job");
                 }
             }

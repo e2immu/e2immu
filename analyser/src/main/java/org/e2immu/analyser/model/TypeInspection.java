@@ -138,7 +138,7 @@ public interface TypeInspection extends Inspection {
         return Stream.concat(methodTypes, fieldTypes).collect(Collectors.toSet());
     }
 
-    int getInspectionState();
+    TypeInspectionImpl.InspectionState getInspectionState();
 
     default boolean haveNonStaticNonDefaultMethods() {
         if (methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)

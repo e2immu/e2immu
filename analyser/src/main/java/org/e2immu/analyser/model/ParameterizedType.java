@@ -39,6 +39,8 @@ import java.util.*;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
+
 public class ParameterizedType {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterizedType.class);
 
@@ -120,7 +122,7 @@ public class ParameterizedType {
                     }
                     // we're going to assume that we're creating a subtype
                     String subTypeFqn = scopePt.typeInfo.fullyQualifiedName + "." + name;
-                    TypeInfo subType = context.typeMapBuilder.getOrCreate(subTypeFqn, TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION);
+                    TypeInfo subType = context.typeMapBuilder.getOrCreate(subTypeFqn, TRIGGER_BYTECODE_INSPECTION);
                     return parameters.isEmpty() ? new ParameterizedType(subType, arrays) : new ParameterizedType(subType, parameters);
                 }
             }// else {

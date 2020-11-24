@@ -37,6 +37,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.TRIGGER_JAVA_PARSER;
+
 public class Test_13_MethodOverloadAndSuperTypes {
     private static final Logger LOGGER = LoggerFactory.getLogger(Test_13_MethodOverloadAndSuperTypes.class);
     public static final String SRC_TEST_JAVA_ORG_E2IMMU_ANALYSER = "src/test/java/org/e2immu/analyser/";
@@ -94,7 +96,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
         Parser parser = new Parser();
 
         TypeInfo methodOverloadOrig = parser.getTypeContext().typeMapBuilder.getOrCreate(
-                "org.e2immu.analyser.testexample.MethodOverload", TypeInspectionImpl.TRIGGER_JAVA_PARSER);
+                "org.e2immu.analyser.testexample.MethodOverload", TRIGGER_JAVA_PARSER);
         URL url = new File(SRC_TEST_JAVA_ORG_E2IMMU_ANALYSER + "testexample/MethodOverload.java").toURI().toURL();
         List<SortedType> types = parser.inspectAndResolve(Map.of(methodOverloadOrig, url), new Trie<>());
         LOGGER.info("Have {} types", types.size());

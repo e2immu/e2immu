@@ -28,6 +28,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.BY_HAND;
+
 public class TestTypeInfoStream {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestTypeInfoStream.class);
     private static final String TEST_PACKAGE = "org.e2immu.analyser.test";
@@ -130,7 +132,7 @@ public class TestTypeInfoStream {
                 .setInspectedInitialiserExpression(new NullConstant())
                 .build());
 
-        TypeInspection containerTypeInspection = new TypeInspectionImpl.Builder(containerTypeInfo, TypeInspectionImpl.BY_HAND)
+        TypeInspection containerTypeInspection = new TypeInspectionImpl.Builder(containerTypeInfo, BY_HAND)
                 .setTypeNature(TypeNature.CLASS)
                 .setParentClass(primitives.objectParameterizedType)
                 .setEnclosingType(typeInfo)
@@ -153,7 +155,7 @@ public class TestTypeInfoStream {
                 .setReturnType(primitives.stringTypeInfo)
                 .setInspectedBlock(new Block.BlockBuilder().build())
                 .build());
-        testEquivalent.typeInspection.set(new TypeInspectionImpl.Builder(testEquivalent, TypeInspectionImpl.BY_HAND)
+        testEquivalent.typeInspection.set(new TypeInspectionImpl.Builder(testEquivalent, BY_HAND)
                 .setParentClass(primitives.objectParameterizedType)
                 .setPackageName(TEST_PACKAGE)
                 .setTypeNature(TypeNature.ANNOTATION)
@@ -189,7 +191,7 @@ public class TestTypeInfoStream {
                         ).build())
                 .build());
 
-        TypeInspection typeInspection = new TypeInspectionImpl.Builder(typeInfo, TypeInspectionImpl.BY_HAND)
+        TypeInspection typeInspection = new TypeInspectionImpl.Builder(typeInfo, BY_HAND)
                 .addTypeModifier(TypeModifier.PUBLIC)
                 .setParentClass(primitives.objectParameterizedType)
                 .setPackageName("org.e2immu.analyser.model")

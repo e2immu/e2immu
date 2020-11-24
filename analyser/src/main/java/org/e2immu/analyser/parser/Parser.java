@@ -40,6 +40,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 
@@ -124,14 +125,14 @@ public class Parser {
 
         @Override
         public void inspect(TypeInfo typeInfo, TypeInspectionImpl.Builder typeInspectionBuilder) {
-            if (typeInspectionBuilder.getInspectionState() != TypeInspectionImpl.TRIGGER_JAVA_PARSER) {
+            if (typeInspectionBuilder.getInspectionState() != TRIGGER_JAVA_PARSER) {
                 return; // already done, or started
             }
             URL url = Objects.requireNonNull(urls.get(typeInfo),
                     "Cannot find URL for " + typeInfo.fullyQualifiedName + " in " + urls);
             try {
                 LOGGER.info("Starting Java parser inspection of {}", url);
-                typeInspectionBuilder.setInspectionState(TypeInspectionImpl.STARTING_JAVA_PARSER);
+                typeInspectionBuilder.setInspectionState(STARTING_JAVA_PARSER);
 
                 TypeContext inspectionTypeContext = new TypeContext(getTypeContext());
 
@@ -142,7 +143,7 @@ public class Parser {
                 List<TypeInfo> primaryTypes = parseAndInspect.run(inspectionTypeContext, url.toString(), source);
                 primaryTypes.forEach(t -> typeContexts.put(t, inspectionTypeContext));
 
-                typeInspectionBuilder.setInspectionState(TypeInspectionImpl.FINISHED_JAVA_PARSER);
+                typeInspectionBuilder.setInspectionState(FINISHED_JAVA_PARSER);
 
             } catch (RuntimeException rte) {
                 LOGGER.error("Caught runtime exception parsing and inspecting URL {}", url);

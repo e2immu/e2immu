@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -75,12 +76,12 @@ public class TypeInspector {
         this.typeInfo = typeInfo;
 
         TypeInspection typeInspection = typeMapBuilder.getTypeInspection(typeInfo);
-        if (typeInspection == null || typeInspection.getInspectionState() >= TypeInspectionImpl.FINISHED_JAVA_PARSER) {
+        if (typeInspection == null || typeInspection.getInspectionState().ge(FINISHED_JAVA_PARSER)) {
             throw new UnsupportedOperationException();
         }
         this.fullInspection = fullInspection;
         builder = (TypeInspectionImpl.Builder) typeInspection;
-        builder.setInspectionState(TypeInspectionImpl.STARTING_JAVA_PARSER);
+        builder.setInspectionState(STARTING_JAVA_PARSER);
     }
 
     public TypeInspection build() {
@@ -179,7 +180,7 @@ public class TypeInspector {
             for (Modifier modifier : typeDeclaration.getModifiers()) {
                 builder.addTypeModifier(TypeModifier.from(modifier));
             }
-        } else if(typeDeclaration instanceof ClassOrInterfaceDeclaration cid) {
+        } else if (typeDeclaration instanceof ClassOrInterfaceDeclaration cid) {
             // even if we're inspecting dollar types (no full inspection), we need to keep track
             // of the type parameters
             int tpIndex = 0;
@@ -304,7 +305,7 @@ public class TypeInspector {
     }
 
     public void inspectLocalClassDeclaration(ExpressionContext expressionContext, TypeInfo localType, ClassOrInterfaceDeclaration cid) {
-        TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(localType, TypeInspectionImpl.STARTING_JAVA_PARSER);
+        TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(localType, STARTING_JAVA_PARSER);
         builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
         builder.setEnclosingType(expressionContext.enclosingType);
         doClassOrInterfaceDeclaration(expressionContext, cid);
@@ -338,8 +339,8 @@ public class TypeInspector {
     }
 
     private static void addToTypeStore(TypeMapImpl.Builder typeStore, DollarResolverResult res, String what) {
-        int inspectionState = res.isDollarType ? TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION :
-                TypeInspectionImpl.STARTING_JAVA_PARSER;
+        TypeInspectionImpl.InspectionState inspectionState = res.isDollarType ? TRIGGER_BYTECODE_INSPECTION :
+                STARTING_JAVA_PARSER;
         typeStore.ensureTypeAndInspection(res.subType(), inspectionState);
         log(INSPECT, "Added {} to type store: {}", what, res.subType.fullyQualifiedName);
     }

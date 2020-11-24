@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
+import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.TRIGGER_JAVA_PARSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -84,7 +86,7 @@ public class ParseAndInspect {
         classPath.expandLeaves(packageName, ".class", (expansion, urls) -> {
             if (!expansion[expansion.length - 1].contains("$")) {
                 String fqn = fqnOfClassFile(packageName, expansion);
-                TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(fqn, TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION);
+                TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(fqn, TRIGGER_BYTECODE_INSPECTION);
                 typeContextOfFile.addToContext(typeInfo, false);
             }
         });
@@ -124,7 +126,7 @@ public class ParseAndInspect {
                                 TypeInfo typeInfo = typeContextOfFile.getFullyQualified(fqn, false);
                                 if (typeInfo == null) {
                                     TypeInfo newTypeInfo = typeContextOfFile.typeMapBuilder
-                                            .getOrCreate(fqn, TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION);
+                                            .getOrCreate(fqn, TRIGGER_BYTECODE_INSPECTION);
                                     log(INSPECT, "Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
                                     typeContextOfFile.addToContext(newTypeInfo, false);
                                 } else {
@@ -151,7 +153,7 @@ public class ParseAndInspect {
         compilationUnit.getTypes().forEach(td -> {
             String name = td.getName().asString();
             TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(packageName + "." + name,
-                    TypeInspectionImpl.TRIGGER_JAVA_PARSER);
+                    TRIGGER_JAVA_PARSER);
             typeContextOfFile.addToContext(typeInfo);
             TypeInspector typeInspector = new TypeInspector(typeMapBuilder, typeInfo, true);
             typeInspector.recursivelyAddToTypeStore(typeMapBuilder, td);
@@ -171,7 +173,7 @@ public class ParseAndInspect {
 
     private TypeInfo importType(String fqn) {
         boolean source = TypeMapImpl.containsPrefix(sourceTypes, fqn);
-        int inspectionState = source ? TypeInspectionImpl.TRIGGER_JAVA_PARSER: TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION;
+        TypeInspectionImpl.InspectionState inspectionState = source ? TRIGGER_JAVA_PARSER: TRIGGER_BYTECODE_INSPECTION;
         return typeMapBuilder.getOrCreate(fqn, inspectionState);
     }
 
