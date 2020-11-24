@@ -31,6 +31,7 @@ import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.parser.TypeMapImpl;
+import org.e2immu.analyser.util.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,30 +45,19 @@ public class MethodInspector {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodInspection.class);
 
     private final MethodInfo methodInfo;
-    private final MethodInspectionImpl.Builder builder;
+    private final SetOnce<MethodInspectionImpl.Builder> builderOnceFQNIsKnown = new SetOnce<>();
     private final boolean fullInspection;
     private final TypeMapImpl.Builder typeMapBuilder;
 
     public MethodInspector(TypeMapImpl.Builder typeMapBuilder, MethodInfo methodInfo, boolean fullInspection) {
         this.methodInfo = methodInfo;
         this.typeMapBuilder = typeMapBuilder;
-        MethodInspection methodInspection = typeMapBuilder.getMethodInspection(methodInfo);
-
-        // the following statement is only correct when all imported types have been byte code analysed
-
         this.fullInspection = fullInspection;
-        if (methodInspection == null) {
-            builder = new MethodInspectionImpl.Builder(methodInfo);
-        } else {
-            builder = (MethodInspectionImpl.Builder) methodInspection;
-        }
     }
 
     public MethodInspectionImpl.Builder getBuilder() {
-        return Objects.requireNonNull(builder);
+        return Objects.requireNonNull(builderOnceFQNIsKnown.get());
     }
-
-
 
     /*
     Inspection of a method inside an annotation type.
@@ -80,15 +70,34 @@ public class MethodInspector {
 
     public void inspect(AnnotationMemberDeclaration amd, ExpressionContext expressionContext) {
         log(INSPECT, "Inspecting annotation member {}", methodInfo.fullyQualifiedName());
-        addAnnotations(amd.getAnnotations(), expressionContext);
+        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(methodInfo);
+        MethodInspectionImpl.Builder builder = fqnIsKnown(tempBuilder);
+
+        addAnnotations(builder, amd.getAnnotations(), expressionContext);
         if (fullInspection) {
-            addModifiers(amd.getModifiers());
+            addModifiers(builder, amd.getModifiers());
             Expression expression = expressionContext.parseExpression(amd.getDefaultValue());
             Block body = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expression)).build();
             builder.setInspectedBlock(body);
             ParameterizedType returnType = ParameterizedType.from(expressionContext.typeContext, amd.getType());
             builder.setReturnType(returnType);
+            typeMapBuilder.registerMethodInspection(builder);
         }
+    }
+
+    private MethodInspectionImpl.Builder fqnIsKnown(MethodInspectionImpl.Builder builder) {
+        builder.readyToComputeFQN();
+        log(INSPECT, "Inspecting method " + builder.getFullyQualifiedName());
+        MethodInspection methodInspection = typeMapBuilder.getMethodInspection(methodInfo);
+        if (methodInspection instanceof MethodInspectionImpl.Builder existing) {
+            builderOnceFQNIsKnown.set(existing);
+            return existing;
+        }
+        if (methodInspection == null) {
+            builderOnceFQNIsKnown.set(builder);
+            return builder;
+        }
+        throw new UnsupportedOperationException();
     }
 
     private void checkCompanionMethods(Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods) {
@@ -113,14 +122,16 @@ public class MethodInspector {
                         ExpressionContext expressionContext,
                         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
                         TypeInspector.DollarResolver dollarResolver) {
-        log(INSPECT, "Inspecting constructor {}", methodInfo.fullyQualifiedName());
+        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(methodInfo);
+        addParameters(tempBuilder, cd.getParameters(), expressionContext, dollarResolver);
+        MethodInspectionImpl.Builder builder = fqnIsKnown(tempBuilder);
+
         builder.addCompanionMethods(companionMethods);
         checkCompanionMethods(companionMethods);
-        addAnnotations(cd.getAnnotations(), expressionContext);
+        addAnnotations(builder, cd.getAnnotations(), expressionContext);
         if (fullInspection) {
-            addModifiers(cd.getModifiers());
-            addParameters(cd.getParameters(), expressionContext, dollarResolver);
-            addExceptionTypes(cd.getThrownExceptions(), expressionContext.typeContext);
+            addModifiers(builder, cd.getModifiers());
+            addExceptionTypes(builder, cd.getThrownExceptions(), expressionContext.typeContext);
 
             builder.readyToComputeFQN();
             typeMapBuilder.registerMethodInspection(builder);
@@ -140,9 +151,7 @@ public class MethodInspector {
                         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
                         TypeInspector.DollarResolver dollarResolver) {
         try {
-            log(INSPECT, "Inspecting method {}", methodInfo.fullyQualifiedName());
-            builder.addCompanionMethods(companionMethods);
-            checkCompanionMethods(companionMethods);
+            MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(methodInfo);
 
             int tpIndex = 0;
             ExpressionContext newContext = md.getTypeParameters().isEmpty() ? expressionContext :
@@ -150,16 +159,22 @@ public class MethodInspector {
             for (com.github.javaparser.ast.type.TypeParameter typeParameter : md.getTypeParameters()) {
                 org.e2immu.analyser.model.TypeParameter tp = new org.e2immu.analyser.model.TypeParameter(methodInfo,
                         typeParameter.getNameAsString(), tpIndex++);
-                builder.addTypeParameter(tp);
+                tempBuilder.addTypeParameter(tp);
                 newContext.typeContext.addToContext(tp);
                 tp.inspect(newContext.typeContext, typeParameter);
             }
-            addAnnotations(md.getAnnotations(), newContext);
+
+            addParameters(tempBuilder, md.getParameters(), newContext, dollarResolver);
+            MethodInspectionImpl.Builder builder = fqnIsKnown(tempBuilder);
+
+            builder.addCompanionMethods(companionMethods);
+            checkCompanionMethods(companionMethods);
+            
+            addAnnotations(builder, md.getAnnotations(), newContext);
             if (fullInspection) {
-                addModifiers(md.getModifiers());
+                addModifiers(builder, md.getModifiers());
                 if (isInterface) builder.addModifier(MethodModifier.PUBLIC);
-                addParameters(md.getParameters(), newContext, dollarResolver);
-                addExceptionTypes(md.getThrownExceptions(), newContext.typeContext);
+                addExceptionTypes(builder, md.getThrownExceptions(), newContext.typeContext);
                 ParameterizedType pt = ParameterizedType.from(newContext.typeContext, md.getType());
                 builder.setReturnType(pt);
 
@@ -170,41 +185,45 @@ public class MethodInspector {
                     builder.setBlock(md.getBody().get());
                 }
             }
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             LOGGER.error("Caught exception while inspecting method {}", methodInfo.fullyQualifiedName());
             throw e;
         }
     }
 
-    private void addAnnotations(NodeList<AnnotationExpr> annotations,
-                                ExpressionContext expressionContext) {
+    private static void addAnnotations(MethodInspectionImpl.Builder builder,
+                                       NodeList<AnnotationExpr> annotations,
+                                       ExpressionContext expressionContext) {
         for (AnnotationExpr ae : annotations) {
             builder.addAnnotation(AnnotationExpressionImpl.inspect(expressionContext, ae));
         }
     }
 
-    private void addExceptionTypes(NodeList<ReferenceType> thrownExceptions,
-                                   TypeContext typeContext) {
+    private static void addExceptionTypes(MethodInspectionImpl.Builder builder,
+                                          NodeList<ReferenceType> thrownExceptions,
+                                          TypeContext typeContext) {
         for (ReferenceType referenceType : thrownExceptions) {
             ParameterizedType pt = ParameterizedType.from(typeContext, referenceType);
             builder.addExceptionType(pt);
         }
     }
 
-    private void addModifiers(NodeList<Modifier> modifiers) {
+    private static void addModifiers(MethodInspectionImpl.Builder builder,
+                                     NodeList<Modifier> modifiers) {
         for (Modifier modifier : modifiers) {
             if (!"static".equals(modifier.getKeyword().asString()))
                 builder.addModifier(MethodModifier.from(modifier));
         }
     }
 
-    private void addParameters(NodeList<Parameter> parameters,
-                               ExpressionContext expressionContext,
-                               TypeInspector.DollarResolver dollarResolver) {
+    private static void addParameters(MethodInspectionImpl.Builder builder,
+                                      NodeList<Parameter> parameters,
+                                      ExpressionContext expressionContext,
+                                      TypeInspector.DollarResolver dollarResolver) {
         int i = 0;
         for (Parameter parameter : parameters) {
             ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, parameter.getType(), parameter.isVarArgs(), dollarResolver);
-            ParameterInfo parameterInfo = new ParameterInfo(methodInfo, pt, parameter.getNameAsString(), i++);
+            ParameterInfo parameterInfo = new ParameterInfo(builder.getMethodInfo(), pt, parameter.getNameAsString(), i++);
             ParameterInspectionImpl.Builder parameterInspectionBuilder = builder.addParameterCreateBuilder(parameterInfo);
             parameterInspectionBuilder.inspect(parameter, expressionContext, parameter.isVarArgs());
         }
