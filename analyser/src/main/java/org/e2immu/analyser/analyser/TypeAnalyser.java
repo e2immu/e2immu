@@ -817,7 +817,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         boolean haveFirstParameter = false;
         ParameterizedType commonTypeOfFirstParameter = null;
         for (MethodInfo methodInfo : typeInspection.methods()) {
-            if (methodInfo.isStatic && !methodInfo.isPrivate()) {
+            if (methodInfo.methodInspection.get().isStatic() && !methodInfo.isPrivate()) {
                 List<ParameterInfo> parameters = methodInfo.methodInspection.get().getParameters();
                 ParameterizedType typeOfFirstParameter;
                 if (parameters.isEmpty()) {
@@ -862,7 +862,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         }
 
         for (MethodInfo methodInfo : typeInspection.methods()) {
-            if (!methodInfo.isStatic) {
+            if (!methodInfo.methodInspection.get().isStatic()) {
                 log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                         " is not a @UtilityClass, method {} is not static", methodInfo.name);
                 typeAnalysis.setProperty(VariableProperty.UTILITY_CLASS, Level.FALSE);

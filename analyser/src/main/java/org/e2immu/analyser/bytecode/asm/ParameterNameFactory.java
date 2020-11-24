@@ -19,7 +19,7 @@ public class ParameterNameFactory {
                 base = firstLetterLowerCase(type.typeInfo.simpleName);
             }
         } else if (type.typeParameter != null) {
-            base = firstLetterLowerCase(type.typeParameter.name);
+            base = firstLetterLowerCase(type.typeParameter.getName());
         } else {
             base = "p";
         }

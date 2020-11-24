@@ -46,17 +46,19 @@ public class ParseArrayCreationExpr {
 
     // new Type[3]; this method creates the constructor that makes this array, without attaching said constructor to the type
     static MethodInfo createArrayCreationConstructor(TypeContext typeContext, ParameterizedType parameterizedType) {
-        MethodInfo constructor = new MethodInfo(parameterizedType.typeInfo, List.of());
-        MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(constructor)
+        MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(parameterizedType.typeInfo)
                 .setInspectedBlock(Block.EMPTY_BLOCK)
                 .setReturnType(parameterizedType)
                 .addModifier(MethodModifier.PUBLIC);
         for (int i = 0; i < parameterizedType.arrays; i++) {
-            ParameterInfo p = new ParameterInfo(constructor, typeContext.getPrimitives().intParameterizedType, "dim" + i, i);
-            builder.addParameterCreateBuilder(p);
-            p.setAnalysis(new ParameterAnalysisImpl.Builder(typeContext.getPrimitives(), AnalysisProvider.DEFAULT_PROVIDER, p).build());
+            ParameterInspectionImpl.Builder p = new ParameterInspectionImpl.Builder(
+                    typeContext.getPrimitives().intParameterizedType, "dim" + i, i);
+            builder.addParameter(p);
         }
-        constructor.methodInspection.set(builder.build());
+        MethodInfo constructor = builder.build().getMethodInfo();
+        constructor.methodInspection.get().getParameters().forEach(p ->
+                p.setAnalysis(new ParameterAnalysisImpl.Builder(typeContext.getPrimitives(),
+                        AnalysisProvider.DEFAULT_PROVIDER, p).build()));
         constructor.setAnalysis(MethodAnalysis.createEmpty(constructor));
         return constructor;
     }

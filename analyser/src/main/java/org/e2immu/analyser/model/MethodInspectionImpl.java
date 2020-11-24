@@ -57,10 +57,14 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     //@Immutable
     private final List<MethodInfo> implementationOf;
     private final Map<CompanionMethodName, MethodInfo> companionMethods;
+    private final boolean isStatic;
+    private final boolean isDefault;
 
     private MethodInspectionImpl(MethodInfo methodInfo,
                                  String fullyQualifiedName,
                                  String distinguishingName,
+                                 boolean isStatic,
+                                 boolean isDefault,
                                  List<MethodModifier> modifiers,
                                  List<ParameterInfo> parameters,
                                  ParameterizedType returnType,
@@ -82,6 +86,18 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         this.methodBody = methodBody;
         this.exceptionTypes = exceptionTypes;
         this.implementationOf = implementationOf;
+        this.isDefault = isDefault;
+        this.isStatic = isStatic;
+    }
+
+    @Override
+    public boolean isDefault() {
+        return isDefault;
+    }
+
+    @Override
+    public boolean isStatic() {
+        return isStatic;
     }
 
     @Override
@@ -141,12 +157,17 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
     @Container(builds = MethodInspectionImpl.class)
     public static class Builder extends AbstractInspectionBuilder<Builder> implements MethodInspection {
-        private final MethodInfo methodInfo;
-        private final List<ParameterInfo> parameters = new ArrayList<>();
+        private final List<ParameterInspectionImpl.Builder> parameters = new ArrayList<>();
         private final List<MethodModifier> modifiers = new ArrayList<>();
         private final List<AnnotationExpression> annotations = new ArrayList<>();
-        private final List<TypeParameter> typeParameters = new ArrayList<>();
+        private final List<TypeParameterImpl.Builder> typeParameters = new ArrayList<>();
         private final List<MethodInfo> implementationsOf = new ArrayList<>();
+        private final TypeInfo owner;
+        private final String name;
+        private final boolean isConstructor;
+        private Boolean isStatic;
+        private Boolean isDefault;
+
         private final Map<CompanionMethodName, Builder> companionMethods = new LinkedHashMap<>();
         private BlockStmt block;
         private Block inspectedBlock;
@@ -155,9 +176,32 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         private final Map<Integer, ParameterInspectionImpl.Builder> parameterInspectionBuilders = new HashMap<>();
         private String fullyQualifiedName;
         private String distinguishingName;
+        private MethodInfo methodInfo;
+        private List<ParameterInfo> immutableParameters;
+        private List<TypeParameter> immutableTypeParameters;
 
-        public Builder(MethodInfo methodInfo) {
-            this.methodInfo = methodInfo;
+        public Builder(TypeInfo owner, String name) {
+            this.owner = owner;
+            this.name = name;
+            this.isConstructor = false;
+        }
+
+        public Builder(TypeInfo owner) {
+            this.owner = owner;
+            this.name = owner.simpleName;
+            this.isConstructor = true;
+        }
+
+        @Fluent
+        public Builder setStatic(boolean isStatic) {
+            this.isStatic = isStatic;
+            return this;
+        }
+
+        @Fluent
+        public Builder setDefault(boolean isDefault) {
+            this.isDefault = isDefault;
+            return this;
         }
 
         @Fluent
@@ -196,28 +240,18 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             return builder;
         }
 
-        public void addParameterNoBuilder(ParameterInfo parameterInfo) {
-            parameters.add(parameterInfo);
-            assert parameterInfo.index + 1 == parameters.size();
-        }
-
-        // the following method is used by the method inspector
-
-        public ParameterInspectionImpl.Builder addParameterCreateBuilder(@NotNull ParameterInfo parameterInfo) {
-            parameters.add(parameterInfo);
-            return newParameterInspectionBuilder(parameterInfo.index);
-        }
-
         // finally, this one is used by hand
 
-        public Builder addParameterFluently(@NotNull ParameterInfo parameterInfo) {
-            addParameterCreateBuilder(parameterInfo);
+        @Fluent
+        public Builder addParameter(@NotNull ParameterInspectionImpl.Builder builder) {
+            if (builder.getIndex() == -1) builder.setIndex(parameters.size());
+            parameters.add(builder);
             return this;
         }
 
         @Fluent
-        public Builder addParameters(@NotNull Collection<ParameterInfo> parameters) {
-            parameters.forEach(this::addParameterCreateBuilder);
+        public Builder addParameters(@NotNull Collection<ParameterInspectionImpl.Builder> parameters) {
+            parameters.forEach(this::addParameter);
             return this;
         }
 
@@ -234,7 +268,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         }
 
         @Fluent
-        public Builder addTypeParameter(@NotNull TypeParameter typeParameter) {
+        public Builder addTypeParameter(@NotNull TypeParameterImpl.Builder typeParameter) {
             typeParameters.add(typeParameter);
             if (!typeParameter.isMethodTypeParameter()) throw new IllegalArgumentException();
             return this;
@@ -257,16 +291,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             if (inspectedBlock == null) {
                 inspectedBlock = Block.EMPTY_BLOCK;
             }
-            for (TypeParameter typeParameter : typeParameters) {
-                if (typeParameter.owner.isRight() && typeParameter.owner.getRight() != methodInfo) {
-                    throw new UnsupportedOperationException("I cannot have type parameters owned by another method!");
-                }
-            }
 
-            parameterInspectionBuilders.forEach((index, builder) -> {
-                ParameterInfo parameterInfo = parameters.get(index);
-                parameterInfo.parameterInspection.set(builder.build());
-            });
             companionMethods.values().forEach(builder -> builder.methodInfo.methodInspection.set(builder.build()));
 
             // removed a check that the type parameter, if it belonged to a method, had to be this method.
@@ -275,28 +300,37 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
             if (fullyQualifiedName == null) readyToComputeFQN();
 
-            return new MethodInspectionImpl(methodInfo,
+            MethodInspectionImpl methodInspection = new MethodInspectionImpl(methodInfo,
                     getFullyQualifiedName(), // the builders have not been invalidated yet
                     getDistinguishingName(),
+                    isStatic(),
+                    isDefault(),
                     ImmutableList.copyOf(modifiers),
-                    ImmutableList.copyOf(parameters),
+                    ImmutableList.copyOf(immutableParameters),
                     returnType,
                     ImmutableList.copyOf(annotations),
-                    ImmutableList.copyOf(typeParameters),
+                    ImmutableList.copyOf(immutableTypeParameters),
                     ImmutableList.copyOf(exceptionTypes),
                     ImmutableList.copyOf(implementationsOf),
                     ImmutableMap.copyOf(getCompanionMethods()),
                     inspectedBlock
             );
+            methodInfo.methodInspection.set(methodInspection);
+            return methodInspection;
         }
 
         public void readyToComputeFQN() {
-            this.fullyQualifiedName = methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
-                    .map(p -> p.parameterizedType.stream(parameterInspectionBuilders.get(p.index).isVarArgs()))
+            fullyQualifiedName = methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
+                    .map(p -> p.getParameterizedType().stream(parameterInspectionBuilders.get(p.getIndex()).isVarArgs()))
                     .collect(Collectors.joining(",")) + ")";
-            this.distinguishingName = methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
-                    .map(p -> p.parameterizedType.distinguishingStream(parameterInspectionBuilders.get(p.index).isVarArgs()))
+            distinguishingName = methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
+                    .map(p -> p.getParameterizedType().distinguishingStream(parameterInspectionBuilders.get(p.getIndex()).isVarArgs()))
                     .collect(Collectors.joining(",")) + ")";
+            this.methodInfo = new MethodInfo(owner, name, fullyQualifiedName, distinguishingName, isConstructor);
+            immutableTypeParameters = typeParameters.stream()
+                    .map(tp -> tp.setMethodInfo(methodInfo).build()).collect(Collectors.toList());
+            immutableParameters = parameterInspectionBuilders.values().stream()
+                    .map(b -> b.build(methodInfo)).sorted().collect(Collectors.toList());
         }
 
         @Override
@@ -313,6 +347,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         @Override
         public MethodInfo getMethodInfo() {
+            if (methodInfo == null) throw new UnsupportedOperationException("Not ready");
             return methodInfo;
         }
 
@@ -328,7 +363,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         @Override
         public List<ParameterInfo> getParameters() {
-            return parameters;
+            if (immutableParameters == null) throw new UnsupportedOperationException();
+            return immutableParameters;
         }
 
         @Override
@@ -338,7 +374,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         @Override
         public List<TypeParameter> getTypeParameters() {
-            return typeParameters;
+            if (immutableTypeParameters == null) throw new UnsupportedOperationException();
+            return immutableTypeParameters;
         }
 
         @Override
@@ -358,6 +395,16 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         public boolean inspectedBlockIsSet() {
             return inspectedBlock != null;
+        }
+
+        @Override
+        public boolean isDefault() {
+            return isDefault != null ? isDefault : modifiers.contains(MethodModifier.DEFAULT);
+        }
+
+        @Override
+        public boolean isStatic() {
+            return isStatic != null ? isStatic : modifiers.contains(MethodModifier.STATIC);
         }
     }
 }

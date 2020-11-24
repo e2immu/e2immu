@@ -406,18 +406,17 @@ public class MyClassVisitor extends ClassVisitor {
         if (synthetic) return null;
 
         boolean isStatic = (access & Opcodes.ACC_STATIC) != 0;
-
-        MethodInfo methodInfo;
+        MethodInspectionImpl.Builder methodInspectionBuilder;
         if ("<init>".equals(name)) {
-            methodInfo = new MethodInfo(currentType, List.of());
+            methodInspectionBuilder = new MethodInspectionImpl.Builder(currentType);
         } else {
-            methodInfo = new MethodInfo(currentType, name, isStatic);
+            methodInspectionBuilder = new MethodInspectionImpl.Builder(currentType, name);
+            methodInspectionBuilder.setStatic(isStatic);
         }
-        MethodInspectionImpl.Builder methodInspectionBuilder = new MethodInspectionImpl.Builder(methodInfo);
-
         if ((access & Opcodes.ACC_PUBLIC) != 0 && !currentTypeIsInterface) {
             methodInspectionBuilder.addModifier(MethodModifier.PUBLIC);
         }
+        // FIXME default modifier in interface methods?
         if ((access & Opcodes.ACC_PRIVATE) != 0) methodInspectionBuilder.addModifier(MethodModifier.PRIVATE);
         if ((access & Opcodes.ACC_PROTECTED) != 0) methodInspectionBuilder.addModifier(MethodModifier.PROTECTED);
         if ((access & Opcodes.ACC_FINAL) != 0) methodInspectionBuilder.addModifier(MethodModifier.FINAL);
@@ -430,7 +429,7 @@ public class MyClassVisitor extends ClassVisitor {
 
         String signatureOrDescription = signature != null ? signature : descriptor;
         if (signatureOrDescription.startsWith("<")) {
-            int end = parseMethodGenerics(signatureOrDescription, methodInfo, methodInspectionBuilder, methodContext);
+            int end = parseMethodGenerics(signatureOrDescription, methodInspectionBuilder, methodContext);
             if (end < 0) {
                 // error state
                 errorStateForType(signatureOrDescription);
@@ -464,7 +463,6 @@ public class MyClassVisitor extends ClassVisitor {
     // copyOf(U[], int, java.lang.Class<? extends T[]>) spaces between parameter types
 
     private int parseMethodGenerics(String signature,
-                                    MethodInfo methodInfo,
                                     MethodInspectionImpl.Builder methodInspectionBuilder,
                                     TypeContext methodContext) {
         IterativeParsing iterativeParsing = new IterativeParsing();

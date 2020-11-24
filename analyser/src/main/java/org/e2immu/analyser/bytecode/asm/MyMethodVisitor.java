@@ -86,11 +86,11 @@ public class MyMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end, int index) {
-        int parameterIndex = countLocalVars - (methodInfo.isStatic ? 0 : 1);
+        int parameterIndex = countLocalVars - (methodInspectionBuilder.isStatic() ? 0 : 1);
         if (parameterIndex >= 0 && parameterIndex < numberOfParameters) {
             ParameterizedType parameterizedType = types.get(parameterIndex);
             ParameterInfo parameterInfo = new ParameterInfo(methodInfo, parameterizedType, name, parameterIndex);
-            methodInspectionBuilder.addParameterNoBuilder(parameterInfo);
+            methodInspectionBuilder.addParameter(parameterInfo);
             if (lastParameterIsVarargs && parameterIndex == numberOfParameters - 1) {
                 parameterInspectionBuilders[parameterIndex].setVarArgs(true);
             }

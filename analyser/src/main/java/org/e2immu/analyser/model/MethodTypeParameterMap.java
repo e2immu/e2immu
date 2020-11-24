@@ -145,22 +145,21 @@ public class MethodTypeParameterMap {
         return Primitives.isVoid(methodInspection.getReturnType()) == Primitives.isVoid(other.methodInspection.getReturnType());
     }
 
+    // used in TypeInfo.convertMethodReferenceIntoLambda
     public MethodInspectionImpl.Builder buildCopy(TypeInfo typeInfo) {
-        MethodInfo copy = new MethodInfo(typeInfo, methodInspection.getMethodInfo().name, false);
-        MethodInspectionImpl.Builder mib = new MethodInspectionImpl.Builder(copy);
-        mib.addModifier(MethodModifier.PUBLIC);
+        MethodInspectionImpl.Builder copy = new MethodInspectionImpl.Builder(typeInfo, methodInspection.getMethodInfo().name);
+        copy.addModifier(MethodModifier.PUBLIC);
 
         for (ParameterInfo p : methodInspection.getParameters()) {
-            ParameterInfo newParameter = new ParameterInfo(copy, getConcreteTypeOfParameter(p.index), p.name, p.index);
-            mib.addParameterCreateBuilder(newParameter);
-            ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder();
+            ParameterInspectionImpl.Builder newParameterBuilder = new ParameterInspectionImpl.Builder(
+                    getConcreteTypeOfParameter(p.index), p.name, p.index);
             if (p.parameterInspection.get().isVarArgs()) {
-                pib.setVarArgs(true);
+                newParameterBuilder.setVarArgs(true);
             }
-            newParameter.parameterInspection.set(pib.build());
+            copy.addParameter(newParameterBuilder);
         }
-        mib.setReturnType(getConcreteReturnType());
-        return mib;
+        copy.setReturnType(getConcreteReturnType());
+        return copy;
     }
 
     public MethodTypeParameterMap translate(TranslationMap translationMap) {

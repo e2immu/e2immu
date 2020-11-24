@@ -43,33 +43,22 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public final TypeInfo typeInfo; // back reference, only @ContextClass after...
     public final String name;
-    public final List<ParameterInfo> parametersAsObserved;
-    public final ParameterizedType returnTypeObserved; // @ContextClass
+    public final String fullyQualifiedName;
+    public final String distinguishingName;
     public final boolean isConstructor;
-    public final boolean isStatic;
-    public final boolean isDefaultImplementation;
 
     public final SetOnce<MethodInspection> methodInspection = new SetOnce<>();
     public final SetOnce<MethodAnalysis> methodAnalysis = new SetOnce<>();
     public final SetOnce<MethodResolution> methodResolution = new SetOnce<>();
 
     // for constructors
-    public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull List<ParameterInfo> parametersAsObserved) {
-        this(typeInfo, dropDollar(typeInfo.simpleName), parametersAsObserved, null, true, false, false);
+    public MethodInfo(@NotNull TypeInfo typeInfo, String fullyQualifiedName, String distinguishingName) {
+        this(typeInfo, dropDollar(typeInfo.simpleName), fullyQualifiedName, distinguishingName, true);
     }
 
-    public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull String name, @NotNull List<ParameterInfo> parametersAsObserved,
-                      ParameterizedType returnTypeObserved, boolean isStatic) {
-        this(typeInfo, dropDollarGetClass(name), parametersAsObserved, returnTypeObserved, false, isStatic, false);
-    }
-
-    public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull String name, @NotNull List<ParameterInfo> parametersAsObserved,
-                      ParameterizedType returnTypeObserved, boolean isStatic, boolean isDefaultImplementation) {
-        this(typeInfo, dropDollarGetClass(name), parametersAsObserved, returnTypeObserved, false, isStatic, isDefaultImplementation);
-    }
-
-    public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull String name, boolean isStatic) {
-        this(typeInfo, dropDollarGetClass(name), List.of(), null, false, isStatic, false);
+    // for methods
+    public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull String name, String fullyQualifiedName, String distinguishingName) {
+        this(typeInfo, dropDollarGetClass(name), fullyQualifiedName, distinguishingName, false);
     }
 
     public static String dropDollarGetClass(String string) {
@@ -91,21 +80,17 @@ public class MethodInfo implements WithInspectionAndAnalysis {
      * it is possible to observe a method without being able to see its return type. That does not make
      * the method a constructor... we cannot use the returnTypeObserved == null as isConstructor
      */
-    private MethodInfo(@NotNull TypeInfo typeInfo, @NotNull String name, @NotNull List<ParameterInfo> parametersAsObserved,
-                       ParameterizedType returnTypeObserved, boolean isConstructor, boolean isStatic, boolean isDefaultImplementation) {
-        Objects.requireNonNull(typeInfo, "Trying to create a method " + name + " but null type");
+    public MethodInfo(@NotNull TypeInfo typeInfo, @NotNull String name, String fullyQualifiedName,
+                      String distinguishingName, boolean isConstructor) {
+        Objects.requireNonNull(typeInfo);
         Objects.requireNonNull(name);
-        Objects.requireNonNull(parametersAsObserved);
-
-        if (isStatic && isConstructor) throw new IllegalArgumentException();
-        this.isStatic = isStatic;
+        Objects.requireNonNull(fullyQualifiedName);
+        Objects.requireNonNull(distinguishingName);
         this.typeInfo = typeInfo;
         this.name = name;
-        this.parametersAsObserved = parametersAsObserved;
-        this.returnTypeObserved = returnTypeObserved;
+        this.fullyQualifiedName = fullyQualifiedName;
+        this.distinguishingName = distinguishingName;
         this.isConstructor = isConstructor;
-        this.isDefaultImplementation = isDefaultImplementation;
-        if (isConstructor && returnTypeObserved != null) throw new IllegalArgumentException();
     }
 
     public boolean hasBeenInspected() {
@@ -117,15 +102,12 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MethodInfo that = (MethodInfo) o;
-        return methodInspection.get().getFullyQualifiedName().equals(that.methodInspection.get().getFullyQualifiedName());
+        return fullyQualifiedName.equals(that.fullyQualifiedName);
     }
 
     @Override
     public int hashCode() {
-        if (hasBeenInspected()) {
-            return Objects.hash(methodInspection.get().getFullyQualifiedName());
-        }
-        return Objects.hash(typeInfo, name, parametersAsObserved);
+        return fullyQualifiedName.hashCode();
     }
 
     @Override
@@ -141,21 +123,20 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        UpgradableBooleanMap<TypeInfo> constructorTypes = isConstructor ? UpgradableBooleanMap.of() : hasBeenInspected() ?
-                methodInspection.get().getReturnType().typesReferenced(true) : returnTypeObserved.typesReferenced(true);
+        if (!hasBeenInspected()) return UpgradableBooleanMap.of();
+        UpgradableBooleanMap<TypeInfo> constructorTypes = isConstructor ? UpgradableBooleanMap.of() :
+                methodInspection.get().getReturnType().typesReferenced(true);
         UpgradableBooleanMap<TypeInfo> parameterTypes =
-                (hasBeenInspected() ? methodInspection.get().getParameters() : parametersAsObserved)
-                        .stream().flatMap(p -> p.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector());
-        UpgradableBooleanMap<TypeInfo> annotationTypes = hasBeenInspected() ?
-                methodInspection.get().getAnnotations().stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()) :
-                UpgradableBooleanMap.of();
-        UpgradableBooleanMap<TypeInfo> exceptionTypes = hasBeenInspected() ?
-                methodInspection.get().getExceptionTypes().stream().flatMap(et -> et.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()) :
-                UpgradableBooleanMap.of();
+                methodInspection.get().getParameters().stream()
+                        .flatMap(p -> p.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector());
+        UpgradableBooleanMap<TypeInfo> annotationTypes =
+                methodInspection.get().getAnnotations().stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
+        UpgradableBooleanMap<TypeInfo> exceptionTypes =
+                methodInspection.get().getExceptionTypes().stream().flatMap(et -> et.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector());
         UpgradableBooleanMap<TypeInfo> bodyTypes = hasBeenInspected() ?
                 methodInspection.get().getMethodBody().typesReferenced() : UpgradableBooleanMap.of();
-        UpgradableBooleanMap<TypeInfo> companionMethodTypes = hasBeenInspected() ? methodInspection.get().getCompanionMethods().values().stream()
-                .flatMap(cm -> cm.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()) : UpgradableBooleanMap.of();
+        UpgradableBooleanMap<TypeInfo> companionMethodTypes = methodInspection.get().getCompanionMethods().values().stream()
+                .flatMap(cm -> cm.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
         return UpgradableBooleanMap.of(constructorTypes, parameterTypes, annotationTypes, exceptionTypes, companionMethodTypes, bodyTypes);
     }
 
@@ -166,79 +147,60 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     public String stream(int indent) {
         StringBuilder sb = new StringBuilder();
-        ParameterizedType returnType;
-        if (hasBeenInspected()) {
-            returnType = isConstructor ? null : methodInspection.get().getReturnType();
-        } else {
-            returnType = returnTypeObserved;
+        MethodInspection inspection = methodInspection.get();
+
+        Set<TypeInfo> annotationsSeen = new HashSet<>();
+        for (AnnotationExpression annotation : inspection.getAnnotations()) {
+            StringUtil.indent(sb, indent);
+            sb.append(annotation.stream());
+            if (methodAnalysis.isSet()) {
+                methodAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen, sb);
+            }
+            sb.append("\n");
+        }
+        if (methodAnalysis.isSet()) {
+            methodAnalysis.get().getAnnotationStream().forEach(entry -> {
+                boolean present = entry.getValue();
+                AnnotationExpression annotation = entry.getKey();
+                if (present && !annotationsSeen.contains(annotation.typeInfo())) {
+                    StringUtil.indent(sb, indent);
+                    sb.append(annotation.stream());
+                    sb.append("\n");
+                }
+            });
         }
 
-        List<MethodModifier> methodModifiers;
-        if (hasBeenInspected()) {
-            methodModifiers = methodInspection.get().getModifiers();
-        } else {
-            methodModifiers = List.of(MethodModifier.PUBLIC);
-        }
-        if (hasBeenInspected()) {
-            Set<TypeInfo> annotationsSeen = new HashSet<>();
-            for (AnnotationExpression annotation : methodInspection.get().getAnnotations()) {
-                StringUtil.indent(sb, indent);
-                sb.append(annotation.stream());
-                if (methodAnalysis.isSet()) {
-                    methodAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen, sb);
-                }
-                sb.append("\n");
-            }
-            if (methodAnalysis.isSet()) {
-                methodAnalysis.get().getAnnotationStream().forEach(entry -> {
-                    boolean present = entry.getValue();
-                    AnnotationExpression annotation = entry.getKey();
-                    if (present && !annotationsSeen.contains(annotation.typeInfo())) {
-                        StringUtil.indent(sb, indent);
-                        sb.append(annotation.stream());
-                        sb.append("\n");
-                    }
-                });
-            }
-        }
         StringUtil.indent(sb, indent);
-        sb.append(methodModifiers.stream().map(m -> m.toJava() + " ").collect(Collectors.joining()));
-        if (isStatic) {
+        sb.append(inspection.getModifiers().stream().map(m -> m.toJava() + " ").collect(Collectors.joining()));
+        MethodInspection methodInspection = this.methodInspection.get();
+        if (methodInspection.isStatic()) {
             sb.append("static ");
         }
-        if (hasBeenInspected()) {
-            MethodInspection methodInspection = this.methodInspection.get();
-            if (!methodInspection.getTypeParameters().isEmpty()) {
-                sb.append("<");
-                sb.append(methodInspection.getTypeParameters().stream().map(tp -> tp.name).collect(Collectors.joining(", ")));
-                sb.append("> ");
-            }
+        if (!methodInspection.getTypeParameters().isEmpty()) {
+            sb.append("<");
+            sb.append(methodInspection.getTypeParameters().stream().map(TypeParameter::getName).collect(Collectors.joining(", ")));
+            sb.append("> ");
         }
+
         if (!isConstructor) {
-            sb.append(returnType.stream());
+            sb.append(inspection.getReturnType().stream());
             sb.append(" ");
         }
         sb.append(name);
         sb.append("(");
 
-        List<ParameterInfo> parameters;
-        if (hasBeenInspected()) {
-            parameters = methodInspection.get().getParameters();
-        } else {
-            parameters = parametersAsObserved;
-        }
-        sb.append(parameters.stream().map(ParameterInfo::stream).collect(Collectors.joining(", ")));
+        sb.append(inspection.getParameters().stream().map(ParameterInfo::stream).collect(Collectors.joining(", ")));
         sb.append(")");
-        if (hasBeenInspected() && !methodInspection.get().getExceptionTypes().isEmpty()) {
+        if (!inspection.getExceptionTypes().isEmpty()) {
             sb.append(" throws ");
-            sb.append(methodInspection.get().getExceptionTypes().stream()
+            sb.append(inspection.getExceptionTypes().stream()
                     .map(ParameterizedType::stream).collect(Collectors.joining(", ")));
         }
         if (hasBeenInspected()) {
             if (methodAnalysis.isSet() && methodAnalysis.get().getFirstStatement() != null) {
-                sb.append(methodInspection.get().getMethodBody().statementString(indent, methodAnalysis.get().getFirstStatement()));
+                sb.append(inspection.getMethodBody().statementString(indent, methodAnalysis.get().getFirstStatement()));
             } else {
-                sb.append(methodInspection.get().getMethodBody().statementString(indent, null));
+                sb.append(inspection.getMethodBody().statementString(indent, null));
             }
         } else {
             sb.append(" { }");
@@ -247,16 +209,15 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public String fullyQualifiedName() {
-        return methodInspection.get("Fully Qualified Name of " + name + " in " + typeInfo.fullyQualifiedName).getFullyQualifiedName();
+        return fullyQualifiedName;
     }
 
     public String distinguishingName() {
-        return methodInspection.get("Distinguishing Name of " + name + " in " + typeInfo.fullyQualifiedName).getDistinguishingName();
+        return distinguishingName;
     }
 
     public ParameterizedType returnType() {
-        return Objects.requireNonNull(hasBeenInspected() ? methodInspection.get().getReturnType() :
-                returnTypeObserved, "Null return type for " + fullyQualifiedName() + ", inspected? " + hasBeenInspected());
+        return methodInspection.get().getReturnType();
     }
 
     public Optional<AnnotationExpression> hasInspectedAnnotation(String annotationFQN) {
@@ -370,18 +331,15 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 translationMap.get(inSuperType.typeParameter);
         if (translated != null && translated.typeParameter == inSubType.typeParameter) return false;
         if (inSubType.isUnboundParameterType() && inSuperType.isUnboundParameterType()) return false;
-        if (inSubType.typeParameter.typeParameterInspection.isSet() && inSuperType.typeParameter.typeParameterInspection.isSet()) {
-            List<ParameterizedType> inSubTypeBounds = inSubType.typeParameter.typeParameterInspection.get().typeBounds;
-            List<ParameterizedType> inSuperTypeBounds = inSuperType.typeParameter.typeParameterInspection.get().typeBounds;
-            if (inSubTypeBounds.size() != inSuperTypeBounds.size()) return true;
-            int i = 0;
-            for (ParameterizedType typeBound : inSubType.typeParameter.typeParameterInspection.get().typeBounds) {
-                boolean different = differentType(typeBound, inSuperTypeBounds.get(i), translationMap);
-                if (different) return true;
-            }
-            return false;
+        List<ParameterizedType> inSubTypeBounds = inSubType.typeParameter.getTypeBounds();
+        List<ParameterizedType> inSuperTypeBounds = inSuperType.typeParameter.getTypeBounds();
+        if (inSubTypeBounds.size() != inSuperTypeBounds.size()) return true;
+        int i = 0;
+        for (ParameterizedType typeBound : inSubType.typeParameter.getTypeBounds()) {
+            boolean different = differentType(typeBound, inSuperTypeBounds.get(i), translationMap);
+            if (different) return true;
         }
-        throw new UnsupportedOperationException("? type parameter inspections not set");
+        return false;
     }
 
     @Override
@@ -400,9 +358,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean cannotBeOverridden() {
-        return isStatic ||
-                methodInspection.get().getModifiers().contains(MethodModifier.FINAL)
-                || methodInspection.get().getModifiers().contains(MethodModifier.PRIVATE)
+        MethodInspection inspection = methodInspection.get();
+        return inspection.isStatic() ||
+                inspection.getModifiers().contains(MethodModifier.FINAL)
+                || inspection.getModifiers().contains(MethodModifier.PRIVATE)
                 || typeInfo.typeInspection.get().modifiers().contains(TypeModifier.FINAL);
     }
 
@@ -423,7 +382,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean isSingleAbstractMethod() {
-        return typeInfo.typeInspection.get().isFunctionalInterface() && !isStatic && !isDefaultImplementation;
+        MethodInspection inspection = methodInspection.get();
+        return typeInfo.typeInspection.get().isFunctionalInterface() &&
+                !inspection.isStatic() && !inspection.isDefault();
     }
 
     public Set<ParameterizedType> explicitTypes() {

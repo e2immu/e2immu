@@ -18,84 +18,34 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Either;
-import org.e2immu.analyser.util.SetOnce;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
-import static org.e2immu.analyser.util.Logger.log;
-
-public class TypeParameter implements NamedType {
+public interface TypeParameter extends NamedType {
 
     // the type the parameter belongs to
-    public final Either<TypeInfo, MethodInfo> owner;
-    public final String name;
-    public final int index;
+    Either<TypeInfo, MethodInfo> getOwner();
 
-    public final SetOnce<TypeParameterInspection> typeParameterInspection = new SetOnce<>();
+    String getName();
 
-    public TypeParameter(TypeInfo typeInfo, String name, int index) {
-        this.name = name;
-        this.index = index;
-        this.owner = Either.left(typeInfo);
-    }
+    int getIndex();
 
-    public TypeParameter(MethodInfo typeInfo, String name, int index) {
-        this.name = name;
-        this.index = index;
-        this.owner = Either.right(typeInfo);
-    }
+    List<ParameterizedType> getTypeBounds();
 
-    public String stream() {
-        if (typeParameterInspection.isSet() && !typeParameterInspection.get().typeBounds.isEmpty()) {
-            return name + " extends " + typeParameterInspection.get()
-                    .typeBounds.stream().map(ParameterizedType::stream).collect(Collectors.joining(" & "));
-        }
-        return name;
+    default String stream() {
+        return getName() + " extends " + getTypeBounds()
+                .stream().map(ParameterizedType::stream).collect(Collectors.joining(" & "));
     }
 
     @Override
-    public String toString() {
-        String where = owner.isLeft() ? owner.getLeft().fullyQualifiedName :
-                owner.getRight().fullyQualifiedName();
-        return name + " as #" + index + " in " + where;
+    default String simpleName() {
+        return getName();
     }
 
-    @Override
-    public String simpleName() {
-        return name;
+    default boolean isMethodTypeParameter() {
+        return getOwner().isRight();
     }
 
-    public boolean isMethodTypeParameter() {
-        return owner.isRight();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        TypeParameter that = (TypeParameter) o;
-        return owner.equals(that.owner) &&
-                name.equals(that.name);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(owner, name);
-    }
-
-    public void inspect(TypeContext typeContext, com.github.javaparser.ast.type.TypeParameter typeParameter) {
-        List<ParameterizedType> typeBounds = new ArrayList<>();
-        typeParameter.getTypeBound().forEach(cit -> {
-            log(INSPECT, "Inspecting type parameter {}", cit.getName().asString());
-            ParameterizedType bound = ParameterizedType.from(typeContext, cit);
-            typeBounds.add(bound);
-        });
-        typeParameterInspection.set(new TypeParameterInspection(typeBounds));
-    }
 }

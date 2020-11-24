@@ -202,7 +202,8 @@ public class Resolver {
 
             // dependencies of the type
 
-            Set<TypeInfo> typeDependencies = typeInfo.typesReferenced().stream().map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
+            Set<TypeInfo> typeDependencies = typeInspection.typesReferenced().stream()
+                    .map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
             List<TypeInfo> typeAndAllSubTypes = typeAndAllSubTypes(typeContextOfType, typeInfo);
             typeDependencies.retainAll(typeAndAllSubTypes);
             methodFieldSubTypeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
@@ -296,8 +297,9 @@ public class Resolver {
         // METHOD AND CONSTRUCTOR, without the SAMs in FIELDS
         typeInspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
             try {
-                MethodInspection methodInspection = Objects.requireNonNull(expressionContext.typeContext.getMethodInspection(methodInfo),
-                        "Method inspection for " + methodInfo.fullyQualifiedName() + " not found");
+                MethodInspection methodInspection = expressionContext.typeContext.getMethodInspection(methodInfo);
+                assert methodInspection != null :
+                        "Method inspection for " + methodInfo.name + " in " + methodInfo.typeInfo.fullyQualifiedName + " not found";
                 doMethodOrConstructor(methodInfo, (MethodInspectionImpl.Builder) methodInspection,
                         expressionContext, methodFieldSubTypeGraph);
                 methodInspection.getCompanionMethods().values().forEach(companionMethod -> {
@@ -334,7 +336,7 @@ public class Resolver {
         boolean doBlock = !methodInspection.inspectedBlockIsSet();
         if (doBlock) {
             BlockStmt block = methodInspection.getBlock();
-            if (!block.getStatements().isEmpty()) {
+            if (block != null && !block.getStatements().isEmpty()) {
                 log(RESOLVE, "Parsing block of method {}", methodInfo.name);
                 doBlock(subContext, methodInfo, methodInspection, block, methodFieldSubTypeGraph);
             } else {
@@ -343,10 +345,12 @@ public class Resolver {
         }
         MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited();
         methodsAndFieldsVisited.visit(methodInspection.getMethodBody());
-        methodFieldSubTypeGraph.addNode(methodInfo, ImmutableList.copyOf(methodsAndFieldsVisited.methodsAndFields));
 
         // finally, we build the method inspection
         methodInfo.methodInspection.set(methodInspection.build());
+
+        // and only then, when the FQN is known, add to the sub-graph
+        methodFieldSubTypeGraph.addNode(methodInfo, ImmutableList.copyOf(methodsAndFieldsVisited.methodsAndFields));
     }
 
     private static class MethodsAndFieldsVisited {
@@ -443,14 +447,14 @@ public class Resolver {
 
     private static void computeStaticMethodCallsOnly(@NotModified MethodInfo methodInfo, MethodResolution.Builder methodResolution) {
         if (!methodResolution.staticMethodCallsOnly.isSet()) {
-            if (methodInfo.isStatic) {
+            if (methodInfo.methodInspection.get().isStatic()) {
                 methodResolution.staticMethodCallsOnly.set(true);
             } else {
                 AtomicBoolean atLeastOneCallOnThis = new AtomicBoolean(false);
                 Block block = methodInfo.methodInspection.get().getMethodBody();
                 block.visit(element -> {
                     if (element instanceof MethodCall methodCall) {
-                        boolean callOnThis = !methodCall.methodInfo.isStatic &&
+                        boolean callOnThis = !methodCall.methodInfo.methodInspection.get().isStatic() &&
                                 methodCall.object == null || ((methodCall.object instanceof This) &&
                                 ((This) methodCall.object).typeInfo == methodInfo.typeInfo);
                         if (callOnThis) atLeastOneCallOnThis.set(true);

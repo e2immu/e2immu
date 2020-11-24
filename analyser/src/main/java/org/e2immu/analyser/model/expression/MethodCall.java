@@ -652,7 +652,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         boolean effectivelyE2Immutable = immutable == MultiLevel.EFFECTIVELY_E2IMMUTABLE;
         if (!effectivelyE2Immutable && modified == Level.DELAY) return SideEffect.DELAYED;
         if (effectivelyE2Immutable || modified == Level.FALSE) {
-            if (methodInfo.isStatic) {
+            if (methodInfo.methodInspection.get().isStatic()) {
                 if (methodInfo.isVoid()) {
                     return SideEffect.STATIC_ONLY;
                 }

@@ -19,7 +19,6 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetTwice;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.NotNull;
@@ -35,7 +34,7 @@ import java.util.Set;
  */
 @Container
 //@ContextClass(after="this.analyse()")
-public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
+public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Comparable<ParameterInfo> {
 
     public final ParameterizedType parameterizedType;
     public final String name;
@@ -183,5 +182,13 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis {
                 hasBeenInspected() ?
                         parameterInspection.get().getAnnotations().stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
                         : UpgradableBooleanMap.of());
+    }
+
+    @Override
+    public int compareTo(ParameterInfo o) {
+        if (owner == o.owner) {
+            return index - o.index;
+        }
+        throw new UnsupportedOperationException();
     }
 }

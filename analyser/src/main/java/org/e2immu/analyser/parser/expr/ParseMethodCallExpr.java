@@ -90,7 +90,7 @@ public class ParseMethodCallExpr {
 
         Expression computedScope;
         if (scope == null) {
-            if (method.methodInspection.getMethodInfo().isStatic) {
+            if (method.methodInspection.isStatic()) {
                 computedScope = new TypeExpression(method.methodInspection.getMethodInfo().typeInfo.asParameterizedType());
             } else {
                 Variable thisVariable = new This(expressionContext.enclosingType);
@@ -157,13 +157,13 @@ public class ParseMethodCallExpr {
                 if (methodCandidates.size() > 1) {
                     //methodCandidates.sort(expressionContext.typeContext::compareMethodCandidates);
                     TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
-                    Set<MethodInfo> overrides = mc0.method.methodInspection.getMethodInfo().methodResolution.get().overrides();
+                    Set<MethodInfo> overrides = mc0.method().methodInspection.getMethodInfo().methodResolution.get().overrides();
                     for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
-                        if (!overrides.contains(mcN.method.methodInspection.getMethodInfo()) &&
-                                mcN.method.methodInspection.getMethodInfo() != mc0.method.methodInspection.getMethodInfo()) {
+                        if (!overrides.contains(mcN.method().methodInspection.getMethodInfo()) &&
+                                mcN.method().methodInspection.getMethodInfo() != mc0.method().methodInspection.getMethodInfo()) {
                             for (TypeContext.MethodCandidate mc : methodCandidates) {
-                                log(METHOD_CALL, "Candidate: {} score {}", mc.method.methodInspection.getFullyQualifiedName(),
-                                        compatibilityScore.get(mc.method.methodInspection.getMethodInfo()));
+                                log(METHOD_CALL, "Candidate: {} score {}", mc.method().methodInspection.getFullyQualifiedName(),
+                                        compatibilityScore.get(mc.method().methodInspection.getMethodInfo()));
                             }
                             for (MethodInfo override : overrides) {
                                 log(METHOD_CALL, "Overrides of 1st: {}", override.distinguishingName());
@@ -176,7 +176,7 @@ public class ParseMethodCallExpr {
                 }
             }
         }
-        MethodTypeParameterMap method = methodCandidates.get(0).method;
+        MethodTypeParameterMap method = methodCandidates.get(0).method();
         // now parse the lambda's with our new info
         log(METHOD_CALL, "Found method {}", method.methodInspection.getFullyQualifiedName());
 
@@ -204,7 +204,7 @@ public class ParseMethodCallExpr {
                                 ParameterizedType best = null;
                                 ParameterizedType tpInReturnType = returnTypeOfMethod.parameters.stream().filter(pt -> pt.typeParameter == typeParameter.typeParameter).findFirst().orElse(null);
                                 if (tpInReturnType != null) {
-                                    ParameterizedType tpInFormalReturnType = formalReturnTypeOfMethod.parameters.get(tpInReturnType.typeParameter.index);
+                                    ParameterizedType tpInFormalReturnType = formalReturnTypeOfMethod.parameters.get(tpInReturnType.typeParameter.getIndex());
                                     best = MethodTypeParameterMap.apply(singleAbstractMethod.concreteTypes, tpInFormalReturnType);
                                 }
                                 if (best == null) {
@@ -283,9 +283,9 @@ public class ParseMethodCallExpr {
     }
 
     private static void trimMethodsWithBestScore(List<TypeContext.MethodCandidate> methodCandidates, Map<MethodInfo, Integer> compatibilityScore) {
-        int min = methodCandidates.stream().mapToInt(mc -> compatibilityScore.getOrDefault(mc.method.methodInspection.getMethodInfo(), 0)).min().orElseThrow();
+        int min = methodCandidates.stream().mapToInt(mc -> compatibilityScore.getOrDefault(mc.method().methodInspection.getMethodInfo(), 0)).min().orElseThrow();
         if (min == NOT_ASSIGNABLE) throw new UnsupportedOperationException();
-        methodCandidates.removeIf(mc -> compatibilityScore.getOrDefault(mc.method.methodInspection.getMethodInfo(), 0) > min);
+        methodCandidates.removeIf(mc -> compatibilityScore.getOrDefault(mc.method().methodInspection.getMethodInfo(), 0) > min);
     }
 
     // remove varargs if there's also non-varargs solutions
@@ -293,9 +293,9 @@ public class ParseMethodCallExpr {
     // this step if AFTER the score step, so we've already dealt with type conversions.
     // we still have to deal with overloads in supertypes, methods with the same type signature
     private static void trimVarargsVsMethodsWithFewerParameters(List<TypeContext.MethodCandidate> methodCandidates) {
-        int countVarargs = (int) methodCandidates.stream().filter(mc -> mc.method.methodInspection.getMethodInfo().isVarargs()).count();
+        int countVarargs = (int) methodCandidates.stream().filter(mc -> mc.method().methodInspection.getMethodInfo().isVarargs()).count();
         if (countVarargs > 0 && countVarargs < methodCandidates.size()) {
-            methodCandidates.removeIf(mc -> mc.method.methodInspection.getMethodInfo().isVarargs());
+            methodCandidates.removeIf(mc -> mc.method().methodInspection.getMethodInfo().isVarargs());
         }
     }
 
@@ -307,14 +307,14 @@ public class ParseMethodCallExpr {
             List<TypeContext.MethodCandidate> methodCandidates,
             Set<Integer> ignore) {
         if (methodCandidates.isEmpty()) return null;
-        MethodInspection mi0 = methodCandidates.get(0).method.methodInspection;
+        MethodInspection mi0 = methodCandidates.get(0).method().methodInspection;
         outer:
         for (int i = 0; i < mi0.getParameters().size(); i++) {
             com.github.javaparser.ast.expr.Expression expression = expressions.get(i);
             if (!ignore.contains(i) && (expression.isLambdaExpr() || expression.isMethodReferenceExpr())) {
                 Set<Integer> numberOfParametersInFunctionalInterface = new HashSet<>();
                 for (TypeContext.MethodCandidate mc : methodCandidates) {
-                    MethodInspection mi = mc.method.methodInspection;
+                    MethodInspection mi = mc.method().methodInspection;
                     ParameterInfo pi = mi.getParameters().get(i);
                     boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface();
                     if (isFunctionalInterface) {
@@ -337,14 +337,14 @@ public class ParseMethodCallExpr {
             List<TypeContext.MethodCandidate> methodCandidates,
             Set<Integer> ignore) {
         if (methodCandidates.isEmpty()) return null;
-        MethodInspection mi0 = methodCandidates.get(0).method.methodInspection;
+        MethodInspection mi0 = methodCandidates.get(0).method().methodInspection;
         for (int i = 0; i < mi0.getParameters().size(); i++) {
             if (!ignore.contains(i)) {
                 ParameterizedType functionalInterface = null;
                 TypeContext.MethodCandidate mcOfFunctionalInterface = null;
                 MethodTypeParameterMap singleAbstractMethod = null;
                 for (TypeContext.MethodCandidate mc : methodCandidates) {
-                    MethodInspection mi = mc.method.methodInspection;
+                    MethodInspection mi = mc.method().methodInspection;
                     if (i < mi.getParameters().size()) {
                         ParameterInfo pi = mi.getParameters().get(i);
                         boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface();
@@ -358,7 +358,7 @@ public class ParseMethodCallExpr {
                                 if (!singleAbstractMethod.isAssignableFrom(sam2)) {
                                     log(METHOD_CALL, "Incompatible functional interfaces {} and {} on method overloads {} and {}",
                                             pi.parameterizedType.detailedString(), functionalInterface.detailedString(),
-                                            mi.getDistinguishingName(), mcOfFunctionalInterface.method.methodInspection.getDistinguishingName());
+                                            mi.getDistinguishingName(), mcOfFunctionalInterface.method().methodInspection.getDistinguishingName());
                                     functionalInterface = null;
                                     break;
                                 }
@@ -366,7 +366,7 @@ public class ParseMethodCallExpr {
                         }
                     }
                 }
-                if (functionalInterface != null) return new Pair<>(mcOfFunctionalInterface.method, i);
+                if (functionalInterface != null) return new Pair<>(mcOfFunctionalInterface.method(), i);
             }
         }
         return null;
@@ -375,12 +375,12 @@ public class ParseMethodCallExpr {
     private static Integer findParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate
             (List<TypeContext.MethodCandidate> methodCandidates, Set<Integer> ignore) {
         if (methodCandidates.isEmpty()) return null;
-        MethodInspection mi0 = methodCandidates.get(0).method.methodInspection;
+        MethodInspection mi0 = methodCandidates.get(0).method().methodInspection;
         for (int i = 0; i < mi0.getParameters().size(); i++) {
             if (!ignore.contains(i)) {
                 boolean ok = true;
                 for (TypeContext.MethodCandidate mc : methodCandidates) {
-                    MethodInspection mi = mc.method.methodInspection;
+                    MethodInspection mi = mc.method().methodInspection;
                     if (i < mi.getParameters().size()) {
                         ParameterInfo pi = mi.getParameters().get(i);
                         boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface();
@@ -405,11 +405,11 @@ public class ParseMethodCallExpr {
                                                List<TypeContext.MethodCandidate> methodCandidates,
                                                Map<MethodInfo, Integer> compatibilityScore) {
         methodCandidates.removeIf(mc -> {
-            int score = compatibleParameter(expressionContext, evaluatedExpression, pos, mc.method.methodInspection);
+            int score = compatibleParameter(expressionContext, evaluatedExpression, pos, mc.method().methodInspection);
             if (score >= 0) {
-                Integer inMap = compatibilityScore.get(mc.method.methodInspection.getMethodInfo());
+                Integer inMap = compatibilityScore.get(mc.method().methodInspection.getMethodInfo());
                 inMap = inMap == null ? score : score + inMap;
-                compatibilityScore.put(mc.method.methodInspection.getMethodInfo(), inMap);
+                compatibilityScore.put(mc.method().methodInspection.getMethodInfo(), inMap);
             }
             return score < 0;
         });

@@ -256,7 +256,7 @@ public class ParameterizedType {
                     "Cannot find " + typeInfo.fullyQualifiedName + " in typeStore");
         }
         List<ParameterizedType> newParameters = parameters.stream().map(pt -> pt.copy(localTypeContext)).collect(Collectors.toList());
-        TypeParameter newTypeParameter = typeParameter == null ? null : (TypeParameter) localTypeContext.get(typeParameter.name, true);
+        TypeParameter newTypeParameter = typeParameter == null ? null : (TypeParameter) localTypeContext.get(typeParameter.getName(), true);
         return new ParameterizedType(newTypeInfo, arrays, wildCard, newParameters, newTypeParameter);
     }
 
@@ -318,8 +318,8 @@ public class ParameterizedType {
         }
         if (isTypeParameter()) {
             if (numericTypeParameters) {
-                boolean isType = typeParameter.owner.isLeft();
-                sb.append(isType ? "T" : "M").append(typeParameter.index);
+                boolean isType = typeParameter.getOwner().isLeft();
+                sb.append(isType ? "T" : "M").append(typeParameter.getIndex());
             } else {
                 sb.append(typeParameter.simpleName());
             }
@@ -379,7 +379,7 @@ public class ParameterizedType {
         if (pt1.typeParameter == null && pt2.typeParameter != null) return true;
         if (pt1.typeParameter != null && pt2.typeParameter == null) return true;
         if (pt1.typeParameter == null) return false;
-        return pt1.typeParameter.index != pt2.typeParameter.index;
+        return pt1.typeParameter.getIndex() != pt2.typeParameter.getIndex();
     }
 
     public boolean allowsForOperators() {
@@ -528,7 +528,7 @@ public class ParameterizedType {
         if (typeParameter != null) {
             // T extends Comparable<...> & Serializable
             try {
-                List<ParameterizedType> typeBounds = typeParameter.typeParameterInspection.get().typeBounds;
+                List<ParameterizedType> typeBounds = typeParameter.getTypeBounds();
                 if (!typeBounds.isEmpty()) {
                     if (wildCard == WildCard.EXTENDS) {
                         return typeBounds.stream().mapToInt(pt -> numericIsAssignableFrom(inspectionProvider, pt)).reduce(IN_HIERARCHY, REDUCER);
@@ -574,10 +574,11 @@ public class ParameterizedType {
     private MethodTypeParameterMap findSingleAbstractMethodOfInterface(InspectionProvider inspectionProvider, boolean complain) {
         if (!isFunctionalInterface(inspectionProvider)) return null;
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
-        Optional<MethodInfo> theMethod = typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .filter(m -> !m.isStatic && !m.isDefaultImplementation).findFirst();
+        Optional<MethodInspection> theMethod = typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                .map(inspectionProvider::getMethodInspection)
+                .filter(m -> !m.isStatic() && !m.isDefault()).findFirst();
         if (theMethod.isPresent()) {
-            return new MethodTypeParameterMap(inspectionProvider.getMethodInspection(theMethod.get()), initialTypeParameterMap());
+            return new MethodTypeParameterMap(theMethod.get(), initialTypeParameterMap());
         }
         for (ParameterizedType extension : typeInspection.interfacesImplemented()) {
             MethodTypeParameterMap ofExtension = extension.findSingleAbstractMethodOfInterface(inspectionProvider, false);

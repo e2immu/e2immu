@@ -28,7 +28,7 @@ import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.BY_HA
 
 public class Primitives {
     public static final String JAVA_LANG = "java.lang";
-    public static final String JAVA_LANG_OBJECT = "java.lang.Object";
+    private static final String JAVA_LANG_OBJECT = "java.lang.Object";
 
     public static final String ORG_E2IMMU_ANNOTATION = "org.e2immu.annotation";
 
@@ -189,7 +189,7 @@ public class Primitives {
     public final ParameterizedType objectParameterizedType = objectTypeInfo.asParameterizedType();
 
     public static boolean isJavaLangObject(TypeInfo typeInfo) {
-        return "java.lang.Object".equals(typeInfo.fullyQualifiedName);
+        return JAVA_LANG_OBJECT.equals(typeInfo.fullyQualifiedName);
     }
 
     public static boolean isJavaLangObject(ParameterizedType parameterizedType) {
@@ -201,16 +201,14 @@ public class Primitives {
     }
 
     private MethodInfo createOperator(TypeInfo owner, String name, List<ParameterizedType> parameterizedTypes, ParameterizedType returnType) {
-        MethodInfo methodInfo = new MethodInfo(owner, name, true);
         int i = 0;
-        MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(methodInfo);
+        MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(owner, name).setStatic(true);
         for (ParameterizedType parameterizedType : parameterizedTypes) {
-            ParameterInfo parameterInfo = new ParameterInfo(methodInfo, parameterizedType, "p" + i, i++);
-            builder.addParameterCreateBuilder(parameterInfo); // inspection built when method is built
+            ParameterInspectionImpl.Builder pb = new ParameterInspectionImpl.Builder(parameterizedType, "p" + i, i++);
+            builder.addParameter(pb); // inspection built when method is built
         }
         builder.setReturnType(returnType);
-        methodInfo.methodInspection.set(builder.build());
-        return methodInfo;
+        return builder.build().getMethodInfo();
     }
 
     private final List<ParameterizedType> intInt = List.of(intParameterizedType, intParameterizedType);
@@ -327,18 +325,17 @@ public class Primitives {
     }
 
     private void processEnum(TypeInfo typeInfo, List<FieldInfo> fields) {
-        MethodInfo valueOf = new MethodInfo(typeInfo, "valueOf", true);
-        ParameterInfo valueOf1 = new ParameterInfo(valueOf, stringParameterizedType, "s", 0);
-        valueOf.methodInspection.set(new MethodInspectionImpl.Builder(valueOf)
-                .setReturnType(typeInfo)
-                .addParameterFluently(valueOf1)
+        MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf").setStatic(true);
+        ParameterInspectionImpl.Builder valueOf0Builder = new ParameterInspectionImpl.Builder(stringParameterizedType, "s", 0);
+        MethodInfo valueOf = valueOfBuilder.setReturnType(typeInfo)
+                .addParameter(valueOf0Builder)
                 .addModifier(MethodModifier.PUBLIC)
-                .build());
-        MethodInfo name = new MethodInfo(typeInfo, "name", false);
-        name.methodInspection.set(new MethodInspectionImpl.Builder(name)
-                .setReturnType(stringTypeInfo)
+                .build().getMethodInfo();
+
+        MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(typeInfo, "name");
+        MethodInfo name = nameBuilder.setReturnType(stringTypeInfo)
                 .addModifier(MethodModifier.PUBLIC)
-                .build());
+                .build().getMethodInfo();
         TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND)
                 .setPackageName(ORG_E2IMMU_ANNOTATION)
                 .setTypeNature(TypeNature.ENUM)

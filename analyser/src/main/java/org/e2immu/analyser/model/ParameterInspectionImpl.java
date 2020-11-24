@@ -43,6 +43,42 @@ public class ParameterInspectionImpl extends InspectionImpl implements Parameter
     public static class Builder extends AbstractInspectionBuilder<Builder> implements ParameterInspection {
 
         private boolean varArgs;
+        private String name;
+        private ParameterizedType parameterizedType;
+        private int index = -1;
+
+        public Builder() {
+        }
+
+        public Builder(ParameterizedType parameterizedType, String name, int index) {
+            this.name = name;
+            this.index = index;
+            this.parameterizedType = parameterizedType;
+        }
+
+        public void setIndex(int index) {
+            this.index = index;
+        }
+
+        public int getIndex() {
+            return index;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setParameterizedType(ParameterizedType parameterizedType) {
+            this.parameterizedType = parameterizedType;
+        }
+
+        public ParameterizedType getParameterizedType() {
+            return parameterizedType;
+        }
 
         @Fluent
         public Builder setVarArgs(boolean varArgs) {
@@ -63,8 +99,12 @@ public class ParameterInspectionImpl extends InspectionImpl implements Parameter
 
         @NotModified
         @NotNull
-        public ParameterInspectionImpl build() {
-            return new ParameterInspectionImpl(getAnnotations(), varArgs);
+        public ParameterInfo build(MethodInfo owner) {
+            assert index >= 0 : "Forgot to set index";
+            ParameterInspectionImpl inspection = new ParameterInspectionImpl(getAnnotations(), varArgs);
+            ParameterInfo parameterInfo = new ParameterInfo(owner, parameterizedType, name, index);
+            parameterInfo.parameterInspection.set(inspection);
+            return parameterInfo;
         }
 
         public void inspect(Parameter parameter, ExpressionContext expressionContext, boolean varArgs) {

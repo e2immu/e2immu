@@ -134,11 +134,8 @@ public class TypeContext implements InspectionProvider {
     }
 
     private static MethodInspection createEmptyConstructor(@NotNull TypeInfo typeInfo) {
-        MethodInfo constructor = new MethodInfo(typeInfo, List.of());
-        MethodInspection methodInspection = new MethodInspectionImpl.Builder(constructor)
-                .addModifier(MethodModifier.PUBLIC).build();
-        constructor.methodInspection.set(methodInspection);
-        return methodInspection;
+        MethodInspectionImpl.Builder constructorBuilder = new MethodInspectionImpl.Builder(typeInfo);
+        return constructorBuilder.addModifier(MethodModifier.PUBLIC).build();
     }
 
     private List<TypeInfo> extractTypeInfo(ParameterizedType typeOfObject, Map<NamedType, ParameterizedType> typeMap) {
@@ -149,7 +146,7 @@ public class TypeContext implements InspectionProvider {
             if (pt == null) {
                 // rather than give an exception here, we replace t by the type that it extends, so that we can find those methods
                 // in the case that there is no explicit extension/super, we replace it by the implicit Object
-                List<ParameterizedType> typeBounds = typeOfObject.typeParameter.typeParameterInspection.get().typeBounds;
+                List<ParameterizedType> typeBounds = typeOfObject.typeParameter.getTypeBounds();
                 if (!typeBounds.isEmpty()) {
                     return typeBounds.stream().flatMap(bound -> extractTypeInfo(bound, typeMap).stream()).collect(Collectors.toList());
                 } else {
@@ -218,14 +215,7 @@ public class TypeContext implements InspectionProvider {
     // TODO: this would be a good candidate to make into a non-static inner class, so that it can be made
     // Comparable!
 
-    public static class MethodCandidate {
-        public final MethodTypeParameterMap method;
-        public final Set<Integer> parameterIndicesOfFunctionalInterfaces;
-
-        public MethodCandidate(MethodTypeParameterMap method, Set<Integer> parameterIndicesOfFunctionalInterfaces) {
-            this.parameterIndicesOfFunctionalInterfaces = parameterIndicesOfFunctionalInterfaces;
-            this.method = method;
-        }
+    public record MethodCandidate(MethodTypeParameterMap method, Set<Integer> parameterIndicesOfFunctionalInterfaces) {
     }
 
     public static final int IGNORE_PARAMETER_NUMBERS = -1;
@@ -243,11 +233,11 @@ public class TypeContext implements InspectionProvider {
             }
         }
         return typeInspection.constructors().stream()
-                .filter(methodInfo -> parametersPresented == IGNORE_PARAMETER_NUMBERS ||
-                        compatibleNumberOfParameters(methodInfo, parametersPresented))
-                .map(methodInfo -> new MethodCandidate(new MethodTypeParameterMap(
-                        Objects.requireNonNull(getMethodInspection(methodInfo)), typeMap),
-                        findIndicesOfFunctionalInterfaces(methodInfo)))
+                .map(this::getMethodInspection)
+                .filter(methodInspection -> parametersPresented == IGNORE_PARAMETER_NUMBERS ||
+                        compatibleNumberOfParameters(methodInspection, parametersPresented))
+                .map(methodInspection -> new MethodCandidate(new MethodTypeParameterMap(methodInspection, typeMap),
+                        findIndicesOfFunctionalInterfaces(methodInspection)))
                 .collect(Collectors.toList());
     }
 
@@ -302,12 +292,13 @@ public class TypeContext implements InspectionProvider {
         TypeInspection typeInspection = Objects.requireNonNull(getTypeInspection(typeInfo));
         typeInspection.methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .filter(m -> m.name.equals(methodName))
-                .peek(m -> log(METHOD_CALL, "Considering {}", m.distinguishingName()))
-                .filter(m -> !staticOnly || m.isStatic)
+                .map(this::getMethodInspection)
+                .peek(m -> log(METHOD_CALL, "Considering {}", m.getDistinguishingName()))
+                .filter(m -> !staticOnly || m.isStatic())
                 .filter(m -> parametersPresented == IGNORE_PARAMETER_NUMBERS ||
                         compatibleNumberOfParameters(m, parametersPresented +
-                                (!m.isStatic && decrementWhenNotStatic ? -1 : 0)))
-                .map(m -> new MethodCandidate(new MethodTypeParameterMap(Objects.requireNonNull(getMethodInspection(m)), typeMap),
+                                (!m.isStatic() && decrementWhenNotStatic ? -1 : 0)))
+                .map(m -> new MethodCandidate(new MethodTypeParameterMap(m, typeMap),
                         findIndicesOfFunctionalInterfaces(m)))
                 .forEach(result::add);
 
@@ -333,13 +324,11 @@ public class TypeContext implements InspectionProvider {
         }
     }
 
-    private Set<Integer> findIndicesOfFunctionalInterfaces(MethodInfo m) {
+    private Set<Integer> findIndicesOfFunctionalInterfaces(MethodInspection m) {
         Set<Integer> res = new HashSet<>();
         int i = 0;
-        MethodInspection methodInspection = Objects.requireNonNull(getMethodInspection(m));
-        for (ParameterInfo parameterInfo : methodInspection.getParameters()) {
+        for (ParameterInfo parameterInfo : m.getParameters()) {
             if (parameterInfo.parameterizedType.typeInfo != null) {
-                // FIXME seems like the place to recursively ensure type inspection
                 TypeInspection typeInspection = Objects.requireNonNull(getTypeInspection(parameterInfo.parameterizedType.typeInfo));
                 if (typeInspection.typeNature() == TypeNature.INTERFACE && typeInspection.hasAnnotation(
                         getPrimitives().functionalInterfaceAnnotationExpression)) {
@@ -351,11 +340,10 @@ public class TypeContext implements InspectionProvider {
         return res;
     }
 
-    private boolean compatibleNumberOfParameters(MethodInfo m, int parametersPresented) {
-        MethodInspection methodInspection = Objects.requireNonNull(getMethodInspection(m));
-        int declared = methodInspection.getParameters().size();
+    private boolean compatibleNumberOfParameters(MethodInspection m, int parametersPresented) {
+        int declared = m.getParameters().size();
         if (declared == 0) return parametersPresented == 0;
-        boolean lastIsVarArgs = methodInspection.getParameters().get(declared - 1).parameterInspection.get().isVarArgs();
+        boolean lastIsVarArgs = m.getParameters().get(declared - 1).parameterInspection.get().isVarArgs();
         if (lastIsVarArgs) return parametersPresented >= declared - 1;
         return parametersPresented == declared;
     }

@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import com.google.common.collect.Iterables;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Either;
+import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.AnnotationMode;
 
 import java.util.List;
@@ -142,7 +143,7 @@ public interface TypeInspection extends Inspection {
 
     default boolean haveNonStaticNonDefaultMethods() {
         if (methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .anyMatch(m -> !m.isStatic && !m.isDefaultImplementation)) return true;
+                .anyMatch(m -> !m.methodInspection.get().isStatic() && !m.methodInspection.get().isDefault())) return true;
         for (ParameterizedType superInterface : interfacesImplemented()) {
             assert superInterface.typeInfo != null && superInterface.typeInfo.hasBeenInspected();
             if (superInterface.typeInfo.typeInspection.get().haveNonStaticNonDefaultMethods()) {
@@ -151,4 +152,35 @@ public interface TypeInspection extends Inspection {
         }
         return false;
     }
+
+    /**
+     * This is the starting place to compute all types that are referred to in any way.
+     * It is different from imports, because imports need an explicitly written type.
+     *
+     * @return a map of all types referenced, with the boolean indicating explicit reference somewhere
+     */
+    default UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return UpgradableBooleanMap.of(
+                parentClass().typesReferenced(true),
+                packageNameOrEnclosingType().isRight() && !isStatic() && !isInterface() ?
+                        UpgradableBooleanMap.of(packageNameOrEnclosingType().getRight(), false) :
+                        UpgradableBooleanMap.of(),
+                interfacesImplemented().stream().flatMap(i -> i.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()),
+                getAnnotations().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
+                //ti.subTypes.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
+                methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
+                        .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
+                fields().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
+        );
+    }
+
+    default boolean isStatic() {
+        if (packageNameOrEnclosingType().isLeft()) return true; // independent type
+        return modifiers().contains(TypeModifier.STATIC); // static sub type
+    }
+
+    default boolean isInterface() {
+        return typeNature() == TypeNature.INTERFACE;
+    }
+
 }

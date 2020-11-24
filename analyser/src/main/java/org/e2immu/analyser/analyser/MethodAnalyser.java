@@ -297,13 +297,13 @@ public class MethodAnalyser extends AbstractAnalyser {
     private AnalysisStatus detectMissingStaticModifier() {
         assert !methodAnalysis.complainedAboutMissingStaticModifier.isSet();
 
-        if (!methodInfo.isStatic && !methodInfo.typeInfo.isInterface() && !methodInfo.isTestMethod()) {
+        if (!methodInfo.methodInspection.get().isStatic() && !methodInfo.typeInfo.isInterface() && !methodInfo.isTestMethod()) {
             // we need to check if there's fields being read/assigned/
             if (absentUnlessStatic(VariableProperty.READ) &&
                     absentUnlessStatic(VariableProperty.ASSIGNED) &&
                     (getThisAsVariable().getProperty(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
                     methodInfo.isNotOverridingAnyOtherMethod() &&
-                    !methodInfo.isDefaultImplementation) {
+                    !methodInfo.methodInspection.get().isDefault()) {
                 MethodResolution methodResolution = methodInfo.methodResolution.get();
                 if (methodResolution.staticMethodCallsOnly()) {
                     messages.add(Message.newMessage(new Location(methodInfo), Message.METHOD_SHOULD_BE_MARKED_STATIC));

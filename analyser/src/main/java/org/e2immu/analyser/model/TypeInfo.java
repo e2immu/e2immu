@@ -28,7 +28,6 @@ import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.ExpressionContext;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.NotNull;
@@ -125,7 +124,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         boolean isSubType = indent > 0;
         String typeNature;
         Set<AnnotationExpression> annotations = new HashSet<>();
-        Set<String> imports = isSubType ? Collections.emptySet() : imports();
+        Set<String> imports = isSubType ? Collections.emptySet() : imports(typeInspection.get());
         Stream<String> typeModifiers;
         List<FieldInfo> fields;
         List<MethodInfo> constructors;
@@ -237,8 +236,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return sb.toString();
     }
 
-    private Set<String> imports() {
-        Set<TypeInfo> typesReferenced = typesReferenced().stream().filter(Map.Entry::getValue)
+    private Set<String> imports(TypeInspection typeInspection) {
+        Set<TypeInfo> typesReferenced = typeInspection.typesReferenced().stream().filter(Map.Entry::getValue)
                 .filter(e -> !e.getKey().isJavaLang())
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
@@ -278,28 +277,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public boolean isJavaLang() {
         if (Primitives.isPrimitiveExcludingVoid(this)) return true;
         return Primitives.JAVA_LANG.equals(packageName());
-    }
-
-    /**
-     * This is the starting place to compute all types that are referred to in any way.
-     * It is different from imports, because imports need an explicitly written type.
-     *
-     * @return a map of all types referenced, with the boolean indicating explicit reference somewhere
-     */
-    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        TypeInspection ti = typeInspection.get();
-        return UpgradableBooleanMap.of(
-                ti.parentClass().typesReferenced(true),
-                ti.packageNameOrEnclosingType().isRight() && !isStatic() && !isInterface() ?
-                        UpgradableBooleanMap.of(ti.packageNameOrEnclosingType().getRight(), false) :
-                        UpgradableBooleanMap.of(),
-                ti.interfacesImplemented().stream().flatMap(i -> i.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()),
-                ti.getAnnotations().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                //ti.subTypes.stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                ti.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY)
-                        .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
-                ti.fields().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
-        );
     }
 
     @Override
@@ -370,8 +347,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public boolean isStatic() {
         assert typeInspection.isSet();
-        if (typeInspection.get().packageNameOrEnclosingType().isLeft()) return true; // independent type
-        return typeInspection.get().modifiers().contains(TypeModifier.STATIC); // static sub type
+        return typeInspection.get().isStatic();
     }
 
 
@@ -430,7 +406,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         // compose the content of the method...
         MethodInspection methodReferenceInspection = expressionContext.typeContext.getMethodInspection(methodReference.methodInfo);
         Expression newReturnExpression;
-        if (methodReference.methodInfo.isStatic || !(methodReference.scope instanceof TypeExpression)) {
+        if (methodReferenceInspection.isStatic() || !(methodReference.scope instanceof TypeExpression)) {
             newReturnExpression = methodCallCopyAllParameters(methodReference.scope, methodReferenceInspection, methodBuilder);
         } else {
             if (methodBuilder.getParameters().size() != 1)
@@ -563,8 +539,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     // this type implements a functional interface, and we need to find the single abstract method
     public MethodInfo findOverriddenSingleAbstractMethod() {
         return typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .filter(mi -> !mi.isDefaultImplementation && !mi.isStatic)
-                .findFirst().orElseThrow();
+                .map(mi -> mi.methodInspection.get())
+                .filter(mi -> !mi.isDefault() && !mi.isStatic())
+                .findFirst().orElseThrow().getMethodInfo();
     }
 
     public MethodInfo findConstructor(int parameters) {
@@ -588,5 +565,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         // we don't analyse annotations at the moment
         if (inspection.typeNature() == TypeNature.ANNOTATION) return true;
         return inspection.methodsAndConstructors(TypeInspection.Methods.INCLUDE_SUBTYPES).allMatch(MethodInfo::shallowAnalysis);
+    }
+
+    @Override
+    public UpgradableBooleanMap<TypeInfo> typesReferenced() {
+        return typeInspection.get().typesReferenced();
     }
 }
