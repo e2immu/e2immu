@@ -79,14 +79,15 @@ public class Parser {
         // and the the inspection and resolution of Java sources (Java parser)
         List<SortedType> resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), input.sourceTypes());
 
+        // creating the typeMap ensures that all inspections are set.
+        TypeMap typeMap = input.globalTypeContext().typeMapBuilder.build();
+
         // finally, there is an analysis step
+
 
         if (!configuration.skipAnalysis) {
             // we pass on the Java sources for the PrimaryTypeAnalyser, while all other loaded types
             // will be sent to the ShallowAnalyser
-
-            TypeMap typeMap = input.globalTypeContext().typeMapBuilder.build();
-
             runShallowAnalyser(typeMap, sortedAnnotatedAPITypes);
             runPrimaryTypeAnalyser(typeMap, resolvedSourceTypes);
         }
@@ -100,7 +101,7 @@ public class Parser {
         typeMapBuilder.setInspectWithJavaParser(onDemandSourceInspection);
 
         // trigger the on-demand detection
-        input.sourceURLs().entrySet().stream().sorted(Comparator.comparing(e -> e.getValue().toString())).forEach(e ->
+        urls.entrySet().stream().sorted(Comparator.comparing(e -> e.getValue().toString())).forEach(e ->
                 input.globalTypeContext().getTypeInspection(e.getKey()));
 
         // phase 2: resolve methods and fields
@@ -126,7 +127,8 @@ public class Parser {
             if (typeInspectionBuilder.getInspectionState() != TypeInspectionImpl.TRIGGER_JAVA_PARSER) {
                 return; // already done, or started
             }
-            URL url = Objects.requireNonNull(urls.get(typeInfo));
+            URL url = Objects.requireNonNull(urls.get(typeInfo),
+                    "Cannot find URL for " + typeInfo.fullyQualifiedName + " in " + urls);
             try {
                 LOGGER.info("Starting Java parser inspection of {}", url);
                 typeInspectionBuilder.setInspectionState(TypeInspectionImpl.STARTING_JAVA_PARSER);
@@ -143,10 +145,10 @@ public class Parser {
                 typeInspectionBuilder.setInspectionState(TypeInspectionImpl.FINISHED_JAVA_PARSER);
 
             } catch (RuntimeException rte) {
-                LOGGER.warn("Caught runtime exception parsing and inspecting URL {}", url);
+                LOGGER.error("Caught runtime exception parsing and inspecting URL {}", url);
                 throw rte;
             } catch (IOException ioe) {
-                LOGGER.warn("Stopping runnable because of an IOException parsing URL {}", url);
+                LOGGER.error("Stopping runnable because of an IOException parsing URL {}", url);
                 throw new RuntimeException(ioe);
             }
         }

@@ -45,12 +45,15 @@ public class MethodInspector {
     private final boolean fullInspection;
     private final TypeMapImpl.Builder typeMapBuilder;
 
-    public MethodInspector(TypeMapImpl.Builder typeMapBuilder, MethodInfo methodInfo) {
+    public MethodInspector(TypeMapImpl.Builder typeMapBuilder, MethodInfo methodInfo, boolean fullInspection) {
         this.methodInfo = methodInfo;
         this.typeMapBuilder = typeMapBuilder;
         MethodInspection methodInspection = typeMapBuilder.getMethodInspection(methodInfo);
-        fullInspection = methodInspection == null;
-        if (fullInspection) {
+
+        // the following statement is only correct when all imported types have been byte code analysed
+
+        this.fullInspection = fullInspection;
+        if (methodInspection == null) {
             builder = new MethodInspectionImpl.Builder(methodInfo);
         } else {
             builder = (MethodInspectionImpl.Builder) methodInspection;
@@ -94,11 +97,6 @@ public class MethodInspector {
             }
             if (!companionMethodName.methodName().equals(methodInfo.name)) {
                 throw new UnsupportedOperationException("Companion method's name differs from the method name: " + companionMethodName + " vs " + methodInfo.name);
-            }
-            int expectStatements = methodInspection.getMethodInfo().isVoid() ? 0 : 1;
-            boolean error = methodInspection.getMethodBody().structure.statements.size() != expectStatements;
-            if (error) {
-                throw new UnsupportedOperationException("Companion methods must have only one statement when non-void: a return statement! " + companionMethodName);
             }
         }
     }

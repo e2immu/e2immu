@@ -153,7 +153,7 @@ public class ParseAndInspect {
             TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(packageName + "." + name,
                     TypeInspectionImpl.TRIGGER_JAVA_PARSER);
             typeContextOfFile.addToContext(typeInfo);
-            TypeInspector typeInspector = new TypeInspector(typeMapBuilder, typeInfo);
+            TypeInspector typeInspector = new TypeInspector(typeMapBuilder, typeInfo, true);
             typeInspector.recursivelyAddToTypeStore(typeMapBuilder, td);
             ExpressionContext expressionContext = ExpressionContext.forInspectionOfPrimaryType(typeInfo,
                     new TypeContext(packageName, typeContextOfFile));

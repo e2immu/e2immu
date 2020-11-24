@@ -1,0 +1,24 @@
+=== Set once
+
+Class `Foo` creates holds an object of type `Bar`, which is mutable for some period, after which it stabilises and becomes immutable.
+Create an interface `Bar`, which will be used by all the code that does not rely on `Bar` being mutable.
+Create a type `BarImpl` which implements `Bar`, which is the immutable version.
+Inside, `BarImpl`, create a static builder class `Builder` which also implements `Bar`, and has a build method `BarImpl build()`.
+In `Foo`, make a final field `final SetOnce<Bar> bar = new SetOnce<>()`.
+
+The statement `bar.set(builder.build())` is the only modification on `bar`.
+All the code that is guaranteed to come after the mutable period can use `bar.get()`, but what of the code during the mutable period, or code that can run both?
+
+We introduce an interface `BarProvider` with a method `Bar getBar(Foo foo)` which associates a `Bar` with a `Foo`.
+The default implementation is simply:
+
+[source,java]
+----
+interface BarProvider {
+  Bar getBar(Foo foo);
+  static final BarProvider DEFAULT = foo -> foo.bar.get();
+}
+----
+
+However, any overarching object `Controller` that is passed on to the code that mutates `Bar`, can now implement `BarProvider`, and keep a `Map<Foo,BarImpl.Builder>`.
+

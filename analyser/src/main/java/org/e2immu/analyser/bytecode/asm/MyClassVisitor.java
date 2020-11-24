@@ -27,6 +27,7 @@ import org.e2immu.analyser.bytecode.JetBrainsAnnotationTranslator;
 import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeContext;
 import org.objectweb.asm.*;
 import org.slf4j.Logger;
@@ -139,8 +140,10 @@ public class MyClassVisitor extends ClassVisitor {
         }
         currentTypePath = name;
 
-        // may be overwritten, but this is the default
-        typeInspectionBuilder.setParentClass(typeContext.getPrimitives().objectParameterizedType);
+        // may be overwritten, but this is the default UNLESS it's JLO itself
+        if(!Primitives.isJavaLangObject(currentType)) {
+            typeInspectionBuilder.setParentClass(typeContext.getPrimitives().objectParameterizedType);
+        }
 
         TypeNature currentTypeNature = typeNatureFromOpCode(access);
         typeInspectionBuilder.setTypeNature(currentTypeNature);

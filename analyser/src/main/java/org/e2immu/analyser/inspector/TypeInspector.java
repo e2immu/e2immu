@@ -25,7 +25,6 @@ import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.*;
-import org.e2immu.analyser.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +36,33 @@ import java.util.stream.Collectors;
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
 
+/*
+ Overall structure of an "Annotated API" Java class:
+
+import com.google.common.collect.ImmutableSet;                    // real imports are possible
+
+public class ComGoogleCommonCollect {                             // name irrelevant
+    final static String PACKAGE_NAME="com.google.common.collect"; // field must have exactly this name
+
+    static class ImmutableCollection$<E> {                        // the $ changes the package to the content of PACKAGE_NAME
+        ImmutableList<E> asList() { return null;  }               // body of method completely ignored
+
+        boolean size$Invariant$Size(int i) { return i >= 0; }     // companion methods must precede the method directly
+        void size$Aspect$Size() {}
+        @NotModified                                              // annotations are added
+        int size() { return 0; }
+
+        int toArray$Transfer$Size(int size) { return size; }
+        public Object[] toArray() { return null; }
+    }
+    ...
+}
+
+It is important to note that the type inspector first *adds* to the byte-code inspection of ImmutableCollection,
+as the Annotated API Java class may not be complete. In this case fullInspection is false.
+
+ */
+
 public class TypeInspector {
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeInspector.class);
     public static final String PACKAGE_NAME_FIELD = "PACKAGE_NAME";
@@ -45,14 +71,14 @@ public class TypeInspector {
     private final TypeInspectionImpl.Builder builder;
     private final boolean fullInspection;
 
-    public TypeInspector(TypeMapImpl.Builder typeMapBuilder, TypeInfo typeInfo) {
+    public TypeInspector(TypeMapImpl.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection) {
         this.typeInfo = typeInfo;
 
         TypeInspection typeInspection = typeMapBuilder.getTypeInspection(typeInfo);
         if (typeInspection == null || typeInspection.getInspectionState() >= TypeInspectionImpl.FINISHED_JAVA_PARSER) {
             throw new UnsupportedOperationException();
         }
-        fullInspection = typeInspection.getInspectionState() >= TypeInspectionImpl.TRIGGER_JAVA_PARSER;
+        this.fullInspection = fullInspection;
         builder = (TypeInspectionImpl.Builder) typeInspection;
         builder.setInspectionState(TypeInspectionImpl.STARTING_JAVA_PARSER);
     }
@@ -168,7 +194,7 @@ public class TypeInspector {
                 String methodName = amd.getName().getIdentifier();
                 MethodInfo methodInfo = new MethodInfo(typeInfo, methodName, List.of(),
                         expressionContext.typeContext.getPrimitives().voidParameterizedType, true, true);
-                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, methodInfo);
+                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, methodInfo, fullInspection);
                 methodInspector.inspect(amd, subContext);
                 builder.addMethod(methodInfo);
             }
@@ -277,24 +303,35 @@ public class TypeInspector {
 
     // only to be called on primary types
     public void recursivelyAddToTypeStore(TypeMapImpl.Builder typeStore, TypeDeclaration<?> typeDeclaration) {
-        recursivelyAddToTypeStore(typeInfo, true, typeStore, typeDeclaration);
+        recursivelyAddToTypeStore(typeInfo, true, false, typeStore, typeDeclaration);
     }
 
-    private static void recursivelyAddToTypeStore(TypeInfo typeInfo, boolean parentIsPrimaryType, TypeMapImpl.Builder typeStore, TypeDeclaration<?> typeDeclaration) {
+    private static void recursivelyAddToTypeStore(TypeInfo typeInfo,
+                                                  boolean parentIsPrimaryType,
+                                                  boolean parentIsDollarType,
+                                                  TypeMapImpl.Builder typeStore,
+                                                  TypeDeclaration<?> typeDeclaration) {
         typeDeclaration.getMembers().forEach(bodyDeclaration -> {
             bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> {
-                TypeInfo subType = subTypeInfo(typeInfo.fullyQualifiedName, cid.getName().asString(), typeDeclaration, parentIsPrimaryType);
-                typeStore.add(subType, TypeInspectionImpl.STARTING_JAVA_PARSER);
-                log(INSPECT, "Added to type store: " + subType.fullyQualifiedName);
-                recursivelyAddToTypeStore(subType, false, typeStore, cid);
+                DollarResolverResult res = subTypeInfo(typeInfo.fullyQualifiedName, cid.getName().asString(),
+                        typeDeclaration, parentIsPrimaryType, parentIsDollarType);
+                addToTypeStore(typeStore, res, "type");
+                recursivelyAddToTypeStore(res.subType, false, res.isDollarType, typeStore, cid);
             });
             bodyDeclaration.ifEnumDeclaration(ed -> {
-                TypeInfo subType = subTypeInfo(typeInfo.fullyQualifiedName, ed.getName().asString(), typeDeclaration, parentIsPrimaryType);
-                typeStore.add(subType, TypeInspectionImpl.STARTING_JAVA_PARSER);
-                log(INSPECT, "Added enum to type store: " + subType.fullyQualifiedName);
-                recursivelyAddToTypeStore(subType, false, typeStore, ed);
+                DollarResolverResult res = subTypeInfo(typeInfo.fullyQualifiedName, ed.getName().asString(),
+                        typeDeclaration, parentIsPrimaryType, parentIsDollarType);
+                addToTypeStore(typeStore, res, "enum");
+                recursivelyAddToTypeStore(res.subType, false, res.isDollarType, typeStore, ed);
             });
         });
+    }
+
+    private static void addToTypeStore(TypeMapImpl.Builder typeStore, DollarResolverResult res, String what) {
+        int inspectionState = res.isDollarType ? TypeInspectionImpl.TRIGGER_BYTECODE_INSPECTION :
+                TypeInspectionImpl.STARTING_JAVA_PARSER;
+        typeStore.add(res.subType(), inspectionState);
+        log(INSPECT, "Added {} to type store: {}", what, res.subType.fullyQualifiedName);
     }
 
     private List<TypeInfo> continueInspection(
@@ -371,7 +408,8 @@ public class TypeInspector {
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifConstructorDeclaration(cd -> {
                 MethodInfo methodInfo = new MethodInfo(typeInfo, List.of());
-                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, methodInfo);
+                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, methodInfo,
+                        fullInspection);
                 methodInspector.inspect(cd, subContext, companionMethodsWaiting, dollarResolver);
                 builder.addConstructor(methodInfo);
                 companionMethodsWaiting.clear();
@@ -381,10 +419,12 @@ public class TypeInspector {
                 // parameters that we'll be parsing soon at inspection. That's why we can live with "void" for now
                 String methodName = MethodInfo.dropDollarGetClass(md.getName().getIdentifier());
                 CompanionMethodName companionMethodName = CompanionMethodName.extract(methodName);
+                boolean methodFullInspection = fullInspection || companionMethodName != null;
 
                 MethodInfo methodInfo = new MethodInfo(typeInfo, methodName, List.of(),
                         expressionContext.typeContext.getPrimitives().voidParameterizedType, md.isStatic(), md.isDefault());
-                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, methodInfo);
+                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, methodInfo,
+                        methodFullInspection);
                 methodInspector.inspect(isInterface, md, subContext,
                         companionMethodName != null ? Map.of() : companionMethodsWaiting, dollarResolver);
                 if (isInterface && !methodInfo.isStatic && !methodInfo.isDefaultImplementation) {
@@ -412,15 +452,19 @@ public class TypeInspector {
                 builder.addAnnotation(expressionContext.typeContext.getPrimitives().functionalInterfaceAnnotationExpression);
             }
         }
+        log(INSPECT, "Setting type inspection of {}", typeInfo.fullyQualifiedName);
         typeInfo.typeInspection.set(builder.build());
         return dollarTypes;
     }
 
+    private record DollarResolverResult(TypeInfo subType, boolean isDollarType) {
+    }
+
     private void prepareSubType(ExpressionContext expressionContext, DollarResolver dollarResolver, String nameAsString) {
-        Pair<Boolean, TypeInfo> pair = subType(expressionContext, dollarResolver, nameAsString);
-        expressionContext.typeContext.addToContext(pair.v);
-        if (pair.k) { // dollar name
-            expressionContext.typeContext.addToContext(nameAsString, pair.v, false);
+        DollarResolverResult res = subType(expressionContext, dollarResolver, nameAsString);
+        expressionContext.typeContext.addToContext(res.subType);
+        if (res.isDollarType) { // dollar name
+            expressionContext.typeContext.addToContext(nameAsString, res.subType, false);
         }
     }
 
@@ -430,27 +474,30 @@ public class TypeInspector {
                                 boolean isInterface,
                                 String nameAsString,
                                 TypeDeclaration<?> asTypeDeclaration) {
-        Pair<Boolean, TypeInfo> pair = subType(expressionContext, dollarResolver, nameAsString);
-        TypeInfo subType = pair.v;
+        DollarResolverResult res = subType(expressionContext, dollarResolver, nameAsString);
+        TypeInfo subType = res.subType;
         ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
-        TypeInfo enclosingType = pair.k ? null : typeInfo;
-        TypeInspector subTypeInspector = new TypeInspector(expressionContext.typeContext.typeMapBuilder, subType);
+        TypeInfo enclosingType = res.isDollarType ? null : typeInfo;
+        boolean typeFullInspection = fullInspection && !res.isDollarType;
+        TypeInspector subTypeInspector = new TypeInspector(expressionContext.typeContext.typeMapBuilder, subType, typeFullInspection);
         subTypeInspector.inspect(isInterface, enclosingType, asTypeDeclaration, newExpressionContext, dollarResolver);
-        subType.typeInspection.set(subTypeInspector.build());
-        if (pair.k) {
+        if (res.isDollarType) {
             dollarTypes.add(subType);
         } else {
             builder.addSubType(subType);
         }
     }
 
-    private Pair<Boolean, TypeInfo> subType(ExpressionContext expressionContext, DollarResolver dollarResolver, String name) {
+    private DollarResolverResult subType(ExpressionContext expressionContext, DollarResolver dollarResolver, String name) {
         TypeInfo subType = dollarResolver == null ? null : dollarResolver.apply(name);
-        if (subType != null) return new Pair<>(true, subType);
+        if (subType != null) {
+            return new DollarResolverResult(subType, true);
+        }
         TypeInfo fromStore = expressionContext.typeContext.typeMapBuilder.get(typeInfo.fullyQualifiedName + "." + name);
         if (fromStore == null)
-            throw new UnsupportedOperationException("I should already know type " + name + " inside " + typeInfo.fullyQualifiedName);
-        return new Pair<>(false, fromStore);
+            throw new UnsupportedOperationException("I should already know type " + name +
+                    " inside " + typeInfo.fullyQualifiedName);
+        return new DollarResolverResult(fromStore, false);
     }
 
     public interface DollarResolver extends Function<String, TypeInfo> {
@@ -460,15 +507,20 @@ public class TypeInspector {
     Briefly, if a first-level subtype's name ends with a $, its FQN is composed by the PACKAGE_NAME field in the primary type
     and the subtype name without the $.
      */
-    private static TypeInfo subTypeInfo(String fullyQualifiedName, String simpleName, TypeDeclaration<?> typeDeclaration, boolean parentIsPrimaryType) {
+    private static DollarResolverResult subTypeInfo(String fullyQualifiedName, String simpleName,
+                                                    TypeDeclaration<?> typeDeclaration,
+                                                    boolean isPrimaryType,
+                                                    boolean parentIsDollarType) {
         if (simpleName.endsWith("$")) {
-            if (!parentIsPrimaryType) throw new UnsupportedOperationException();
+            if (!isPrimaryType) throw new UnsupportedOperationException();
             String packageName = packageName(typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null));
             if (packageName != null) {
-                return TypeInfo.createFqnOrPackageNameDotSimpleName(packageName, simpleName.substring(0, simpleName.length() - 1));
+                TypeInfo dollarType = TypeInfo.createFqnOrPackageNameDotSimpleName(packageName, simpleName.substring(0, simpleName.length() - 1));
+                return new DollarResolverResult(dollarType, true);
             }
         }
-        return TypeInfo.createFqnOrPackageNameDotSimpleName(fullyQualifiedName, simpleName);
+        return new DollarResolverResult(TypeInfo.createFqnOrPackageNameDotSimpleName(fullyQualifiedName, simpleName),
+                parentIsDollarType);
     }
 
     private static String packageName(FieldDeclaration packageNameField) {

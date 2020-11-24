@@ -83,6 +83,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     }
 
     @Override
+    public String toString() {
+        return "type inspection of "+typeInfo.fullyQualifiedName;
+    }
+
+    @Override
     public TypeInfo typeInfo() {
         return typeInfo;
     }

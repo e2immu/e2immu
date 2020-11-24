@@ -165,10 +165,16 @@ public class TypeMapImpl implements TypeMap {
 
         public TypeInspectionImpl.Builder add(TypeInfo typeInfo, int inspectionState) {
             trie.add(typeInfo.fullyQualifiedName.split("\\."), typeInfo);
-            TypeInspectionImpl.Builder ti = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
-            if (typeInspections.put(typeInfo, ti) != null) {
-                throw new IllegalArgumentException("Re-registering type " + typeInfo.fullyQualifiedName);
+            TypeInspectionImpl.Builder inMap = typeInspections.get(typeInfo);
+            if (inMap != null) {
+                // technically possible because of $ classes in Annotated API java classes
+                // first import com.google.common.collect.ImmutableList
+                // and then later static class ImmutableList$ { ... }
+                inMap.setInspectionState(inspectionState);
+                return inMap;
             }
+            TypeInspectionImpl.Builder ti = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
+            typeInspections.put(typeInfo, ti);
             return ti;
         }
 
@@ -238,7 +244,13 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public MethodInspection getMethodInspection(MethodInfo methodInfo) {
-            return methodInspections.get(methodInfo.fullyQualifiedName());
+            String fqn =methodInfo.fullyQualifiedName();
+            MethodInspection methodInspection = methodInspections.get(fqn);
+            if(methodInspection != null) return methodInspection;
+            // see if we can trigger an inspection
+            getTypeInspection(methodInfo.typeInfo);
+            // try again
+            return methodInspections.get(fqn);
         }
 
         @Override
