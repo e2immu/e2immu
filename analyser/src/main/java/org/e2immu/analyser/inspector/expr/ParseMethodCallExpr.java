@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
@@ -161,7 +162,8 @@ public class ParseMethodCallExpr {
                 if (methodCandidates.size() > 1) {
                     //methodCandidates.sort(expressionContext.typeContext::compareMethodCandidates);
                     TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
-                    Set<MethodInfo> overrides = mc0.method().methodInspection.getMethodInfo().methodResolution.get().overrides();
+                    // we cannot rely on methodResolution yet...
+                    Set<MethodInfo> overrides = Resolver.overrides(inspectionProvider, mc0.method().methodInspection.getMethodInfo());
                     for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
                         if (!overrides.contains(mcN.method().methodInspection.getMethodInfo()) &&
                                 mcN.method().methodInspection.getMethodInfo() != mc0.method().methodInspection.getMethodInfo()) {
@@ -300,9 +302,9 @@ public class ParseMethodCallExpr {
     // this step if AFTER the score step, so we've already dealt with type conversions.
     // we still have to deal with overloads in supertypes, methods with the same type signature
     private static void trimVarargsVsMethodsWithFewerParameters(List<TypeContext.MethodCandidate> methodCandidates) {
-        int countVarargs = (int) methodCandidates.stream().filter(mc -> mc.method().methodInspection.getMethodInfo().isVarargs()).count();
+        int countVarargs = (int) methodCandidates.stream().filter(mc -> mc.method().methodInspection.isVarargs()).count();
         if (countVarargs > 0 && countVarargs < methodCandidates.size()) {
-            methodCandidates.removeIf(mc -> mc.method().methodInspection.getMethodInfo().isVarargs());
+            methodCandidates.removeIf(mc -> mc.method().methodInspection.isVarargs());
         }
     }
 

@@ -444,7 +444,7 @@ public class Resolver {
         methodGraph.visit((from, toList) -> {
             if (from instanceof MethodInfo methodInfo) {
                 MethodResolution.Builder builder = builders.get(methodInfo);
-                builder.partOfConstruction.set(computeCallStatus(builders, methodInfo));
+                builder.partOfConstruction.set(computeCallStatus(inspectionProvider, builders, methodInfo));
 
                 methodInfo.methodResolution.set(builder.build());
             }
@@ -500,7 +500,7 @@ public class Resolver {
      * @param methodInfo: the method for which we're looking for overrides
      * @return all super methods
      */
-    private static Set<MethodInfo> overrides(InspectionProvider inspectionProvider, MethodInfo methodInfo) {
+    public static Set<MethodInfo> overrides(InspectionProvider inspectionProvider, MethodInfo methodInfo) {
         return ImmutableSet.copyOf(recursiveOverridesCall(inspectionProvider, methodInfo.typeInfo, methodInfo, Map.of()));
     }
 
@@ -653,13 +653,17 @@ public class Resolver {
      *
      * @return true if there is a non-private method in this class which calls this private method.
      */
-    private static boolean isCalledFromNonPrivateMethod(Map<MethodInfo, MethodResolution.Builder> builders, MethodInfo methodInfo) {
-        for (MethodInfo other : methodInfo.typeInfo.typeInspection.get().methods()) {
+    private static boolean isCalledFromNonPrivateMethod(
+            InspectionProvider inspectionProvider,
+            Map<MethodInfo, MethodResolution.Builder> builders,
+            MethodInfo methodInfo) {
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
+        for (MethodInfo other : typeInspection.methods()) {
             if (!other.isPrivate() && builders.get(other).methodsOfOwnClassReached.get().contains(methodInfo)) {
                 return true;
             }
         }
-        for (FieldInfo fieldInfo : methodInfo.typeInfo.typeInspection.get().fields()) {
+        for (FieldInfo fieldInfo : typeInspection.fields()) {
             if (!fieldInfo.isPrivate() && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
                 FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
                 if (fieldInitialiser.implementationOfSingleAbstractMethod() != null &&
@@ -671,13 +675,17 @@ public class Resolver {
         return false;
     }
 
-    private static boolean isCalledFromConstructors(Map<MethodInfo, MethodResolution.Builder> builders, MethodInfo methodInfo) {
-        for (MethodInfo other : methodInfo.typeInfo.typeInspection.get().constructors()) {
+    private static boolean isCalledFromConstructors(
+            InspectionProvider inspectionProvider,
+            Map<MethodInfo, MethodResolution.Builder> builders,
+            MethodInfo methodInfo) {
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
+        for (MethodInfo other : typeInspection.constructors()) {
             if (builders.get(other).methodsOfOwnClassReached.get().contains(methodInfo)) {
                 return true;
             }
         }
-        for (FieldInfo fieldInfo : methodInfo.typeInfo.typeInspection.get().fields()) {
+        for (FieldInfo fieldInfo : typeInspection.fields()) {
             if (fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
                 FieldInspection.FieldInitialiser fieldInitialiser = fieldInfo.fieldInspection.get().getFieldInitialiser();
                 if (fieldInitialiser.implementationOfSingleAbstractMethod() == null) {
@@ -699,17 +707,19 @@ public class Resolver {
     }
 
 
-    private static MethodResolution.CallStatus computeCallStatus(Map<MethodInfo, MethodResolution.Builder> builders, MethodInfo methodInfo) {
+    private static MethodResolution.CallStatus computeCallStatus(InspectionProvider inspectionProvider,
+                                                                 Map<MethodInfo, MethodResolution.Builder> builders,
+                                                                 MethodInfo methodInfo) {
         if (methodInfo.isConstructor) {
             return MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         }
         if (!methodInfo.isPrivate()) {
             return MethodResolution.CallStatus.NON_PRIVATE;
         }
-        if (isCalledFromNonPrivateMethod(builders, methodInfo)) {
+        if (isCalledFromNonPrivateMethod(inspectionProvider, builders, methodInfo)) {
             return MethodResolution.CallStatus.CALLED_FROM_NON_PRIVATE_METHOD;
         }
-        if (isCalledFromConstructors(builders, methodInfo)) {
+        if (isCalledFromConstructors(inspectionProvider, builders, methodInfo)) {
             return MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         }
         return MethodResolution.CallStatus.NOT_CALLED_AT_ALL;
@@ -764,8 +774,9 @@ public class Resolver {
         Stream<TypeInfo> localStream = typeInspection.subTypes().stream()
                 .filter(ti -> acceptSubType(inspectionProvider, ti, inSameCompilationUnit, inSamePackage));
         Stream<TypeInfo> parentStream;
-        if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
-            assert typeInspection.parentClass().typeInfo != null;
+        boolean isJLO = Primitives.isJavaLangObject(typeInfo);
+        if (!isJLO) {
+            assert typeInspection.parentClass() != null && typeInspection.parentClass().typeInfo != null;
             parentStream = accessibleBySimpleNameTypeInfoStream(inspectionProvider,
                     typeInspection.parentClass().typeInfo, startingPoint, startingPointPackageName, visited);
         } else parentStream = Stream.empty();
@@ -826,8 +837,9 @@ public class Resolver {
 
         // my parent's fields
         Stream<FieldInfo> parentStream;
-        if (!Primitives.isJavaLangObject(typeInspection.parentClass())) {
-            assert typeInspection.parentClass().typeInfo != null;
+        boolean isJLO = Primitives.isJavaLangObject(typeInfo);
+        if (!isJLO) {
+            assert typeInspection.parentClass() != null && typeInspection.parentClass().typeInfo != null;
             parentStream = accessibleFieldsStream(inspectionProvider, typeInspection.parentClass().typeInfo,
                     startingPoint, startingPointPackageName);
         } else parentStream = Stream.empty();

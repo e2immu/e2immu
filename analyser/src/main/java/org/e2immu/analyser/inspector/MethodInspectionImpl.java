@@ -160,7 +160,13 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
     @Override
     public String toString() {
-        return "methodInspection of "+fullyQualifiedName;
+        return "methodInspection of " + fullyQualifiedName;
+    }
+
+    @Override
+    public boolean isVarargs() {
+        if (getParameters().isEmpty()) return false;
+        return getParameters().get(getParameters().size() - 1).parameterInspection.get().isVarArgs();
     }
 
     @Container(builds = MethodInspectionImpl.class)
@@ -405,6 +411,12 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         @Override
         public boolean isDefault() {
             return isDefault != null ? isDefault : modifiers.contains(MethodModifier.DEFAULT);
+        }
+
+        @Override
+        public boolean isVarargs() {
+            if (parameters.isEmpty()) return false;
+            return parameters.get(parameters.size() - 1).isVarArgs();
         }
 
         @Override

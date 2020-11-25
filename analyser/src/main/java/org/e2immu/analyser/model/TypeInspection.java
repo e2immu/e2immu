@@ -144,7 +144,8 @@ public interface TypeInspection extends Inspection {
 
     default boolean haveNonStaticNonDefaultMethods() {
         if (methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
-                .anyMatch(m -> !m.methodInspection.get().isStatic() && !m.methodInspection.get().isDefault())) return true;
+                .anyMatch(m -> !m.methodInspection.get().isStatic() && !m.methodInspection.get().isDefault()))
+            return true;
         for (ParameterizedType superInterface : interfacesImplemented()) {
             assert superInterface.typeInfo != null && superInterface.typeInfo.hasBeenInspected();
             if (superInterface.typeInfo.typeInspection.get().haveNonStaticNonDefaultMethods()) {
@@ -162,7 +163,7 @@ public interface TypeInspection extends Inspection {
      */
     default UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(
-                parentClass().typesReferenced(true),
+                parentClass() == null ? UpgradableBooleanMap.of() : parentClass().typesReferenced(true),
                 packageNameOrEnclosingType().isRight() && !isStatic() && !isInterface() ?
                         UpgradableBooleanMap.of(packageNameOrEnclosingType().getRight(), false) :
                         UpgradableBooleanMap.of(),

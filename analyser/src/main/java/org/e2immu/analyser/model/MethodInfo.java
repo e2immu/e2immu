@@ -257,12 +257,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return fullyQualifiedName();
     }
 
-    public boolean isVarargs() {
-        MethodInspection mi = methodInspection.get();
-        if (mi.getParameters().isEmpty()) return false;
-        return mi.getParameters().get(mi.getParameters().size() - 1).parameterInspection.get().isVarArgs();
-    }
-
     public boolean isNotOverridingAnyOtherMethod() {
         return methodResolution.get().overrides().isEmpty();
     }
