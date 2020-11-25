@@ -428,7 +428,7 @@ public class TypeInspector {
 
                 MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
                         methodFullInspection);
-                methodInspector.inspect(isInterface, md, subContext,
+                methodInspector.inspect(isInterface, methodName, md, subContext,
                         companionMethodName != null ? Map.of() : companionMethodsWaiting, dollarResolver);
                 MethodInspection methodInspection = methodInspector.getBuilder();
                 MethodInfo methodInfo = methodInspection.getMethodInfo();

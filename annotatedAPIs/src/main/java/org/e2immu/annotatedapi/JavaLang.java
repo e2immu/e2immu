@@ -29,15 +29,6 @@ class JavaLang {
 
     final static String PACKAGE_NAME = "java.lang";
 
-    interface CharSequence$ {
-        @NotModified
-        char charAt(int index);
-
-        @NotModified
-        int length();
-    }
-
-
     interface Iterable$<T> {
         // looping over the collection should not not change it!
         @NotModified
@@ -130,12 +121,24 @@ class JavaLang {
 
     }
 
+    static class CharSequence$ {
+        @NotModified
+        char charAt(int index) { return 0; }
+
+        boolean length$Invariant$Len(int l) {
+            return l >= 0;
+        }
+        void length$Aspect$Len() { }
+        @NotModified
+        int length() { return 0; }
+    }
+
     @E2Container
-    static class String$ implements CharSequence {
+    static abstract class String$ implements CharSequence {
+
         boolean String$Modification$Len(int post) {
             return post == 0;
         }
-
         String$() {
         }
 
@@ -184,17 +187,6 @@ class JavaLang {
 
         boolean endsWith(String suffix) {
             return false;
-        }
-
-        boolean length$Invariant$Len(int l) {
-            return l >= 0;
-        }
-
-        void length$Aspect$Len() {
-        }
-
-        public int length() {
-            return 0;
         }
 
         boolean isEmpty$Value$Len(int l) {
@@ -326,7 +318,7 @@ class JavaLang {
     }
 
     @Container
-    static class StringBuilder$ {
+    static abstract class StringBuilder$ implements CharSequence {
 
         boolean StringBuilder$Modification$Len(int post) {
             return post == 0;
@@ -382,11 +374,6 @@ class JavaLang {
         @Fluent
         StringBuilder append(Object o) {
             return null;
-        }
-
-        void length$Aspect$Len() {}
-        int length() {
-            return 0;
         }
     }
 

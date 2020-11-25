@@ -17,36 +17,28 @@
 
 package org.e2immu.annotatedapi;
 
-import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.*;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ComGoogleCommonCollect {
     final static String PACKAGE_NAME="com.google.common.collect";
 
-    static class ImmutableCollection$<E> {
+    @E2Container
+    static abstract class ImmutableCollection$<E> extends AbstractCollection<E> {
+
+        int asList$Transfer$Size(int size) { return size; }
+        @NotNull
+        @Independent
+        @NotModified
         ImmutableList<E> asList() { return null;  }
 
-        boolean contains(Object object) { return false; }
-        
-        boolean size$Invariant$Size(int i) { return i >= 0; }
-        void size$Aspect$Size() {}
-        @NotModified
-        int size() { return 0; }
-
-        int toArray$Transfer$Size(int size) { return size; }
-        public Object[] toArray() { return null; }
-
-        public <T> T[] toArray(T[] other) { return null; }
     }
 
     @E2Container
-    static class ImmutableList$<E> {
+    static class ImmutableList$<E> { // extends immutable collection
 
         @Container(builds = ImmutableList.class)
         public static class Builder<E> {
@@ -62,12 +54,14 @@ public class ComGoogleCommonCollect {
             @Fluent
             public Builder<E> addAll(@NotNull Iterator<? extends E> iterator) { return this; }
 
+            int build$Transfer$Size(int size) { return size; }
             @NotNull
             @Independent
             @NotModified
             public ImmutableList<E> build() { return null; }
         }
 
+        int copyOf$Transfer$Size(int size) { return size; }
         @NotNull
         @E2Container
         static <E> ImmutableList<E> copyOf(@NotNull Iterable<? extends E> iterable) { return null; }
@@ -91,15 +85,17 @@ public class ComGoogleCommonCollect {
             @Fluent
             public Builder<E> addAll(@NotNull Iterator<? extends E> iterator) { return this; }
 
+            int build$Transfer$Size(int size) { return size; }
             @NotNull
             @Independent
             @NotModified
             public ImmutableSet<E> build() { return null; }
         }
 
+        int copyOf$Transfer$Size(int size) { return size; }
         @NotNull
         @E2Container
-        static <E> ImmutableSet<E> copyOf(@NotNull Set<? extends E> iterable) { return null; }
+        static <E> ImmutableSet<E> copyOf(@NotNull Collection<? extends E> collection) { return null; }
     }
 
 }

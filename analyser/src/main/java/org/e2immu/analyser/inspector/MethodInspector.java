@@ -86,15 +86,24 @@ public class MethodInspector {
 
     private MethodInspectionImpl.Builder fqnIsKnown(MethodInspectionImpl.Builder builder) {
         builder.readyToComputeFQN();
-        log(INSPECT, "Inspecting method " + builder.getFullyQualifiedName());
         MethodInspection methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(builder.getFullyQualifiedName());
         if (methodInspection instanceof MethodInspectionImpl.Builder existing) {
+            log(INSPECT, "Inspecting method {}, already byte-code inspected", builder.getFullyQualifiedName());
+            assert !fullInspection;
             builderOnceFQNIsKnown.set(existing);
             return existing;
         }
         if (methodInspection == null) {
-            builderOnceFQNIsKnown.set(builder);
-            return builder;
+            if (fullInspection) {
+                log(INSPECT, "Inspecting method {}, full inspection", builder.getFullyQualifiedName());
+                builderOnceFQNIsKnown.set(builder);
+                return builder;
+            }
+            MethodInspectionImpl.Builder inHierarchy = null; // FIXME
+            log(INSPECT, "Inspecting method {}, found {} in type hierarchy", builder.getFullyQualifiedName(),
+                    inHierarchy.getFullyQualifiedName());
+            builderOnceFQNIsKnown.set(inHierarchy);
+            return inHierarchy;
         }
         throw new UnsupportedOperationException();
     }
@@ -145,13 +154,13 @@ public class MethodInspector {
      */
 
     public void inspect(boolean isInterface,
+                        String methodName,
                         MethodDeclaration md,
                         ExpressionContext expressionContext,
                         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
                         TypeInspector.DollarResolver dollarResolver) {
-        String name = md.getNameAsString();
         try {
-            MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo, name);
+            MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo, methodName);
 
             int tpIndex = 0;
             ExpressionContext newContext = md.getTypeParameters().isEmpty() ? expressionContext :
@@ -167,7 +176,7 @@ public class MethodInspector {
             MethodInspectionImpl.Builder builder = fqnIsKnown(tempBuilder);
 
             builder.addCompanionMethods(companionMethods);
-            checkCompanionMethods(companionMethods, name);
+            checkCompanionMethods(companionMethods, methodName);
 
             addAnnotations(builder, md.getAnnotations(), newContext);
             if (fullInspection) {
@@ -184,7 +193,7 @@ public class MethodInspector {
                 }
             }
         } catch (RuntimeException e) {
-            LOGGER.error("Caught exception while inspecting method {} in {}", name, typeInfo.fullyQualifiedName());
+            LOGGER.error("Caught exception while inspecting method {} in {}", methodName, typeInfo.fullyQualifiedName());
             throw e;
         }
     }
