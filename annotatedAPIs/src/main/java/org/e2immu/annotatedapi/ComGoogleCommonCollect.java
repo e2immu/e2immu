@@ -42,17 +42,6 @@ public class ComGoogleCommonCollect {
 
         @Container(builds = ImmutableList.class)
         public static class Builder<E> {
-            @Fluent
-            public Builder<E> add(E... elements) {return this; }
-
-            @Fluent
-            public Builder<E> add(E element) { return this; }
-
-            @Fluent
-            public Builder<E> addAll(@NotNull Iterable<? extends E> iterable) { return this; }
-
-            @Fluent
-            public Builder<E> addAll(@NotNull Iterator<? extends E> iterator) { return this; }
 
             int build$Transfer$Size(int size) { return size; }
             @NotNull
@@ -73,17 +62,6 @@ public class ComGoogleCommonCollect {
 
         @Container(builds = ImmutableSet.class)
         public static class Builder<E> {
-            @Fluent
-            public Builder<E> add(E... elements) {return this; }
-
-            @Fluent
-            public Builder<E> add(E element) { return this; }
-
-            @Fluent
-            public Builder<E> addAll(@NotNull Iterable<? extends E> iterable) { return this; }
-
-            @Fluent
-            public Builder<E> addAll(@NotNull Iterator<? extends E> iterator) { return this; }
 
             int build$Transfer$Size(int size) { return size; }
             @NotNull

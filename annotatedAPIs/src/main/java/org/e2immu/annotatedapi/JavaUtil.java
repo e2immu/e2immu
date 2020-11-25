@@ -21,7 +21,6 @@ import org.e2immu.annotation.*;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
@@ -37,6 +36,7 @@ public class JavaUtil extends AnnotatedAPI {
         return isFact(containsE) ? !containsE : (size == 0 || retVal);
     }
 
+    // Note: we can use T instead of E (in the byte-code), since we use distinguishingName instead of fullyQualifiedName
     interface Iterator$<T> {
         @NotModified
         default void forEachRemaining(Consumer<? super T> action) {
@@ -56,7 +56,8 @@ public class JavaUtil extends AnnotatedAPI {
         boolean add(@NotNull E e) { return true; }
 
         boolean addAll$Modification$Size(int i, int j, java.util.Collection<? extends E> c) { return i >= j && i <= j + c.size(); }
-        boolean addAll$Postcondition(java.util.Collection<? extends E> c) { return c.stream().allMatch(this::contains); }
+        // FIXME the next line causes problems with override() not yet computed in method resolution
+        // boolean addAll$Postcondition(java.util.Collection<? extends E> c) { return c.stream().allMatch(this::contains); }
         @Independent
         boolean addAll(@NotNull1 java.util.Collection<? extends E> collection) { return true; }
 
@@ -75,7 +76,8 @@ public class JavaUtil extends AnnotatedAPI {
 
         // there is a "default forEach" in Iterable, but here we can guarantee that consumer is @NotNull1 (its
         // arguments will not be null either)
-        void forEach(@NotNull1 Consumer<? super E> action) {}
+        // FIXME allow for "overrides" (copies)
+        //void forEach(@NotNull1 Consumer<? super E> action) {}
 
         boolean isEmpty$Value$Size(int i, boolean retVal) { return i == 0; }
         @NotModified
@@ -136,7 +138,8 @@ public class JavaUtil extends AnnotatedAPI {
 
         boolean addAll$Modification$Size(int i, int j, java.util.Collection<? extends E> c) { return i == j + c.size(); }
         boolean addAll$Value(java.util.Collection<? extends E> c, boolean retVal) { return true; }
-        boolean addAll$Postcondition(java.util.Collection<? extends E> c) { return c.stream().allMatch(this::contains); }
+        // FIXME causes problems with method resolution
+        // boolean addAll$Postcondition(java.util.Collection<? extends E> c) { return c.stream().allMatch(this::contains); }
         @Independent
         boolean addAll(@NotNull1 Collection<? extends E> collection) { return false; }
 
