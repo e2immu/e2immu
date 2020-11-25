@@ -23,10 +23,12 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.CombinedValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.value.CombinedValue;
+import org.e2immu.analyser.model.value.VariableValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.value.ConstantValue;
 import org.e2immu.analyser.model.value.NullValue;
@@ -44,7 +46,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
+import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 

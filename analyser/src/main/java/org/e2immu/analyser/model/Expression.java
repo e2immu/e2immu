@@ -18,10 +18,14 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 
-import java.util.*;
+import java.util.List;
 
 @E2Container
 public interface Expression extends Element {

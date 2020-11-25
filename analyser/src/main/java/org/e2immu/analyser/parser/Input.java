@@ -22,8 +22,9 @@ import org.e2immu.analyser.annotationxml.AnnotationStore;
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.inspector.ParseAndInspect;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeInspectionImpl;
 import org.e2immu.analyser.util.Resources;
 import org.e2immu.analyser.util.Trie;
 import org.slf4j.Logger;
@@ -39,7 +40,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.TRIGGER_JAVA_PARSER;
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_JAVA_PARSER;
 
 public record Input(Configuration configuration,
                     TypeContext globalTypeContext,

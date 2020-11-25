@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;

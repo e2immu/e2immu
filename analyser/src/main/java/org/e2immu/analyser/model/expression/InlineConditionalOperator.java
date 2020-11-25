@@ -18,10 +18,13 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
-import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.value.ConditionalValue;
+import org.e2immu.analyser.model.value.NegatedValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 

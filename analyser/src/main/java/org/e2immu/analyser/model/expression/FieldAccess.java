@@ -18,10 +18,15 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.value.VariableValue;
 import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;

@@ -3,7 +3,7 @@ package org.e2immu.analyser.analyser.check;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;

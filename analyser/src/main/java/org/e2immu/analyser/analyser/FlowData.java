@@ -19,7 +19,6 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.StatementAnalysis;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.value.BoolValue;

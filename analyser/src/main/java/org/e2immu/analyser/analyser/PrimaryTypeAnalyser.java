@@ -23,6 +23,7 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.pattern.PatternMatcher;
+import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.NotNull;

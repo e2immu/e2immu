@@ -19,10 +19,13 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.CompanionAnalysis;
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.ArrayValue;
-import org.e2immu.analyser.model.abstractvalue.Instance;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.value.ArrayValue;
+import org.e2immu.analyser.model.value.Instance;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;

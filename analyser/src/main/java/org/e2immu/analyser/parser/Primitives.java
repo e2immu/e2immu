@@ -18,13 +18,18 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.TypeAnalysisImpl;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.inspector.FieldInspectionImpl;
+import org.e2immu.analyser.inspector.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.ParameterInspectionImpl;
+import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 
 import java.util.*;
 
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
 import static org.e2immu.analyser.model.ParameterizedType.NOT_ASSIGNABLE;
-import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.BY_HAND;
 
 public class Primitives {
     public static final String JAVA_LANG = "java.lang";

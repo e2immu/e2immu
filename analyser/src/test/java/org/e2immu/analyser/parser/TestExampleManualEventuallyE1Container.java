@@ -4,7 +4,8 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.NegatedValue;
+import org.e2immu.analyser.model.value.NegatedValue;
+import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
 import org.junit.Test;
 

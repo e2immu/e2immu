@@ -4,7 +4,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.junit.Assert;
 import org.junit.Test;
 

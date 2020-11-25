@@ -24,7 +24,10 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.TypeMapImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.*;
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -162,7 +165,7 @@ public class TypeInspector {
 
         boolean haveFunctionalInterface = false;
         for (AnnotationExpr annotationExpr : typeDeclaration.getAnnotations()) {
-            AnnotationExpression ae = AnnotationExpressionImpl.inspect(expressionContext, annotationExpr);
+            AnnotationExpression ae = AnnotationInspector.inspect(expressionContext, annotationExpr);
             haveFunctionalInterface |= "java.lang.FunctionalInterface".equals(ae.typeInfo().fullyQualifiedName);
             builder.addAnnotation(ae);
         }
@@ -365,7 +368,7 @@ public class TypeInspector {
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifFieldDeclaration(fd -> {
                 List<AnnotationExpression> annotations = fd.getAnnotations().stream()
-                        .map(ae -> AnnotationExpressionImpl.inspect(expressionContext, ae)).collect(Collectors.toList());
+                        .map(ae -> AnnotationInspector.inspect(expressionContext, ae)).collect(Collectors.toList());
                 List<FieldModifier> modifiers = fd.getModifiers().stream()
                         .map(FieldModifier::from)
                         .collect(Collectors.toList());

@@ -18,12 +18,9 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.statement.Structure;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
-
-import java.util.List;
 
 @E2Container
 public interface Statement extends Element {

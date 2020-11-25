@@ -18,6 +18,9 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
+import org.e2immu.analyser.inspector.FieldInspectionImpl;
+import org.e2immu.analyser.inspector.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.Trie;
 
@@ -27,8 +30,8 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState;
-import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.*;
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState;
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
 
 public class TypeMapImpl implements TypeMap {
 

@@ -2,7 +2,8 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.annotation.*;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
 @Container

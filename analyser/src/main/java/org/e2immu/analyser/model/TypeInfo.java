@@ -19,6 +19,10 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.inspector.ExpressionContext;
+import org.e2immu.analyser.inspector.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.MethodTypeParameterMap;
+import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.MethodReference;
 import org.e2immu.analyser.model.expression.TypeExpression;
@@ -27,7 +31,6 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.ExpressionContext;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.NotNull;
@@ -37,7 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.BY_HAND;
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
 import static org.e2immu.analyser.util.Logger.LogTarget.LAMBDA;
 import static org.e2immu.analyser.util.Logger.log;
 

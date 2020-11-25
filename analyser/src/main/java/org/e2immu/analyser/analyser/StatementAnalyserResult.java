@@ -18,7 +18,6 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.model.AbstractAnalysisBuilder;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 

@@ -27,7 +27,7 @@ import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.abstractvalue.ConditionalValue;
+import org.e2immu.analyser.model.value.ConditionalValue;
 import org.junit.Assert;
 import org.junit.Test;
 

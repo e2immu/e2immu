@@ -18,8 +18,13 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.inspector.FieldInspectionImpl;
+import org.e2immu.analyser.inspector.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.ParameterInspectionImpl;
+import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.parser.Primitives;
 import org.junit.Assert;
 import org.junit.Test;
@@ -28,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.BY_HAND;
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.BY_HAND;
 
 public class TestTypeInfoStream {
     private static final Logger LOGGER = LoggerFactory.getLogger(TestTypeInfoStream.class);

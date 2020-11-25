@@ -7,6 +7,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
+import org.e2immu.analyser.model.variable.This;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -2,12 +2,10 @@ package org.e2immu.analyser.config;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.CompanionAnalysis;
-import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.*;
-
-import java.util.List;
-import java.util.Map;
+import org.e2immu.analyser.model.CompanionMethodName;
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.model.MethodInfo;
 
 public interface CompanionAnalyserVisitor {
     void visit(Data data);

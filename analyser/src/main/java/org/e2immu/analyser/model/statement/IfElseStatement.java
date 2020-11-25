@@ -18,16 +18,17 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.FlowData;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.NegatedValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
 
-import static org.e2immu.analyser.model.StatementAnalysis.startOfBlock;
+import static org.e2immu.analyser.analyser.StatementAnalysis.startOfBlock;
 
 public class IfElseStatement extends StatementWithExpression {
     public final Block elseBlock;

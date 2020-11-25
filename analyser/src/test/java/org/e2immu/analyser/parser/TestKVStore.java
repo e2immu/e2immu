@@ -3,6 +3,7 @@ package org.e2immu.analyser.parser;
 import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.analyser.resolver.SortedType;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;

@@ -18,11 +18,12 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 

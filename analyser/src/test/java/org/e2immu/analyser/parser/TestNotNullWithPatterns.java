@@ -20,9 +20,9 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.model.StatementAnalysis;
+import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.abstractvalue.InlineValue;
+import org.e2immu.analyser.model.value.InlineValue;
 import org.junit.Assert;
 import org.junit.Test;
 

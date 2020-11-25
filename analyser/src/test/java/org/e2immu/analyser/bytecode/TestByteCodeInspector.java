@@ -21,8 +21,7 @@ package org.e2immu.analyser.bytecode;
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeNature;
-import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
-import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
@@ -83,7 +82,7 @@ public class TestByteCodeInspector {
     @Test
     public void testInterface() throws IOException {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/model/EvaluationContext");
-        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.model.EvaluationContext");
+        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.analyser.EvaluationContext");
 
         LOGGER.info("Stream is\n{}", typeInfo.stream(0));
         Assert.assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature());

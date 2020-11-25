@@ -17,6 +17,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.FlowData;
 
 import java.util.function.BiFunction;

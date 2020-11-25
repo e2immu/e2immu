@@ -18,10 +18,14 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.InlineValue;
-import org.e2immu.analyser.model.abstractvalue.Instance;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.value.InlineValue;
+import org.e2immu.analyser.model.value.Instance;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;

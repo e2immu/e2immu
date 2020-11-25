@@ -19,9 +19,12 @@
 package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.bytecode.ExpressionFactory;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.inspector.AbstractInspectionBuilder;
+import org.e2immu.analyser.model.AnnotationExpressionImpl;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.MemberValuePair;
-import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.objectweb.asm.AnnotationVisitor;
 
 import java.util.Objects;

@@ -18,12 +18,10 @@
 
 package org.e2immu.analyser.model;
 
-import com.github.javaparser.ast.expr.NormalAnnotationExpr;
-import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.parser.ExpressionContext;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
@@ -59,22 +57,6 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         public AnnotationExpression build() {
             return new AnnotationExpressionImpl(typeInfo, ImmutableList.copyOf(expressions));
         }
-    }
-
-    public static AnnotationExpression inspect(ExpressionContext expressionContext, com.github.javaparser.ast.expr.AnnotationExpr ae) {
-        List<Expression> analyserExpressions;
-        if (ae instanceof NormalAnnotationExpr) {
-            analyserExpressions = new ArrayList<>();
-            for (com.github.javaparser.ast.expr.MemberValuePair mvp : ((NormalAnnotationExpr) ae).getPairs()) {
-                Expression value = expressionContext.parseExpression(mvp.getValue());
-                analyserExpressions.add(new MemberValuePair(mvp.getName().asString(), value));
-            }
-        } else if (ae instanceof SingleMemberAnnotationExpr) {
-            Expression value = expressionContext.parseExpression(ae.asSingleMemberAnnotationExpr().getMemberValue());
-            analyserExpressions = List.of(new MemberValuePair("value", value));
-        } else analyserExpressions = List.of();
-        TypeInfo typeInfo = (TypeInfo) expressionContext.typeContext.get(ae.getNameAsString(), true);
-        return new AnnotationExpressionImpl(typeInfo, analyserExpressions);
     }
 
     @Override

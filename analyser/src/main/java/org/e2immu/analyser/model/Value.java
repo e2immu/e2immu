@@ -18,14 +18,17 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.abstractvalue.Instance;
-import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.abstractvalue.ValueComparator;
+import org.e2immu.analyser.model.value.Instance;
+import org.e2immu.analyser.model.value.NegatedValue;
+import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.value.ValueComparator;
 import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;

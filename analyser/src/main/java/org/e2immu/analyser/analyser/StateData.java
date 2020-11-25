@@ -17,12 +17,10 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.StatementAnalysis;
 import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
-import org.e2immu.analyser.model.abstractvalue.AndValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.value.AndValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.util.FlipSwitch;
 import org.e2immu.analyser.util.SetOnce;
 

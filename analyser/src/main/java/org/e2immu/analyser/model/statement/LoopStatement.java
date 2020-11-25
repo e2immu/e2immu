@@ -1,6 +1,8 @@
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Element;
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.model.SideEffect;
 
 import java.util.List;
 

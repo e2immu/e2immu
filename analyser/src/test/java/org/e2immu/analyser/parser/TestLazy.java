@@ -23,7 +23,8 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
 import org.junit.Test;
 

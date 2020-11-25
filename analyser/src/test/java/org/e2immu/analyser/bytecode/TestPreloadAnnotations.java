@@ -22,7 +22,6 @@ import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
-import org.e2immu.analyser.model.TypeInspectionImpl;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.annotation.E2Immutable;
 import org.junit.Assert;
@@ -34,7 +33,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.FINISHED_BYTECODE;
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.FINISHED_BYTECODE;
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR;
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 

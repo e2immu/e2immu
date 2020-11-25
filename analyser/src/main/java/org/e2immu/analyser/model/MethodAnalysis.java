@@ -18,11 +18,8 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.CompanionAnalysis;
-import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 

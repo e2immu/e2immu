@@ -23,7 +23,10 @@ import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Only;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 

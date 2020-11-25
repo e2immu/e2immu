@@ -17,6 +17,9 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
 
 public interface ConstantExpression<T> extends Expression, Constant<T> {

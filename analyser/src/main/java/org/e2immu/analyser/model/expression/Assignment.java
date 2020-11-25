@@ -19,8 +19,15 @@
 package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.AssignExpr;
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.variable.DependentVariable;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
@@ -29,7 +36,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
+import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
 import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
 import static org.e2immu.analyser.util.Logger.log;

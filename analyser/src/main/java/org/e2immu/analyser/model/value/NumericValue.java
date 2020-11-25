@@ -19,8 +19,6 @@
 package org.e2immu.analyser.model.value;
 
 import com.google.common.math.DoubleMath;
-import org.e2immu.analyser.model.EvaluationContext;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;

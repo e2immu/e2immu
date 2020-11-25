@@ -19,9 +19,12 @@
 package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.UnaryExpr;
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.NegatedValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownPrimitiveValue;
+import org.e2immu.analyser.model.value.NegatedValue;
+import org.e2immu.analyser.model.value.UnknownPrimitiveValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;

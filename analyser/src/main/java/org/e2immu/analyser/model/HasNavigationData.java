@@ -17,7 +17,9 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.NavigationData;
+import org.e2immu.analyser.analyser.StatementAnalysis;
 
 import java.util.List;
 import java.util.function.BiFunction;

@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AbstractAnalysisBuilder;
 import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 

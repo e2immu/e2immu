@@ -1,7 +1,7 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.output.PrintMode;

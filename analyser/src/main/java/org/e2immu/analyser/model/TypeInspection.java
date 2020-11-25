@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.Iterables;
+import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.UpgradableBooleanMap;

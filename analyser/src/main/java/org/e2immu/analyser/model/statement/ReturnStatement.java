@@ -18,12 +18,12 @@
 
 package org.e2immu.analyser.model.statement;
 
-import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;

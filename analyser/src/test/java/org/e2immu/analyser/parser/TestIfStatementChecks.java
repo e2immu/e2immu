@@ -4,7 +4,7 @@ import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.abstractvalue.InlineValue;
+import org.e2immu.analyser.model.value.InlineValue;
 import org.junit.Assert;
 import org.junit.Test;
 

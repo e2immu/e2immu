@@ -18,14 +18,17 @@
 
 package org.e2immu.analyser.bytecode.asm;
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.NamedType;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeParameter;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.inspector.TypeContext;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
 
 // signatures formally defined in https://docs.oracle.com/javase/specs/jvms/se13/html/jvms-4.html
 

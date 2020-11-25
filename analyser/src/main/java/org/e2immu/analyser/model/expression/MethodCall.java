@@ -19,16 +19,13 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableMap;
-import org.e2immu.analyser.analyser.CompanionAnalysis;
-import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.*;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
-import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.IntValue;
-import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.model.value.StringValue;
+import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;

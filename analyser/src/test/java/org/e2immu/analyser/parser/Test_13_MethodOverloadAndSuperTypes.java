@@ -18,10 +18,12 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.TypeInspectionImpl;
+import org.e2immu.analyser.resolver.Resolver;
+import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.Trie;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -37,7 +39,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.TRIGGER_JAVA_PARSER;
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_JAVA_PARSER;
 
 public class Test_13_MethodOverloadAndSuperTypes {
     private static final Logger LOGGER = LoggerFactory.getLogger(Test_13_MethodOverloadAndSuperTypes.class);

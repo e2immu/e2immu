@@ -19,7 +19,7 @@
 package org.e2immu.analyser.bytecode;
 
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.inspector.TypeContext;
 
 import java.util.List;
 import java.util.Stack;

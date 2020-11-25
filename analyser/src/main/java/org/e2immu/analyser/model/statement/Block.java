@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.InspectionProvider;

@@ -18,7 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.Variable;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;

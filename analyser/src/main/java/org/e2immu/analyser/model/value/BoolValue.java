@@ -18,13 +18,14 @@
 
 package org.e2immu.analyser.model.value;
 
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Objects;
-import java.util.stream.Stream;
 
 public class BoolValue extends ConstantValue implements Constant<Boolean> {
     public final boolean value;

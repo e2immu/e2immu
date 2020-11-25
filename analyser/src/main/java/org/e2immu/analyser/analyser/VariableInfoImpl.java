@@ -18,7 +18,9 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.*;
+import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnce;
@@ -27,7 +29,7 @@ import java.util.*;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.model.abstractvalue.UnknownValue.NO_VALUE;
+import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
 
 class VariableInfoImpl implements VariableInfo {
     public final Variable variable;

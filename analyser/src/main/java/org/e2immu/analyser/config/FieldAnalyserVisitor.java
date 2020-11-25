@@ -2,7 +2,7 @@ package org.e2immu.analyser.config;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.FieldAnalysis;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Value;

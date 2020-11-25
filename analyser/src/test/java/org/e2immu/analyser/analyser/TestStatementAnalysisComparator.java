@@ -21,7 +21,6 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.StatementAnalysis;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.parser.Primitives;

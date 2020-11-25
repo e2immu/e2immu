@@ -21,6 +21,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;

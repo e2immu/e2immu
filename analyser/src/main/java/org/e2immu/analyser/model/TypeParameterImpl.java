@@ -19,7 +19,7 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.SetOnce;
 

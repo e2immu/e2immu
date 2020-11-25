@@ -19,7 +19,7 @@ package org.e2immu.analyser.config;
 
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.EvaluationResult;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.MethodInfo;
 
 import java.util.Map;

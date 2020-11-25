@@ -23,7 +23,7 @@ import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
-import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.testexample.Basics;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.junit.Assert;

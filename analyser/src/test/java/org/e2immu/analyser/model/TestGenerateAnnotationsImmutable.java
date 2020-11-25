@@ -6,8 +6,8 @@ import org.junit.Test;
 
 import java.util.Map;
 
-import static org.e2immu.analyser.model.GenerateAnnotationsImmutable.TRUE;
-import static org.e2immu.analyser.model.GenerateAnnotationsImmutable.generate;
+import static org.e2immu.analyser.analyser.GenerateAnnotationsImmutable.TRUE;
+import static org.e2immu.analyser.analyser.GenerateAnnotationsImmutable.generate;
 import static org.e2immu.analyser.model.MultiLevel.*;
 
 public class TestGenerateAnnotationsImmutable {

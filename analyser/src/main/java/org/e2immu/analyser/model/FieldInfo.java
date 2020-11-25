@@ -19,13 +19,15 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class FieldInfo implements WithInspectionAndAnalysis {

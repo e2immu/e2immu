@@ -20,7 +20,7 @@ package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Constant;
-import org.e2immu.analyser.model.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 

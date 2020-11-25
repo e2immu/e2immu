@@ -18,12 +18,11 @@
 package org.e2immu.analyser.model.expression.util;
 
 import com.google.common.collect.ImmutableMap;
-import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.Filter;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.value.Filter;
+import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.value.VariableValue;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;

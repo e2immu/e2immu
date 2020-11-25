@@ -25,9 +25,13 @@ import org.e2immu.analyser.annotationxml.AnnotationXmlWriter;
 import org.e2immu.analyser.bytecode.ByteCodeInspector;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.config.TypeMapVisitor;
+import org.e2immu.analyser.inspector.ParseAndInspect;
+import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
-import org.e2immu.analyser.model.TypeInspectionImpl;
+import org.e2immu.analyser.resolver.Resolver;
+import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.upload.AnnotationUploader;
 import org.e2immu.analyser.util.Trie;
 import org.slf4j.Logger;
@@ -40,7 +44,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.*;
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 

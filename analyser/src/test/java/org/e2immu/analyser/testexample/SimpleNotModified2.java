@@ -17,6 +17,8 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.analyser.model.value.PropertyWrapper;
+import org.e2immu.analyser.model.value.VariableValue;
 import org.e2immu.annotation.E1Immutable;
 import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
@@ -28,8 +30,8 @@ import java.util.stream.Stream;
 
 /**
  * Almost identical to SimpleNotModified1, but now there's a "barrier" of <code>requireNonNull</code>
- * between <code>input</code> and <code>set</code>. The method introduces a {@link org.e2immu.analyser.model.abstractvalue.PropertyWrapper}
- * around the {@link org.e2immu.analyser.model.abstractvalue.VariableValue}, which forces us to use
+ * between <code>input</code> and <code>set</code>. The method introduces a {@link PropertyWrapper}
+ * around the {@link VariableValue}, which forces us to use
  * <code>Value.asInstanceOf</code> rather than the <code>instanceof</code> operator.
  * <p>
  * At the same time <code>set</code> has been made explicitly final, reducing complexity.

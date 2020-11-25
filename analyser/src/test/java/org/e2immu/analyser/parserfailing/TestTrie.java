@@ -24,7 +24,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.abstractvalue.VariableValue;
+import org.e2immu.analyser.model.value.VariableValue;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.junit.Assert;
 import org.junit.Test;

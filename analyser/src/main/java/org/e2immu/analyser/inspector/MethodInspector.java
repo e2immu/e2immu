@@ -28,8 +28,6 @@ import com.github.javaparser.ast.type.ReferenceType;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.parser.ExpressionContext;
-import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.SetOnce;
 import org.slf4j.Logger;
@@ -197,7 +195,7 @@ public class MethodInspector {
                                        NodeList<AnnotationExpr> annotations,
                                        ExpressionContext expressionContext) {
         for (AnnotationExpr ae : annotations) {
-            builder.addAnnotation(AnnotationExpressionImpl.inspect(expressionContext, ae));
+            builder.addAnnotation(AnnotationInspector.inspect(expressionContext, ae));
         }
     }
 

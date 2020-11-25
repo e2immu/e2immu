@@ -20,11 +20,9 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.model.PackagePrefix;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.annotation.*;
 
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 public interface TypeMap extends  InspectionProvider {
 

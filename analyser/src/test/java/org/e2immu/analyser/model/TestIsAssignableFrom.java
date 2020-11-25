@@ -2,7 +2,7 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.parser.Parser;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;

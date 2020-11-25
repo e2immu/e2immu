@@ -19,7 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.abstractvalue.UnknownValue;
+import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.util.SetOnce;
 
 import java.util.List;

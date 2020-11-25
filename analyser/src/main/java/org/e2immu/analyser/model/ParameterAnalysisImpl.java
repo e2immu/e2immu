@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.AbstractAnalysisBuilder;
+import org.e2immu.analyser.analyser.AnalysisImpl;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;

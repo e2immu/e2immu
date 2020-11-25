@@ -19,9 +19,12 @@
 package org.e2immu.analyser.bytecode;
 
 import org.e2immu.analyser.annotationxml.model.Annotation;
+import org.e2immu.analyser.inspector.AbstractInspectionBuilder;
+import org.e2immu.analyser.inspector.ParameterInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 

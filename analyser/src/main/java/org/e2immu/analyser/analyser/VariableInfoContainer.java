@@ -17,10 +17,8 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.EvaluationContext;
 import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.Variable;
-import org.e2immu.analyser.model.abstractvalue.Instance;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 

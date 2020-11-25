@@ -7,7 +7,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.abstractvalue.MethodValue;
+import org.e2immu.analyser.model.value.MethodValue;
 import org.junit.Assert;
 import org.junit.Test;
 

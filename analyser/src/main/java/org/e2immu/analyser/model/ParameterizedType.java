@@ -25,11 +25,12 @@ import com.github.javaparser.ast.type.WildcardType;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.parser.TypeContext;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
@@ -39,7 +40,7 @@ import java.util.*;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.Collectors;
 
-import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
 
 public class ParameterizedType {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterizedType.class);

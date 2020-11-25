@@ -18,9 +18,12 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.ArrayValue;
-import org.e2immu.analyser.model.abstractvalue.UnknownPrimitiveValue;
+import org.e2immu.analyser.model.value.ArrayValue;
+import org.e2immu.analyser.model.value.UnknownPrimitiveValue;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;

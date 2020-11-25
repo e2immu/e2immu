@@ -19,10 +19,11 @@
 package org.e2immu.analyser.model.expression;
 
 import com.github.javaparser.ast.expr.BinaryExpr;
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.*;
-import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Message;

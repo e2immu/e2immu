@@ -17,13 +17,6 @@
 
 package org.e2immu.analyser.model;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import org.e2immu.analyser.parser.Primitives;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 public record TypeResolution(Set<TypeInfo> circularDependencies, Set<TypeInfo> superTypesExcludingJavaLangObject) {

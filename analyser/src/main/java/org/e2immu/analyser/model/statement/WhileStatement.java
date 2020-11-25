@@ -19,6 +19,8 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.FlowData;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.util.StringUtil;
 

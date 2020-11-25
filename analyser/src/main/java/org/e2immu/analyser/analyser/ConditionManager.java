@@ -1,9 +1,8 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.abstractvalue.*;
-import org.e2immu.analyser.model.value.BoolValue;
-import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
