@@ -22,12 +22,12 @@ import com.github.javaparser.Position;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
@@ -94,9 +94,9 @@ public class ParseMethodCallExpr {
         Expression computedScope;
         if (scope == null) {
             if (method.methodInspection.isStatic()) {
-                computedScope = new TypeExpression(method.methodInspection.getMethodInfo().typeInfo.asParameterizedType());
+                computedScope = new TypeExpression(method.methodInspection.getMethodInfo().typeInfo.asParameterizedType(expressionContext.typeContext));
             } else {
-                Variable thisVariable = new This(expressionContext.enclosingType);
+                Variable thisVariable = new This(expressionContext.typeContext, expressionContext.enclosingType);
                 computedScope = new VariableExpression(thisVariable);
             }
         } else {
@@ -190,7 +190,7 @@ public class ParseMethodCallExpr {
                         methodNameForErrorReporting, i, singleAbstractMethod);
                 MethodTypeParameterMap mapForEvaluation;
 
-                MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(expressionContext.typeContext,
+                MethodTypeParameterMap abstractInterfaceMethod = determineAbstractInterfaceMethod(inspectionProvider,
                         method, i, singleAbstractMethod);
                 if (abstractInterfaceMethod != null) {
                     if (singleAbstractMethod != null) {
@@ -199,7 +199,7 @@ public class ParseMethodCallExpr {
                             // a type with its own formal parameters, we try to jump from the concrete value in the AIM (entry.getValue) to
                             // the type parameter in the method's return type (tpInReturnType) to the type parameter in the method's formal return type (tpInFormalReturnType)
                             // to the value in the SAM (best)
-                            ParameterizedType formalReturnTypeOfMethod = returnTypeOfMethod.typeInfo.asParameterizedType();
+                            ParameterizedType formalReturnTypeOfMethod = returnTypeOfMethod.typeInfo.asParameterizedType(inspectionProvider);
                             // we should expect type parameters of the return type to be present in the SAM; the ones of the formal type are in the AIM
                             Map<NamedType, ParameterizedType> newMap = new HashMap<>();
                             for (Map.Entry<NamedType, ParameterizedType> entry : abstractInterfaceMethod.concreteTypes.entrySet()) {
@@ -225,7 +225,7 @@ public class ParseMethodCallExpr {
                 } else {
                     // could be that e == null, we did not evaluate
                     if (e instanceof UnevaluatedMethodCall && singleAbstractMethod != null) {
-                        Map<NamedType, ParameterizedType> newMap = makeTranslationMap(method, i, singleAbstractMethod);
+                        Map<NamedType, ParameterizedType> newMap = makeTranslationMap(inspectionProvider, method, i, singleAbstractMethod);
                         mapForEvaluation = new MethodTypeParameterMap(null, newMap);
                     } else {
                         mapForEvaluation = singleAbstractMethod;
@@ -249,7 +249,7 @@ public class ParseMethodCallExpr {
             log(METHOD_CALL, "Examine parameter {}", i);
             ParameterizedType concreteParameterType = expression.returnType();
             Map<NamedType, ParameterizedType> translated = formalParameters.get(i).parameterizedType
-                    .translateMap(expressionContext.typeContext, concreteParameterType);
+                    .translateMap(inspectionProvider, concreteParameterType);
             ParameterizedType concreteTypeInMethod = method.getConcreteTypeOfParameter(i);
 
             translated.forEach((k, v) -> {
@@ -271,10 +271,13 @@ public class ParseMethodCallExpr {
         return method;
     }
 
-    private static Map<NamedType, ParameterizedType> makeTranslationMap(MethodTypeParameterMap method, int i, MethodTypeParameterMap singleAbstractMethod) {
+    private static Map<NamedType, ParameterizedType> makeTranslationMap(InspectionProvider inspectionProvider,
+                                                                        MethodTypeParameterMap method,
+                                                                        int i,
+                                                                        MethodTypeParameterMap singleAbstractMethod) {
         ParameterInfo parameterInfo = method.methodInspection.getParameters().get(i);
         ParameterizedType parameterizedType = parameterInfo.parameterizedType; // Collector<T,A,R>, with T linked to T0 of Stream
-        ParameterizedType formalParameterizedType = parameterizedType.typeInfo.asParameterizedType();
+        ParameterizedType formalParameterizedType = parameterizedType.typeInfo.asParameterizedType(inspectionProvider);
         Map<NamedType, ParameterizedType> newMap = new HashMap<>();
         int pos = 0;
         for (ParameterizedType typeParameter : formalParameterizedType.parameters) {

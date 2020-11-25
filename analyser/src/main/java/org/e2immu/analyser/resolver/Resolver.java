@@ -27,7 +27,10 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.SMapSet;
@@ -187,20 +190,19 @@ public class Resolver {
             TypeInfo primaryType = primaryType(typeContextOfType, typeInfo);
             ExpressionContext expressionContext = ExpressionContext.forBodyParsing(typeInfo,
                     primaryType, typeContextOfType);
-
-            expressionContext.typeContext.addToContext(typeInfo);
-            typeInspection.typeParameters().forEach(expressionContext.typeContext::addToContext);
+            TypeContext typeContext = expressionContext.typeContext;
+            typeContext.addToContext(typeInfo);
+            typeInspection.typeParameters().forEach(typeContext::addToContext);
 
             // add visible types to the type context
-            accessibleBySimpleNameTypeInfoStream(expressionContext.typeContext, typeInfo, primaryType)
-                    .forEach(expressionContext.typeContext::addToContext);
+            accessibleBySimpleNameTypeInfoStream(typeContext, typeInfo, primaryType).forEach(typeContext::addToContext);
 
             // add visible fields to variable context
-            accessibleFieldsStream(expressionContext.typeContext, typeInfo, primaryType)
+            accessibleFieldsStream(typeContext, typeInfo, primaryType)
                     .forEach(fieldInfo -> expressionContext.variableContext.add(new FieldReference(
-                            expressionContext.typeContext,
+                            typeContext,
                             fieldInfo,
-                            fieldInfo.isStatic() ? null : new This(fieldInfo.owner))));
+                            fieldInfo.isStatic() ? null : new This(typeContext, fieldInfo.owner))));
 
             doFields(typeInspection, expressionContext, methodFieldSubTypeGraph);
             doMethodsAndConstructors(typeInspection, expressionContext, methodFieldSubTypeGraph);
@@ -324,6 +326,8 @@ public class Resolver {
                                        MethodInspectionImpl.Builder methodInspection,
                                        ExpressionContext expressionContext,
                                        DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+        log(RESOLVE, "Resolving {}", methodInfo.fullyQualifiedName);
+
         // TYPE PARAMETERS OF METHOD
 
         List<TypeParameter> typeParameters = methodInspection.getTypeParameters();

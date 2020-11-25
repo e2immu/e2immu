@@ -230,7 +230,7 @@ public class ExpressionContext {
         TypeInspection enumInspection = typeContext.getTypeInspection(enumType);
         if (enumType != null) {
             newExpressionContext = newVariableContext("switch-statement");
-            Variable scope = new This(enumType);
+            Variable scope = new This(typeContext, enumType);
             enumInspection.fields().forEach(fieldInfo -> newExpressionContext.variableContext
                     .add(new FieldReference(typeContext, fieldInfo, scope)));
         } else {
@@ -466,8 +466,8 @@ public class ExpressionContext {
                 Variable variable = thisExpr.getTypeName().map(typeName -> {
                     NamedType superType = typeContext.get(typeName.asString(), true);
                     if (!(superType instanceof TypeInfo)) throw new UnsupportedOperationException();
-                    return new This((TypeInfo) superType, true, false);
-                }).orElse(new This(enclosingType));
+                    return new This(typeContext, (TypeInfo) superType, true, false);
+                }).orElse(new This(typeContext, enclosingType));
                 return new VariableExpression(variable);
             }
             if (expression.isSuperExpr()) {
@@ -475,8 +475,8 @@ public class ExpressionContext {
                 Variable variable = superExpr.getTypeName().map(typeName -> {
                     NamedType superType = typeContext.get(typeName.asString(), true);
                     if (!(superType instanceof TypeInfo)) throw new UnsupportedOperationException();
-                    return new This((TypeInfo) superType, true, true);
-                }).orElse(new This(enclosingType, false, true));
+                    return new This(typeContext, (TypeInfo) superType, true, true);
+                }).orElse(new This(typeContext, enclosingType, false, true));
                 return new VariableExpression(variable);
             }
             if (expression.isTypeExpr()) {

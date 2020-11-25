@@ -38,7 +38,7 @@ public class ParseSwitchExpr {
         TypeInspection enumInspection = expressionContext.typeContext.getTypeInspection(enumType);
         if (enumType != null) {
             newExpressionContext = expressionContext.newVariableContext("switch-expression");
-            Variable scope = new This(enumType);
+            Variable scope = new This(expressionContext.typeContext, enumType);
             enumInspection.fields()
                     .forEach(fieldInfo -> newExpressionContext.variableContext.add(
                             new FieldReference(expressionContext.typeContext, fieldInfo, scope)));

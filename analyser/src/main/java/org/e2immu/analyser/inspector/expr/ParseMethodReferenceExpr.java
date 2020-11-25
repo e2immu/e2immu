@@ -24,6 +24,7 @@ import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;
 
@@ -83,7 +84,7 @@ public class ParseMethodReferenceExpr {
                         methodCandidates.size(), concreteType.detailedString(), i);
                 List<TypeContext.MethodCandidate> copy = new LinkedList<>(methodCandidates);
                 copy.removeIf(mc -> {
-                    ParameterizedType typeOfMethodCandidate = typeOfMethodCandidate(mc, index, scopeIsAType, constructor);
+                    ParameterizedType typeOfMethodCandidate = typeOfMethodCandidate(typeContext, mc, index, scopeIsAType, constructor);
                     boolean isAssignable = typeOfMethodCandidate.isAssignableFrom(typeContext, concreteType);
                     return !isAssignable;
                 });
@@ -95,8 +96,8 @@ public class ParseMethodReferenceExpr {
                 }
                 // sort on assignability to parameter "index"
                 methodCandidates.sort((mc1, mc2) -> {
-                    ParameterizedType typeOfMc1 = typeOfMethodCandidate(mc1, index, scopeIsAType, constructor);
-                    ParameterizedType typeOfMc2 = typeOfMethodCandidate(mc2, index, scopeIsAType, constructor);
+                    ParameterizedType typeOfMc1 = typeOfMethodCandidate(typeContext, mc1, index, scopeIsAType, constructor);
+                    ParameterizedType typeOfMc2 = typeOfMethodCandidate(typeContext, mc2, index, scopeIsAType, constructor);
                     if (typeOfMc1.equals(typeOfMc2)) return 0;
                     return typeOfMc2.isAssignableFrom(typeContext, typeOfMc1) ? -1 : 1;
                 });
@@ -126,11 +127,15 @@ public class ParseMethodReferenceExpr {
         return new MethodReference(scope, method.methodInspection.getMethodInfo(), functionalType);
     }
 
-    private static ParameterizedType typeOfMethodCandidate(TypeContext.MethodCandidate mc, int index, boolean scopeIsAType, boolean constructor) {
+    private static ParameterizedType typeOfMethodCandidate(InspectionProvider inspectionProvider,
+                                                           TypeContext.MethodCandidate mc,
+                                                           int index,
+                                                           boolean scopeIsAType,
+                                                           boolean constructor) {
         MethodInfo methodInfo = mc.method().methodInspection.getMethodInfo();
         int param = scopeIsAType && !constructor && !mc.method().methodInspection.isStatic() ? index - 1 : index;
         if (param == -1) {
-            return methodInfo.typeInfo.asParameterizedType();
+            return methodInfo.typeInfo.asParameterizedType(inspectionProvider);
         } else {
             return mc.method().methodInspection.getParameters().get(index).parameterizedType;
         }

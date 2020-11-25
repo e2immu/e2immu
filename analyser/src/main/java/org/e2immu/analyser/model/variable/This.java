@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.Objects;
@@ -32,15 +33,17 @@ public class This implements Variable {
     public final TypeInfo typeInfo;
     public final boolean explicitlyWriteType;
     public final boolean writeSuper;
+    public final ParameterizedType typeAsParameterizedType;
 
-    public This(TypeInfo typeInfo) {
-        this(typeInfo, false, false);
+    public This(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
+        this(inspectionProvider, typeInfo, false, false);
     }
 
-    public This(TypeInfo typeInfo, boolean explicitlyWriteType, boolean writeSuper) {
+    public This(InspectionProvider inspectionProvider, TypeInfo typeInfo, boolean explicitlyWriteType, boolean writeSuper) {
         this.typeInfo = Objects.requireNonNull(typeInfo);
         this.explicitlyWriteType = explicitlyWriteType;
         this.writeSuper = writeSuper;
+        typeAsParameterizedType = typeInfo.asParameterizedType(inspectionProvider);
     }
 
     @Override
@@ -58,12 +61,12 @@ public class This implements Variable {
 
     @Override
     public ParameterizedType parameterizedType() {
-        return typeInfo.asParameterizedType();
+        return typeAsParameterizedType;
     }
 
     @Override
     public ParameterizedType concreteReturnType() {
-        return parameterizedType();
+        return typeAsParameterizedType;
     }
 
     @Override

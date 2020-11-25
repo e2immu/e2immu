@@ -37,7 +37,7 @@ public class ClassValue extends ConstantValue implements Constant<ParameterizedT
     public ClassValue(Primitives primitives, ParameterizedType value, ObjectFlow objectFlow) {
         super(objectFlow);
         this.value = Objects.requireNonNull(value);
-        this.classParameterizedType = primitives.classTypeInfo.asParameterizedType();
+        this.classParameterizedType = primitives.classTypeInfo.asSimpleParameterizedType();
     }
 
     @Override

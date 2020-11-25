@@ -503,14 +503,14 @@ public class ParameterizedType {
                         if (Primitives.isPrimitiveExcludingVoid(this)) {
                             return inspectionProvider.getPrimitives().isAssignableFromTo(type, this);
                         }
-                        return checkBoxing(inspectionProvider.getPrimitives(), type.typeInfo) ? BOXING_FROM_PRIMITIVE : NOT_ASSIGNABLE;
+                        return checkBoxing(inspectionProvider, type.typeInfo) ? BOXING_FROM_PRIMITIVE : NOT_ASSIGNABLE;
                     }
                     // TODO; for now: primitive array can only be assigned to its own type
                     return NOT_ASSIGNABLE;
                 }
                 if (Primitives.isPrimitiveExcludingVoid(this)) {
                     // the other one is not a primitive
-                    return arrays == 0 && type.checkBoxing(inspectionProvider.getPrimitives(), typeInfo) ? BOXING_TO_PRIMITIVE : NOT_ASSIGNABLE;
+                    return arrays == 0 && type.checkBoxing(inspectionProvider, typeInfo) ? BOXING_TO_PRIMITIVE : NOT_ASSIGNABLE;
                 }
 
                 TypeInspection typeInspection = inspectionProvider.getTypeInspection(type.typeInfo);
@@ -547,8 +547,8 @@ public class ParameterizedType {
         return wildCard == WildCard.UNBOUND ? UNBOUND_WILDCARD : NOT_ASSIGNABLE; // <?> anything goes
     }
 
-    private boolean checkBoxing(Primitives primitives, TypeInfo primitiveType) {
-        TypeInfo boxed = primitiveType.asParameterizedType().toBoxed(primitives);
+    private boolean checkBoxing(InspectionProvider inspectionProvider, TypeInfo primitiveType) {
+        TypeInfo boxed = primitiveType.asParameterizedType(inspectionProvider).toBoxed(inspectionProvider.getPrimitives());
         return boxed == typeInfo;
     }
 

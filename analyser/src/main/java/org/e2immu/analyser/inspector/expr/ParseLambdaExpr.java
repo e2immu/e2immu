@@ -109,7 +109,7 @@ public class ParseLambdaExpr {
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}", functionalType, anonymousType.fullyQualifiedName);
 
         expressionContext.addNewlyCreatedType(anonymousType);
-        return new Lambda(functionalType, anonymousType.asParameterizedType());
+        return new Lambda(functionalType, anonymousType.asParameterizedType(expressionContext.typeContext));
     }
 
     // experimental: we look at the parameters, and return an expression which is superficial, with only

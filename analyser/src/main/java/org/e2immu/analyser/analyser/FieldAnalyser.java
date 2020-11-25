@@ -550,7 +550,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         } else {
             combinedValue = CombinedValue.create(analyserContext.getPrimitives(), values);
         }
-        This thisVariable = new This(fieldInfo.owner);
+        This thisVariable = new This(analyserContext, fieldInfo.owner);
         FieldReference fieldReference = new FieldReference(analyserContext,
                 fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
         /*

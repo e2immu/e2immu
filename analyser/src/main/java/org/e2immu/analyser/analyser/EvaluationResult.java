@@ -355,7 +355,7 @@ public class EvaluationResult {
             if (variable instanceof This) {
                 v = variable;
             } else if (variable.concreteReturnType().typeInfo == evaluationContext.getCurrentType()) {
-                v = new This(evaluationContext.getCurrentType());
+                v = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
             } else v = null;
             if (v != null) {
                 addToModifications(statementAnalyser.new SetProperty(v, VariableProperty.METHOD_CALLED, methodCalled));

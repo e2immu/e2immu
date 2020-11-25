@@ -207,7 +207,7 @@ public class MethodLevelData {
         if (evaluationContext.getIteration() > 0) return DONE;
 
         VariableInfoContainer thisVi = statementAnalysis.findForWriting(evaluationContext.getAnalyserContext(),
-                new This(evaluationContext.getCurrentType()));
+                new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType()));
         thisVi.setProperty(VIC_LEVEL, VariableProperty.ASSIGNED, Level.FALSE);
         thisVi.ensureProperty(VIC_LEVEL, VariableProperty.READ, Level.FALSE);
         thisVi.ensureProperty(VIC_LEVEL, VariableProperty.METHOD_CALLED, Level.FALSE);

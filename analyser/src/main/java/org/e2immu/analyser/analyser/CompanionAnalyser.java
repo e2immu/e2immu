@@ -132,14 +132,14 @@ public class CompanionAnalyser {
             if (aspectVariables >= 1 && parameterInfo.index == 0) {
                 // this is the aspect as a method call
                 MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
-                Value scope = new VariableValue(new This(aspectMethod.typeInfo));
+                Value scope = new VariableValue(new This(analyserContext, aspectMethod.typeInfo));
                 value = new MethodValue(aspectMethod, scope, List.of(), ObjectFlow.NO_FLOW);
             } else if (aspectVariables >= 2 && parameterInfo.index == 1) {
                 // this is the initial aspect value in a Modification$Aspect
                 MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
                 ParameterizedType returnType = aspectMethod.returnType();
                 // the value that we store is the same as that for the post-variable (see previous if-statement)
-                Value scope = new VariableValue(new This(aspectMethod.typeInfo));
+                Value scope = new VariableValue(new This(analyserContext, aspectMethod.typeInfo));
                 MethodValue methodValue = new MethodValue(aspectMethod, scope, List.of(), ObjectFlow.NO_FLOW);
                 value = new VariableValue(new PreAspectVariable(returnType, methodValue));
                 companionAnalysis.preAspectVariableValue.set(value);

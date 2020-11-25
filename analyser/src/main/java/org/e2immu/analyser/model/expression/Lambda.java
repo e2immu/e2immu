@@ -133,7 +133,7 @@ public class Lambda implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        ParameterizedType parameterizedType = methodInfo.typeInfo.asParameterizedType();
+        ParameterizedType parameterizedType = methodInfo.typeInfo.asParameterizedType(evaluationContext.getAnalyserContext());
         Location location = evaluationContext.getLocation(this);
         ObjectFlow objectFlow = builder.createInternalObjectFlow(location, parameterizedType, Origin.NEW_OBJECT_CREATION);
         Value result = null;

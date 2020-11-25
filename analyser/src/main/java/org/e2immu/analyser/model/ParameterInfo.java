@@ -46,10 +46,6 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
     public final SetOnce<ParameterInspection> parameterInspection = new SetOnce<>();
     public final MethodInfo owner;
 
-    public ParameterInfo(MethodInfo owner, TypeInfo typeInfo, String name, int index) {
-        this(owner, typeInfo.asParameterizedType(), name, index);
-    }
-
     public ParameterInfo(MethodInfo owner, ParameterizedType parameterizedType, String name, int index) {
         // can be null, in lambda's
         this.parameterizedType = parameterizedType;

@@ -355,7 +355,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             throw new UnsupportedOperationException("NYI");
         }
         if (variable instanceof This) {
-            ObjectFlow objectFlow = new ObjectFlow(new Location(typeInfo), typeInfo.asParameterizedType(), Origin.NO_ORIGIN);
+            ObjectFlow objectFlow = new ObjectFlow(new Location(typeInfo), typeInfo.asParameterizedType(analyserContext), Origin.NO_ORIGIN);
             return new VariableValue(variable, objectFlow);
         }
         throw new UnsupportedOperationException();

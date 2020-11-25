@@ -341,11 +341,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return Optional.empty();
     }
 
-    public ParameterizedType asParameterizedType() {
-        return new ParameterizedType(this, typeInspection.get().typeParameters()
-                .stream().map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toList()));
-    }
-
     public ParameterizedType asParameterizedType(InspectionProvider inspectionProvider) {
         return new ParameterizedType(this, inspectionProvider.getTypeInspection(this).typeParameters()
                 .stream().map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toList()));
