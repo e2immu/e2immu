@@ -725,15 +725,16 @@ public class Resolver {
         return MethodResolution.CallStatus.NOT_CALLED_AT_ALL;
     }
 
-    private static Set<TypeInfo> superTypesExcludingJavaLangObject(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
+    public static Set<TypeInfo> superTypesExcludingJavaLangObject(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
         if (Primitives.isJavaLangObject(typeInfo)) return Set.of();
         List<TypeInfo> list = new ArrayList<>();
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
-        boolean parentIsNotJLO = !Primitives.isJavaLangObject(typeInspection.parentClass());
-        if (parentIsNotJLO) {
+        if (typeInspection.parentClass() != null && typeInspection.parentClass().typeInfo != null) {
             TypeInfo parent = Objects.requireNonNull(typeInspection.parentClass().typeInfo);
             list.add(parent);
             list.addAll(superTypesExcludingJavaLangObject(inspectionProvider, parent));
+        } else {
+            assert !Primitives.needsParent(typeInfo) : "? " + typeInfo.fullyQualifiedName + " needs parent";
         }
 
         typeInspection.interfacesImplemented().forEach(i -> {

@@ -203,7 +203,9 @@ public class Primitives {
     }
 
     public static boolean needsParent(TypeInfo typeInfo) {
-        return !isJavaLangObject(typeInfo) && !typeInfo.fullyQualifiedName.startsWith("jdk.internal");
+        return typeInfo.fullyQualifiedName.indexOf('.') > 0 &&
+                !typeInfo.fullyQualifiedName.startsWith("java.lang") &&
+                !typeInfo.fullyQualifiedName.startsWith("jdk.internal");
     }
 
     private MethodInfo createOperator(TypeInfo owner, String name, List<ParameterizedType> parameterizedTypes, ParameterizedType returnType) {
