@@ -185,7 +185,7 @@ public class TypeInspector {
             // of the type parameters
             int tpIndex = 0;
             for (com.github.javaparser.ast.type.TypeParameter typeParameter : cid.getTypeParameters()) {
-                TypeParameter tp = new TypeParameter(typeInfo, typeParameter.getNameAsString(), tpIndex++);
+                TypeParameterImpl tp = new TypeParameterImpl(typeInfo, typeParameter.getNameAsString(), tpIndex++);
                 expressionContext.typeContext.addToContext(tp);
                 tp.inspect(expressionContext.typeContext, typeParameter);
             }
@@ -202,12 +202,9 @@ public class TypeInspector {
             if (bd.isAnnotationMemberDeclaration()) {
                 AnnotationMemberDeclaration amd = bd.asAnnotationMemberDeclaration();
                 log(INSPECT, "Have member {} in {}", amd.getNameAsString(), typeInfo.fullyQualifiedName);
-                String methodName = amd.getName().getIdentifier();
-                MethodInfo methodInfo = new MethodInfo(typeInfo, methodName, List.of(),
-                        expressionContext.typeContext.getPrimitives().voidParameterizedType, true, true);
-                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, methodInfo, fullInspection);
+                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo, fullInspection);
                 methodInspector.inspect(amd, subContext);
-                builder.addMethod(methodInfo);
+                builder.addMethod(methodInspector.getBuilder().build().getMethodInfo());
             }
         }
     }
@@ -225,32 +222,26 @@ public class TypeInspector {
             // TODO we have arguments, class body
         });
         Primitives primitives = expressionContext.typeContext.getPrimitives();
-        MethodInfo nameMethodInfo = new MethodInfo(typeInfo, "name", List.of(),
-                primitives.stringParameterizedType, false);
         E2ImmuAnnotationExpressions e2 = expressionContext.typeContext.typeMapBuilder.getE2ImmuAnnotationExpressions();
-        nameMethodInfo.methodInspection.set(new MethodInspectionImpl.Builder(nameMethodInfo)
-                .addAnnotation(e2.notModified)
+
+        MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(typeInfo, "name")
                 .setReturnType(primitives.stringParameterizedType)
-                .build());
+                .addAnnotation(e2.notModified);
+        builder.addMethod(nameBuilder.build().getMethodInfo());
 
-        MethodInfo valueOfMethodInfo = new MethodInfo(typeInfo, "valueOf", List.of(),
-                primitives.stringParameterizedType, true);
-        MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(valueOfMethodInfo)
-                .addAnnotation(e2.notModified).setReturnType(typeInfo.asParameterizedType());
-
-        ParameterInfo valueOfP0 = new ParameterInfo(valueOfMethodInfo, primitives.stringParameterizedType, "name", 0);
-        ParameterInspectionImpl.Builder valueOfP0B = valueOfBuilder.addParameterCreateBuilder(valueOfP0);
-        valueOfP0B.addAnnotation(e2.notNull);
-
-        valueOfMethodInfo.methodInspection.set(valueOfBuilder.build());
-
-        builder.addMethod(nameMethodInfo).addMethod(valueOfMethodInfo);
+        MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf")
+                .setReturnType(typeInfo.asParameterizedType())
+                .setStatic(true)
+                .addAnnotation(e2.notModified);
+        ParameterInspectionImpl.Builder valueOfP0B = new ParameterInspectionImpl.Builder(primitives.stringParameterizedType,
+                "name", 0).addAnnotation(e2.notNull);
+        builder.addMethod(valueOfBuilder.addParameter(valueOfP0B).build().getMethodInfo());
     }
 
     private void doClassOrInterfaceDeclaration(ExpressionContext expressionContext, ClassOrInterfaceDeclaration cid) {
         int tpIndex = 0;
         for (com.github.javaparser.ast.type.TypeParameter typeParameter : cid.getTypeParameters()) {
-            TypeParameter tp = new TypeParameter(typeInfo, typeParameter.getNameAsString(), tpIndex++);
+            TypeParameterImpl tp = new TypeParameterImpl(typeInfo, typeParameter.getNameAsString(), tpIndex++);
             expressionContext.typeContext.addToContext(tp);
             tp.inspect(expressionContext.typeContext, typeParameter);
             builder.addTypeParameter(tp);
@@ -418,11 +409,10 @@ public class TypeInspector {
 
         for (BodyDeclaration<?> bodyDeclaration : members) {
             bodyDeclaration.ifConstructorDeclaration(cd -> {
-                MethodInfo methodInfo = new MethodInfo(typeInfo, List.of());
-                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, methodInfo,
+                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
                         fullInspection);
                 methodInspector.inspect(cd, subContext, companionMethodsWaiting, dollarResolver);
-                builder.addConstructor(methodInfo);
+                builder.addConstructor(methodInspector.getBuilder().build().getMethodInfo());
                 companionMethodsWaiting.clear();
             });
             bodyDeclaration.ifMethodDeclaration(md -> {
@@ -432,13 +422,13 @@ public class TypeInspector {
                 CompanionMethodName companionMethodName = CompanionMethodName.extract(methodName);
                 boolean methodFullInspection = fullInspection || companionMethodName != null;
 
-                MethodInfo methodInfo = new MethodInfo(typeInfo, methodName, List.of(),
-                        expressionContext.typeContext.getPrimitives().voidParameterizedType, md.isStatic(), md.isDefault());
-                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, methodInfo,
+                MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
                         methodFullInspection);
                 methodInspector.inspect(isInterface, md, subContext,
                         companionMethodName != null ? Map.of() : companionMethodsWaiting, dollarResolver);
-                if (isInterface && !methodInfo.isStatic && !methodInfo.isDefaultImplementation) {
+                MethodInspection methodInspection = methodInspector.getBuilder().build();
+                MethodInfo methodInfo = methodInspection.getMethodInfo();
+                if (isInterface && !methodInspection.isStatic() && !methodInspection.isDefault()) {
                     countNonStaticNonDefaultIfInterface.incrementAndGet();
                 }
                 if (companionMethodName != null) {

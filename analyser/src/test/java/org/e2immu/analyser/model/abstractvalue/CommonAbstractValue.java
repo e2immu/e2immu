@@ -30,7 +30,6 @@ import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Logger;
 import org.junit.BeforeClass;
 
-import java.util.List;
 import java.util.Set;
 
 import static org.e2immu.analyser.model.TypeInspectionImpl.InspectionState.BY_HAND;
@@ -162,19 +161,19 @@ public abstract class CommonAbstractValue {
         }
         TypeInfo someType = TypeInfo.fromFqn("some.type");
         someType.typeAnalysis.set(new TypeAnalysisImpl.Builder(PRIMITIVES, someType).build());
-        MethodInfo methodInfo = new MethodInfo(someType, List.of());
-        ParameterInfo pi = new ParameterInfo(methodInfo, PRIMITIVES.stringParameterizedType, name, 0);
-        pi.setAnalysis(new ParameterAnalysisImpl.Builder(PRIMITIVES, null, pi));
-        methodInfo.methodInspection.set(new MethodInspectionImpl.Builder(methodInfo)
-                .addParameterFluently(pi)
-                .build());
+        MethodInspectionImpl.Builder methodBuilder = new MethodInspectionImpl.Builder(someType, "someMethod");
+        ParameterInspectionImpl.Builder pi = new ParameterInspectionImpl.Builder(PRIMITIVES.stringParameterizedType, name, 0);
+        methodBuilder.addParameter(pi);
+        MethodInfo methodInfo = methodBuilder.build().getMethodInfo();
+        ParameterInfo p0 = methodInfo.methodInspection.get().getParameters().get(0);
+        p0.setAnalysis(new ParameterAnalysisImpl.Builder(PRIMITIVES, null, p0));
+
         someType.typeInspection.set(new TypeInspectionImpl.Builder(someType, BY_HAND)
                 .setPackageName("org.e2immu.test")
                 .setParentClass(PRIMITIVES.objectParameterizedType)
                 .addMethod(methodInfo)
                 .build());
-        //methodInfo.methodAnalysis.set(new MethodAnalysis(methodInfo));
-        return pi;
+        return p0;
     }
 
     protected final static AnalyserContext analyserContext = new AnalyserContext() {

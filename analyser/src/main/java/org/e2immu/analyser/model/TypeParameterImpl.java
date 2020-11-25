@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.parser.TypeContext;
 import org.e2immu.analyser.util.Either;
+import org.e2immu.analyser.util.SetOnce;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,23 +32,28 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class TypeParameterImpl implements TypeParameter {
 
-    public final Either<TypeInfo, MethodInfo> owner;
     public final String name;
     public final int index;
-    public final List<ParameterizedType> typeBounds;
 
-    private TypeParameterImpl(Either<TypeInfo, MethodInfo> owner, String name, int index, List<ParameterizedType> typeBounds) {
+    // typeInfo can be set straight away, but methodInfo has to wait until
+    // method building is sufficiently far
+    private final SetOnce<Either<TypeInfo, MethodInfo>> owner = new SetOnce<>();
+    private final SetOnce<List<ParameterizedType>> typeBounds = new SetOnce<>();
+
+    public TypeParameterImpl(String name, int index) {
         this.name = name;
         this.index = index;
-        this.owner = owner;
-        this.typeBounds = typeBounds;
     }
 
+    public TypeParameterImpl(TypeInfo typeInfo, String name, int index) {
+        this(name, index);
+        owner.set(Either.left(typeInfo));
+    }
 
     @Override
     public String toString() {
-        String where = owner.isLeft() ? owner.getLeft().fullyQualifiedName :
-                owner.getRight().fullyQualifiedName();
+        String where = owner.isSet() ? (owner.get().isLeft() ? owner.get().getLeft().fullyQualifiedName :
+                owner.get().getRight().fullyQualifiedName()) : "<no owner yet>";
         return name + " as #" + index + " in " + where;
     }
 
@@ -67,7 +73,7 @@ public class TypeParameterImpl implements TypeParameter {
 
     @Override
     public Either<TypeInfo, MethodInfo> getOwner() {
-        return owner;
+        return owner.getOrElse(null);
     }
 
     @Override
@@ -77,7 +83,7 @@ public class TypeParameterImpl implements TypeParameter {
 
     @Override
     public List<ParameterizedType> getTypeBounds() {
-        return typeBounds;
+        return typeBounds.getOrElse(List.of());
     }
 
     @Override
@@ -85,63 +91,25 @@ public class TypeParameterImpl implements TypeParameter {
         return name;
     }
 
-    public static class Builder implements TypeParameter {
-        private TypeInfo typeInfo;
-        private MethodInfo methodInfo;
-        private final List<ParameterizedType> typeBounds = new ArrayList<>();
-        private String name;
-        private int index;
+    public void setMethodInfo(MethodInfo methodInfo) {
+        owner.set(Either.right(methodInfo));
+    }
+    // from method and type inspector
 
-        public void setTypeInfo(TypeInfo typeInfo) {
-            this.typeInfo = typeInfo;
-        }
+    public void inspect(TypeContext typeContext, com.github.javaparser.ast.type.TypeParameter typeParameter) {
+        List<ParameterizedType> typeBounds = new ArrayList<>();
+        typeParameter.getTypeBound().forEach(cit -> {
+            log(INSPECT, "Inspecting type parameter {}", cit.getName().asString());
+            ParameterizedType bound = ParameterizedType.from(typeContext, cit);
+            typeBounds.add(bound);
+        });
+        setTypeBounds(typeBounds);
+    }
 
-        public Builder setMethodInfo(MethodInfo methodInfo) {
-            this.methodInfo = methodInfo;
-            return this;
-        }
+    // from byte code inspector
 
-        public Builder setName(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public Builder setIndex(int index) {
-            this.index = index;
-            return this;
-        }
-
-        public TypeParameterImpl build() {
-            return new TypeParameterImpl(getOwner(), name, index, ImmutableList.copyOf(typeBounds));
-        }
-
-        public void computeTypeBounds(TypeContext typeContext, com.github.javaparser.ast.type.TypeParameter typeParameter) {
-            typeParameter.getTypeBound().forEach(cit -> {
-                log(INSPECT, "Inspecting type parameter {}", cit.getName().asString());
-                ParameterizedType bound = ParameterizedType.from(typeContext, cit);
-                typeBounds.add(bound);
-            });
-        }
-
-        @Override
-        public Either<TypeInfo, MethodInfo> getOwner() {
-            return typeInfo != null ? Either.left(typeInfo) : Either.right(methodInfo);
-        }
-
-        @Override
-        public String getName() {
-            return name;
-        }
-
-        @Override
-        public int getIndex() {
-            return index;
-        }
-
-        @Override
-        public List<ParameterizedType> getTypeBounds() {
-            return typeBounds;
-        }
+    public void setTypeBounds(List<ParameterizedType> typeBounds) {
+        this.typeBounds.set(ImmutableList.copyOf(typeBounds));
     }
 
 }

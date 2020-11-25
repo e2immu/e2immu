@@ -36,7 +36,6 @@ import static org.objectweb.asm.Opcodes.ASM7;
 public class MyMethodVisitor extends MethodVisitor {
     private final TypeInspectionImpl.Builder typeInspectionBuilder;
     private final TypeContext typeContext;
-    private final MethodInfo methodInfo;
     private final MethodInspectionImpl.Builder methodInspectionBuilder;
     private final List<ParameterizedType> types;
     private final ParameterInspectionImpl.Builder[] parameterInspectionBuilders;
@@ -48,7 +47,6 @@ public class MyMethodVisitor extends MethodVisitor {
     private final boolean lastParameterIsVarargs;
 
     public MyMethodVisitor(TypeContext typeContext,
-                           MethodInfo methodInfo,
                            MethodInspectionImpl.Builder methodInspectionBuilder,
                            TypeInspectionImpl.Builder typeInspectionBuilder,
                            List<ParameterizedType> types,
@@ -57,7 +55,6 @@ public class MyMethodVisitor extends MethodVisitor {
                            JetBrainsAnnotationTranslator jetBrainsAnnotationTranslator) {
         super(ASM7);
         this.typeContext = typeContext;
-        this.methodInfo = methodInfo;
         this.methodInspectionBuilder = methodInspectionBuilder;
         this.typeInspectionBuilder = typeInspectionBuilder;
         this.types = types;
@@ -86,15 +83,16 @@ public class MyMethodVisitor extends MethodVisitor {
 
     @Override
     public void visitLocalVariable(String name, String descriptor, String signature, Label start, Label end, int index) {
-        int parameterIndex = countLocalVars - (methodInspectionBuilder.isStatic() ? 0 : 1);
-        if (parameterIndex >= 0 && parameterIndex < numberOfParameters) {
-            ParameterizedType parameterizedType = types.get(parameterIndex);
-            ParameterInfo parameterInfo = new ParameterInfo(methodInfo, parameterizedType, name, parameterIndex);
-            methodInspectionBuilder.addParameter(parameterInfo);
-            if (lastParameterIsVarargs && parameterIndex == numberOfParameters - 1) {
-                parameterInspectionBuilders[parameterIndex].setVarArgs(true);
+        int i = countLocalVars - (methodInspectionBuilder.isStatic() ? 0 : 1);
+        if (i >= 0 && i < numberOfParameters) {
+            ParameterizedType parameterizedType = types.get(i);
+            ParameterInspectionImpl.Builder pib = parameterInspectionBuilders[i];
+            pib.setName(name);
+            pib.setParameterizedType(parameterizedType);
+            if (lastParameterIsVarargs && i == numberOfParameters - 1) {
+                parameterInspectionBuilders[i].setVarArgs(true);
             }
-            hasNameFromLocalVar[parameterIndex] = true;
+            hasNameFromLocalVar[i] = true;
         }
         countLocalVars++;
     }
@@ -104,17 +102,17 @@ public class MyMethodVisitor extends MethodVisitor {
         ParameterNameFactory factory = new ParameterNameFactory();
         for (int i = 0; i < numberOfParameters; i++) {
             if (!hasNameFromLocalVar[i]) {
+                ParameterInspectionImpl.Builder pib = parameterInspectionBuilders[i];
                 ParameterizedType type = types.get(i);
-                String parameterName = factory.next(type);
-                ParameterInfo parameterInfo = new ParameterInfo(methodInfo, type, parameterName, i);
-                ParameterInspectionImpl.Builder pib = methodInspectionBuilder.addParameterCreateBuilder(parameterInfo);
-                parameterInspectionBuilders[i] = pib;
+                pib.setParameterizedType(type);
+                pib.setName(factory.next(type));
                 if (lastParameterIsVarargs && i == numberOfParameters - 1) {
                     pib.setVarArgs(true);
                 }
                 log(BYTECODE_INSPECTOR_DEBUG, "Set parameterInspection {}", i);
             }
         }
+        MethodInfo methodInfo = methodInspectionBuilder.build().getMethodInfo();
         if (methodItem != null) {
             for (ParameterItem parameterItem : methodItem.getParameterItems()) {
                 if (parameterItem.index < parameterInspectionBuilders.length) {

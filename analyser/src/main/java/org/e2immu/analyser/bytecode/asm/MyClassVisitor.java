@@ -292,11 +292,12 @@ public class MyClassVisitor extends ClassVisitor {
                 iterativeParsing = iterativelyParseGenerics(signature,
                         iterativeParsing,
                         name -> {
-                            TypeParameter typeParameter = new TypeParameter(currentType, name, index.getAndIncrement());
-                            typeInspectionBuilder.addTypeParameter(typeParameter);
+                            TypeParameterImpl typeParameter = new TypeParameterImpl(currentType, name, index.getAndIncrement());
                             typeContext.addToContext(typeParameter);
+                            typeInspectionBuilder.addTypeParameter(typeParameter);
                             return typeParameter;
-                        }, typeContext,
+                        },
+                        typeContext,
                         this::mustFindTypeInfo);
                 if (iterativeParsing == null) {
                     return -1; // error state
@@ -310,7 +311,7 @@ public class MyClassVisitor extends ClassVisitor {
 
     private IterativeParsing iterativelyParseGenerics(String signature,
                                                       IterativeParsing iterativeParsing,
-                                                      Function<String, TypeParameter> onTypeParameterName,
+                                                      Function<String, TypeParameterImpl> createTypeParameterAndAddToContext,
                                                       TypeContext typeContext,
                                                       FindType findType) {
         int colon = signature.indexOf(':', iterativeParsing.startPos);
@@ -320,7 +321,7 @@ public class MyClassVisitor extends ClassVisitor {
         // method getAnnotation in java.lang.reflect.AnnotatedElement
 
         String name = signature.substring(iterativeParsing.startPos, colon);
-        TypeParameter typeParameter = onTypeParameterName.apply(name);
+        TypeParameterImpl typeParameter = createTypeParameterAndAddToContext.apply(name);
         ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext, findType,
                 signature.substring(afterColon));
         if (result == null) return null; // unable to load type
@@ -330,7 +331,7 @@ public class MyClassVisitor extends ClassVisitor {
         } else {
             typeBounds = List.of(result.parameterizedType);
         }
-        typeParameter.typeParameterInspection.set(new TypeParameterInspection(typeBounds));
+        typeParameter.setTypeBounds(typeBounds);
 
         int end = result.nextPos + afterColon;
         char atEnd = signature.charAt(end);
@@ -452,7 +453,7 @@ public class MyClassVisitor extends ClassVisitor {
             }
         }
 
-        return new MyMethodVisitor(methodContext, methodInfo, methodInspectionBuilder, typeInspectionBuilder, types,
+        return new MyMethodVisitor(methodContext, methodInspectionBuilder, typeInspectionBuilder, types,
                 lastParameterIsVarargs, methodItem, jetBrainsAnnotationTranslator);
     }
 
@@ -472,7 +473,7 @@ public class MyClassVisitor extends ClassVisitor {
             do {
                 iterativeParsing = iterativelyParseGenerics(signature,
                         iterativeParsing, name -> {
-                            TypeParameter typeParameter = new TypeParameter(methodInfo, name, index.getAndIncrement());
+                            TypeParameterImpl typeParameter = new TypeParameterImpl(name, index.getAndIncrement());
                             methodInspectionBuilder.addTypeParameter(typeParameter);
                             methodContext.addToContext(typeParameter);
                             return typeParameter;

@@ -47,18 +47,16 @@ public class TestTypeInfoStream {
 
     final Primitives primitives = new Primitives();
 
-    TypeParameter typeParameterT = new TypeParameter(containerTypeInfo, "T", 0);
+    TypeParameter typeParameterT = new TypeParameterImpl(containerTypeInfo, "T", 0);
     ParameterizedType typeT = new ParameterizedType(typeParameterT, 0, ParameterizedType.WildCard.NONE);
 
-    final MethodInfo genericContainerPutMethod = new MethodInfo(containerTypeInfo, "put",
-            List.of(),
-            typeT, false);
+    final MethodInfo genericContainerPutMethod = new MethodInspectionImpl.Builder(containerTypeInfo, "put")
+            .setReturnType(typeT).build().getMethodInfo();
 
-    final MethodInfo emptyConstructor = new MethodInfo(typeInfo, List.of());
-    final MethodInfo toStringMethodInfo = new MethodInfo(typeInfo, "toString", List.of(),
-            primitives.stringParameterizedType, false);
-
-    final MethodInfo intSum = new MethodInfo(typeInfo, "sum", List.of(), primitives.intParameterizedType, true);
+    final MethodInfo emptyConstructor = new MethodInspectionImpl.Builder(containerTypeInfo).build().getMethodInfo();
+    final MethodInfo toStringMethodInfo = new MethodInspectionImpl.Builder(typeInfo, "toString")
+            .addModifier(MethodModifier.PUBLIC)
+            .setReturnType(primitives.stringParameterizedType).build().getMethodInfo();
 
     @Test
     public void test() {
@@ -76,12 +74,12 @@ public class TestTypeInfoStream {
                 .setName("map")
                 .setParameterizedType(new ParameterizedType(map, List.of(primitives.stringParameterizedType, typeT)))
                 .build();
-        MethodInfo hashMapConstructor = new MethodInfo(hashMap, List.of());
+        MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap).build().getMethodInfo();
         Expression creationExpression = new NewObject(hashMapConstructor, hashMapParameterizedType, List.of(), null);
-        ParameterInfo p0 = new ParameterInfo(hashMapConstructor, typeT, "value", 0);
-        genericContainerPutMethod.methodInspection.set(new MethodInspectionImpl.Builder(genericContainerPutMethod)
+        ParameterInspectionImpl.Builder p0 = new ParameterInspectionImpl.Builder(typeT, "value", 0);
+        genericContainerPutMethod.methodInspection.set(new MethodInspectionImpl.Builder(hashMap)
                 .setReturnType(typeT)
-                .addParameterFluently(p0)
+                .addParameter(p0)
                 //.addAnnotation(new AnnotationExpression(jdk.override))
                 //.addExceptionType(new ParameterizedType(jdk.ioException))
                 .setInspectedBlock(
@@ -149,12 +147,10 @@ public class TestTypeInfoStream {
 
         TypeInfo commutative = TypeInfo.createFqnOrPackageNameDotSimpleName(GENERATED_PACKAGE, "Commutative");
         TypeInfo testEquivalent = TypeInfo.createFqnOrPackageNameDotSimpleName(TEST_PACKAGE, "TestEquivalent");
-        MethodInfo referenceMethodInfo = new MethodInfo(testEquivalent, "reference", List.of(),
-                primitives.stringParameterizedType, false);
-        referenceMethodInfo.methodInspection.set(new MethodInspectionImpl.Builder(referenceMethodInfo)
-                .setReturnType(primitives.stringTypeInfo)
+        MethodInfo referenceMethodInfo = new MethodInspectionImpl.Builder(testEquivalent, "reference")
+                .setReturnType(primitives.stringParameterizedType)
                 .setInspectedBlock(new Block.BlockBuilder().build())
-                .build());
+                .build().getMethodInfo();
         testEquivalent.typeInspection.set(new TypeInspectionImpl.Builder(testEquivalent, BY_HAND)
                 .setParentClass(primitives.objectParameterizedType)
                 .setPackageName(TEST_PACKAGE)
@@ -162,24 +158,25 @@ public class TestTypeInfoStream {
                 .addMethod(referenceMethodInfo)
                 .build());
 
-        toStringMethodInfo.methodInspection.set(new MethodInspectionImpl.Builder(toStringMethodInfo)
-                .addModifier(MethodModifier.PUBLIC)
-                .setReturnType(primitives.stringTypeInfo)
-                .build());
-        emptyConstructor.methodInspection.set(new MethodInspectionImpl.Builder(emptyConstructor)
-                .build());
-        ParameterInfo x = new ParameterInfo(intSum, primitives.intTypeInfo, "x", 0);
-        ParameterInfo y = new ParameterInfo(intSum, primitives.intTypeInfo, "y", 1);
+        MethodInspectionImpl.Builder intSumBuilder = new MethodInspectionImpl.Builder(typeInfo, "sum")
+                .setReturnType(primitives.intParameterizedType).setStatic(true);
+
+        ParameterInspectionImpl.Builder xb = new ParameterInspectionImpl.Builder(primitives.intParameterizedType, "x", 0);
+        ParameterInspectionImpl.Builder yb = new ParameterInspectionImpl.Builder(primitives.intParameterizedType, "y", 1);
 
         TypeInfo exception = TypeInfo.createFqnOrPackageNameDotSimpleName(GENERATED_PACKAGE, "MyException");
         ParameterizedType exceptionType = exception.asParameterizedType();
 
-        intSum.methodInspection.set(new MethodInspectionImpl.Builder(intSum)
+        intSumBuilder
                 .addModifier(MethodModifier.PUBLIC)
                 .addExceptionType(exceptionType)
-                .setReturnType(primitives.intTypeInfo)
-                .addParameterFluently(x)
-                .addParameterFluently(y)
+                .setReturnType(primitives.intParameterizedType)
+                .addParameter(xb)
+                .addParameter(yb);
+        intSumBuilder.readyToComputeFQN();
+        ParameterInfo x = intSumBuilder.getParameters().get(0);
+        ParameterInfo y = intSumBuilder.getParameters().get(0);
+        MethodInfo intSum = intSumBuilder
                 .addAnnotation(new AnnotationExpressionImpl(commutative, List.of()))
                 .addAnnotation(new AnnotationExpressionImpl(testEquivalent, List.of(new StringConstant(primitives, "hello"))))
                 .setInspectedBlock(
@@ -189,7 +186,7 @@ public class TestTypeInfoStream {
                                                 new VariableExpression(x), primitives.plusOperatorInt, new VariableExpression(y), BinaryOperator.ADDITIVE_PRECEDENCE
                                         ))
                         ).build())
-                .build());
+                .build().getMethodInfo();
 
         TypeInspection typeInspection = new TypeInspectionImpl.Builder(typeInfo, BY_HAND)
                 .addTypeModifier(TypeModifier.PUBLIC)

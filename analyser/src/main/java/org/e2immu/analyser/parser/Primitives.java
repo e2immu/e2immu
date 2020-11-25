@@ -327,13 +327,14 @@ public class Primitives {
     private void processEnum(TypeInfo typeInfo, List<FieldInfo> fields) {
         MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf").setStatic(true);
         ParameterInspectionImpl.Builder valueOf0Builder = new ParameterInspectionImpl.Builder(stringParameterizedType, "s", 0);
-        MethodInfo valueOf = valueOfBuilder.setReturnType(typeInfo)
+        ParameterizedType typeInfoAsPt = typeInfo.asParameterizedType();
+        MethodInfo valueOf = valueOfBuilder.setReturnType(typeInfoAsPt)
                 .addParameter(valueOf0Builder)
                 .addModifier(MethodModifier.PUBLIC)
                 .build().getMethodInfo();
 
         MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(typeInfo, "name");
-        MethodInfo name = nameBuilder.setReturnType(stringTypeInfo)
+        MethodInfo name = nameBuilder.setReturnType(stringParameterizedType)
                 .addModifier(MethodModifier.PUBLIC)
                 .build().getMethodInfo();
         TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND)

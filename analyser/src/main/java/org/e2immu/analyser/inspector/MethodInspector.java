@@ -47,15 +47,9 @@ public class MethodInspector {
     private final SetOnce<MethodInspectionImpl.Builder> builderOnceFQNIsKnown = new SetOnce<>();
     private final boolean fullInspection;
     private final TypeMapImpl.Builder typeMapBuilder;
-    private final String name;
-    private final boolean isConstructor;
     private final TypeInfo typeInfo;
 
-    public MethodInspector(TypeMapImpl.Builder typeMapBuilder,
-                           TypeInfo typeInfo,
-                           String name, boolean isConstructor, boolean fullInspection) {
-        this.name = name;
-        this.isConstructor = isConstructor;
+    public MethodInspector(TypeMapImpl.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection) {
         this.typeMapBuilder = typeMapBuilder;
         this.fullInspection = fullInspection;
         this.typeInfo = typeInfo;
@@ -75,6 +69,7 @@ public class MethodInspector {
      */
 
     public void inspect(AnnotationMemberDeclaration amd, ExpressionContext expressionContext) {
+        String name = amd.getNameAsString();
         log(INSPECT, "Inspecting annotation member {} in {}", name, typeInfo.fullyQualifiedName);
         MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo, name);
         MethodInspectionImpl.Builder builder = fqnIsKnown(tempBuilder);
@@ -109,12 +104,13 @@ public class MethodInspector {
     private void checkCompanionMethods(Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods) {
         for (Map.Entry<CompanionMethodName, MethodInspectionImpl.Builder> entry : companionMethods.entrySet()) {
             CompanionMethodName companionMethodName = entry.getKey();
-            MethodInspection methodInspection = entry.getValue();
+            MethodInspectionImpl.Builder methodInspection = entry.getValue();
             if (!methodInspection.getAnnotations().isEmpty()) {
                 throw new UnsupportedOperationException("Companion methods do not accept annotations: " + companionMethodName);
             }
-            if (!companionMethodName.methodName().equals(methodInfo.name)) {
-                throw new UnsupportedOperationException("Companion method's name differs from the method name: " + companionMethodName + " vs " + methodInfo.name);
+            if (!companionMethodName.methodName().equals(methodInspection.name)) {
+                throw new UnsupportedOperationException("Companion method's name differs from the method name: " +
+                        companionMethodName + " vs " + methodInspection.name);
             }
         }
     }
@@ -128,7 +124,7 @@ public class MethodInspector {
                         ExpressionContext expressionContext,
                         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
                         TypeInspector.DollarResolver dollarResolver) {
-        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(methodInfo);
+        MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo);
         addParameters(tempBuilder, cd.getParameters(), expressionContext, dollarResolver);
         MethodInspectionImpl.Builder builder = fqnIsKnown(tempBuilder);
 
@@ -156,18 +152,18 @@ public class MethodInspector {
                         ExpressionContext expressionContext,
                         Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods,
                         TypeInspector.DollarResolver dollarResolver) {
+        String name = md.getNameAsString();
         try {
-            MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder();
+            MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo, name);
 
             int tpIndex = 0;
             ExpressionContext newContext = md.getTypeParameters().isEmpty() ? expressionContext :
                     expressionContext.newTypeContext("Method type parameters");
             for (com.github.javaparser.ast.type.TypeParameter typeParameter : md.getTypeParameters()) {
-                TypeParameterImpl.Builder tp = new TypeParameterImpl.Builder().setName(typeParameter.getNameAsString())
-                        .setIndex(tpIndex++);
+                TypeParameterImpl tp = new TypeParameterImpl(typeParameter.getNameAsString(), tpIndex++);
                 tempBuilder.addTypeParameter(tp);
                 newContext.typeContext.addToContext(tp);
-                tp.computeTypeBounds(newContext.typeContext, typeParameter);
+                tp.inspect(newContext.typeContext, typeParameter);
             }
 
             addParameters(tempBuilder, md.getParameters(), newContext, dollarResolver);
@@ -192,7 +188,7 @@ public class MethodInspector {
                 }
             }
         } catch (RuntimeException e) {
-            LOGGER.error("Caught exception while inspecting method {}", methodInfo.fullyQualifiedName());
+            LOGGER.error("Caught exception while inspecting method {} in {}", name, typeInfo.fullyQualifiedName());
             throw e;
         }
     }
