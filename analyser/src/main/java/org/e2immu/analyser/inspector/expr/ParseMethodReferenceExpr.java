@@ -21,9 +21,9 @@ package org.e2immu.analyser.inspector.expr;
 import com.github.javaparser.ast.expr.MethodReferenceExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.*;
@@ -122,8 +122,10 @@ public class ParseMethodReferenceExpr {
         List<ParameterizedType> types = new ArrayList<>();
         types.add(parameterizedType);
         method.methodInspection.getParameters().stream().map(p -> p.parameterizedType).forEach(types::add);
-        ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, method.getConcreteReturnType());
-        log(METHOD_CALL, "End parsing method reference {}, found {}", methodNameForErrorReporting, method.methodInspection.getDistinguishingName());
+        ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(typeContext,
+                types, method.getConcreteReturnType());
+        log(METHOD_CALL, "End parsing method reference {}, found {}", methodNameForErrorReporting,
+                method.methodInspection.getDistinguishingName());
         return new MethodReference(scope, method.methodInspection.getMethodInfo(), functionalType);
     }
 

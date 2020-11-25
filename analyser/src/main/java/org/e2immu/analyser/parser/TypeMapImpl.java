@@ -198,8 +198,8 @@ public class TypeMapImpl implements TypeMap {
         }
 
         public void registerMethodInspection(MethodInspectionImpl.Builder builder) {
-            if (methodInspections.put(builder.getFullyQualifiedName(), builder) != null) {
-                throw new IllegalArgumentException("Re-registering method " + builder.getFullyQualifiedName());
+            if (methodInspections.put(builder.getDistinguishingName(), builder) != null) {
+                throw new IllegalArgumentException("Re-registering method " + builder.getDistinguishingName());
             }
         }
 
@@ -257,17 +257,17 @@ public class TypeMapImpl implements TypeMap {
 
         @Override
         public MethodInspection getMethodInspection(MethodInfo methodInfo) {
-            String fqn = methodInfo.fullyQualifiedName();
-            MethodInspection methodInspection = methodInspections.get(fqn);
+            String dn = methodInfo.distinguishingName();
+            MethodInspection methodInspection = methodInspections.get(dn);
             if (methodInspection != null) return methodInspection;
             // see if we can trigger an inspection
             getTypeInspection(methodInfo.typeInfo);
             // try again
-            return methodInspections.get(fqn);
+            return methodInspections.get(dn);
         }
 
-        public MethodInspection getMethodInspectionDoNotTrigger(String fullyQualifiedName) {
-            return methodInspections.get(fullyQualifiedName);
+        public MethodInspection getMethodInspectionDoNotTrigger(String distinguishingName) {
+            return methodInspections.get(distinguishingName);
         }
 
         @Override

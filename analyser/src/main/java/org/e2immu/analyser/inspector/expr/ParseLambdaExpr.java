@@ -103,7 +103,8 @@ public class ParseLambdaExpr {
             block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());
             inferredReturnType = block.mostSpecificReturnType(expressionContext.typeContext);
         }
-        ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(types, inferredReturnType);
+        ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(expressionContext.typeContext,
+                types, inferredReturnType);
         TypeInfo anonymousType = continueCreationOfAnonymousType(expressionContext.typeContext,
                 expressionContext.enclosingType, functionalType, ownerBuilder, block, inferredReturnType);
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}", functionalType, anonymousType.fullyQualifiedName);

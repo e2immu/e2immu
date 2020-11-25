@@ -288,7 +288,10 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                 inspectedBlock = Block.EMPTY_BLOCK;
             }
 
-            companionMethods.values().forEach(Builder::build);
+            // all companion methods have to have been built already!
+            companionMethods.values().forEach(builder -> {
+                assert builder.methodInfo != null && builder.methodInfo.methodInspection.isSet();
+            });
 
             // removed a check that the type parameter, if it belonged to a method, had to be this method.
             // that's not correct, lambdas can have a method parameter type belonging to the enclosing method.

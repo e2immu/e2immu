@@ -121,7 +121,8 @@ public class ParseMethodCallExpr {
             while (true) {
                 Expression evaluatedExpression = null;
                 // we know that all method candidates have an identical amount of parameters
-                Integer pos = findParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate(methodCandidates, evaluatedExpressions.keySet());
+                Integer pos = findParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate(
+                        inspectionProvider, methodCandidates, evaluatedExpressions.keySet());
                 if (pos == null) {
                     pos = findParameterWhereUnevaluatedLambdaWillHelp(inspectionProvider, expressions, methodCandidates, evaluatedExpressions.keySet());
                 }
@@ -322,7 +323,7 @@ public class ParseMethodCallExpr {
                 for (TypeContext.MethodCandidate mc : methodCandidates) {
                     MethodInspection mi = mc.method().methodInspection;
                     ParameterInfo pi = mi.getParameters().get(i);
-                    boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface();
+                    boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface(inspectionProvider);
                     if (isFunctionalInterface) {
                         MethodTypeParameterMap singleAbstractMethod = pi.parameterizedType.findSingleAbstractMethodOfInterface(inspectionProvider);
                         int numberOfParameters = singleAbstractMethod.methodInspection.getParameters().size();
@@ -378,8 +379,10 @@ public class ParseMethodCallExpr {
         return null;
     }
 
-    private static Integer findParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate
-            (List<TypeContext.MethodCandidate> methodCandidates, Set<Integer> ignore) {
+    private static Integer findParameterWithoutFunctionalInterfaceTypeOnAnyMethodCandidate(
+            InspectionProvider inspectionProvider,
+            List<TypeContext.MethodCandidate> methodCandidates,
+            Set<Integer> ignore) {
         if (methodCandidates.isEmpty()) return null;
         MethodInspection mi0 = methodCandidates.get(0).method().methodInspection;
         for (int i = 0; i < mi0.getParameters().size(); i++) {
@@ -389,7 +392,7 @@ public class ParseMethodCallExpr {
                     MethodInspection mi = mc.method().methodInspection;
                     if (i < mi.getParameters().size()) {
                         ParameterInfo pi = mi.getParameters().get(i);
-                        boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface();
+                        boolean isFunctionalInterface = pi.parameterizedType.isFunctionalInterface(inspectionProvider);
                         if (isFunctionalInterface) {
                             ok = false;
                             break;

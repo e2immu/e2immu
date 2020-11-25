@@ -241,22 +241,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return hasInspectedAnnotation(annotationFQN);
     }
 
-    // given R accept(T t), and types={string}, returnType=string, deduce that R=string, T=string, and we have Function<String, String>
-    public List<ParameterizedType> typeParametersComputed(List<ParameterizedType> types, ParameterizedType inferredReturnType) {
-        if (typeInfo.typeInspection.get().typeParameters().isEmpty()) return List.of();
-        return typeInfo.typeInspection.get().typeParameters().stream().map(typeParameter -> {
-            int cnt = 0;
-            for (ParameterInfo parameterInfo : methodInspection.get().getParameters()) {
-                if (parameterInfo.parameterizedType.typeParameter == typeParameter) {
-                    return types.get(cnt); // this is one we know!
-                }
-                cnt++;
-            }
-            if (methodInspection.get().getReturnType().typeParameter == typeParameter) return inferredReturnType;
-            return new ParameterizedType(typeParameter, 0, ParameterizedType.WildCard.NONE);
-        }).collect(Collectors.toList());
-    }
-
     @Override
     public String name() {
         return name;
@@ -266,81 +250,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return methodInspection.get().getParameters().stream()
                 .mapToInt(parameterInfo -> parameterInfo.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED))
                 .max().orElse(Level.FALSE);
-    }
-
-    public boolean sameMethod(MethodInfo target, Map<NamedType, ParameterizedType> translationMap) {
-        return name.equals(target.name) &&
-                sameParameters(methodInspection.get().getParameters(), target.methodInspection.get().getParameters(), translationMap);
-    }
-
-    private static boolean sameParameters(List<ParameterInfo> parametersOfMyMethod,
-                                          List<ParameterInfo> parametersOfTarget,
-                                          Map<NamedType, ParameterizedType> translationMap) {
-        if (parametersOfMyMethod.size() != parametersOfTarget.size()) return false;
-        int i = 0;
-        for (ParameterInfo parameterInfo : parametersOfMyMethod) {
-            ParameterInfo p2 = parametersOfTarget.get(i);
-            if (differentType(parameterInfo.parameterizedType, p2.parameterizedType, translationMap)) return false;
-            i++;
-        }
-        return true;
-    }
-
-    /**
-     * This method is NOT the same as <code>isAssignableFrom</code>, and it serves a different purpose.
-     * We need to take care to ensure that overloads are different.
-     * <p>
-     * java.lang.Appendable.append(java.lang.CharSequence) and java.lang.AbstractStringBuilder.append(java.lang.String)
-     * can exist together in one class. They are different, even if String is assignable to CharSequence.
-     * <p>
-     * On the other hand, int comparable(Value other) is the same method as int comparable(T) in Comparable.
-     * This is solved by taking the concrete type when we move from concrete types to parameterized types.
-     *
-     * @param inSuperType    first type
-     * @param inSubType      second type
-     * @param translationMap a map from type parameters in the super type to (more) concrete types in the sub-type
-     * @return true if the types are "different"
-     */
-    private static boolean differentType(ParameterizedType inSuperType,
-                                         ParameterizedType inSubType,
-                                         Map<NamedType, ParameterizedType> translationMap) {
-        Objects.requireNonNull(inSuperType);
-        Objects.requireNonNull(inSubType);
-        if (inSuperType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR && inSubType == inSuperType) return false;
-
-        if (inSuperType.typeInfo != null) {
-            if (inSubType.typeInfo != inSuperType.typeInfo) return true;
-            if (inSuperType.parameters.size() != inSubType.parameters.size()) return true;
-            int i = 0;
-            for (ParameterizedType param1 : inSuperType.parameters) {
-                ParameterizedType param2 = inSubType.parameters.get(i);
-                if (differentType(param1, param2, translationMap)) return true;
-                i++;
-            }
-            return false;
-        }
-        if (inSuperType.typeParameter != null && inSubType.typeInfo != null) {
-            // check if we can go from the parameter to the concrete type
-            ParameterizedType inMap = translationMap.get(inSuperType.typeParameter);
-            if (inMap == null) return true;
-            return differentType(inMap, inSubType, translationMap);
-        }
-        if (inSuperType.typeParameter == null && inSubType.typeParameter == null) return false;
-        if (inSuperType.typeParameter == null || inSubType.typeParameter == null) return true;
-        // they CAN have different indices, example in BiFunction TestTestExamplesWithAnnotatedAPIs, AnnotationsOnLambdas
-        ParameterizedType translated =
-                translationMap.get(inSuperType.typeParameter);
-        if (translated != null && translated.typeParameter == inSubType.typeParameter) return false;
-        if (inSubType.isUnboundParameterType() && inSuperType.isUnboundParameterType()) return false;
-        List<ParameterizedType> inSubTypeBounds = inSubType.typeParameter.getTypeBounds();
-        List<ParameterizedType> inSuperTypeBounds = inSuperType.typeParameter.getTypeBounds();
-        if (inSubTypeBounds.size() != inSuperTypeBounds.size()) return true;
-        int i = 0;
-        for (ParameterizedType typeBound : inSubType.typeParameter.getTypeBounds()) {
-            boolean different = differentType(typeBound, inSuperTypeBounds.get(i), translationMap);
-            if (different) return true;
-        }
-        return false;
     }
 
     @Override

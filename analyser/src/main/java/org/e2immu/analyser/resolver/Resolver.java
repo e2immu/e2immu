@@ -184,7 +184,10 @@ public class Resolver {
             typeInspection.subTypes().forEach(typeContextOfType::addToContext);
 
             // recursion, do sub-types first
-            typeInspection.subTypes().forEach(subType -> doType(subType, typeContextOfType, methodFieldSubTypeGraph));
+            typeInspection.subTypes().forEach(subType -> {
+                log(RESOLVE, "From {} into {}", typeInfo.fullyQualifiedName, subType.fullyQualifiedName);
+                doType(subType, typeContextOfType, methodFieldSubTypeGraph);
+            });
 
             log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
             TypeInfo primaryType = primaryType(typeContextOfType, typeInfo);
@@ -230,8 +233,9 @@ public class Resolver {
             if (!fieldInspection.fieldInitialiserIsSet() && fieldInspection.getInitialiserExpression() != null) {
                 doFieldInitialiser(fieldInfo, fieldInspection, expressionContext, methodFieldSubTypeGraph);
             }
-
+            assert !fieldInfo.fieldInspection.isSet() : "Field inspection for " + fieldInfo.fullyQualifiedName() + " has already been set";
             fieldInfo.fieldInspection.set(fieldInspection.build());
+            log(RESOLVE, "Set field inspection of " + fieldInfo.fullyQualifiedName());
         });
     }
 
@@ -307,13 +311,20 @@ public class Resolver {
                 MethodInspection methodInspection = expressionContext.typeContext.getMethodInspection(methodInfo);
                 assert methodInspection != null :
                         "Method inspection for " + methodInfo.name + " in " + methodInfo.typeInfo.fullyQualifiedName + " not found";
-                doMethodOrConstructor(methodInfo, (MethodInspectionImpl.Builder) methodInspection,
-                        expressionContext, methodFieldSubTypeGraph);
+                boolean haveCompanionMethods = !methodInspection.getCompanionMethods().isEmpty();
+                if (haveCompanionMethods) {
+                    log(RESOLVE, "Start resolving companion methods of {}", methodInspection.getDistinguishingName());
+                }
                 methodInspection.getCompanionMethods().values().forEach(companionMethod -> {
                     MethodInspection companionMethodInspection = expressionContext.typeContext.getMethodInspection(companionMethod);
                     doMethodOrConstructor(companionMethod, (MethodInspectionImpl.Builder)
                             companionMethodInspection, expressionContext, methodFieldSubTypeGraph);
                 });
+                if (haveCompanionMethods) {
+                    log(RESOLVE, "Finished resolving companion methods of {}", methodInspection.getDistinguishingName());
+                }
+                doMethodOrConstructor(methodInfo, (MethodInspectionImpl.Builder) methodInspection,
+                        expressionContext, methodFieldSubTypeGraph);
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while resolving method {} in {}", methodInfo.name,
                         methodInfo.typeInfo.fullyQualifiedName);
@@ -420,7 +431,7 @@ public class Resolver {
                     methodResolutionBuilder.methodsOfOwnClassReached.set(methodsReached);
 
                     methodCreatesObjectOfSelf(methodInfo, methodResolutionBuilder);
-                    computeStaticMethodCallsOnly(methodInfo, methodResolutionBuilder);
+                    computeStaticMethodCallsOnly(inspectionProvider, methodInfo, methodResolutionBuilder);
                     methodResolutionBuilder.overrides.set(overrides(inspectionProvider, methodInfo));
 
                     builders.put(methodInfo, methodResolutionBuilder);
@@ -454,23 +465,28 @@ public class Resolver {
         methodResolution.createObjectOfSelf.set(createSelf.get());
     }
 
-    private static void computeStaticMethodCallsOnly(@NotModified MethodInfo methodInfo, MethodResolution.Builder methodResolution) {
+    private static void computeStaticMethodCallsOnly(InspectionProvider inspectionProvider,
+                                                     @NotModified MethodInfo methodInfo,
+                                                     MethodResolution.Builder methodResolution) {
+        MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
         if (!methodResolution.staticMethodCallsOnly.isSet()) {
-            if (methodInfo.methodInspection.get().isStatic()) {
+            if (methodInspection.isStatic()) {
                 methodResolution.staticMethodCallsOnly.set(true);
             } else {
                 AtomicBoolean atLeastOneCallOnThis = new AtomicBoolean(false);
-                Block block = methodInfo.methodInspection.get().getMethodBody();
+                Block block = methodInspection.getMethodBody();
                 block.visit(element -> {
                     if (element instanceof MethodCall methodCall) {
-                        boolean callOnThis = !methodCall.methodInfo.methodInspection.get().isStatic() &&
+                        MethodInspection callInspection = inspectionProvider.getMethodInspection(methodCall.methodInfo);
+                        boolean callOnThis = !callInspection.isStatic() &&
                                 methodCall.object == null || ((methodCall.object instanceof This) &&
                                 ((This) methodCall.object).typeInfo == methodInfo.typeInfo);
                         if (callOnThis) atLeastOneCallOnThis.set(true);
                     }
                 });
                 boolean staticMethodCallsOnly = !atLeastOneCallOnThis.get();
-                log(STATIC_METHOD_CALLS, "Method {} is not static, does it have no calls on <this> scope? {}", methodInfo.fullyQualifiedName(), staticMethodCallsOnly);
+                log(STATIC_METHOD_CALLS, "Method {} is not static, does it have no calls on <this> scope? {}",
+                        methodInfo.fullyQualifiedName(), staticMethodCallsOnly);
                 methodResolution.staticMethodCallsOnly.set(staticMethodCallsOnly);
             }
         }
@@ -509,7 +525,7 @@ public class Resolver {
                 }
             }
             assert superType.typeInfo != null;
-            MethodInfo override = findUniqueMethod(inspectionProvider.getTypeInspection(superType.typeInfo), methodInfo, translationMapOfSuperType);
+            MethodInfo override = findUniqueMethod(inspectionProvider, superType.typeInfo, methodInfo, translationMapOfSuperType);
             if (override != null) {
                 result.add(override);
             }
@@ -528,14 +544,99 @@ public class Resolver {
      * @param translationMap from the type parameters of this to the concrete types of the sub-type
      * @return the method of this, if deemed the same
      */
-    private static MethodInfo findUniqueMethod(TypeInspection typeInspection, MethodInfo target, Map<NamedType, ParameterizedType> translationMap) {
+    private static MethodInfo findUniqueMethod(InspectionProvider inspectionProvider,
+                                               TypeInfo typeInfo,
+                                               MethodInfo target,
+                                               Map<NamedType, ParameterizedType> translationMap) {
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         for (MethodInfo methodInfo : typeInspection.methodsAndConstructors()) {
-            if (methodInfo.sameMethod(target, translationMap)) {
+            if (sameMethod(inspectionProvider, methodInfo, target, translationMap)) {
                 return methodInfo;
             }
         }
         return null;
     }
+
+    private static boolean sameMethod(InspectionProvider inspectionProvider,
+                                      MethodInfo base,
+                                      MethodInfo target,
+                                      Map<NamedType, ParameterizedType> translationMap) {
+        return base.name.equals(target.name) &&
+                sameParameters(inspectionProvider.getMethodInspection(base).getParameters(),
+                        inspectionProvider.getMethodInspection(target).getParameters(),
+                        translationMap);
+    }
+
+    private static boolean sameParameters(List<ParameterInfo> parametersOfMyMethod,
+                                          List<ParameterInfo> parametersOfTarget,
+                                          Map<NamedType, ParameterizedType> translationMap) {
+        if (parametersOfMyMethod.size() != parametersOfTarget.size()) return false;
+        int i = 0;
+        for (ParameterInfo parameterInfo : parametersOfMyMethod) {
+            ParameterInfo p2 = parametersOfTarget.get(i);
+            if (differentType(parameterInfo.parameterizedType, p2.parameterizedType, translationMap)) return false;
+            i++;
+        }
+        return true;
+    }
+
+    /**
+     * This method is NOT the same as <code>isAssignableFrom</code>, and it serves a different purpose.
+     * We need to take care to ensure that overloads are different.
+     * <p>
+     * java.lang.Appendable.append(java.lang.CharSequence) and java.lang.AbstractStringBuilder.append(java.lang.String)
+     * can exist together in one class. They are different, even if String is assignable to CharSequence.
+     * <p>
+     * On the other hand, int comparable(Value other) is the same method as int comparable(T) in Comparable.
+     * This is solved by taking the concrete type when we move from concrete types to parameterized types.
+     *
+     * @param inSuperType    first type
+     * @param inSubType      second type
+     * @param translationMap a map from type parameters in the super type to (more) concrete types in the sub-type
+     * @return true if the types are "different"
+     */
+    private static boolean differentType(ParameterizedType inSuperType,
+                                         ParameterizedType inSubType,
+                                         Map<NamedType, ParameterizedType> translationMap) {
+        Objects.requireNonNull(inSuperType);
+        Objects.requireNonNull(inSubType);
+        if (inSuperType == ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR && inSubType == inSuperType) return false;
+
+        if (inSuperType.typeInfo != null) {
+            if (inSubType.typeInfo != inSuperType.typeInfo) return true;
+            if (inSuperType.parameters.size() != inSubType.parameters.size()) return true;
+            int i = 0;
+            for (ParameterizedType param1 : inSuperType.parameters) {
+                ParameterizedType param2 = inSubType.parameters.get(i);
+                if (differentType(param1, param2, translationMap)) return true;
+                i++;
+            }
+            return false;
+        }
+        if (inSuperType.typeParameter != null && inSubType.typeInfo != null) {
+            // check if we can go from the parameter to the concrete type
+            ParameterizedType inMap = translationMap.get(inSuperType.typeParameter);
+            if (inMap == null) return true;
+            return differentType(inMap, inSubType, translationMap);
+        }
+        if (inSuperType.typeParameter == null && inSubType.typeParameter == null) return false;
+        if (inSuperType.typeParameter == null || inSubType.typeParameter == null) return true;
+        // they CAN have different indices, example in BiFunction TestTestExamplesWithAnnotatedAPIs, AnnotationsOnLambdas
+        ParameterizedType translated =
+                translationMap.get(inSuperType.typeParameter);
+        if (translated != null && translated.typeParameter == inSubType.typeParameter) return false;
+        if (inSubType.isUnboundParameterType() && inSuperType.isUnboundParameterType()) return false;
+        List<ParameterizedType> inSubTypeBounds = inSubType.typeParameter.getTypeBounds();
+        List<ParameterizedType> inSuperTypeBounds = inSuperType.typeParameter.getTypeBounds();
+        if (inSubTypeBounds.size() != inSuperTypeBounds.size()) return true;
+        int i = 0;
+        for (ParameterizedType typeBound : inSubType.typeParameter.getTypeBounds()) {
+            boolean different = differentType(typeBound, inSuperTypeBounds.get(i), translationMap);
+            if (different) return true;
+        }
+        return false;
+    }
+
 
     public static List<ParameterizedType> directSuperTypes(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
         if (Primitives.isJavaLangObject(typeInfo)) return List.of();

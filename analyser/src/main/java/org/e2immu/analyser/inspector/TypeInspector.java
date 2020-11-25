@@ -416,7 +416,7 @@ public class TypeInspector {
                 MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
                         fullInspection);
                 methodInspector.inspect(cd, subContext, companionMethodsWaiting, dollarResolver);
-                builder.addConstructor(methodInspector.getBuilder().getMethodInfo());
+                builder.ensureConstructor(methodInspector.getBuilder().getMethodInfo());
                 companionMethodsWaiting.clear();
             });
             bodyDeclaration.ifMethodDeclaration(md -> {
@@ -438,7 +438,7 @@ public class TypeInspector {
                 if (companionMethodName != null) {
                     companionMethodsWaiting.put(companionMethodName, methodInspector.getBuilder()); // will be built with its main method
                 } else {
-                    builder.addMethod(methodInfo);
+                    builder.ensureMethod(methodInfo);
                     companionMethodsWaiting.clear();
                 }
             });
@@ -489,7 +489,7 @@ public class TypeInspector {
         if (res.isDollarType) {
             dollarTypes.add(subType);
         } else {
-            builder.addSubType(subType);
+            builder.ensureSubType(subType);
         }
     }
 

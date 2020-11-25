@@ -162,8 +162,10 @@ public class TypeContext implements InspectionProvider {
             typeInfo = typeOfObject.typeInfo;
         }
         assert typeInfo != null;
-        if (!typeInfo.hasBeenInspected())
+        TypeInspection typeInspection = typeMapBuilder.getTypeInspection(typeInfo);
+        if (typeInspection == null) {
             throw new UnsupportedOperationException("Type " + typeInfo.fullyQualifiedName + " has not been inspected");
+        }
         return List.of(typeInfo);
     }
 
@@ -306,7 +308,10 @@ public class TypeContext implements InspectionProvider {
                 .forEach(result::add);
 
         ParameterizedType parentClass = typeInspection.parentClass();
-        if (!Primitives.isJavaLangObject(parentClass)) {
+        boolean isJLO = Primitives.isJavaLangObject(typeInfo);
+        assert isJLO || parentClass != null :
+                "Parent class of " + typeInfo.fullyQualifiedName + " is null";
+        if (!isJLO) {
             recursivelyResolveOverloadedMethods(parentClass, methodName, parametersPresented, decrementWhenNotStatic,
                     joinMaps(typeMap, parentClass), result, visited, staticOnly);
         }
@@ -314,10 +319,12 @@ public class TypeContext implements InspectionProvider {
             recursivelyResolveOverloadedMethods(interfaceImplemented, methodName, parametersPresented,
                     decrementWhenNotStatic, joinMaps(typeMap, interfaceImplemented), result, visited, staticOnly);
         }
-        if (!staticOnly && typeInfo != getPrimitives().objectTypeInfo) {
+        /*
+        if (!staticOnly && !isJLO) {
             recursivelyResolveOverloadedMethods(getPrimitives().objectParameterizedType, methodName,
                     parametersPresented, decrementWhenNotStatic, typeMap, result, visited, false);
         }
+         */
         if (typeInspection.packageNameOrEnclosingType().isRight()) {
             // if I'm in a static subtype, I can only access the static methods of the enclosing type
             ParameterizedType enclosingType = typeInspection.packageNameOrEnclosingType()

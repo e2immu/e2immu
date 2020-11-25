@@ -86,24 +86,20 @@ public class MethodInspector {
 
     private MethodInspectionImpl.Builder fqnIsKnown(MethodInspectionImpl.Builder builder) {
         builder.readyToComputeFQN();
-        MethodInspection methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(builder.getFullyQualifiedName());
+        MethodInspection methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(builder.getDistinguishingName());
         if (methodInspection instanceof MethodInspectionImpl.Builder existing) {
-            log(INSPECT, "Inspecting method {}, already byte-code inspected", builder.getFullyQualifiedName());
+            log(INSPECT, "Inspecting method {}, already byte-code inspected", builder.getDistinguishingName());
             assert !fullInspection;
             builderOnceFQNIsKnown.set(existing);
             return existing;
         }
         if (methodInspection == null) {
             if (fullInspection) {
-                log(INSPECT, "Inspecting method {}, full inspection", builder.getFullyQualifiedName());
+                log(INSPECT, "Inspecting method {}, full inspection", builder.getDistinguishingName());
                 builderOnceFQNIsKnown.set(builder);
                 return builder;
             }
-            MethodInspectionImpl.Builder inHierarchy = null; // FIXME
-            log(INSPECT, "Inspecting method {}, found {} in type hierarchy", builder.getFullyQualifiedName(),
-                    inHierarchy.getFullyQualifiedName());
-            builderOnceFQNIsKnown.set(inHierarchy);
-            return inHierarchy;
+            throw new UnsupportedOperationException("Cannot find method " + builder.getDistinguishingName());
         }
         throw new UnsupportedOperationException();
     }

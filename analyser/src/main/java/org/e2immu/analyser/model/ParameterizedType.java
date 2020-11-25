@@ -416,8 +416,8 @@ public class ParameterizedType {
             return Map.of();
         }
         Map<NamedType, ParameterizedType> res = new HashMap<>();
-        boolean iAmFunctionalInterface = isFunctionalInterface();
-        boolean concreteTypeIsFunctionalInterface = concreteType.isFunctionalInterface();
+        boolean iAmFunctionalInterface = isFunctionalInterface(inspectionProvider);
+        boolean concreteTypeIsFunctionalInterface = concreteType.isFunctionalInterface(inspectionProvider);
 
         if (iAmFunctionalInterface && concreteTypeIsFunctionalInterface) {
             MethodTypeParameterMap methodTypeParameterMap = findSingleAbstractMethodOfInterface(inspectionProvider);

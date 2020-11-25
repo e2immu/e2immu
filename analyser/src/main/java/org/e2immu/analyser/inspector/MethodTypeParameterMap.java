@@ -19,6 +19,7 @@ package org.e2immu.analyser.inspector;
 
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
@@ -119,15 +120,43 @@ public class MethodTypeParameterMap {
         return (isSingleAbstractMethod() ? ("method " + methodInspection.getFullyQualifiedName()) : "No method") + ", map " + concreteTypes;
     }
 
-    public ParameterizedType inferFunctionalType(List<ParameterizedType> types, ParameterizedType inferredReturnType) {
+    public ParameterizedType inferFunctionalType(InspectionProvider inspectionProvider,
+                                                 List<ParameterizedType> types,
+                                                 ParameterizedType inferredReturnType) {
         Objects.requireNonNull(inferredReturnType);
         Objects.requireNonNull(types);
         if (!isSingleAbstractMethod())
             throw new UnsupportedOperationException("Can only be called on a single abstract method");
 
         MethodInfo methodInfo = methodInspection.getMethodInfo();
-        return new ParameterizedType(methodInfo.typeInfo, methodInfo.typeParametersComputed(types, inferredReturnType));
+        List<ParameterizedType> parameters = typeParametersComputed(inspectionProvider, methodInfo, types, inferredReturnType);
+        return new ParameterizedType(methodInfo.typeInfo, parameters);
     }
+
+
+    // given R accept(T t), and types={string}, returnType=string, deduce that R=string, T=string, and we have Function<String, String>
+    private static List<ParameterizedType> typeParametersComputed(
+            InspectionProvider inspectionProvider,
+            MethodInfo methodInfo,
+            List<ParameterizedType> types,
+            ParameterizedType inferredReturnType) {
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
+        if (typeInspection.typeParameters().isEmpty()) return List.of();
+        MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
+        return typeInspection.typeParameters().stream().map(typeParameter -> {
+            int cnt = 0;
+            for (ParameterInfo parameterInfo : methodInspection.getParameters()) {
+                if (parameterInfo.parameterizedType.typeParameter == typeParameter) {
+                    return types.get(cnt); // this is one we know!
+                }
+                cnt++;
+            }
+            if (methodInspection.getReturnType().typeParameter == typeParameter)
+                return inferredReturnType;
+            return new ParameterizedType(typeParameter, 0, ParameterizedType.WildCard.NONE);
+        }).collect(Collectors.toList());
+    }
+
 
     public boolean isAssignableFrom(MethodTypeParameterMap other) {
         if (!isSingleAbstractMethod() || !other.isSingleAbstractMethod()) throw new UnsupportedOperationException();

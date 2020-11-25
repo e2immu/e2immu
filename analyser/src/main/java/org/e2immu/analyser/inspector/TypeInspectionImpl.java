@@ -23,10 +23,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*;
 
@@ -191,10 +188,12 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         private String packageName;
         private TypeInfo enclosingType;
         private TypeNature typeNature = TypeNature.CLASS;
+        private final Set<String> methodAndConstructorNames = new HashSet<>();
         private final List<MethodInfo> methods = new ArrayList<>();
         private final List<MethodInfo> constructors = new ArrayList<>();
         private final List<FieldInfo> fields = new ArrayList<>();
         private final List<TypeModifier> modifiers = new ArrayList<>();
+        private final Set<String> subTypeNames = new HashSet<>();
         private final List<TypeInfo> subTypes = new ArrayList<>();
         private final List<TypeParameter> typeParameters = new ArrayList<>();
         private ParameterizedType parentClass;
@@ -251,18 +250,47 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         }
 
         public Builder addConstructor(MethodInfo methodInfo) {
+            if (!methodAndConstructorNames.add(methodInfo.distinguishingName)) {
+                throw new UnsupportedOperationException("Already have " + methodInfo.distinguishingName +
+                        ", set is " + methodAndConstructorNames);
+            }
             constructors.add(methodInfo);
             return this;
         }
 
+        public void ensureConstructor(MethodInfo methodInfo) {
+            if (!methodAndConstructorNames.contains(methodInfo.distinguishingName)) {
+                constructors.add(methodInfo);
+            }
+        }
+
         public Builder addMethod(MethodInfo methodInfo) {
+            if (!methodAndConstructorNames.add(methodInfo.distinguishingName)) {
+                throw new UnsupportedOperationException("Already have " + methodInfo.distinguishingName
+                        + ", set is " + methodAndConstructorNames);
+            }
             methods.add(methodInfo);
             return this;
         }
 
+        public void ensureMethod(MethodInfo methodInfo) {
+            if (!methodAndConstructorNames.contains(methodInfo.distinguishingName)) {
+                methods.add(methodInfo);
+            }
+        }
+
         public Builder addSubType(TypeInfo typeInfo) {
+            if (!subTypeNames.add(typeInfo.simpleName)) {
+                throw new UnsupportedOperationException("Already have subtype " + typeInfo);
+            }
             subTypes.add(typeInfo);
             return this;
+        }
+
+        public void ensureSubType(TypeInfo typeInfo) {
+            if(!subTypeNames.contains(typeInfo.simpleName)) {
+                subTypes.add(typeInfo);
+            }
         }
 
         public Builder addTypeParameter(TypeParameter typeParameter) {
