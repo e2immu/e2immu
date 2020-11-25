@@ -55,8 +55,9 @@ public class ParameterInspectionImpl extends InspectionImpl implements Parameter
             this.parameterizedType = parameterizedType;
         }
 
-        public void setIndex(int index) {
+        public Builder setIndex(int index) {
             this.index = index;
+            return this;
         }
 
         public int getIndex() {

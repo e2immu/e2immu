@@ -147,7 +147,7 @@ public class TypeMapImpl implements TypeMap {
             methodInspections.values().forEach(methodInspectionBuilder -> {
                 MethodInfo methodInfo = methodInspectionBuilder.getMethodInfo();
                 if (!methodInfo.methodInspection.isSet() && methodInfo.typeInfo.typeInspection.isSet()) {
-                    methodInfo.methodInspection.set(methodInspectionBuilder.build());
+                    methodInspectionBuilder.build(); // will set the inspection itself
                 }
             });
             fieldInspections.forEach((fieldInfo, fieldInspectionBuilder) -> {

@@ -35,7 +35,7 @@ import java.util.List;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 import static org.e2immu.analyser.util.Logger.log;
-import static org.objectweb.asm.Opcodes.ASM7;
+import static org.objectweb.asm.Opcodes.ASM8;
 
 public class MyMethodVisitor extends MethodVisitor {
     private final TypeInspectionImpl.Builder typeInspectionBuilder;
@@ -57,7 +57,7 @@ public class MyMethodVisitor extends MethodVisitor {
                            boolean lastParameterIsVarargs,
                            MethodItem methodItem,
                            JetBrainsAnnotationTranslator jetBrainsAnnotationTranslator) {
-        super(ASM7);
+        super(ASM8);
         this.typeContext = typeContext;
         this.methodInspectionBuilder = methodInspectionBuilder;
         this.typeInspectionBuilder = typeInspectionBuilder;
@@ -116,7 +116,9 @@ public class MyMethodVisitor extends MethodVisitor {
                 log(BYTECODE_INSPECTOR_DEBUG, "Set parameterInspection {}", i);
             }
         }
-        MethodInfo methodInfo = methodInspectionBuilder.build().getMethodInfo();
+
+        methodInspectionBuilder.readyToComputeFQN();
+
         if (methodItem != null) {
             for (ParameterItem parameterItem : methodItem.getParameterItems()) {
                 if (parameterItem.index < parameterInspectionBuilders.length) {
@@ -126,10 +128,11 @@ public class MyMethodVisitor extends MethodVisitor {
                     }
                 } else {
                     log(BYTECODE_INSPECTOR_DEBUG, "Ignoring parameter with index {} on method {}",
-                            parameterItem.index, methodInfo.fullyQualifiedName());
+                            parameterItem.index, methodInspectionBuilder.getFullyQualifiedName());
                 }
             }
         }
+        MethodInfo methodInfo = methodInspectionBuilder.getMethodInfo();
         if (methodInfo.isConstructor) {
             typeInspectionBuilder.addConstructor(methodInfo);
         } else {
@@ -138,7 +141,6 @@ public class MyMethodVisitor extends MethodVisitor {
         // note that we do NOT YET execute methodInfo.methodInspection.set(methodInspectionBuilder.build())
         // this will take place after potential AnnotatedAPI inspection.
         // can't do this too early: we need all parameters parsed properly
-        methodInspectionBuilder.readyToComputeFQN();
         typeContext.typeMapBuilder.registerMethodInspection(methodInspectionBuilder);
 
     }

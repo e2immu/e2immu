@@ -84,6 +84,7 @@ application {
     mainClassName = 'org.e2immu.analyser.cli.Main'
 }
 
+/*
 task generateAnnotationXml(type: JavaExec) {
     group = "Execution"
     description = "Convert all annotations in the annotatedAPIs to annotation.xml files"
@@ -113,6 +114,7 @@ def annotationXmlArtifact = artifacts.add('archives', annotationXmlJar, {
     type ('jar')
     builtBy ('annotationXmlJar')
 })
+*/
 
 // for now, we publish to maven local, so that we can use the plugin locally
 

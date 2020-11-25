@@ -112,4 +112,8 @@ public class TypeParameterImpl implements TypeParameter {
         this.typeBounds.set(ImmutableList.copyOf(typeBounds));
     }
 
+    @Override
+    public boolean isMethodTypeParameter() {
+        return !owner.isSet() || owner.get().isRight();
+    }
 }

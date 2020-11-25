@@ -81,7 +81,7 @@ public class TestByteCodeInspector {
 
     @Test
     public void testInterface() throws IOException {
-        TypeMap typeMap = parseFromJar("org/e2immu/analyser/model/EvaluationContext");
+        TypeMap typeMap = parseFromJar("org/e2immu/analyser/analyser/EvaluationContext");
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.analyser.EvaluationContext");
 
         LOGGER.info("Stream is\n{}", typeInfo.stream(0));

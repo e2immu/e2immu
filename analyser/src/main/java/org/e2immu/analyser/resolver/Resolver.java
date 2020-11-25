@@ -349,8 +349,8 @@ public class Resolver {
         MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited();
         methodsAndFieldsVisited.visit(methodInspection.getMethodBody());
 
-        // finally, we build the method inspection
-        methodInfo.methodInspection.set(methodInspection.build());
+        // finally, we build the method inspection and set it in the methodInfo object
+        methodInspection.build();
 
         // and only then, when the FQN is known, add to the sub-graph
         methodFieldSubTypeGraph.addNode(methodInfo, ImmutableList.copyOf(methodsAndFieldsVisited.methodsAndFields));

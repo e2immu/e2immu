@@ -26,11 +26,11 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.TypeInspector;
 import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
@@ -319,8 +319,7 @@ public class ParameterizedType {
         }
         if (isTypeParameter()) {
             if (numericTypeParameters) {
-                boolean isType = typeParameter.getOwner().isLeft();
-                sb.append(isType ? "T" : "M").append(typeParameter.getIndex());
+                sb.append(typeParameter.isMethodTypeParameter() ? "M" : "T").append(typeParameter.getIndex());
             } else {
                 sb.append(typeParameter.simpleName());
             }

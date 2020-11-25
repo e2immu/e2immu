@@ -44,8 +44,6 @@ public interface TypeParameter extends NamedType {
         return getName();
     }
 
-    default boolean isMethodTypeParameter() {
-        return getOwner().isRight();
-    }
+    boolean isMethodTypeParameter();
 
 }

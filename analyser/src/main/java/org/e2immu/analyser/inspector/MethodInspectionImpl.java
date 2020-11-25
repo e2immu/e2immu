@@ -155,6 +155,11 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         return companionMethods;
     }
 
+    @Override
+    public String toString() {
+        return "methodInspection of "+fullyQualifiedName;
+    }
+
     @Container(builds = MethodInspectionImpl.class)
     public static class Builder extends AbstractInspectionBuilder<Builder> implements MethodInspection {
         private final List<ParameterInspectionImpl.Builder> parameters = new ArrayList<>();
@@ -173,7 +178,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         private Block inspectedBlock;
         private final List<ParameterizedType> exceptionTypes = new ArrayList<>();
         private ParameterizedType returnType;
-        private final Map<Integer, ParameterInspectionImpl.Builder> parameterInspectionBuilders = new HashMap<>();
         private String fullyQualifiedName;
         private String distinguishingName;
         private MethodInfo methodInfo;
@@ -228,8 +232,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         // the following two methods are used by the bytecode inspector
 
         public ParameterInspectionImpl.Builder newParameterInspectionBuilder(int index) {
-            ParameterInspectionImpl.Builder builder = new ParameterInspectionImpl.Builder();
-            parameterInspectionBuilders.put(index, builder);
+            ParameterInspectionImpl.Builder builder = new ParameterInspectionImpl.Builder().setIndex(index);
+            addParameter(builder);
             return builder;
         }
 
@@ -239,6 +243,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         public Builder addParameter(@NotNull ParameterInspectionImpl.Builder builder) {
             if (builder.getIndex() == -1) builder.setIndex(parameters.size());
             parameters.add(builder);
+            assert builder.getIndex() == parameters.size() - 1;
             return this;
         }
 
@@ -276,22 +281,24 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         @NotModified
         @NotNull
         public MethodInspectionImpl build() {
-            if (methodInfo.isConstructor) {
-                returnType = ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
-            } else {
-                Objects.requireNonNull(returnType);
-            }
             if (inspectedBlock == null) {
                 inspectedBlock = Block.EMPTY_BLOCK;
             }
 
-            companionMethods.values().forEach(builder -> builder.methodInfo.methodInspection.set(builder.build()));
+            companionMethods.values().forEach(Builder::build);
 
             // removed a check that the type parameter, if it belonged to a method, had to be this method.
             // that's not correct, lambdas can have a method parameter type belonging to the enclosing method.
             // we cannot easily check for that because anonymous types cannot (ATM) refer to their owning field/method.
 
             if (fullyQualifiedName == null) readyToComputeFQN();
+
+            // we have a method object now...
+            if (methodInfo.isConstructor) {
+                returnType = ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
+            } else {
+                Objects.requireNonNull(returnType);
+            }
 
             MethodInspectionImpl methodInspection = new MethodInspectionImpl(methodInfo,
                     getFullyQualifiedName(), // the builders have not been invalidated yet
@@ -313,15 +320,15 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         }
 
         public void readyToComputeFQN() {
-            fullyQualifiedName = methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
-                    .map(p -> p.getParameterizedType().stream(parameterInspectionBuilders.get(p.getIndex()).isVarArgs()))
+            fullyQualifiedName = owner.fullyQualifiedName + "." + name + "(" + parameters.stream()
+                    .map(p -> p.getParameterizedType().stream(p.isVarArgs()))
                     .collect(Collectors.joining(",")) + ")";
-            distinguishingName = methodInfo.typeInfo.fullyQualifiedName + "." + methodInfo.name + "(" + parameters.stream()
-                    .map(p -> p.getParameterizedType().distinguishingStream(parameterInspectionBuilders.get(p.getIndex()).isVarArgs()))
+            distinguishingName = owner.fullyQualifiedName + "." + name + "(" + parameters.stream()
+                    .map(p -> p.getParameterizedType().distinguishingStream(p.isVarArgs()))
                     .collect(Collectors.joining(",")) + ")";
             this.methodInfo = new MethodInfo(owner, name, fullyQualifiedName, distinguishingName, isConstructor);
             typeParameters.forEach(tp -> ((TypeParameterImpl) tp).setMethodInfo(methodInfo));
-            immutableParameters = parameterInspectionBuilders.values().stream()
+            immutableParameters = parameters.stream()
                     .map(b -> b.build(methodInfo)).sorted().collect(Collectors.toList());
         }
 
