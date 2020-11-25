@@ -160,10 +160,6 @@ public class JavaUtil extends AnnotatedAPI {
         @NotNull
         E get(int index) { return null; }
 
-        void size$Aspect$Size() {}
-        @NotModified
-        int size() { return 0; }
-
         int of$Transfer$Size() { return 0; }
         @NotModified
         @NotNull1
@@ -243,10 +239,6 @@ public class JavaUtil extends AnnotatedAPI {
         @NotNull1
         @E2Container
         <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3) { return null; }
-
-        void size$Aspect$Size() {}
-        @NotModified
-        int size() { return 0; }
     }
 
     @Container
@@ -271,9 +263,5 @@ public class JavaUtil extends AnnotatedAPI {
 
         @NotNull
         Iterator<E> iterator() { return null; }
-
-        void size$Aspect$Size() {}
-        @NotModified
-        int size() { return 0; }
     }
 }

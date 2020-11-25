@@ -21,14 +21,14 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
-import org.e2immu.analyser.model.variable.DependentVariable;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.AndValue;
 import org.e2immu.analyser.model.value.NegatedValue;
 import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.variable.DependentVariable;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -240,36 +240,48 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus findAspects() {
-        return findAspects(typeAnalysis, myMethodAndConstructorAnalysersExcludingSAMs.stream().map(ma -> ma.methodInfo));
+        return findAspects(typeAnalysis, typeInfo);
+    }
+
+    public static AnalysisStatus findAspects(TypeAnalysisImpl.Builder typeAnalysis, TypeInfo typeInfo) {
+        Set<TypeInfo> typesToSearch = new HashSet<>(typeInfo.typeResolution.get().superTypesExcludingJavaLangObject());
+        typesToSearch.add(typeInfo);
+        assert !typeAnalysis.aspects.isFrozen();
+
+        typesToSearch.forEach(type -> findAspectsSingleType(typeAnalysis, type));
+
+        typeAnalysis.aspects.freeze();
+        return DONE;
     }
 
     // also used by ShallowTypeAnalyser
-    public static AnalysisStatus findAspects(TypeAnalysisImpl.Builder typeAnalysis,
-                                             Stream<MethodInfo> methodsAndConstructorsExclSAM) {
-        assert !typeAnalysis.aspects.isFrozen();
+    private static void findAspectsSingleType(TypeAnalysisImpl.Builder typeAnalysis,
+                                              TypeInfo typeInfo) {
+        typeInfo.typeInspection.get().methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
+                .forEach(mainMethod -> findAspectsSingleMethod(typeAnalysis, mainMethod));
+    }
 
-        methodsAndConstructorsExclSAM.forEach(mainMethod -> {
-            List<CompanionMethodName> companionMethodNames =
-                    mainMethod.methodInspection.get().getCompanionMethods().keySet().stream()
-                            .filter(mi -> mi.action() == CompanionMethodName.Action.ASPECT).collect(Collectors.toList());
-            if (!companionMethodNames.isEmpty()) {
-                log(ANALYSER, "Find aspects in {}", typeAnalysis.typeInfo.fullyQualifiedName);
+    private static void findAspectsSingleMethod(TypeAnalysisImpl.Builder typeAnalysis, MethodInfo mainMethod) {
+        List<CompanionMethodName> companionMethodNames =
+                mainMethod.methodInspection.get().getCompanionMethods().keySet().stream()
+                        .filter(mi -> mi.action() == CompanionMethodName.Action.ASPECT).collect(Collectors.toList());
+        if (!companionMethodNames.isEmpty()) {
+            log(ANALYSER, "Find aspects in {}", typeAnalysis.typeInfo.fullyQualifiedName);
 
-                for (CompanionMethodName companionMethodName : companionMethodNames) {
-                    if (companionMethodName.aspect() == null) {
-                        throw new UnsupportedOperationException("Aspect is null in aspect definition of " + mainMethod.fullyQualifiedName());
-                    }
-                    String aspect = companionMethodName.aspect();
-                    if (!typeAnalysis.aspects.isSet(aspect)) {
-                        typeAnalysis.aspects.put(aspect, mainMethod);
-                    } else {
-                        throw new UnsupportedOperationException("Duplicating aspect " + aspect + " in " + mainMethod.fullyQualifiedName());
-                    }
+            for (CompanionMethodName companionMethodName : companionMethodNames) {
+                if (companionMethodName.aspect() == null) {
+                    throw new UnsupportedOperationException("Aspect is null in aspect definition of " +
+                            mainMethod.fullyQualifiedName());
+                }
+                String aspect = companionMethodName.aspect();
+                if (!typeAnalysis.aspects.isSet(aspect)) {
+                    typeAnalysis.aspects.put(aspect, mainMethod);
+                } else {
+                    throw new UnsupportedOperationException("Duplicating aspect " + aspect + " in " +
+                            mainMethod.fullyQualifiedName());
                 }
             }
-        });
-        typeAnalysis.aspects.freeze();
-        return DONE;
+        }
     }
 
     private AnalysisStatus makeInternalObjectFlowsPermanent() {
@@ -894,7 +906,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
         // and there should be no means of generating an object
         for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
-           if (methodAnalyser.methodInfo.methodResolution.get().createObjectOfSelf()) {
+            if (methodAnalyser.methodInfo.methodResolution.get().createObjectOfSelf()) {
                 log(UTILITY_CLASS, "Type " + typeInfo.fullyQualifiedName +
                         " looks like a @UtilityClass, but an object of the class is created in method "
                         + methodAnalyser.methodInfo.fullyQualifiedName());

@@ -20,10 +20,10 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.config.CompanionAnalyserVisitor;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.value.MethodValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.model.value.VariableValue;
-import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -31,10 +31,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
@@ -68,10 +65,13 @@ public class CompanionAnalyser {
     public AnalysisStatus analyse(int iteration) {
         try {
             if (companionMethodName.aspect() != null && !typeAnalysis.aspectsIsSet(companionMethodName.aspect())) {
-                log(DELAYED, "Delaying companion analysis of {} of {}, aspect function not known",
-                        companionMethodName, mainMethod.fullyQualifiedName());
-                visit(iteration, DELAYS, null, null);
-                return AnalysisStatus.DELAYS;
+                if (iteration == 0) {
+                    log(DELAYED, "Delaying companion analysis of {} of {}, aspect function not known",
+                            companionMethodName, mainMethod.fullyQualifiedName());
+                    visit(iteration, DELAYS, null, null);
+                    return AnalysisStatus.DELAYS;
+                }
+                throw new UnsupportedOperationException("Aspect function not found in type " + mainMethod.typeInfo.fullyQualifiedName);
             }
             if (companionMethodName.action() == CompanionMethodName.Action.ASPECT) {
                 // there is no code, and the type analyser deals with it
@@ -220,6 +220,11 @@ public class CompanionAnalyser {
                 return Objects.requireNonNull(remapping.get(parameterInfo.name));
             }
             return new VariableValue(variable);
+        }
+
+        @Override
+        public Set<Variable> linkedVariables(Value value) {
+            return Set.of(); // not interested
         }
     }
 }

@@ -279,8 +279,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         TypeInspection typeInspection = typeInfo.typeInspection.get();
         messages.addAll(typeAnalysisBuilder.fromAnnotationsIntoProperties(false, true, typeInspection.getAnnotations(), e2ImmuAnnotationExpressions));
 
-        TypeAnalyser.findAspects(typeAnalysisBuilder,
-                typeInspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM));
+        TypeAnalyser.findAspects(typeAnalysisBuilder, typeInfo);
         typeAnalysisBuilder.approvedPreconditions.freeze();
         TypeAnalysis typeAnalysis = typeAnalysisBuilder.build();
         typeInfo.typeAnalysis.set(typeAnalysis);
