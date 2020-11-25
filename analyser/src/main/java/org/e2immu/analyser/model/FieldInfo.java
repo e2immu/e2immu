@@ -39,10 +39,6 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     public final SetOnce<FieldInspection> fieldInspection = new SetOnce<>();
     public final SetOnce<FieldAnalysis> fieldAnalysis = new SetOnce<>();
 
-    public FieldInfo(TypeInfo type, String name, TypeInfo owner) {
-        this(type.asParameterizedType(), name, owner);
-    }
-
     public FieldInfo(ParameterizedType type, String name, TypeInfo owner) {
         Objects.requireNonNull(type);
         Objects.requireNonNull(name);

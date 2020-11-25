@@ -21,10 +21,11 @@ package org.e2immu.analyser.bytecode;
 import org.e2immu.analyser.annotationxml.model.Annotation;
 import org.e2immu.analyser.inspector.AbstractInspectionBuilder;
 import org.e2immu.analyser.inspector.ParameterInspectionImpl;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.AnnotationExpression;
+import org.e2immu.analyser.model.AnnotationExpressionImpl;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.MemberValuePair;
-import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -42,13 +43,13 @@ public class JetBrainsAnnotationTranslator {
         this.primitives = primitives;
     }
 
-    public <T> void mapAnnotations(List<Annotation> annotations, AbstractInspectionBuilder inspectionBuilder) {
+    public <T> void mapAnnotations(List<Annotation> annotations, AbstractInspectionBuilder<T> inspectionBuilder) {
         for (Annotation annotation : annotations) {
             mapAnnotation(annotation, inspectionBuilder);
         }
     }
 
-    private <T> void mapAnnotation(Annotation annotation, AbstractInspectionBuilder inspectionBuilder) {
+    private <T> void mapAnnotation(Annotation annotation, AbstractInspectionBuilder<T> inspectionBuilder) {
         if (ORG_JETBRAINS_ANNOTATIONS_NOTNULL.equals(annotation.name())) {
             if (inspectionBuilder instanceof ParameterInspectionImpl.Builder) {
                 inspectionBuilder.addAnnotation(e2ImmuAnnotationExpressions.notNull);
@@ -60,8 +61,7 @@ public class JetBrainsAnnotationTranslator {
 
     private AnnotationExpression toAnnotationExpression(Annotation annotation) {
         TypeInfo typeInfo = e2ImmuAnnotationExpressions.get(annotation.name());
-        MemberValuePair contractExpression = new MemberValuePair("type",
-                new VariableExpression(new FieldReference(primitives.annotationTypeContract, null)));
+        MemberValuePair contractExpression = new MemberValuePair("contract", new BooleanConstant(primitives, true));
         return new AnnotationExpressionImpl(typeInfo, List.of(contractExpression));
     }
 }

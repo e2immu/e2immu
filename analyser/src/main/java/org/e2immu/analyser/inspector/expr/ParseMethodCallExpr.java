@@ -62,7 +62,7 @@ public class ParseMethodCallExpr {
                 }
             }
         }
-        Map<NamedType, ParameterizedType> scopeTypeMap = scopeType.initialTypeParameterMap();
+        Map<NamedType, ParameterizedType> scopeTypeMap = scopeType.initialTypeParameterMap(expressionContext.typeContext);
         log(METHOD_CALL, "Type map of method call {} is {}", methodCallExpr.getNameAsString(), scopeTypeMap);
         String methodName = methodCallExpr.getName().asString();
         List<TypeContext.MethodCandidate> methodCandidates = new ArrayList<>();

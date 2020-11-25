@@ -231,7 +231,8 @@ public class ExpressionContext {
         if (enumType != null) {
             newExpressionContext = newVariableContext("switch-statement");
             Variable scope = new This(enumType);
-            enumInspection.fields().forEach(fieldInfo -> newExpressionContext.variableContext.add(new FieldReference(fieldInfo, scope)));
+            enumInspection.fields().forEach(fieldInfo -> newExpressionContext.variableContext
+                    .add(new FieldReference(typeContext, fieldInfo, scope)));
         } else {
             newExpressionContext = this;
         }
@@ -296,7 +297,8 @@ public class ExpressionContext {
         ExpressionContext tryExpressionContext = newVariableContext("try-resources");
         for (com.github.javaparser.ast.expr.Expression resource : tryStmt.getResources()) {
             LocalVariableCreation localVariableCreation = (LocalVariableCreation) tryExpressionContext.parseExpression(resource);
-            tryExpressionContext.variableContext.add(localVariableCreation.localVariable, List.of(localVariableCreation.expression));
+            tryExpressionContext.variableContext.add(typeContext,
+                    localVariableCreation.localVariable, List.of(localVariableCreation.expression));
             resources.add(localVariableCreation);
         }
         Block tryBlock = tryExpressionContext.parseBlockOrStatement(tryStmt.getTryBlock());
@@ -310,7 +312,7 @@ public class ExpressionContext {
                 unionOfTypes = unionType.getElements()
                         .stream()
                         .map(rt -> ParameterizedType.from(typeContext, rt)).collect(Collectors.toList());
-                typeOfVariable = typeContext.typeMapBuilder.get("java.lang.Exception").asParameterizedType();
+                typeOfVariable = typeContext.typeMapBuilder.get("java.lang.Exception").asParameterizedType(typeContext);
             } else {
                 typeOfVariable = ParameterizedType.from(typeContext, parameter.getType());
                 unionOfTypes = List.of(typeOfVariable);
@@ -319,7 +321,7 @@ public class ExpressionContext {
             LocalVariable localVariable = new LocalVariable.LocalVariableBuilder().setName(name).setParameterizedType(typeOfVariable).build();
             TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(localVariable, unionOfTypes);
             ExpressionContext catchExpressionContext = newVariableContext("catch-clause");
-            catchExpressionContext.variableContext.add(localVariable, List.of());
+            catchExpressionContext.variableContext.add(typeContext, localVariable, List.of());
             Block block = catchExpressionContext.parseBlockOrStatement(catchClause.getBody());
             catchClauses.add(new Pair<>(catchParameter, block));
         }
@@ -370,7 +372,7 @@ public class ExpressionContext {
                 .setParameterizedType(ParameterizedType.from(typeContext, vde.getVariables().get(0).getType()))
                 .build();
         org.e2immu.analyser.model.Expression expression = parseExpression(forEachStmt.getIterable());
-        newVariableContext.add(localVariable, List.of(expression));
+        newVariableContext.add(typeContext, localVariable, List.of(expression));
         Block block = newVariableContext(newVariableContext, "for-loop").parseBlockOrStatement(forEachStmt.getBody());
         return new ForEachStatement(label, localVariable, expression, block);
     }
@@ -529,7 +531,7 @@ public class ExpressionContext {
                 org.e2immu.analyser.model.Expression initializer = var.getInitializer()
                         .map(i -> parseExpression(i, parameterizedType.findSingleAbstractMethodOfInterface(typeContext)))
                         .orElse(EmptyExpression.EMPTY_EXPRESSION);
-                return new LocalVariableCreation(typeContext.getPrimitives(), localVariable.build(), initializer);
+                return new LocalVariableCreation(typeContext, localVariable.build(), initializer);
             }
             if (expression.isAssignExpr()) {
                 AssignExpr assignExpr = (AssignExpr) expression;

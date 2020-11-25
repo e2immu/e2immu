@@ -197,7 +197,9 @@ public class Resolver {
 
             // add visible fields to variable context
             accessibleFieldsStream(expressionContext.typeContext, typeInfo, primaryType)
-                    .forEach(fieldInfo -> expressionContext.variableContext.add(new FieldReference(fieldInfo,
+                    .forEach(fieldInfo -> expressionContext.variableContext.add(new FieldReference(
+                            expressionContext.typeContext,
+                            fieldInfo,
                             fieldInfo.isStatic() ? null : new This(fieldInfo.owner))));
 
             doFields(typeInspection, expressionContext, methodFieldSubTypeGraph);
@@ -247,7 +249,7 @@ public class Resolver {
             // fieldInfo.type can have concrete types; but the abstract method will not have them filled in
             MethodTypeParameterMap singleAbstractMethod = fieldInfo.type.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
             if (singleAbstractMethod != null) {
-                singleAbstractMethod = singleAbstractMethod.expand(fieldInfo.type.initialTypeParameterMap());
+                singleAbstractMethod = singleAbstractMethod.expand(fieldInfo.type.initialTypeParameterMap(expressionContext.typeContext));
                 log(RESOLVE, "Passing on functional interface method to field initializer of {}: {}", fieldInfo.name, singleAbstractMethod);
             }
             org.e2immu.analyser.model.Expression parsedExpression = subContext.parseExpression(expression, singleAbstractMethod);
@@ -493,7 +495,7 @@ public class Resolver {
                 translationMapOfSuperType = translationMap;
             } else {
                 assert superType.typeInfo != null;
-                ParameterizedType formalType = superType.typeInfo.asParameterizedType();
+                ParameterizedType formalType = superType.typeInfo.asParameterizedType(inspectionProvider);
                 translationMapOfSuperType = new HashMap<>(translationMap);
                 int index = 0;
                 for (ParameterizedType parameter : formalType.parameters) {

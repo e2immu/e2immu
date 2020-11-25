@@ -69,7 +69,7 @@ public class ParseFieldAccessExpr {
             TypeInspection objectTypeInspection = expressionContext.typeContext.getTypeInspection(objectType.typeInfo);
             Optional<TypeInfo> oSubType = objectTypeInspection.subTypes().stream().filter(s -> name.equals(s.name())).findFirst();
             if (oSubType.isPresent()) {
-                return new TypeExpression(oSubType.get().asParameterizedType());
+                return new TypeExpression(oSubType.get().asParameterizedType(expressionContext.typeContext));
             }
             throw new UnsupportedOperationException("Unknown field or subtype " + name + " in type " + objectType.typeInfo.fullyQualifiedName + " at " + positionForErrorReporting);
         } else {
@@ -86,7 +86,7 @@ public class ParseFieldAccessExpr {
         // Otherwise, it has to be a variable
         List<Variable> vars = object.variables();
         Variable objectVariable = vars.isEmpty() ? null : vars.get(0);
-        FieldReference fieldReference = new FieldReference(fieldInfo, objectVariable);
+        FieldReference fieldReference = new FieldReference(expressionContext.typeContext, fieldInfo, objectVariable);
         return new FieldAccess(object, fieldReference);
     }
 }

@@ -622,7 +622,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         boolean assignedInLoop = statementAnalysis.statement instanceof LoopStatement;
 
         if (structure.localVariableCreation != null) {
-            LocalVariableReference lvr = new LocalVariableReference(structure.localVariableCreation, List.of());
+            LocalVariableReference lvr = new LocalVariableReference(analyserContext,
+                    structure.localVariableCreation, List.of());
             StatementAnalysis firstStatementInBlock = firstStatementFirstBlock();
             final int l1 = VariableInfoContainer.LEVEL_1_INITIALISER;
             VariableInfoContainer vic = firstStatementInBlock.findForWriting(analyserContext, lvr);
@@ -643,7 +644,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         StatementAnalysis saToCreate = structure.createVariablesInsideBlock ? firstStatementFirstBlock() : statementAnalysis;
         for (Expression initialiser : structure.initialisers) {
             if (initialiser instanceof LocalVariableCreation lvc) {
-                LocalVariableReference lvr = new LocalVariableReference((lvc).localVariable, List.of());
+                LocalVariableReference lvr = new LocalVariableReference(analyserContext, (lvc).localVariable, List.of());
                 // the NO_VALUE here becomes the initial (and reset) value, which should not be a problem because variables
                 // introduced here should not become "reset" to an initial value; they'll always be assigned one
                 if (assignedInLoop) {
@@ -757,7 +758,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (((arrayValue = value.asInstanceOf(ArrayValue.class)) != null) &&
                 arrayValue.values.stream().allMatch(sharedState.evaluationContext::isNotNull0)) {
             Structure structure = statementAnalysis.statement.getStructure();
-            LocalVariableReference localVariableReference = new LocalVariableReference(structure.localVariableCreation, List.of());
+            LocalVariableReference localVariableReference = new LocalVariableReference(
+                    analyserContext, structure.localVariableCreation, List.of());
             StatementAnalysis firstStatementInBlock = firstStatementFirstBlock();
             firstStatementInBlock.addProperty(analyserContext, VariableInfoContainer.LEVEL_3_EVALUATION,
                     localVariableReference, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);

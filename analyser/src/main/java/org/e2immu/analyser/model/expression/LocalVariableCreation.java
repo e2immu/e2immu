@@ -25,7 +25,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
@@ -38,16 +38,16 @@ public class LocalVariableCreation implements Expression {
     public final LocalVariable localVariable;
     public final LocalVariableReference localVariableReference;
     public final Expression expression;
-    private final Primitives primitives;
+    private final InspectionProvider inspectionProvider;
 
     public LocalVariableCreation(
-            @NotNull Primitives primitives,
+            @NotNull InspectionProvider inspectionProvider,
             @NotNull LocalVariable localVariable,
             @NotNull Expression expression) {
         this.localVariable = Objects.requireNonNull(localVariable);
         this.expression = Objects.requireNonNull(expression);
-        this.primitives = primitives;
-        localVariableReference = new LocalVariableReference(localVariable,
+        this.inspectionProvider = inspectionProvider;
+        localVariableReference = new LocalVariableReference(inspectionProvider, localVariable,
                 expression == EmptyExpression.EMPTY_EXPRESSION ? List.of() : List.of(expression));
     }
 
@@ -67,13 +67,13 @@ public class LocalVariableCreation implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new LocalVariableCreation(primitives, translationMap.translateLocalVariable(localVariable),
+        return new LocalVariableCreation(inspectionProvider, translationMap.translateLocalVariable(localVariable),
                 translationMap.translateExpression(expression));
     }
 
     @Override
     public ParameterizedType returnType() {
-        return primitives.voidParameterizedType;
+        return inspectionProvider.getPrimitives().voidParameterizedType;
     }
 
     @Override

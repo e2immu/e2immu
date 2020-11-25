@@ -164,9 +164,9 @@ public abstract class CommonAbstractValue {
         }
         TypeInfo someType = TypeInfo.fromFqn("some.type");
         someType.typeAnalysis.set(new TypeAnalysisImpl.Builder(PRIMITIVES, someType).build());
-        MethodInspectionImpl.Builder methodBuilder = new MethodInspectionImpl.Builder(someType, "someMethod");
+        MethodInspectionImpl.Builder methodBuilder = new MethodInspectionImpl.Builder(someType, "type");
         ParameterInspectionImpl.Builder pi = new ParameterInspectionImpl.Builder(PRIMITIVES.stringParameterizedType, name, 0);
-        methodBuilder.addParameter(pi);
+        methodBuilder.setReturnType(PRIMITIVES.stringParameterizedType).addParameter(pi);
         MethodInfo methodInfo = methodBuilder.build().getMethodInfo();
         ParameterInfo p0 = methodInfo.methodInspection.get().getParameters().get(0);
         p0.setAnalysis(new ParameterAnalysisImpl.Builder(PRIMITIVES, null, p0));

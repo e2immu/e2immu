@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.Objects;
 
@@ -30,6 +31,13 @@ public class FieldReference extends VariableWithConcreteReturnType {
     // can be a Resolved field again, but ends with This
     // can be null, in which case this is a reference to a static field
     public final Variable scope;
+
+    public FieldReference(InspectionProvider inspectionProvider, FieldInfo fieldInfo, Variable scope) {
+        super(scope == null ? fieldInfo.type : fieldInfo.type.fillTypeParameters
+                (inspectionProvider, scope.concreteReturnType()));
+        this.fieldInfo = Objects.requireNonNull(fieldInfo);
+        this.scope = scope;
+    }
 
     /**
      * @param o the other one
@@ -47,12 +55,6 @@ public class FieldReference extends VariableWithConcreteReturnType {
     public int hashCode() { //
         // return fieldInfo.hashCode();
         return Objects.hash(fieldInfo, scope);
-    }
-
-    public FieldReference(FieldInfo fieldInfo, Variable scope) {
-        super(scope == null ? fieldInfo.type : fieldInfo.type.fillTypeParameters(scope.concreteReturnType()));
-        this.fieldInfo = Objects.requireNonNull(fieldInfo);
-        this.scope = scope;
     }
 
     @Override

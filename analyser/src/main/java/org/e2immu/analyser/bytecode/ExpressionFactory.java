@@ -39,7 +39,8 @@ public class ExpressionFactory {
         if (value instanceof Character c) return new CharConstant(primitives, c);
         if (value instanceof Boolean b) return new BooleanConstant(primitives, b);
         if (value instanceof Type t)
-            return new TypeExpression(typeContext.getFullyQualified(t.getClassName(), true).asParameterizedType());
+            return new TypeExpression(typeContext.getFullyQualified(t.getClassName(), true)
+                    .asParameterizedType(typeContext));
         throw new UnsupportedOperationException("Value " + value + " is of " + value.getClass());
     }
 }

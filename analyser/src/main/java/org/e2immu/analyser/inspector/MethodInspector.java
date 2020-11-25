@@ -99,16 +99,16 @@ public class MethodInspector {
         throw new UnsupportedOperationException();
     }
 
-    private void checkCompanionMethods(Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods) {
+    private void checkCompanionMethods(Map<CompanionMethodName, MethodInspectionImpl.Builder> companionMethods, String mainMethodName) {
         for (Map.Entry<CompanionMethodName, MethodInspectionImpl.Builder> entry : companionMethods.entrySet()) {
             CompanionMethodName companionMethodName = entry.getKey();
-            MethodInspectionImpl.Builder methodInspection = entry.getValue();
-            if (!methodInspection.getAnnotations().isEmpty()) {
+            MethodInspectionImpl.Builder companionInspection = entry.getValue();
+            if (!companionInspection.getAnnotations().isEmpty()) {
                 throw new UnsupportedOperationException("Companion methods do not accept annotations: " + companionMethodName);
             }
-            if (!companionMethodName.methodName().equals(methodInspection.name)) {
+            if (!companionMethodName.methodName().equals(mainMethodName)) {
                 throw new UnsupportedOperationException("Companion method's name differs from the method name: " +
-                        companionMethodName + " vs " + methodInspection.name);
+                        companionMethodName + " vs " + mainMethodName);
             }
         }
     }
@@ -127,13 +127,12 @@ public class MethodInspector {
         MethodInspectionImpl.Builder builder = fqnIsKnown(tempBuilder);
 
         builder.addCompanionMethods(companionMethods);
-        checkCompanionMethods(companionMethods);
+        checkCompanionMethods(companionMethods, typeInfo.simpleName);
         addAnnotations(builder, cd.getAnnotations(), expressionContext);
         if (fullInspection) {
             addModifiers(builder, cd.getModifiers());
             addExceptionTypes(builder, cd.getThrownExceptions(), expressionContext.typeContext);
 
-            builder.readyToComputeFQN();
             typeMapBuilder.registerMethodInspection(builder);
 
             builder.setBlock(cd.getBody());
@@ -168,7 +167,7 @@ public class MethodInspector {
             MethodInspectionImpl.Builder builder = fqnIsKnown(tempBuilder);
 
             builder.addCompanionMethods(companionMethods);
-            checkCompanionMethods(companionMethods);
+            checkCompanionMethods(companionMethods, name);
 
             addAnnotations(builder, md.getAnnotations(), newContext);
             if (fullInspection) {
@@ -178,7 +177,6 @@ public class MethodInspector {
                 ParameterizedType pt = ParameterizedType.from(newContext.typeContext, md.getType());
                 builder.setReturnType(pt);
 
-                builder.readyToComputeFQN();
                 typeMapBuilder.registerMethodInspection(builder);
 
                 if (md.getBody().isPresent()) {

@@ -31,6 +31,7 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.NotNull;
@@ -341,11 +342,18 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public ParameterizedType asParameterizedType() {
-        if (!typeInspection.isSet()) {
-            return new ParameterizedType(this, List.of());
-        }
         return new ParameterizedType(this, typeInspection.get().typeParameters()
                 .stream().map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toList()));
+    }
+
+    public ParameterizedType asParameterizedType(InspectionProvider inspectionProvider) {
+        return new ParameterizedType(this, inspectionProvider.getTypeInspection(this).typeParameters()
+                .stream().map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toList()));
+    }
+
+    // to be called before type inspection has been built
+    public ParameterizedType asSimpleParameterizedType() {
+        return new ParameterizedType(this, List.of());
     }
 
     public boolean isStatic() {
@@ -365,12 +373,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public TypeInfo primaryType() {
-        if (typeInspection.isSet()) {
-            Either<String, TypeInfo> packageNameOrEnclosingType = typeInspection.get().packageNameOrEnclosingType();
-            if (packageNameOrEnclosingType.isLeft()) return this;
-            return packageNameOrEnclosingType.getRight().primaryType();
-        }
-        throw new UnsupportedOperationException("Type inspection on " + fullyQualifiedName + " not yet set");
+        Either<String, TypeInfo> packageNameOrEnclosingType = typeInspection.get().packageNameOrEnclosingType();
+        if (packageNameOrEnclosingType.isLeft()) return this;
+        return packageNameOrEnclosingType.getRight().primaryType();
     }
 
     /*

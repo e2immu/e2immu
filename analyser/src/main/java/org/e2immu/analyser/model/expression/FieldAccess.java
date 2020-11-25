@@ -99,7 +99,8 @@ public class FieldAccess implements Expression {
         EvaluationResult scopeResult = expression.evaluate(evaluationContext, forwardEvaluationInfo.copyModificationEnsureNotNull());
         Variable newVar;
         if (scopeResult.value instanceof VariableValue variableValue && variable instanceof FieldReference fieldReference) {
-            newVar = new FieldReference(fieldReference.fieldInfo, variableValue.variable);
+            newVar = new FieldReference(evaluationContext.getAnalyserContext(),
+                    fieldReference.fieldInfo, variableValue.variable);
         } else {
             newVar = variable;
         }

@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.HashMap;
 import java.util.List;
@@ -78,8 +79,8 @@ public class VariableContext {
         parameters.put(variable.simpleName(), variable);
     }
 
-    public void add(LocalVariable variable, List<Expression> assignmentExpressions) {
-        localVars.put(variable.name, new LocalVariableReference(variable, assignmentExpressions));
+    public void add(InspectionProvider inspectionProvider, LocalVariable variable, List<Expression> assignmentExpressions) {
+        localVars.put(variable.name, new LocalVariableReference(inspectionProvider, variable, assignmentExpressions));
     }
 
     public void addAll(List<LocalVariableReference> localVariableReferences) {

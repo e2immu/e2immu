@@ -17,13 +17,15 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.LocalVariable;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.value.IntValue;
+import org.e2immu.analyser.model.value.VariableValue;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
@@ -31,19 +33,24 @@ import java.util.List;
 public abstract class CommonVariableInfo {
 
     protected final Primitives primitives = new Primitives();
+    protected final InspectionProvider inspectionProvider = InspectionProvider.defaultFrom(primitives);
 
     protected Variable makeLocalIntVar(String name) {
-        return new LocalVariableReference(new LocalVariable(List.of(), name, primitives.intParameterizedType, List.of()),
+        return new LocalVariableReference(inspectionProvider,
+                new LocalVariable(List.of(), name, primitives.intParameterizedType, List.of()),
                 List.of());
     }
+
     protected Variable makeLocalBooleanVar(String name) {
-        return new LocalVariableReference(new LocalVariable(List.of(), name, primitives.booleanParameterizedType, List.of()),
+        return new LocalVariableReference(inspectionProvider,
+                new LocalVariable(List.of(), name, primitives.booleanParameterizedType, List.of()),
                 List.of());
     }
 
     protected Variable makeReturnVariable() {
         return new ReturnVariable(primitives.orOperatorBool);
     }
+
     protected final IntValue two = new IntValue(primitives, 2, ObjectFlow.NO_FLOW);
     protected final IntValue three = new IntValue(primitives, 3, ObjectFlow.NO_FLOW);
     protected final IntValue four = new IntValue(primitives, 4, ObjectFlow.NO_FLOW);

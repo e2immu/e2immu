@@ -177,7 +177,7 @@ public class MyClassVisitor extends ClassVisitor {
                     errorStateForType(parentFqName);
                     return;
                 }
-                typeInspectionBuilder.setParentClass(typeInfo.asParameterizedType());
+                typeInspectionBuilder.setParentClass(typeInfo.asParameterizedType(typeContext));
             } else {
                 log(BYTECODE_INSPECTOR_DEBUG, "No parent name for {}", fqName);
             }
@@ -191,7 +191,7 @@ public class MyClassVisitor extends ClassVisitor {
                         errorStateForType(fqn);
                         return;
                     }
-                    typeInspectionBuilder.addInterfaceImplemented(typeInfo.asParameterizedType());
+                    typeInspectionBuilder.addInterfaceImplemented(typeInfo.asParameterizedType(typeContext));
                 }
             }
         } else {

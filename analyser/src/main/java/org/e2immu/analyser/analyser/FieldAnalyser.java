@@ -551,7 +551,8 @@ public class FieldAnalyser extends AbstractAnalyser {
             combinedValue = CombinedValue.create(analyserContext.getPrimitives(), values);
         }
         This thisVariable = new This(fieldInfo.owner);
-        FieldReference fieldReference = new FieldReference(fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
+        FieldReference fieldReference = new FieldReference(analyserContext,
+                fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
         /*
            Map<VariableProperty, Integer> properties = new HashMap<>();
         for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {

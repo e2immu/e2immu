@@ -30,6 +30,9 @@ import org.e2immu.annotation.NotNull;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
+import static org.e2immu.analyser.util.Logger.log;
+
 public class MethodInspectionImpl extends InspectionImpl implements MethodInspection {
 
     private final String fullyQualifiedName;
@@ -316,6 +319,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                     inspectedBlock
             );
             methodInfo.methodInspection.set(methodInspection);
+            log(INSPECT, "Setting inspection of {}", methodInfo.fullyQualifiedName);
             return methodInspection;
         }
 

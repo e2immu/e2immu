@@ -207,7 +207,7 @@ public class TypeInspector {
                 log(INSPECT, "Have member {} in {}", amd.getNameAsString(), typeInfo.fullyQualifiedName);
                 MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo, fullInspection);
                 methodInspector.inspect(amd, subContext);
-                builder.addMethod(methodInspector.getBuilder().build().getMethodInfo());
+                builder.addMethod(methodInspector.getBuilder().getMethodInfo());
             }
         }
     }
@@ -215,7 +215,8 @@ public class TypeInspector {
     private void doEnumDeclaration(ExpressionContext expressionContext, EnumDeclaration enumDeclaration) {
         builder.setTypeNature(TypeNature.ENUM);
         enumDeclaration.getEntries().forEach(enumConstantDeclaration -> {
-            FieldInfo fieldInfo = new FieldInfo(typeInfo, enumConstantDeclaration.getNameAsString(), typeInfo);
+            FieldInfo fieldInfo = new FieldInfo(typeInfo.asSimpleParameterizedType(),
+                    enumConstantDeclaration.getNameAsString(), typeInfo);
             FieldInspectionImpl.Builder fieldBuilder = new FieldInspectionImpl.Builder();
             fieldBuilder.addModifier(FieldModifier.FINAL);
             fieldBuilder.addModifier(FieldModifier.PUBLIC);
@@ -230,10 +231,10 @@ public class TypeInspector {
         MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(typeInfo, "name")
                 .setReturnType(primitives.stringParameterizedType)
                 .addAnnotation(e2.notModified);
-        builder.addMethod(nameBuilder.build().getMethodInfo());
+        builder.addMethod(nameBuilder.getMethodInfo());
 
         MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf")
-                .setReturnType(typeInfo.asParameterizedType())
+                .setReturnType(typeInfo.asParameterizedType(expressionContext.typeContext))
                 .setStatic(true)
                 .addAnnotation(e2.notModified);
         ParameterInspectionImpl.Builder valueOfP0B = new ParameterInspectionImpl.Builder(primitives.stringParameterizedType,
@@ -415,7 +416,7 @@ public class TypeInspector {
                 MethodInspector methodInspector = new MethodInspector(expressionContext.typeContext.typeMapBuilder, typeInfo,
                         fullInspection);
                 methodInspector.inspect(cd, subContext, companionMethodsWaiting, dollarResolver);
-                builder.addConstructor(methodInspector.getBuilder().build().getMethodInfo());
+                builder.addConstructor(methodInspector.getBuilder().getMethodInfo());
                 companionMethodsWaiting.clear();
             });
             bodyDeclaration.ifMethodDeclaration(md -> {
@@ -429,7 +430,7 @@ public class TypeInspector {
                         methodFullInspection);
                 methodInspector.inspect(isInterface, md, subContext,
                         companionMethodName != null ? Map.of() : companionMethodsWaiting, dollarResolver);
-                MethodInspection methodInspection = methodInspector.getBuilder().build();
+                MethodInspection methodInspection = methodInspector.getBuilder();
                 MethodInfo methodInfo = methodInspection.getMethodInfo();
                 if (isInterface && !methodInspection.isStatic() && !methodInspection.isDefault()) {
                     countNonStaticNonDefaultIfInterface.incrementAndGet();

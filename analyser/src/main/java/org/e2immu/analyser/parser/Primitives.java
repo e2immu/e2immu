@@ -38,7 +38,7 @@ public class Primitives {
     public static final String ORG_E2IMMU_ANNOTATION = "org.e2immu.annotation";
 
     public final TypeInfo intTypeInfo = TypeInfo.fromFqn("int");
-    public final ParameterizedType intParameterizedType = intTypeInfo.asParameterizedType();
+    public final ParameterizedType intParameterizedType = intTypeInfo.asSimpleParameterizedType();
 
     public static boolean isInt(TypeInfo typeInfo) {
         return "int".equals(typeInfo.fullyQualifiedName);
@@ -51,7 +51,7 @@ public class Primitives {
     }
 
     public final TypeInfo charTypeInfo = TypeInfo.fromFqn("char");
-    public final ParameterizedType charParameterizedType = charTypeInfo.asParameterizedType();
+    public final ParameterizedType charParameterizedType = charTypeInfo.asSimpleParameterizedType();
 
     public static boolean isChar(TypeInfo typeInfo) {
         return "char".equals(typeInfo.fullyQualifiedName);
@@ -64,7 +64,7 @@ public class Primitives {
     }
 
     public final TypeInfo booleanTypeInfo = TypeInfo.fromFqn("boolean");
-    public final ParameterizedType booleanParameterizedType = booleanTypeInfo.asParameterizedType();
+    public final ParameterizedType booleanParameterizedType = booleanTypeInfo.asSimpleParameterizedType();
 
     public static boolean isBoolean(TypeInfo typeInfo) {
         return "boolean".equals(typeInfo.fullyQualifiedName);
@@ -82,7 +82,7 @@ public class Primitives {
     }
 
     public final TypeInfo longTypeInfo = TypeInfo.fromFqn("long");
-    public final ParameterizedType longParameterizedType = longTypeInfo.asParameterizedType();
+    public final ParameterizedType longParameterizedType = longTypeInfo.asSimpleParameterizedType();
 
     public static boolean isLong(TypeInfo typeInfo) {
         return "long".equals(typeInfo.fullyQualifiedName);
@@ -95,7 +95,7 @@ public class Primitives {
     }
 
     public final TypeInfo shortTypeInfo = TypeInfo.fromFqn("short");
-    public final ParameterizedType shortParameterizedType = shortTypeInfo.asParameterizedType();
+    public final ParameterizedType shortParameterizedType = shortTypeInfo.asSimpleParameterizedType();
 
     public static boolean isShort(TypeInfo typeInfo) {
         return "short".equals(typeInfo.fullyQualifiedName);
@@ -108,7 +108,7 @@ public class Primitives {
     }
 
     public final TypeInfo byteTypeInfo = TypeInfo.fromFqn("byte");
-    public final ParameterizedType byteParameterizedType = byteTypeInfo.asParameterizedType();
+    public final ParameterizedType byteParameterizedType = byteTypeInfo.asSimpleParameterizedType();
 
     public static boolean isByte(TypeInfo typeInfo) {
         return "byte".equals(typeInfo.fullyQualifiedName);
@@ -121,7 +121,7 @@ public class Primitives {
     }
 
     public final TypeInfo doubleTypeInfo = TypeInfo.fromFqn("double");
-    public final ParameterizedType doubleParameterizedType = doubleTypeInfo.asParameterizedType();
+    public final ParameterizedType doubleParameterizedType = doubleTypeInfo.asSimpleParameterizedType();
 
     public static boolean isDouble(TypeInfo typeInfo) {
         return "double".equals(typeInfo.fullyQualifiedName);
@@ -134,7 +134,7 @@ public class Primitives {
     }
 
     public final TypeInfo floatTypeInfo = TypeInfo.fromFqn("float");
-    public final ParameterizedType floatParameterizedType = floatTypeInfo.asParameterizedType();
+    public final ParameterizedType floatParameterizedType = floatTypeInfo.asSimpleParameterizedType();
 
     public static boolean isFloat(TypeInfo typeInfo) {
         return "float".equals(typeInfo.fullyQualifiedName);
@@ -147,7 +147,7 @@ public class Primitives {
     }
 
     public final TypeInfo voidTypeInfo = TypeInfo.fromFqn("void");
-    public final ParameterizedType voidParameterizedType = voidTypeInfo.asParameterizedType();
+    public final ParameterizedType voidParameterizedType = voidTypeInfo.asSimpleParameterizedType();
     public final TypeInfo boxedVoidTypeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_LANG, "Void");
 
     public static boolean isVoid(TypeInfo typeInfo) {
@@ -163,22 +163,23 @@ public class Primitives {
     }
 
     public final TypeInfo stringTypeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_LANG, "String");
-    public final ParameterizedType stringParameterizedType = stringTypeInfo.asParameterizedType();
+    public final ParameterizedType stringParameterizedType = stringTypeInfo.asSimpleParameterizedType();
 
     public static boolean isJavaLangString(TypeInfo typeInfo) {
         return "java.lang.String".equals(typeInfo.fullyQualifiedName);
     }
 
     public final TypeInfo annotationTypeTypeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName(ORG_E2IMMU_ANNOTATION, "AnnotationType");
-    public final FieldInfo annotationTypeComputed = new FieldInfo(annotationTypeTypeInfo, "COMPUTED", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeVerify = new FieldInfo(annotationTypeTypeInfo, "VERIFY", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeVerifyAbsent = new FieldInfo(annotationTypeTypeInfo, "VERIFY_ABSENT", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeContract = new FieldInfo(annotationTypeTypeInfo, "CONTRACT", annotationTypeTypeInfo);
-    public final FieldInfo annotationTypeContractAbsent = new FieldInfo(annotationTypeTypeInfo, "CONTRACT_ABSENT", annotationTypeTypeInfo);
+    private final ParameterizedType annotationTypePt = annotationTypeTypeInfo.asSimpleParameterizedType();
+    public final FieldInfo annotationTypeComputed = new FieldInfo(annotationTypePt, "COMPUTED", annotationTypeTypeInfo);
+    public final FieldInfo annotationTypeVerify = new FieldInfo(annotationTypePt, "VERIFY", annotationTypeTypeInfo);
+    public final FieldInfo annotationTypeVerifyAbsent = new FieldInfo(annotationTypePt, "VERIFY_ABSENT", annotationTypeTypeInfo);
+    public final FieldInfo annotationTypeContract = new FieldInfo(annotationTypePt, "CONTRACT", annotationTypeTypeInfo);
+    public final FieldInfo annotationTypeContractAbsent = new FieldInfo(annotationTypePt, "CONTRACT_ABSENT", annotationTypeTypeInfo);
 
     public final TypeInfo annotationModeTypeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName(ORG_E2IMMU_ANNOTATION, "AnnotationMode");
-    public final FieldInfo annotationModeDefensive = new FieldInfo(annotationTypeTypeInfo, "DEFENSIVE", annotationModeTypeInfo);
-    public final FieldInfo annotationModeOffensive = new FieldInfo(annotationTypeTypeInfo, "OFFENSIVE", annotationModeTypeInfo);
+    public final FieldInfo annotationModeDefensive = new FieldInfo(annotationTypePt, "DEFENSIVE", annotationModeTypeInfo);
+    public final FieldInfo annotationModeOffensive = new FieldInfo(annotationTypePt, "OFFENSIVE", annotationModeTypeInfo);
 
     public final TypeInfo functionalInterface = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_LANG, "FunctionalInterface");
     public final AnnotationExpression functionalInterfaceAnnotationExpression =
@@ -191,7 +192,7 @@ public class Primitives {
     public final TypeInfo classTypeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_LANG, "Class");
 
     public final TypeInfo objectTypeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_LANG, "Object");
-    public final ParameterizedType objectParameterizedType = objectTypeInfo.asParameterizedType();
+    public final ParameterizedType objectParameterizedType = objectTypeInfo.asSimpleParameterizedType();
 
     public static boolean isJavaLangObject(TypeInfo typeInfo) {
         return JAVA_LANG_OBJECT.equals(typeInfo.fullyQualifiedName);
@@ -332,7 +333,7 @@ public class Primitives {
     private void processEnum(TypeInfo typeInfo, List<FieldInfo> fields) {
         MethodInspectionImpl.Builder valueOfBuilder = new MethodInspectionImpl.Builder(typeInfo, "valueOf").setStatic(true);
         ParameterInspectionImpl.Builder valueOf0Builder = new ParameterInspectionImpl.Builder(stringParameterizedType, "s", 0);
-        ParameterizedType typeInfoAsPt = typeInfo.asParameterizedType();
+        ParameterizedType typeInfoAsPt = typeInfo.asSimpleParameterizedType();
         MethodInfo valueOf = valueOfBuilder.setReturnType(typeInfoAsPt)
                 .addParameter(valueOf0Builder)
                 .addModifier(MethodModifier.PUBLIC)

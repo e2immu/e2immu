@@ -185,13 +185,13 @@ public class TypeContext implements InspectionProvider {
                     .filter(FieldInfo::isStatic)
                     .filter(f -> f.name.equals(memberName))
                     .findFirst()
-                    .ifPresent(fieldInfo -> map.put(memberName, new FieldReference(fieldInfo, null)));
+                    .ifPresent(fieldInfo -> map.put(memberName, new FieldReference(this, fieldInfo, null)));
         }
         for (TypeInfo typeInfo : importStaticAsterisk) {
             TypeInspection typeInspection = getTypeInspection(typeInfo);
             typeInspection.fields().stream()
                     .filter(FieldInfo::isStatic)
-                    .forEach(fieldInfo -> map.put(fieldInfo.name, new FieldReference(fieldInfo, null)));
+                    .forEach(fieldInfo -> map.put(fieldInfo.name, new FieldReference(this, fieldInfo, null)));
         }
         return map;
     }
@@ -320,7 +320,8 @@ public class TypeContext implements InspectionProvider {
         }
         if (typeInspection.packageNameOrEnclosingType().isRight()) {
             // if I'm in a static subtype, I can only access the static methods of the enclosing type
-            ParameterizedType enclosingType = typeInspection.packageNameOrEnclosingType().getRight().asParameterizedType();
+            ParameterizedType enclosingType = typeInspection.packageNameOrEnclosingType()
+                    .getRight().asParameterizedType(this);
             boolean onlyStatic = staticOnly || typeInfo.isStatic();
             recursivelyResolveOverloadedMethods(enclosingType, methodName, parametersPresented, decrementWhenNotStatic,
                     joinMaps(typeMap, enclosingType), result, visited, onlyStatic);
@@ -351,10 +352,10 @@ public class TypeContext implements InspectionProvider {
         return parametersPresented == declared;
     }
 
-    private static Map<NamedType, ParameterizedType> joinMaps(Map<NamedType, ParameterizedType> previous,
-                                                              ParameterizedType target) {
+    private Map<NamedType, ParameterizedType> joinMaps(Map<NamedType, ParameterizedType> previous,
+                                                       ParameterizedType target) {
         HashMap<NamedType, ParameterizedType> res = new HashMap<>(previous);
-        res.putAll(target.initialTypeParameterMap());
+        res.putAll(target.initialTypeParameterMap(this));
         return res;
     }
 

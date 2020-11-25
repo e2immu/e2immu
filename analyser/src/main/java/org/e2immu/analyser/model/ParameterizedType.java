@@ -393,11 +393,11 @@ public class ParameterizedType {
     // ******************************************************************************************************
 
     // make a map from the type's abstract parameters to its concrete ones
-    public Map<NamedType, ParameterizedType> initialTypeParameterMap() {
+    public Map<NamedType, ParameterizedType> initialTypeParameterMap(InspectionProvider inspectionProvider) {
         // TODO make recursive
         if (!isType()) return Map.of();
         if (parameters.isEmpty()) return Map.of();
-        ParameterizedType originalType = typeInfo.asParameterizedType();
+        ParameterizedType originalType = typeInfo.asParameterizedType(inspectionProvider);
         int i = 0;
         Map<NamedType, ParameterizedType> map = new HashMap<>();
         for (ParameterizedType parameter : originalType.parameters) {
@@ -578,7 +578,7 @@ public class ParameterizedType {
                 .map(inspectionProvider::getMethodInspection)
                 .filter(m -> !m.isStatic() && !m.isDefault()).findFirst();
         if (theMethod.isPresent()) {
-            return new MethodTypeParameterMap(theMethod.get(), initialTypeParameterMap());
+            return new MethodTypeParameterMap(theMethod.get(), initialTypeParameterMap(inspectionProvider));
         }
         for (ParameterizedType extension : typeInspection.interfacesImplemented()) {
             MethodTypeParameterMap ofExtension = extension.findSingleAbstractMethodOfInterface(inspectionProvider, false);
@@ -603,8 +603,8 @@ public class ParameterizedType {
      * The field 'k' has an abstract type K, which can be filled to get a concrete return type Integer
      */
 
-    public ParameterizedType fillTypeParameters(ParameterizedType concreteType) {
-        Map<NamedType, ParameterizedType> typeParameterMap = concreteType.initialTypeParameterMap();
+    public ParameterizedType fillTypeParameters(InspectionProvider inspectionProvider, ParameterizedType concreteType) {
+        Map<NamedType, ParameterizedType> typeParameterMap = concreteType.initialTypeParameterMap(inspectionProvider);
         return MethodTypeParameterMap.apply(typeParameterMap, this);
     }
 

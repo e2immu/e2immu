@@ -46,6 +46,7 @@ public class ParseMethodReferenceExpr {
         String methodName = methodReferenceExpr.getIdentifier();
         boolean constructor = "new".equals(methodName);
 
+        TypeContext typeContext = expressionContext.typeContext;
         int parametersPresented = singleAbstractMethod.methodInspection.getParameters().size();
         List<TypeContext.MethodCandidate> methodCandidates;
         String methodNameForErrorReporting;
@@ -54,7 +55,7 @@ public class ParseMethodReferenceExpr {
                 return arrayConstruction(expressionContext, parameterizedType);
             }
             methodNameForErrorReporting = "constructor";
-            methodCandidates = expressionContext.typeContext.resolveConstructor(parameterizedType, parametersPresented, parameterizedType.initialTypeParameterMap());
+            methodCandidates = typeContext.resolveConstructor(parameterizedType, parametersPresented, parameterizedType.initialTypeParameterMap(typeContext));
         } else {
             methodCandidates = new ArrayList<>();
             methodNameForErrorReporting = "method " + methodName;
@@ -66,8 +67,8 @@ public class ParseMethodReferenceExpr {
 
             // but this example says you need to subtract:
             // e.g. Function<T, R> has R apply(T t), and we present Object::toString (the scope is the first argument)
-            expressionContext.typeContext.recursivelyResolveOverloadedMethods(parameterizedType,
-                    methodName, parametersPresented, scopeIsAType, parameterizedType.initialTypeParameterMap(), methodCandidates);
+            typeContext.recursivelyResolveOverloadedMethods(parameterizedType,
+                    methodName, parametersPresented, scopeIsAType, parameterizedType.initialTypeParameterMap(typeContext), methodCandidates);
         }
         if (methodCandidates.isEmpty()) {
             throw new UnsupportedOperationException("Cannot find a candidate for " + methodNameForErrorReporting + " at " + methodReferenceExpr.getBegin());
@@ -83,7 +84,7 @@ public class ParseMethodReferenceExpr {
                 List<TypeContext.MethodCandidate> copy = new LinkedList<>(methodCandidates);
                 copy.removeIf(mc -> {
                     ParameterizedType typeOfMethodCandidate = typeOfMethodCandidate(mc, index, scopeIsAType, constructor);
-                    boolean isAssignable = typeOfMethodCandidate.isAssignableFrom(expressionContext.typeContext, concreteType);
+                    boolean isAssignable = typeOfMethodCandidate.isAssignableFrom(typeContext, concreteType);
                     return !isAssignable;
                 });
                 // only accept of this is an improvement
@@ -97,7 +98,7 @@ public class ParseMethodReferenceExpr {
                     ParameterizedType typeOfMc1 = typeOfMethodCandidate(mc1, index, scopeIsAType, constructor);
                     ParameterizedType typeOfMc2 = typeOfMethodCandidate(mc2, index, scopeIsAType, constructor);
                     if (typeOfMc1.equals(typeOfMc2)) return 0;
-                    return typeOfMc2.isAssignableFrom(expressionContext.typeContext, typeOfMc1) ? -1 : 1;
+                    return typeOfMc2.isAssignableFrom(typeContext, typeOfMc1) ? -1 : 1;
                 });
             }
             if (methodCandidates.size() > 1) {
@@ -151,16 +152,17 @@ public class ParseMethodReferenceExpr {
         String methodName = methodReferenceExpr.getIdentifier();
         boolean constructor = "new".equals(methodName);
 
+        TypeContext typeContext = expressionContext.typeContext;
         List<TypeContext.MethodCandidate> methodCandidates;
         if (constructor) {
             if (parameterizedType.arrays > 0) {
                 return arrayConstruction(expressionContext, parameterizedType);
             }
-            methodCandidates = expressionContext.typeContext.resolveConstructor(parameterizedType, TypeContext.IGNORE_PARAMETER_NUMBERS, parameterizedType.initialTypeParameterMap());
+            methodCandidates = typeContext.resolveConstructor(parameterizedType, TypeContext.IGNORE_PARAMETER_NUMBERS, parameterizedType.initialTypeParameterMap(typeContext));
         } else {
             methodCandidates = new ArrayList<>();
-            expressionContext.typeContext.recursivelyResolveOverloadedMethods(parameterizedType,
-                    methodName, TypeContext.IGNORE_PARAMETER_NUMBERS, false, parameterizedType.initialTypeParameterMap(), methodCandidates);
+            typeContext.recursivelyResolveOverloadedMethods(parameterizedType,
+                    methodName, TypeContext.IGNORE_PARAMETER_NUMBERS, false, parameterizedType.initialTypeParameterMap(typeContext), methodCandidates);
         }
         if (methodCandidates.isEmpty()) {
             throw new UnsupportedOperationException("Cannot find a candidate for " + (constructor ? "constructor" : methodName) + " at " + methodReferenceExpr.getBegin());
