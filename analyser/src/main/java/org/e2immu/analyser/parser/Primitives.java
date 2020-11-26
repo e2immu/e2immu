@@ -216,7 +216,7 @@ public class Primitives {
             builder.addParameter(pb); // inspection built when method is built
         }
         builder.setReturnType(returnType);
-        return builder.build().getMethodInfo();
+        return builder.build(InspectionProvider.DEFAULT).getMethodInfo();
     }
 
     private final List<ParameterizedType> intInt = List.of(intParameterizedType, intParameterizedType);
@@ -339,12 +339,12 @@ public class Primitives {
         MethodInfo valueOf = valueOfBuilder.setReturnType(typeInfoAsPt)
                 .addParameter(valueOf0Builder)
                 .addModifier(MethodModifier.PUBLIC)
-                .build().getMethodInfo();
+                .build(InspectionProvider.DEFAULT).getMethodInfo();
 
         MethodInspectionImpl.Builder nameBuilder = new MethodInspectionImpl.Builder(typeInfo, "name");
         MethodInfo name = nameBuilder.setReturnType(stringParameterizedType)
                 .addModifier(MethodModifier.PUBLIC)
-                .build().getMethodInfo();
+                .build(InspectionProvider.DEFAULT).getMethodInfo();
         TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND)
                 .setPackageName(ORG_E2IMMU_ANNOTATION)
                 .setTypeNature(TypeNature.ENUM)

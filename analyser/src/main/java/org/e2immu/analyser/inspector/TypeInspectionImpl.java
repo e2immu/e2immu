@@ -288,7 +288,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         }
 
         public void ensureSubType(TypeInfo typeInfo) {
-            if(!subTypeNames.contains(typeInfo.simpleName)) {
+            if (!subTypeNames.contains(typeInfo.simpleName)) {
                 subTypes.add(typeInfo);
             }
         }
@@ -351,7 +351,9 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         @Override
         public Either<String, TypeInfo> packageNameOrEnclosingType() {
-            return packageName == null ? Either.right(enclosingType) : Either.left(packageName);
+            if (enclosingType != null) return Either.right(enclosingType);
+            if (packageName != null) return Either.left(packageName);
+            throw new UnsupportedOperationException("Type " + typeInfo.fullyQualifiedName);
         }
 
         @Override

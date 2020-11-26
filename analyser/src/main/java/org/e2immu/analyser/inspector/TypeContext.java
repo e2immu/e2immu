@@ -136,9 +136,9 @@ public class TypeContext implements InspectionProvider {
         }
     }
 
-    private static MethodInspection createEmptyConstructor(@NotNull TypeInfo typeInfo) {
+    private  MethodInspection createEmptyConstructor(@NotNull TypeInfo typeInfo) {
         MethodInspectionImpl.Builder constructorBuilder = new MethodInspectionImpl.Builder(typeInfo);
-        return constructorBuilder.addModifier(MethodModifier.PUBLIC).build();
+        return constructorBuilder.addModifier(MethodModifier.PUBLIC).build(this);
     }
 
     private List<TypeInfo> extractTypeInfo(ParameterizedType typeOfObject, Map<NamedType, ParameterizedType> typeMap) {

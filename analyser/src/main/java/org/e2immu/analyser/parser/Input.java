@@ -135,7 +135,7 @@ public record Input(Configuration configuration,
      * if not, the method will have little effect and no classes beyond the ones from
      * <code>initializeClassPath</code> will be present
      */
-    private static void preload(TypeContext globalTypeContext,
+    public static void preload(TypeContext globalTypeContext,
                                 ByteCodeInspector byteCodeInspector,
                                 Resources classPath,
                                 String thePackage) {

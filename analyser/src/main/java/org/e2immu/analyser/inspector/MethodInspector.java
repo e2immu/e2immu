@@ -28,6 +28,7 @@ import com.github.javaparser.ast.type.ReferenceType;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.SetOnce;
 import org.slf4j.Logger;
@@ -70,7 +71,7 @@ public class MethodInspector {
         String name = amd.getNameAsString();
         log(INSPECT, "Inspecting annotation member {} in {}", name, typeInfo.fullyQualifiedName);
         MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo, name);
-        MethodInspectionImpl.Builder builder = fqnIsKnown(tempBuilder);
+        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
 
         addAnnotations(builder, amd.getAnnotations(), expressionContext);
         if (fullInspection) {
@@ -84,8 +85,8 @@ public class MethodInspector {
         }
     }
 
-    private MethodInspectionImpl.Builder fqnIsKnown(MethodInspectionImpl.Builder builder) {
-        builder.readyToComputeFQN();
+    private MethodInspectionImpl.Builder fqnIsKnown(InspectionProvider inspectionProvider, MethodInspectionImpl.Builder builder) {
+        builder.readyToComputeFQN(inspectionProvider);
         MethodInspection methodInspection = typeMapBuilder.getMethodInspectionDoNotTrigger(builder.getDistinguishingName());
         if (methodInspection instanceof MethodInspectionImpl.Builder existing) {
             log(INSPECT, "Inspecting method {}, already byte-code inspected", builder.getDistinguishingName());
@@ -129,7 +130,7 @@ public class MethodInspector {
                         TypeInspector.DollarResolver dollarResolver) {
         MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo);
         addParameters(tempBuilder, cd.getParameters(), expressionContext, dollarResolver);
-        MethodInspectionImpl.Builder builder = fqnIsKnown(tempBuilder);
+        MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
 
         builder.addCompanionMethods(companionMethods);
         checkCompanionMethods(companionMethods, typeInfo.simpleName);
@@ -169,7 +170,7 @@ public class MethodInspector {
             }
 
             addParameters(tempBuilder, md.getParameters(), newContext, dollarResolver);
-            MethodInspectionImpl.Builder builder = fqnIsKnown(tempBuilder);
+            MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
 
             builder.addCompanionMethods(companionMethods);
             checkCompanionMethods(companionMethods, methodName);

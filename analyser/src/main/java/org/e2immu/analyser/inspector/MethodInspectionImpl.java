@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotModified;
@@ -289,7 +290,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         @NotModified
         @NotNull
-        public MethodInspectionImpl build() {
+        public MethodInspectionImpl build(InspectionProvider inspectionProvider) {
             if (inspectedBlock == null) {
                 inspectedBlock = Block.EMPTY_BLOCK;
             }
@@ -303,7 +304,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             // that's not correct, lambdas can have a method parameter type belonging to the enclosing method.
             // we cannot easily check for that because anonymous types cannot (ATM) refer to their owning field/method.
 
-            if (fullyQualifiedName == null) readyToComputeFQN();
+            if (fullyQualifiedName == null) readyToComputeFQN(inspectionProvider);
 
             // we have a method object now...
             if (methodInfo.isConstructor) {
@@ -332,12 +333,12 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
             return methodInspection;
         }
 
-        public void readyToComputeFQN() {
+        public void readyToComputeFQN(InspectionProvider inspectionProvider) {
             fullyQualifiedName = owner.fullyQualifiedName + "." + name + "(" + parameters.stream()
-                    .map(p -> p.getParameterizedType().stream(p.isVarArgs()))
+                    .map(p -> p.getParameterizedType().stream(inspectionProvider, p.isVarArgs()))
                     .collect(Collectors.joining(",")) + ")";
             distinguishingName = owner.fullyQualifiedName + "." + name + "(" + parameters.stream()
-                    .map(p -> p.getParameterizedType().distinguishingStream(p.isVarArgs()))
+                    .map(p -> p.getParameterizedType().distinguishingStream(inspectionProvider, p.isVarArgs()))
                     .collect(Collectors.joining(",")) + ")";
             this.methodInfo = new MethodInfo(owner, name, fullyQualifiedName, distinguishingName, isConstructor);
             typeParameters.forEach(tp -> ((TypeParameterImpl) tp).setMethodInfo(methodInfo));

@@ -239,7 +239,7 @@ public class TypeInspector {
                 .addAnnotation(e2.notModified);
         ParameterInspectionImpl.Builder valueOfP0B = new ParameterInspectionImpl.Builder(primitives.stringParameterizedType,
                 "name", 0).addAnnotation(e2.notNull);
-        builder.addMethod(valueOfBuilder.addParameter(valueOfP0B).build().getMethodInfo());
+        builder.addMethod(valueOfBuilder.addParameter(valueOfP0B).build(expressionContext.typeContext).getMethodInfo());
     }
 
     private void doClassOrInterfaceDeclaration(ExpressionContext expressionContext, ClassOrInterfaceDeclaration cid) {

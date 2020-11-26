@@ -18,12 +18,14 @@
 
 package org.e2immu.analyser.bytecode.asm;
 
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.NamedType;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeParameter;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.inspector.TypeContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +35,7 @@ import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.T
 // signatures formally defined in https://docs.oracle.com/javase/specs/jvms/se13/html/jvms-4.html
 
 public class ParameterizedTypeFactory {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ParameterizedTypeFactory.class);
 
     static class Result {
         final ParameterizedType parameterizedType;
@@ -46,68 +49,67 @@ public class ParameterizedTypeFactory {
         }
     }
 
-    // for testing
-    static Result from(TypeContext typeContext, String signature) {
-        return from(typeContext, (fqn, path) -> typeContext.typeMapBuilder.getOrCreate(fqn,
-                TRIGGER_BYTECODE_INSPECTION), signature);
-    }
-
     static Result from(TypeContext typeContext, FindType findType, String signature) {
-        int firstCharPos = 0;
-        char firstChar = signature.charAt(0);
+        try {
+            int firstCharPos = 0;
+            char firstChar = signature.charAt(0);
 
-        // wildcard, <?>
-        if ('*' == firstChar) {
-            return new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE, 1, false);
-        }
-
-        ParameterizedType.WildCard wildCard;
-        // extends keyword; NOTE: order is important, extends and super need to come before arrays
-        if ('+' == firstChar || ':' == firstChar) {
-            firstCharPos++;
-            firstChar = signature.charAt(firstCharPos);
-            wildCard = ParameterizedType.WildCard.EXTENDS;
-        } else if ('-' == firstChar) {
-            firstCharPos++;
-            firstChar = signature.charAt(firstCharPos);
-            wildCard = ParameterizedType.WildCard.SUPER;
-        } else wildCard = ParameterizedType.WildCard.NONE;
-
-        // arrays
-        int arrays = 0;
-        while ('[' == firstChar) {
-            arrays++;
-            firstCharPos++;
-            firstChar = signature.charAt(firstCharPos);
-        }
-
-        // normal class or interface type
-        if ('L' == firstChar) {
-            return normalType(typeContext, findType, signature, arrays, wildCard, firstCharPos);
-        }
-
-        // type parameter
-        if ('T' == firstChar) {
-            int semiColon = signature.indexOf(';');
-            String typeParamName = signature.substring(firstCharPos + 1, semiColon);
-            NamedType namedType = typeContext.get(typeParamName, false);
-            if (namedType == null) {
-                // this is possible
-                // <T:Ljava/lang/Object;T_SPLITR::Ljava/util/Spliterator$OfPrimitive<TT;TT_CONS;TT_SPLITR;>;T_CONS:Ljava/lang/Object;>Ljava/util/stream/StreamSpliterators$SliceSpliterator<TT;TT_SPLITR;>;Ljava/util/Spliterator$OfPrimitive<TT;TT_CONS;TT_SPLITR;>;
-                // problem is that T_CONS is used before it is declared
-                ParameterizedType objectParameterizedType = typeContext.getPrimitives().objectParameterizedType;
-                return new Result(objectParameterizedType, semiColon + 1, true);
+            // wildcard, <?>
+            if ('*' == firstChar) {
+                return new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE, 1, false);
             }
-            if (!(namedType instanceof TypeParameter))
-                throw new RuntimeException("?? expected " + typeParamName + " to be a type parameter");
-            return new Result(new ParameterizedType((TypeParameter) namedType,
-                    arrays, wildCard), semiColon + 1, false);
+
+            ParameterizedType.WildCard wildCard;
+            // extends keyword; NOTE: order is important, extends and super need to come before arrays
+            if ('+' == firstChar || ':' == firstChar) {
+                firstCharPos++;
+                firstChar = signature.charAt(firstCharPos);
+                wildCard = ParameterizedType.WildCard.EXTENDS;
+            } else if ('-' == firstChar) {
+                firstCharPos++;
+                firstChar = signature.charAt(firstCharPos);
+                wildCard = ParameterizedType.WildCard.SUPER;
+            } else wildCard = ParameterizedType.WildCard.NONE;
+
+            // arrays
+            int arrays = 0;
+            while ('[' == firstChar) {
+                arrays++;
+                firstCharPos++;
+                firstChar = signature.charAt(firstCharPos);
+            }
+
+            // normal class or interface type
+            if ('L' == firstChar) {
+                return normalType(typeContext, findType, signature, arrays, wildCard, firstCharPos);
+            }
+
+            // type parameter
+            if ('T' == firstChar) {
+                int semiColon = signature.indexOf(';');
+                String typeParamName = signature.substring(firstCharPos + 1, semiColon);
+                NamedType namedType = typeContext.get(typeParamName, false);
+                if (namedType == null) {
+                    // this is possible
+                    // <T:Ljava/lang/Object;T_SPLITR::Ljava/util/Spliterator$OfPrimitive<TT;TT_CONS;TT_SPLITR;>;T_CONS:Ljava/lang/Object;>Ljava/util/stream/StreamSpliterators$SliceSpliterator<TT;TT_SPLITR;>;Ljava/util/Spliterator$OfPrimitive<TT;TT_CONS;TT_SPLITR;>;
+                    // problem is that T_CONS is used before it is declared
+                    ParameterizedType objectParameterizedType = typeContext.getPrimitives().objectParameterizedType;
+                    return new Result(objectParameterizedType, semiColon + 1, true);
+                }
+                if (!(namedType instanceof TypeParameter))
+                    throw new RuntimeException("?? expected " + typeParamName + " to be a type parameter");
+                return new Result(new ParameterizedType((TypeParameter) namedType,
+                        arrays, wildCard), semiColon + 1, false);
+            }
+            ParameterizedType primitivePt = primitive(typeContext.getPrimitives(), firstChar);
+            if (arrays > 0) {
+                return new Result(new ParameterizedType(primitivePt.typeInfo, arrays), arrays + 1, false);
+            }
+            return new Result(primitivePt, 1, false);
+        } catch (RuntimeException e) {
+            LOGGER.error("Caught exception while parsing type from " + signature);
+            throw e;
         }
-        ParameterizedType primitivePt = primitive(typeContext.getPrimitives(), firstChar);
-        if (arrays > 0) {
-            return new Result(new ParameterizedType(primitivePt.typeInfo, arrays), arrays + 1, false);
-        }
-        return new Result(primitivePt, 1, false);
     }
 
     // TODO extends, super
@@ -154,7 +156,7 @@ public class ParameterizedTypeFactory {
                 int dot = signature.indexOf('.', start);
                 haveDot = dot >= 0 && dot < semiColon;
                 if (haveDot) start = dot + 1;
-                endOfTypeInfo = dot >= 0 ? dot : semiColon;
+                endOfTypeInfo = haveDot ? dot : semiColon;
             }
             if (path.length() > 0) path.append("$");
             path.append(signature, unmodifiedStart, endOfTypeInfo);

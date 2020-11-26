@@ -267,86 +267,43 @@ public class ParameterizedType {
     }
 
     public String print(PrintMode printMode) {
-        return stream(printMode.forDebug(), false, false, false);
+        return printMode.forDebug() ? detailedString(): stream();
     }
 
     @Override
     public String toString() {
-        return (isType() ? "Type " : isTypeParameter() ? "Type param " : "") +
-                stream(true, false, false, false);
+        return (isType() ? "Type " : isTypeParameter() ? "Type param " : "") + detailedString();
     }
 
     public String stream() {
-        return stream(false, false, false, false);
+        return ParameterizedTypeStreamer.DEFAULT.stream(InspectionProvider.DEFAULT, this, false, false);
     }
 
     public String stream(boolean varargs) {
-        return stream(false, false, varargs, false);
+        return ParameterizedTypeStreamer.DEFAULT.stream(InspectionProvider.DEFAULT, this, varargs, false);
+    }
+
+    public String stream(InspectionProvider inspectionProvider, boolean varargs) {
+        return ParameterizedTypeStreamer.DEFAULT.stream(inspectionProvider, this, varargs, false);
     }
 
     /**
-     * Stream for sending the qualified name to the KV store
+     * Stream for sending the qualified name to the KV store; for storing methods in the type map
      *
      * @param varArgs property of the type
      * @return the type as a fully qualified name, with type parameters according to the format
      * Tn or Mn, with n the index, and T for type, M for method
      */
-    public String distinguishingStream(boolean varArgs) {
-        return stream(true, true, varArgs, false);
+    public String distinguishingStream(InspectionProvider inspectionProvider, boolean varArgs) {
+        return ParameterizedTypeStreamer.DISTINGUISHING.stream(inspectionProvider, this, varArgs, false);
     }
 
     public String detailedString() {
-        return stream(true, false, false, false);
+        return ParameterizedTypeStreamer.DETAILED.stream(InspectionProvider.DEFAULT, this, false, false);
     }
 
     public String streamWithoutArrays() {
-        return stream(false, false, false, true);
-    }
-
-    private String stream(boolean fullyQualified, boolean numericTypeParameters, boolean varargs, boolean withoutArrays) {
-        StringBuilder sb = new StringBuilder();
-        switch (wildCard) {
-            case UNBOUND:
-                sb.append("?");
-                break;
-            case EXTENDS:
-                sb.append("? extends ");
-                break;
-            case SUPER:
-                sb.append("? super ");
-                break;
-            case NONE:
-        }
-        if (isTypeParameter()) {
-            if (numericTypeParameters) {
-                sb.append(typeParameter.isMethodTypeParameter() ? "M" : "T").append(typeParameter.getIndex());
-            } else {
-                sb.append(typeParameter.simpleName());
-            }
-        } else if (isType()) {
-            if (fullyQualified)
-                sb.append(typeInfo.fullyQualifiedName);
-            else
-                sb.append(typeInfo.simpleName);
-            if (!parameters.isEmpty()) {
-                sb.append("<");
-                sb.append(parameters.stream()
-                        .map(pt -> pt.stream(fullyQualified, numericTypeParameters, false, false))
-                        .collect(Collectors.joining(", ")));
-                sb.append(">");
-            }
-        }
-        if (!withoutArrays) {
-            if (varargs) {
-                if (arrays == 0) {
-                    throw new UnsupportedOperationException("Varargs parameterized types must have arrays>0!");
-                }
-                sb.append("[]".repeat(arrays - 1)).append("...");
-            } else {
-                sb.append("[]".repeat(arrays));
-            }
-        }
-        return sb.toString();
+        return ParameterizedTypeStreamer.DEFAULT.stream(InspectionProvider.DEFAULT, this, false, true);
     }
 
     @Override

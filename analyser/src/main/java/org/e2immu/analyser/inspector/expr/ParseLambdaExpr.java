@@ -82,7 +82,7 @@ public class ParseLambdaExpr {
         }
 
         // we've added name and parameters, so we're ready to build the FQN and make the parameters immutable
-        ownerBuilder.readyToComputeFQN();
+        ownerBuilder.readyToComputeFQN(expressionContext.typeContext);
         ownerBuilder.getParameters().forEach(newVariableContext::add);
 
         ExpressionContext newExpressionContext = expressionContext.newVariableContext(newVariableContext, "lambda");
@@ -135,7 +135,7 @@ public class ParseLambdaExpr {
                 sam.methodInspection.getMethodInfo().returnType());
         builder.setReturnType(Objects.requireNonNull(bestReturnType));
         builder.setInspectedBlock(block);
-        MethodInfo methodInfo = builder.build().getMethodInfo();
+        MethodInfo methodInfo = builder.build(inspectionProvider).getMethodInfo();
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND);

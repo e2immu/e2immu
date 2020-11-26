@@ -57,7 +57,7 @@ public class ParseArrayCreationExpr {
                     typeContext.getPrimitives().intParameterizedType, "dim" + i, i);
             builder.addParameter(p);
         }
-        MethodInfo constructor = builder.build().getMethodInfo();
+        MethodInfo constructor = builder.build(typeContext).getMethodInfo();
         constructor.methodInspection.get().getParameters().forEach(p ->
                 p.setAnalysis(new ParameterAnalysisImpl.Builder(typeContext.getPrimitives(),
                         AnalysisProvider.DEFAULT_PROVIDER, p).build()));

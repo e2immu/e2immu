@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,30 +42,44 @@ public class TestTypeInfoStream {
     private static final String TEST_PACKAGE = "org.e2immu.analyser.test";
     private static final String GENERATED_PACKAGE = "org.e2immu.analyser.generatedannotation";
     public static final String JAVA_UTIL = "java.util";
+    public static final String MODEL = "org.e2immu.analyser.model";
 
+    @BeforeClass
+    public static void beforeClass() {
+        org.e2immu.analyser.util.Logger.activate();
+    }
 
     @Test
     public void test() {
         Primitives primitives = new Primitives();
-
-        TypeInfo genericContainer = TypeInfo.createFqnOrPackageNameDotSimpleName("org.e2immu.analyser.model",
+        InspectionProvider IP = InspectionProvider.DEFAULT;
+        TypeInfo genericContainer = TypeInfo.createFqnOrPackageNameDotSimpleName(MODEL,
                 "GenericContainer");
+        TypeParameter genericContainerTypeParameterT = new TypeParameterImpl(genericContainer, "T", 0);
+        ParameterizedType genericContainerT = new ParameterizedType(genericContainerTypeParameterT, 0, ParameterizedType.WildCard.NONE);
 
-        TypeInfo testTypeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName("org.e2immu.analyser.model",
+        genericContainer.typeInspection.set(new TypeInspectionImpl.Builder(genericContainer, BY_HAND)
+                .setPackageName(MODEL)
+                .addTypeParameter(genericContainerTypeParameterT)
+                .setParentClass(primitives.objectParameterizedType).build());
+
+        TypeInfo testTypeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName(MODEL,
                 "TestTypeInfoStream");
         TypeInfo loggerTypeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName("org.slf4j", "Logger");
         TypeInfo containerTypeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName("org.e2immu.analyser.model.TestTypeInfoStream", "Container");
-        FieldInfo logger = new FieldInfo(loggerTypeInfo.asSimpleParameterizedType(), "LOGGER", testTypeInfo);
 
         TypeParameter typeParameterT = new TypeParameterImpl(containerTypeInfo, "T", 0);
+
+        FieldInfo logger = new FieldInfo(loggerTypeInfo.asSimpleParameterizedType(), "LOGGER", testTypeInfo);
+
         ParameterizedType typeT = new ParameterizedType(typeParameterT, 0, ParameterizedType.WildCard.NONE);
 
-        MethodInfo emptyTestConstructor = new MethodInspectionImpl.Builder(testTypeInfo).build().getMethodInfo();
+        MethodInfo emptyTestConstructor = new MethodInspectionImpl.Builder(testTypeInfo).build(IP).getMethodInfo();
 
-        MethodInfo emptyContainerConstructor = new MethodInspectionImpl.Builder(containerTypeInfo).build().getMethodInfo();
+        MethodInfo emptyContainerConstructor = new MethodInspectionImpl.Builder(containerTypeInfo).build(IP).getMethodInfo();
         MethodInfo toStringMethodInfo = new MethodInspectionImpl.Builder(testTypeInfo, "toString")
                 .addModifier(MethodModifier.PUBLIC)
-                .setReturnType(primitives.stringParameterizedType).build().getMethodInfo();
+                .setReturnType(primitives.stringParameterizedType).build(IP).getMethodInfo();
 
         TypeInfo hashMap = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_UTIL, "HashMap");
         TypeInfo exception = TypeInfo.createFqnOrPackageNameDotSimpleName(GENERATED_PACKAGE, "MyException");
@@ -101,7 +116,17 @@ public class TestTypeInfoStream {
         };
         ParameterizedType hashMapParameterizedType = hashMap.asParameterizedType(inspectionProvider);
         TypeInfo map = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_UTIL, "Map");
+        map.typeInspection.set(new TypeInspectionImpl.Builder(map, BY_HAND)
+                .setParentClass(primitives.objectParameterizedType)
+                .setTypeNature(TypeNature.INTERFACE)
+                .setPackageName(JAVA_UTIL).build()
+        );
         TypeInfo mapEntry = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_UTIL, "Entry");
+        mapEntry.typeInspection.set(new TypeInspectionImpl.Builder(mapEntry, BY_HAND)
+                .setEnclosingType(map)
+                .setTypeNature(TypeNature.INTERFACE)
+                .setParentClass(primitives.objectParameterizedType)
+                .build());
 
         logger.fieldInspection.set(new FieldInspectionImpl.Builder()
                 .addModifier(FieldModifier.PRIVATE)
@@ -112,7 +137,7 @@ public class TestTypeInfoStream {
                 .setName("map")
                 .setParameterizedType(new ParameterizedType(map, List.of(primitives.stringParameterizedType, typeT)))
                 .build();
-        MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap).build().getMethodInfo();
+        MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap).build(IP).getMethodInfo();
         Expression creationExpression = new NewObject(hashMapConstructor, hashMapParameterizedType, List.of(), null);
         ParameterInspectionImpl.Builder p0 = new ParameterInspectionImpl.Builder(typeT, "value", 0);
         MethodInfo put = new MethodInspectionImpl.Builder(testTypeInfo, "put")
@@ -147,7 +172,7 @@ public class TestTypeInfoStream {
                                         )
                                 )
                                 .build())
-                .build().getMethodInfo();
+                .build(IP).getMethodInfo();
 
         FieldInfo intFieldInContainer = new FieldInfo(primitives.intParameterizedType, "i", containerTypeInfo);
         intFieldInContainer.fieldInspection.set(new FieldInspectionImpl.Builder()
@@ -181,7 +206,7 @@ public class TestTypeInfoStream {
                 .addMethod(put)
                 .addMethod(emptyContainerConstructor)
                 .addTypeParameter(typeParameterT)
-                .addInterfaceImplemented(new ParameterizedType(genericContainer, List.of(typeT)))
+                .addInterfaceImplemented(new ParameterizedType(genericContainer, List.of(genericContainerT)))
                 .build();
         containerTypeInfo.typeInspection.set(containerTypeInspection);
 
@@ -190,7 +215,7 @@ public class TestTypeInfoStream {
         MethodInfo referenceMethodInfo = new MethodInspectionImpl.Builder(testEquivalent, "reference")
                 .setReturnType(primitives.stringParameterizedType)
                 .setInspectedBlock(new Block.BlockBuilder().build())
-                .build().getMethodInfo();
+                .build(IP).getMethodInfo();
         testEquivalent.typeInspection.set(new TypeInspectionImpl.Builder(testEquivalent, BY_HAND)
                 .setParentClass(primitives.objectParameterizedType)
                 .setPackageName(TEST_PACKAGE)
@@ -212,7 +237,7 @@ public class TestTypeInfoStream {
                 .setReturnType(primitives.intParameterizedType)
                 .addParameter(xb)
                 .addParameter(yb);
-        intSumBuilder.readyToComputeFQN();
+        intSumBuilder.readyToComputeFQN(IP);
         ParameterInfo x = intSumBuilder.getParameters().get(0);
         ParameterInfo y = intSumBuilder.getParameters().get(0);
         MethodInfo intSum = intSumBuilder
@@ -225,12 +250,12 @@ public class TestTypeInfoStream {
                                                 new VariableExpression(x), primitives.plusOperatorInt, new VariableExpression(y), BinaryOperator.ADDITIVE_PRECEDENCE
                                         ))
                         ).build())
-                .build().getMethodInfo();
+                .build(IP).getMethodInfo();
 
         TypeInspection testTypeInspection = new TypeInspectionImpl.Builder(testTypeInfo, BY_HAND)
                 .addTypeModifier(TypeModifier.PUBLIC)
                 .setParentClass(primitives.objectParameterizedType)
-                .setPackageName("org.e2immu.analyser.model")
+                .setPackageName(MODEL)
                 .addField(logger)
                 .addSubType(containerTypeInfo)
                 .addConstructor(emptyTestConstructor)

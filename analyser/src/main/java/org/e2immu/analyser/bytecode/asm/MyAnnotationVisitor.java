@@ -20,15 +20,16 @@ package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.bytecode.ExpressionFactory;
 import org.e2immu.analyser.inspector.AbstractInspectionBuilder;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.AnnotationExpressionImpl;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.MemberValuePair;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.objectweb.asm.AnnotationVisitor;
 
 import java.util.Objects;
 
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
 import static org.e2immu.analyser.util.Logger.LogTarget.BYTECODE_INSPECTOR_DEBUG;
 import static org.e2immu.analyser.util.Logger.log;
 import static org.objectweb.asm.Opcodes.ASM8;
@@ -44,7 +45,9 @@ public class MyAnnotationVisitor<T> extends AnnotationVisitor {
         this.typeContext = typeContext;
         this.inspectionBuilder = Objects.requireNonNull(inspectionBuilder);
         log(BYTECODE_INSPECTOR_DEBUG, "My annotation visitor: {}", descriptor);
-        ParameterizedType type = ParameterizedTypeFactory.from(typeContext, descriptor).parameterizedType;
+        FindType findType = (fqn, path) -> typeContext.typeMapBuilder.getOrCreate(fqn,
+                TRIGGER_BYTECODE_INSPECTION);
+        ParameterizedType type = ParameterizedTypeFactory.from(typeContext, findType, descriptor).parameterizedType;
         expressionBuilder = new AnnotationExpressionImpl.Builder().setTypeInfo(type.typeInfo);
     }
 

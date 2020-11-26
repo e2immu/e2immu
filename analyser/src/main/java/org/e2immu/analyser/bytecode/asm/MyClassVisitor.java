@@ -27,18 +27,19 @@ import org.e2immu.analyser.bytecode.JetBrainsAnnotationTranslator;
 import org.e2immu.analyser.bytecode.OnDemandInspection;
 import org.e2immu.analyser.inspector.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.objectweb.asm.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -195,37 +196,43 @@ public class MyClassVisitor extends ClassVisitor {
                 }
             }
         } else {
-            int pos = 0;
-            if (signature.charAt(0) == '<') {
-                pos = parseTypeGenerics(signature) + 1;
-            }
-            {
-                ParameterizedTypeFactory.Result res = ParameterizedTypeFactory.from(typeContext,
-                        this::mustFindTypeInfo, signature.substring(pos));
-                if (res == null) {
-                    log(BYTECODE_INSPECTOR_DEBUG, "Stop inspection of {}, parent type unknown",
-                            currentType.fullyQualifiedName);
-                    errorStateForType(parentFqName);
-                    return;
+            try {
+                int pos = 0;
+                if (signature.charAt(0) == '<') {
+                    ParseGenerics parseGenerics = new ParseGenerics(typeContext, currentType, typeInspectionBuilder, this::mustFindTypeInfo);
+                    pos = parseGenerics.parseTypeGenerics(signature) + 1;
                 }
-                typeInspectionBuilder.setParentClass(res.parameterizedType);
-                pos += res.nextPos;
-            }
-            if (interfaces != null) {
-                for (int i = 0; i < interfaces.length; i++) {
-                    ParameterizedTypeFactory.Result interFaceRes = ParameterizedTypeFactory.from(typeContext,
+                {
+                    ParameterizedTypeFactory.Result res = ParameterizedTypeFactory.from(typeContext,
                             this::mustFindTypeInfo, signature.substring(pos));
-                    if (interFaceRes == null) {
-                        log(BYTECODE_INSPECTOR_DEBUG, "Stop inspection of {}, interface type unknown",
+                    if (res == null) {
+                        log(BYTECODE_INSPECTOR_DEBUG, "Stop inspection of {}, parent type unknown",
                                 currentType.fullyQualifiedName);
                         errorStateForType(parentFqName);
                         return;
                     }
-                    if (typeContext.getPrimitives().objectTypeInfo != interFaceRes.parameterizedType.typeInfo) {
-                        typeInspectionBuilder.addInterfaceImplemented(interFaceRes.parameterizedType);
-                    }
-                    pos += interFaceRes.nextPos;
+                    typeInspectionBuilder.setParentClass(res.parameterizedType);
+                    pos += res.nextPos;
                 }
+                if (interfaces != null) {
+                    for (int i = 0; i < interfaces.length; i++) {
+                        ParameterizedTypeFactory.Result interFaceRes = ParameterizedTypeFactory.from(typeContext,
+                                this::mustFindTypeInfo, signature.substring(pos));
+                        if (interFaceRes == null) {
+                            log(BYTECODE_INSPECTOR_DEBUG, "Stop inspection of {}, interface type unknown",
+                                    currentType.fullyQualifiedName);
+                            errorStateForType(parentFqName);
+                            return;
+                        }
+                        if (typeContext.getPrimitives().objectTypeInfo != interFaceRes.parameterizedType.typeInfo) {
+                            typeInspectionBuilder.addInterfaceImplemented(interFaceRes.parameterizedType);
+                        }
+                        pos += interFaceRes.nextPos;
+                    }
+                }
+            } catch (RuntimeException e) {
+                LOGGER.error("Caught exception while parsing signature " + signature);
+                throw e;
             }
         }
 
@@ -286,72 +293,6 @@ public class MyClassVisitor extends ClassVisitor {
         return null;
     }
 
-    private int parseTypeGenerics(String signature) {
-        IterativeParsing iterativeParsing = new IterativeParsing();
-        while (true) {
-            iterativeParsing.startPos = 1;
-            AtomicInteger index = new AtomicInteger();
-            do {
-                iterativeParsing = iterativelyParseGenerics(signature,
-                        iterativeParsing,
-                        name -> {
-                            TypeParameterImpl typeParameter = new TypeParameterImpl(currentType, name, index.getAndIncrement());
-                            typeContext.addToContext(typeParameter);
-                            typeInspectionBuilder.addTypeParameter(typeParameter);
-                            return typeParameter;
-                        },
-                        typeContext,
-                        this::mustFindTypeInfo);
-                if (iterativeParsing == null) {
-                    return -1; // error state
-                }
-            } while (iterativeParsing.more);
-            if (!iterativeParsing.typeNotFoundError) break;
-            iterativeParsing = new IterativeParsing();
-        }
-        return iterativeParsing.endPos;
-    }
-
-    private IterativeParsing iterativelyParseGenerics(String signature,
-                                                      IterativeParsing iterativeParsing,
-                                                      Function<String, TypeParameterImpl> createTypeParameterAndAddToContext,
-                                                      TypeContext typeContext,
-                                                      FindType findType) {
-        int colon = signature.indexOf(':', iterativeParsing.startPos);
-        int afterColon = colon + 1;
-        boolean typeNotFoundError = iterativeParsing.typeNotFoundError;
-        // example for extends keyword: sig='<T::Ljava/lang/annotation/Annotation;>(Ljava/lang/Class<TT;>;)TT;' for
-        // method getAnnotation in java.lang.reflect.AnnotatedElement
-
-        String name = signature.substring(iterativeParsing.startPos, colon);
-        TypeParameterImpl typeParameter = createTypeParameterAndAddToContext.apply(name);
-        ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext, findType,
-                signature.substring(afterColon));
-        if (result == null) return null; // unable to load type
-        List<ParameterizedType> typeBounds;
-        if (result.parameterizedType.typeInfo != null && typeContext.getPrimitives().objectTypeInfo == result.parameterizedType.typeInfo) {
-            typeBounds = List.of();
-        } else {
-            typeBounds = List.of(result.parameterizedType);
-        }
-        typeParameter.setTypeBounds(typeBounds);
-
-        int end = result.nextPos + afterColon;
-        char atEnd = signature.charAt(end);
-        IterativeParsing next = new IterativeParsing();
-        next.typeNotFoundError = typeNotFoundError || result.typeNotFoundError;
-        next.name = name;
-        next.result = result.parameterizedType;
-
-        if ('>' == atEnd) {
-            next.more = false;
-            next.endPos = end;
-        } else {
-            next.more = true;
-            next.startPos = end;
-        }
-        return next;
-    }
 
     @Override
     public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
@@ -430,10 +371,11 @@ public class MyClassVisitor extends ClassVisitor {
         boolean lastParameterIsVarargs = (access & Opcodes.ACC_VARARGS) != 0;
 
         TypeContext methodContext = new TypeContext(typeContext);
+        ParseGenerics parseGenerics = new ParseGenerics(methodContext, currentType, typeInspectionBuilder, this::getOrCreateTypeInfo);
 
         String signatureOrDescription = signature != null ? signature : descriptor;
         if (signatureOrDescription.startsWith("<")) {
-            int end = parseMethodGenerics(signatureOrDescription, methodInspectionBuilder, methodContext);
+            int end = parseGenerics.parseMethodGenerics(signatureOrDescription, methodInspectionBuilder, methodContext);
             if (end < 0) {
                 // error state
                 errorStateForType(signatureOrDescription);
@@ -441,7 +383,7 @@ public class MyClassVisitor extends ClassVisitor {
             }
             signatureOrDescription = signatureOrDescription.substring(end + 1); // 1 to get rid of >
         }
-        List<ParameterizedType> types = parseParameterTypesOfMethod(methodContext, signatureOrDescription);
+        List<ParameterizedType> types = parseGenerics.parseParameterTypesOfMethod(methodContext, signatureOrDescription);
         methodInspectionBuilder.setReturnType(types.get(types.size() - 1));
 
         MethodItem methodItem = null;
@@ -458,82 +400,6 @@ public class MyClassVisitor extends ClassVisitor {
 
         return new MyMethodVisitor(methodContext, methodInspectionBuilder, typeInspectionBuilder, types,
                 lastParameterIsVarargs, methodItem, jetBrainsAnnotationTranslator);
-    }
-
-    // result should be
-    // entrySet()                                       has a complicated return type, but that is skipped
-    // addFirst(E)                                      type parameter of interface/class as first argument
-    // ArrayList(java.util.Collection<? extends E>)     this is a constructor
-    // copyOf(U[], int, java.lang.Class<? extends T[]>) spaces between parameter types
-
-    private int parseMethodGenerics(String signature,
-                                    MethodInspectionImpl.Builder methodInspectionBuilder,
-                                    TypeContext methodContext) {
-        IterativeParsing iterativeParsing = new IterativeParsing();
-        while (true) {
-            iterativeParsing.startPos = 1;
-            AtomicInteger index = new AtomicInteger();
-            do {
-                iterativeParsing = iterativelyParseGenerics(signature,
-                        iterativeParsing, name -> {
-                            TypeParameterImpl typeParameter = new TypeParameterImpl(name, index.getAndIncrement());
-                            methodInspectionBuilder.addTypeParameter(typeParameter);
-                            methodContext.addToContext(typeParameter);
-                            return typeParameter;
-                        },
-                        methodContext,
-                        this::getOrCreateTypeInfo);
-                if (iterativeParsing == null) {
-                    return -1; // error state
-                }
-            } while (iterativeParsing.more);
-            if (!iterativeParsing.typeNotFoundError) break;
-            iterativeParsing = new IterativeParsing();
-        }
-        return iterativeParsing.endPos;
-    }
-
-    private List<ParameterizedType> parseParameterTypesOfMethod(TypeContext typeContext, String signature) {
-        if (signature.startsWith("()")) {
-            return List.of(ParameterizedTypeFactory.from(typeContext,
-                    this::getOrCreateTypeInfo, signature.substring(2)).parameterizedType);
-        }
-        List<ParameterizedType> methodTypes = new ArrayList<>();
-
-        IterativeParsing iterativeParsing = new IterativeParsing();
-        iterativeParsing.startPos = 1;
-        do {
-            iterativeParsing = iterativelyParseMethodTypes(typeContext, signature, iterativeParsing);
-            methodTypes.add(iterativeParsing.result);
-        } while (iterativeParsing.more);
-        return methodTypes;
-    }
-
-    private IterativeParsing iterativelyParseMethodTypes(TypeContext typeContext, String signature, IterativeParsing iterativeParsing) {
-        ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext,
-                this::getOrCreateTypeInfo, signature.substring(iterativeParsing.startPos));
-        int end = iterativeParsing.startPos + result.nextPos;
-        IterativeParsing next = new IterativeParsing();
-        next.result = result.parameterizedType;
-        if (end >= signature.length()) {
-            next.more = false;
-            next.endPos = end;
-        } else {
-            char atEnd = signature.charAt(end);
-            if (atEnd == '^') {
-                // NOTE NOTE: this marks the "throws" block, which we're NOT parsing at the moment!!
-                next.more = false;
-                next.endPos = end;
-            } else {
-                next.more = true;
-                if (atEnd == ')') {
-                    next.startPos = end + 1;
-                } else {
-                    next.startPos = end;
-                }
-            }
-        }
-        return next;
     }
 
     @Override
@@ -608,12 +474,4 @@ public class MyClassVisitor extends ClassVisitor {
         typeInspectionBuilder = null;
     }
 
-    private static class IterativeParsing {
-        int startPos;
-        int endPos;
-        ParameterizedType result;
-        boolean more;
-        String name;
-        boolean typeNotFoundError;
-    }
 }

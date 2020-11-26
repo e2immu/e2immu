@@ -367,7 +367,7 @@ public class Resolver {
         methodsAndFieldsVisited.visit(methodInspection.getMethodBody());
 
         // finally, we build the method inspection and set it in the methodInfo object
-        methodInspection.build();
+        methodInspection.build(expressionContext.typeContext);
 
         // and only then, when the FQN is known, add to the sub-graph
         methodFieldSubTypeGraph.addNode(methodInfo, ImmutableList.copyOf(methodsAndFieldsVisited.methodsAndFields));
@@ -733,9 +733,7 @@ public class Resolver {
             TypeInfo parent = Objects.requireNonNull(typeInspection.parentClass().typeInfo);
             list.add(parent);
             list.addAll(superTypesExcludingJavaLangObject(inspectionProvider, parent));
-        } else {
-            assert !Primitives.needsParent(typeInfo) : "? " + typeInfo.fullyQualifiedName + " needs parent";
-        }
+        } // else: silently ignore, we may be going out of bounds
 
         typeInspection.interfacesImplemented().forEach(i -> {
             list.add(i.typeInfo);

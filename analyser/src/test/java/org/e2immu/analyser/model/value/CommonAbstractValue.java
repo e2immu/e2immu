@@ -28,6 +28,7 @@ import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Logger;
@@ -167,7 +168,7 @@ public abstract class CommonAbstractValue {
         MethodInspectionImpl.Builder methodBuilder = new MethodInspectionImpl.Builder(someType, "type");
         ParameterInspectionImpl.Builder pi = new ParameterInspectionImpl.Builder(PRIMITIVES.stringParameterizedType, name, 0);
         methodBuilder.setReturnType(PRIMITIVES.stringParameterizedType).addParameter(pi);
-        MethodInfo methodInfo = methodBuilder.build().getMethodInfo();
+        MethodInfo methodInfo = methodBuilder.build(InspectionProvider.DEFAULT).getMethodInfo();
         ParameterInfo p0 = methodInfo.methodInspection.get().getParameters().get(0);
         p0.setAnalysis(new ParameterAnalysisImpl.Builder(PRIMITIVES, null, p0));
 

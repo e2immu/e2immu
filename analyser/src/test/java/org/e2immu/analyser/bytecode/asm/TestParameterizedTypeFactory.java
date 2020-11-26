@@ -18,26 +18,42 @@
 
 package org.e2immu.analyser.bytecode.asm;
 
-import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TypeParameterImpl;
 import org.e2immu.analyser.parser.TypeMapImpl;
+import org.e2immu.analyser.util.Logger;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Objects;
 
+import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
+
 public class TestParameterizedTypeFactory {
+    @BeforeClass
+    public static void beforeClass() {
+        Logger.activate(Logger.LogTarget.BYTECODE_INSPECTOR);
+    }
+
     private final TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder());
+    private final FindType findType = (fqn, path) -> typeContext.typeMapBuilder.getOrCreate(fqn,
+            TRIGGER_BYTECODE_INSPECTION);
 
     @Test
     public void testInt() {
         Assert.assertEquals(typeContext.getPrimitives().intParameterizedType,
-                ParameterizedTypeFactory.from(typeContext, "I").parameterizedType);
+                create("I").parameterizedType);
+    }
+
+    private ParameterizedTypeFactory.Result create(String signature) {
+        return ParameterizedTypeFactory.from(typeContext, findType, signature);
     }
 
     @Test
     public void testString() {
-        ParameterizedType pt = ParameterizedTypeFactory.from(typeContext, "[Ljava/lang/String;").parameterizedType;
+        ParameterizedType pt = create("[Ljava/lang/String;").parameterizedType;
         Assert.assertEquals(typeContext.getPrimitives().stringTypeInfo,
                 pt.typeInfo);
         Assert.assertEquals(1, pt.arrays);
@@ -46,7 +62,7 @@ public class TestParameterizedTypeFactory {
     @Test
     public void testStringAndInt() {
         String desc = "[Ljava/lang/String;I";
-        ParameterizedTypeFactory.Result res = ParameterizedTypeFactory.from(typeContext, desc);
+        ParameterizedTypeFactory.Result res = create(desc);
         Assert.assertEquals(typeContext.getPrimitives().stringTypeInfo,
                 res.parameterizedType.typeInfo);
         Assert.assertEquals(1, res.parameterizedType.arrays);
@@ -55,7 +71,7 @@ public class TestParameterizedTypeFactory {
 
     @Test
     public void testCharArray() {
-        ParameterizedType pt = ParameterizedTypeFactory.from(typeContext, "[C").parameterizedType;
+        ParameterizedType pt = create("[C").parameterizedType;
         Assert.assertEquals(typeContext.getPrimitives().charTypeInfo,
                 pt.typeInfo);
         Assert.assertEquals(1, pt.arrays);
@@ -63,7 +79,7 @@ public class TestParameterizedTypeFactory {
 
     @Test
     public void testGenerics() {
-        ParameterizedType pt = ParameterizedTypeFactory.from(typeContext, "Ljava/util/List<Ljava/lang/String;>;").parameterizedType;
+        ParameterizedType pt = create("Ljava/util/List<Ljava/lang/String;>;").parameterizedType;
         Assert.assertEquals("java.util.List",
                 Objects.requireNonNull(pt.typeInfo).fullyQualifiedName);
         Assert.assertEquals(1, pt.parameters.size());
@@ -75,7 +91,7 @@ public class TestParameterizedTypeFactory {
 
     @Test
     public void testWildcard() {
-        ParameterizedType pt = ParameterizedTypeFactory.from(typeContext, "Ljava/lang/Class<*>;").parameterizedType;
+        ParameterizedType pt = create("Ljava/lang/Class<*>;").parameterizedType;
         Assert.assertEquals("java.lang.Class",
                 Objects.requireNonNull(pt.typeInfo).fullyQualifiedName);
         Assert.assertEquals(1, pt.parameters.size());
@@ -84,7 +100,7 @@ public class TestParameterizedTypeFactory {
 
     @Test
     public void testWildcardExtends() {
-        ParameterizedType pt = ParameterizedTypeFactory.from(typeContext, "Ljava/lang/Class<+Ljava/lang/Number;>;").parameterizedType;
+        ParameterizedType pt = create("Ljava/lang/Class<+Ljava/lang/Number;>;").parameterizedType;
         Assert.assertEquals("java.lang.Class",
                 Objects.requireNonNull(pt.typeInfo).fullyQualifiedName);
         Assert.assertEquals(1, pt.parameters.size());
@@ -94,7 +110,7 @@ public class TestParameterizedTypeFactory {
     @Test
     public void testGenerics2() {
         String signature = "Ljava/util/List<Ljava/lang/String;Ljava/lang/Integer;>;";
-        ParameterizedType pt = ParameterizedTypeFactory.from(typeContext, signature).parameterizedType;
+        ParameterizedType pt = create(signature).parameterizedType;
         Assert.assertEquals("java.util.List",
                 Objects.requireNonNull(pt.typeInfo).fullyQualifiedName);
         Assert.assertEquals(2, pt.parameters.size());
@@ -109,7 +125,7 @@ public class TestParameterizedTypeFactory {
     @Test
     public void testGenericsMap() {
         String signature = "Ljava/util/List<Ljava/util/Map<Ljava/lang/String;Ljava/lang/Double;>;>;";
-        ParameterizedType pt = ParameterizedTypeFactory.from(typeContext, signature).parameterizedType;
+        ParameterizedType pt = create(signature).parameterizedType;
         Assert.assertEquals("java.util.List",
                 Objects.requireNonNull(pt.typeInfo).fullyQualifiedName);
         Assert.assertEquals(1, pt.parameters.size());

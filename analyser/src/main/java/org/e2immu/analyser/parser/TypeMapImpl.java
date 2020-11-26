@@ -22,11 +22,13 @@ import org.e2immu.analyser.inspector.FieldInspectionImpl;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.util.Trie;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
@@ -147,13 +149,21 @@ public class TypeMapImpl implements TypeMap {
             methodInspections.values().forEach(methodInspectionBuilder -> {
                 MethodInfo methodInfo = methodInspectionBuilder.getMethodInfo();
                 if (!methodInfo.methodInspection.isSet() && methodInfo.typeInfo.typeInspection.isSet()) {
-                    methodInspectionBuilder.build(); // will set the inspection itself
+                    methodInspectionBuilder.build(this); // will set the inspection itself
                 }
             });
             fieldInspections.forEach((fieldInfo, fieldInspectionBuilder) -> {
                 if (!fieldInfo.fieldInspection.isSet() && fieldInfo.owner.typeInspection.isSet()) {
                     fieldInfo.fieldInspection.set(fieldInspectionBuilder.build());
                 }
+            });
+
+            new HashMap<>(typeInspections).forEach((typeInfo, typeInspectionBuilder) -> {
+               if(!typeInfo.typeResolution.isSet()) {
+                   Set<TypeInfo> superTypes = Resolver.superTypesExcludingJavaLangObject(this, typeInfo);
+                   TypeResolution typeResolution = new TypeResolution(Set.of(), superTypes);
+                   typeInfo.typeResolution.set(typeResolution);
+               }
             });
 
             return new TypeMapImpl(trie, primitives, e2ImmuAnnotationExpressions);
@@ -282,8 +292,11 @@ public class TypeMapImpl implements TypeMap {
 
         // inspect from class path
         private void inspectWithByteCodeInspector(TypeInfo typeInfo) {
-            String pathInClassPath = byteCodeInspector.getClassPath().fqnToPath(typeInfo.fullyQualifiedName, ".class");
-            byteCodeInspector.inspectFromPath(pathInClassPath);
+            String pathInClassPath = byteCodeInspector.getClassPath()
+                    .fqnToPath(typeInfo.fullyQualifiedName, ".class");
+            if(pathInClassPath != null) {
+                byteCodeInspector.inspectFromPath(pathInClassPath);
+            } // else ignore
         }
 
         public void setByteCodeInspector(ByteCodeInspector byteCodeInspector) {

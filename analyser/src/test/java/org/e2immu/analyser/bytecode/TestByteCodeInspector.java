@@ -22,6 +22,7 @@ import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeNature;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
@@ -55,6 +56,7 @@ public class TestByteCodeInspector {
         ByteCodeInspector byteCodeInspector = new ByteCodeInspector(resources, annotationParser, typeContext);
         typeContext.typeMapBuilder.setByteCodeInspector(byteCodeInspector);
         typeContext.loadPrimitives();
+        Input.preload(typeContext, byteCodeInspector, resources, "java.lang");
 
         List<TypeInfo> types = byteCodeInspector.inspectFromPath(path);
         // in case the path is a subType, we need to inspect it explicitly

@@ -268,6 +268,7 @@ public class Resources {
             List<URL> urls = data.get(parts);
             if (urls != null) return String.join("/", parts);
         }
-        throw new RuntimeException("Cannot find " + fqn + " with extension " + extension + " in classpath");
+        log(RESOURCES, "Cannot find {} with extension {} in classpath", fqn, extension);
+        return null;
     }
 }
