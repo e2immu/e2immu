@@ -365,7 +365,7 @@ class JavaLang {
             return null;
         }
 
-        boolean append$Modification$Len(int post, int prev, String str) { return post == prev + str.length(); }
+        boolean append$Modification$Len(int post, int prev, String str) { return post == prev + (str == null ? 4: str.length()); }
         @Fluent
         StringBuilder append(String str) {
             return null;

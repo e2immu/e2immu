@@ -357,6 +357,11 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         }
 
         @Override
+        public boolean isStatic() {
+            return modifiers.contains(TypeModifier.STATIC);
+        }
+
+        @Override
         public TypeNature typeNature() {
             return typeNature;
         }

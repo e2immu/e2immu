@@ -157,12 +157,9 @@ public class MyClassVisitor extends ClassVisitor {
         } else {
             typeInspectionBuilder.setPackageName(packageName(fqName));
         }
-        if ((access & Opcodes.ACC_PRIVATE) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.PRIVATE);
-        if ((access & Opcodes.ACC_PROTECTED) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.PROTECTED);
-        if ((access & Opcodes.ACC_PUBLIC) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.PUBLIC);
-
         currentTypeIsInterface = currentTypeNature == TypeNature.INTERFACE;
 
+        checkTypeFlags(name, access, typeInspectionBuilder);
         if (currentTypeNature == TypeNature.CLASS) {
             if ((access & Opcodes.ACC_ABSTRACT) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.ABSTRACT);
             if ((access & Opcodes.ACC_FINAL) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.FINAL);
@@ -408,25 +405,58 @@ public class MyClassVisitor extends ClassVisitor {
 
         log(BYTECODE_INSPECTOR_DEBUG, "Visit inner class {} {} {} {}", name, outerName, innerName, access);
         if (name.equals(currentTypePath)) {
-            if ((access & Opcodes.ACC_STATIC) != 0) {
-                log(BYTECODE_INSPECTOR_DEBUG, "Mark subtype {} as static", name);
-                typeInspectionBuilder.addTypeModifier(TypeModifier.STATIC);
-            }
-        } else if (innerName != null && currentTypePath.equals(outerName)) {
-            log(BYTECODE_INSPECTOR_DEBUG, "Processing sub-type {} of {}", name, currentType.fullyQualifiedName);
-            TypeInfo subTypeInMap = typeContext.typeMapBuilder.get(pathToFqn(name));
-            TypeInspection subTypeInspection = subTypeInMap == null ? null : typeContext.getTypeInspection(subTypeInMap);
-            if (subTypeInMap == null || subTypeInspection.getInspectionState().lt(STARTING_BYTECODE)) {
-                enclosingTypes.push(currentType);
-                TypeInfo subType = onDemandInspection.inspectFromPath(name, enclosingTypes, typeContext);
-                enclosingTypes.pop();
-                if (subType != null) {
-                    typeInspectionBuilder.addSubType(subType);
+            checkTypeFlags(name, access, typeInspectionBuilder);
+        } else if (innerName != null && outerName != null) {
+            String fqnOuter = pathToFqn(outerName);
+            boolean stepDown = currentTypePath.equals(outerName);
+            boolean stepSide = typeInspectionBuilder.packageNameOrEnclosingType().isRight() &&
+                    typeInspectionBuilder.packageNameOrEnclosingType().getRight().fullyQualifiedName.equals(fqnOuter);
+            // step down
+            if (stepSide || stepDown) {
+                String fqn = fqnOuter + "." + innerName;
+
+                log(BYTECODE_INSPECTOR_DEBUG, "Processing sub-type {} of/in {}", fqn, currentType.fullyQualifiedName);
+
+                TypeInfo subTypeInMap = typeContext.typeMapBuilder.get(fqn);
+                TypeInspection subTypeInspection;
+                if (subTypeInMap == null) {
+                    subTypeInMap = TypeInfo.fromFqn(fqn);
+                    subTypeInspection = typeContext.typeMapBuilder.add(subTypeInMap, TRIGGER_BYTECODE_INSPECTION);
                 } else {
-                    errorStateForType(name);
+                    subTypeInspection = typeContext.getTypeInspection(subTypeInMap); //MUST EXIST
                 }
+                if (subTypeInspection.getInspectionState().lt(STARTING_BYTECODE)) {
+                    checkTypeFlags(name, access, (TypeInspectionImpl.Builder) subTypeInspection);
+
+                    if (stepDown) {
+                        enclosingTypes.push(currentType);
+                    }
+                    TypeInfo subType = onDemandInspection.inspectFromPath(name, enclosingTypes, typeContext);
+                    if (stepDown) {
+                        enclosingTypes.pop();
+                    }
+                    if (subType != null) {
+                        if (stepDown) {
+                            typeInspectionBuilder.addSubType(subType);
+                        }
+                    } else {
+                        errorStateForType(name);
+                    }
+                } else {
+                    if (stepDown) {
+                        typeInspectionBuilder.addSubType(subTypeInMap);
+                    }
+                }
+
             }
         }
+    }
+
+    private void checkTypeFlags(String name, int access, TypeInspectionImpl.Builder typeInspectionBuilder) {
+        if ((access & Opcodes.ACC_STATIC) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.STATIC);
+        if ((access & Opcodes.ACC_PRIVATE) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.PRIVATE);
+        if ((access & Opcodes.ACC_PROTECTED) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.PROTECTED);
+        if ((access & Opcodes.ACC_PUBLIC) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.PUBLIC);
     }
 
     @Override
