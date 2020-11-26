@@ -18,12 +18,12 @@
 
 package org.e2immu.analyser.model;
 
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public interface FieldInspection extends Inspection {
 
-    List<FieldModifier> getModifiers();
+    Set<FieldModifier> getModifiers();
 
     FieldInitialiser getFieldInitialiser();
 

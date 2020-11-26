@@ -20,12 +20,11 @@ package org.e2immu.analyser.inspector;
 import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.annotation.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class FieldInspectionImpl extends InspectionImpl implements FieldInspection {
 
@@ -41,11 +40,11 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
         }
     };
 
-    private final List<FieldModifier> modifiers;
+    private final Set<FieldModifier> modifiers;
     private final FieldInspection.FieldInitialiser fieldInitialiser;
     private final FieldModifier access;
 
-    private FieldInspectionImpl(@NotNull List<FieldModifier> modifiers,
+    private FieldInspectionImpl(@NotNull Set<FieldModifier> modifiers,
                                 @NotNull FieldInspection.FieldInitialiser fieldInitialiser,
                                 @NotNull List<AnnotationExpression> annotations,
                                 @NotNull FieldModifier access) {
@@ -57,7 +56,7 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
     }
 
     @Override
-    public List<FieldModifier> getModifiers() {
+    public Set<FieldModifier> getModifiers() {
         return modifiers;
     }
 
@@ -72,7 +71,7 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
     }
 
     public static class Builder extends AbstractInspectionBuilder<Builder> implements FieldInspection {
-        private final List<FieldModifier> modifiers = new ArrayList<>();
+        private final Set<FieldModifier> modifiers = new HashSet<>();
         private com.github.javaparser.ast.expr.Expression initialiserExpression;
         private Expression inspectedInitialiserExpression;
         private FieldInspection.FieldInitialiser fieldInitialiser;
@@ -120,8 +119,8 @@ public class FieldInspectionImpl extends InspectionImpl implements FieldInspecti
         }
 
         @Override
-        public List<FieldModifier> getModifiers() {
-            return ImmutableList.copyOf(modifiers);
+        public Set<FieldModifier> getModifiers() {
+            return ImmutableSet.copyOf(modifiers);
         }
 
         @Override

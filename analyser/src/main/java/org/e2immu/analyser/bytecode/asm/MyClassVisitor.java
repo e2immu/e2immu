@@ -358,13 +358,16 @@ public class MyClassVisitor extends ClassVisitor {
         if ((access & Opcodes.ACC_PUBLIC) != 0 && !currentTypeIsInterface) {
             methodInspectionBuilder.addModifier(MethodModifier.PUBLIC);
         }
-        // FIXME default modifier in interface methods?
         if ((access & Opcodes.ACC_PRIVATE) != 0) methodInspectionBuilder.addModifier(MethodModifier.PRIVATE);
         if ((access & Opcodes.ACC_PROTECTED) != 0) methodInspectionBuilder.addModifier(MethodModifier.PROTECTED);
         if ((access & Opcodes.ACC_FINAL) != 0) methodInspectionBuilder.addModifier(MethodModifier.FINAL);
         boolean isAbstract = (access & Opcodes.ACC_ABSTRACT) != 0;
-        if (isAbstract && (!currentTypeIsInterface || isStatic))
+        if (currentTypeIsInterface && !isAbstract) {
+            methodInspectionBuilder.addModifier(MethodModifier.DEFAULT);
+        }
+        if (isAbstract && (!currentTypeIsInterface || isStatic)) {
             methodInspectionBuilder.addModifier(MethodModifier.ABSTRACT);
+        }
         boolean lastParameterIsVarargs = (access & Opcodes.ACC_VARARGS) != 0;
 
         TypeContext methodContext = new TypeContext(typeContext);

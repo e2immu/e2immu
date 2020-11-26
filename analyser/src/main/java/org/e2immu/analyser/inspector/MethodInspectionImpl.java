@@ -20,6 +20,7 @@ package org.e2immu.analyser.inspector;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -48,7 +49,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     //@Immutable
     private final List<ParameterInfo> parameters;
     //@Immutable
-    private final List<MethodModifier> modifiers;
+    private final Set<MethodModifier> modifiers;
 
     //@Immutable
     private final List<TypeParameter> typeParameters;
@@ -69,7 +70,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                                  String distinguishingName,
                                  boolean isStatic,
                                  boolean isDefault,
-                                 List<MethodModifier> modifiers,
+                                 Set<MethodModifier> modifiers,
                                  List<ParameterInfo> parameters,
                                  ParameterizedType returnType,
                                  List<AnnotationExpression> annotations,
@@ -135,7 +136,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     }
 
     @Override
-    public List<MethodModifier> getModifiers() {
+    public Set<MethodModifier> getModifiers() {
         return modifiers;
     }
 
@@ -173,7 +174,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     @Container(builds = MethodInspectionImpl.class)
     public static class Builder extends AbstractInspectionBuilder<Builder> implements MethodInspection {
         private final List<ParameterInspectionImpl.Builder> parameters = new ArrayList<>();
-        private final List<MethodModifier> modifiers = new ArrayList<>();
+        private final Set<MethodModifier> modifiers = new HashSet<>();
         private final List<AnnotationExpression> annotations = new ArrayList<>();
         private final List<TypeParameter> typeParameters = new ArrayList<>();
         private final List<MethodInfo> implementationsOf = new ArrayList<>();
@@ -324,7 +325,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                     getDistinguishingName(),
                     isStatic(),
                     isDefault(),
-                    ImmutableList.copyOf(modifiers),
+                    ImmutableSet.copyOf(modifiers),
                     ImmutableList.copyOf(immutableParameters),
                     returnType,
                     ImmutableList.copyOf(annotations),
@@ -387,7 +388,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         }
 
         @Override
-        public List<MethodModifier> getModifiers() {
+        public Set<MethodModifier> getModifiers() {
             return modifiers;
         }
 

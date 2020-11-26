@@ -19,6 +19,7 @@
 package org.e2immu.analyser.bytecode;
 
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeModifier;
 import org.e2immu.analyser.model.TypeNature;
@@ -80,7 +81,7 @@ public class TestByteCodeInspector {
 
         Assert.assertEquals(TypeNature.CLASS, subType.typeInspection.get().typeNature());
         Assert.assertFalse(subType.typeInspection.get().isStatic());
-        Assert.assertFalse(subType.typeInspection.get().modifiers().contains(TypeModifier.PRIVATE));
+        Assert.assertTrue(subType.typeInspection.get().modifiers().contains(TypeModifier.PRIVATE));
 
         LOGGER.info("Stream is\n{}", subType.stream(0));
     }
@@ -139,11 +140,14 @@ public class TestByteCodeInspector {
     }
 
     @Test
-    public void testImplements() throws IOException {
-        TypeMap typeMap = parseFromJar("org/e2immu/analyser/analyser/StatementAnalyser.class");
-        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.analyser.StatementAnalyser");
+    public void testDefaultMethod() throws IOException {
+        TypeMap typeMap = parseFromJar("org/e2immu/analyser/output/PrintMode.class");
+        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.output.PrintMode");
 
-        Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
+        Assert.assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.stream(0));
+
+        MethodInfo forDebug = typeInfo.findUniqueMethod("forDebug", 0);
+        Assert.assertTrue(forDebug.methodInspection.get().isDefault());
     }
 }

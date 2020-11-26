@@ -18,6 +18,7 @@
 package org.e2immu.analyser.inspector;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Either;
@@ -41,7 +42,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public final List<MethodInfo> constructors;
     public final List<MethodInfo> methods;
     public final List<FieldInfo> fields;
-    public final List<TypeModifier> modifiers;
+    public final Set<TypeModifier> modifiers;
     public final List<TypeInfo> subTypes;
     public final List<TypeParameter> typeParameters;
     public final List<ParameterizedType> interfacesImplemented;
@@ -59,7 +60,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                List<MethodInfo> constructors,
                                List<MethodInfo> methods,
                                List<FieldInfo> fields,
-                               List<TypeModifier> modifiers,
+                               Set<TypeModifier> modifiers,
                                List<TypeInfo> subTypes,
                                List<AnnotationExpression> annotations,
                                AnnotationMode annotationMode) {
@@ -120,7 +121,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     }
 
     @Override
-    public List<TypeModifier> modifiers() {
+    public Set<TypeModifier> modifiers() {
         return modifiers;
     }
 
@@ -166,7 +167,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         public final int state;
 
-        private InspectionState(int state) {
+        InspectionState(int state) {
             this.state = state;
         }
 
@@ -192,7 +193,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         private final List<MethodInfo> methods = new ArrayList<>();
         private final List<MethodInfo> constructors = new ArrayList<>();
         private final List<FieldInfo> fields = new ArrayList<>();
-        private final List<TypeModifier> modifiers = new ArrayList<>();
+        private final Set<TypeModifier> modifiers = new HashSet<>();
         private final Set<String> subTypeNames = new HashSet<>();
         private final List<TypeInfo> subTypes = new ArrayList<>();
         private final List<TypeParameter> typeParameters = new ArrayList<>();
@@ -395,8 +396,8 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         }
 
         @Override
-        public List<TypeModifier> modifiers() {
-            return ImmutableList.copyOf(modifiers);
+        public Set<TypeModifier> modifiers() {
+            return ImmutableSet.copyOf(modifiers);
         }
 
         @Override

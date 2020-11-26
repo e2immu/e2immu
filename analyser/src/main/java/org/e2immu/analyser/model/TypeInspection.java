@@ -51,7 +51,7 @@ public interface TypeInspection extends Inspection {
 
     List<FieldInfo> fields();
 
-    List<TypeModifier> modifiers();
+    Set<TypeModifier> modifiers();
 
     List<TypeInfo> subTypes();
 

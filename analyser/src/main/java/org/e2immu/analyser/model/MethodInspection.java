@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.statement.Block;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface MethodInspection extends Inspection {
 
@@ -40,7 +41,7 @@ public interface MethodInspection extends Inspection {
     List<ParameterInfo> getParameters();
 
     //@Immutable
-    List<MethodModifier> getModifiers();
+    Set<MethodModifier> getModifiers();
 
     //@Immutable
     List<TypeParameter> getTypeParameters();

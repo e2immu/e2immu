@@ -26,14 +26,14 @@ import org.e2immu.analyser.analyser.check.CheckOnly;
 import org.e2immu.analyser.analyser.check.CheckPrecondition;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.inspector.MethodResolution;
-import org.e2immu.analyser.model.value.*;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -579,11 +579,9 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     private InlineValue.Applicability applicabilityField(FieldInfo fieldInfo) {
-        List<FieldModifier> fieldModifiers = fieldInfo.fieldInspection.get().getModifiers();
-        for (FieldModifier fieldModifier : fieldModifiers) {
-            if (fieldModifier == FieldModifier.PRIVATE) return InlineValue.Applicability.TYPE;
-            if (fieldModifier == FieldModifier.PUBLIC) return InlineValue.Applicability.EVERYWHERE;
-        }
+        Set<FieldModifier> fieldModifiers = fieldInfo.fieldInspection.get().getModifiers();
+        if (fieldModifiers.contains(FieldModifier.PRIVATE)) return InlineValue.Applicability.TYPE;
+        if (fieldModifiers.contains(FieldModifier.PUBLIC)) return InlineValue.Applicability.EVERYWHERE;
         return InlineValue.Applicability.PACKAGE;
     }
 
