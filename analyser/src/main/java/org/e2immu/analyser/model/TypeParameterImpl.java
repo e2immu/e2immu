@@ -63,12 +63,12 @@ public class TypeParameterImpl implements TypeParameter {
         if (o == null || getClass() != o.getClass()) return false;
         TypeParameterImpl that = (TypeParameterImpl) o;
         return owner.equals(that.owner) &&
-                name.equals(that.name);
+                index == that.index;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(owner, name);
+        return Objects.hash(owner, index);
     }
 
     @Override

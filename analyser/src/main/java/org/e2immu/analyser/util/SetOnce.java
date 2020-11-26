@@ -20,6 +20,8 @@ package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.*;
 
+import java.util.Objects;
+
 @E2Container(after = "t")
 public class SetOnce<T> {
 
@@ -90,5 +92,18 @@ public class SetOnce<T> {
         return "SetOnce{" +
                 "t=" + t +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SetOnce<?> setOnce = (SetOnce<?>) o;
+        return Objects.equals(t, setOnce.t);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(t);
     }
 }

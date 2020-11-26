@@ -293,8 +293,16 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             }
         }
 
+        // the iterative parser can call this method multiple times
         public Builder addTypeParameter(TypeParameter typeParameter) {
-            typeParameters.add(typeParameter);
+            if(typeParameter.isMethodTypeParameter()) throw new UnsupportedOperationException();
+            if (typeParameter.getIndex() < typeParameters.size()) {
+                // we've seen the index before, overwrite
+                typeParameters.set(typeParameter.getIndex(), typeParameter);
+            } else {
+                assert typeParameters.size() == typeParameter.getIndex();
+                typeParameters.add(typeParameter);
+            }
             return this;
         }
 

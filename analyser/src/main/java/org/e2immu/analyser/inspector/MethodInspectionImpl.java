@@ -277,8 +277,14 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         @Fluent
         public Builder addTypeParameter(@NotNull TypeParameterImpl typeParameter) {
-            typeParameters.add(typeParameter);
             if (!typeParameter.isMethodTypeParameter()) throw new IllegalArgumentException();
+            if (typeParameter.getIndex() < typeParameters.size()) {
+                // we've seen the index before, overwrite
+                typeParameters.set(typeParameter.getIndex(), typeParameter);
+            } else {
+                assert typeParameters.size() == typeParameter.getIndex();
+                typeParameters.add(typeParameter);
+            }
             return this;
         }
 

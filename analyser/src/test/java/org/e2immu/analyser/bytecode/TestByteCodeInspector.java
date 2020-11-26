@@ -20,6 +20,7 @@ package org.e2immu.analyser.bytecode;
 
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeModifier;
 import org.e2immu.analyser.model.TypeNature;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.parser.Input;
@@ -78,6 +79,9 @@ public class TestByteCodeInspector {
         TypeInfo subType = typeMap.get("org.e2immu.analyser.parser.Parser.InspectWithJavaParserImpl");
 
         Assert.assertEquals(TypeNature.CLASS, subType.typeInspection.get().typeNature());
+        Assert.assertFalse(subType.typeInspection.get().isStatic());
+        Assert.assertFalse(subType.typeInspection.get().modifiers().contains(TypeModifier.PRIVATE));
+
         LOGGER.info("Stream is\n{}", subType.stream(0));
     }
 
