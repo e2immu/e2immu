@@ -187,38 +187,65 @@ public class TypeMapImpl implements TypeMap {
             return new TypeMapImpl(trie, primitives, e2ImmuAnnotationExpressions);
         }
 
+        @Override
+        public TypeInfo get(Class<?> clazz) {
+            return get(clazz.getCanonicalName());
+        }
+
+        @Override
+        public TypeInfo get(String fullyQualifiedName) {
+            return TypeMapImpl.get(trie, fullyQualifiedName);
+        }
+
         public TypeInfo getOrCreate(String packageName, String simpleName, InspectionState inspectionState) {
             assert simpleName.indexOf('.') < 0; // no dots!
             TypeInfo typeInfo = get(packageName + "." + simpleName);
-            if (typeInfo != null) return typeInfo;
+            if (typeInfo != null) {
+                ensureTypeInspection(typeInfo, inspectionState);
+                return typeInfo;
+            }
             TypeInfo newType = new TypeInfo(packageName, simpleName);
             add(newType, inspectionState);
             return newType;
         }
-
         /*
         Creates types all the way up to the primary type if necessary
          */
+
         public TypeInspectionImpl.Builder getOrCreateFromPathReturnInspection(String path, InspectionState inspectionState) {
-            assert path.indexOf('.') < 0; // no dots! uses / and $; the . is for the .class which should have been stripped
+            assert path.indexOf('.') < 0: "Path is "+path; // no dots! uses / and $; the . is for the .class which should have been stripped
             int dollar = path.indexOf('$');
             TypeInfo primaryType = extractPrimaryTypeAndAddToMap(path, dollar);
-            if (dollar < 0) return add(primaryType, inspectionState);
+            if (dollar < 0) return ensureTypeInspection(primaryType, inspectionState);
             TypeInfo enclosingType = primaryType;
             TypeInspectionImpl.Builder typeInspection = null;
             while (dollar >= 0) {
                 int nextDollar = path.indexOf('$', dollar + 1);
                 String simpleName = nextDollar < 0 ? path.substring(dollar + 1) : path.substring(dollar + 1, nextDollar);
-                TypeInfo subType = new TypeInfo(enclosingType, simpleName);
-                typeInspection = add(subType, inspectionState);
+                String fqn = enclosingType.fullyQualifiedName + "." + simpleName;
+                TypeInfo subTypeInMap = get(fqn);
+                TypeInfo subType;
+                if (subTypeInMap != null) {
+                    subType = subTypeInMap;
+                    typeInspection = ensureTypeInspection(subType, inspectionState);
+                } else {
+                    subType = new TypeInfo(enclosingType, simpleName);
+                    typeInspection = add(subType, inspectionState);
+                }
                 enclosingType = subType;
                 dollar = nextDollar;
             }
             return typeInspection;
         }
 
-        public TypeInfo getOrCreateFromPath(String path, InspectionState inspectionState) {
-            return getOrCreateFromPathReturnInspection(path, inspectionState).typeInfo();
+        public TypeInspectionImpl.Builder ensureTypeInspection(TypeInfo typeInfo, InspectionState inspectionState) {
+            TypeInspectionImpl.Builder inMap = typeInspections.get(typeInfo);
+            if (inMap == null) {
+                TypeInspectionImpl.Builder typeInspection = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
+                typeInspections.put(typeInfo, typeInspection);
+                return typeInspection;
+            }
+            return inMap;
         }
 
         private TypeInfo extractPrimaryTypeAndAddToMap(String path, int dollar) {
@@ -234,6 +261,10 @@ public class TypeMapImpl implements TypeMap {
                 return primaryType;
             }
             return primaryTypeInMap;
+        }
+
+        public TypeInfo getOrCreateFromPath(String path, InspectionState inspectionState) {
+            return getOrCreateFromPathReturnInspection(path, inspectionState).typeInfo();
         }
 
         public TypeInspectionImpl.Builder add(TypeInfo typeInfo, InspectionState inspectionState) {
@@ -253,11 +284,7 @@ public class TypeMapImpl implements TypeMap {
                 add(typeInfo, inspectionState);
                 return;
             }
-            TypeInspection typeInspection = getTypeInspection(typeInfo);
-            if (typeInspection == null) {
-                TypeInspectionImpl.Builder ti = new TypeInspectionImpl.Builder(typeInfo, inspectionState);
-                typeInspections.put(typeInfo, ti);
-            }
+            ensureTypeInspection(typeInfo, inspectionState);
         }
 
         public void registerFieldInspection(FieldInfo fieldInfo, FieldInspectionImpl.Builder builder) {
@@ -275,16 +302,6 @@ public class TypeMapImpl implements TypeMap {
         @Override
         public E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
             return e2ImmuAnnotationExpressions;
-        }
-
-        @Override
-        public TypeInfo get(Class<?> clazz) {
-            return get(clazz.getCanonicalName());
-        }
-
-        @Override
-        public TypeInfo get(String fullyQualifiedName) {
-            return TypeMapImpl.get(trie, fullyQualifiedName);
         }
 
         @Override

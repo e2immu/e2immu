@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeInspection;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Resources;
+import org.e2immu.analyser.util.StringUtil;
 import org.objectweb.asm.ClassReader;
 
 import java.util.ArrayList;
@@ -69,7 +70,8 @@ public class ByteCodeInspector implements OnDemandInspection {
             if (primaryTypeInspection == null || primaryTypeInspection.getInspectionState().lt(STARTING_BYTECODE)) {
                 inspectFromPath(pathOfPrimaryType);
             }
-            return List.of(typeContext.typeMapBuilder.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION));
+            String pathWithoutClass = StringUtil.stripDotClass(path);
+            return List.of(typeContext.typeMapBuilder.getOrCreateFromPath(pathWithoutClass, TRIGGER_BYTECODE_INSPECTION));
             // NOTE that is is quite possible that even after the inspectFromPath, the type has not been created
             // yet... cycles are allowed in the use of sub-types as interface or parent
         }

@@ -53,4 +53,9 @@ public class StringUtil {
     public static <E> String join(@NotNull Collection<E> es, @NotNull Function<E, ?> f) {
         return es.stream().map(f).map(Object::toString).collect(Collectors.joining(", "));
     }
+
+    public static String stripDotClass(String path) {
+        if (path.endsWith(".class")) return path.substring(0, path.length() - 6);
+        return path;
+    }
 }

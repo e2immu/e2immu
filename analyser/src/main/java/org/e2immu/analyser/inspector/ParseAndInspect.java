@@ -23,6 +23,7 @@ import com.github.javaparser.ast.ImportDeclaration;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Resources;
+import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.Trie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,7 +123,7 @@ public class ParseAndInspect {
                             String leaf = expansion[expansion.length - 1];
                             if (!leaf.contains("$")) {
                                 // primary type
-                                String simpleName = stripDotClass(leaf);
+                                String simpleName = StringUtil.stripDotClass(leaf);
                                 String fqn = fullyQualified + "." + simpleName;
                                 TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.get(fqn);
                                 if (typeInfo == null) {
@@ -153,8 +154,7 @@ public class ParseAndInspect {
         // we first add the types to the type context, so that they're all known
         compilationUnit.getTypes().forEach(td -> {
             String name = td.getName().asString();
-            TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(packageName, name,
-                    TRIGGER_JAVA_PARSER);
+            TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(packageName, name, TRIGGER_JAVA_PARSER);
             typeContextOfFile.addToContext(typeInfo);
             TypeInspector typeInspector = new TypeInspector(typeMapBuilder, typeInfo, true);
             typeInspector.recursivelyAddToTypeStore(typeMapBuilder, td);
@@ -170,12 +170,6 @@ public class ParseAndInspect {
         });
 
         return allPrimaryTypesInspected;
-    }
-
-    private String stripDotClass(String string) {
-        if (string.endsWith(".class")) return string.substring(0, string.length() - 6);
-        if (string.contains(".")) throw new UnsupportedOperationException();
-        return string;
     }
 
     private TypeInfo importType(String fqn) {

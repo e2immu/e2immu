@@ -32,6 +32,7 @@ import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.StringUtil;
 import org.objectweb.asm.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,8 +90,7 @@ public class MyClassVisitor extends ClassVisitor {
     }
 
     public static String pathToFqn(String path) {
-        String withoutDotClass = path.endsWith(".class") ? path.substring(0, path.length() - 6) : path;
-        return withoutDotClass.replaceAll("[/$]", ".");
+        return StringUtil.stripDotClass(path).replaceAll("[/$]", ".");
     }
 
     private static TypeNature typeNatureFromOpCode(int opCode) {
@@ -132,11 +132,11 @@ public class MyClassVisitor extends ClassVisitor {
                     return;
                 }
                 typeInspectionBuilder = (TypeInspectionImpl.Builder) typeInspection;
-                typeInspectionBuilder.setInspectionState(STARTING_BYTECODE);
             } else {
-                typeInspectionBuilder = new TypeInspectionImpl.Builder(currentType, STARTING_BYTECODE);
+                typeInspectionBuilder = typeContext.typeMapBuilder.ensureTypeInspection(currentType, STARTING_BYTECODE);
             }
         }
+        typeInspectionBuilder.setInspectionState(STARTING_BYTECODE);
         currentTypePath = name;
 
         // may be overwritten, but this is the default UNLESS it's JLO itself
@@ -415,7 +415,7 @@ public class MyClassVisitor extends ClassVisitor {
                     subTypeInMap = new TypeInfo(stepDown ? currentType : currentType.packageNameOrEnclosingType.getRight(), innerName);
                     subTypeInspection = typeContext.typeMapBuilder.add(subTypeInMap, TRIGGER_BYTECODE_INSPECTION);
                 } else {
-                    subTypeInspection = (TypeInspectionImpl.Builder) typeContext.getTypeInspection(subTypeInMap); //MUST EXIST
+                    subTypeInspection = Objects.requireNonNull((TypeInspectionImpl.Builder) typeContext.getTypeInspection(subTypeInMap)); //MUST EXIST
                 }
                 if (subTypeInspection.getInspectionState().lt(STARTING_BYTECODE)) {
                     checkTypeFlags(access, subTypeInspection);
