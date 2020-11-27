@@ -53,20 +53,17 @@ public class TestTypeInfoStream {
     public void test() {
         Primitives primitives = new Primitives();
         InspectionProvider IP = InspectionProvider.DEFAULT;
-        TypeInfo genericContainer = TypeInfo.createFqnOrPackageNameDotSimpleName(MODEL,
-                "GenericContainer");
+        TypeInfo genericContainer = new TypeInfo(MODEL, "GenericContainer");
         TypeParameter genericContainerTypeParameterT = new TypeParameterImpl(genericContainer, "T", 0);
         ParameterizedType genericContainerT = new ParameterizedType(genericContainerTypeParameterT, 0, ParameterizedType.WildCard.NONE);
 
         genericContainer.typeInspection.set(new TypeInspectionImpl.Builder(genericContainer, BY_HAND)
-                .setPackageName(MODEL)
                 .addTypeParameter(genericContainerTypeParameterT)
                 .setParentClass(primitives.objectParameterizedType).build());
 
-        TypeInfo testTypeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName(MODEL,
-                "TestTypeInfoStream");
-        TypeInfo loggerTypeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName("org.slf4j", "Logger");
-        TypeInfo containerTypeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName("org.e2immu.analyser.model.TestTypeInfoStream", "Container");
+        TypeInfo testTypeInfo = new TypeInfo(MODEL, "TestTypeInfoStream");
+        TypeInfo loggerTypeInfo = new TypeInfo("org.slf4j", "Logger");
+        TypeInfo containerTypeInfo = new TypeInfo(testTypeInfo, "Container");
 
         TypeParameter typeParameterT = new TypeParameterImpl(containerTypeInfo, "T", 0);
 
@@ -81,14 +78,12 @@ public class TestTypeInfoStream {
                 .addModifier(MethodModifier.PUBLIC)
                 .setReturnType(primitives.stringParameterizedType).build(IP).getMethodInfo();
 
-        TypeInfo hashMap = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_UTIL, "HashMap");
-        TypeInfo exception = TypeInfo.createFqnOrPackageNameDotSimpleName(GENERATED_PACKAGE, "MyException");
+        TypeInfo hashMap = new TypeInfo(JAVA_UTIL, "HashMap");
+        TypeInfo exception = new TypeInfo(GENERATED_PACKAGE, "MyException");
 
         TypeInspectionImpl.Builder hashMapInspection = new TypeInspectionImpl.Builder(hashMap, BY_HAND)
-                .setPackageName(JAVA_UTIL)
                 .setParentClass(primitives.objectParameterizedType);
         TypeInspectionImpl.Builder exceptionInspection = new TypeInspectionImpl.Builder(exception, BY_HAND)
-                .setPackageName(GENERATED_PACKAGE)
                 .setParentClass(primitives.objectParameterizedType);
 
         InspectionProvider inspectionProvider = new InspectionProvider() {
@@ -115,15 +110,13 @@ public class TestTypeInfoStream {
             }
         };
         ParameterizedType hashMapParameterizedType = hashMap.asParameterizedType(inspectionProvider);
-        TypeInfo map = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_UTIL, "Map");
+        TypeInfo map = new TypeInfo(JAVA_UTIL, "Map");
         map.typeInspection.set(new TypeInspectionImpl.Builder(map, BY_HAND)
                 .setParentClass(primitives.objectParameterizedType)
-                .setTypeNature(TypeNature.INTERFACE)
-                .setPackageName(JAVA_UTIL).build()
+                .setTypeNature(TypeNature.INTERFACE).build()
         );
-        TypeInfo mapEntry = TypeInfo.createFqnOrPackageNameDotSimpleName(JAVA_UTIL, "Entry");
+        TypeInfo mapEntry = new TypeInfo(map, "Entry");
         mapEntry.typeInspection.set(new TypeInspectionImpl.Builder(mapEntry, BY_HAND)
-                .setEnclosingType(map)
                 .setTypeNature(TypeNature.INTERFACE)
                 .setParentClass(primitives.objectParameterizedType)
                 .build());
@@ -197,7 +190,6 @@ public class TestTypeInfoStream {
         TypeInspection containerTypeInspection = new TypeInspectionImpl.Builder(containerTypeInfo, BY_HAND)
                 .setTypeNature(TypeNature.CLASS)
                 .setParentClass(primitives.objectParameterizedType)
-                .setEnclosingType(testTypeInfo)
                 .addTypeModifier(TypeModifier.STATIC)
                 .addField(intFieldInContainer)
                 .addField(stringFieldInContainer)
@@ -210,15 +202,14 @@ public class TestTypeInfoStream {
                 .build();
         containerTypeInfo.typeInspection.set(containerTypeInspection);
 
-        TypeInfo commutative = TypeInfo.createFqnOrPackageNameDotSimpleName(GENERATED_PACKAGE, "Commutative");
-        TypeInfo testEquivalent = TypeInfo.createFqnOrPackageNameDotSimpleName(TEST_PACKAGE, "TestEquivalent");
+        TypeInfo commutative = new TypeInfo(GENERATED_PACKAGE, "Commutative");
+        TypeInfo testEquivalent = new TypeInfo(TEST_PACKAGE, "TestEquivalent");
         MethodInfo referenceMethodInfo = new MethodInspectionImpl.Builder(testEquivalent, "reference")
                 .setReturnType(primitives.stringParameterizedType)
                 .setInspectedBlock(new Block.BlockBuilder().build())
                 .build(IP).getMethodInfo();
         testEquivalent.typeInspection.set(new TypeInspectionImpl.Builder(testEquivalent, BY_HAND)
                 .setParentClass(primitives.objectParameterizedType)
-                .setPackageName(TEST_PACKAGE)
                 .setTypeNature(TypeNature.ANNOTATION)
                 .addMethod(referenceMethodInfo)
                 .build());
@@ -255,7 +246,6 @@ public class TestTypeInfoStream {
         TypeInspection testTypeInspection = new TypeInspectionImpl.Builder(testTypeInfo, BY_HAND)
                 .addTypeModifier(TypeModifier.PUBLIC)
                 .setParentClass(primitives.objectParameterizedType)
-                .setPackageName(MODEL)
                 .addField(logger)
                 .addSubType(containerTypeInfo)
                 .addConstructor(emptyTestConstructor)

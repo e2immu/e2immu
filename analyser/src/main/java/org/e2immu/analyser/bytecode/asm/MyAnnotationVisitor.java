@@ -45,8 +45,7 @@ public class MyAnnotationVisitor<T> extends AnnotationVisitor {
         this.typeContext = typeContext;
         this.inspectionBuilder = Objects.requireNonNull(inspectionBuilder);
         log(BYTECODE_INSPECTOR_DEBUG, "My annotation visitor: {}", descriptor);
-        FindType findType = (fqn, path) -> typeContext.typeMapBuilder.getOrCreate(fqn,
-                TRIGGER_BYTECODE_INSPECTION);
+        FindType findType = (fqn, path) -> typeContext.typeMapBuilder.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
         ParameterizedType type = ParameterizedTypeFactory.from(typeContext, findType, descriptor).parameterizedType;
         expressionBuilder = new AnnotationExpressionImpl.Builder().setTypeInfo(type.typeInfo);
     }

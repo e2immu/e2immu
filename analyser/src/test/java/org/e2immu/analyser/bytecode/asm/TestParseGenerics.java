@@ -84,7 +84,7 @@ public class TestParseGenerics {
         TypeInfo typeInfo = typeContext.getFullyQualified(EnumMap.class);
         TypeInspectionImpl.Builder typeInspectionBuilder = (TypeInspectionImpl.Builder) typeContext.getTypeInspection(typeInfo);
         TypeContext newTypeContext = new TypeContext(typeContext);
-        FindType findType = (fqn, path) -> newTypeContext.typeMapBuilder.getOrCreate(fqn, TRIGGER_BYTECODE_INSPECTION);
+        FindType findType = (fqn, path) -> newTypeContext.typeMapBuilder.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
 
         String signature = "<K:Ljava/lang/Enum<TK;>;V:Ljava/lang/Object;>Ljava/util/AbstractMap<TK;TV;>;Ljava/io/Serializable;Ljava/lang/Cloneable;";
         ParseGenerics parseGenerics = new ParseGenerics(newTypeContext, typeInfo, typeInspectionBuilder,
@@ -145,8 +145,8 @@ public class TestParseGenerics {
         TypeContext newTypeContext = new TypeContext(typeContext);
         newTypeContext.addToContext(new TypeParameterImpl("V", 0));
         newTypeContext.addToContext(new TypeParameterImpl("CLV", 1));
-        FindType findType = (fqn, path) -> newTypeContext.typeMapBuilder.getOrCreate(fqn, TRIGGER_BYTECODE_INSPECTION);
-        TypeInfo typeInfo = TypeInfo.fromFqn("jdk.internal.loader.AbstractClassLoaderValue");
+        FindType findType = (fqn, path) -> newTypeContext.typeMapBuilder.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
+        TypeInfo typeInfo = new TypeInfo("jdk.internal.loader", "AbstractClassLoaderValue");
         TypeInspectionImpl.Builder typeInspectionBuilder = typeContext.typeMapBuilder.add(typeInfo, STARTING_BYTECODE);
 
         ParseGenerics parseGenerics = new ParseGenerics(newTypeContext, typeInfo, typeInspectionBuilder,

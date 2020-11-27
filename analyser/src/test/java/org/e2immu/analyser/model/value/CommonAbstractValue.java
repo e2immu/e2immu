@@ -159,11 +159,10 @@ public abstract class CommonAbstractValue {
         assert PRIMITIVES != null;
         if (!PRIMITIVES.objectTypeInfo.typeInspection.isSet()) {
             PRIMITIVES.objectTypeInfo.typeInspection.set(new TypeInspectionImpl.Builder(PRIMITIVES.objectTypeInfo, BY_HAND)
-                    .setPackageName("java.lang")
                     .setParentClass(PRIMITIVES.objectParameterizedType)
                     .build());
         }
-        TypeInfo someType = TypeInfo.fromFqn("some.type");
+        TypeInfo someType = new TypeInfo("some", "type");
         someType.typeAnalysis.set(new TypeAnalysisImpl.Builder(PRIMITIVES, someType).build());
         MethodInspectionImpl.Builder methodBuilder = new MethodInspectionImpl.Builder(someType, "type");
         ParameterInspectionImpl.Builder pi = new ParameterInspectionImpl.Builder(PRIMITIVES.stringParameterizedType, name, 0);
@@ -173,7 +172,6 @@ public abstract class CommonAbstractValue {
         p0.setAnalysis(new ParameterAnalysisImpl.Builder(PRIMITIVES, null, p0));
 
         someType.typeInspection.set(new TypeInspectionImpl.Builder(someType, BY_HAND)
-                .setPackageName("org.e2immu.test")
                 .setParentClass(PRIMITIVES.objectParameterizedType)
                 .addMethod(methodInfo)
                 .build());

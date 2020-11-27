@@ -165,7 +165,7 @@ public class TypeAnalyser extends AbstractAnalyser {
         this.myMethodAndConstructorAnalysersExcludingSAMs = myMethodAndConstructorAnalysersExcludingSAMs.build();
         this.myFieldAnalysers = myFieldAnalysers.build();
 
-        Either<String, TypeInfo> pe = typeInspection.packageNameOrEnclosingType();
+        Either<String, TypeInfo> pe = typeInfo.packageNameOrEnclosingType;
         List<TypeAnalysis> tmp = new ArrayList<>(2);
         if (pe.isRight() && !typeInfo.isStatic()) {
             tmp.add(analyserContext.getTypeAnalysers().get(pe.getRight()).typeAnalysis);

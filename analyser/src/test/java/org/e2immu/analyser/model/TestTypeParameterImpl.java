@@ -24,7 +24,7 @@ public class TestTypeParameterImpl {
 
     @Test
     public void test() {
-        TypeInfo typeInfo = TypeInfo.fromFqn("java.lang.Class");
+        TypeInfo typeInfo = new TypeInfo("java.lang", "Class");
 
         TypeParameter t0 = new TypeParameterImpl(typeInfo, "T", 0);
         TypeParameter t1 = new TypeParameterImpl(typeInfo, "T", 0);

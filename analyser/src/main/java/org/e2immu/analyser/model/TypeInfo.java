@@ -52,6 +52,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     @NotNull
     public final String fullyQualifiedName;
 
+    // when this type is an inner or nested class of an enclosing class
+    public final Either<String, TypeInfo> packageNameOrEnclosingType;
+
     //@Immutable(after="this.inspect()")
     public final SetOnce<TypeInspection> typeInspection = new SetOnce<>();
     public final SetOnce<TypeResolution> typeResolution = new SetOnce<>();
@@ -59,7 +62,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     // creates an anonymous version of the parent type parameterizedType
     public TypeInfo(TypeInfo enclosingType, int number) {
-        this(enclosingType.fullyQualifiedName + "$" + number, enclosingType.simpleName + "$" + number);
+        this(enclosingType, "$" + number);
     }
 
     @Override
@@ -72,26 +75,16 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return simpleName;
     }
 
-    public static TypeInfo createFqnOrPackageNameDotSimpleName(@NotNull String packageName, @NotNull String simpleName) {
-        if (Objects.requireNonNull(packageName).isEmpty())
-            throw new UnsupportedOperationException("Expect a non-empty package name for " + simpleName);
-        return new TypeInfo(packageName + "." + simpleName, simpleName);
-    }
-
-    public static TypeInfo fromFqn(@NotNull String fullyQualifiedName) {
-        int dot = fullyQualifiedName.lastIndexOf('.');
-        String simpleName;
-        if (dot >= 0) {
-            simpleName = fullyQualifiedName.substring(dot + 1);
-        } else {
-            simpleName = fullyQualifiedName;
-        }
-        return new TypeInfo(fullyQualifiedName, simpleName);
-    }
-
-    private TypeInfo(String fullyQualifiedName, String simpleName) {
+    public TypeInfo(String packageName, String simpleName) {
         this.simpleName = Objects.requireNonNull(simpleName);
-        this.fullyQualifiedName = Objects.requireNonNull(fullyQualifiedName);
+        this.packageNameOrEnclosingType = Either.left(packageName);
+        this.fullyQualifiedName = packageName + "." + simpleName;
+    }
+
+    public TypeInfo(TypeInfo enclosingType, String simpleName) {
+        this.simpleName = Objects.requireNonNull(simpleName);
+        this.packageNameOrEnclosingType = Either.right(enclosingType);
+        this.fullyQualifiedName = enclosingType.fullyQualifiedName + "." + simpleName;
     }
 
     @Override
@@ -106,14 +99,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public boolean hasBeenInspected() {
         return typeInspection.isSet();
-    }
-
-    public String computePackageName() {
-        int dot = fullyQualifiedName.lastIndexOf('.');
-        if (dot >= 0) {
-            return fullyQualifiedName.substring(0, dot);
-        }
-        return "";
     }
 
     public String stream() {
@@ -137,13 +122,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         String interfacesCsv = "";
         String typeParametersCsv = "";
         String parentClass = "";
-        String packageName;
 
         if (hasBeenInspected()) {
             TypeInspection typeInspection = this.typeInspection.get();
             typeNature = typeInspection.typeNature().toJava();
             typeModifiers = typeInspection.modifiers().stream().map(TypeModifier::toJava);
-            packageName = typeInspection.packageNameOrEnclosingType().getLeftOrElse("");
             annotations.addAll(typeInspection.getAnnotations());
             fields = typeInspection.fields();
             constructors = typeInspection.constructors();
@@ -155,7 +138,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             typeParametersCsv = typeInspection.typeParameters().stream()
                     .map(TypeParameter::print).collect(Collectors.joining(", "));
         } else {
-            packageName = computePackageName();
             typeNature = "class"; // we really have no idea what it is
             typeModifiers = List.of("abstract").stream();
             fields = List.of();
@@ -173,6 +155,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         StringBuilder sb = new StringBuilder();
         if (isMainType) {
+            String packageName = packageNameOrEnclosingType.getLeftOrElse("");
             if (!packageName.isEmpty()) {
                 sb.append("package ");
                 sb.append(packageName);
@@ -329,8 +312,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (typeInfo == this) return Optional.of(this);
         if (visited.contains(this)) return Optional.empty();
         visited.add(this);
-        if (typeInspection.get().packageNameOrEnclosingType().isRight()) {
-            TypeInfo parentClass = typeInspection.get().packageNameOrEnclosingType().getRight();
+        if (packageNameOrEnclosingType.isRight()) {
+            TypeInfo parentClass = packageNameOrEnclosingType.getRight();
             Optional<TypeInfo> viaParent = parentClass.inTypeInnerOuterHierarchy(typeInfo, visited);
             if (viaParent.isPresent()) return viaParent;
         }
@@ -368,7 +351,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public TypeInfo primaryType() {
-        Either<String, TypeInfo> packageNameOrEnclosingType = typeInspection.get().packageNameOrEnclosingType();
         if (packageNameOrEnclosingType.isLeft()) return this;
         return packageNameOrEnclosingType.getRight().primaryType();
     }
@@ -395,7 +377,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         MethodTypeParameterMap method = functionalInterfaceType.findSingleAbstractMethodOfInterface(expressionContext.typeContext);
         TypeInfo typeInfo = new TypeInfo(enclosingType, expressionContext.topLevel.newIndex(enclosingType));
         TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND);
-        builder.setEnclosingType(this);
         builder.setTypeNature(TypeNature.CLASS);
         builder.addInterfaceImplemented(functionalInterfaceType);
         builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
@@ -455,7 +436,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public boolean isNestedType() {
-        return typeInspection.get().packageNameOrEnclosingType().isRight();
+        return packageNameOrEnclosingType.isRight();
     }
 
     public boolean isPrivate() {
@@ -464,8 +445,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public boolean isAnEnclosingTypeOf(TypeInfo typeInfo) {
         if (typeInfo == this) return true;
-        if (typeInfo.typeInspection.get().packageNameOrEnclosingType().isLeft()) return false;
-        return isAnEnclosingTypeOf(typeInfo.typeInspection.get().packageNameOrEnclosingType().getRight());
+        if (packageNameOrEnclosingType.isLeft()) return false;
+        return isAnEnclosingTypeOf(typeInfo.packageNameOrEnclosingType.getRight());
     }
 
     public boolean isRecord() {
@@ -529,13 +510,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public String packageName() {
-        if (!typeInspection.isSet()) {
-            // it's too late now
-            return computePackageName();
-        }
-        if (typeInspection.get().packageNameOrEnclosingType().isLeft())
-            return typeInspection.get().packageNameOrEnclosingType().getLeft();
-        return typeInspection.get().packageNameOrEnclosingType().getRight().packageName();
+        if (packageNameOrEnclosingType.isLeft())
+            return packageNameOrEnclosingType.getLeft();
+        return packageNameOrEnclosingType.getRight().packageName();
     }
 
     // this type implements a functional interface, and we need to find the single abstract method
@@ -553,7 +530,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public boolean isPrimaryType() {
-        return typeInspection.isSet() && typeInspection.get().packageNameOrEnclosingType().isLeft();
+        return packageNameOrEnclosingType.isLeft();
     }
 
     /**

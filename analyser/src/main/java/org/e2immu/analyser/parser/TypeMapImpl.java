@@ -48,6 +48,24 @@ public class TypeMapImpl implements TypeMap {
         assert trie.isFrozen();
     }
 
+    public static TypeInfo fromTrie(Trie<TypeInfo> sourceTypes, String[] split) {
+        List<TypeInfo> upTo;
+        int i = split.length;
+        do {
+            upTo = sourceTypes.get(split, i);
+            i--;
+        } while (i >= 1 && (upTo == null || upTo.isEmpty()));
+        if (upTo != null && !upTo.isEmpty()) {
+            TypeInfo typeInfo = upTo.get(0);
+            for (int j = i + 1; j < split.length; i++) {
+                typeInfo = new TypeInfo(typeInfo, split[j]);
+                j++;
+            }
+            return typeInfo;
+        }
+        return null;
+    }
+
     @Override
     public TypeInfo get(Class<?> clazz) {
         return get(clazz.getCanonicalName());
@@ -58,7 +76,7 @@ public class TypeMapImpl implements TypeMap {
         return get(trie, fullyQualifiedName);
     }
 
-    static TypeInfo get(Trie<TypeInfo> trie, String fullyQualifiedName) {
+    public static TypeInfo get(Trie<TypeInfo> trie, String fullyQualifiedName) {
         String[] split = fullyQualifiedName.split("\\.");
         List<TypeInfo> typeInfoList = trie.get(split);
         return typeInfoList == null || typeInfoList.isEmpty() ? null : typeInfoList.get(0);
@@ -159,22 +177,63 @@ public class TypeMapImpl implements TypeMap {
             });
 
             new HashMap<>(typeInspections).forEach((typeInfo, typeInspectionBuilder) -> {
-               if(!typeInfo.typeResolution.isSet()) {
-                   Set<TypeInfo> superTypes = Resolver.superTypesExcludingJavaLangObject(this, typeInfo);
-                   TypeResolution typeResolution = new TypeResolution(Set.of(), superTypes);
-                   typeInfo.typeResolution.set(typeResolution);
-               }
+                if (!typeInfo.typeResolution.isSet()) {
+                    Set<TypeInfo> superTypes = Resolver.superTypesExcludingJavaLangObject(this, typeInfo);
+                    TypeResolution typeResolution = new TypeResolution(Set.of(), superTypes);
+                    typeInfo.typeResolution.set(typeResolution);
+                }
             });
 
             return new TypeMapImpl(trie, primitives, e2ImmuAnnotationExpressions);
         }
 
-        public TypeInfo getOrCreate(String fullyQualifiedName, InspectionState inspectionState) {
-            TypeInfo typeInfo = get(fullyQualifiedName);
+        public TypeInfo getOrCreate(String packageName, String simpleName, InspectionState inspectionState) {
+            assert simpleName.indexOf('.') < 0; // no dots!
+            TypeInfo typeInfo = get(packageName + "." + simpleName);
             if (typeInfo != null) return typeInfo;
-            TypeInfo newType = TypeInfo.fromFqn(fullyQualifiedName);
+            TypeInfo newType = new TypeInfo(packageName, simpleName);
             add(newType, inspectionState);
             return newType;
+        }
+
+        /*
+        Creates types all the way up to the primary type if necessary
+         */
+        public TypeInspectionImpl.Builder getOrCreateFromPathReturnInspection(String path, InspectionState inspectionState) {
+            assert path.indexOf('.') < 0; // no dots! uses / and $; the . is for the .class which should have been stripped
+            int dollar = path.indexOf('$');
+            TypeInfo primaryType = extractPrimaryTypeAndAddToMap(path, dollar);
+            if (dollar < 0) return add(primaryType, inspectionState);
+            TypeInfo enclosingType = primaryType;
+            TypeInspectionImpl.Builder typeInspection = null;
+            while (dollar >= 0) {
+                int nextDollar = path.indexOf('$', dollar + 1);
+                String simpleName = nextDollar < 0 ? path.substring(dollar + 1) : path.substring(dollar + 1, nextDollar);
+                TypeInfo subType = new TypeInfo(enclosingType, simpleName);
+                typeInspection = add(subType, inspectionState);
+                enclosingType = subType;
+                dollar = nextDollar;
+            }
+            return typeInspection;
+        }
+
+        public TypeInfo getOrCreateFromPath(String path, InspectionState inspectionState) {
+            return getOrCreateFromPathReturnInspection(path, inspectionState).typeInfo();
+        }
+
+        private TypeInfo extractPrimaryTypeAndAddToMap(String path, int dollar) {
+            String pathOfPrimaryType = dollar >= 0 ? path.substring(0, dollar) : path;
+            String fqnOfPrimaryType = pathOfPrimaryType.replace('/', '.');
+            TypeInfo primaryTypeInMap = get(fqnOfPrimaryType);
+            if (primaryTypeInMap == null) {
+                int lastDot = fqnOfPrimaryType.lastIndexOf('.');
+                String packageName = fqnOfPrimaryType.substring(0, lastDot);
+                String simpleName = fqnOfPrimaryType.substring(lastDot + 1);
+                TypeInfo primaryType = new TypeInfo(packageName, simpleName);
+                trie.add(primaryType.fullyQualifiedName.split("\\."), primaryType);
+                return primaryType;
+            }
+            return primaryTypeInMap;
         }
 
         public TypeInspectionImpl.Builder add(TypeInfo typeInfo, InspectionState inspectionState) {
@@ -294,7 +353,7 @@ public class TypeMapImpl implements TypeMap {
         private void inspectWithByteCodeInspector(TypeInfo typeInfo) {
             String pathInClassPath = byteCodeInspector.getClassPath()
                     .fqnToPath(typeInfo.fullyQualifiedName, ".class");
-            if(pathInClassPath != null) {
+            if (pathInClassPath != null) {
                 byteCodeInspector.inspectFromPath(pathInClassPath);
             } // else ignore
         }

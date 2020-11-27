@@ -32,7 +32,6 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.DependencyGraph;
-import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.SMapSet;
 import org.e2immu.annotation.NotModified;
 import org.slf4j.Logger;
@@ -102,13 +101,6 @@ public class Resolver {
         for (TypeInfo sub : typeInspection.subTypes()) {
             recursivelyCollectSubTypes(inspectionProvider, sub, result);
         }
-    }
-
-    private static TypeInfo primaryType(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
-        TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
-        Either<String, TypeInfo> packageNameOrEnclosingType = typeInspection.packageNameOrEnclosingType();
-        if (packageNameOrEnclosingType.isLeft()) return typeInfo;
-        return primaryType(inspectionProvider, packageNameOrEnclosingType.getRight());
     }
 
     private List<TypeInfo> sortWarnForCircularDependencies(InspectionProvider inspectionProvider, DependencyGraph<TypeInfo> typeGraph) {
@@ -190,7 +182,7 @@ public class Resolver {
             });
 
             log(RESOLVE, "Resolving type {}", typeInfo.fullyQualifiedName);
-            TypeInfo primaryType = primaryType(typeContextOfType, typeInfo);
+            TypeInfo primaryType = typeInfo.primaryType();
             ExpressionContext expressionContext = ExpressionContext.forBodyParsing(typeInfo,
                     primaryType, typeContextOfType);
             TypeContext typeContext = expressionContext.typeContext;
@@ -747,10 +739,7 @@ public class Resolver {
     public static Stream<TypeInfo> accessibleBySimpleNameTypeInfoStream(InspectionProvider inspectionProvider,
                                                                         TypeInfo typeInfo,
                                                                         TypeInfo primaryType) {
-        TypeInspection primaryTypeInspection = inspectionProvider.getTypeInspection(primaryType);
-        return accessibleBySimpleNameTypeInfoStream(inspectionProvider, typeInfo, typeInfo,
-                primaryTypeInspection.packageNameOrEnclosingType().getLeft(),
-                new HashSet<>());
+        return accessibleBySimpleNameTypeInfoStream(inspectionProvider, typeInfo, typeInfo, primaryType.packageName(), new HashSet<>());
     }
 
     private static Stream<TypeInfo> accessibleBySimpleNameTypeInfoStream(InspectionProvider inspectionProvider,
@@ -763,12 +752,10 @@ public class Resolver {
         Stream<TypeInfo> mySelf = Stream.of(typeInfo);
 
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
-        TypeInfo primaryType = primaryType(inspectionProvider, typeInfo);
+        TypeInfo primaryType = typeInfo.primaryType();
         boolean inSameCompilationUnit = typeInfo == startingPoint ||
-                primaryType == primaryType(inspectionProvider, startingPoint);
-        TypeInspection primaryTypeInspection = inspectionProvider.getTypeInspection(primaryType);
-        boolean inSamePackage = !inSameCompilationUnit &&
-                primaryTypeInspection.packageNameOrEnclosingType().getLeft().equals(startingPointPackageName);
+                primaryType == startingPoint.primaryType();
+        boolean inSamePackage = !inSameCompilationUnit && primaryType.packageNameOrEnclosingType.getLeft().equals(startingPointPackageName);
 
         Stream<TypeInfo> localStream = typeInspection.subTypes().stream()
                 .filter(ti -> acceptSubType(inspectionProvider, ti, inSameCompilationUnit, inSamePackage));
@@ -802,9 +789,7 @@ public class Resolver {
 
 
     public static Stream<FieldInfo> accessibleFieldsStream(InspectionProvider inspectionProvider, TypeInfo typeInfo, TypeInfo primaryType) {
-        TypeInspection primaryTypeInspection = inspectionProvider.getTypeInspection(primaryType);
-        return accessibleFieldsStream(inspectionProvider, typeInfo, typeInfo,
-                primaryTypeInspection.packageNameOrEnclosingType().getLeft());
+        return accessibleFieldsStream(inspectionProvider, typeInfo, typeInfo, primaryType.packageName());
     }
 
     private static Stream<FieldInfo> accessibleFieldsStream(InspectionProvider inspectionProvider,
@@ -812,13 +797,10 @@ public class Resolver {
                                                             TypeInfo startingPoint,
                                                             String startingPointPackageName) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
-        TypeInfo primaryType = primaryType(inspectionProvider, typeInfo);
+        TypeInfo primaryType = typeInfo.primaryType();
 
-        boolean inSameCompilationUnit = typeInfo == startingPoint ||
-                primaryType == primaryType(inspectionProvider, startingPoint);
-        TypeInspection primaryTypeInspection = inspectionProvider.getTypeInspection(primaryType);
-        boolean inSamePackage = !inSameCompilationUnit &&
-                primaryTypeInspection.packageNameOrEnclosingType().getLeft().equals(startingPointPackageName);
+        boolean inSameCompilationUnit = typeInfo == startingPoint || primaryType == startingPoint.primaryType();
+        boolean inSamePackage = !inSameCompilationUnit && primaryType.packageName().equals(startingPointPackageName);
 
         // my own field
         Stream<FieldInfo> localStream = typeInspection.fields().stream()
@@ -826,9 +808,9 @@ public class Resolver {
 
         // my enclosing type's fields
         Stream<FieldInfo> enclosingStream;
-        if (typeInspection.packageNameOrEnclosingType().isRight()) {
+        if (typeInfo.packageNameOrEnclosingType.isRight()) {
             enclosingStream = accessibleFieldsStream(inspectionProvider,
-                    typeInspection.packageNameOrEnclosingType().getRight(), startingPoint, startingPointPackageName);
+                    typeInfo.packageNameOrEnclosingType.getRight(), startingPoint, startingPointPackageName);
         } else {
             enclosingStream = Stream.empty();
         }

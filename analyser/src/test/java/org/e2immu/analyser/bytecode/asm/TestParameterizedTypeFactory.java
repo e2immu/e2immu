@@ -38,7 +38,7 @@ public class TestParameterizedTypeFactory {
     }
 
     private final TypeContext typeContext = new TypeContext(new TypeMapImpl.Builder());
-    private final FindType findType = (fqn, path) -> typeContext.typeMapBuilder.getOrCreate(fqn,
+    private final FindType findType = (fqn, path) -> typeContext.typeMapBuilder.getOrCreateFromPath(path,
             TRIGGER_BYTECODE_INSPECTION);
 
     @Test

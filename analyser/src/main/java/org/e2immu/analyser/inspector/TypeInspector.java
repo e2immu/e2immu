@@ -73,7 +73,7 @@ public class TypeInspector {
 
     private final TypeInfo typeInfo;
     private final TypeInspectionImpl.Builder builder;
-    private final boolean fullInspection;
+    private final boolean fullInspection; // !fullInspection == isDollarType
 
     public TypeInspector(TypeMapImpl.Builder typeMapBuilder, TypeInfo typeInfo, boolean fullInspection) {
         this.typeInfo = typeInfo;
@@ -95,7 +95,6 @@ public class TypeInspector {
                                      ExpressionContext expressionContext,
                                      NodeList<BodyDeclaration<?>> members) {
         assert fullInspection; // no way we could reach this otherwise
-        builder.setEnclosingType(expressionContext.enclosingType);
         builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
         assert classImplemented.typeInfo != null && classImplemented.typeInfo.hasBeenInspected();
         if (classImplemented.typeInfo.typeInspection.get().typeNature() == TypeNature.INTERFACE) {
@@ -116,7 +115,7 @@ public class TypeInspector {
                                   TypeInfo enclosingType,
                                   TypeDeclaration<?> typeDeclaration,
                                   ExpressionContext expressionContext) {
-        List<TypeInfo> dollarTypes = inspect(enclosingTypeIsInterface, enclosingType, typeDeclaration, expressionContext, null);
+        List<TypeInfo> dollarTypes = inspect(enclosingTypeIsInterface, typeDeclaration, expressionContext, null);
         if (enclosingType == null) {
             dollarTypes.add(0, typeInfo);
         }
@@ -127,27 +126,24 @@ public class TypeInspector {
     returns the primary type in normal cases, and primary types in case of $ types
      */
     private List<TypeInfo> inspect(boolean enclosingTypeIsInterface,
-                                   TypeInfo enclosingType,
                                    TypeDeclaration<?> typeDeclaration,
                                    ExpressionContext expressionContext,
                                    DollarResolver dollarResolverInput) {
         LOGGER.info("Inspecting type {}", typeInfo.fullyQualifiedName);
 
         DollarResolver dollarResolver;
-        if (enclosingType != null) {
-            builder.setEnclosingType(enclosingType);
-            dollarResolver = dollarResolverInput;
-        } else {
-            builder.setPackageName(typeInfo.computePackageName());
+        if (typeInfo.isPrimaryType()) {
             FieldDeclaration packageNameField = typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null);
             String dollarPackageName = packageName(packageNameField);
             dollarResolver = name -> {
                 if (name.endsWith("$") && dollarPackageName != null) {
                     return expressionContext.typeContext.typeMapBuilder
-                            .get(dollarPackageName + "." + name.substring(0, name.length() - 1));
+                            .getOrCreate(dollarPackageName, name.substring(0, name.length() - 1), TRIGGER_BYTECODE_INSPECTION);
                 }
                 return null;
             };
+        } else {
+            dollarResolver = dollarResolverInput;
         }
         if (fullInspection) {
             builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
@@ -302,7 +298,6 @@ public class TypeInspector {
     public void inspectLocalClassDeclaration(ExpressionContext expressionContext, TypeInfo localType, ClassOrInterfaceDeclaration cid) {
         TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(localType, STARTING_JAVA_PARSER);
         builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
-        builder.setEnclosingType(expressionContext.enclosingType);
         doClassOrInterfaceDeclaration(expressionContext, cid);
         continueInspection(expressionContext, cid.getMembers(), false, false, null);
     }
@@ -319,13 +314,13 @@ public class TypeInspector {
                                                   TypeDeclaration<?> typeDeclaration) {
         typeDeclaration.getMembers().forEach(bodyDeclaration -> {
             bodyDeclaration.ifClassOrInterfaceDeclaration(cid -> {
-                DollarResolverResult res = subTypeInfo(typeInfo.fullyQualifiedName, cid.getName().asString(),
+                DollarResolverResult res = subTypeInfo(typeInfo, cid.getName().asString(),
                         typeDeclaration, parentIsPrimaryType, parentIsDollarType);
                 addToTypeStore(typeStore, res, "type");
                 recursivelyAddToTypeStore(res.subType, false, res.isDollarType, typeStore, cid);
             });
             bodyDeclaration.ifEnumDeclaration(ed -> {
-                DollarResolverResult res = subTypeInfo(typeInfo.fullyQualifiedName, ed.getName().asString(),
+                DollarResolverResult res = subTypeInfo(typeInfo, ed.getName().asString(),
                         typeDeclaration, parentIsPrimaryType, parentIsDollarType);
                 addToTypeStore(typeStore, res, "enum");
                 recursivelyAddToTypeStore(res.subType, false, res.isDollarType, typeStore, ed);
@@ -482,10 +477,9 @@ public class TypeInspector {
         DollarResolverResult res = subType(expressionContext, dollarResolver, nameAsString);
         TypeInfo subType = res.subType;
         ExpressionContext newExpressionContext = expressionContext.newSubType(subType);
-        TypeInfo enclosingType = res.isDollarType ? null : typeInfo;
         boolean typeFullInspection = fullInspection && !res.isDollarType;
         TypeInspector subTypeInspector = new TypeInspector(expressionContext.typeContext.typeMapBuilder, subType, typeFullInspection);
-        subTypeInspector.inspect(isInterface, enclosingType, asTypeDeclaration, newExpressionContext, dollarResolver);
+        subTypeInspector.inspect(isInterface, asTypeDeclaration, newExpressionContext, dollarResolver);
         if (res.isDollarType) {
             dollarTypes.add(subType);
         } else {
@@ -512,7 +506,7 @@ public class TypeInspector {
     Briefly, if a first-level subtype's name ends with a $, its FQN is composed by the PACKAGE_NAME field in the primary type
     and the subtype name without the $.
      */
-    private static DollarResolverResult subTypeInfo(String fullyQualifiedName, String simpleName,
+    private static DollarResolverResult subTypeInfo(TypeInfo enclosingType, String simpleName,
                                                     TypeDeclaration<?> typeDeclaration,
                                                     boolean isPrimaryType,
                                                     boolean parentIsDollarType) {
@@ -520,12 +514,11 @@ public class TypeInspector {
             if (!isPrimaryType) throw new UnsupportedOperationException();
             String packageName = packageName(typeDeclaration.getFieldByName(PACKAGE_NAME_FIELD).orElse(null));
             if (packageName != null) {
-                TypeInfo dollarType = TypeInfo.createFqnOrPackageNameDotSimpleName(packageName, simpleName.substring(0, simpleName.length() - 1));
+                TypeInfo dollarType = new TypeInfo(packageName, simpleName.substring(0, simpleName.length() - 1));
                 return new DollarResolverResult(dollarType, true);
             }
         }
-        return new DollarResolverResult(TypeInfo.createFqnOrPackageNameDotSimpleName(fullyQualifiedName, simpleName),
-                parentIsDollarType);
+        return new DollarResolverResult(new TypeInfo(enclosingType, simpleName), parentIsDollarType);
     }
 
     private static String packageName(FieldDeclaration packageNameField) {

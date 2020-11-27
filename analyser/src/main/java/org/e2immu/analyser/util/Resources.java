@@ -78,15 +78,6 @@ public class Resources {
         });
     }
 
-    public List<String[]> expandLeaves(String path) {
-        List<String[]> expansions = new LinkedList<>();
-        String[] prefix = path.split("\\.");
-        data.visitLeaves(prefix, (s, list) -> {
-            expansions.add(s);
-        });
-        return expansions;
-    }
-
     public List<URL> expandURLs(String extension) {
         List<URL> expansions = new LinkedList<>();
         data.visit(new String[0], (s, list) -> {

@@ -84,7 +84,7 @@ public class ParseAndInspect {
         classPath.expandLeaves(packageName, ".class", (expansion, urls) -> {
             if (!expansion[expansion.length - 1].contains("$")) {
                 String fqn = fqnOfClassFile(packageName, expansion);
-                TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(fqn, TRIGGER_BYTECODE_INSPECTION);
+                TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreateFromPath(fqn, TRIGGER_BYTECODE_INSPECTION);
                 typeContextOfFile.addToContext(typeInfo, false);
             }
         });
@@ -119,12 +119,15 @@ public class ParseAndInspect {
                             }
                         });
                         classPath.expandLeaves(fullyQualified, ".class", (expansion, urls) -> {
-                            if (!expansion[expansion.length - 1].contains("$")) {
-                                String fqn = fqnOfClassFile(fullyQualified, expansion);
-                                TypeInfo typeInfo = typeContextOfFile.getFullyQualified(fqn, false);
+                            String leaf = expansion[expansion.length - 1];
+                            if (!leaf.contains("$")) {
+                                // primary type
+                                String simpleName = stripDotClass(leaf);
+                                String fqn = fullyQualified + "." + simpleName;
+                                TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.get(fqn);
                                 if (typeInfo == null) {
                                     TypeInfo newTypeInfo = typeContextOfFile.typeMapBuilder
-                                            .getOrCreate(fqn, TRIGGER_BYTECODE_INSPECTION);
+                                            .getOrCreate(fullyQualified, simpleName, TRIGGER_BYTECODE_INSPECTION);
                                     log(INSPECT, "Registering inspection handler for {}", newTypeInfo.fullyQualifiedName);
                                     typeContextOfFile.addToContext(newTypeInfo, false);
                                 } else {
@@ -150,7 +153,7 @@ public class ParseAndInspect {
         // we first add the types to the type context, so that they're all known
         compilationUnit.getTypes().forEach(td -> {
             String name = td.getName().asString();
-            TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(packageName + "." + name,
+            TypeInfo typeInfo = typeContextOfFile.typeMapBuilder.getOrCreate(packageName, name,
                     TRIGGER_JAVA_PARSER);
             typeContextOfFile.addToContext(typeInfo);
             TypeInspector typeInspector = new TypeInspector(typeMapBuilder, typeInfo, true);
@@ -169,11 +172,26 @@ public class ParseAndInspect {
         return allPrimaryTypesInspected;
     }
 
-    private TypeInfo importType(String fqn) {
-        boolean source = TypeMapImpl.containsPrefix(sourceTypes, fqn);
-        TypeInspectionImpl.InspectionState inspectionState = source ? TRIGGER_JAVA_PARSER: TRIGGER_BYTECODE_INSPECTION;
-        return typeMapBuilder.getOrCreate(fqn, inspectionState);
+    private String stripDotClass(String string) {
+        if (string.endsWith(".class")) return string.substring(0, string.length() - 6);
+        if (string.contains(".")) throw new UnsupportedOperationException();
+        return string;
     }
+
+    private TypeInfo importType(String fqn) {
+        TypeInfo inMap = typeMapBuilder.get(fqn);
+        if (inMap != null) return inMap;
+        // we don't know it... so we don't know the boundary between primary and sub-type
+        // we can either search in the class path, or in the source path
+
+        TypeInfo inSourceTypes = TypeMapImpl.fromTrie(sourceTypes, fqn.split("\\."));
+        if (inSourceTypes != null) return inSourceTypes;
+
+        String path = classPath.fqnToPath(fqn, ".class");
+        if (path == null) throw new UnsupportedOperationException("Cannot find " + fqn);
+        return typeMapBuilder.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
+    }
+
 
     public static String fqnOfClassFile(String prefix, String[] suffixes) {
         String combined = prefix + "." + String.join(".", suffixes).replaceAll("\\$", ".");

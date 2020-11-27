@@ -21,7 +21,6 @@ package org.e2immu.analyser.model;
 import com.google.common.collect.Iterables;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.AnnotationMode;
 
@@ -36,9 +35,6 @@ import java.util.stream.Stream;
 public interface TypeInspection extends Inspection {
     // the type that this inspection object belongs to
     TypeInfo typeInfo();
-
-    // when this type is an inner or nested class of an enclosing class
-    Either<String, TypeInfo> packageNameOrEnclosingType();
 
     TypeNature typeNature();
 
@@ -164,8 +160,8 @@ public interface TypeInspection extends Inspection {
     default UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(
                 parentClass() == null ? UpgradableBooleanMap.of() : parentClass().typesReferenced(true),
-                packageNameOrEnclosingType().isRight() && !isStatic() && !isInterface() ?
-                        UpgradableBooleanMap.of(packageNameOrEnclosingType().getRight(), false) :
+                typeInfo().packageNameOrEnclosingType.isRight() && !isStatic() && !isInterface() ?
+                        UpgradableBooleanMap.of(typeInfo().packageNameOrEnclosingType.getRight(), false) :
                         UpgradableBooleanMap.of(),
                 interfacesImplemented().stream().flatMap(i -> i.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector()),
                 getAnnotations().stream().flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector()),
@@ -177,7 +173,7 @@ public interface TypeInspection extends Inspection {
     }
 
     default boolean isStatic() {
-        if (packageNameOrEnclosingType().isLeft()) return true; // independent type
+        if (typeInfo().packageNameOrEnclosingType.isLeft()) return true; // independent type
         return modifiers().contains(TypeModifier.STATIC); // static sub type
     }
 

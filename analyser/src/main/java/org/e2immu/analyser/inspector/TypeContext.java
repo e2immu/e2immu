@@ -136,7 +136,7 @@ public class TypeContext implements InspectionProvider {
         }
     }
 
-    private  MethodInspection createEmptyConstructor(@NotNull TypeInfo typeInfo) {
+    private MethodInspection createEmptyConstructor(@NotNull TypeInfo typeInfo) {
         MethodInspectionImpl.Builder constructorBuilder = new MethodInspectionImpl.Builder(typeInfo);
         return constructorBuilder.addModifier(MethodModifier.PUBLIC).build(this);
     }
@@ -325,10 +325,9 @@ public class TypeContext implements InspectionProvider {
                     parametersPresented, decrementWhenNotStatic, typeMap, result, visited, false);
         }
          */
-        if (typeInspection.packageNameOrEnclosingType().isRight()) {
+        if (typeInfo.packageNameOrEnclosingType.isRight()) {
             // if I'm in a static subtype, I can only access the static methods of the enclosing type
-            ParameterizedType enclosingType = typeInspection.packageNameOrEnclosingType()
-                    .getRight().asParameterizedType(this);
+            ParameterizedType enclosingType = typeInfo.packageNameOrEnclosingType.getRight().asParameterizedType(this);
             boolean onlyStatic = staticOnly || typeInfo.isStatic();
             recursivelyResolveOverloadedMethods(enclosingType, methodName, parametersPresented, decrementWhenNotStatic,
                     joinMaps(typeMap, enclosingType), result, visited, onlyStatic);

@@ -103,7 +103,7 @@ public record Input(Configuration configuration,
                     String typeName = name.substring(0, name.length() - 5);
                     String packageName = Arrays.stream(parts).limit(parts.length - 1).collect(Collectors.joining("."));
                     if (acceptSource(packageName, typeName, restrictions)) {
-                        TypeInfo typeInfo = TypeInfo.createFqnOrPackageNameDotSimpleName(packageName, typeName);
+                        TypeInfo typeInfo = new TypeInfo(packageName, typeName);
                         globalTypeContext.typeMapBuilder.add(typeInfo, TRIGGER_JAVA_PARSER);
                         URL url = list.get(0);
                         sourceURLs.put(typeInfo, url);
@@ -136,9 +136,9 @@ public record Input(Configuration configuration,
      * <code>initializeClassPath</code> will be present
      */
     public static void preload(TypeContext globalTypeContext,
-                                ByteCodeInspector byteCodeInspector,
-                                Resources classPath,
-                                String thePackage) {
+                               ByteCodeInspector byteCodeInspector,
+                               Resources classPath,
+                               String thePackage) {
         LOGGER.info("Start pre-loading {}", thePackage);
         AtomicInteger inspected = new AtomicInteger();
         classPath.expandLeaves(thePackage, ".class", (expansion, list) -> {

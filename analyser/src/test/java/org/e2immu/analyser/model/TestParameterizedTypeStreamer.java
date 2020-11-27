@@ -72,12 +72,11 @@ public class TestParameterizedTypeStreamer {
     @Test
     public void testClazzTSSub() {
         Primitives primitives = new Primitives();
-        TypeInfo clazz = TypeInfo.fromFqn("a.b.Clazz");
+        TypeInfo clazz = new TypeInfo("a.b", "Clazz");
         TypeParameter t = new TypeParameterImpl(clazz, "T", 0);
         TypeParameter s = new TypeParameterImpl(clazz, "S", 1);
         TypeInspectionImpl.Builder clazzInspection = new TypeInspectionImpl.Builder(clazz, TypeInspectionImpl.InspectionState.BY_HAND)
                 .setParentClass(primitives.objectParameterizedType)
-                .setPackageName("a.b")
                 .addTypeParameter(t)
                 .addTypeParameter(s);
         clazz.typeInspection.set(clazzInspection.build());
@@ -86,11 +85,10 @@ public class TestParameterizedTypeStreamer {
                 new ParameterizedType(s, 0, ParameterizedType.WildCard.NONE)));
         Assert.assertEquals("a.b.Clazz<T, S>", clazzTS.detailedString());
 
-        TypeInfo sub = TypeInfo.fromFqn("a.b.Clazz.Sub");
+        TypeInfo sub = new TypeInfo(clazz, "Sub");
 
         TypeInspectionImpl.Builder subInspection = new TypeInspectionImpl.Builder(sub, TypeInspectionImpl.InspectionState.BY_HAND)
-                .setParentClass(primitives.objectParameterizedType)
-                .setEnclosingType(clazz);
+                .setParentClass(primitives.objectParameterizedType);
         sub.typeInspection.set(subInspection.build());
         ParameterizedType clazzTSubS = new ParameterizedType(sub, List.of(
                 new ParameterizedType(t, 0, ParameterizedType.WildCard.NONE),
@@ -101,21 +99,19 @@ public class TestParameterizedTypeStreamer {
     @Test
     public void testClazzTSubS() {
         Primitives primitives = new Primitives();
-        TypeInfo clazz = TypeInfo.fromFqn("a.b.Clazz");
+        TypeInfo clazz = new TypeInfo("a.b", "Clazz");
         TypeParameter t = new TypeParameterImpl(clazz, "T", 0);
         TypeInspectionImpl.Builder clazzInspection = new TypeInspectionImpl.Builder(clazz, TypeInspectionImpl.InspectionState.BY_HAND)
                 .setParentClass(primitives.objectParameterizedType)
-                .setPackageName("a.b")
                 .addTypeParameter(t);
         clazz.typeInspection.set(clazzInspection.build());
         ParameterizedType clazzT = new ParameterizedType(clazz, List.of(new ParameterizedType(t, 0, ParameterizedType.WildCard.NONE)));
         Assert.assertEquals("a.b.Clazz<T>", clazzT.detailedString());
 
-        TypeInfo sub = TypeInfo.fromFqn("a.b.Clazz.Sub");
+        TypeInfo sub = new TypeInfo(clazz, "Sub");
         TypeParameter s = new TypeParameterImpl(sub, "S", 0);
         TypeInspectionImpl.Builder subInspection = new TypeInspectionImpl.Builder(sub, TypeInspectionImpl.InspectionState.BY_HAND)
                 .setParentClass(primitives.objectParameterizedType)
-                .setEnclosingType(clazz)
                 .addTypeParameter(s);
         sub.typeInspection.set(subInspection.build());
         ParameterizedType clazzTSubS = new ParameterizedType(sub, List.of(

@@ -67,7 +67,7 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
             }
         } else if (parameterizedType.typeInfo != null) {
             if (parameterizedType.parameters.isEmpty()) {
-                sb.append(typeName(inspectionProvider, parameterizedType.typeInfo));
+                sb.append(typeName(parameterizedType.typeInfo));
             } else {
                 TypeInspection typeInspection = inspectionProvider.getTypeInspection(parameterizedType.typeInfo);
                 if (typeInspection.isStatic()) { // shortcut
@@ -91,22 +91,20 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
         return sb.toString();
     }
 
-    private String typeName(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
+    private String typeName(TypeInfo typeInfo) {
         if (fullyQualified || Primitives.isPrimitiveExcludingVoid(typeInfo) || Primitives.isVoid(typeInfo)
-        || Primitives.isJavaLangObject(typeInfo) || Primitives.isJavaLangString(typeInfo)) {
+                || Primitives.isJavaLangObject(typeInfo) || Primitives.isJavaLangString(typeInfo)) {
             return typeInfo.fullyQualifiedName;
         }
         // join up to primary type...
-        return recursivelyUpToPrimaryType(inspectionProvider, typeInfo);
+        return recursivelyUpToPrimaryType(typeInfo);
     }
 
-    private static String recursivelyUpToPrimaryType(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
-        TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
-        if (typeInspection.packageNameOrEnclosingType().isLeft()) {
+    private static String recursivelyUpToPrimaryType(TypeInfo typeInfo) {
+        if (typeInfo.packageNameOrEnclosingType.isLeft()) {
             return typeInfo.simpleName;
         }
-        return recursivelyUpToPrimaryType(inspectionProvider,
-                typeInspection.packageNameOrEnclosingType().getRight()) + "." + typeInfo.simpleName;
+        return recursivelyUpToPrimaryType(typeInfo.packageNameOrEnclosingType.getRight()) + "." + typeInfo.simpleName;
     }
 
     // if a type is a sub-type, the type parameters may belong to any of the intermediate types
@@ -130,8 +128,8 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
                 typesForTypeInfo.add(parameterizedType.parameters.get(offset + i));
             }
             TypeInfo next;
-            if (typeInspection.packageNameOrEnclosingType().isRight()) {
-                next = typeInspection.packageNameOrEnclosingType().getRight();
+            if (typeInfo.packageNameOrEnclosingType.isRight()) {
+                next = typeInfo.packageNameOrEnclosingType.getRight();
             } else {
                 next = null;
             }

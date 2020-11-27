@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.Either;
 import org.e2immu.annotation.*;
 
 import java.util.*;
@@ -31,9 +30,6 @@ import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.*
 public class TypeInspectionImpl extends InspectionImpl implements TypeInspection {
     // the type that this inspection object belongs to
     public final TypeInfo typeInfo;
-
-    // when this type is an inner or nested class of an enclosing class
-    public final Either<String, TypeInfo> packageNameOrEnclosingType;
 
     public final TypeNature typeNature;
 
@@ -51,7 +47,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     public final AnnotationMode annotationMode;
 
     private TypeInspectionImpl(TypeInfo typeInfo,
-                               Either<String, TypeInfo> packageNameOrEnclosingType,
                                TypeNature typeNature,
                                TypeModifier access,
                                List<TypeParameter> typeParameters,
@@ -65,7 +60,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                                List<AnnotationExpression> annotations,
                                AnnotationMode annotationMode) {
         super(annotations);
-        this.packageNameOrEnclosingType = packageNameOrEnclosingType;
         this.parentClass = parentClass;
         this.interfacesImplemented = interfacesImplemented;
         this.typeParameters = typeParameters;
@@ -88,11 +82,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
     @Override
     public TypeInfo typeInfo() {
         return typeInfo;
-    }
-
-    @Override
-    public Either<String, TypeInfo> packageNameOrEnclosingType() {
-        return packageNameOrEnclosingType;
     }
 
     @Override
@@ -186,8 +175,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
     @Container(builds = TypeInspectionImpl.class)
     public static class Builder extends AbstractInspectionBuilder<Builder> implements TypeInspection {
-        private String packageName;
-        private TypeInfo enclosingType;
         private TypeNature typeNature = TypeNature.CLASS;
         private final Set<String> methodAndConstructorNames = new HashSet<>();
         private final List<MethodInfo> methods = new ArrayList<>();
@@ -218,16 +205,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         public void setInspectionState(InspectionState inspectionState) {
             this.inspectionState = inspectionState;
-        }
-
-        public Builder setPackageName(String packageName) {
-            this.packageName = packageName;
-            return this;
-        }
-
-        public Builder setEnclosingType(TypeInfo enclosingType) {
-            this.enclosingType = enclosingType;
-            return this;
         }
 
         public Builder setTypeNature(TypeNature typeNature) {
@@ -324,7 +301,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
             return new TypeInspectionImpl(
                     typeInfo,
-                    packageNameOrEnclosingType(),
                     typeNature,
                     access(),
                     typeParameters(),
@@ -356,17 +332,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         @Override
         public TypeInfo typeInfo() {
             return typeInfo;
-        }
-
-        @Override
-        public Either<String, TypeInfo> packageNameOrEnclosingType() {
-            if (enclosingType != null) return Either.right(enclosingType);
-            if (packageName != null) return Either.left(packageName);
-            throw new UnsupportedOperationException("Type " + typeInfo.fullyQualifiedName);
-        }
-
-        public boolean needsPackageOrEnclosing() {
-            return enclosingType == null && packageName == null;
         }
 
         @Override

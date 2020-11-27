@@ -73,7 +73,7 @@ public class E2ImmuAnnotationExpressions {
      */
     @NotModified
     private AnnotationExpression create(Class<?> clazz) {
-        return new AnnotationExpressionImpl(TypeInfo.fromFqn(clazz.getCanonicalName()), List.of());
+        return new AnnotationExpressionImpl(new TypeInfo(clazz.getPackageName(), clazz.getSimpleName()), List.of());
     }
 
     public TypeInfo immutableAnnotation(Class<?> key) {

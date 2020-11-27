@@ -93,12 +93,6 @@ public class MyClassVisitor extends ClassVisitor {
         return withoutDotClass.replaceAll("[/$]", ".");
     }
 
-    private static String packageName(String fqName) {
-        int dot = fqName.lastIndexOf('.');
-        if (dot < 0) return fqName;
-        return fqName.substring(0, dot);
-    }
-
     private static TypeNature typeNatureFromOpCode(int opCode) {
         if ((opCode & Opcodes.ACC_ANNOTATION) != 0) return TypeNature.ANNOTATION;
         if ((opCode & Opcodes.ACC_ENUM) != 0) return TypeNature.ENUM;
@@ -125,8 +119,8 @@ public class MyClassVisitor extends ClassVisitor {
         String fqName = pathToFqn(name);
         currentType = typeContext.typeMapBuilder.get(fqName);
         if (currentType == null) {
-            currentType = TypeInfo.fromFqn(fqName);
-            typeInspectionBuilder = typeContext.typeMapBuilder.add(currentType, STARTING_BYTECODE);
+            typeInspectionBuilder = typeContext.typeMapBuilder.getOrCreateFromPathReturnInspection(name, STARTING_BYTECODE);
+            currentType = typeInspectionBuilder.typeInfo();
         } else {
             TypeInspection typeInspection = typeContext.typeMapBuilder.getTypeInspection(currentType);
             if (typeInspection != null) {
@@ -152,14 +146,9 @@ public class MyClassVisitor extends ClassVisitor {
 
         TypeNature currentTypeNature = typeNatureFromOpCode(access);
         typeInspectionBuilder.setTypeNature(currentTypeNature);
-        if (!enclosingTypes.isEmpty()) {
-            typeInspectionBuilder.setEnclosingType(enclosingTypes.peek());
-        } else {
-            typeInspectionBuilder.setPackageName(packageName(fqName));
-        }
         currentTypeIsInterface = currentTypeNature == TypeNature.INTERFACE;
 
-        checkTypeFlags(name, access, typeInspectionBuilder);
+        checkTypeFlags(access, typeInspectionBuilder);
         if (currentTypeNature == TypeNature.CLASS) {
             if ((access & Opcodes.ACC_ABSTRACT) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.ABSTRACT);
             if ((access & Opcodes.ACC_FINAL) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.FINAL);
@@ -276,7 +265,7 @@ public class MyClassVisitor extends ClassVisitor {
         Matcher m = ILLEGAL_IN_FQN.matcher(fqn);
         if (m.find()) throw new UnsupportedOperationException("Illegal FQN: " + fqn + "; path is " + path);
         // this causes really heavy recursions: return mustFindTypeInfo(fqn, path);
-        return typeContext.typeMapBuilder.getOrCreate(fqn, TRIGGER_BYTECODE_INSPECTION);
+        return typeContext.typeMapBuilder.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
     }
 
     private TypeInfo inEnclosingTypes(String parentFqName) {
@@ -408,12 +397,12 @@ public class MyClassVisitor extends ClassVisitor {
 
         log(BYTECODE_INSPECTOR_DEBUG, "Visit inner class {} {} {} {}", name, outerName, innerName, access);
         if (name.equals(currentTypePath)) {
-            checkTypeFlags(name, access, typeInspectionBuilder);
+            checkTypeFlags(access, typeInspectionBuilder);
         } else if (innerName != null && outerName != null) {
             String fqnOuter = pathToFqn(outerName);
             boolean stepDown = currentTypePath.equals(outerName);
-            boolean stepSide = typeInspectionBuilder.packageNameOrEnclosingType().isRight() &&
-                    typeInspectionBuilder.packageNameOrEnclosingType().getRight().fullyQualifiedName.equals(fqnOuter);
+            boolean stepSide = currentType.packageNameOrEnclosingType.isRight() &&
+                    currentType.packageNameOrEnclosingType.getRight().fullyQualifiedName.equals(fqnOuter);
             // step down
             if (stepSide || stepDown) {
                 String fqn = fqnOuter + "." + innerName;
@@ -423,13 +412,13 @@ public class MyClassVisitor extends ClassVisitor {
                 TypeInfo subTypeInMap = typeContext.typeMapBuilder.get(fqn);
                 TypeInspectionImpl.Builder subTypeInspection;
                 if (subTypeInMap == null) {
-                    subTypeInMap = TypeInfo.fromFqn(fqn);
+                    subTypeInMap = new TypeInfo(stepDown ? currentType : currentType.packageNameOrEnclosingType.getRight(), innerName);
                     subTypeInspection = typeContext.typeMapBuilder.add(subTypeInMap, TRIGGER_BYTECODE_INSPECTION);
                 } else {
                     subTypeInspection = (TypeInspectionImpl.Builder) typeContext.getTypeInspection(subTypeInMap); //MUST EXIST
                 }
                 if (subTypeInspection.getInspectionState().lt(STARTING_BYTECODE)) {
-                    checkTypeFlags(name, access, subTypeInspection);
+                    checkTypeFlags(access, subTypeInspection);
                     /* seems unnecessary
                     if(subTypeInspection.needsPackageOrEnclosing()) {
                        subTypeInspection.setEnclosingType(stepDown ? currentType: typeInspectionBuilder.packageNameOrEnclosingType().getRight());
@@ -459,7 +448,7 @@ public class MyClassVisitor extends ClassVisitor {
         }
     }
 
-    private void checkTypeFlags(String name, int access, TypeInspectionImpl.Builder typeInspectionBuilder) {
+    private void checkTypeFlags(int access, TypeInspectionImpl.Builder typeInspectionBuilder) {
         if ((access & Opcodes.ACC_STATIC) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.STATIC);
         if ((access & Opcodes.ACC_PRIVATE) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.PRIVATE);
         if ((access & Opcodes.ACC_PROTECTED) != 0) typeInspectionBuilder.addTypeModifier(TypeModifier.PROTECTED);

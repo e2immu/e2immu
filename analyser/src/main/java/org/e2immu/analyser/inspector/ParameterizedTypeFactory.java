@@ -98,8 +98,7 @@ public class ParameterizedTypeFactory {
                         throw new UnsupportedOperationException("Cannot find " + name + " in " + scopePt);
                     }
                     // we're going to assume that we're creating a subtype
-                    String subTypeFqn = scopePt.typeInfo.fullyQualifiedName + "." + name;
-                    TypeInfo subType = context.typeMapBuilder.getOrCreate(subTypeFqn, TRIGGER_BYTECODE_INSPECTION);
+                    TypeInfo subType = context.typeMapBuilder.getOrCreate(scopePt.typeInfo.fullyQualifiedName, name, TRIGGER_BYTECODE_INSPECTION);
                     return parameters.isEmpty() ? new ParameterizedType(subType, arrays) : new ParameterizedType(subType, parameters);
                 }
             }// else {
