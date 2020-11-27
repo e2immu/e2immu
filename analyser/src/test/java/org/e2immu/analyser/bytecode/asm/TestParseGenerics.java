@@ -32,10 +32,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.SortedSet;
-import java.util.Spliterator;
+import java.util.*;
 
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.STARTING_BYTECODE;
 import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
@@ -62,13 +59,13 @@ public class TestParseGenerics {
     @Test
     public void testNormalTypeParameter() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Spliterator.class);
-        Assert.assertEquals("Spliterator<T>", typeInfo.asParameterizedType(typeContext).stream(typeContext, false));
+        Assert.assertEquals("Spliterator<T>", typeInfo.asParameterizedType(typeContext).print(typeContext, false));
     }
 
     @Test
     public void testWildcard() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Collection.class);
-        Assert.assertEquals("Collection<E>", typeInfo.asParameterizedType(typeContext).stream(typeContext, false));
+        Assert.assertEquals("Collection<E>", typeInfo.asParameterizedType(typeContext).print(typeContext, false));
         TypeInspection typeInspection = typeContext.getTypeInspection(typeInfo);
         MethodInfo containsAll = typeInspection.methods().stream().filter(m -> m.name.equals("containsAll")).findFirst().orElseThrow();
         Assert.assertEquals("java.util.Collection.containsAll(Collection<?>)", containsAll.fullyQualifiedName);
@@ -96,7 +93,18 @@ public class TestParseGenerics {
         int pos = parseGenerics.parseTypeGenerics(signature) + 1;
         Assert.assertEquals(expected, pos);
 
-        Assert.assertEquals("EnumMap<K extends Enum<K>, V>", typeInfo.asParameterizedType(typeContext).stream(typeContext, false));
+        TypeParameter K = typeInspectionBuilder.typeParameters().get(0);
+        Assert.assertEquals(1, K.getTypeBounds().size());
+        ParameterizedType typeBoundK = K.getTypeBounds().get(0);
+        Assert.assertEquals(ParameterizedType.WildCard.NONE, typeBoundK.wildCard);
+
+        Set<TypeParameter> visited = new HashSet<>();
+        visited.add(K);
+        Assert.assertEquals("Enum<K>", typeBoundK.print(newTypeContext, false, visited));
+        Assert.assertSame(K, typeBoundK.parameters.get(0).typeParameter);
+
+        Assert.assertEquals("EnumMap<K extends Enum<K>, V>", typeInfo.asParameterizedType(typeContext)
+                .print(typeContext, false));
     }
 
     @Test
@@ -105,13 +113,31 @@ public class TestParseGenerics {
         TypeInspection typeInspection = typeContext.getTypeInspection(sortedSet);
         MethodInfo comparator = typeInspection.methods().stream().filter(m -> m.name.equals("comparator")).findFirst().orElseThrow();
         MethodInspection comparatorInspection = typeContext.getMethodInspection(comparator);
-        Assert.assertEquals("Comparator<? super E>", comparatorInspection.getReturnType().stream(typeContext, false));
+        Assert.assertEquals("Comparator<? super E>", comparatorInspection.getReturnType().print(typeContext, false));
     }
 
+    /*
+      <T:Ljava/lang/Object;T_CONS:Ljava/lang/Object;T_SPLITR::Ljava/util/Spliterator$OfPrimitive<TT;TT_CONS;TT_SPLITR;>;>Ljava/lang/Object;Ljava/util/Spliterator<TT;>;
+
+     The double colon indicates that there is no extension for a class, but there is one for an interface (OfPrimitive is a sub-interface of Spliterator)
+     */
     @Test
     public void testExtends3() {
         TypeInfo typeInfo = typeContext.getFullyQualified(Spliterator.OfPrimitive.class);
-        Assert.assertEquals("OfPrimitive<T, T_CONS, T_SPLITR extends Spliterator.OfPrimitive<T, T_CONS, T_SPLITR>>", typeInfo.asParameterizedType(typeContext).stream(typeContext, false));
+        ParameterizedType pt = typeInfo.asParameterizedType(typeContext);
+        TypeInspectionImpl.Builder typeInspectionBuilder = (TypeInspectionImpl.Builder) typeContext.getTypeInspection(typeInfo);
+
+        TypeParameter splitr = typeInspectionBuilder.typeParameters().get(2);
+        ParameterizedType typeBoundSplitr = splitr.getTypeBounds().get(0);
+        Assert.assertEquals(ParameterizedType.WildCard.NONE, typeBoundSplitr.wildCard); // EXTENDS
+
+        Assert.assertSame(splitr, typeBoundSplitr.parameters.get(2).typeParameter);
+        Set<TypeParameter> visited = new HashSet<>();
+        visited.add(splitr);
+        Assert.assertEquals("T_SPLITR extends OfPrimitive<T, T_CONS, T_SPLITR>", splitr.print(typeContext, visited));
+
+        Assert.assertEquals("OfPrimitive<T, T_CONS, T_SPLITR extends Spliterator.OfPrimitive<T, T_CONS, T_SPLITR>>",
+                pt.print(typeContext, false));
     }
 
     @Test

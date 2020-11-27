@@ -120,7 +120,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
             FieldInspection fieldInspection = this.fieldInspection.get();
             sb.append(fieldInspection.getModifiers().stream().map(m -> m.toJava() + " ").collect(Collectors.joining()));
         }
-        sb.append(type.stream())
+        sb.append(type.print())
                 .append(" ")
                 .append(name);
         if (fieldInspection.isSet() && fieldInspection.get().fieldInitialiserIsSet()) {

@@ -365,6 +365,10 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
             throw new UnsupportedOperationException("Type " + typeInfo.fullyQualifiedName);
         }
 
+        public boolean needsPackageOrEnclosing() {
+            return enclosingType == null && packageName == null;
+        }
+
         @Override
         public boolean isStatic() {
             return modifiers.contains(TypeModifier.STATIC);
@@ -427,7 +431,6 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
         public AnnotationMode annotationMode() {
             return computeAnnotationMode();
         }
-
     }
 
 }

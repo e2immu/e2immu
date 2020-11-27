@@ -421,16 +421,20 @@ public class MyClassVisitor extends ClassVisitor {
                 log(BYTECODE_INSPECTOR_DEBUG, "Processing sub-type {} of/in {}", fqn, currentType.fullyQualifiedName);
 
                 TypeInfo subTypeInMap = typeContext.typeMapBuilder.get(fqn);
-                TypeInspection subTypeInspection;
+                TypeInspectionImpl.Builder subTypeInspection;
                 if (subTypeInMap == null) {
                     subTypeInMap = TypeInfo.fromFqn(fqn);
                     subTypeInspection = typeContext.typeMapBuilder.add(subTypeInMap, TRIGGER_BYTECODE_INSPECTION);
                 } else {
-                    subTypeInspection = typeContext.getTypeInspection(subTypeInMap); //MUST EXIST
+                    subTypeInspection = (TypeInspectionImpl.Builder) typeContext.getTypeInspection(subTypeInMap); //MUST EXIST
                 }
                 if (subTypeInspection.getInspectionState().lt(STARTING_BYTECODE)) {
-                    checkTypeFlags(name, access, (TypeInspectionImpl.Builder) subTypeInspection);
-
+                    checkTypeFlags(name, access, subTypeInspection);
+                    /* seems unnecessary
+                    if(subTypeInspection.needsPackageOrEnclosing()) {
+                       subTypeInspection.setEnclosingType(stepDown ? currentType: typeInspectionBuilder.packageNameOrEnclosingType().getRight());
+                    }
+                    */
                     if (stepDown) {
                         enclosingTypes.push(currentType);
                     }

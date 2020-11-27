@@ -161,7 +161,7 @@ public class ParameterizedType {
     }
 
     public String print(PrintMode printMode) {
-        return printMode.forDebug() ? detailedString(): stream();
+        return printMode.forDebug() ? detailedString() : print();
     }
 
     @Override
@@ -169,16 +169,20 @@ public class ParameterizedType {
         return (isType() ? "Type " : isTypeParameter() ? "Type param " : "") + detailedString();
     }
 
-    public String stream() {
-        return ParameterizedTypeStreamer.DEFAULT.stream(InspectionProvider.DEFAULT, this, false, false);
+    public String print() {
+        return ParameterizedTypePrinter.DEFAULT.print(InspectionProvider.DEFAULT, this, false, false);
     }
 
-    public String stream(boolean varargs) {
-        return ParameterizedTypeStreamer.DEFAULT.stream(InspectionProvider.DEFAULT, this, varargs, false);
+    public String print(boolean varargs) {
+        return ParameterizedTypePrinter.DEFAULT.print(InspectionProvider.DEFAULT, this, varargs, false);
     }
 
-    public String stream(InspectionProvider inspectionProvider, boolean varargs) {
-        return ParameterizedTypeStreamer.DEFAULT.stream(inspectionProvider, this, varargs, false);
+    public String print(InspectionProvider inspectionProvider, boolean varargs) {
+        return ParameterizedTypePrinter.DEFAULT.print(inspectionProvider, this, varargs, false);
+    }
+
+    public String print(InspectionProvider inspectionProvider, boolean varargs, Set<TypeParameter> visitedTypeParameters) {
+        return ParameterizedTypePrinter.DEFAULT.print(inspectionProvider, this, varargs, false, visitedTypeParameters);
     }
 
     /**
@@ -188,16 +192,16 @@ public class ParameterizedType {
      * @return the type as a fully qualified name, with type parameters according to the format
      * Tn or Mn, with n the index, and T for type, M for method
      */
-    public String distinguishingStream(InspectionProvider inspectionProvider, boolean varArgs) {
-        return ParameterizedTypeStreamer.DISTINGUISHING.stream(inspectionProvider, this, varArgs, false);
+    public String distinguishingName(InspectionProvider inspectionProvider, boolean varArgs) {
+        return ParameterizedTypePrinter.DISTINGUISHING.print(inspectionProvider, this, varArgs, false);
     }
 
     public String detailedString() {
-        return ParameterizedTypeStreamer.DETAILED.stream(InspectionProvider.DEFAULT, this, false, false);
+        return ParameterizedTypePrinter.DETAILED.print(InspectionProvider.DEFAULT, this, false, false);
     }
 
     public String streamWithoutArrays() {
-        return ParameterizedTypeStreamer.DEFAULT.stream(InspectionProvider.DEFAULT, this, false, true);
+        return ParameterizedTypePrinter.DEFAULT.print(InspectionProvider.DEFAULT, this, false, true);
     }
 
     @Override

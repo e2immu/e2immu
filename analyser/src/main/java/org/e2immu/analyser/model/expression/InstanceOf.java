@@ -128,7 +128,7 @@ public class InstanceOf implements Expression {
     @Override
     @NotNull
     public String expressionString(int indent) {
-        return bracketedExpressionString(indent, expression) + " instanceof " + parameterizedType.stream();
+        return bracketedExpressionString(indent, expression) + " instanceof " + parameterizedType.print();
     }
 
     @Override

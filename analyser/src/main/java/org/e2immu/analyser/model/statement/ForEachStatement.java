@@ -61,7 +61,7 @@ public class ForEachStatement extends LoopStatement {
             sb.append(label).append(": ");
         }
         sb.append("for (");
-        sb.append(structure.localVariableCreation.parameterizedType.stream());
+        sb.append(structure.localVariableCreation.parameterizedType.print());
         sb.append(" ");
         sb.append(structure.localVariableCreation.name);
         sb.append(" : ");

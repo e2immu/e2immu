@@ -17,12 +17,15 @@
 
 package org.e2immu.analyser.bytecode.asm;
 
+import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.TypeParameter;
 import org.e2immu.analyser.model.TypeParameterImpl;
+import org.e2immu.analyser.parser.Primitives;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +33,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 class ParseGenerics {
+    public static final char COLON = ':';
+    public static final char GT_END_TYPE_PARAMS = '>';
+    public static final char CARET_THROWS = '^';
+    public static final char CLOSE_BRACKET = ')';
+
     private final TypeContext typeContext;
     private final TypeInfo typeInfo;
     private final TypeInspectionImpl.Builder typeInspectionBuilder;
@@ -42,17 +50,17 @@ class ParseGenerics {
         this.findType = findType;
     }
 
-    private static class IterativeParsing {
+    private static class IterativeParsing<R> {
         int startPos;
         int endPos;
-        ParameterizedType result;
+        R result;
         boolean more;
         String name;
         boolean typeNotFoundError;
     }
 
     int parseTypeGenerics(String signature) {
-        IterativeParsing iterativeParsing = new IterativeParsing();
+        IterativeParsing<TypeParameter> iterativeParsing = new IterativeParsing<>();
         while (true) {
             iterativeParsing.startPos = 1;
             AtomicInteger index = new AtomicInteger();
@@ -72,43 +80,54 @@ class ParseGenerics {
                 }
             } while (iterativeParsing.more);
             if (!iterativeParsing.typeNotFoundError) break;
-            iterativeParsing = new IterativeParsing();
+            iterativeParsing = new IterativeParsing<>();
         }
         return iterativeParsing.endPos;
     }
 
-    private IterativeParsing iterativelyParseGenerics(String signature,
-                                                      IterativeParsing iterativeParsing,
+    private IterativeParsing<TypeParameter> iterativelyParseGenerics(String signature,
+                                                      IterativeParsing<TypeParameter> iterativeParsing,
                                                       Function<String, TypeParameterImpl> createTypeParameterAndAddToContext,
                                                       TypeContext typeContext,
                                                       FindType findType) {
-        int colon = signature.indexOf(':', iterativeParsing.startPos);
-        int afterColon = colon + 1;
+        int end = signature.indexOf(COLON, iterativeParsing.startPos);
+        char atEnd = COLON;
+
         boolean typeNotFoundError = iterativeParsing.typeNotFoundError;
         // example for extends keyword: sig='<T::Ljava/lang/annotation/Annotation;>(Ljava/lang/Class<TT;>;)TT;' for
         // method getAnnotation in java.lang.reflect.AnnotatedElement
 
-        String name = signature.substring(iterativeParsing.startPos, colon);
+        String name = signature.substring(iterativeParsing.startPos, end);
         TypeParameterImpl typeParameter = createTypeParameterAndAddToContext.apply(name);
-        ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext, findType,
-                signature.substring(afterColon));
-        if (result == null) return null; // unable to load type
-        List<ParameterizedType> typeBounds;
-        if (result.parameterizedType.typeInfo != null && typeContext.getPrimitives().objectTypeInfo == result.parameterizedType.typeInfo) {
-            typeBounds = List.of();
-        } else {
-            typeBounds = List.of(result.parameterizedType);
-        }
-        typeParameter.setTypeBounds(typeBounds);
+        List<ParameterizedType> typeBounds = new ArrayList<>();
 
-        int end = result.nextPos + afterColon;
-        char atEnd = signature.charAt(end);
-        IterativeParsing next = new IterativeParsing();
-        next.typeNotFoundError = typeNotFoundError || result.typeNotFoundError;
+        IterativeParsing<TypeParameter> next = new IterativeParsing<>();
         next.name = name;
-        next.result = result.parameterizedType;
 
-        if ('>' == atEnd) {
+        while (atEnd == COLON) {
+            char charAfterColon = signature.charAt(end + 1);
+            if (charAfterColon == COLON) { // this can happen max. once, when there is no class extension, but there are interface extensions
+                end++;
+            }
+            ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext, findType,
+                    signature.substring(end + 1));
+            if (result == null) return null; // unable to load type
+            if (result.parameterizedType.typeInfo != null && !Primitives.isJavaLangObject(result.parameterizedType.typeInfo)) {
+                typeBounds.add(result.parameterizedType);
+            }
+
+            end = result.nextPos + end + 1;
+            atEnd = signature.charAt(end);
+
+            next.typeNotFoundError = typeNotFoundError || result.typeNotFoundError;
+        }
+
+
+        typeParameter.setTypeBounds(ImmutableList.copyOf(typeBounds));
+        next.result = typeParameter;
+
+
+        if (GT_END_TYPE_PARAMS == atEnd) {
             next.more = false;
             next.endPos = end;
         } else {
@@ -128,7 +147,7 @@ class ParseGenerics {
     int parseMethodGenerics(String signature,
                             MethodInspectionImpl.Builder methodInspectionBuilder,
                             TypeContext methodContext) {
-        IterativeParsing iterativeParsing = new IterativeParsing();
+        IterativeParsing<TypeParameter> iterativeParsing = new IterativeParsing<>();
         while (true) {
             iterativeParsing.startPos = 1;
             AtomicInteger index = new AtomicInteger();
@@ -147,7 +166,7 @@ class ParseGenerics {
                 }
             } while (iterativeParsing.more);
             if (!iterativeParsing.typeNotFoundError) break;
-            iterativeParsing = new IterativeParsing();
+            iterativeParsing = new IterativeParsing<>();
         }
         return iterativeParsing.endPos;
     }
@@ -159,7 +178,7 @@ class ParseGenerics {
         }
         List<ParameterizedType> methodTypes = new ArrayList<>();
 
-        IterativeParsing iterativeParsing = new IterativeParsing();
+        IterativeParsing<ParameterizedType> iterativeParsing = new IterativeParsing<>();
         iterativeParsing.startPos = 1;
         do {
             iterativeParsing = iterativelyParseMethodTypes(typeContext, signature, iterativeParsing);
@@ -168,24 +187,24 @@ class ParseGenerics {
         return methodTypes;
     }
 
-    private IterativeParsing iterativelyParseMethodTypes(TypeContext typeContext, String signature, IterativeParsing iterativeParsing) {
+    private IterativeParsing<ParameterizedType> iterativelyParseMethodTypes(TypeContext typeContext, String signature, IterativeParsing<ParameterizedType> iterativeParsing) {
         ParameterizedTypeFactory.Result result = ParameterizedTypeFactory.from(typeContext,
                 findType, signature.substring(iterativeParsing.startPos));
         int end = iterativeParsing.startPos + result.nextPos;
-        IterativeParsing next = new IterativeParsing();
+        IterativeParsing<ParameterizedType> next = new IterativeParsing<>();
         next.result = result.parameterizedType;
         if (end >= signature.length()) {
             next.more = false;
             next.endPos = end;
         } else {
             char atEnd = signature.charAt(end);
-            if (atEnd == '^') {
-                // NOTE NOTE: this marks the "throws" block, which we're NOT parsing at the moment!!
+            if (atEnd == CARET_THROWS) {
+                // FIXME: this marks the "throws" block, which we're NOT parsing at the moment!!
                 next.more = false;
                 next.endPos = end;
             } else {
                 next.more = true;
-                if (atEnd == ')') {
+                if (atEnd == CLOSE_BRACKET) {
                     next.startPos = end + 1;
                 } else {
                     next.startPos = end;

@@ -81,7 +81,7 @@ public class LocalVariableCreation implements Expression {
         StringBuilder sb = new StringBuilder();
         sb.append(localVariable.annotations.stream().map(ann -> ann.stream() + " ").collect(Collectors.joining()))
                 .append(localVariable.modifiers.stream().map(modifier -> modifier.toJava() + " ").collect(Collectors.joining()))
-                .append(localVariable.parameterizedType.stream())
+                .append(localVariable.parameterizedType.print())
                 .append(" ")
                 .append(localVariable.name);
         if (expression != EmptyExpression.EMPTY_EXPRESSION) {

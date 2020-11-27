@@ -149,11 +149,11 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             constructors = typeInspection.constructors();
             methods = typeInspection.methods();
             subTypes = typeInspection.subTypes();
-            parentClass = parentIsNotJavaLangObject() ? typeInspection.parentClass().stream() : "";
+            parentClass = parentIsNotJavaLangObject() ? typeInspection.parentClass().print() : "";
             interfacesCsv = typeInspection.interfacesImplemented().stream()
-                    .map(ParameterizedType::stream).collect(Collectors.joining(", "));
+                    .map(ParameterizedType::print).collect(Collectors.joining(", "));
             typeParametersCsv = typeInspection.typeParameters().stream()
-                    .map(TypeParameter::stream).collect(Collectors.joining(", "));
+                    .map(TypeParameter::print).collect(Collectors.joining(", "));
         } else {
             packageName = computePackageName();
             typeNature = "class"; // we really have no idea what it is

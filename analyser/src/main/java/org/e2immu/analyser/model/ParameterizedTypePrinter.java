@@ -20,18 +20,27 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
-public record ParameterizedTypeStreamer(boolean fullyQualified, boolean numericTypeParameters) {
+public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTypeParameters) {
 
-    public static final ParameterizedTypeStreamer DISTINGUISHING = new ParameterizedTypeStreamer(true, true);
-    public static final ParameterizedTypeStreamer DEFAULT = new ParameterizedTypeStreamer(false, false);
-    public static final ParameterizedTypeStreamer DETAILED = new ParameterizedTypeStreamer(true, false);
+    public static final ParameterizedTypePrinter DISTINGUISHING = new ParameterizedTypePrinter(true, true);
+    public static final ParameterizedTypePrinter DEFAULT = new ParameterizedTypePrinter(false, false);
+    public static final ParameterizedTypePrinter DETAILED = new ParameterizedTypePrinter(true, false);
 
-    public String stream(InspectionProvider inspectionProvider, ParameterizedType parameterizedType, boolean varargs, boolean withoutArrays) {
+    public String print(InspectionProvider inspectionProvider,
+                        ParameterizedType parameterizedType,
+                        boolean varargs,
+                        boolean withoutArrays) {
+        return print(inspectionProvider, parameterizedType, varargs, withoutArrays, new HashSet<>());
+    }
+
+    public String print(InspectionProvider inspectionProvider,
+                        ParameterizedType parameterizedType,
+                        boolean varargs,
+                        boolean withoutArrays,
+                        Set<TypeParameter> visitedTypeParameters) {
         StringBuilder sb = new StringBuilder();
         switch (parameterizedType.wildCard) {
             case UNBOUND:
@@ -50,21 +59,22 @@ public record ParameterizedTypeStreamer(boolean fullyQualified, boolean numericT
             if (numericTypeParameters) {
                 sb.append(tp.isMethodTypeParameter() ? "M" : "T").append(tp.getIndex());
             } else {
-                sb.append(tp.simpleName());
+                if (visitedTypeParameters.add(tp)) {
+                    sb.append(tp.print(inspectionProvider, visitedTypeParameters));
+                } else {
+                    sb.append(tp.simpleName());
+                }
             }
         } else if (parameterizedType.typeInfo != null) {
             if (parameterizedType.parameters.isEmpty()) {
-                if (fullyQualified) {
-                    sb.append(parameterizedType.typeInfo.fullyQualifiedName);
-                } else {
-                    sb.append(parameterizedType.typeInfo.simpleName);
-                }
+                sb.append(typeName(inspectionProvider, parameterizedType.typeInfo));
             } else {
                 TypeInspection typeInspection = inspectionProvider.getTypeInspection(parameterizedType.typeInfo);
                 if (typeInspection.isStatic()) { // shortcut
-                    sb.append(singleType(inspectionProvider, parameterizedType.typeInfo, true, parameterizedType.parameters));
+                    sb.append(singleType(inspectionProvider, parameterizedType.typeInfo, true,
+                            parameterizedType.parameters, visitedTypeParameters));
                 } else {
-                    sb.append(distributeTypeParameters(inspectionProvider, parameterizedType));
+                    sb.append(distributeTypeParameters(inspectionProvider, parameterizedType, visitedTypeParameters));
                 }
             }
         }
@@ -81,9 +91,29 @@ public record ParameterizedTypeStreamer(boolean fullyQualified, boolean numericT
         return sb.toString();
     }
 
+    private String typeName(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
+        if (fullyQualified || Primitives.isPrimitiveExcludingVoid(typeInfo) || Primitives.isVoid(typeInfo)
+        || Primitives.isJavaLangObject(typeInfo) || Primitives.isJavaLangString(typeInfo)) {
+            return typeInfo.fullyQualifiedName;
+        }
+        // join up to primary type...
+        return recursivelyUpToPrimaryType(inspectionProvider, typeInfo);
+    }
+
+    private static String recursivelyUpToPrimaryType(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
+        TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
+        if (typeInspection.packageNameOrEnclosingType().isLeft()) {
+            return typeInfo.simpleName;
+        }
+        return recursivelyUpToPrimaryType(inspectionProvider,
+                typeInspection.packageNameOrEnclosingType().getRight()) + "." + typeInfo.simpleName;
+    }
+
     // if a type is a sub-type, the type parameters may belong to any of the intermediate types
     // we should write them there
-    private String distributeTypeParameters(InspectionProvider inspectionProvider, ParameterizedType parameterizedType) {
+    private String distributeTypeParameters(InspectionProvider inspectionProvider,
+                                            ParameterizedType parameterizedType,
+                                            Set<TypeParameter> visitedTypeParameters) {
         TypeInfo typeInfo = parameterizedType.typeInfo;
         assert typeInfo != null;
         List<TypeAndParameters> taps = new LinkedList<>();
@@ -109,14 +139,17 @@ public record ParameterizedTypeStreamer(boolean fullyQualified, boolean numericT
             typeInfo = next;
         }
         return taps.stream().map(tap -> singleType(inspectionProvider,
-                tap.typeInfo, tap.isPrimaryType, tap.typeParameters)).collect(Collectors.joining("."));
+                tap.typeInfo, tap.isPrimaryType, tap.typeParameters, visitedTypeParameters))
+                .collect(Collectors.joining("."));
     }
 
     static record TypeAndParameters(TypeInfo typeInfo, boolean isPrimaryType, List<ParameterizedType> typeParameters) {
     }
 
     private String singleType(InspectionProvider inspectionProvider,
-                              TypeInfo typeInfo, boolean isPrimaryType, List<ParameterizedType> typeParameters) {
+                              TypeInfo typeInfo, boolean isPrimaryType,
+                              List<ParameterizedType> typeParameters,
+                              Set<TypeParameter> visitedTypeParameters) {
         StringBuilder sb = new StringBuilder();
         if (fullyQualified && isPrimaryType) {
             sb.append(typeInfo.fullyQualifiedName);
@@ -125,8 +158,8 @@ public record ParameterizedTypeStreamer(boolean fullyQualified, boolean numericT
         }
         if (!typeParameters.isEmpty()) {
             sb.append("<");
-            sb.append(typeParameters.stream().map(tp -> stream(inspectionProvider, tp,false, false))
-                    .collect(Collectors.joining(", ")));
+            sb.append(typeParameters.stream().map(tp -> print(inspectionProvider, tp, false, false,
+                    visitedTypeParameters)).collect(Collectors.joining(", ")));
             sb.append(">");
         }
         return sb.toString();

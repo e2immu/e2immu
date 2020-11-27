@@ -41,14 +41,14 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
 
     //@Mark("freeze")
     public MethodItem(MethodInfo methodInfo) {
-        returnType = methodInfo.returnType().stream();
+        returnType = methodInfo.returnType().print();
         String parameters;
         if (methodInfo.methodInspection.isSet()) {
             List<String> parameterTypes = new ArrayList<>();
             for (ParameterInfo parameterInfo : methodInfo.methodInspection.get().getParameters()) {
                 ParameterItem parameterItem = new ParameterItem(parameterInfo);
                 parameterItems.add(parameterItem);
-                parameterTypes.add(parameterInfo.parameterizedType.stream());
+                parameterTypes.add(parameterInfo.parameterizedType.print());
             }
             parameters = String.join(", ", parameterTypes);
         } else {

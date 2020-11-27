@@ -30,12 +30,21 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.TRIGGER_BYTECODE_INSPECTION;
-
 // signatures formally defined in https://docs.oracle.com/javase/specs/jvms/se13/html/jvms-4.html
 
 public class ParameterizedTypeFactory {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParameterizedTypeFactory.class);
+    public static final char PLUS_EXTENDS = '+';
+    public static final char MINUS_SUPER = '-';
+    public static final char ARRAY_BRACKET = '[';
+    public static final char CHAR_L = 'L';
+    public static final char TYPE_PARAM_T = 'T';
+    public static final char WILDCARD_STAR = '*';
+    public static final char SEMICOLON_END_NAME = ';';
+    public static final char DOT = '.';
+    public static final char DOLLAR_SEPARATE_SUBTYPE = '$';
+    public static final char GT_END_TYPE_PARAMS = '>';
+    public static final char LT_START_TYPE_PARAMS = '<';
 
     static class Result {
         final ParameterizedType parameterizedType;
@@ -55,17 +64,17 @@ public class ParameterizedTypeFactory {
             char firstChar = signature.charAt(0);
 
             // wildcard, <?>
-            if ('*' == firstChar) {
+            if (WILDCARD_STAR == firstChar) {
                 return new Result(ParameterizedType.WILDCARD_PARAMETERIZED_TYPE, 1, false);
             }
 
             ParameterizedType.WildCard wildCard;
             // extends keyword; NOTE: order is important, extends and super need to come before arrays
-            if ('+' == firstChar || ':' == firstChar) {
+            if (PLUS_EXTENDS == firstChar) {
                 firstCharPos++;
                 firstChar = signature.charAt(firstCharPos);
                 wildCard = ParameterizedType.WildCard.EXTENDS;
-            } else if ('-' == firstChar) {
+            } else if (MINUS_SUPER == firstChar) {
                 firstCharPos++;
                 firstChar = signature.charAt(firstCharPos);
                 wildCard = ParameterizedType.WildCard.SUPER;
@@ -73,20 +82,20 @@ public class ParameterizedTypeFactory {
 
             // arrays
             int arrays = 0;
-            while ('[' == firstChar) {
+            while (ARRAY_BRACKET == firstChar) {
                 arrays++;
                 firstCharPos++;
                 firstChar = signature.charAt(firstCharPos);
             }
 
             // normal class or interface type
-            if ('L' == firstChar) {
+            if (CHAR_L == firstChar) {
                 return normalType(typeContext, findType, signature, arrays, wildCard, firstCharPos);
             }
 
             // type parameter
-            if ('T' == firstChar) {
-                int semiColon = signature.indexOf(';');
+            if (TYPE_PARAM_T == firstChar) {
+                int semiColon = signature.indexOf(SEMICOLON_END_NAME);
                 String typeParamName = signature.substring(firstCharPos + 1, semiColon);
                 NamedType namedType = typeContext.get(typeParamName, false);
                 if (namedType == null) {
@@ -133,8 +142,8 @@ public class ParameterizedTypeFactory {
         boolean typeNotFoundError = false;
 
         while (haveDot) {
-            semiColon = signature.indexOf(';', start);
-            int openGenerics = signature.indexOf('<', start);
+            semiColon = signature.indexOf(SEMICOLON_END_NAME, start);
+            int openGenerics = signature.indexOf(LT_START_TYPE_PARAMS, start);
             boolean haveGenerics = openGenerics >= 0 && openGenerics < semiColon;
             int endOfTypeInfo;
             int unmodifiedStart = start;
@@ -149,16 +158,16 @@ public class ParameterizedTypeFactory {
                     //} we should be repeating, e.g., BinaryOperator<T> extends BiFunction<T,T,T>
                     typeNotFoundError = typeNotFoundError || iterativeParsing.typeNotFoundError;
                 } while (iterativeParsing.more);
-                haveDot = iterativeParsing.endPos < signature.length() && signature.charAt(iterativeParsing.endPos) == '.';
+                haveDot = iterativeParsing.endPos < signature.length() && signature.charAt(iterativeParsing.endPos) == DOT;
                 if (haveDot) start = iterativeParsing.endPos + 1;
-                semiColon = signature.indexOf(';', iterativeParsing.endPos);
+                semiColon = signature.indexOf(SEMICOLON_END_NAME, iterativeParsing.endPos);
             } else {
-                int dot = signature.indexOf('.', start);
+                int dot = signature.indexOf(DOT, start);
                 haveDot = dot >= 0 && dot < semiColon;
                 if (haveDot) start = dot + 1;
                 endOfTypeInfo = haveDot ? dot : semiColon;
             }
-            if (path.length() > 0) path.append("$");
+            if (path.length() > 0) path.append(DOLLAR_SEPARATE_SUBTYPE);
             path.append(signature, unmodifiedStart, endOfTypeInfo);
         }
         String fqn = path.toString().replaceAll("[/$]", ".");
@@ -206,7 +215,7 @@ public class ParameterizedTypeFactory {
         IterativeParsing next = new IterativeParsing();
         next.result = result.parameterizedType;
         char atEnd = signature.charAt(end);
-        if (atEnd == '>') {
+        if (atEnd == GT_END_TYPE_PARAMS) {
             next.more = false;
             next.endPos = end + 1;
         } else {

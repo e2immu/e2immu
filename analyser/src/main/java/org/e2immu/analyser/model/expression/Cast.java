@@ -70,7 +70,7 @@ public class Cast implements Expression {
 
     @Override
     public String expressionString(int indent) {
-        return "(" + parameterizedType.stream() + ")" + bracketedExpressionString(indent, expression);
+        return "(" + parameterizedType.print() + ")" + bracketedExpressionString(indent, expression);
     }
 
     @Override

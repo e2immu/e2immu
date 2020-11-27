@@ -341,10 +341,10 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         public void readyToComputeFQN(InspectionProvider inspectionProvider) {
             fullyQualifiedName = owner.fullyQualifiedName + "." + name + "(" + parameters.stream()
-                    .map(p -> p.getParameterizedType().stream(inspectionProvider, p.isVarArgs()))
+                    .map(p -> p.getParameterizedType().print(inspectionProvider, p.isVarArgs()))
                     .collect(Collectors.joining(",")) + ")";
             distinguishingName = owner.fullyQualifiedName + "." + name + "(" + parameters.stream()
-                    .map(p -> p.getParameterizedType().distinguishingStream(inspectionProvider, p.isVarArgs()))
+                    .map(p -> p.getParameterizedType().distinguishingName(inspectionProvider, p.isVarArgs()))
                     .collect(Collectors.joining(",")) + ")";
             this.methodInfo = new MethodInfo(owner, name, fullyQualifiedName, distinguishingName, isConstructor);
             typeParameters.forEach(tp -> ((TypeParameterImpl) tp).setMethodInfo(methodInfo));

@@ -224,7 +224,7 @@ public class ObjectFlow {
     public String safeToString(Set<ObjectFlow> visited, boolean detailed) {
         visited.add(this);
         if (detailed) {
-            return "\n<flow of type " + type.stream() + ": " + origin + "@" + location +
+            return "\n<flow of type " + type.print() + ": " + origin + "@" + location +
                     (previous.isEmpty() ? "" : "; previous " + getPrevious().map(of -> of.safeToString(visited, false)).collect(Collectors.joining(", "))) +
                     (nonModifyingAccesses.isEmpty() ? "" : "; @NM access" + getNonModifyingAccesses().map(access -> access.safeToString(visited, false)).collect(Collectors.joining(", "))) +
                     (modifyingAccess == null ? "" : "; @M access" + modifyingAccess.safeToString(visited, false)) +
@@ -234,7 +234,7 @@ public class ObjectFlow {
                     (next.isEmpty() ? "" : "; next " + getNext().map(of -> of.safeToString(visited, false)).collect(Collectors.joining(", "))) +
                     ">";
         }
-        return "<flow of type " + type.stream() + ": " + origin + "@" + location + ">";
+        return "<flow of type " + type.print() + ": " + origin + "@" + location + ">";
     }
 
     public String visited() {

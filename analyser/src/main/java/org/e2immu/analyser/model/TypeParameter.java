@@ -18,9 +18,12 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.Either;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public interface TypeParameter extends NamedType {
@@ -34,11 +37,16 @@ public interface TypeParameter extends NamedType {
 
     List<ParameterizedType> getTypeBounds();
 
-    default String stream() {
+    default String print() {
+        return print(InspectionProvider.DEFAULT, new HashSet<>());
+    }
+
+    default String print(InspectionProvider inspectionProvider, Set<TypeParameter> visitedTypeParameters) {
         List<ParameterizedType> typeBounds = getTypeBounds();
         if (typeBounds.isEmpty()) return getName();
         return getName() + " extends " + getTypeBounds()
-                .stream().map(ParameterizedType::stream).collect(Collectors.joining(" & "));
+                .stream().map(pt -> pt.print(inspectionProvider, false, visitedTypeParameters))
+                .collect(Collectors.joining(" & "));
     }
 
     @Override

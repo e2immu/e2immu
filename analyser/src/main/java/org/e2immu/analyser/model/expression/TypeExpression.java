@@ -59,7 +59,7 @@ public class TypeExpression implements Expression {
 
     @Override
     public String expressionString(int indent) {
-        return parameterizedType.stream(); // TODO but there could be occasions where we need the FQN
+        return parameterizedType.print(); // TODO but there could be occasions where we need the FQN
     }
 
     @Override

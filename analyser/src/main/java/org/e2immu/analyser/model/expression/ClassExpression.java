@@ -72,7 +72,7 @@ public class ClassExpression implements ConstantExpression<ParameterizedType> {
 
     @Override
     public String expressionString(int indent) {
-        return parameterizedType.stream() + ".class";
+        return parameterizedType.print() + ".class";
     }
 
     @Override

@@ -139,7 +139,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
             });
         }
         if (parameterizedType != ParameterizedType.NO_TYPE_GIVEN_IN_LAMBDA) {
-            sb.append(parameterizedType.stream(parameterInspection.isVarArgs()));
+            sb.append(parameterizedType.print(parameterInspection.isVarArgs()));
             sb.append(" ");
         }
         sb.append(name);

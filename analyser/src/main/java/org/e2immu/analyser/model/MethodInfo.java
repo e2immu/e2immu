@@ -184,7 +184,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         }
 
         if (!isConstructor) {
-            sb.append(inspection.getReturnType().stream());
+            sb.append(inspection.getReturnType().print());
             sb.append(" ");
         }
         sb.append(name);
@@ -195,7 +195,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         if (!inspection.getExceptionTypes().isEmpty()) {
             sb.append(" throws ");
             sb.append(inspection.getExceptionTypes().stream()
-                    .map(ParameterizedType::stream).collect(Collectors.joining(", ")));
+                    .map(ParameterizedType::print).collect(Collectors.joining(", ")));
         }
         if (hasBeenInspected()) {
             if (methodAnalysis.isSet() && methodAnalysis.get().getFirstStatement() != null) {
