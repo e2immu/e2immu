@@ -296,7 +296,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
 
         // the iterative parser can call this method multiple times
         public Builder addTypeParameter(TypeParameter typeParameter) {
-            if(typeParameter.isMethodTypeParameter()) throw new UnsupportedOperationException();
+            if (typeParameter.isMethodTypeParameter()) throw new UnsupportedOperationException();
             if (typeParameter.getIndex() < typeParameters.size()) {
                 // we've seen the index before, overwrite
                 typeParameters.set(typeParameter.getIndex(), typeParameter);
@@ -335,7 +335,7 @@ public class TypeInspectionImpl extends InspectionImpl implements TypeInspection
                     fields(),
                     modifiers(),
                     subTypes(),
-                    ImmutableList.copyOf(getAnnotations()),
+                    getAnnotations(),
                     annotationMode());
         }
 

@@ -163,7 +163,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     public Messages fromAnnotationsIntoProperties(
-            boolean isParameter,
             boolean acceptVerify,
             List<AnnotationExpression> annotations,
             E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {

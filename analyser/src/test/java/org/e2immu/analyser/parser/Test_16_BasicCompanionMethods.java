@@ -43,7 +43,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
         super(true);
     }
 
-    public static final String LIST_SIZE = "instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()]";
+    public static final String LIST_SIZE = "instance type java.util.ArrayList[0 == java.util.Collection.this.size()]";
 
     @Test
     public void test0() throws IOException {

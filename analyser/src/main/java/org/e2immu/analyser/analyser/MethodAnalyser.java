@@ -180,8 +180,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         this.myFieldAnalysers = myFieldAnalysers.build();
 
         // copy CONTRACT annotations into the properties
-        methodAnalysis.fromAnnotationsIntoProperties(false, false,
-                methodInspection.getAnnotations(),
+        methodAnalysis.fromAnnotationsIntoProperties(false, methodInspection.getAnnotations(),
                 analyserContext.getE2ImmuAnnotationExpressions());
     }
 

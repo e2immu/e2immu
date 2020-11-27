@@ -21,7 +21,10 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.Pair;
@@ -148,7 +151,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
 
         methodInspection.getParameters().forEach(parameterInfo -> {
             ParameterAnalysisImpl.Builder builder = new ParameterAnalysisImpl.Builder(getPrimitives(), AnalysisProvider.DEFAULT_PROVIDER, parameterInfo);
-            messages.addAll(builder.fromAnnotationsIntoProperties(true, true,
+            messages.addAll(builder.fromAnnotationsIntoProperties(true,
                     parameterInfo.parameterInspection.get().getAnnotations(), e2ImmuAnnotationExpressions));
             parameterInfo.setAnalysis(builder.build());
         });
@@ -159,7 +162,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(false, getPrimitives(), AnalysisProvider.DEFAULT_PROVIDER,
                 methodInfo, parameterAnalyses);
 
-        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(false, true, methodInspection.getAnnotations(),
+        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(true, methodInspection.getAnnotations(),
                 e2ImmuAnnotationExpressions));
         methodInfo.setAnalysis(methodAnalysisBuilder.build());
     }

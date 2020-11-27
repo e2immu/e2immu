@@ -175,7 +175,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
     public static class Builder extends AbstractInspectionBuilder<Builder> implements MethodInspection {
         private final List<ParameterInspectionImpl.Builder> parameters = new ArrayList<>();
         private final Set<MethodModifier> modifiers = new HashSet<>();
-        private final List<AnnotationExpression> annotations = new ArrayList<>();
         private final List<TypeParameter> typeParameters = new ArrayList<>();
         private final List<MethodInfo> implementationsOf = new ArrayList<>();
         public final TypeInfo owner;
@@ -328,7 +327,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                     ImmutableSet.copyOf(modifiers),
                     ImmutableList.copyOf(immutableParameters),
                     returnType,
-                    ImmutableList.copyOf(annotations),
+                    getAnnotations(),
                     ImmutableList.copyOf(typeParameters),
                     ImmutableList.copyOf(exceptionTypes),
                     ImmutableList.copyOf(implementationsOf),
