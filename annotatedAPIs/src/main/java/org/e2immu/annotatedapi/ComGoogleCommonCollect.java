@@ -17,6 +17,7 @@
 
 package org.e2immu.annotatedapi;
 
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.annotation.*;
@@ -35,6 +36,15 @@ public class ComGoogleCommonCollect {
         @NotModified
         ImmutableList<E> asList() { return null;  }
 
+        @Container(builds = ImmutableCollection.class)
+        public static class Builder<E> {
+
+            @NotNull
+            @Independent
+            @NotModified
+            public ImmutableCollection<E> build() { return null; }
+        }
+
     }
 
     @E2Container
@@ -43,7 +53,6 @@ public class ComGoogleCommonCollect {
         @Container(builds = ImmutableList.class)
         public static class Builder<E> {
 
-            int build$Transfer$Size(int size) { return size; }
             @NotNull
             @Independent
             @NotModified
@@ -63,7 +72,7 @@ public class ComGoogleCommonCollect {
         @Container(builds = ImmutableSet.class)
         public static class Builder<E> {
 
-            int build$Transfer$Size(int size) { return size; }
+            // we cannot transfer size, as the builder has no size method! int build$Transfer$Size(int size) { return size; }
             @NotNull
             @Independent
             @NotModified
