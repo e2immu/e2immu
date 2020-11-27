@@ -1151,11 +1151,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public boolean isNotNull0(Value value) {
-            return MultiLevel.isEffectivelyNotNull(getProperty(value, VariableProperty.NOT_NULL));
-        }
-
-        @Override
         public Value currentValue(Variable variable) {
             VariableInfo vi = statementAnalysis.find(analyserContext, variable);
             Value value = vi.getValue();

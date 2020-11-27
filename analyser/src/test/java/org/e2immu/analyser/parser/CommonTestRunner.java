@@ -88,11 +88,11 @@ public abstract class CommonTestRunner {
         Configuration configuration = new Configuration.Builder()
                 .setDebugConfiguration(debugConfiguration)
                 .setAnalyserConfiguration(analyserConfiguration)
-                .addDebugLogTargets(List.of(ANALYSER, INSPECT, RESOLVE,
+                .addDebugLogTargets(List.of(ANALYSER, // INSPECT, RESOLVE,
 
                         TRANSFORM,
                         LAMBDA,
-                        RESOLVE,
+                       // RESOLVE,
                         DELAYED, SIZE,
                         //VARIABLE_PROPERTIES,
                         FINAL,

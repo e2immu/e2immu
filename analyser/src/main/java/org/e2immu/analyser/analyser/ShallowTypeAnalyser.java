@@ -30,6 +30,7 @@ import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.Either;
+import org.e2immu.analyser.util.Logger;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,9 +48,14 @@ public class ShallowTypeAnalyser implements AnalyserContext {
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
     private final Map<TypeInfo, TypeAnalysis> typeAnalyses;
     private final Map<MethodInfo, MethodAnalysis> methodAnalyses;
-    private final Map<MethodInfo, Either<MethodAnalyser, MethodAnalysisImpl.Builder>> buildersForCompanionAnalysis = new HashMap<>();
+    private final Map<MethodInfo, Either<MethodAnalyser, MethodAnalysisImpl.Builder>> buildersForCompanionAnalysis = new LinkedHashMap<>();
 
     public ShallowTypeAnalyser(List<TypeInfo> types, Configuration configuration, Primitives primitives, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+
+        if(Logger.isLogEnabled(ANALYSER)) {
+            log(ANALYSER, "Order of shallow analysis:");
+            types.forEach(typeInfo -> log(ANALYSER, "  Type "+typeInfo.fullyQualifiedName));
+        }
         this.primitives = primitives;
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
@@ -191,7 +197,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         // do the types and fields
         typeAnalyses.forEach((typeInfo, typeAnalysis) -> {
             // do types and fields; no need to recurse into sub-types, they're included among the primary types
-            shallowTypeAndFieldAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis, primitives, e2ImmuAnnotationExpressions);
+            shallowTypeAndFieldAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis, e2ImmuAnnotationExpressions);
         });
 
         // then the methods
@@ -272,10 +278,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
 
     private void shallowTypeAndFieldAnalysis(TypeInfo typeInfo,
                                              TypeAnalysisImpl.Builder typeAnalysisBuilder,
-                                             Primitives primitives,
                                              E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
-        log(RESOLVE, "copy annotations into properties: {}", typeInfo.fullyQualifiedName);
-
         TypeInspection typeInspection = typeInfo.typeInspection.get();
         messages.addAll(typeAnalysisBuilder.fromAnnotationsIntoProperties(false, true, typeInspection.getAnnotations(), e2ImmuAnnotationExpressions));
 
@@ -284,11 +287,11 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         TypeAnalysis typeAnalysis = typeAnalysisBuilder.build();
         typeInfo.typeAnalysis.set(typeAnalysis);
 
-        typeInspection.fields().forEach(fieldInfo -> shallowFieldAnalyser(fieldInfo, typeAnalysis));
+        typeInspection.fields().forEach(this::shallowFieldAnalyser);
     }
 
 
-    public void shallowFieldAnalyser(FieldInfo fieldInfo, TypeAnalysis typeAnalysis) {
+    public void shallowFieldAnalyser(FieldInfo fieldInfo) {
         FieldAnalysisImpl.Builder fieldAnalysisBuilder = new FieldAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER,
                 fieldInfo, fieldInfo.owner.typeAnalysis.get());
 

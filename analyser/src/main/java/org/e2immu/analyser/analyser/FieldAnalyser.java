@@ -781,12 +781,6 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public boolean isNotNull0(Value value) {
-            // will crash for variable values, but that should be fine
-            return MultiLevel.isEffectivelyNotNull(value.getProperty(this, VariableProperty.NOT_NULL));
-        }
-
-        @Override
         public TypeInfo getCurrentType() {
             return fieldInfo.owner;
         }

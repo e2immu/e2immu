@@ -266,8 +266,6 @@ public class TypeAnalyser extends AbstractAnalyser {
                 mainMethod.methodInspection.get().getCompanionMethods().keySet().stream()
                         .filter(mi -> mi.action() == CompanionMethodName.Action.ASPECT).collect(Collectors.toList());
         if (!companionMethodNames.isEmpty()) {
-            log(ANALYSER, "Find aspects in {}", typeAnalysis.typeInfo.fullyQualifiedName);
-
             for (CompanionMethodName companionMethodName : companionMethodNames) {
                 if (companionMethodName.aspect() == null) {
                     throw new UnsupportedOperationException("Aspect is null in aspect definition of " +
@@ -281,6 +279,8 @@ public class TypeAnalyser extends AbstractAnalyser {
                             mainMethod.fullyQualifiedName());
                 }
             }
+            log(ANALYSER, "Found aspects {} in {}, {}", typeAnalysis.aspects.stream().map(Map.Entry::getKey).collect(Collectors.joining(",")),
+                    typeAnalysis.typeInfo.fullyQualifiedName, mainMethod.fullyQualifiedName);
         }
     }
 

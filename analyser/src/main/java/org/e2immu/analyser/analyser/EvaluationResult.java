@@ -28,6 +28,8 @@ import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -38,6 +40,7 @@ import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
 import static org.e2immu.analyser.util.Logger.log;
 
 public class EvaluationResult {
+    private static final Logger LOGGER = LoggerFactory.getLogger(EvaluationResult.class);
 
     // mostly to set properties and raise errors
     private final List<StatementAnalyser.StatementAnalysisModification> modifications;
@@ -294,14 +297,22 @@ public class EvaluationResult {
         }
 
         public Builder raiseError(String messageString) {
-            Message message = Message.newMessage(evaluationContext.getLocation(), messageString);
-            addToModifications(statementAnalyser.new RaiseErrorMessage(message));
+            if (statementAnalyser != null) {
+                Message message = Message.newMessage(evaluationContext.getLocation(), messageString);
+                addToModifications(statementAnalyser.new RaiseErrorMessage(message));
+            } else { // e.g. companion analyser
+                LOGGER.warn("Analyser error: {}", messageString);
+            }
             return this;
         }
 
         public void raiseError(String messageString, String extra) {
-            Message message = Message.newMessage(evaluationContext.getLocation(), messageString, extra);
-            addToModifications(statementAnalyser.new RaiseErrorMessage(message));
+            if (statementAnalyser != null) {
+                Message message = Message.newMessage(evaluationContext.getLocation(), messageString, extra);
+                addToModifications(statementAnalyser.new RaiseErrorMessage(message));
+            } else {
+                LOGGER.warn("Analyser error: {}, {}", messageString, extra);
+            }
         }
 
         public Builder addMessage(Message message) {

@@ -17,6 +17,14 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.value.EqualsValue;
+import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+
 public abstract class AbstractEvaluationContextImpl implements EvaluationContext {
 
     public final int iteration;
@@ -38,4 +46,15 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
         return conditionManager;
     }
 
+    @Override
+    public boolean isNotNull0(Value value) {
+        if(conditionManager.haveNonEmptyState() && value != UnknownValue.NO_VALUE) {
+            Value valueIsNull = EqualsValue.equals(this, NullValue.NULL_VALUE, value, ObjectFlow.NO_FLOW);
+            ConditionManager newCm = conditionManager.addCondition(this, valueIsNull);
+            if(newCm.condition instanceof BoolValue boolValue) {
+                return boolValue.value;
+            }
+        }
+        return MultiLevel.isEffectivelyNotNull(getProperty(value, VariableProperty.NOT_NULL));
+    }
 }
