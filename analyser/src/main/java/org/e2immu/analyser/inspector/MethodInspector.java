@@ -79,7 +79,7 @@ public class MethodInspector {
             Expression expression = expressionContext.parseExpression(amd.getDefaultValue());
             Block body = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expression)).build();
             builder.setInspectedBlock(body);
-            ParameterizedType returnType = ParameterizedType.from(expressionContext.typeContext, amd.getType());
+            ParameterizedType returnType = ParameterizedTypeFactory.from(expressionContext.typeContext, amd.getType());
             builder.setReturnType(returnType);
             typeMapBuilder.registerMethodInspection(builder);
         }
@@ -180,7 +180,7 @@ public class MethodInspector {
                 addModifiers(builder, md.getModifiers());
                 if (isInterface) builder.addModifier(MethodModifier.PUBLIC);
                 addExceptionTypes(builder, md.getThrownExceptions(), newContext.typeContext);
-                ParameterizedType pt = ParameterizedType.from(newContext.typeContext, md.getType());
+                ParameterizedType pt = ParameterizedTypeFactory.from(newContext.typeContext, md.getType());
                 builder.setReturnType(pt);
 
                 typeMapBuilder.registerMethodInspection(builder);
@@ -207,7 +207,7 @@ public class MethodInspector {
                                           NodeList<ReferenceType> thrownExceptions,
                                           TypeContext typeContext) {
         for (ReferenceType referenceType : thrownExceptions) {
-            ParameterizedType pt = ParameterizedType.from(typeContext, referenceType);
+            ParameterizedType pt = ParameterizedTypeFactory.from(typeContext, referenceType);
             builder.addExceptionType(pt);
         }
     }
@@ -226,7 +226,7 @@ public class MethodInspector {
                                       TypeInspector.DollarResolver dollarResolver) {
         int i = 0;
         for (Parameter parameter : parameters) {
-            ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, parameter.getType(),
+            ParameterizedType pt = ParameterizedTypeFactory.from(expressionContext.typeContext, parameter.getType(),
                     parameter.isVarArgs(), dollarResolver);
             ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder(pt, parameter.getNameAsString(), i++);
             pib.inspect(parameter, expressionContext, parameter.isVarArgs());

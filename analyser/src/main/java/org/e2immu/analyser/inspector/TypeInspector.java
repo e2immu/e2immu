@@ -252,7 +252,7 @@ public class TypeInspector {
         }
         if (builder.typeNature() == TypeNature.CLASS) {
             if (!cid.getExtendedTypes().isEmpty()) {
-                ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, cid.getExtendedTypes(0));
+                ParameterizedType parameterizedType = ParameterizedTypeFactory.from(expressionContext.typeContext, cid.getExtendedTypes(0));
                 // why this check? hasBeenDefined == true signifies Java parsing; == false is annotated APIs.
                 // the annotated APIs are backed by .class files, which can be inspected with byte code; there, we only have
                 // fully qualified names. In Java, we must add type names of parent's subtypes etc.
@@ -260,14 +260,14 @@ public class TypeInspector {
                 builder.setParentClass(parameterizedType);
             }
             for (ClassOrInterfaceType extended : cid.getImplementedTypes()) {
-                ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, extended);
+                ParameterizedType parameterizedType = ParameterizedTypeFactory.from(expressionContext.typeContext, extended);
                 if (fullInspection) ensureLoaded(expressionContext, parameterizedType);
                 builder.addInterfaceImplemented(parameterizedType);
             }
         } else {
             if (builder.typeNature() != TypeNature.INTERFACE) throw new UnsupportedOperationException();
             for (ClassOrInterfaceType extended : cid.getExtendedTypes()) {
-                ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, extended);
+                ParameterizedType parameterizedType = ParameterizedTypeFactory.from(expressionContext.typeContext, extended);
                 if (fullInspection) ensureLoaded(expressionContext, parameterizedType);
                 builder.addInterfaceImplemented(parameterizedType);
             }
@@ -374,7 +374,7 @@ public class TypeInspector {
                         .map(FieldModifier::from)
                         .collect(Collectors.toList());
                 for (VariableDeclarator vd : fd.getVariables()) {
-                    ParameterizedType pt = ParameterizedType.from(expressionContext.typeContext, vd.getType());
+                    ParameterizedType pt = ParameterizedTypeFactory.from(expressionContext.typeContext, vd.getType());
 
                     String name = vd.getNameAsString();
                     FieldInfo fieldInfo = new FieldInfo(pt, name, typeInfo);

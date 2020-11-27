@@ -311,10 +311,10 @@ public class ExpressionContext {
                 UnionType unionType = parameter.getType().asUnionType();
                 unionOfTypes = unionType.getElements()
                         .stream()
-                        .map(rt -> ParameterizedType.from(typeContext, rt)).collect(Collectors.toList());
+                        .map(rt -> ParameterizedTypeFactory.from(typeContext, rt)).collect(Collectors.toList());
                 typeOfVariable = typeContext.typeMapBuilder.get("java.lang.Exception").asParameterizedType(typeContext);
             } else {
-                typeOfVariable = ParameterizedType.from(typeContext, parameter.getType());
+                typeOfVariable = ParameterizedTypeFactory.from(typeContext, parameter.getType());
                 unionOfTypes = List.of(typeOfVariable);
             }
             String name = parameter.getName().asString();
@@ -369,7 +369,7 @@ public class ExpressionContext {
         VariableDeclarationExpr vde = forEachStmt.getVariable();
         LocalVariable localVariable = new LocalVariable.LocalVariableBuilder()
                 .setName(vde.getVariables().get(0).getNameAsString())
-                .setParameterizedType(ParameterizedType.from(typeContext, vde.getVariables().get(0).getType()))
+                .setParameterizedType(ParameterizedTypeFactory.from(typeContext, vde.getVariables().get(0).getType()))
                 .build();
         org.e2immu.analyser.model.Expression expression = parseExpression(forEachStmt.getIterable());
         newVariableContext.add(typeContext, localVariable, List.of(expression));
@@ -418,7 +418,7 @@ public class ExpressionContext {
             }
             if (expression.isCastExpr()) {
                 CastExpr castExpr = (CastExpr) expression;
-                ParameterizedType parameterizedType = ParameterizedType.from(typeContext, castExpr.getType());
+                ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, castExpr.getType());
                 return new Cast(parseExpression(castExpr.getExpression()), parameterizedType);
             }
             if (expression.isBinaryExpr()) {
@@ -492,7 +492,7 @@ public class ExpressionContext {
                         if (variable != null) {
                             scope = new VariableExpression(variable);
                         } else {
-                            ParameterizedType parameterizedType = ParameterizedType.from(typeContext, cit.getScope().get());
+                            ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, cit.getScope().get());
                             scope = new TypeExpression(parameterizedType);
                         }
                         return ParseFieldAccessExpr.createFieldAccess(this, scope, cit.getNameAsString(), expression.getBegin().orElseThrow());
@@ -504,12 +504,12 @@ public class ExpressionContext {
                         return new VariableExpression(variable);
                     }
                 }
-                ParameterizedType parameterizedType = ParameterizedType.from(typeContext, typeExpr.getType());
+                ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, typeExpr.getType());
                 return new TypeExpression(parameterizedType);
             }
             if (expression.isClassExpr()) {
                 ClassExpr classExpr = (ClassExpr) expression;
-                ParameterizedType parameterizedType = ParameterizedType.from(typeContext, classExpr.getType());
+                ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, classExpr.getType());
                 return new ClassExpression(typeContext.getPrimitives(), parameterizedType);
             }
             if (expression.isNameExpr()) {
@@ -522,7 +522,7 @@ public class ExpressionContext {
             if (expression.isVariableDeclarationExpr()) {
                 VariableDeclarationExpr vde = (VariableDeclarationExpr) expression;
                 VariableDeclarator var = vde.getVariable(0);
-                ParameterizedType parameterizedType = ParameterizedType.from(typeContext, var.getType());
+                ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, var.getType());
                 LocalVariable.LocalVariableBuilder localVariable = new LocalVariable.LocalVariableBuilder()
                         .setName(var.getNameAsString())
                         .setParameterizedType(parameterizedType);
@@ -600,7 +600,7 @@ public class ExpressionContext {
             if (expression.isInstanceOfExpr()) {
                 InstanceOfExpr instanceOfExpr = expression.asInstanceOfExpr();
                 Expression e = parseExpression(instanceOfExpr.getExpression());
-                ParameterizedType type = ParameterizedType.from(typeContext, instanceOfExpr.getType());
+                ParameterizedType type = ParameterizedTypeFactory.from(typeContext, instanceOfExpr.getType());
                 return new InstanceOf(e, type, typeContext.getPrimitives().booleanParameterizedType);
             }
             throw new UnsupportedOperationException("Unknown expression type " + expression +

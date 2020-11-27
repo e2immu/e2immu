@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.inspector.ParameterizedTypeFactory;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.SetOnce;
@@ -100,7 +101,7 @@ public class TypeParameterImpl implements TypeParameter {
         List<ParameterizedType> typeBounds = new ArrayList<>();
         typeParameter.getTypeBound().forEach(cit -> {
             log(INSPECT, "Inspecting type parameter {}", cit.getName().asString());
-            ParameterizedType bound = ParameterizedType.from(typeContext, cit);
+            ParameterizedType bound = ParameterizedTypeFactory.from(typeContext, cit);
             typeBounds.add(bound);
         });
         setTypeBounds(typeBounds);

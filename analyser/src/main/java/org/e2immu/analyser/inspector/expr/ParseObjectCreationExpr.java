@@ -19,13 +19,10 @@
 package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
-import org.e2immu.analyser.inspector.ExpressionContext;
-import org.e2immu.analyser.inspector.MethodTypeParameterMap;
-import org.e2immu.analyser.inspector.TypeInspector;
+import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
-import org.e2immu.analyser.inspector.TypeContext;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,7 +31,7 @@ import java.util.Map;
 
 public class ParseObjectCreationExpr {
     public static Expression parse(ExpressionContext expressionContext, ObjectCreationExpr objectCreationExpr, MethodTypeParameterMap singleAbstractMethod) {
-        ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, objectCreationExpr.getType());
+        ParameterizedType parameterizedType = ParameterizedTypeFactory.from(expressionContext.typeContext, objectCreationExpr.getType());
 
         if (objectCreationExpr.getAnonymousClassBody().isPresent()) {
             // TODO parameterizedType can be Iterator<>, we will need to detect the correct type from context if needed

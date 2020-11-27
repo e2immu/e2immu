@@ -108,7 +108,7 @@ public class TypeContext implements InspectionProvider {
     }
 
     public TypeInfo getFullyQualified(Class<?> clazz) {
-        return getFullyQualified(clazz.getName(), true);
+        return getFullyQualified(clazz.getCanonicalName(), true);
     }
 
     public TypeInfo getFullyQualified(String fullyQualifiedName, boolean complain) {

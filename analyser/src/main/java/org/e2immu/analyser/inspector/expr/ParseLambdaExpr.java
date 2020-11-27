@@ -59,7 +59,7 @@ public class ParseLambdaExpr {
         for (Parameter parameter : lambdaExpr.getParameters()) {
             ParameterizedType parameterType = null;
             if (parameter.getType() != null && !parameter.getType().asString().isEmpty()) {
-                parameterType = ParameterizedType.from(expressionContext.typeContext, parameter.getType());
+                parameterType = ParameterizedTypeFactory.from(expressionContext.typeContext, parameter.getType());
             }
             if (parameterType == null) {
                 // the type hint is an interface with exactly one abstract method (not "default", not static)

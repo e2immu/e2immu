@@ -20,22 +20,19 @@ package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.ArrayCreationExpr;
 import org.e2immu.analyser.analyser.AnalysisProvider;
-import org.e2immu.analyser.inspector.ExpressionContext;
-import org.e2immu.analyser.inspector.MethodInspectionImpl;
-import org.e2immu.analyser.inspector.ParameterInspectionImpl;
+import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.inspector.TypeContext;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class ParseArrayCreationExpr {
     public static Expression parse(ExpressionContext expressionContext, ArrayCreationExpr arrayCreationExpr) {
-        ParameterizedType parameterizedType = ParameterizedType.from(expressionContext.typeContext, arrayCreationExpr.createdType());
+        ParameterizedType parameterizedType = ParameterizedTypeFactory.from(expressionContext.typeContext, arrayCreationExpr.createdType());
         ArrayInitializer arrayInitializer = arrayCreationExpr.getInitializer().map(i ->
                 new ArrayInitializer(expressionContext.typeContext.getPrimitives(), i.getValues().stream()
                         .map(expressionContext::parseExpression).collect(Collectors.toList()))).orElse(null);

@@ -33,6 +33,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -78,10 +80,14 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
         };
 
         TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo charSequence = typeMap.get(CharSequence.class);
-            MethodInfo length = charSequence.findUniqueMethod("length", 0);
-            int modified = length.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
+            TypeInfo collection = typeMap.get(Collection.class);
+            MethodInfo size = collection.findUniqueMethod("size", 0);
+            int modified = size.methodAnalysis.get().getProperty(VariableProperty.MODIFIED);
             Assert.assertEquals(Level.FALSE, modified);
+
+            TypeInfo list = typeMap.get(List.class);
+            MethodInfo listSize = list.findUniqueMethod("size", 0);
+            Assert.assertEquals(Level.FALSE, listSize.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
         };
 
         // two errors: two unused parameters
