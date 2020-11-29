@@ -63,7 +63,8 @@ public interface ParameterAnalysis extends Analysis {
         if (isBeingAnalysed()) {
             theStream = mine;
         } else {
-            IntStream overrideValues = analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides().stream()
+            IntStream overrideValues = analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides(analysisProvider)
+                    .stream()
                     .map(methodAnalysis -> methodAnalysis.getParameterAnalyses().get(parameterInfo.index))
                     .mapToInt(parameterAnalysis -> parameterAnalysis.getPropertyAsIs(variableProperty));
             theStream = IntStream.concat(mine, overrideValues);

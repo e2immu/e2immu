@@ -183,7 +183,7 @@ public class ParseAndInspect {
 
         String path = classPath.fqnToPath(fqn, ".class");
         if (path == null) throw new UnsupportedOperationException("Cannot find " + fqn);
-        return typeMapBuilder.getOrCreateFromPath(path, TRIGGER_BYTECODE_INSPECTION);
+        return typeMapBuilder.getOrCreateFromPath(StringUtil.stripDotClass(path), TRIGGER_BYTECODE_INSPECTION);
     }
 
 

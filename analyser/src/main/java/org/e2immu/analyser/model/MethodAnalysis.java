@@ -61,7 +61,7 @@ public interface MethodAnalysis extends Analysis {
         return UnknownValue.NO_VALUE;
     }
 
-    default Set<MethodAnalysis> getOverrides() {
+    default Set<MethodAnalysis> getOverrides(AnalysisProvider analysisProvider) {
         return Set.of();
     }
 
@@ -141,20 +141,20 @@ public interface MethodAnalysis extends Analysis {
                         typeAnalysis.getProperty(VariableProperty.IMMUTABLE) == MultiLevel.EFFECTIVELY_E2IMMUTABLE) {
                     return Level.FALSE;
                 }
-                return getPropertyCheckOverrides(VariableProperty.MODIFIED);
+                return getPropertyCheckOverrides(analysisProvider, VariableProperty.MODIFIED);
 
             case FLUENT:
             case IDENTITY:
 
             case INDEPENDENT:
                 // TODO if we have an array constructor created on-the-fly, it should be EFFECTIVELY INDEPENDENT
-                return getPropertyCheckOverrides(variableProperty);
+                return getPropertyCheckOverrides(analysisProvider, variableProperty);
 
             case NOT_NULL:
                 if (Primitives.isPrimitiveExcludingVoid(returnType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 int fluent = getProperty(VariableProperty.FLUENT);
                 if (fluent == Level.TRUE) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                return getPropertyCheckOverrides(VariableProperty.NOT_NULL);
+                return getPropertyCheckOverrides(analysisProvider, VariableProperty.NOT_NULL);
 
             case IMMUTABLE:
                 assert returnType != ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR : "void method";
@@ -166,7 +166,7 @@ public interface MethodAnalysis extends Analysis {
                 assert returnType != ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR : "void method";
                 int container = returnType.getProperty(analysisProvider, VariableProperty.CONTAINER);
                 if (container == Level.DELAY) return Level.DELAY;
-                return Level.best(getPropertyCheckOverrides(VariableProperty.CONTAINER), container);
+                return Level.best(getPropertyCheckOverrides(analysisProvider, VariableProperty.CONTAINER), container);
 
             default:
         }
@@ -179,15 +179,16 @@ public interface MethodAnalysis extends Analysis {
         return Level.best(internalGetProperty(VariableProperty.IMMUTABLE), immutableTypeAfterEventual);
     }
 
-    default int valueFromOverrides(VariableProperty variableProperty) {
-        return getOverrides().stream().mapToInt(ma -> ma.getPropertyAsIs(variableProperty)).max().orElse(Level.DELAY);
+    default int valueFromOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
+        return getOverrides(analysisProvider).stream()
+                .mapToInt(ma -> ma.getPropertyAsIs(variableProperty)).max().orElse(Level.DELAY);
     }
 
-    private int getPropertyCheckOverrides(VariableProperty variableProperty) {
+    private int getPropertyCheckOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
         IntStream mine = IntStream.of(getPropertyAsIs(variableProperty));
         IntStream theStream;
         if (getMethodInfo().shallowAnalysis()) {
-            IntStream overrideValues = getOverrides().stream().mapToInt(ma -> ma.getPropertyAsIs(variableProperty));
+            IntStream overrideValues = getOverrides(analysisProvider).stream().mapToInt(ma -> ma.getPropertyAsIs(variableProperty));
             theStream = IntStream.concat(mine, overrideValues);
         } else {
             theStream = mine;

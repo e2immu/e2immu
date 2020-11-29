@@ -299,22 +299,29 @@ public class Resolver {
                                           DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
         // METHOD AND CONSTRUCTOR, without the SAMs in FIELDS
         typeInspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
-            try {
-                MethodInspection methodInspection = expressionContext.typeContext.getMethodInspection(methodInfo);
-                assert methodInspection != null :
-                        "Method inspection for " + methodInfo.name + " in " + methodInfo.typeInfo.fullyQualifiedName + " not found";
-                boolean haveCompanionMethods = !methodInspection.getCompanionMethods().isEmpty();
-                if (haveCompanionMethods) {
-                    log(RESOLVE, "Start resolving companion methods of {}", methodInspection.getDistinguishingName());
-                }
+
+            MethodInspection methodInspection = expressionContext.typeContext.getMethodInspection(methodInfo);
+            assert methodInspection != null :
+                    "Method inspection for " + methodInfo.name + " in " + methodInfo.typeInfo.fullyQualifiedName + " not found";
+            boolean haveCompanionMethods = !methodInspection.getCompanionMethods().isEmpty();
+            if (haveCompanionMethods) {
+                log(RESOLVE, "Start resolving companion methods of {}", methodInspection.getDistinguishingName());
+
                 methodInspection.getCompanionMethods().values().forEach(companionMethod -> {
                     MethodInspection companionMethodInspection = expressionContext.typeContext.getMethodInspection(companionMethod);
-                    doMethodOrConstructor(companionMethod, (MethodInspectionImpl.Builder)
-                            companionMethodInspection, expressionContext, methodFieldSubTypeGraph);
+                    try {
+                        doMethodOrConstructor(companionMethod, (MethodInspectionImpl.Builder)
+                                companionMethodInspection, expressionContext, methodFieldSubTypeGraph);
+                    } catch (RuntimeException rte) {
+                        LOGGER.warn("Caught runtime exception while resolving companion method {} in {}", companionMethod.name,
+                                methodInfo.typeInfo.fullyQualifiedName);
+                        throw rte;
+                    }
                 });
-                if (haveCompanionMethods) {
-                    log(RESOLVE, "Finished resolving companion methods of {}", methodInspection.getDistinguishingName());
-                }
+
+                log(RESOLVE, "Finished resolving companion methods of {}", methodInspection.getDistinguishingName());
+            }
+            try {
                 doMethodOrConstructor(methodInfo, (MethodInspectionImpl.Builder) methodInspection,
                         expressionContext, methodFieldSubTypeGraph);
             } catch (RuntimeException rte) {

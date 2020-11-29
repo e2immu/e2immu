@@ -102,8 +102,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public Set<MethodAnalysis> getOverrides() {
-        return overrides(AnalysisProvider.DEFAULT_PROVIDER, methodInfo);
+    public Set<MethodAnalysis> getOverrides(AnalysisProvider analysisProvider) {
+        return overrides(analysisProvider, methodInfo, this);
     }
 
     @Override
@@ -174,7 +174,6 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public static class Builder extends AbstractAnalysisBuilder implements MethodAnalysis {
         public final ParameterizedType returnType;
         public final MethodInfo methodInfo;
-        public final SetOnce<Set<MethodAnalysis>> overrides = new SetOnce<>();
         private final SetOnce<StatementAnalysis> firstStatement = new SetOnce<>();
         public final List<ParameterAnalysis> parameterAnalyses;
         private final AnalysisProvider analysisProvider;
@@ -368,19 +367,16 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             return !Primitives.isVoid(returnType) && returnType.isImplicitlyOrAtLeastEventuallyE2Immutable(analysisProvider) != Boolean.TRUE;
         }
 
+        // the name refers to the @Mark and @Only annotations. It is the data for this annotation.
         protected void writeMarkAndOnly(MarkAndOnly markAndOnly) {
             ContractMark contractMark = new ContractMark(markAndOnly.markLabel);
             preconditionForMarkAndOnly.set(List.of(contractMark));
             this.markAndOnly.set(markAndOnly);
         }
 
-        // the name refers to the @Mark and @Only annotations. It is the data for this annotation.
-
-        public Set<MethodAnalysis> getOverrides() {
-            if (overrides.isSet()) return overrides.get();
-            Set<MethodAnalysis> computed = overrides(analysisProvider, methodInfo);
-            overrides.set(ImmutableSet.copyOf(computed));
-            return computed;
+        @Override
+        public Set<MethodAnalysis> getOverrides(AnalysisProvider analysisProvider) {
+            return overrides(analysisProvider, methodInfo, this);
         }
 
         @Override
@@ -420,10 +416,10 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
     }
 
-    private static Set<MethodAnalysis> overrides(AnalysisProvider analysisProvider, MethodInfo methodInfo) {
+    private static Set<MethodAnalysis> overrides(AnalysisProvider analysisProvider, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         try {
             return methodInfo.methodResolution.get().overrides().stream()
-                    .map(mi -> analysisProvider.getMethodAnalysis(methodInfo))
+                    .map(mi -> mi == methodInfo ? methodAnalysis: analysisProvider.getMethodAnalysis(methodInfo))
                     .collect(Collectors.toSet());
         } catch (RuntimeException rte) {
             LOGGER.error("Cannot compute method analysis of {}", methodInfo.distinguishingName());

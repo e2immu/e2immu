@@ -118,9 +118,16 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
     @Override
     public void setAnalysis(Analysis analysis) {
-        methodAnalysis.set((MethodAnalysis) analysis);
+        if (analysis instanceof MethodAnalysis ma) {
+            methodAnalysis.set(ma);
+            Iterator<ParameterAnalysis> it = ma.getParameterAnalyses().iterator();
+            for (ParameterInfo parameterInfo : methodInspection.get().getParameters()) {
+                if (!it.hasNext()) throw new UnsupportedOperationException();
+                ParameterAnalysis parameterAnalysis = it.next();
+                parameterInfo.setAnalysis(parameterAnalysis);
+            }
+        } else throw new UnsupportedOperationException();
     }
-
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {

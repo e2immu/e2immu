@@ -80,9 +80,11 @@ public class ParameterAnalyser {
 
     private void checkWorseThanParent() {
         for (VariableProperty variableProperty : VariableProperty.CHECK_WORSE_THAN_PARENT) {
-            int valueFromOverrides = analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides().stream()
+            int valueFromOverrides = analysisProvider.getMethodAnalysis(parameterInfo.owner).getOverrides(analysisProvider)
+                    .stream()
                     .map(ma -> ma.getMethodInfo().methodInspection.get().getParameters().get(parameterInfo.index))
-                    .mapToInt(pi -> analysisProvider.getParameterAnalysis(pi).getProperty(variableProperty)).max().orElse(Level.DELAY);
+                    .mapToInt(pi -> analysisProvider.getParameterAnalysis(pi).getProperty(variableProperty))
+                    .max().orElse(Level.DELAY);
             int value = parameterAnalysis.getProperty(variableProperty);
             if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
                 boolean complain = variableProperty == VariableProperty.MODIFIED ? value > valueFromOverrides : value < valueFromOverrides;

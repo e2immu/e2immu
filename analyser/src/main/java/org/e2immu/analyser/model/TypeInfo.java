@@ -76,9 +76,16 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     public TypeInfo(String packageName, String simpleName) {
+        assert packageName != null && !packageName.isBlank();
+        assert simpleName != null && !simpleName.isBlank();
+
         this.simpleName = Objects.requireNonNull(simpleName);
         this.packageNameOrEnclosingType = Either.left(packageName);
-        this.fullyQualifiedName = packageName + "." + simpleName;
+        if (Primitives.JAVA_PRIMITIVE.equals(packageName)) {
+            this.fullyQualifiedName = simpleName;
+        } else {
+            this.fullyQualifiedName = packageName + "." + simpleName;
+        }
     }
 
     public TypeInfo(TypeInfo enclosingType, String simpleName) {

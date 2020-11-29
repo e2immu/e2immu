@@ -58,6 +58,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
     private final Map<ParameterInfo, ParameterAnalyser> parameterAnalysers;
     private final Messages messages = new Messages();
     private final Primitives primitives;
+    private final ShallowMethodAnalyser shallowMethodAnalyser;
 
     public PrimaryTypeAnalyser(@NotNull SortedType sortedType,
                                @NotNull Configuration configuration,
@@ -70,6 +71,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         this.primitives = primitives;
         this.primaryType = Objects.requireNonNull(sortedType.primaryType);
         assert this.primaryType.isPrimaryType();
+        this.shallowMethodAnalyser = new ShallowMethodAnalyser(primitives, this, e2ImmuAnnotationExpressions);
 
         // do the types first, so we can pass on a TypeAnalysis objects
         ImmutableMap.Builder<TypeInfo, TypeAnalyser> typeAnalysersBuilder = new ImmutableMap.Builder<>();
@@ -91,7 +93,8 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         sortedType.methodsFieldsSubTypes.forEach(mfs -> {
             if (mfs instanceof MethodInfo methodInfo) {
                 if (methodInfo.shallowAnalysis()) {
-                    copyAnnotationsIntoMethodAnalysisProperties(methodInfo);
+                    MethodAnalysisImpl.Builder builder = shallowMethodAnalyser.copyAnnotationsIntoMethodAnalysisProperties(methodInfo);
+                    methodInfo.setAnalysis(builder.build());
                 } else {
                     MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo).typeAnalysis,
                             false, this);
@@ -117,7 +120,6 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
                     MethodInfo sam = fieldInitialiser.implementationOfSingleAbstractMethod();
                     if (sam != null) {
                         samAnalyser = new MethodAnalyser(sam, typeAnalysers.get(fieldInfo.owner).typeAnalysis, true, this);
-                        samAnalyser.methodAnalysis.overrides.set(overrides(sam, methodAnalysers));
                     }
                 }
                 TypeAnalysis ownerTypeAnalysis = typeAnalysers.get(fieldInfo.owner).typeAnalysis;
@@ -130,9 +132,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
                 if (methodInfo.shallowAnalysis()) {
                     return Stream.empty(); // interface method
                 }
-                MethodAnalyser methodAnalyser = methodAnalysers.get(mfs);
-                analyser = methodAnalyser;
-                methodAnalyser.methodAnalysis.overrides.set(overrides((MethodInfo) mfs, methodAnalysers));
+                analyser = methodAnalysers.get(mfs);
             } else if (mfs instanceof TypeInfo) {
                 analyser = typeAnalysers.get(mfs);
             } else throw new UnsupportedOperationException();
@@ -145,44 +145,15 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         analysers.forEach(Analyser::initialize);
     }
 
-    // this code is partially in the ShallowTypeAnalyser as well... TODO unify
-    private void copyAnnotationsIntoMethodAnalysisProperties(MethodInfo methodInfo) {
-        MethodInspection methodInspection = methodInfo.methodInspection.get();
-
-        methodInspection.getParameters().forEach(parameterInfo -> {
-            ParameterAnalysisImpl.Builder builder = new ParameterAnalysisImpl.Builder(getPrimitives(), AnalysisProvider.DEFAULT_PROVIDER, parameterInfo);
-            messages.addAll(builder.fromAnnotationsIntoProperties(true,
-                    parameterInfo.parameterInspection.get().getAnnotations(), e2ImmuAnnotationExpressions));
-            parameterInfo.setAnalysis(builder.build());
-        });
-
-        List<ParameterAnalysis> parameterAnalyses = methodInspection.getParameters().stream()
-                .map(parameterInfo -> parameterInfo.parameterAnalysis.get()).collect(Collectors.toList());
-
-        MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(false, getPrimitives(), AnalysisProvider.DEFAULT_PROVIDER,
-                methodInfo, parameterAnalyses);
-
-        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(true, methodInspection.getAnnotations(),
-                e2ImmuAnnotationExpressions));
-        methodInfo.setAnalysis(methodAnalysisBuilder.build());
-    }
 
     @Override
     public Primitives getPrimitives() {
         return primitives;
     }
 
-    private static Set<MethodAnalysis> overrides(MethodInfo methodInfo, Map<MethodInfo, MethodAnalyser> methodAnalysers) {
-        return methodInfo.methodResolution.get().overrides()
-                .stream().map(mi -> {
-                    MethodAnalyser methodAnalyser = methodAnalysers.get(mi);
-                    assert methodAnalyser != null || mi.methodAnalysis.isSet() : "No analysis known for " + mi.fullyQualifiedName();
-                    return methodAnalyser != null ? methodAnalyser.methodAnalysis : mi.methodAnalysis.get();
-                }).collect(Collectors.toSet());
-    }
-
     public Stream<Message> getMessageStream() {
-        return Stream.concat(messages.getMessageStream(), analysers.stream().flatMap(Analyser::getMessageStream));
+        return Stream.concat(shallowMethodAnalyser.getMessageStream(),
+                Stream.concat(messages.getMessageStream(), analysers.stream().flatMap(Analyser::getMessageStream)));
     }
 
     public void check() {
@@ -230,10 +201,6 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         analysers.forEach(analyser -> {
             analyser.write();
             analyser.getMember().setAnalysis(analyser.getAnalysis().build());
-            if (analyser instanceof MethodAnalyser methodAnalyser) {
-                methodAnalyser.getParameterAnalysers().forEach(parameterAnalyser ->
-                        parameterAnalyser.parameterInfo.setAnalysis(parameterAnalyser.parameterAnalysis.build()));
-            }
         });
     }
 

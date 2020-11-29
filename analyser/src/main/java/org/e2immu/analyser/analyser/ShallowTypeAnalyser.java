@@ -26,15 +26,20 @@ import org.e2immu.analyser.model.value.StringValue;
 import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.model.value.VariableValue;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.Logger;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
@@ -47,6 +52,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
     private final Messages messages = new Messages();
     private final Primitives primitives;
     private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
+    private final ShallowMethodAnalyser shallowMethodAnalyser;
+
     private final Map<TypeInfo, TypeAnalysis> typeAnalyses;
     private final Map<MethodInfo, MethodAnalysis> methodAnalyses;
     private final Map<MethodInfo, Either<MethodAnalyser, MethodAnalysisImpl.Builder>> buildersForCompanionAnalysis = new LinkedHashMap<>();
@@ -60,6 +67,8 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         this.primitives = primitives;
         this.configuration = configuration;
         this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
+        this.shallowMethodAnalyser = new ShallowMethodAnalyser(primitives, this, e2ImmuAnnotationExpressions);
+
         typeAnalyses = new LinkedHashMap<>(); // we keep the order provided
         ImmutableMap.Builder<MethodInfo, MethodAnalysis> methodAnalysesBuilder = new ImmutableMap.Builder<>();
         for (TypeInfo typeInfo : types) {
@@ -71,14 +80,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                 if (IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
                     analyseIsFact(methodInfo);
                 } else {
-                    MethodInspection methodInspection = methodInfo.methodInspection.get();
-                    List<ParameterAnalysis> parameterAnalyses = new ArrayList<>(methodInspection.getParameters().size());
-                    methodInspection.getParameters().forEach(parameterInfo -> {
-                        ParameterAnalysisImpl.Builder parameterAnalysisBuilder = new ParameterAnalysisImpl.Builder(primitives, AnalysisProvider.DEFAULT_PROVIDER, parameterInfo);
-                        messages.addAll(parameterAnalysisBuilder.fromAnnotationsIntoProperties(true,
-                                parameterInfo.parameterInspection.get().getAnnotations(), e2ImmuAnnotationExpressions));
-                        parameterAnalyses.add(parameterAnalysisBuilder);
-                    });
+
 
                     MethodAnalysisImpl.Builder methodAnalysisBuilder;
 
@@ -91,16 +93,11 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                         buildersForCompanionAnalysis.put(methodInfo, Either.left(methodAnalyser));
                         methodAnalysisBuilder = methodAnalyser.methodAnalysis;
                     } else {
-                        // shallow method analysis
-                        methodAnalysisBuilder = new MethodAnalysisImpl.Builder(false, primitives, this, methodInfo, parameterAnalyses);
-
-                        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(true,
-                                methodInfo.methodInspection.get().getAnnotations(), e2ImmuAnnotationExpressions));
-
+                        // shallow method analysis, companion analysis
+                        methodAnalysisBuilder = shallowMethodAnalyser.copyAnnotationsIntoMethodAnalysisProperties(methodInfo);
                         if (hasNoCompanionMethods) {
                             MethodAnalysis methodAnalysis = (MethodAnalysis) methodAnalysisBuilder.build();
-                            methodInfo.setAnalysis(methodAnalysis);
-                            setAnalysis(methodInfo.methodInspection.get().getParameters(), methodAnalysis.getParameterAnalyses());
+                            methodInfo.setAnalysis(methodAnalysis); // also sets parameter analyses
                         } else {
                             buildersForCompanionAnalysis.put(methodInfo, Either.right(methodAnalysisBuilder));
                         }
@@ -192,7 +189,13 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         return typeInfo.typeAnalysis.get();
     }
 
-    public Messages analyse() {
+    public Stream<Message> analyse() {
+        shallowTypeAndFieldAnalysis();
+        methodAnalysis();
+        return Stream.concat(shallowMethodAnalyser.getMessageStream(), messages.getMessageStream());
+    }
+
+    private void shallowTypeAndFieldAnalysis() {
         log(ANALYSER, "Starting shallow analysis on {} types, {} methods", typeAnalyses.size(), methodAnalyses.size());
 
         // do the types and fields
@@ -200,8 +203,9 @@ public class ShallowTypeAnalyser implements AnalyserContext {
             // do types and fields; no need to recurse into sub-types, they're included among the primary types
             shallowTypeAndFieldAnalysis(typeInfo, (TypeAnalysisImpl.Builder) typeAnalysis, e2ImmuAnnotationExpressions);
         });
+    }
 
-        // then the methods
+    private void methodAnalysis() {
         int iteration = 0;
         while (!buildersForCompanionAnalysis.isEmpty()) {
             List<MethodInfo> keysToRemove = new LinkedList<>();
@@ -248,7 +252,6 @@ public class ShallowTypeAnalyser implements AnalyserContext {
                         keysToRemove.add(methodInfo);
                         MethodAnalysis methodAnalysis = (MethodAnalysis) (either.isRight() ? either.getRight().build() : either.getLeft().methodAnalysis.build());
                         methodInfo.setAnalysis(methodAnalysis);
-                        setAnalysis(methodInfo.methodInspection.get().getParameters(), methodAnalysis.getParameterAnalyses());
                         progress.set(true);
                     }
                     case DELAYS -> delayed.set(true);
@@ -267,16 +270,6 @@ public class ShallowTypeAnalyser implements AnalyserContext {
             if (iteration >= 20) throw new UnsupportedOperationException();
         }
 
-        return messages;
-    }
-
-    private void setAnalysis(List<ParameterInfo> parameters, List<ParameterAnalysis> parameterAnalyses) {
-        Iterator<ParameterAnalysis> it = parameterAnalyses.iterator();
-        for (ParameterInfo parameterInfo : parameters) {
-            if (!it.hasNext()) throw new UnsupportedOperationException();
-            ParameterAnalysis parameterAnalysis = it.next();
-            parameterInfo.setAnalysis(parameterAnalysis);
-        }
     }
 
     private void shallowTypeAndFieldAnalysis(TypeInfo typeInfo,

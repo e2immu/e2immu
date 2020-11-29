@@ -34,10 +34,11 @@ import static org.e2immu.analyser.model.ParameterizedType.NOT_ASSIGNABLE;
 public class Primitives {
     public static final String JAVA_LANG = "java.lang";
     private static final String JAVA_LANG_OBJECT = "java.lang.Object";
+    public static final String JAVA_PRIMITIVE = "__java.lang__PRIMITIVE"; // special string, caught by constructor
 
     public static final String ORG_E2IMMU_ANNOTATION = "org.e2immu.annotation";
 
-    public final TypeInfo intTypeInfo = new TypeInfo("", "int");
+    public final TypeInfo intTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "int");
     public final ParameterizedType intParameterizedType = intTypeInfo.asSimpleParameterizedType();
 
     public static boolean isInt(TypeInfo typeInfo) {
@@ -50,7 +51,7 @@ public class Primitives {
         return "java.lang.Integer".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo charTypeInfo = new TypeInfo("", "char");
+    public final TypeInfo charTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "char");
     public final ParameterizedType charParameterizedType = charTypeInfo.asSimpleParameterizedType();
 
     public static boolean isChar(TypeInfo typeInfo) {
@@ -63,7 +64,7 @@ public class Primitives {
         return "java.lang.Character".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo booleanTypeInfo = new TypeInfo("", "boolean");
+    public final TypeInfo booleanTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "boolean");
     public final ParameterizedType booleanParameterizedType = booleanTypeInfo.asSimpleParameterizedType();
 
     public static boolean isBoolean(TypeInfo typeInfo) {
@@ -81,7 +82,7 @@ public class Primitives {
         return !isBoolean(parameterizedType.typeInfo) && !isBoxedBoolean(parameterizedType.typeInfo);
     }
 
-    public final TypeInfo longTypeInfo = new TypeInfo("", "long");
+    public final TypeInfo longTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "long");
     public final ParameterizedType longParameterizedType = longTypeInfo.asSimpleParameterizedType();
 
     public static boolean isLong(TypeInfo typeInfo) {
@@ -94,7 +95,7 @@ public class Primitives {
         return "java.lang.Long".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo shortTypeInfo = new TypeInfo("", "short");
+    public final TypeInfo shortTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "short");
     public final ParameterizedType shortParameterizedType = shortTypeInfo.asSimpleParameterizedType();
 
     public static boolean isShort(TypeInfo typeInfo) {
@@ -107,7 +108,7 @@ public class Primitives {
         return "java.lang.Short".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo byteTypeInfo = new TypeInfo("", "byte");
+    public final TypeInfo byteTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "byte");
     public final ParameterizedType byteParameterizedType = byteTypeInfo.asSimpleParameterizedType();
 
     public static boolean isByte(TypeInfo typeInfo) {
@@ -120,7 +121,7 @@ public class Primitives {
         return "java.lang.Byte".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo doubleTypeInfo = new TypeInfo("", "double");
+    public final TypeInfo doubleTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "double");
     public final ParameterizedType doubleParameterizedType = doubleTypeInfo.asSimpleParameterizedType();
 
     public static boolean isDouble(TypeInfo typeInfo) {
@@ -133,7 +134,7 @@ public class Primitives {
         return "java.lang.Double".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo floatTypeInfo = new TypeInfo("", "float");
+    public final TypeInfo floatTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "float");
     public final ParameterizedType floatParameterizedType = floatTypeInfo.asSimpleParameterizedType();
 
     public static boolean isFloat(TypeInfo typeInfo) {
@@ -146,7 +147,7 @@ public class Primitives {
         return "java.lang.Float".equals(typeInfo.fullyQualifiedName);
     }
 
-    public final TypeInfo voidTypeInfo = new TypeInfo("", "void");
+    public final TypeInfo voidTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "void");
     public final ParameterizedType voidParameterizedType = voidTypeInfo.asSimpleParameterizedType();
     public final TypeInfo boxedVoidTypeInfo = new TypeInfo(JAVA_LANG, "Void");
 

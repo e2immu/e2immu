@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public interface AnalysisProvider {
-    static final Logger LOGGER = LoggerFactory.getLogger(AnalysisProvider.class);
+    Logger LOGGER = LoggerFactory.getLogger(AnalysisProvider.class);
 
     FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo);
 
@@ -46,13 +46,13 @@ public interface AnalysisProvider {
 
         @Override
         public TypeAnalysis getTypeAnalysis(TypeInfo typeInfo) {
-            return typeInfo.typeAnalysis.get();
+            return typeInfo.typeAnalysis.get("Type analysis of "+typeInfo.fullyQualifiedName);
         }
 
         @Override
         public MethodAnalysis getMethodAnalysis(MethodInfo methodInfo) {
             try {
-                return methodInfo.methodAnalysis.get();
+                return methodInfo.methodAnalysis.get("Method analysis of "+methodInfo.fullyQualifiedName);
             } catch (RuntimeException re) {
                 LOGGER.error("Caught exception trying to obtain default method analysis for " + methodInfo.fullyQualifiedName());
                 throw re;

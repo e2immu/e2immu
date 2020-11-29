@@ -19,10 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.AnnotationParameters;
-import org.e2immu.analyser.analyser.CompanionAnalysis;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.Instance;
@@ -122,7 +119,7 @@ public class Test_01_SizeCopy extends CommonTestRunner {
         TypeInfo set = typeMap.get(Set.class);
         MethodInfo addAllSet = set.findUniqueMethod("addAll", 1);
 
-        Set<MethodAnalysis> overrides = addAllSet.methodAnalysis.get().getOverrides();
+        Set<MethodAnalysis> overrides = addAllSet.methodAnalysis.get().getOverrides(AnalysisProvider.DEFAULT_PROVIDER);
         Assert.assertEquals(1, overrides.size());
 
         // ensure that in Set.addAll(p0), p0 is not modified (implicitly, because type is container!)

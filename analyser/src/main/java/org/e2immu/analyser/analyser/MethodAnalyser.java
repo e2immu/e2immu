@@ -244,7 +244,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     private void checkWorseThanOverriddenMethod() {
         for (VariableProperty variableProperty : VariableProperty.CHECK_WORSE_THAN_PARENT) {
-            int valueFromOverrides = methodAnalysis.valueFromOverrides(variableProperty);
+            int valueFromOverrides = methodAnalysis.valueFromOverrides(analyserContext, variableProperty);
             int value = methodAnalysis.getProperty(variableProperty);
             if (valueFromOverrides != Level.DELAY && value != Level.DELAY) {
                 boolean complain = variableProperty == VariableProperty.MODIFIED ? value > valueFromOverrides : value < valueFromOverrides;
