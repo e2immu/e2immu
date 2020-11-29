@@ -176,13 +176,13 @@ public class TypeMapImpl implements TypeMap {
             new HashSet<>(typeInspections.keySet()).forEach(typeInfo -> {
                 if (typeInfo.typeInspection.isSet()) {
                     if (!typeInfo.typeResolution.isSet()) {
-                        Set<TypeInfo> superTypes = Resolver.superTypesExcludingJavaLangObject(this, typeInfo);
+                        Set<TypeInfo> superTypes = Resolver.superTypesExcludingJavaLangObject(InspectionProvider.DEFAULT, typeInfo);
                         TypeResolution typeResolution = new TypeResolution(Set.of(), superTypes);
                         typeInfo.typeResolution.set(typeResolution);
                     }
                     for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
                         if (!methodInfo.methodResolution.isSet()) {
-                            methodInfo.methodResolution.set(ShallowMethodResolver.onlyOverrides(this, methodInfo));
+                            methodInfo.methodResolution.set(ShallowMethodResolver.onlyOverrides(InspectionProvider.DEFAULT, methodInfo));
                         }
                     }
                 }
@@ -353,7 +353,9 @@ public class TypeMapImpl implements TypeMap {
             // see if we can trigger an inspection
             getTypeInspection(methodInfo.typeInfo);
             // try again
-            return methodInspections.get(dn);
+            MethodInspection take2 = methodInspections.get(dn);
+            if(take2 == null) throw new UnsupportedOperationException();
+            return take2;
         }
 
         public MethodInspection getMethodInspectionDoNotTrigger(String distinguishingName) {

@@ -71,7 +71,7 @@ public class Filter {
             if (v instanceof NegatedValue negatedValue) {
                 FilterResult<X> resultOfNegated = internalFilter(evaluationContext, negatedValue.value, filterMode, filterMethods);
                 if (resultOfNegated != null) {
-                    FilterResult<X> negatedResult = new FilterResult<X>(resultOfNegated.accepted.entrySet().stream()
+                    FilterResult<X> negatedResult = new FilterResult<>(resultOfNegated.accepted.entrySet().stream()
                             .collect(Collectors.toMap(Map.Entry::getKey,
                                     e -> NegatedValue.negate(evaluationContext, e.getValue()), (v1, v2) -> v1)),
                             NegatedValue.negate(evaluationContext, resultOfNegated.rest));
@@ -121,7 +121,7 @@ public class Filter {
         else {
             rest = new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, restList.toArray(Value[]::new));
         }
-        return new FilterResult<X>(acceptedCombined, rest);
+        return new FilterResult<>(acceptedCombined, rest);
     }
 
     // some filter methods
@@ -147,7 +147,7 @@ public class Filter {
 
     private static <X> FilterResult<X> negated(EvaluationContext evaluationContext, FilterResult<X> filterResult) {
         if (filterResult == null) return null;
-        return new FilterResult<X>(filterResult.accepted.entrySet().stream()
+        return new FilterResult<>(filterResult.accepted.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey,
                         e -> NegatedValue.negate(evaluationContext, e.getValue()), (v1, v2) -> v1)),
                 NegatedValue.negate(evaluationContext, filterResult.rest));
@@ -161,7 +161,6 @@ public class Filter {
             boolean lhsIsNull = equalsValue.lhs.isNull();
             boolean lhsIsNotNull = equalsValue.lhs.isNotNull();
             if ((lhsIsNull || lhsIsNotNull) && equalsValue.rhs instanceof VariableValue v) {
-                Value clause = lhsIsNull ? NullValue.NULL_VALUE : NullValue.NOT_NULL_VALUE;
                 return new FilterResult<Variable>(Map.of(v.variable, value), UnknownValue.EMPTY);
             }
         }
@@ -176,7 +175,6 @@ public class Filter {
             boolean lhsIsNull = equalsValue.lhs.isNull();
             boolean lhsIsNotNull = equalsValue.lhs.isNotNull();
             if ((lhsIsNull || lhsIsNotNull) && equalsValue.rhs instanceof VariableValue v && v.variable instanceof ParameterInfo p) {
-                Value clause = lhsIsNull ? NullValue.NULL_VALUE : NullValue.NOT_NULL_VALUE;
                 return new FilterResult<ParameterInfo>(Map.of(p, value), UnknownValue.EMPTY);
             }
         }
@@ -192,11 +190,11 @@ public class Filter {
             if (value instanceof EqualsValue equalsValue) {
                 MethodValue r = compatibleMethodValue(equalsValue.rhs);
                 if (r != null) {
-                    return new FilterResult<MethodValue>(Map.of(r, equalsValue.lhs), UnknownValue.EMPTY);
+                    return new FilterResult<>(Map.of(r, equalsValue.lhs), UnknownValue.EMPTY);
                 }
                 MethodValue l = compatibleMethodValue(equalsValue.lhs);
                 if (l != null) {
-                    return new FilterResult<MethodValue>(Map.of(l, equalsValue.rhs), UnknownValue.EMPTY);
+                    return new FilterResult<>(Map.of(l, equalsValue.rhs), UnknownValue.EMPTY);
                 }
             }
             return null;
@@ -216,9 +214,7 @@ public class Filter {
 
     private static boolean compatibleMethod(MethodInfo methodInfo, MethodInfo methodInClause) {
         if (methodInClause == methodInfo) return true;
-        if (methodInClause.methodInspection.get().getParameters().size() != methodInfo.methodInspection.get().getParameters().size())
-            return false;
-        return methodInClause.methodResolution.get().overrides().contains(methodInfo);
+        return methodInfo.methodResolution.get().overrides().contains(methodInClause);
     }
 
     // EXAMPLE: java.util.List.contains("a")
