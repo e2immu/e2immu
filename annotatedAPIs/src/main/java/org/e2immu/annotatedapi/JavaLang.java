@@ -67,6 +67,7 @@ class JavaLang {
         }
 
         @NotNull
+        @NotModified
         public String toString() {
             return "x";
         }
