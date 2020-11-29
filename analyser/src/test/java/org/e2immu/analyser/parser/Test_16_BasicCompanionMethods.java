@@ -229,7 +229,8 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                 // check the length method
                 Assert.assertSame(lengthCall.methodInfo, stringLength);
             }
-            CompanionAnalysis appendCa = appendInt.methodAnalysis.get().getCompanionAnalyses().values().stream().findFirst().orElseThrow();
+            CompanionAnalysis appendCa = appendInt.methodAnalysis.get().getCompanionAnalyses()
+                    .get(new CompanionMethodName("append", CompanionMethodName.Action.MODIFICATION, "Len"));
             Value appendCompanionValue = appendCa.getValue();
             Assert.assertEquals("(java.lang.Integer.toString(java.lang.StringBuilder.append(int):0:i).length() + pre) == java.lang.CharSequence.this.length()",
                     appendCa.getValue().toString());
@@ -242,6 +243,11 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
             MethodInfo appendStringCompanion = appendStr.methodInspection.get().getCompanionMethods().values().stream().findFirst().orElseThrow();
             ReturnStatement returnStatementStr = (ReturnStatement) appendStringCompanion.methodInspection.get().getMethodBody().structure.statements.get(0);
             Assert.assertEquals("return post == prev + (str == null ? 4 : str.length());\n", returnStatementStr.statementString(0, null));
+
+            MethodInfo sbToString = stringBuilder.findUniqueMethod("toString", 0);
+            CompanionAnalysis sbToStringCa = sbToString.methodAnalysis.get().getCompanionAnalyses()
+                    .get(new CompanionMethodName("toString", CompanionMethodName.Action.TRANSFER, "Len"));
+            Assert.assertEquals("java.lang.CharSequence.this.length()", sbToStringCa.getValue().toString());
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -255,6 +261,10 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals("false", d.evaluationResult().value.toString());
+            }
+            if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                Assert.assertEquals("true", d.evaluationResult().value.toString());
             }
         };
 

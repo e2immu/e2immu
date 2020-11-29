@@ -17,6 +17,7 @@
 
 package org.e2immu.analyser.model;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -91,5 +92,19 @@ public record CompanionMethodName(String methodName, Action action, String aspec
             throw new UnsupportedOperationException("Method with $, but not recognized as companion? " + methodName);
         }
         return null;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CompanionMethodName that = (CompanionMethodName) o;
+        return action == that.action &&
+                Objects.equals(aspect, that.aspect);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(action, aspect);
     }
 }
