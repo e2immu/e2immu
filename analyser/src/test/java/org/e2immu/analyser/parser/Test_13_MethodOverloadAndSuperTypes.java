@@ -22,7 +22,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.resolver.Resolver;
+import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.Trie;
 import org.junit.Assert;
@@ -98,7 +98,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
         Parser parser = new Parser();
 
         TypeInfo methodOverloadOrig = parser.getTypeContext().typeMapBuilder.getOrCreate(
-                "org.e2immu.analyser.testexample","MethodOverload", TRIGGER_JAVA_PARSER);
+                "org.e2immu.analyser.testexample", "MethodOverload", TRIGGER_JAVA_PARSER);
         URL url = new File(SRC_TEST_JAVA_ORG_E2IMMU_ANALYSER + "testexample/MethodOverload.java").toURI().toURL();
         List<SortedType> types = parser.inspectAndResolve(Map.of(methodOverloadOrig, url), new Trie<>());
         LOGGER.info("Have {} types", types.size());
@@ -118,7 +118,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
 
         Set<TypeInfo> superTypesC1 = c1.typeResolution.get().superTypesExcludingJavaLangObject();
         Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.I1]", superTypesC1.toString());
-        List<ParameterizedType> directSuperTypesC1 = Resolver.directSuperTypes(parser.getTypeContext(), c1);
+        List<ParameterizedType> directSuperTypesC1 = ShallowMethodResolver.directSuperTypes(parser.getTypeContext(), c1);
         Assert.assertEquals("[Type java.lang.Object, Type org.e2immu.analyser.testexample.MethodOverload.I1]", directSuperTypesC1.toString());
 
 
@@ -137,7 +137,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
 
         Set<TypeInfo> superTypesC2 = c2.typeResolution.get().superTypesExcludingJavaLangObject();
         Assert.assertEquals("[org.e2immu.analyser.testexample.MethodOverload.C1, org.e2immu.analyser.testexample.MethodOverload.I1]", superTypesC2.toString());
-        List<ParameterizedType> directSuperTypesC2 = Resolver.directSuperTypes(parser.getTypeContext(), c2);
+        List<ParameterizedType> directSuperTypesC2 = ShallowMethodResolver.directSuperTypes(parser.getTypeContext(), c2);
         Assert.assertEquals("[Type org.e2immu.analyser.testexample.MethodOverload.C1]", directSuperTypesC2.toString());
 
         MethodInfo toString = c2.findUniqueMethod("toString", 0);

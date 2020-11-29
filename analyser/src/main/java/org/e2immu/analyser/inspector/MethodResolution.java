@@ -33,7 +33,8 @@ public record MethodResolution(Set<MethodInfo> overrides,
         PART_OF_CONSTRUCTION,
         NOT_CALLED_AT_ALL,
         CALLED_FROM_NON_PRIVATE_METHOD,
-        NON_PRIVATE;
+        NON_PRIVATE,
+        NOT_RESOLVED; // this one means that we did not do any effort to find out
 
         public boolean accessibleFromTheOutside() {
             return this == NON_PRIVATE || this == CALLED_FROM_NON_PRIVATE_METHOD;

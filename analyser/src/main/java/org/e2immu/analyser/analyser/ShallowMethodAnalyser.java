@@ -17,17 +17,18 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.MethodInspection;
-import org.e2immu.analyser.model.ParameterAnalysis;
-import org.e2immu.analyser.model.ParameterAnalysisImpl;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.SMapList;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ShallowMethodAnalyser {
@@ -44,7 +45,10 @@ public class ShallowMethodAnalyser {
         this.primitives = primitives;
     }
 
+
     public MethodAnalysisImpl.Builder copyAnnotationsIntoMethodAnalysisProperties(MethodInfo methodInfo) {
+        Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> map = collectAnnotations(methodInfo);
+
         MethodInspection methodInspection = methodInfo.methodInspection.get();
 
         List<ParameterAnalysis> parameterAnalyses = new ArrayList<>();
@@ -52,16 +56,55 @@ public class ShallowMethodAnalyser {
         methodInspection.getParameters().forEach(parameterInfo -> {
             ParameterAnalysisImpl.Builder builder = new ParameterAnalysisImpl.Builder(primitives, analysisProvider, parameterInfo);
             messages.addAll(builder.fromAnnotationsIntoProperties(true,
-                    parameterInfo.parameterInspection.get().getAnnotations(), e2ImmuAnnotationExpressions));
+                    map.getOrDefault(parameterInfo, Map.of()).keySet(), e2ImmuAnnotationExpressions));
             parameterAnalyses.add(builder); // building will take place when the method analysis is built
         });
 
         MethodAnalysisImpl.Builder methodAnalysisBuilder = new MethodAnalysisImpl.Builder(false, primitives, analysisProvider,
                 methodInfo, parameterAnalyses);
 
-        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(true, methodInspection.getAnnotations(),
+        messages.addAll(methodAnalysisBuilder.fromAnnotationsIntoProperties(true, map.getOrDefault(methodInfo, Map.of()).keySet(),
                 e2ImmuAnnotationExpressions));
         return methodAnalysisBuilder;
+    }
+
+    private Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> collectAnnotations(MethodInfo methodInfo) {
+        Map<WithInspectionAndAnalysis, Map<AnnotationExpression, List<MethodInfo>>> map = new HashMap<>();
+
+        Map<AnnotationExpression, List<MethodInfo>> methodMap = new HashMap<>();
+        map.put(methodInfo, methodMap);
+
+        Stream.concat(Stream.of(methodInfo), methodInfo.methodResolution.get(methodInfo.fullyQualifiedName).overrides().stream()).forEach(mi -> {
+
+            MethodInspection mii = mi.methodInspection.get();
+            mii.getAnnotations().forEach(annotationExpression -> SMapList.add(methodMap, annotationExpression, mi));
+
+            mii.getParameters().forEach(parameterInfo -> {
+                Map<AnnotationExpression, List<MethodInfo>> parameterMap = map.computeIfAbsent(parameterInfo, k -> new HashMap<>());
+                parameterInfo.parameterInspection.get().getAnnotations().forEach(annotationExpression ->
+                        SMapList.add(parameterMap, annotationExpression, mi));
+            });
+        });
+
+        map.forEach(this::checkContradictions);
+        return map;
+    }
+
+    private void checkContradictions(WithInspectionAndAnalysis where, Map<AnnotationExpression, List<MethodInfo>> annotations) {
+        if (annotations.size() < 2) return;
+        checkContradictions(where, annotations, e2ImmuAnnotationExpressions.notModified, e2ImmuAnnotationExpressions.modified);
+        checkContradictions(where, annotations, e2ImmuAnnotationExpressions.notNull, e2ImmuAnnotationExpressions.nullable);
+    }
+
+    private void checkContradictions(WithInspectionAndAnalysis where, Map<AnnotationExpression, List<MethodInfo>> annotations,
+                                     AnnotationExpression left, AnnotationExpression right) {
+        List<MethodInfo> leftMethods = annotations.getOrDefault(left, List.of());
+        List<MethodInfo> rightMethods = annotations.getOrDefault(right, List.of());
+        if (!leftMethods.isEmpty() && !rightMethods.isEmpty()) {
+            messages.add(Message.newMessage(new Location(where), Message.CONTRADICTING_ANNOTATIONS,
+                    left + " in " + leftMethods.stream().map(mi -> mi.fullyQualifiedName).collect(Collectors.joining("; ")) +
+                            "; " + right + " in " + rightMethods.stream().map(mi -> mi.fullyQualifiedName).collect(Collectors.joining("; "))));
+        }
     }
 
     public Stream<Message> getMessageStream() {

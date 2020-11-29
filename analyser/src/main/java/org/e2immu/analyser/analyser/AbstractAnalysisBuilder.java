@@ -164,7 +164,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
 
     public Messages fromAnnotationsIntoProperties(
             boolean acceptVerify,
-            List<AnnotationExpression> annotations,
+            Collection<AnnotationExpression> annotations,
             E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         int immutable = -1;
         int notNull = -1;

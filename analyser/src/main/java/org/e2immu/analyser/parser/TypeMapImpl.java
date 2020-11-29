@@ -23,12 +23,10 @@ import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.resolver.Resolver;
+import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.Trie;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
@@ -157,10 +155,8 @@ public class TypeMapImpl implements TypeMap {
             trie.freeze();
 
             typeInspections.forEach((typeInfo, typeInspectionBuilder) -> {
-                if (typeInspectionBuilder.finishedInspection()) {
-                    if (!typeInfo.typeInspection.isSet()) {
-                        typeInfo.typeInspection.set(typeInspectionBuilder.build());
-                    }
+                if (typeInspectionBuilder.finishedInspection() && !typeInfo.typeInspection.isSet()) {
+                    typeInfo.typeInspection.set(typeInspectionBuilder.build());
                 }
             });
 
@@ -176,11 +172,19 @@ public class TypeMapImpl implements TypeMap {
                 }
             });
 
-            new HashMap<>(typeInspections).forEach((typeInfo, typeInspectionBuilder) -> {
-                if (!typeInfo.typeResolution.isSet()) {
-                    Set<TypeInfo> superTypes = Resolver.superTypesExcludingJavaLangObject(this, typeInfo);
-                    TypeResolution typeResolution = new TypeResolution(Set.of(), superTypes);
-                    typeInfo.typeResolution.set(typeResolution);
+            // we make a new map, because the resolver will encounter new types (which we will ignore)
+            new HashSet<>(typeInspections.keySet()).forEach(typeInfo -> {
+                if (typeInfo.typeInspection.isSet()) {
+                    if (!typeInfo.typeResolution.isSet()) {
+                        Set<TypeInfo> superTypes = Resolver.superTypesExcludingJavaLangObject(this, typeInfo);
+                        TypeResolution typeResolution = new TypeResolution(Set.of(), superTypes);
+                        typeInfo.typeResolution.set(typeResolution);
+                    }
+                    for (MethodInfo methodInfo : typeInfo.typeInspection.get().methodsAndConstructors()) {
+                        if (!methodInfo.methodResolution.isSet()) {
+                            methodInfo.methodResolution.set(ShallowMethodResolver.onlyOverrides(this, methodInfo));
+                        }
+                    }
                 }
             });
 
@@ -213,7 +217,7 @@ public class TypeMapImpl implements TypeMap {
          */
 
         public TypeInspectionImpl.Builder getOrCreateFromPathReturnInspection(String path, InspectionState inspectionState) {
-            assert path.indexOf('.') < 0: "Path is "+path; // no dots! uses / and $; the . is for the .class which should have been stripped
+            assert path.indexOf('.') < 0 : "Path is " + path; // no dots! uses / and $; the . is for the .class which should have been stripped
             int dollar = path.indexOf('$');
             TypeInfo primaryType = extractPrimaryTypeAndAddToMap(path, dollar);
             if (dollar < 0) return ensureTypeInspection(primaryType, inspectionState);

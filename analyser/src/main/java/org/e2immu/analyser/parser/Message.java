@@ -53,13 +53,6 @@ public class Message {
 
     public static final String ANNOTATION_UNEXPECTEDLY_PRESENT = "Annotation should be absent";
     public static final String ANNOTATION_ABSENT = "Annotation missing";
-    public static final String SIZE_MIN_MISSING = "@Size annotation, min value missing";
-    public static final String SIZE_WRONG_MIN_VALUE = "@Size annotation, wrong min value";
-    public static final String SIZE_EQUALS_MISSING = "@Size annotation, equals value missing";
-    public static final String SIZE_WRONG_EQUALS_VALUE = "@Size annotation, wrong equals value";
-    public static final String SIZE_COPY_MISSING = "@Size(copy = true) missing";
-    public static final String SIZE_COPY_MIN_MISSING = "@Size(copyMin = true) missing";
-    public static final String SIZE_NEED_PARAMETER = "Need at least one parameter in the @Size annotation";
     public static final String WRONG_CONSTANT = "@Constant annotation, wrong value";
     public static final String PRIVATE_FIELD_NOT_READ = "Private field not read outside constructors";
     public static final String NON_PRIVATE_FIELD_NOT_FINAL = "Non-private field is not effectively final (@Final)";
@@ -70,7 +63,6 @@ public class Message {
     public static final String USELESS_ASSIGNMENT = "Useless assignment";
     public static final String METHOD_EVALUATES_TO_CONSTANT = "Method evaluates to constant";
 
-    public static final String MULTIPLE_SIZE_ANNOTATIONS = "Multiple @Size annotations in a modifying method";
     public static final String PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT = "Part of short-circuit expression evaluates to constant";
 
     public static final String WRONG_PRECONDITION = "Wrong precondition";
@@ -90,7 +82,7 @@ public class Message {
 
     public static final String UNUSED_PARAMETER = "Unused parameter";
 
-    public static final String PROBLEM_ANALYSING_COMPANION_METHOD = "Problem analysing companion method";
+    public static final String CONTRADICTING_ANNOTATIONS = "Contradicting annotations";
 
     @NotNull1
     @E2Container

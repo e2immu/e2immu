@@ -29,6 +29,7 @@ import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.resolver.Resolver;
+import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
 import org.slf4j.Logger;
@@ -163,7 +164,7 @@ public class ParseMethodCallExpr {
                     //methodCandidates.sort(expressionContext.typeContext::compareMethodCandidates);
                     TypeContext.MethodCandidate mc0 = methodCandidates.get(0);
                     // we cannot rely on methodResolution yet...
-                    Set<MethodInfo> overrides = Resolver.overrides(inspectionProvider, mc0.method().methodInspection.getMethodInfo());
+                    Set<MethodInfo> overrides = ShallowMethodResolver.overrides(inspectionProvider, mc0.method().methodInspection.getMethodInfo());
                     for (TypeContext.MethodCandidate mcN : methodCandidates.subList(1, methodCandidates.size())) {
                         if (!overrides.contains(mcN.method().methodInspection.getMethodInfo()) &&
                                 mcN.method().methodInspection.getMethodInfo() != mc0.method().methodInspection.getMethodInfo()) {
