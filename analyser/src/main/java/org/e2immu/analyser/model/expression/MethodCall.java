@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -39,6 +40,7 @@ import org.e2immu.annotation.Only;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -213,7 +215,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             MethodInspection methodInspection = methodInfo.methodInspection.get();
             complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo, contentNotNullRequired);
 
-            EvaluationResult mv = methodValue(evaluationContext, methodInfo, methodAnalysis, objectValue, parameterValues, objectFlowOfResult);
+            EvaluationResult mv = methodValue(modified, evaluationContext, methodInfo, methodAnalysis, objectValue, parameterValues, objectFlowOfResult);
             builder.compose(mv);
             if (mv.value == objectValue && mv.value instanceof Instance && modifiedInstance != null) {
                 result = modifiedInstance;
@@ -398,7 +400,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     // static, also used in MethodValue re-evaluation
-    public static EvaluationResult methodValue(EvaluationContext evaluationContext,
+    public static EvaluationResult methodValue(int modified,
+                                               EvaluationContext evaluationContext,
                                                MethodInfo methodInfo,
                                                MethodAnalysis methodAnalysis,
                                                Value objectValue,
@@ -413,11 +416,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return builder.setValue(UnknownValue.NO_VALUE).build(); // this will delay
         }
 
-        // Integer.toString(3)
+        // static eval: Integer.toString(3)
         Value knownStaticEvaluation = computeStaticEvaluation(evaluationContext.getPrimitives(), methodInfo, parameters);
         if (knownStaticEvaluation != null) {
             return builder.setValue(knownStaticEvaluation).build();
         }
+
         // eval on constant, like "abc".length()
         Value evaluationOnConstant = computeEvaluationOnConstant(evaluationContext.getPrimitives(),
                 methodInfo, objectValue);
@@ -425,12 +429,23 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return builder.setValue(evaluationOnConstant).build();
         }
 
-        // evaluation on Instance, with state
-        Filter.FilterResult<MethodValue> evaluationOnInstance =
-                computeEvaluationOnInstance(builder, evaluationContext, methodInfo, objectValue, parameters);
-        if (evaluationOnInstance != null && !evaluationOnInstance.accepted().isEmpty()) {
-            Value value = evaluationOnInstance.accepted().values().stream().findFirst().orElseThrow();
-            return builder.setValue(value).build();
+        if (modified == Level.FALSE) {
+
+            // new object returned, with a transfer of the aspect; 5 == stringBuilder.length() in aspect -> 5 == stringBuilder.toString().length()
+            Value newInstance = newInstanceWithTransferCompanion(builder, evaluationContext, methodInfo, objectValue, parameters);
+            if (newInstance != null) {
+                return builder.setValue(newInstance).build();
+            }
+
+            // evaluation on Instance, with state; check companion methods
+            // TYPE 1: boolean expression of aspect; e.g., xx == aspect method (5 == string.length())
+            // TYPE 2: boolean clause; e.g., contains("a")
+            Filter.FilterResult<MethodValue> evaluationOnInstance =
+                    computeEvaluationOnInstance(builder, evaluationContext, methodInfo, objectValue, parameters);
+            if (evaluationOnInstance != null && !evaluationOnInstance.accepted().isEmpty()) {
+                Value value = evaluationOnInstance.accepted().values().stream().findFirst().orElseThrow();
+                return builder.setValue(value).build();
+            }
         }
 
         // @Identity as method annotation
@@ -502,6 +517,45 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return builder.setValue(methodValue).build();
     }
 
+    private static Value newInstanceWithTransferCompanion(EvaluationResult.Builder builder,
+                                                          EvaluationContext evaluationContext,
+                                                          MethodInfo methodInfo,
+                                                          Value objectValue,
+                                                          List<Value> parameters) {
+        Instance instance;
+        if (objectValue instanceof Instance theInstance) {
+            instance = theInstance;
+        } else if (objectValue instanceof VariableValue variableValue) {
+            instance = builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+        } else {
+            return null;
+        }
+
+        MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+
+        Map<Value, Value> translationMap = new HashMap<>();
+        methodAnalysis.getCompanionAnalyses().entrySet().stream()
+                .filter(e -> e.getKey().action() == CompanionMethodName.Action.TRANSFER && e.getKey().aspect() != null)
+                .forEach(e -> {
+                    // we're assuming the aspects retain their name, but apart from the name we allow them to be different methods
+
+                    MethodInfo oldAspectMethod = evaluationContext.getTypeAnalysis(instance.parameterizedType.typeInfo).getAspects().get(e.getKey().aspect());
+                    Value oldValue = new MethodValue(oldAspectMethod,
+                            new VariableValue(new This(evaluationContext.getAnalyserContext(), oldAspectMethod.typeInfo)),
+                            List.of(), ObjectFlow.NO_FLOW);
+                    MethodInfo newAspectMethod = evaluationContext.getTypeAnalysis(methodInfo.typeInfo).getAspects().get(e.getKey().aspect());
+                    Value newValue = new MethodValue(newAspectMethod,
+                            new VariableValue(new This(evaluationContext.getAnalyserContext(), newAspectMethod.typeInfo)),
+                            List.of(), ObjectFlow.NO_FLOW);
+                    translationMap.put(oldValue, newValue);
+                });
+
+        if (translationMap.isEmpty()) return null;
+        Value newState = instance.state.reEvaluate(evaluationContext, translationMap).value;
+        // TODO object flow
+        return new Instance(methodInfo.returnType(), null, List.of(), ObjectFlow.NO_FLOW, newState);
+    }
+
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()
 
     private static Filter.FilterResult<MethodValue> computeEvaluationOnInstance(EvaluationResult.Builder builder,
@@ -525,8 +579,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                                            MethodInfo methodInfo,
                                                            Value state,
                                                            List<Value> parameterValues) {
-        List<Filter.FilterMethod<MethodValue>> filters = List.of(new Filter.MethodCallBooleanResult(methodInfo, parameterValues,
-                BoolValue.createTrue(evaluationContext.getPrimitives())), new Filter.ValueEqualsMethodCallNoParameters(methodInfo));
+        List<Filter.FilterMethod<MethodValue>> filters = List.of(
+                new Filter.MethodCallBooleanResult(methodInfo, parameterValues,
+                        BoolValue.createTrue(evaluationContext.getPrimitives())),
+                new Filter.ValueEqualsMethodCallNoParameters(methodInfo));
         return Filter.filter(evaluationContext, state, Filter.FilterMode.ACCEPT, filters);
     }
 

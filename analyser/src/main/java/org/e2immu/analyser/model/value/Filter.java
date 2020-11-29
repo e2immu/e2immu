@@ -145,14 +145,6 @@ public class Filter {
         return value instanceof VariableValue variableValue && variableValue.variable instanceof FieldReference fieldReference ? fieldReference : null;
     }
 
-    private static <X> FilterResult<X> negated(EvaluationContext evaluationContext, FilterResult<X> filterResult) {
-        if (filterResult == null) return null;
-        return new FilterResult<>(filterResult.accepted.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> NegatedValue.negate(evaluationContext, e.getValue()), (v1, v2) -> v1)),
-                NegatedValue.negate(evaluationContext, filterResult.rest));
-    }
-
     // EXAMPLE: p == null, field != null
 
 
@@ -225,7 +217,7 @@ public class Filter {
         @Override
         public FilterResult<MethodValue> apply(Value value) {
             if (value instanceof MethodValue methodValue && compatible(methodValue)) {
-                return new FilterResult<MethodValue>(Map.of(methodValue, boolValueTrue), UnknownValue.EMPTY);
+                return new FilterResult<>(Map.of(methodValue, boolValueTrue), UnknownValue.EMPTY);
             }
             return null;
         }
