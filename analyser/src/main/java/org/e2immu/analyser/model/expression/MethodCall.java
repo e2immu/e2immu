@@ -261,8 +261,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     // post is already OK (it is the new value of the aspect method)
                     // pre is the "old" value, which has to be obtained. If that's impossible, we bail out.
                     // the parameters are available
-                    FilterResultAndTranslationMap translation = createTranslationMap(builder, evaluationContext, aspectMethod,
-                            companionAnalysis, companionMethodName, newState.get(), parameterValues);
+                    FilterResultAndTranslationMap translation = createTranslationMap(evaluationContext, aspectMethod,
+                            companionAnalysis, newState.get(), parameterValues);
 
                     Value companionValue = companionAnalysis.getValue();
                     EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(evaluationContext, translation.translationMap);
@@ -322,11 +322,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     // for modifying methods only. there is a "Pre" variable when there are aspects.
     // the filter result contains the pre-clause and the rest.
-    private FilterResultAndTranslationMap createTranslationMap(EvaluationResult.Builder builder,
-                                                               EvaluationContext evaluationContext,
+    private FilterResultAndTranslationMap createTranslationMap(EvaluationContext evaluationContext,
                                                                MethodInfo aspectMethod,
                                                                CompanionAnalysis companionAnalysis,
-                                                               CompanionMethodName companionMethodName,
                                                                Value stateOfInstance,
                                                                List<Value> parameterValues) {
         ImmutableMap.Builder<Value, Value> translationMap = new ImmutableMap.Builder<>();
@@ -415,6 +413,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             return builder.setValue(UnknownValue.NO_VALUE).build(); // this will delay
         }
 
+        // Integer.toString(3)
+        Value knownStaticEvaluation = computeStaticEvaluation(evaluationContext.getPrimitives(), methodInfo, parameters);
+        if (knownStaticEvaluation != null) {
+            return builder.setValue(knownStaticEvaluation).build();
+        }
         // eval on constant, like "abc".length()
         Value evaluationOnConstant = computeEvaluationOnConstant(evaluationContext.getPrimitives(),
                 methodInfo, objectValue);
@@ -499,10 +502,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return builder.setValue(methodValue).build();
     }
 
-    private record ValueAndClause(Value value, Value clause) {
-    }
-
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()
+
     private static Filter.FilterResult<MethodValue> computeEvaluationOnInstance(EvaluationResult.Builder builder,
                                                                                 EvaluationContext evaluationContext,
                                                                                 MethodInfo methodInfo,
@@ -529,16 +530,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return Filter.filter(evaluationContext, state, Filter.FilterMode.ACCEPT, filters);
     }
 
+    private static Value computeStaticEvaluation(Primitives primitives, MethodInfo methodInfo, List<Value> parameters) {
+        if ("java.lang.Integer.toString(int)".equals(methodInfo.fullyQualifiedName()) &&
+                parameters.get(0).isConstant()) {
+            return new StringValue(primitives, Integer.toString(((IntValue) parameters.get(0)).getValue()));
+        }
+        return null;
+    }
+
     private static Value computeEvaluationOnConstant(Primitives primitives, MethodInfo methodInfo, Value objectValue) {
         if (!objectValue.isConstant()) return null;
         StringValue stringValue;
         if ("java.lang.String.length()".equals(methodInfo.fullyQualifiedName()) &&
                 (stringValue = objectValue.asInstanceOf(StringValue.class)) != null) {
             return new IntValue(primitives, stringValue.value.length(), ObjectFlow.NO_FLOW);
-        }
-        if ("java.lang.Integer.toString(int)".equals(methodInfo.fullyQualifiedName()) &&
-                objectValue instanceof IntValue intValue) {
-            return new StringValue(primitives, Integer.toString(intValue.value));
         }
         return null;
     }

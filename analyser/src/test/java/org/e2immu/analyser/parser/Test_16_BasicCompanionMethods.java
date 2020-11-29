@@ -246,14 +246,22 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "sb".equals(d.variableName())) {
-                Assert.assertEquals("xnstance type java.lang.StringBuilder(abc)[(1 + (java.lang.Integer.toString(3).length() + java.lang.StringBuilder.StringBuilder(java.lang.String):0:str.length())) == java.lang.CharSequence.this.length()]",
+                Assert.assertEquals("instance type java.lang.StringBuilder(abc)[5 == java.lang.CharSequence.this.length()]",
                         d.currentValue().toString());
             }
         };
 
-        testClass("BasicCompanionMethods_3", 0, 0, new DebugConfiguration.Builder()
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                Assert.assertEquals("false", d.evaluationResult().value.toString());
+            }
+        };
+
+        testClass("BasicCompanionMethods_3", 2, 0, new DebugConfiguration.Builder()
                 .addTypeContextVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

@@ -3,7 +3,10 @@ package org.e2immu.analyser.model.value;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -74,6 +77,25 @@ public abstract class ConstantValue implements Value {
             if (Primitives.isChar(typeInfo)) return new CharValue(primitives, '\0', ObjectFlow.NO_FLOW);
         }
         return NullValue.NULL_VALUE;
+    }
+
+
+    public static Value equalsValue(Primitives primitives, ConstantValue l, ConstantValue r) {
+        if (l instanceof NullValue || r instanceof NullValue) throw new UnsupportedOperationException("Not for me");
+
+        if (l instanceof StringValue ls && r instanceof StringValue rs) {
+            return BoolValue.create(primitives, ls.value.equals(rs.value));
+        }
+        if (l instanceof BoolValue lb && r instanceof BoolValue lr) {
+            return BoolValue.create(primitives, lb.value == lr.value);
+        }
+        if (l instanceof CharValue lc && r instanceof CharValue rc) {
+            return BoolValue.create(primitives, lc.value == rc.value);
+        }
+        if (l instanceof NumericValue ln && r instanceof NumericValue rn) {
+            return BoolValue.create(primitives, ln.getNumber().equals(rn.getNumber()));
+        }
+        throw new UnsupportedOperationException();
     }
 
 }

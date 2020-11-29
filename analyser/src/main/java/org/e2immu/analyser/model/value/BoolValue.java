@@ -20,7 +20,10 @@ package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Constant;
+import org.e2immu.analyser.model.Location;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Primitives;
@@ -60,6 +63,10 @@ public class BoolValue extends ConstantValue implements Constant<Boolean> {
 
     public static Value createFalse(Primitives primitives) {
         return new BoolValue(primitives, false, ObjectFlow.NO_FLOW);
+    }
+
+    public static Value create(Primitives primitives, boolean b) {
+        return b ? createTrue(primitives) : createFalse(primitives);
     }
 
     @Override

@@ -17,7 +17,9 @@
 
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
 
@@ -46,4 +48,16 @@ public interface CompanionAnalysis {
      * @return a list of parameters, never null.
      */
     List<Value> getParameterValues();
+
+    /**
+     * Re-evaluate the companion method with concrete parameters and object
+     *
+     * @param evaluationContext the evaluation context
+     * @return a re-evaluated Value
+     */
+    default Value reEvaluate(EvaluationContext evaluationContext, List<Value> parameterValues) {
+        ImmutableMap.Builder<Value, Value> translationMap = new ImmutableMap.Builder<>();
+        ListUtil.joinLists(getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
+        return getValue().reEvaluate(evaluationContext, translationMap.build()).value;
+    }
 }

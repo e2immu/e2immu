@@ -23,20 +23,21 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.value.ArrayValue;
 import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.e2immu.analyser.util.Logger.log;
 
 public class NewObject implements HasParameterExpressions {
     public final ParameterizedType parameterizedType;
@@ -158,22 +159,27 @@ public class NewObject implements HasParameterExpressions {
         Location location = evaluationContext.getLocation(this);
         ObjectFlow objectFlow = res.k.createInternalObjectFlow(location, parameterizedType, Origin.NEW_OBJECT_CREATION);
 
-        Value state = stateFromCompanionOfConstructor(constructor, evaluationContext);
+        Value state = stateFromCompanionOfConstructor(constructor, res.v, evaluationContext);
 
         Value valueToSet = new Instance(parameterizedType, constructor, res.v, objectFlow, state);
         res.k.setValue(valueToSet);
         return res.k.build();
     }
 
-    public static Value stateFromCompanionOfConstructor(MethodInfo constructor, EvaluationContext evaluationContext) {
+    // static because also used by MethodReference
+    public static Value stateFromCompanionOfConstructor(MethodInfo constructor, List<Value> parameters, EvaluationContext evaluationContext) {
         if (constructor != null) {
             Optional<CompanionMethodName> optEntry = constructor.methodInspection.get().getCompanionMethods().keySet().stream()
                     .filter(e -> e.aspect() != null && e.action() == CompanionMethodName.Action.MODIFICATION).findFirst();
             if (optEntry.isPresent()) {
                 MethodAnalysis constructorAnalysis = evaluationContext.getMethodAnalysis(constructor);
-                CompanionAnalysis companionAnalysis = constructorAnalysis.getCompanionAnalyses().get(optEntry.get());
+                CompanionMethodName cmn = optEntry.get();
+                CompanionAnalysis companionAnalysis = constructorAnalysis.getCompanionAnalyses().get(cmn);
                 // in the case of new ArrayList(), the aspect is Size, the aspect method size()
-                return companionAnalysis.getValue();
+
+                Value reEval = companionAnalysis.reEvaluate(evaluationContext, parameters);
+                log(Logger.LogTarget.COMPANION, "Re-evaluated companion {} to {}", cmn, reEval);
+                return reEval;
             }
         }
         return UnknownValue.EMPTY;

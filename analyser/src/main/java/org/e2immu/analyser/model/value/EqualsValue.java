@@ -19,7 +19,8 @@ package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
@@ -62,6 +63,9 @@ public class EqualsValue extends PrimitiveValue {
                 r instanceof NullValue && evaluationContext.isNotNull0(l))
             return new BoolValue(primitives, false, objectFlow);
 
+        if (l instanceof ConstantValue lc && r instanceof ConstantValue rc) {
+            return ConstantValue.equalsValue(primitives, lc, rc);
+        }
         return new EqualsValue(primitives, l, r, objectFlow);
     }
 

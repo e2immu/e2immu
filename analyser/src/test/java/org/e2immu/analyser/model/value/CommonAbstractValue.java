@@ -66,11 +66,12 @@ public abstract class CommonAbstractValue {
 
     @BeforeClass
     public static void beforeClass() {
+        Logger.activate(Logger.LogTarget.CNF);
+        
         TYPE_MAP_BUILDER = new TypeMapImpl.Builder();
         PRIMITIVES = TYPE_MAP_BUILDER.getPrimitives();
         TRUE = new BoolValue(PRIMITIVES, true);
         FALSE = new BoolValue(PRIMITIVES, false);
-        Logger.activate(Logger.LogTarget.CNF);
 
         va = createVariable("a");
         vb = createVariable("b");
