@@ -30,6 +30,7 @@ import java.util.Objects;
 public class Message {
 
     public enum Severity {
+        INFO,
         WARN,
         ERROR
     }
@@ -38,6 +39,9 @@ public class Message {
     public static final String NULL_POINTER_EXCEPTION = "Null pointer exception";
     public static final String INLINE_CONDITION_EVALUATES_TO_CONSTANT = "Inline conditional evaluates to constant";
     public static final String CONDITION_EVALUATES_TO_CONSTANT = "Condition in 'if' or 'switch' statement evaluates to constant";
+    public static final String ALERT_EVALUATES_TO_CONSTANT_FALSE = "Condition in 'assert' is always false";
+    public static final String ALERT_EVALUATES_TO_CONSTANT_TRUE = "Condition in 'assert' is always true";
+
     public static final String EMPTY_LOOP = "Empty loop";
     public static final String UNREACHABLE_STATEMENT = "Unreachable statement";
 
@@ -96,6 +100,8 @@ public class Message {
         map.put(IGNORING_RESULT_OF_METHOD_CALL, Severity.WARN);
         map.put(POTENTIAL_SIZE_PROBLEM, Severity.WARN);
         map.put(CIRCULAR_TYPE_DEPENDENCY, Severity.WARN);
+
+        map.put(ALERT_EVALUATES_TO_CONSTANT_TRUE, Severity.WARN);
 
         SEVERITY_MAP = map.build();
     }

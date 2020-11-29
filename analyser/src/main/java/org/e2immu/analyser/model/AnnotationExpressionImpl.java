@@ -74,22 +74,24 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
 
     public String stream() {
         StringBuilder sb = new StringBuilder("@" + typeInfo.simpleName);
-        sb.append("(");
-        boolean first = true;
-        for (Expression expression : expressions) {
-            if (first) first = false;
-            else sb.append(", ");
-            if (expression instanceof Constant) {
-                sb.append(expression.expressionString(0));
-            } else if (expression instanceof MemberValuePair memberValuePair) {
-                if (!memberValuePair.name.equals("value")) {
-                    sb.append(memberValuePair.name);
-                    sb.append("=");
+        if(!expressions.isEmpty()) {
+            sb.append("(");
+            boolean first = true;
+            for (Expression expression : expressions) {
+                if (first) first = false;
+                else sb.append(", ");
+                if (expression instanceof Constant) {
+                    sb.append(expression.expressionString(0));
+                } else if (expression instanceof MemberValuePair memberValuePair) {
+                    if (!memberValuePair.name.equals("value")) {
+                        sb.append(memberValuePair.name);
+                        sb.append("=");
+                    }
+                    sb.append(memberValuePair.value.expressionString(0));
                 }
-                sb.append(memberValuePair.value.expressionString(0));
             }
+            sb.append(")");
         }
-        sb.append(")");
         return sb.toString();
     }
 

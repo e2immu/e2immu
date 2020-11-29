@@ -275,4 +275,10 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test4() throws IOException {
+        testClass("BasicCompanionMethods_4", 2, 1, new DebugConfiguration.Builder()
+
+                .build());
+    }
 }

@@ -535,12 +535,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         // IMPROVE check that AddOnceSet is the right data structure
     }
 
-    private void markAssigned(Map<VariableProperty, Integer> properties) {
-        int assigned = properties.getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
-        int newAssigned = Math.max(Level.TRUE, assigned + 1); // at least 1, but must go up
-        properties.put(VariableProperty.ASSIGNED, newAssigned);
-    }
-
     // whatever that has not been picked up by the notNull and the size escapes
     // + preconditions by calling other methods with preconditions!
 
@@ -735,8 +729,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (statementAnalysis.statement instanceof ForEachStatement) {
                 step3_ForEach(sharedState, value);
             }
-            if (statementAnalysis.statement instanceof IfElseStatement || statementAnalysis.statement instanceof SwitchStatement) {
-                value = step3_IfElse_Switch(sharedState.evaluationContext, value);
+            if (statementAnalysis.statement instanceof IfElseStatement ||
+                    statementAnalysis.statement instanceof SwitchStatement ||
+                    statementAnalysis.statement instanceof AssertStatement) {
+                value = step3_IfElse_Switch_Assert(sharedState.evaluationContext, value);
             }
             if (value != NO_VALUE) {
                 statementAnalysis.stateData.valueOfExpression.set(value);
@@ -766,7 +762,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    private Value step3_IfElse_Switch(EvaluationContext evaluationContext, Value value) {
+    private Value step3_IfElse_Switch_Assert(EvaluationContext evaluationContext, Value value) {
         Objects.requireNonNull(value);
 
         Value previousConditional = localConditionManager.condition;
@@ -778,12 +774,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 || combinedWithCondition.isConstant();
 
         if (noEffect && !statementAnalysis.stateData.statementContributesToPrecondition.isSet()) {
-            statementAnalysis.ensure(Message.newMessage(evaluationContext.getLocation(), Message.CONDITION_EVALUATES_TO_CONSTANT));
-
             Value constant = combinedWithCondition.equals(previousConditional) ? BoolValue.createTrue(analyserContext.getPrimitives())
                     : combinedWithState.isConstant() ? combinedWithState : combinedWithCondition;
+            String message;
             List<Optional<StatementAnalysis>> blocks = statementAnalysis.navigationData.blocks.get();
             if (statementAnalysis.statement instanceof IfElseStatement) {
+                message = Message.CONDITION_EVALUATES_TO_CONSTANT;
+
                 blocks.get(0).ifPresent(firstStatement -> {
                     boolean isTrue = constant.isBoolValueTrue();
                     if (!isTrue) {
@@ -806,7 +803,24 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         firstStatement.flowData.setGuaranteedToBeReached(isTrue ? NEVER : ALWAYS);
                     });
                 }
-            } // else TODO switch in sub-statements
+            } else if (statementAnalysis.statement instanceof AssertStatement) {
+                boolean isTrue = constant.isBoolValueTrue();
+                if (isTrue) {
+                    message = Message.ALERT_EVALUATES_TO_CONSTANT_TRUE;
+                } else {
+                    message = Message.ALERT_EVALUATES_TO_CONSTANT_FALSE;
+                    Optional<StatementAnalysis> next = statementAnalysis.navigationData.next.get();
+                    next.ifPresent(nextAnalysis -> {
+                        nextAnalysis.flowData.setGuaranteedToBeReached(NEVER);
+                        nextAnalysis.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo, nextAnalysis.index),
+                                Message.UNREACHABLE_STATEMENT));
+                    });
+                }
+            } else {
+                // switch
+                message = Message.CONDITION_EVALUATES_TO_CONSTANT;
+            }
+            statementAnalysis.ensure(Message.newMessage(evaluationContext.getLocation(), message));
             return constant;
         }
         return value;
@@ -818,6 +832,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (!startOfBlocks.isEmpty()) {
             analysisStatus = step4_haveSubBlocks(sharedState, startOfBlocks);
         } else {
+            if (statementAnalysis.statement instanceof AssertStatement) {
+                Value assertion = statementAnalysis.stateData.valueOfExpression.get();
+                localConditionManager = localConditionManager.addToState(sharedState.evaluationContext, assertion);
+                boolean atLeastFieldOrParameterInvolved = assertion.variables().stream()
+                        .anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
+                if (atLeastFieldOrParameterInvolved) {
+                    log(VARIABLE_PROPERTIES, "Assertion escape with precondition {}", assertion);
+
+                    statementAnalysis.stateData.precondition.set(assertion);
+                    statementAnalysis.stateData.statementContributesToPrecondition.set();
+                }
+            }
             analysisStatus = DONE;
         }
         if (localConditionManager.notInDelayedState() && !statementAnalysis.stateData.conditionManager.isSet()) {
