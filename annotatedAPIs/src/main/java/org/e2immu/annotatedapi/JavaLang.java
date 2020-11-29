@@ -375,6 +375,12 @@ class JavaLang {
         StringBuilder append(Object o) {
             return null;
         }
+
+        int toString$Transfer$Len(int len) { return len; }
+        @Override
+        public String toString() {
+            return "x";
+        }
     }
 
     @E2Container

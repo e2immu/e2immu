@@ -29,6 +29,7 @@ public class AnnotatedAPI {
      * @param b the clause
      * @return specialised inline method
      */
+
     public static boolean isFact(boolean b) {
         throw new UnsupportedOperationException();
     }

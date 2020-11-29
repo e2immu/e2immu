@@ -138,19 +138,15 @@ public class JavaUtil extends AnnotatedAPI {
 
         boolean addAll$Modification$Size(int i, int j, java.util.Collection<? extends E> c) { return i == j + c.size(); }
         boolean addAll$Value(java.util.Collection<? extends E> c, boolean retVal) { return true; }
-        // FIXME causes problems with method resolution
+        // IMPROVE causes problems with method resolution
         // boolean addAll$Postcondition(java.util.Collection<? extends E> c) { return c.stream().allMatch(this::contains); }
         @Independent
         boolean addAll(@NotNull1 Collection<? extends E> collection) { return false; }
 
+        // needed here because it is used by a companion of 'add'.
+        static boolean contains$Value$Size(int i, boolean retVal) { return i != 0 && retVal; }
         @NotModified
         boolean contains(@NotNull Object object) { return false; }
-
-        @NotModified
-        boolean containsAll(@NotNull1 Collection<?> c) { return false; }
-
-        @NotModified
-        boolean isEmpty() { return false; }
 
         @NotNull1
         java.util.Iterator<E> iterator() { return null; }
