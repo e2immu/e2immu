@@ -180,8 +180,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         public final TypeInfo owner;
         public final String name;
         public final boolean isConstructor;
-        private Boolean isStatic;
-        private Boolean isDefault;
 
         private final Map<CompanionMethodName, Builder> companionMethods = new LinkedHashMap<>();
         private BlockStmt block;
@@ -207,13 +205,15 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         @Fluent
         public Builder setStatic(boolean isStatic) {
-            this.isStatic = isStatic;
+            if (isStatic) this.modifiers.add(MethodModifier.STATIC);
+            else if (this.modifiers.contains(MethodModifier.STATIC)) throw new UnsupportedOperationException();
             return this;
         }
 
         @Fluent
         public Builder setDefault(boolean isDefault) {
-            this.isDefault = isDefault;
+            if (isDefault) this.modifiers.add(MethodModifier.DEFAULT);
+            else if (this.modifiers.contains(MethodModifier.DEFAULT)) throw new UnsupportedOperationException();
             return this;
         }
 
@@ -417,7 +417,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         @Override
         public boolean isDefault() {
-            return isDefault != null ? isDefault : modifiers.contains(MethodModifier.DEFAULT);
+            return modifiers.contains(MethodModifier.DEFAULT);
         }
 
         @Override
@@ -428,7 +428,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         @Override
         public boolean isStatic() {
-            return isStatic != null ? isStatic : modifiers.contains(MethodModifier.STATIC);
+            return modifiers.contains(MethodModifier.STATIC);
         }
     }
 }

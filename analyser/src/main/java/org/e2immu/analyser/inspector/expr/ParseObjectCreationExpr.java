@@ -20,7 +20,10 @@ package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import org.e2immu.analyser.inspector.*;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.NamedType;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 
@@ -47,9 +50,10 @@ public class ParseObjectCreationExpr {
         Map<NamedType, ParameterizedType> typeMap = parameterizedType.initialTypeParameterMap(expressionContext.typeContext);
         List<TypeContext.MethodCandidate> methodCandidates = expressionContext.typeContext.resolveConstructor(parameterizedType, objectCreationExpr.getArguments().size(), typeMap);
         List<Expression> newParameterExpressions = new ArrayList<>();
-        MethodTypeParameterMap method = ParseMethodCallExpr.chooseCandidateAndEvaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),
-                newParameterExpressions, singleAbstractMethod, new HashMap<>(), "constructor",
-                parameterizedType, objectCreationExpr.getBegin().orElseThrow());
+        MethodTypeParameterMap method = new ParseMethodCallExpr(expressionContext.typeContext)
+                .chooseCandidateAndEvaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),
+                        newParameterExpressions, singleAbstractMethod, new HashMap<>(), "constructor",
+                        parameterizedType, objectCreationExpr.getBegin().orElseThrow());
         if (method == null) return new UnevaluatedMethodCall(parameterizedType.detailedString() + "::new");
         return new NewObject(method.methodInspection.getMethodInfo(), parameterizedType, newParameterExpressions, null);
     }

@@ -547,7 +547,7 @@ public class ExpressionContext {
                 return new Assignment(typeContext.getPrimitives(), target, value);
             }
             if (expression.isMethodCallExpr()) {
-                return ParseMethodCallExpr.parse(this, expression.asMethodCallExpr(), singleAbstractMethod);
+                return new ParseMethodCallExpr(typeContext).parse(this, expression.asMethodCallExpr(), singleAbstractMethod);
             }
             if (expression.isMethodReferenceExpr()) {
                 return ParseMethodReferenceExpr.parse(this, expression.asMethodReferenceExpr(), singleAbstractMethod);

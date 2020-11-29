@@ -409,7 +409,7 @@ public class ParameterizedType {
 
     public boolean isFunctionalInterface() {
         if (typeInfo == null) return false;
-        return typeInfo.typeInspection.get().isFunctionalInterface();
+        return typeInfo.typeInspection.get(typeInfo.fullyQualifiedName).isFunctionalInterface();
     }
 
     public boolean isFunctionalInterface(InspectionProvider inspectionProvider) {

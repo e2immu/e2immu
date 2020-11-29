@@ -153,7 +153,6 @@ public interface TypeInspection extends Inspection {
 
     /**
      * This is the starting place to compute all types that are referred to in any way.
-     * It is different from imports, because imports need an explicitly written type.
      *
      * @return a map of all types referenced, with the boolean indicating explicit reference somewhere
      */

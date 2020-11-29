@@ -181,9 +181,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         StringUtil.indent(sb, indent);
         sb.append(inspection.getModifiers().stream().map(m -> m.toJava() + " ").collect(Collectors.joining()));
         MethodInspection methodInspection = this.methodInspection.get();
-        if (methodInspection.isStatic()) {
-            sb.append("static ");
-        }
+
         if (!methodInspection.getTypeParameters().isEmpty()) {
             sb.append("<");
             sb.append(methodInspection.getTypeParameters().stream().map(TypeParameter::getName).collect(Collectors.joining(", ")));

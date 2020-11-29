@@ -20,10 +20,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.AnalyserConfiguration;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.junit.Assert;
 import org.junit.Test;
@@ -59,10 +56,13 @@ public class TestModificationGraphInterface extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass(List.of("ModificationGraphInterface", "ModificationGraphInterfaceC1", "ModificationGraphInterfaceC2",
-                "ModificationGraphInterfaceIncrementer"), 0, 0, new DebugConfiguration.Builder()
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .build(), new AnalyserConfiguration.Builder().build());
+                "ModificationGraphInterfaceIncrementer"), 0, 0,
+                new DebugConfiguration.Builder()
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder().build(),
+                new AnnotatedAPIConfiguration.Builder().build());
     }
 
 }

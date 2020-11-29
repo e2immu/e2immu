@@ -78,11 +78,12 @@ public class Parser {
         if (annotatedAPIs.isEmpty()) {
             sortedAnnotatedAPITypes = List.of();
         } else {
-            sortedAnnotatedAPITypes = inspectAndResolve(input.annotatedAPIs(), input.annotatedAPITypes());
+            sortedAnnotatedAPITypes = inspectAndResolve(input.annotatedAPIs(), input.annotatedAPITypes(),
+                    configuration.annotatedAPIConfiguration.reportWarnings, true);
         }
 
         // and the the inspection and resolution of Java sources (Java parser)
-        List<SortedType> resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), input.sourceTypes());
+        List<SortedType> resolvedSourceTypes = inspectAndResolve(input.sourceURLs(), input.sourceTypes(), true, false);
 
         // creating the typeMap ensures that all inspections are set.
         TypeMap typeMap = input.globalTypeContext().typeMapBuilder.build();
@@ -100,7 +101,9 @@ public class Parser {
         return resolvedSourceTypes;
     }
 
-    public List<SortedType> inspectAndResolve(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport) {
+    public List<SortedType> inspectAndResolve(Map<TypeInfo, URL> urls, Trie<TypeInfo> typesForWildcardImport,
+                                              boolean reportWarnings,
+                                              boolean shallowResolver) {
         TypeMapImpl.Builder typeMapBuilder = input.globalTypeContext().typeMapBuilder;
         InspectWithJavaParserImpl onDemandSourceInspection = new InspectWithJavaParserImpl(urls, typesForWildcardImport);
         typeMapBuilder.setInspectWithJavaParser(onDemandSourceInspection);
@@ -110,10 +113,11 @@ public class Parser {
                 input.globalTypeContext().getTypeInspection(e.getKey()));
 
         // phase 2: resolve methods and fields
-        Resolver resolver = new Resolver();
+        Resolver resolver = new Resolver(shallowResolver);
         List<SortedType> sortedPrimaryTypes = resolver.sortTypes(input.globalTypeContext(),
                 onDemandSourceInspection.typeContexts);
-        messages.addAll(resolver.getMessageStream());
+        messages.addAll(resolver.getMessageStream()
+                .filter(m -> m.severity != Message.Severity.WARN || reportWarnings));
         return sortedPrimaryTypes;
     }
 

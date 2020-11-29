@@ -79,11 +79,14 @@ public class TestModificationGraph extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass(List.of("ModificationGraph", "ModificationGraphC1", "ModificationGraphC2"),
-                0, 1, new DebugConfiguration.Builder()
+                0, 1,
+                new DebugConfiguration.Builder()
                         .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                        .build(), new AnalyserConfiguration.Builder().build());
+                        .build(),
+                new AnalyserConfiguration.Builder().build(),
+                new AnnotatedAPIConfiguration.Builder().build());
 
     }
 

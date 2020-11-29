@@ -21,10 +21,7 @@ package org.e2immu.analyser.parser;
 
 import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.config.AnalyserConfiguration;
-import org.e2immu.analyser.config.Configuration;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.resolver.SortedType;
 import org.junit.Assert;
@@ -60,16 +57,20 @@ public abstract class CommonTestRunner {
     }
 
     protected TypeContext testClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration) throws IOException {
-        return testClass(List.of(className), errorsToExpect, warningsToExpect, debugConfiguration, new AnalyserConfiguration.Builder().build());
+        return testClass(List.of(className), errorsToExpect, warningsToExpect, debugConfiguration, new AnalyserConfiguration.Builder().build(),
+                new AnnotatedAPIConfiguration.Builder().build());
     }
 
     protected TypeContext testClass(String className, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration,
                                     AnalyserConfiguration analyserConfiguration) throws IOException {
-        return testClass(List.of(className), errorsToExpect, warningsToExpect, debugConfiguration, analyserConfiguration);
+        return testClass(List.of(className), errorsToExpect, warningsToExpect, debugConfiguration, analyserConfiguration,
+                new AnnotatedAPIConfiguration.Builder().build());
     }
 
-    protected TypeContext testClass(List<String> classNames, int errorsToExpect, int warningsToExpect, DebugConfiguration debugConfiguration,
-                                    AnalyserConfiguration analyserConfiguration) throws IOException {
+    protected TypeContext testClass(List<String> classNames, int errorsToExpect, int warningsToExpect,
+                                    DebugConfiguration debugConfiguration,
+                                    AnalyserConfiguration analyserConfiguration,
+                                    AnnotatedAPIConfiguration annotatedAPIConfiguration) throws IOException {
         // parsing the annotatedAPI files needs them being backed up by .class files, so we'll add the Java
         // test runner's classpath to ours
         InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
@@ -88,11 +89,12 @@ public abstract class CommonTestRunner {
         Configuration configuration = new Configuration.Builder()
                 .setDebugConfiguration(debugConfiguration)
                 .setAnalyserConfiguration(analyserConfiguration)
+                .setAnnotatedAPIConfiguration(annotatedAPIConfiguration)
                 .addDebugLogTargets(List.of(ANALYSER, // INSPECT, RESOLVE,
 
                         TRANSFORM,
                         LAMBDA,
-                       // RESOLVE,
+                        // RESOLVE,
                         DELAYED, SIZE,
                         //VARIABLE_PROPERTIES,
                         FINAL,

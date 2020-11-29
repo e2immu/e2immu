@@ -215,8 +215,7 @@ public class MethodInspector {
     private static void addModifiers(MethodInspectionImpl.Builder builder,
                                      NodeList<Modifier> modifiers) {
         for (Modifier modifier : modifiers) {
-            if (!"static".equals(modifier.getKeyword().asString()))
-                builder.addModifier(MethodModifier.from(modifier));
+            builder.addModifier(MethodModifier.from(modifier));
         }
     }
 

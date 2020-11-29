@@ -100,7 +100,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
         TypeInfo methodOverloadOrig = parser.getTypeContext().typeMapBuilder.getOrCreate(
                 "org.e2immu.analyser.testexample", "MethodOverload", TRIGGER_JAVA_PARSER);
         URL url = new File(SRC_TEST_JAVA_ORG_E2IMMU_ANALYSER + "testexample/MethodOverload.java").toURI().toURL();
-        List<SortedType> types = parser.inspectAndResolve(Map.of(methodOverloadOrig, url), new Trie<>());
+        List<SortedType> types = parser.inspectAndResolve(Map.of(methodOverloadOrig, url), new Trie<>(), true, false);
         LOGGER.info("Have {} types", types.size());
 
         // method: hashCode

@@ -51,9 +51,14 @@ public class Resolver {
     private static final Logger LOGGER = LoggerFactory.getLogger(Resolver.class);
 
     private final Messages messages = new Messages();
+    private final boolean shallowResolver;
 
     public Stream<Message> getMessageStream() {
         return messages.getMessageStream();
+    }
+
+    public Resolver(boolean shallowResolver) {
+        this.shallowResolver = shallowResolver;
     }
 
     /**
@@ -142,15 +147,13 @@ public class Resolver {
         // NOW, ALL METHODS IN THIS PRIMARY TYPE HAVE METHOD RESOLUTION SET
 
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
-        Set<TypeInfo> typeDependencies = typeInfo.typesReferenced().stream().map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
+        Set<TypeInfo> typeDependencies = shallowResolver ?
+                new HashSet<>(superTypesExcludingJavaLangObject(typeContextOfFile, typeInfo)) :
+                typeInfo.typesReferenced().stream().map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
 
-        if (Primitives.isJavaLangObject(typeInfo)) {
-            typeDependencies.clear(); // removes a gigantic circular dependency on Object -> String
-        } else {
-            typeDependencies.removeAll(typeAndAllSubTypes);
-            typeDependencies.remove(typeInfo);
-            typeDependencies.retainAll(stayWithin);
-        }
+        typeDependencies.removeAll(typeAndAllSubTypes);
+        typeDependencies.remove(typeInfo);
+        typeDependencies.retainAll(stayWithin);
 
         typeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
         ImmutableList<WithInspectionAndAnalysis> methodFieldSubTypeOrder = ImmutableList.copyOf(methodFieldSubTypeGraph.sorted());

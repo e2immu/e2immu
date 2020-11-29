@@ -31,17 +31,22 @@ import static org.e2immu.analyser.config.Configuration.*;
 @E2Immutable
 public class AnnotatedAPIConfiguration {
 
+    public final boolean reportWarnings;
+
     // write AA
     public final boolean writeAnnotatedAPIs;
     public final List<String> writeAnnotatedAPIsPackages;
     public final String writeAnnotatedAPIsDir;
 
-    public AnnotatedAPIConfiguration(boolean writeAnnotatedAPIs,
-                                     List<String> writeAnnotatedAPIsPackages,
-                                     String writeAnnotatedAPIsDir) {
+    public AnnotatedAPIConfiguration(
+            boolean reportWarnings,
+            boolean writeAnnotatedAPIs,
+            List<String> writeAnnotatedAPIsPackages,
+            String writeAnnotatedAPIsDir) {
         this.writeAnnotatedAPIs = writeAnnotatedAPIs;
         this.writeAnnotatedAPIsPackages = writeAnnotatedAPIsPackages;
         this.writeAnnotatedAPIsDir = writeAnnotatedAPIsDir;
+        this.reportWarnings = reportWarnings;
     }
 
     public static AnnotatedAPIConfiguration fromProperties(Map<String, String> analyserProperties) {
@@ -78,14 +83,15 @@ public class AnnotatedAPIConfiguration {
 
     @Container
     public static class Builder {
-
+        private boolean reportWarnings;
         private boolean writeAnnotatedAPIs;
         private final List<String> writeAnnotatedAPIsPackages = new ArrayList<>();
         private String writeAnnotatedAPIsDir;
 
 
         public AnnotatedAPIConfiguration build() {
-            return new AnnotatedAPIConfiguration(writeAnnotatedAPIs,
+            return new AnnotatedAPIConfiguration(reportWarnings,
+                    writeAnnotatedAPIs,
                     ImmutableList.copyOf(writeAnnotatedAPIsPackages),
                     writeAnnotatedAPIsDir);
         }
@@ -99,6 +105,12 @@ public class AnnotatedAPIConfiguration {
         @Fluent
         public Builder setAnnotatedAPIs(boolean writeAnnotatedAPIs) {
             this.writeAnnotatedAPIs = writeAnnotatedAPIs;
+            return this;
+        }
+
+        @Fluent
+        public Builder setReportWarnings(boolean reportWarnings) {
+            this.reportWarnings = reportWarnings;
             return this;
         }
 

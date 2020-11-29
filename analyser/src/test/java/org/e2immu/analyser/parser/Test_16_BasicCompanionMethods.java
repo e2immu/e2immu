@@ -22,13 +22,13 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.EqualsValue;
-import org.e2immu.analyser.model.value.MethodValue;
-import org.e2immu.analyser.model.value.SumValue;
 import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.statement.ReturnStatement;
+import org.e2immu.analyser.model.value.EqualsValue;
+import org.e2immu.analyser.model.value.MethodValue;
+import org.e2immu.analyser.model.value.SumValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -76,6 +76,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("test".equals(d.methodInfo().name)) {
                 Assert.assertEquals("4", d.methodAnalysis().getSingleReturnValue().toString());
+                Assert.assertTrue(d.methodInfo().methodInspection.get().isStatic());
             }
         };
 
@@ -91,17 +92,22 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
         };
 
         // two errors: two unused parameters
-        testClass("BasicCompanionMethods_0", 2, 0, new DebugConfiguration.Builder()
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addTypeContextVisitor(typeMapVisitor)
-                .build());
+        testClass(List.of("BasicCompanionMethods_0"), 2, 0,
+                new DebugConfiguration.Builder()
+                        .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
+                        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                        .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addTypeContextVisitor(typeMapVisitor)
+                        .build(),
+                new AnalyserConfiguration.Builder().build(),
+                new AnnotatedAPIConfiguration.Builder()
+                        .setReportWarnings(true)
+                        .build());
     }
 
 
-    public static final String INSTANCE_SIZE_1_CONTAINS = "instance type java.util.ArrayList()[(java.util.List.this.contains(a) and 1 == java.util.List.this.size())]";
+    public static final String INSTANCE_SIZE_1_CONTAINS = "instance type java.util.ArrayList[(java.util.List.this.contains(a) and 1 == java.util.Collection.this.size())]";
     public static final String TEST_1_RETURN_VARIABLE = "org.e2immu.analyser.testexample.BasicCompanionMethods_1.test()";
 
     @Test
@@ -170,12 +176,12 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId()) && "list".equals(d.variableName())) {
-                Assert.assertEquals("instance type java.util.ArrayList()[(java.util.List.this.contains(a) and 1 == java.util.List.this.size())]",
+                Assert.assertEquals("instance type java.util.ArrayList[(java.util.List.this.contains(a) and 1 == java.util.Collection.this.size())]",
                         d.currentValue().toString());
             }
             if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId()) && "list".equals(d.variableName())) {
-                Assert.assertEquals("instance type java.util.ArrayList()[(java.util.List.this.contains(a) and java.util.List.this.contains(b)" +
-                                " and 2 == java.util.List.this.size())]",
+                Assert.assertEquals("instance type java.util.ArrayList[(java.util.List.this.contains(a) and java.util.List.this.contains(b)" +
+                                " and 2 == java.util.Collection.this.size())]",
                         d.currentValue().toString());
             }
         };
@@ -196,8 +202,8 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
     @Test
     public void test3() throws IOException {
         TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo string = typeMap.get(String.class);
-            MethodInfo length = string.findUniqueMethod("length", 0);
+            TypeInfo charSequence = typeMap.get(CharSequence.class);
+            MethodInfo length = charSequence.findUniqueMethod("length", 0);
             Assert.assertTrue(length.methodAnalysis.isSet());
             Assert.assertEquals(Set.of(CompanionMethodName.Action.ASPECT, CompanionMethodName.Action.INVARIANT),
                     length.methodInspection.get().getCompanionMethods().keySet().stream().map(CompanionMethodName::action).collect(Collectors.toSet()));
@@ -210,6 +216,9 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
             ReturnStatement returnStatement = (ReturnStatement) appendIntCompanion.methodInspection.get().getMethodBody().structure.statements.get(0);
             Assert.assertEquals("return post == prev + Integer.toString(i).length();\n", returnStatement.statementString(0, null));
 
+            TypeInfo string = typeMap.getPrimitives().stringTypeInfo;
+            MethodInfo stringLength = string.findUniqueMethod("length", 0);
+
             if (returnStatement.expression instanceof BinaryOperator eq &&
                     eq.rhs instanceof BinaryOperator plus &&
                     plus.rhs instanceof MethodCall lengthCall &&
@@ -218,34 +227,33 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                 // check we have the same Integer type
                 Assert.assertSame(integer.parameterizedType.typeInfo, typeMap.getPrimitives().integerTypeInfo);
                 // check the length method
-                Assert.assertSame(lengthCall.methodInfo, length);
+                Assert.assertSame(lengthCall.methodInfo, stringLength);
             }
             CompanionAnalysis appendCa = appendInt.methodAnalysis.get().getCompanionAnalyses().values().stream().findFirst().orElseThrow();
             Value appendCompanionValue = appendCa.getValue();
-            Assert.assertEquals("(java.lang.Integer.toString(java.lang.StringBuilder.append(int):0:i).length() + pre) == java.lang.StringBuilder.this.length()",
+            Assert.assertEquals("(java.lang.Integer.toString(java.lang.StringBuilder.append(int):0:i).length() + pre) == java.lang.CharSequence.this.length()",
                     appendCa.getValue().toString());
             if (appendCompanionValue instanceof EqualsValue eq && eq.lhs instanceof SumValue sum && sum.lhs instanceof MethodValue lengthCall) {
-                Assert.assertSame(lengthCall.methodInfo, length);
+                Assert.assertSame(lengthCall.methodInfo, stringLength);
             } else Assert.fail();
 
-            TypeInfo stringTypeInfo = typeMap.getPrimitives().stringTypeInfo;
             MethodInfo appendStr = stringBuilder.typeInspection.get().methods().stream().filter(methodInfo -> "append".equals(methodInfo.name) &&
                     string == methodInfo.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
             MethodInfo appendStringCompanion = appendStr.methodInspection.get().getCompanionMethods().values().stream().findFirst().orElseThrow();
             ReturnStatement returnStatementStr = (ReturnStatement) appendStringCompanion.methodInspection.get().getMethodBody().structure.statements.get(0);
-            Assert.assertEquals("return post == prev + str.length();\n", returnStatementStr.statementString(0, null));
+            Assert.assertEquals("return post == prev + (str == null ? 4 : str.length());\n", returnStatementStr.statementString(0, null));
+        };
 
-            if (returnStatementStr.expression instanceof BinaryOperator eq &&
-                    eq.rhs instanceof BinaryOperator plus &&
-                    plus.rhs instanceof MethodCall lengthCall) {
-                // check the length method
-                Assert.assertEquals(lengthCall.methodInfo, length);
-                Assert.assertSame(lengthCall.methodInfo, length);
-            } else Assert.fail();
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "sb".equals(d.variableName())) {
+                Assert.assertEquals("xnstance type java.lang.StringBuilder(abc)[(1 + (java.lang.Integer.toString(3).length() + java.lang.StringBuilder.StringBuilder(java.lang.String):0:str.length())) == java.lang.CharSequence.this.length()]",
+                        d.currentValue().toString());
+            }
         };
 
         testClass("BasicCompanionMethods_3", 0, 0, new DebugConfiguration.Builder()
                 .addTypeContextVisitor(typeMapVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
