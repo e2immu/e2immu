@@ -95,7 +95,7 @@ public abstract class ConstantValue implements Value {
         if (l instanceof NumericValue ln && r instanceof NumericValue rn) {
             return BoolValue.create(primitives, ln.getNumber().equals(rn.getNumber()));
         }
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("l = "+l+", r = "+r);
     }
 
 }

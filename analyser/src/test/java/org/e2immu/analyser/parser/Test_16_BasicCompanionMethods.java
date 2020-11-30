@@ -281,4 +281,25 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
 
                 .build());
     }
+
+    @Test
+    public void test5() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
+                if("0".equals(d.statementId())) {
+                    Assert.assertEquals("instance type java.util.HashSet[0 == java.util.Collection.this.size()]",
+                            d.currentValue().toString());
+                }
+                if("1".equals(d.statementId())) {
+                    Assert.assertEquals("instance type java.util.HashSet[0 == java.util.Collection.this.size()]",
+                            d.currentValue().toString());
+                }
+            }
+        };
+
+
+        testClass("BasicCompanionMethods_5", 0, 6, new DebugConfiguration.Builder()
+        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
 }

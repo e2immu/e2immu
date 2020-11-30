@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model.value;
 
-import org.e2immu.analyser.analyser.AnalyserContext;
-import org.e2immu.analyser.analyser.ConditionManager;
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.TypeAnalysisImpl;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
@@ -67,7 +64,7 @@ public abstract class CommonAbstractValue {
     @BeforeClass
     public static void beforeClass() {
         Logger.activate(Logger.LogTarget.CNF);
-        
+
         TYPE_MAP_BUILDER = new TypeMapImpl.Builder();
         PRIMITIVES = TYPE_MAP_BUILDER.getPrimitives();
         TRUE = new BoolValue(PRIMITIVES, true);
@@ -182,10 +179,21 @@ public abstract class CommonAbstractValue {
     protected final static AnalyserContext analyserContext = new AnalyserContext() {
     };
 
-    protected final static EvaluationContext minimalEvaluationContext = new EvaluationContext() {
+    protected final static EvaluationContext minimalEvaluationContext = new EvaluationContextImpl();
+
+    static class EvaluationContextImpl extends AbstractEvaluationContextImpl {
+
+        private EvaluationContextImpl(ConditionManager conditionManager) {
+            super(0, conditionManager);
+        }
+
+        EvaluationContextImpl() {
+            super(0, ConditionManager.INITIAL);
+        }
+
         @Override
-        public ConditionManager getConditionManager() {
-            return ConditionManager.INITIAL;
+        public EvaluationContext child(Value condition) {
+            return new EvaluationContextImpl(conditionManager.addCondition(this, condition));
         }
 
         @Override
@@ -199,15 +207,15 @@ public abstract class CommonAbstractValue {
         }
 
         @Override
-        public boolean isNotNull0(Value value) {
-            return false; // no opinion
-        }
-
-        @Override
         public Primitives getPrimitives() {
             return PRIMITIVES;
         }
-    };
+
+        @Override
+        public int getProperty(Value value, VariableProperty variableProperty) {
+            return 0;
+        }
+    }
 
     protected static Value equals(Value v1, Value v2) {
         return EqualsValue.equals(minimalEvaluationContext, v1, v2, ObjectFlow.NO_FLOW);

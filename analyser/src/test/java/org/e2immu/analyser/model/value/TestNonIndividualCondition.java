@@ -19,7 +19,7 @@ public class TestNonIndividualCondition extends CommonAbstractValue {
         Assert.assertEquals("null == s", rest(sEqualsNull, Filter.FilterMode.ACCEPT).toString());
 
         Value pEqualsNull = equals(NullValue.NULL_VALUE, p);
-        Assert.assertEquals("null == some.type.type(String):0:p", pEqualsNull.toString());
+        Assert.assertEquals("null == some.type.type(java.lang.String):0:p", pEqualsNull.toString());
         Assert.assertEquals("null == p", pEqualsNull.print(PrintMode.FOR_ANNOTATIONS));
         Assert.assertSame(UnknownValue.EMPTY, rest(pEqualsNull, Filter.FilterMode.ACCEPT));
         Assert.assertSame(UnknownValue.EMPTY, rest(negate(pEqualsNull), Filter.FilterMode.ACCEPT));
@@ -28,17 +28,17 @@ public class TestNonIndividualCondition extends CommonAbstractValue {
         Assert.assertEquals("null == s", rest(orValue, Filter.FilterMode.REJECT).toString());
 
         Value orValue2 = newOrAppend(sEqualsNull, pEqualsNull);
-        Assert.assertEquals("(null == s or null == some.type.type(String):0:p)", rest(orValue2, Filter.FilterMode.ACCEPT).toString());
+        Assert.assertEquals("(null == s or null == some.type.type(java.lang.String):0:p)", rest(orValue2, Filter.FilterMode.ACCEPT).toString());
         Assert.assertEquals("(null == s or null == p)", rest(orValue2, Filter.FilterMode.ACCEPT).print(PrintMode.FOR_ANNOTATIONS));
 
         Value andValue = newAndAppend(sEqualsNull, pEqualsNull);
-        Assert.assertEquals("(null == s and null == some.type.type(String):0:p)", rest(andValue, Filter.FilterMode.REJECT).toString());
+        Assert.assertEquals("(null == s and null == some.type.type(java.lang.String):0:p)", rest(andValue, Filter.FilterMode.REJECT).toString());
 
         Value andValue2 = newAndAppend(sEqualsNull, pEqualsNull);
         Assert.assertEquals("null == s", rest(andValue2, Filter.FilterMode.ACCEPT).toString());
 
         Value notAndValue = negate(andValue);
-        Assert.assertEquals("(not (null == s) or not (null == some.type.type(String):0:p))", notAndValue.toString());
+        Assert.assertEquals("(not (null == s) or not (null == some.type.type(java.lang.String):0:p))", notAndValue.toString());
         Assert.assertEquals("not (null == s)", rest(notAndValue, Filter.FilterMode.REJECT).toString());
     }
 }

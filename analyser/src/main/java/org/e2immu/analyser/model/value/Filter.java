@@ -228,4 +228,12 @@ public class Filter {
         }
     }
 
+    public static record ExactValue(Value value) implements FilterMethod<Value> {
+
+        @Override
+        public FilterResult<Value> apply(Value value) {
+            if(this.value.equals(value)) return new FilterResult<>(Map.of(value, value), UnknownValue.EMPTY);
+            return null;
+        }
+    }
 }

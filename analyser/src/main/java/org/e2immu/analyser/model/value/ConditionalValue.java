@@ -19,8 +19,11 @@ package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
@@ -102,6 +105,9 @@ public class ConditionalValue implements Value {
         Value edgeCase = edgeCases(evaluationContext, evaluationContext.getPrimitives(), condition, ifTrue, ifFalse);
         if (edgeCase != null) return builder.setValue(edgeCase).build();
 
+        Value isFact = isFact(evaluationContext, condition, ifTrue, ifFalse);
+        if (isFact != null) return builder.setValue(isFact).build();
+
         // standardization... we swap!
         // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form
 
@@ -128,7 +134,40 @@ public class ConditionalValue implements Value {
             return BoolValue.createTrue(primitives);
         }
         // !a ? a : !a == !a == a ? !a : a --> will not happen, as we've already swapped
+
+        // a ? true: b  --> a || b
+        // a ? b : true --> !a || b
+        // a ? b : false --> a && b
+        // a ? false: b --> !a && b
+        if (ifTrue instanceof BoolValue ifTrueBool) {
+            if (ifTrueBool.value) {
+                return new OrValue(primitives).append(evaluationContext, condition, ifFalse);
+            }
+            return new AndValue(primitives).append(evaluationContext, NegatedValue.negate(evaluationContext, condition), ifFalse);
+        }
+        if (ifFalse instanceof BoolValue ifFalseBool) {
+            if (ifFalseBool.value) {
+                return new OrValue(primitives).append(evaluationContext, NegatedValue.negate(evaluationContext, condition), ifTrue);
+            }
+            return new AndValue(primitives).append(evaluationContext, condition, ifTrue);
+        }
         return null;
+    }
+
+    // isFact(contains(e)) will check if "contains(e)" is part of the current instance's state
+    // it will bypass ConditionalValue and return ifTrue or ifFalse accordingly
+    // note that we don't need to check for !isFact() because the inversion has already taken place
+    private static Value isFact(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse) {
+        if (condition instanceof MethodValue methodValue && ShallowTypeAnalyser.IS_FACT_FQN.equals(methodValue.methodInfo.fullyQualifiedName)) {
+            return inState(evaluationContext, methodValue.parameters.get(0)) ? ifTrue : ifFalse;
+        }
+        return null;
+    }
+
+    private static boolean inState(EvaluationContext evaluationContext, Value value) {
+        Filter.FilterResult<Value> res = Filter.filter(evaluationContext, evaluationContext.getConditionManager().state,
+                Filter.FilterMode.ACCEPT, new Filter.ExactValue(value));
+        return !res.accepted().isEmpty();
     }
 
     @Override

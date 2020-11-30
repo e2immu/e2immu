@@ -21,6 +21,7 @@ import org.e2immu.annotation.*;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
@@ -48,16 +49,9 @@ public class JavaUtil extends AnnotatedAPI {
     // this is not in line with the JDK, but we will block null keys!
     static class Collection$<E>  {
 
-        // note that with the $, we're really in java.util.Collection, so we have no knowledge of addModificationHelper unless we add it to the
-        // type context (but that is possible) IMPROVE
-        boolean add$Modification$Size(int i, int j, E e) { return org.e2immu.annotatedapi.JavaUtil.addModificationHelper(i, j, contains(e)); }
-        boolean add$Value$Size(int size, E e, boolean retVal) { return org.e2immu.annotatedapi.JavaUtil.addValueHelper(size, contains(e), retVal); }
         boolean add$Postcondition(E e) { return contains(e); }
         boolean add(@NotNull E e) { return true; }
 
-        boolean addAll$Modification$Size(int i, int j, java.util.Collection<? extends E> c) { return i >= j && i <= j + c.size(); }
-        // FIXME the next line causes problems with override() not yet computed in method resolution
-        // boolean addAll$Postcondition(java.util.Collection<? extends E> c) { return c.stream().allMatch(this::contains); }
         @Independent
         boolean addAll(@NotNull1 java.util.Collection<? extends E> collection) { return true; }
 
@@ -76,7 +70,7 @@ public class JavaUtil extends AnnotatedAPI {
 
         // there is a "default forEach" in Iterable, but here we can guarantee that consumer is @NotNull1 (its
         // arguments will not be null either)
-        // FIXME allow for "overrides" (copies)
+        // IMPROVE allow for "overrides" (copies)
         //void forEach(@NotNull1 Consumer<? super E> action) {}
 
         boolean isEmpty$Value$Size(int i, boolean retVal) { return i == 0; }
@@ -145,6 +139,8 @@ public class JavaUtil extends AnnotatedAPI {
 
         // needed here because it is used by a companion of 'add'.
         static boolean contains$Value$Size(int i, boolean retVal) { return i != 0 && retVal; }
+        static boolean contains$Value$Size99(int i, boolean retVal) { return i==0 ?  false: retVal; }
+
         @NotModified
         boolean contains(@NotNull Object object) { return false; }
 
@@ -205,6 +201,17 @@ public class JavaUtil extends AnnotatedAPI {
     // this is not in line with the JDK, but we will block null keys!
     static class Set$<E> {
 
+        // note that with the $, we're really in java.util.Set, so we have no knowledge of addModificationHelper unless we add it to the
+        // type context (but that is possible) IMPROVE
+        boolean add$Modification$Size(int i, int j, E e) { return org.e2immu.annotatedapi.JavaUtil.addModificationHelper(i, j, contains(e)); }
+        boolean add$Value$Size(int size, E e, boolean retVal) { return org.e2immu.annotatedapi.JavaUtil.addValueHelper(size, contains(e), retVal); }
+        boolean add$Postcondition(E e) { return contains(e); }
+        boolean add(@NotNull E e) { return true; }
+
+        boolean addAll$Modification$Size(int i, int j, java.util.Collection<? extends E> c) { return i >= j && i <= j + c.size(); }
+        @Independent
+        boolean addAll(@NotNull1 java.util.Collection<? extends E> collection) { return true; }
+
         static boolean contains$Value$Size(int i, boolean retVal) { return i != 0 && retVal; }
         @NotModified
         boolean contains(@NotNull Object object) { return true; }
@@ -238,9 +245,9 @@ public class JavaUtil extends AnnotatedAPI {
     }
 
     @Container
-    // this is not in line with the JDK, but we will block null keys!
     static class ArrayList$<E> {
 
+        // tested in BCM_0, _1
         boolean ArrayList$Modification$Size(int post) { return post == 0; }
         public ArrayList$() {
         }
@@ -248,16 +255,18 @@ public class JavaUtil extends AnnotatedAPI {
         boolean ArrayList$Modification$Size(int post, int size) { return post == 0; }
         public ArrayList$(int size) {
         }
+    }
 
-        boolean add$Modification$Size(int i, int j, E e) { return i == j + 1; }
-        boolean add$Value(E e, boolean retVal) { return true; }
-        boolean add$Postcondition(E e) { return contains(e); }
-        boolean add(@NotNull E e) { return false; /* actually, true, see $Value */ }
+    @Container
+    static class HashSet$<E> {
 
-        @NotModified
-        boolean contains(@NotNull Object object) { return false; }
+        // tested in BCM_0, _1
+        boolean HashSet$Modification$Size(int post) { return post == 0; }
+        public HashSet$() {
+        }
 
-        @NotNull
-        Iterator<E> iterator() { return null; }
+        boolean HashSet$Modification$Size(int post, Collection<? extends  E> c) { return post == c.size(); }
+        public HashSet$(Collection<? extends  E> c) {
+        }
     }
 }
