@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.MethodCall;
+import org.e2immu.analyser.model.expression.util.EvaluateMethodCall;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
@@ -97,7 +98,7 @@ public class MethodValue implements Value {
         EvaluationResult reObject = object.reEvaluate(evaluationContext, translation);
         List<Value> reParamValues = reParams.stream().map(er -> er.value).collect(Collectors.toList());
         int modified = evaluationContext.getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED);
-        EvaluationResult mv = MethodCall.methodValue(modified,
+        EvaluationResult mv = EvaluateMethodCall.methodValue(modified,
                 evaluationContext, methodInfo, evaluationContext.getMethodAnalysis(methodInfo), reObject.value, reParamValues, getObjectFlow());
         return new EvaluationResult.Builder(evaluationContext).compose(reParams).compose(reObject, mv).setValue(mv.value).build();
     }

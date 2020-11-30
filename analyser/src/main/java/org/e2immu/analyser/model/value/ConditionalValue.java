@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
@@ -105,9 +106,11 @@ public class ConditionalValue implements Value {
         Value edgeCase = edgeCases(evaluationContext, evaluationContext.getPrimitives(), condition, ifTrue, ifFalse);
         if (edgeCase != null) return builder.setValue(edgeCase).build();
 
-        if(!evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis()) {
+        if (!evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis()) {
             Value isFact = isFact(evaluationContext, condition, ifTrue, ifFalse);
             if (isFact != null) return builder.setValue(isFact).build();
+            Value isKnown = isKnown(evaluationContext, condition, ifTrue, ifFalse);
+            if (isKnown != null) return builder.setValue(isKnown).build();
         }
         // standardization... we swap!
         // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form
@@ -170,6 +173,20 @@ public class ConditionalValue implements Value {
                 Filter.FilterMode.ACCEPT, new Filter.ExactValue(value));
         return !res.accepted().isEmpty();
     }
+
+    // whilst isKnown is also caught at the level of MethodCall, we grab it here to avoid warnings for
+    // constant evaluation
+    private static Value isKnown(EvaluationContext evaluationContext, Value condition, Value ifTrue, Value ifFalse) {
+        if (condition instanceof MethodValue methodValue &&
+                ShallowTypeAnalyser.IS_KNOWN_FQN.equals(methodValue.methodInfo.fullyQualifiedName) &&
+                methodValue.parameters.get(0) instanceof BoolValue boolValue && boolValue.value) {
+            VariableValue object = new VariableValue(new This(evaluationContext.getAnalyserContext(), methodValue.methodInfo.typeInfo));
+            Value knownValue = new MethodValue(methodValue.methodInfo, object, methodValue.parameters, methodValue.objectFlow);
+            return inState(evaluationContext, knownValue) ? ifTrue : ifFalse;
+        }
+        return null;
+    }
+
 
     @Override
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {

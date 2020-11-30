@@ -48,6 +48,8 @@ import static org.e2immu.analyser.util.Logger.log;
 public class ShallowTypeAnalyser implements AnalyserContext {
 
     public static final String IS_FACT_FQN = "org.e2immu.annotatedapi.AnnotatedAPI.isFact(boolean)";
+    public static final String IS_KNOWN_FQN = "org.e2immu.annotatedapi.AnnotatedAPI.isKnown(boolean)";
+
     private final Configuration configuration;
     private final Messages messages = new Messages();
     private final Primitives primitives;
@@ -79,9 +81,9 @@ public class ShallowTypeAnalyser implements AnalyserContext {
 
                 if (IS_FACT_FQN.equals(methodInfo.fullyQualifiedName())) {
                     analyseIsFact(methodInfo);
+                } else if (IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName())) {
+                    analyseIsKnown(methodInfo);
                 } else {
-
-
                     MethodAnalysisImpl.Builder methodAnalysisBuilder;
 
                     boolean hasNoCompanionMethods = methodInfo.methodInspection.get().getCompanionMethods().isEmpty();
@@ -130,6 +132,31 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         builder.companionAnalyses.freeze();
         builder.singleReturnValueImmutable.set(MultiLevel.MUTABLE);
         builder.singleReturnValue.set(new InlineValue(methodInfo, new VariableValue(parameterInfo), InlineValue.Applicability.EVERYWHERE));
+        log(ANALYSER, "Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
+        methodInfo.setAnalysis(builder.build());
+    }
+
+
+    // dedicated method exactly for this "isKnown" method
+    private void analyseIsKnown(MethodInfo methodInfo) {
+        ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(0);
+        ParameterAnalysisImpl.Builder parameterAnalysis = new ParameterAnalysisImpl.Builder(getPrimitives(), this, parameterInfo);
+        parameterAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
+        parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        parameterAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
+        parameterAnalysis.isAssignedToAField.set(false);
+
+        List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
+        MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(false, getPrimitives(), this, methodInfo, parameterAnalyses);
+        builder.setProperty(VariableProperty.IDENTITY, Level.FALSE);
+        builder.setProperty(VariableProperty.MODIFIED, Level.FALSE);
+        builder.setProperty(VariableProperty.INDEPENDENT, Level.TRUE);
+        builder.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+        builder.setProperty(VariableProperty.IMMUTABLE, MultiLevel.EFFECTIVELY_E2IMMUTABLE);
+        builder.setProperty(VariableProperty.CONTAINER, Level.FALSE);
+        builder.companionAnalyses.freeze();
+        builder.singleReturnValueImmutable.set(MultiLevel.EFFECTIVELY_E2IMMUTABLE);
+        builder.singleReturnValue.set(UnknownValue.RETURN_VALUE);
         log(ANALYSER, "Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
         methodInfo.setAnalysis(builder.build());
     }

@@ -287,12 +287,15 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
                 if("0".equals(d.statementId())) {
-                    Assert.assertEquals("instance type java.util.HashSet[0 == java.util.Collection.this.size()]",
+                    Assert.assertEquals("instance type java.util.HashSet[(org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true)" +
+                                    " and 0 == java.util.Collection.this.size())]",
                             d.currentValue().toString());
                 }
                 if(Set.of("1", "4").contains(d.statementId())) {
                     Assert.assertEquals("In statement "+d.statementId(),
-                            "instance type java.util.HashSet[(java.util.Set.this.contains(a) and 1 == java.util.Collection.this.size())]",
+                            "instance type java.util.HashSet[(java.util.Set.this.contains(a)" +
+                                    " and org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true)" +
+                                    " and 1 == java.util.Collection.this.size())]",
                             d.currentValue().toString());
                 }
                 if("7".equals(d.statementId())) {

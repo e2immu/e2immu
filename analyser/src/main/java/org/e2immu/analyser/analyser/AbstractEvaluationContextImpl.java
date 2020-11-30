@@ -48,10 +48,11 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
 
     @Override
     public boolean isNotNull0(Value value) {
-        if(conditionManager.haveNonEmptyState() && value != UnknownValue.NO_VALUE) {
-            Value valueIsNull = EqualsValue.equals(this, NullValue.NULL_VALUE, value, ObjectFlow.NO_FLOW);
+        if (conditionManager.haveNonEmptyState() && value != UnknownValue.NO_VALUE) {
+            // do not use Equals.equalsValue because that results in an infinite loop
+            Value valueIsNull = new EqualsValue(getPrimitives(), NullValue.NULL_VALUE, value, ObjectFlow.NO_FLOW);
             ConditionManager newCm = conditionManager.addCondition(this, valueIsNull);
-            if(newCm.condition instanceof BoolValue boolValue) {
+            if (newCm.condition instanceof BoolValue boolValue) {
                 return boolValue.value;
             }
         }

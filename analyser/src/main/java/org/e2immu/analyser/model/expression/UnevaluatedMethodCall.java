@@ -69,7 +69,7 @@ public class UnevaluatedMethodCall implements Expression {
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Types referenced of "+methodName);
     }
 
     @Override
