@@ -68,13 +68,13 @@ public class Primitives {
     public final ParameterizedType booleanParameterizedType = booleanTypeInfo.asSimpleParameterizedType();
 
     public static boolean isBoolean(TypeInfo typeInfo) {
-        return "boolean".equals(typeInfo.fullyQualifiedName);
+        return typeInfo != null && "boolean".equals(typeInfo.fullyQualifiedName);
     }
 
     public final TypeInfo boxedBooleanTypeInfo = new TypeInfo(JAVA_LANG, "Boolean");
 
     public static boolean isBoxedBoolean(TypeInfo typeInfo) {
-        return "java.lang.Boolean".equals(typeInfo.fullyQualifiedName);
+        return typeInfo != null && "java.lang.Boolean".equals(typeInfo.fullyQualifiedName);
     }
 
     public static boolean isNotBooleanOrBoxedBoolean(ParameterizedType parameterizedType) {

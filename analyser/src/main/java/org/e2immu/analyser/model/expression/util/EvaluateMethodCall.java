@@ -17,10 +17,7 @@
 
 package org.e2immu.analyser.model.expression.util;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -28,14 +25,16 @@ import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.ListUtil;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class EvaluateMethodCall {
+
+    private EvaluateMethodCall() {
+        throw new UnsupportedOperationException();
+    }
 
     // static, also used in MethodValue re-evaluation
     public static EvaluationResult methodValue(int modified,
@@ -85,22 +84,31 @@ public class EvaluateMethodCall {
             return builder.setValue(evaluationOnConstant).build();
         }
 
-        if (modified == Level.FALSE) {
-
-            // new object returned, with a transfer of the aspect; 5 == stringBuilder.length() in aspect -> 5 == stringBuilder.toString().length()
-            Value newInstance = newInstanceWithTransferCompanion(builder, evaluationContext, methodInfo, objectValue);
-            if (newInstance != null) {
-                return builder.setValue(newInstance).build();
+        if (!evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis()) {
+            // boolean added = set.add(e);  -- if the set is empty, we know the result will be "true"
+            Value assistedByCompanion = valueAssistedByCompanion(builder, evaluationContext,
+                    objectValue, methodInfo, methodAnalysis, parameters);
+            if (assistedByCompanion != null) {
+                return builder.setValue(assistedByCompanion).build();
             }
 
-            // evaluation on Instance, with state; check companion methods
-            // TYPE 1: boolean expression of aspect; e.g., xx == aspect method (5 == string.length())
-            // TYPE 2: boolean clause; e.g., contains("a")
-            Filter.FilterResult<MethodValue> evaluationOnInstance =
-                    computeEvaluationOnInstance(builder, evaluationContext, methodInfo, objectValue, parameters);
-            if (evaluationOnInstance != null && !evaluationOnInstance.accepted().isEmpty()) {
-                Value value = evaluationOnInstance.accepted().values().stream().findFirst().orElseThrow();
-                return builder.setValue(value).build();
+            if (modified == Level.FALSE) {
+
+                // new object returned, with a transfer of the aspect; 5 == stringBuilder.length() in aspect -> 5 == stringBuilder.toString().length()
+                Value newInstance = newInstanceWithTransferCompanion(builder, evaluationContext, objectValue, methodInfo, methodAnalysis, parameters);
+                if (newInstance != null) {
+                    return builder.setValue(newInstance).build();
+                }
+
+                // evaluation on Instance, with state; check companion methods
+                // TYPE 1: boolean expression of aspect; e.g., xx == aspect method (5 == string.length())
+                // TYPE 2: boolean clause; e.g., contains("a")
+                Filter.FilterResult<MethodValue> evaluationOnInstance =
+                        computeEvaluationOnInstance(builder, evaluationContext, methodInfo, objectValue, parameters);
+                if (evaluationOnInstance != null && !evaluationOnInstance.accepted().isEmpty()) {
+                    Value value = evaluationOnInstance.accepted().values().stream().findFirst().orElseThrow();
+                    return builder.setValue(value).build();
+                }
             }
         }
 
@@ -173,36 +181,84 @@ public class EvaluateMethodCall {
         return builder.setValue(methodValue).build();
     }
 
-    private static Value newInstanceWithTransferCompanion(EvaluationResult.Builder builder,
-                                                          EvaluationContext evaluationContext,
-                                                          MethodInfo methodInfo,
-                                                          Value objectValue) {
-        Instance instance;
+    private static Instance obtainInstance(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Value objectValue) {
         if (objectValue instanceof Instance theInstance) {
-            instance = theInstance;
-        } else if (objectValue instanceof VariableValue variableValue) {
-            instance = builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
-        } else {
+            return theInstance;
+        }
+        if (objectValue instanceof VariableValue variableValue) {
+            return builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+        }
+        return null;
+    }
+
+    private static Value valueAssistedByCompanion(EvaluationResult.Builder builder,
+                                                  EvaluationContext evaluationContext,
+                                                  Value objectValue,
+                                                  MethodInfo methodInfo,
+                                                  MethodAnalysis methodAnalysis,
+                                                  List<Value> parameterValues) {
+        Instance instance = obtainInstance(builder, evaluationContext, objectValue);
+        if (instance == null) {
             return null;
         }
+        Optional<Map.Entry<CompanionMethodName, CompanionAnalysis>> optValue = methodAnalysis.getCompanionAnalyses()
+                .entrySet().stream()
+                .filter(e -> e.getKey().action() == CompanionMethodName.Action.VALUE)
+                .findFirst();
+        if (optValue.isEmpty()) {
+            return null;
+        }
+        CompanionAnalysis companionAnalysis = optValue.get().getValue();
+        Value companionValue = companionAnalysis.getValue();
+        Map<Value, Value> translationMap = new HashMap<>();
 
-        MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+        // parameters of companionAnalysis look like: aspect (if present) | main method parameters | retVal
+        ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues)
+                .forEach(pair -> translationMap.put(pair.k, pair.v));
+        Value resultingValue = companionValue.reEvaluate(evaluationContext, translationMap).value;
+        if (instance.state != UnknownValue.EMPTY && resultingValue != UnknownValue.EMPTY) {
+            if (Primitives.isBoolean(methodInfo.returnType().typeInfo)) {
+                // State is: (org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and 0 == java.util.Collection.this.size())
+                // Resulting value: (java.util.Set.contains(java.lang.Object) and not (0 == java.util.Collection.this.size()))
+                Value reduced = new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, instance.state, resultingValue);
+                if (reduced instanceof BoolValue) {
+                    return reduced;
+                }
+            } else throw new UnsupportedOperationException("Not yet implemented");
+            // unsuccessful
+        }
+        return null;
+    }
 
+    // IMPROVE add parameters
+    private static Value newInstanceWithTransferCompanion(EvaluationResult.Builder builder,
+                                                          EvaluationContext evaluationContext,
+                                                          Value objectValue, MethodInfo methodInfo,
+                                                          MethodAnalysis methodAnalysis,
+                                                          List<Value> parameterValues) {
+        Instance instance = obtainInstance(builder, evaluationContext, objectValue);
+        if (instance == null) {
+            return null;
+        }
         Map<Value, Value> translationMap = new HashMap<>();
         methodAnalysis.getCompanionAnalyses().entrySet().stream()
                 .filter(e -> e.getKey().action() == CompanionMethodName.Action.TRANSFER && e.getKey().aspect() != null)
                 .forEach(e -> {
                     // we're assuming the aspects retain their name, but apart from the name we allow them to be different methods
-
-                    MethodInfo oldAspectMethod = evaluationContext.getTypeAnalysis(instance.parameterizedType.typeInfo).getAspects().get(e.getKey().aspect());
+                    CompanionMethodName cmn = e.getKey();
+                    MethodInfo oldAspectMethod = evaluationContext.getTypeAnalysis(instance.parameterizedType.typeInfo)
+                            .getAspects().get(cmn.aspect());
                     Value oldValue = new MethodValue(oldAspectMethod,
                             new VariableValue(new This(evaluationContext.getAnalyserContext(), oldAspectMethod.typeInfo)),
                             List.of(), ObjectFlow.NO_FLOW);
-                    MethodInfo newAspectMethod = evaluationContext.getTypeAnalysis(methodInfo.typeInfo).getAspects().get(e.getKey().aspect());
+                    MethodInfo newAspectMethod = evaluationContext.getTypeAnalysis(methodInfo.typeInfo).getAspects().get(cmn.aspect());
                     Value newValue = new MethodValue(newAspectMethod,
                             new VariableValue(new This(evaluationContext.getAnalyserContext(), newAspectMethod.typeInfo)),
                             List.of(), ObjectFlow.NO_FLOW);
                     translationMap.put(oldValue, newValue);
+                    CompanionAnalysis companionAnalysis = e.getValue();
+                    ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues)
+                            .forEach(pair -> translationMap.put(pair.k, pair.v));
                 });
 
         if (translationMap.isEmpty()) return null;
@@ -212,19 +268,16 @@ public class EvaluateMethodCall {
     }
 
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()
-
+    // this approach is independent of the companion methods: it simply searches for clauses related to the method
+    // in the instance state
     private static Filter.FilterResult<MethodValue> computeEvaluationOnInstance(EvaluationResult.Builder builder,
                                                                                 EvaluationContext evaluationContext,
                                                                                 MethodInfo methodInfo,
                                                                                 Value objectValue,
                                                                                 List<Value> parameterValues) {
         // look for a clause that has "this.methodInfo" as a MethodValue
-        Instance instance;
-        if (objectValue instanceof Instance theInstance) {
-            instance = theInstance;
-        } else if (objectValue instanceof VariableValue variableValue) {
-            instance = builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
-        } else {
+        Instance instance = obtainInstance(builder, evaluationContext, objectValue);
+        if (instance == null) {
             return null;
         }
         return filter(evaluationContext, methodInfo, instance.state, parameterValues);

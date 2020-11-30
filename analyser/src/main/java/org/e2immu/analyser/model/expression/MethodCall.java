@@ -301,6 +301,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Instance modifiedInstance = methodInfo.isConstructor ? new Instance(instance, newState.get()):
                 // we clear the constructor and its arguments after calling a modifying method on the object
                 new Instance(instance.parameterizedType, null, List.of(), instance.objectFlow, newState.get());
+
+        // update the object of the modifying call
         if (objectValue instanceof VariableValue variableValue) {
             Set<Variable> linkedVariables = variablesLinkedToScopeVariableInModifyingMethod(evaluationContext, parameterValues);
             builder.modifyingMethodAccess(variableValue.variable, modifiedInstance, linkedVariables);

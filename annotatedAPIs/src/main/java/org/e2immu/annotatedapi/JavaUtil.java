@@ -59,11 +59,11 @@ public class JavaUtil extends AnnotatedAPI {
         @Modified
         void clear() { }
 
-        static boolean contains$Value$Size(int i, boolean retVal) { return i != 0 && retVal; }
+        static boolean contains$Value$Size(int i, Object o, boolean retVal) { return i != 0 && retVal; }
         @NotModified
         boolean contains(@NotNull Object object) { return true; }
 
-        static boolean containsAll$Value$Size(int i, boolean retVal) { return i != 0 && retVal; }
+        static boolean containsAll$Value$Size(int i, java.util.Collection<?> c, boolean retVal) { return i != 0 && retVal; }
         @NotModified
         boolean containsAll(@NotNull1 java.util.Collection<?> c) { return true; }
 
@@ -137,7 +137,7 @@ public class JavaUtil extends AnnotatedAPI {
         boolean addAll(@NotNull1 Collection<? extends E> collection) { return false; }
 
         // needed here because it is used by a companion of 'add'.
-        static boolean contains$Value$Size(int i, boolean retVal) { return i != 0 && retVal; }
+        static boolean contains$Value$Size(int i, Object o, boolean retVal) { return i != 0 && retVal; }
         @NotModified
         boolean contains(@NotNull Object object) { return false; }
 
@@ -216,7 +216,7 @@ public class JavaUtil extends AnnotatedAPI {
         @Modified
         void clear() { }
 
-        static boolean contains$Value$Size(int i, boolean retVal) { return i != 0 && retVal; }
+        static boolean contains$Value$Size(int i, Object object, boolean retVal) { return i != 0 && retVal; }
         @NotModified
         boolean contains(@NotNull Object object) { return true; }
 
