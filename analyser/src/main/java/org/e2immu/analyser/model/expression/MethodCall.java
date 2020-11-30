@@ -267,7 +267,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                             companionAnalysis, newState.get(), parameterValues);
 
                     Value companionValue = companionAnalysis.getValue();
-                    EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(evaluationContext, translation.translationMap);
+                    EvaluationContext child = evaluationContext.child(instance.state);
+                    EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(child, translation.translationMap);
                     // no need to compose: this is a separate operation. builder.compose(companionValueTranslationResult);
                     Value companionValueTranslated = companionValueTranslationResult.value;
                     // IMPROVE the object flow and the state from the precondition!!

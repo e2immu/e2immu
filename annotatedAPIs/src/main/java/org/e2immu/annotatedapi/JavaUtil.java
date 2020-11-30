@@ -20,8 +20,6 @@ package org.e2immu.annotatedapi;
 import org.e2immu.annotation.*;
 
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
@@ -29,11 +27,11 @@ import java.util.stream.Stream;
 public class JavaUtil extends AnnotatedAPI {
     final static String PACKAGE_NAME = "java.util";
 
-    static boolean addModificationHelper(int i, int j, boolean containsE) {
-        return isFact(containsE) ? (containsE ? i == j : i == j + 1): i >= j && i <= j+1;
+    static boolean setAddModificationHelper(int i, int j, boolean containsE) {
+        return isFact(containsE) ? (containsE ? i == j : i == j + 1): (j == 0 ? i == 1: i >= j && i <= j+1);
     }
 
-    static boolean addValueHelper(int size, boolean containsE, boolean retVal) {
+    static boolean setAddValueHelper(int size, boolean containsE, boolean retVal) {
         return isFact(containsE) ? !containsE : (size == 0 || retVal);
     }
 
@@ -139,8 +137,6 @@ public class JavaUtil extends AnnotatedAPI {
 
         // needed here because it is used by a companion of 'add'.
         static boolean contains$Value$Size(int i, boolean retVal) { return i != 0 && retVal; }
-        static boolean contains$Value$Size99(int i, boolean retVal) { return i==0 ?  false: retVal; }
-
         @NotModified
         boolean contains(@NotNull Object object) { return false; }
 
@@ -203,8 +199,8 @@ public class JavaUtil extends AnnotatedAPI {
 
         // note that with the $, we're really in java.util.Set, so we have no knowledge of addModificationHelper unless we add it to the
         // type context (but that is possible) IMPROVE
-        boolean add$Modification$Size(int i, int j, E e) { return org.e2immu.annotatedapi.JavaUtil.addModificationHelper(i, j, contains(e)); }
-        boolean add$Value$Size(int size, E e, boolean retVal) { return org.e2immu.annotatedapi.JavaUtil.addValueHelper(size, contains(e), retVal); }
+        boolean add$Modification$Size(int i, int j, E e) { return org.e2immu.annotatedapi.JavaUtil.setAddModificationHelper(i, j, contains(e)); }
+        boolean add$Value$Size(int size, E e, boolean retVal) { return org.e2immu.annotatedapi.JavaUtil.setAddValueHelper(size, contains(e), retVal); }
         boolean add$Postcondition(E e) { return contains(e); }
         boolean add(@NotNull E e) { return true; }
 

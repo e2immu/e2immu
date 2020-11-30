@@ -105,9 +105,10 @@ public class ConditionalValue implements Value {
         Value edgeCase = edgeCases(evaluationContext, evaluationContext.getPrimitives(), condition, ifTrue, ifFalse);
         if (edgeCase != null) return builder.setValue(edgeCase).build();
 
-        Value isFact = isFact(evaluationContext, condition, ifTrue, ifFalse);
-        if (isFact != null) return builder.setValue(isFact).build();
-
+        if(!evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis()) {
+            Value isFact = isFact(evaluationContext, condition, ifTrue, ifFalse);
+            if (isFact != null) return builder.setValue(isFact).build();
+        }
         // standardization... we swap!
         // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form
 
@@ -176,14 +177,8 @@ public class ConditionalValue implements Value {
         EvaluationResult reTrue = ifTrue.reEvaluate(evaluationContext, translation);
         EvaluationResult reFalse = ifFalse.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reCondition, reTrue, reFalse);
-        if (reCondition.value.isBoolValueTrue()) {
-            return builder.setValue(reTrue.value).build();
-        }
-        if (reCondition.value.isBoolValueFalse()) {
-            return builder.setValue(reFalse.value).build();
-        }
-        return builder.setValue(new ConditionalValue(evaluationContext.getPrimitives(),
-                reCondition.value, reTrue.value, reFalse.value, getObjectFlow())).build();
+        EvaluationResult res = conditionalValueConditionResolved(evaluationContext, reCondition.value, reTrue.value, reFalse.value, objectFlow);
+        return builder.setValue(res.value).build();
     }
 
     @Override

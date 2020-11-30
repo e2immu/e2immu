@@ -310,4 +310,9 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         }
         fieldInfo.setAnalysis(fieldAnalysisBuilder.build());
     }
+
+    @Override
+    public boolean inAnnotatedAPIAnalysis() {
+        return true;
+    }
 }

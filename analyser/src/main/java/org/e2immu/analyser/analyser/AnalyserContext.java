@@ -40,6 +40,15 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         return new Primitives();
     }
 
+    /**
+     * Used by ConditionalValue, isFact().
+     *
+     * @return true when analysing annotated API files (companion methods)
+     */
+    default boolean inAnnotatedAPIAnalysis() {
+        return false;
+    }
+
     default E2ImmuAnnotationExpressions getE2ImmuAnnotationExpressions() {
         return null;
     }
