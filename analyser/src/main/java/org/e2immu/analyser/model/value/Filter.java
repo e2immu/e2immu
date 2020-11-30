@@ -18,8 +18,11 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -68,6 +71,7 @@ public class Filter {
     private static <X> FilterResult<X> internalFilter(EvaluationContext evaluationContext, Value value, FilterMode filterMode, List<FilterMethod<X>> filterMethods) {
         AtomicReference<FilterResult<X>> filterResult = new AtomicReference<>();
         value.visit(v -> {
+            if (v == UnknownValue.EMPTY) return false;
             if (v instanceof NegatedValue negatedValue) {
                 FilterResult<X> resultOfNegated = internalFilter(evaluationContext, negatedValue.value, filterMode, filterMethods);
                 if (resultOfNegated != null) {
@@ -173,8 +177,8 @@ public class Filter {
         return null;
     };
 
-    // EXAMPLE: 0 == java.util.List.this.size()
-
+    // EXAMPLE: 0 == java.util.Collection.this.size()  --> map java.util.Collection.this.size() onto 0
+    // EXAMPLE: java.util.Collection.this.size() == o.e.a.t.BasicCompanionMethods_6.test(Set<java.lang.String>):0:strings.size() --> copy lhs onto rhs
     public static record ValueEqualsMethodCallNoParameters(MethodInfo methodInfo) implements FilterMethod<MethodValue> {
 
         @Override
@@ -193,7 +197,10 @@ public class Filter {
         }
 
         private MethodValue compatibleMethodValue(Value value) {
-            if (value instanceof MethodValue methodValue && compatibleMethod(methodInfo, methodValue.methodInfo)) {
+            if (value instanceof MethodValue methodValue &&
+                    methodValue.object instanceof VariableValue vv &&
+                    vv.variable instanceof This &&
+                    compatibleMethod(methodInfo, methodValue.methodInfo)) {
                 return methodValue;
             }
             return null;
@@ -232,7 +239,7 @@ public class Filter {
 
         @Override
         public FilterResult<Value> apply(Value value) {
-            if(this.value.equals(value)) return new FilterResult<>(Map.of(value, value), UnknownValue.EMPTY);
+            if (this.value.equals(value)) return new FilterResult<>(Map.of(value, value), UnknownValue.EMPTY);
             return null;
         }
     }

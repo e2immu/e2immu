@@ -286,19 +286,19 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
     public void test5() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
-                if("0".equals(d.statementId())) {
+                if ("0".equals(d.statementId())) {
                     Assert.assertEquals("instance type java.util.HashSet[(org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true)" +
                                     " and 0 == java.util.Collection.this.size())]",
                             d.currentValue().toString());
                 }
-                if(Set.of("1", "4").contains(d.statementId())) {
-                    Assert.assertEquals("In statement "+d.statementId(),
+                if (Set.of("1", "4").contains(d.statementId())) {
+                    Assert.assertEquals("In statement " + d.statementId(),
                             "instance type java.util.HashSet[(java.util.Set.this.contains(a)" +
                                     " and org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true)" +
                                     " and 1 == java.util.Collection.this.size())]",
                             d.currentValue().toString());
                 }
-                if("7".equals(d.statementId())) {
+                if ("7".equals(d.statementId())) {
                     Assert.assertEquals("instance type java.util.HashSet[(java.util.Set.this.contains(a)" +
                                     " and java.util.Set.this.contains(b)" +
                                     " and org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true)" +
@@ -309,8 +309,26 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
         };
 
 
-        testClass("BasicCompanionMethods_5", 0, 6, new DebugConfiguration.Builder()
-        .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+        testClass("BasicCompanionMethods_5", 0, 7, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
+    @Test
+    public void test6() throws IOException {
+        final String PARAM = "org.e2immu.analyser.testexample.BasicCompanionMethods_6.test(Set<java.lang.String>):0:strings";
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals("instance type java.util.HashSet(" + PARAM + ")" +
+                                    "[java.util.Collection.this.size() == " + PARAM + ".size()]",
+                            d.currentValue().toString());
+                }
+            }
+        };
+
+        testClass("BasicCompanionMethods_6", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

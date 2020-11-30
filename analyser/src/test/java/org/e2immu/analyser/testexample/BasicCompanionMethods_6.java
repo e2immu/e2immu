@@ -22,28 +22,15 @@ import org.e2immu.annotation.Constant;
 import java.util.HashSet;
 import java.util.Set;
 
-public class BasicCompanionMethods_5 {
+public class BasicCompanionMethods_6 {
 
     @Constant("true")
-    static boolean test() {
-        Set<String> set = new HashSet<>();
-        set.add("a");
-        assert set.contains("a");
-        assert set.size() == 1;
+    static boolean test(Set<String> strings) {
+        Set<String> set = new HashSet<>(strings);
 
-        set.add("a");
-        assert set.contains("a");
-        assert set.size() == 1;
+        assert !set.contains("a"); // no idea, does not cause a warning
 
-        set.add("b");
-        assert set.contains("a");
-        assert set.contains("b");
-        assert set.size() == 2;
-
-        set.add("b");
-        assert !set.contains("c");
-
-        return set.size() == 2;
+        return set.size() == strings.size();
     }
 
 }
