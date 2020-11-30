@@ -209,6 +209,13 @@ public class JavaUtil extends AnnotatedAPI {
         @Independent
         boolean addAll(@NotNull1 java.util.Collection<? extends E> collection) { return true; }
 
+        // IMPROVE for now we have to repeat the method+companions from Collection, as companions are not inherited
+        void clear$Clear() { } // executed before $Modification$Size; removes all
+        boolean clear$Modification$Size(int i, int j) { return i == 0; }
+        boolean clear$Postcondition() { return org.e2immu.annotatedapi.AnnotatedAPI.isKnown(false); }
+        @Modified
+        void clear() { }
+
         static boolean contains$Value$Size(int i, boolean retVal) { return i != 0 && retVal; }
         @NotModified
         boolean contains(@NotNull Object object) { return true; }

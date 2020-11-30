@@ -365,7 +365,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                 }
                 if ("4".equals(d.statementId())) {
                     Assert.assertEquals("instance type java.util.HashSet(" + PARAM + ")" +
-                                    "[java.util.Collection.this.size() == " + PARAM + ".size()]",
+                                    "[(org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and 0 == java.util.Collection.this.size())]",
                             d.currentValue().toString());
                 }
             }

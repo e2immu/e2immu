@@ -346,7 +346,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (aspectMethod != null && !mainMethodIsConstructor) {
             // first: pre
             filterResult = EvaluateMethodCall.filter(evaluationContext, aspectMethod, stateOfInstance, List.of());
-            translationMap.put(preAspectVariableValue, filterResult.accepted().values().stream().findFirst().orElseThrow());
+            translationMap.put(preAspectVariableValue, filterResult.accepted().values().stream()
+                    .findFirst()
+                    // it is possible that no pre- information can be found... that's OK as long as it isn't used
+                    .orElse(UnknownValue.EMPTY));
         } else {
             filterResult = null;
         }

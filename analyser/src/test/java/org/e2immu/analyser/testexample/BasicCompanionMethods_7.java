@@ -30,13 +30,13 @@ public class BasicCompanionMethods_7 {
         assert !set.contains("a"); // no idea, does not cause a warning
 
         set.add("a");
-        assert set.contains("a");
+        assert set.contains("a"); // always true
 
         set.clear();
         assert !set.contains("a"); // we know!
 
         set.add("a");
-        assert set.contains("a");
+        assert set.contains("a"); // always true
 
         return set.size();
     }
