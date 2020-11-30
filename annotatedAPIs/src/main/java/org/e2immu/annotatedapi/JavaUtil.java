@@ -28,11 +28,12 @@ public class JavaUtil extends AnnotatedAPI {
     final static String PACKAGE_NAME = "java.util";
 
     static boolean setAddModificationHelper(int i, int j, boolean containsE) {
-        return isFact(containsE) ? (containsE ? i == j : i == j + 1): (j == 0 ? i == 1: i >= j && i <= j+1);
+        return isFact(containsE) ? (containsE ? i == j : i == j + 1):
+                isKnown(true) ? i == j + 1: i >= j && i <= j+1;
     }
 
     static boolean setAddValueHelper(int size, boolean containsE, boolean retVal) {
-        return isFact(containsE) ? !containsE : (size == 0 || retVal);
+        return isFact(containsE) ? !containsE : (isKnown(true) || size == 0 || retVal);
     }
 
     // Note: we can use T instead of E (in the byte-code), since we use distinguishingName instead of fullyQualifiedName
@@ -258,10 +259,12 @@ public class JavaUtil extends AnnotatedAPI {
 
         // tested in BCM_0, _1
         boolean HashSet$Modification$Size(int post) { return post == 0; }
+        boolean HashSet$Postcondition() { return org.e2immu.annotatedapi.AnnotatedAPI.isKnown(false); }
         public HashSet$() {
         }
 
         boolean HashSet$Modification$Size(int post, Collection<? extends  E> c) { return post == c.size(); }
+        boolean HashSet$Postcondition(Collection<? extends E> c) { return org.e2immu.annotatedapi.AnnotatedAPI.isKnown(false); }
         public HashSet$(Collection<? extends  E> c) {
         }
     }

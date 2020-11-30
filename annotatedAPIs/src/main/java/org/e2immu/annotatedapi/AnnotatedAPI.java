@@ -34,4 +34,11 @@ public class AnnotatedAPI {
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * @param test true when testing, false when generating a clause for the state
+     * @return true when absence of information means knowing the negation
+     */
+    public static boolean isKnown(boolean test) {
+        throw new UnsupportedOperationException();
+    }
 }
