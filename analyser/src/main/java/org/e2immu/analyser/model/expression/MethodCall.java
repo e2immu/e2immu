@@ -249,8 +249,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         AtomicReference<Value> newState = new AtomicReference<>(instance.state);
         methodInfo.methodInspection.get().getCompanionMethods().keySet().stream()
-                .filter(e -> e.action() == CompanionMethodName.Action.MODIFICATION || e.action() == CompanionMethodName.Action.POSTCONDITION)
+                .filter(e -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(e.action()))
+                .sorted()
                 .forEach(companionMethodName -> {
+                    if (companionMethodName.action() == CompanionMethodName.Action.CLEAR) {
+                        newState.set(UnknownValue.EMPTY);
+                        return;
+                    }
                     CompanionAnalysis companionAnalysis = methodAnalysis.getCompanionAnalyses().get(companionMethodName);
                     MethodInfo aspectMethod;
                     if (companionMethodName.aspect() != null) {
@@ -329,11 +334,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     // for modifying methods only. there is a "Pre" variable when there are aspects.
     // the filter result contains the pre-clause and the rest.
     private static FilterResultAndTranslationMap createTranslationMap(EvaluationContext evaluationContext,
-                                                               MethodInfo aspectMethod,
-                                                               CompanionAnalysis companionAnalysis,
-                                                               Value stateOfInstance,
-                                                               boolean mainMethodIsConstructor,
-                                                               List<Value> parameterValues) {
+                                                                      MethodInfo aspectMethod,
+                                                                      CompanionAnalysis companionAnalysis,
+                                                                      Value stateOfInstance,
+                                                                      boolean mainMethodIsConstructor,
+                                                                      List<Value> parameterValues) {
         ImmutableMap.Builder<Value, Value> translationMap = new ImmutableMap.Builder<>();
         Filter.FilterResult<MethodValue> filterResult;
         Value preAspectVariableValue = companionAnalysis.getPreAspectVariableValue();

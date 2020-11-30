@@ -54,8 +54,8 @@ public class JavaUtil extends AnnotatedAPI {
         @Independent
         boolean addAll(@NotNull1 java.util.Collection<? extends E> collection) { return true; }
 
+        void clear$Clear() { } // executed before $Modification$Size; removes all
         boolean clear$Modification$Size(int i, int j) { return i == 0; }
-        // TODO need proper definition boolean clear$Erase(Object any) { return !contains(any); } // should remove all contains
         @Modified
         void clear() { }
 

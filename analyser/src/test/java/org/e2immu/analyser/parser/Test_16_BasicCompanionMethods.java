@@ -331,4 +331,49 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
+
+
+    @Test
+    public void test7() throws IOException {
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo collection = typeMap.get(Collection.class);
+            MethodInfo clear = collection.findUniqueMethod("clear", 0);
+            CompanionAnalysis clearCompanion = clear.methodAnalysis.get().getCompanionAnalyses()
+                    .get(new CompanionMethodName("clear", CompanionMethodName.Action.CLEAR, null));
+            Assert.assertNotNull(clearCompanion);
+            Assert.assertEquals(Level.TRUE, clear.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+
+            TypeInfo set = typeMap.get(Set.class);
+            MethodInfo setClear = set.findUniqueMethod("clear", 0);
+            Assert.assertEquals(Level.TRUE, setClear.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        };
+
+        final String PARAM = "org.e2immu.analyser.testexample.BasicCompanionMethods_7.test(Set<java.lang.String>):0:strings";
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals("instance type java.util.HashSet(" + PARAM + ")" +
+                                    "[java.util.Collection.this.size() == " + PARAM + ".size()]",
+                            d.currentValue().toString());
+                }
+                if ("2".equals(d.statementId())) {
+                    Assert.assertEquals("instance type java.util.HashSet(" + PARAM + ")" +
+                                    "[(java.util.Set.this.contains(a) and " +
+                                    "((1 + " + PARAM + ".size()) + (-(java.util.Collection.this.size()))) >= 0 and " +
+                                    "(java.util.Collection.this.size() + (-(" + PARAM + ".size()))) >= 0)]",
+                            d.currentValue().toString());
+                }
+                if ("4".equals(d.statementId())) {
+                    Assert.assertEquals("instance type java.util.HashSet(" + PARAM + ")" +
+                                    "[java.util.Collection.this.size() == " + PARAM + ".size()]",
+                            d.currentValue().toString());
+                }
+            }
+        };
+
+        testClass("BasicCompanionMethods_7", 0, 3, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addTypeContextVisitor(typeMapVisitor)
+                .build());
+    }
 }

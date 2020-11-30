@@ -71,7 +71,7 @@ public class CompanionAnalyser {
                 }
                 throw new UnsupportedOperationException("Aspect function not found in type " + mainMethod.typeInfo.fullyQualifiedName);
             }
-            if (companionMethodName.action() == CompanionMethodName.Action.ASPECT) {
+            if (CompanionMethodName.NO_CODE.contains(companionMethodName.action())) {
                 // there is no code, and the type analyser deals with it
                 companionAnalysis.value.set(UnknownValue.EMPTY);
                 visit(iteration, DONE, null, null);

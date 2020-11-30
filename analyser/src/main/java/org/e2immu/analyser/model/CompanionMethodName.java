@@ -17,38 +17,47 @@
 
 package org.e2immu.analyser.model;
 
+import java.util.EnumSet;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public record CompanionMethodName(String methodName, Action action, String aspect) {
+public record CompanionMethodName(String methodName, Action action,
+                                  String aspect) implements Comparable<CompanionMethodName> {
+
+
+    @Override
+    public int compareTo(CompanionMethodName o) {
+        return action.order - o.action.order;
+    }
 
     public enum Action {
 
         // define
-        ASPECT(true, true, "Aspect", 0, 0),
+        ASPECT(0, true, true, "Aspect", 0, 0),
 
+        CLEAR(1, false, false, "Clear", 0, 0),
         // a clause that is valid at all times, e.g. size() >= 0
-        INVARIANT(false, true, "Invariant", 1, 1),
+        INVARIANT(2, false, true, "Invariant", 1, 1),
 
         // a clause that must be true before the method starts; otherwise an exception is thrown
-        PRECONDITION(false, true, "Precondition", 1, 1), // pre-mod
+        PRECONDITION(3, false, true, "Precondition", 1, 1), // pre-mod
 
         // return value of a primitive type, aspect or not
-        VALUE(false, true, "Value", 1, 1), // current (non-modifying)
+        VALUE(4, false, true, "Value", 1, 1), // current (non-modifying)
 
         // return value of the SAME type of object, change in aspect
-        TRANSFER(true, true, "Transfer", 2, 1), // post if modifying
+        TRANSFER(5, true, true, "Transfer", 2, 1), // post if modifying
 
         // change to aspect of a modifying method
         // also use for constructors, but then without the "pre" (only post)
-        MODIFICATION(true, true, "Modification", 2, 1), //pre, post (modifying)
+        MODIFICATION(6, true, true, "Modification", 2, 1), //pre, post (modifying)
 
         // clauses that can be added independent of the aspect after a modification (contains('a') after add('a'))
-        // clauses that can be added about the aspect of the return value of a non-modifying method
-        POSTCONDITION(false, true, "Postcondition", 2, 2), // pre, post (modifying),
-        ;
+        // clauses that can be added about the aspect of the return value of a non-modifying method,
+        POSTCONDITION(7, false, true, "Postcondition", 2, 2); // pre, post (modifying),
 
+        public final int order;
         public final boolean requiresAspect;
         public final boolean allowsAspect;
         public final String action;
@@ -56,13 +65,14 @@ public record CompanionMethodName(String methodName, Action action, String aspec
         public final int aspectVariablesModifying;
         public final int aspectVariablesNonModifying;
 
-        Action(boolean requiresAspect, boolean allowsAspect, String action, int aspectVariablesModifying, int aspectVariablesNonModifying) {
+        Action(int order, boolean requiresAspect, boolean allowsAspect, String action, int aspectVariablesModifying, int aspectVariablesNonModifying) {
             this.requiresAspect = requiresAspect;
             this.allowsAspect = allowsAspect;
             this.action = action;
             this.aspectVariablesModifying = aspectVariablesModifying;
             this.aspectVariablesNonModifying = aspectVariablesNonModifying;
             this.pattern = composePattern();
+            this.order = order;
         }
 
         private Pattern composePattern() {
@@ -73,6 +83,9 @@ public record CompanionMethodName(String methodName, Action action, String aspec
             return Pattern.compile(p);
         }
     }
+
+    public static final EnumSet<Action> MODIFYING_METHOD_OR_CONSTRUCTOR = EnumSet.of(Action.CLEAR, Action.MODIFICATION, Action.POSTCONDITION);
+    public static final EnumSet<Action> NO_CODE = EnumSet.of(Action.ASPECT, Action.CLEAR);
 
     public int numAspectVariables(boolean modifyingMethod) {
         return aspect == null ? 0 : (modifyingMethod ? action.aspectVariablesModifying : action.aspectVariablesNonModifying);
