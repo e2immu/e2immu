@@ -200,20 +200,12 @@ public class ConditionalValue implements Value {
 
     @Override
     public int order() {
-        return ORDER_CONDITIONAL;
+        return condition.order();
     }
 
     @Override
     public int internalCompareTo(Value v) {
-        ConditionalValue cv = (ConditionalValue) v;
-        int c = condition.compareTo(cv.condition);
-        if (c == 0) {
-            c = ifTrue.compareTo(cv.ifTrue);
-        }
-        if (c == 0) {
-            c = ifFalse.compareTo(cv.ifFalse);
-        }
-        return c;
+        return condition.internalCompareTo(v);
     }
 
     @Override

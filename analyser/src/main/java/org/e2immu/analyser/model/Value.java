@@ -64,7 +64,6 @@ public interface Value extends Comparable<Value> {
     // variables, types
     int ORDER_PRIMITIVE = 60;
     int ORDER_ARRAY = 61;
-    int ORDER_CONSTRAINED_NUMERIC_VALUE = 62;
     int ORDER_INSTANCE = 63;
     int ORDER_INLINE_METHOD = 64;
     int ORDER_METHOD = 65;
@@ -72,7 +71,7 @@ public interface Value extends Comparable<Value> {
     int ORDER_COMBINED = 67;
     int ORDER_TYPE = 68;
     int ORDER_NO_VALUE = 69;
-    int ORDER_CONDITIONAL = 70;
+    //int ORDER_CONDITIONAL = 70;
     int ORDER_SWITCH = 71;
 
     // boolean operations
