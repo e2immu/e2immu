@@ -21,18 +21,28 @@ import org.e2immu.annotation.Constant;
 
 import java.util.HashSet;
 import java.util.Set;
+
 /*
-Tests the post-condition on the HashSet constructor
-*/
-public class BasicCompanionMethods_6 {
+Tests the $Value$Size companion method on contains and isEmpty
+ */
+public class BasicCompanionMethods_8 {
 
-    @Constant("true")
-    static boolean test(Set<String> strings) {
-        Set<String> set = new HashSet<>(strings);
+    @Constant("1")
+    static int test() {
+        Set<String> set = new HashSet<>();
+        assert !set.contains("b"); // always true
 
-        assert !set.contains("a"); // no idea, does not cause a warning
+        set.add("a");
+        assert !set.isEmpty(); // always true
 
-        return set.size() == strings.size();
+        set.clear();
+        assert set.isEmpty(); // always true
+
+        set.add("a");
+        assert set.contains("a"); // always true
+        assert !set.contains("b"); // always true
+
+        return set.size();
     }
 
 }

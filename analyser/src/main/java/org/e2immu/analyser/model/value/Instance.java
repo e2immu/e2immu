@@ -93,7 +93,7 @@ public class Instance implements Value {
     @Override
     public String print(PrintMode printMode) {
         return "instance type " + parameterizedType.detailedString()
-                + (constructorParameterValues.isEmpty() ? "" : (
+                + (constructor == null ? "" : (
                 "(" + constructorParameterValues.stream()
                         .map(Value::toString)
                         .collect(Collectors.joining(", ")) + ")"))

@@ -22,6 +22,9 @@ import org.e2immu.annotation.Constant;
 import java.util.HashSet;
 import java.util.Set;
 
+/*
+Tests the $Clear companion method on clear
+ */
 public class BasicCompanionMethods_7 {
 
     @Constant("1")
@@ -33,7 +36,7 @@ public class BasicCompanionMethods_7 {
         assert set.contains("a"); // always true
 
         set.clear();
-        assert !set.contains("a"); // we know!
+        assert set.size() == 0; // always true
 
         set.add("a");
         assert set.contains("a"); // always true

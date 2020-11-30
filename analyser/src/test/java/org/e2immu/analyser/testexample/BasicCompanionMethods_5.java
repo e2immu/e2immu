@@ -22,6 +22,9 @@ import org.e2immu.annotation.Constant;
 import java.util.HashSet;
 import java.util.Set;
 
+/*
+Tests the isKnown() artificial method so that the count in size() goes from 1 to 2
+ */
 public class BasicCompanionMethods_5 {
 
     @Constant("true")
@@ -41,7 +44,7 @@ public class BasicCompanionMethods_5 {
         assert set.size() == 2;
 
         set.add("b");
-        assert !set.contains("c");
+        // assert !set.contains("c"); // cannot do that yet, see test 8
 
         return set.size() == 2;
     }

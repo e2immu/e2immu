@@ -45,7 +45,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
         super(true);
     }
 
-    public static final String LIST_SIZE = "instance type java.util.ArrayList[0 == java.util.Collection.this.size()]";
+    public static final String LIST_SIZE = "instance type java.util.ArrayList()[0 == java.util.Collection.this.size()]";
 
     @Test
     public void test0() throws IOException {
@@ -252,7 +252,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "sb".equals(d.variableName())) {
-                Assert.assertEquals("instance type java.lang.StringBuilder(abc)[5 == java.lang.CharSequence.this.length()]",
+                Assert.assertEquals("instance type java.lang.StringBuilder[5 == java.lang.CharSequence.this.length()]",
                         d.currentValue().toString());
             }
         };
@@ -287,7 +287,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals("instance type java.util.HashSet[(org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true)" +
+                    Assert.assertEquals("instance type java.util.HashSet()[(org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true)" +
                                     " and 0 == java.util.Collection.this.size())]",
                             d.currentValue().toString());
                 }
@@ -357,14 +357,13 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                             d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    Assert.assertEquals("instance type java.util.HashSet(" + PARAM + ")" +
-                                    "[(java.util.Set.this.contains(a) and " +
+                    Assert.assertEquals("instance type java.util.HashSet[(java.util.Set.this.contains(a) and " +
                                     "((1 + " + PARAM + ".size()) + (-(java.util.Collection.this.size()))) >= 0 and " +
                                     "(java.util.Collection.this.size() + (-(" + PARAM + ".size()))) >= 0)]",
                             d.currentValue().toString());
                 }
                 if ("4".equals(d.statementId())) {
-                    Assert.assertEquals("instance type java.util.HashSet(" + PARAM + ")" +
+                    Assert.assertEquals("instance type java.util.HashSet" +
                                     "[(org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and 0 == java.util.Collection.this.size())]",
                             d.currentValue().toString());
                 }
@@ -376,4 +375,22 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                 .addTypeContextVisitor(typeMapVisitor)
                 .build());
     }
+
+
+    @Test
+    public void test8() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals("instance type java.util.HashSet()" +
+                                    "[(org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and 0 == java.util.Collection.this.size())]",
+                            d.currentValue().toString());
+                }
+            }
+        };
+        testClass("BasicCompanionMethods_8", 0, 5, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .build());
+    }
+
 }
