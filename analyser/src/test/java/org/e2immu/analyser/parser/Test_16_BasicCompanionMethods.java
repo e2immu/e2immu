@@ -291,10 +291,15 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                             d.currentValue().toString());
                 }
                 if(Set.of("1", "4").contains(d.statementId())) {
-                    Assert.assertEquals("instance type java.util.HashSet[(java.util.Set.this.contains(a) and 1 == java.util.Collection.this.size())]",
+                    Assert.assertEquals("In statement "+d.statementId(),
+                            "instance type java.util.HashSet[(java.util.Set.this.contains(a) and 1 == java.util.Collection.this.size())]",
                             d.currentValue().toString());
                 }
-
+                if("7".equals(d.statementId())) {
+                    Assert.assertEquals("instance type java.util.HashSet[(java.util.Set.this.contains(a) " +
+                                    "and java.util.Set.this.contains(b) and 2 == java.util.Collection.this.size())]\n",
+                            d.currentValue().toString());
+                }
             }
         };
 

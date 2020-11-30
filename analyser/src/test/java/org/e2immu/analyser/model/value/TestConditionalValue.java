@@ -59,6 +59,8 @@ public class TestConditionalValue extends CommonAbstractValue {
         MethodInfo isFact = new MethodInfo(annotatedAPI, "isFact", ShallowTypeAnalyser.IS_FACT_FQN, ShallowTypeAnalyser.IS_FACT_FQN, false);
         Value isFactA = new MethodValue(isFact, new TypeValue(annotatedAPIPt, ObjectFlow.NO_FLOW), List.of(a), ObjectFlow.NO_FLOW);
         Assert.assertEquals("org.e2immu.annotatedapi.AnnotatedAPI.isFact(a)", isFactA.toString());
+        Value isFactB = new MethodValue(isFact, new TypeValue(annotatedAPIPt, ObjectFlow.NO_FLOW), List.of(b), ObjectFlow.NO_FLOW);
+        Assert.assertEquals("org.e2immu.annotatedapi.AnnotatedAPI.isFact(b)", isFactB.toString());
 
         Assert.assertSame(UnknownValue.EMPTY, minimalEvaluationContext.getConditionManager().state);
         Value cv1 = ConditionalValue.conditionalValueConditionResolved(minimalEvaluationContext, isFactA, a, b, ObjectFlow.NO_FLOW).value;
@@ -74,11 +76,24 @@ public class TestConditionalValue extends CommonAbstractValue {
         Value cv3 = ConditionalValue.conditionalValueConditionResolved(child2, isFactA, a, b, ObjectFlow.NO_FLOW).value;
         Assert.assertSame(a, cv3);
 
+        Value cv3b = ConditionalValue.conditionalValueConditionResolved(child2, isFactB, a, b, ObjectFlow.NO_FLOW).value;
+        Assert.assertSame(a, cv3b);
+
         EvaluationContext child3 = minimalEvaluationContext.child(
                 new OrValue(PRIMITIVES).append(minimalEvaluationContext, c,
                 new AndValue(PRIMITIVES).append(minimalEvaluationContext, a, b)));
         Assert.assertEquals("((a or c) and (b or c))", child3.getConditionManager().state.toString());
         Value cv4 = ConditionalValue.conditionalValueConditionResolved(child3, isFactA, a, b, ObjectFlow.NO_FLOW).value;
         Assert.assertSame(b, cv4);
+    }
+
+    @Test
+    public void test4() {
+        Value cv1 = ConditionalValue.conditionalValueConditionResolved(minimalEvaluationContext, a, b, c, ObjectFlow.NO_FLOW).value;
+        Assert.assertEquals("a?b:c", cv1.toString());
+        Value and1 = new AndValue(PRIMITIVES).append(minimalEvaluationContext, a, cv1);
+        Assert.assertEquals("(a and b)", and1.toString());
+        Value and2 = new AndValue(PRIMITIVES).append(minimalEvaluationContext, negate(a), cv1);
+        Assert.assertEquals("(not (a) and c)", and2.toString());
     }
 }

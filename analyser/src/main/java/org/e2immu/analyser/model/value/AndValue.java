@@ -20,7 +20,8 @@ package org.e2immu.analyser.model.value;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
@@ -157,9 +158,21 @@ public class AndValue extends PrimitiveValue {
 
         // this works because of sorting
         // A && !A will always sit next to each other
-        if (value instanceof NegatedValue && ((NegatedValue) value).value.equals(prev)) {
+        if (value instanceof NegatedValue negatedValue && negatedValue.value.equals(prev)) {
             log(CNF, "Return FALSE in And, found opposites for {}", value);
             return Action.FALSE;
+        }
+
+        // A && A ? B : C --> A && B
+        if (value instanceof ConditionalValue conditionalValue && conditionalValue.condition.equals(prev)) {
+            newConcat.add(conditionalValue.ifTrue);
+            return Action.SKIP;
+        }
+        // !A && A ? B : C --> !A && C
+        if (value instanceof ConditionalValue conditionalValue && conditionalValue.condition.
+                equals(NegatedValue.negate(evaluationContext, prev))) {
+            newConcat.add(conditionalValue.ifFalse);
+            return Action.SKIP;
         }
 
         // A && (!A || ...) ==> we can remove the !A
@@ -421,7 +434,7 @@ public class AndValue extends PrimitiveValue {
 
     @Override
     public void visit(Predicate<Value> predicate) {
-        if(predicate.test(this)) {
+        if (predicate.test(this)) {
             values.forEach(v -> v.visit(predicate));
         }
     }
