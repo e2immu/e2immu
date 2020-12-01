@@ -21,7 +21,6 @@ package org.e2immu.analyser.annotationxml;
 import org.e2immu.analyser.annotationxml.model.*;
 import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.util.SMapList;
 import org.e2immu.annotation.UtilityClass;
 import org.slf4j.Logger;
@@ -53,7 +52,7 @@ public class AnnotationXmlWriter {
         // nothing here
     }
 
-    public static void write(AnnotationXmlConfiguration configuration, TypeMap typeMap) throws IOException {
+    public static void write(AnnotationXmlConfiguration configuration, Set<TypeInfo> typesToWrite) throws IOException {
         File base;
         if (configuration.writeAnnotationXmlDir != null) {
             base = new File(configuration.writeAnnotationXmlDir);
@@ -66,8 +65,6 @@ public class AnnotationXmlWriter {
         } else {
             base = new File(System.getProperty("user.dir"));
         }
-        Set<TypeInfo> typesToWrite = new HashSet<>();
-        typeMap.visit(new String[0], (packageSplit, types) -> typesToWrite.addAll(types));
         Map<String, List<TypeItem>> typeItemsPerPackage = new HashMap<>();
         boolean isEmpty = configuration.writeAnnotationXmlPackages.isEmpty();
         typesToWrite.forEach(typeInfo -> {
@@ -126,7 +123,7 @@ public class AnnotationXmlWriter {
         typeItem.getFieldItems().values().stream().sorted().forEach(fieldItem ->
                 add(document, root, typeItem.name, fieldItem));
         typeItem.getMethodItems().values().stream().sorted().forEach(methodItem ->
-                add(document, root, typeItem.name, methodItem, false));
+                add(document, root, typeItem.name, methodItem));
     }
 
     private static void add(Document document, Element root, String typeName, FieldItem fieldItem) {
@@ -136,18 +133,17 @@ public class AnnotationXmlWriter {
         }
     }
 
-    private static void add(Document document, Element root, String typeName, MethodItem methodItem, boolean isCompanion) {
+    private static void add(Document document, Element root, String typeName, MethodItem methodItem) {
         String methodName = typeName + (methodItem.returnType != null ? " " + methodItem.returnType : "") + " " + methodItem.name;
         if (!methodItem.getAnnotations().isEmpty()) {
-            add(document, root, methodName, methodItem.getAnnotations(), isCompanion ? methodItem.getCompanionValue() : null);
+            // companions don't have annotations
+            add(document, root, methodName, methodItem.getAnnotations(), null);
         }
         if (!methodItem.getParameterItems().isEmpty()) {
             methodItem.getParameterItems().stream().sorted().forEach(parameterItem -> add(document, root, methodName, parameterItem));
         }
-        if (!isCompanion) {
-            for (MethodItem companionItem : methodItem.getCompanionMethods()) {
-                add(document, root, typeName, companionItem, true);
-            }
+        for (MethodItem companionItem : methodItem.getCompanionMethods()) {
+            add(document, root, companionItem.name, List.of(), companionItem.companionValue);
         }
     }
 
@@ -162,7 +158,9 @@ public class AnnotationXmlWriter {
         Element item = document.createElement("item");
         item.setAttribute("name", itemName);
         if (companionValue != null && !companionValue.isBlank()) {
-            item.setAttribute("definition", companionValue);
+            Element definitionElement = document.createElement("definition");
+            definitionElement.setTextContent(companionValue);
+            item.appendChild(definitionElement);
         }
         root.appendChild(item);
         for (Annotation annotation : annotations) {

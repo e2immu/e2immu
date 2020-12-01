@@ -95,7 +95,9 @@ public class Parser {
             // we pass on the Java sources for the PrimaryTypeAnalyser, while all other loaded types
             // will be sent to the ShallowAnalyser
             runShallowAnalyser(typeMap, sortedAnnotatedAPITypes);
+            writeAndUpload(sortedAnnotatedAPITypes);
             runPrimaryTypeAnalyser(typeMap, resolvedSourceTypes);
+            writeAndUpload(resolvedSourceTypes);
         }
 
         return resolvedSourceTypes;
@@ -163,6 +165,25 @@ public class Parser {
         }
     }
 
+    private void writeAndUpload(List<SortedType> sortedPrimaryTypes) {
+        Set<TypeInfo> typesToWrite = sortedPrimaryTypes.stream()
+                .map(sortedType -> sortedType.primaryType).collect(Collectors.toSet());
+        if (configuration.uploadConfiguration.upload) {
+            AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration,
+                    input.globalTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
+            Map<String, String> map = annotationUploader.createMap(typesToWrite);
+            annotationUploader.writeMap(map);
+        }
+        if (configuration.annotationXmlConfiguration.writeAnnotationXml) {
+            try {
+                AnnotationXmlWriter.write(configuration.annotationXmlConfiguration, typesToWrite);
+            } catch (IOException ioe) {
+                LOGGER.error("Caught ioe exception writing annotation XMLs");
+                throw new RuntimeException(ioe);
+            }
+        }
+    }
+
     private void runPrimaryTypeAnalyser(TypeMap typeMap, List<SortedType> sortedPrimaryTypes) {
         for (TypeMapVisitor typeMapVisitor : configuration.debugConfiguration.typeMapVisitors) {
             typeMapVisitor.visit(typeMap);
@@ -171,21 +192,6 @@ public class Parser {
                 sortedPrimaryTypes.stream().map(t -> t.primaryType.fullyQualifiedName).collect(Collectors.joining("\n")));
         for (SortedType sortedType : sortedPrimaryTypes) {
             analyseSortedType(sortedType);
-        }
-        if (configuration.uploadConfiguration.upload) {
-            AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration,
-                    typeMap.getE2ImmuAnnotationExpressions());
-            Map<String, String> map = annotationUploader.createMap(sortedPrimaryTypes.stream()
-                    .map(sortedType -> sortedType.primaryType).collect(Collectors.toSet()));
-            annotationUploader.writeMap(map);
-        }
-        if (configuration.annotationXmlConfiguration.writeAnnotationXml) {
-            try {
-                AnnotationXmlWriter.write(configuration.annotationXmlConfiguration, typeMap);
-            } catch (IOException ioe) {
-                LOGGER.error("Caught ioe exception writing annotation XMLs");
-                throw new RuntimeException(ioe);
-            }
         }
     }
 
