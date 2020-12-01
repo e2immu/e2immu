@@ -411,4 +411,19 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test9() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+
+        };
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+
+        };
+
+        testClass("BasicCompanionMethods_9", 0, 8, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .build());
+    }
+
 }

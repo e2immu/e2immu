@@ -53,9 +53,12 @@ public record CompanionMethodName(String methodName, Action action,
         // also use for constructors, but then without the "pre" (only post)
         MODIFICATION(6, true, true, "Modification", 2, 1), //pre, post (modifying)
 
+        // opposite to post-condition (to remove an existing contains('a') before adding !contains('a'), for example)
+        REMOVE(7, false, false, "Remove", 2, 2),
+
         // clauses that can be added independent of the aspect after a modification (contains('a') after add('a'))
         // clauses that can be added about the aspect of the return value of a non-modifying method,
-        POSTCONDITION(7, false, true, "Postcondition", 2, 2); // pre, post (modifying),
+        POSTCONDITION(8, false, false, "Postcondition", 2, 2); // pre, post (modifying),
 
         public final int order;
         public final boolean requiresAspect;
@@ -84,7 +87,8 @@ public record CompanionMethodName(String methodName, Action action,
         }
     }
 
-    public static final EnumSet<Action> MODIFYING_METHOD_OR_CONSTRUCTOR = EnumSet.of(Action.CLEAR, Action.MODIFICATION, Action.POSTCONDITION);
+    public static final EnumSet<Action> MODIFYING_METHOD_OR_CONSTRUCTOR = EnumSet.of(Action.CLEAR,
+            Action.MODIFICATION, Action.REMOVE, Action.POSTCONDITION);
     public static final EnumSet<Action> NO_CODE = EnumSet.of(Action.ASPECT, Action.CLEAR);
 
     public int numAspectVariables(boolean modifyingMethod) {

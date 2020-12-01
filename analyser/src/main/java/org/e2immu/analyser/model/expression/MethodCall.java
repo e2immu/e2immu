@@ -280,25 +280,34 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     Value companionValueTranslated = companionValueTranslationResult.value;
                     // IMPROVE the object flow and the state from the precondition!!
 
-                    if (translation.filterResult != null) {
-                        // there is an old "pre" value that needs to be removed
-                        if (translation.filterResult.rest() == UnknownValue.EMPTY) {
-                            newState.set(companionValueTranslated);
-                        } else {
-                            newState.set(new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, translation.filterResult.rest(),
-                                    companionValueTranslated));
+                    boolean remove = companionMethodName.action() == CompanionMethodName.Action.REMOVE;
+                    if (remove) {
+                        if (newState.get() != UnknownValue.EMPTY) {
+                            Filter.FilterResult<Value> res = Filter.filter(evaluationContext, newState.get(),
+                                    Filter.FilterMode.ACCEPT, new Filter.ExactValue(companionValueTranslated));
+                            newState.set(res.rest());
                         }
                     } else {
-                        // no pre-value to be removed
-                        if (newState.get() == UnknownValue.EMPTY) {
-                            newState.set(companionValueTranslated);
+                        if (translation.filterResult != null) {
+                            // there is an old "pre" value that needs to be removed
+                            if (translation.filterResult.rest() == UnknownValue.EMPTY) {
+                                newState.set(companionValueTranslated);
+                            } else {
+                                newState.set(new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, translation.filterResult.rest(),
+                                        companionValueTranslated));
+                            }
                         } else {
-                            newState.set(new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, newState.get(),
-                                    companionValueTranslated));
+                            // no pre-value to be removed
+                            if (newState.get() == UnknownValue.EMPTY) {
+                                newState.set(companionValueTranslated);
+                            } else {
+                                newState.set(new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, newState.get(),
+                                        companionValueTranslated));
+                            }
                         }
                     }
                 });
-        Instance modifiedInstance = methodInfo.isConstructor ? new Instance(instance, newState.get()):
+        Instance modifiedInstance = methodInfo.isConstructor ? new Instance(instance, newState.get()) :
                 // we clear the constructor and its arguments after calling a modifying method on the object
                 new Instance(instance.parameterizedType, null, List.of(), instance.objectFlow, newState.get());
 

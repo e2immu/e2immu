@@ -36,6 +36,15 @@ public class JavaUtil extends AnnotatedAPI {
         return isFact(containsE) ? !containsE : (isKnown(true) || size == 0 || retVal);
     }
 
+    static boolean setRemoveModificationHelper(int i, int j, boolean containsE) {
+        return isFact(containsE) ? (containsE ? i == j : i == j + 1):
+                isKnown(true) ? i == j + 1: i >= j && i <= j+1;
+    }
+
+    static boolean setRemoveValueHelper(int size, boolean containsE, boolean retVal) {
+        return isFact(containsE) ? !containsE : (isKnown(true) || size == 0 || retVal);
+    }
+
     // Note: we can use T instead of E (in the byte-code), since we use distinguishingName instead of fullyQualifiedName
     interface Iterator$<T> {
         @NotModified
@@ -202,6 +211,7 @@ public class JavaUtil extends AnnotatedAPI {
         // type context (but that is possible) IMPROVE
         boolean add$Modification$Size(int i, int j, E e) { return org.e2immu.annotatedapi.JavaUtil.setAddModificationHelper(i, j, contains(e)); }
         boolean add$Value$Size(int size, E e, boolean retVal) { return org.e2immu.annotatedapi.JavaUtil.setAddValueHelper(size, contains(e), retVal); }
+        boolean add$Remove(E e) { return !contains(e); }
         boolean add$Postcondition(E e) { return contains(e); }
         boolean add(@NotNull E e) { return true; }
 
@@ -250,6 +260,13 @@ public class JavaUtil extends AnnotatedAPI {
         @NotNull1
         @E2Container
         <H> java.util.Set<H> of(@NotNull H e1, @NotNull H e2, @NotNull H e3) { return null; }
+
+        boolean remove$Modification$Size(int i, int j, Object o) { return org.e2immu.annotatedapi.JavaUtil.setRemoveModificationHelper(i, j, contains(o)); }
+        boolean remove$Value$Size(int i, Object o, boolean retVal) { return org.e2immu.annotatedapi.JavaUtil.setRemoveValueHelper(i, retVal, contains(o));}
+        boolean remove$Remove(Object object) { return contains(object); }
+        boolean remove$Postcondition(Object object) { return !contains(object); }
+        @Modified
+        boolean remove(@NotNull Object object) { return true; }
     }
 
     @Container

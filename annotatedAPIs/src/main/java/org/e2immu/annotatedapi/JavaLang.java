@@ -298,18 +298,9 @@ class JavaLang {
             return null;
         }
 
-        boolean trim$Postcondition$Len(int post, int pre) {
-            return post <= pre;
-        }
-
         @NotNull
         String trim() {
             return null;
-        }
-
-        // result is smaller than original:
-        boolean strip$Postcondition$Len(int post, int pre) {
-            return post <= pre;
         }
 
         @NotNull
