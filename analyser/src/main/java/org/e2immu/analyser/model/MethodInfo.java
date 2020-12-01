@@ -179,7 +179,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         }
 
         StringUtil.indent(sb, indent);
-        sb.append(inspection.getModifiers().stream().map(m -> m.toJava() + " ").collect(Collectors.joining()));
+        sb.append(MethodModifier.toJava(inspection.getModifiers()));
         MethodInspection methodInspection = this.methodInspection.get();
 
         if (!methodInspection.getTypeParameters().isEmpty()) {

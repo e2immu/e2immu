@@ -92,8 +92,7 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
     }
 
     private String typeName(TypeInfo typeInfo) {
-        if (fullyQualified || Primitives.isPrimitiveExcludingVoid(typeInfo) || Primitives.isVoid(typeInfo)
-                || Primitives.isJavaLangObject(typeInfo) || Primitives.isJavaLangString(typeInfo)) {
+        if (fullyQualified) {
             return typeInfo.fullyQualifiedName;
         }
         // join up to primary type...

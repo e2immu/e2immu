@@ -20,15 +20,33 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.Modifier;
 
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 public enum FieldModifier {
-    FINAL,
-    TRANSIENT, VOLATILE,
-    STATIC,
-    PRIVATE, PUBLIC, PROTECTED,
+
+    PRIVATE(0), PUBLIC(0), PROTECTED(0),
 
     // this one obviously does not exist as a field modifier in Java code, but is useful so we can use this enum as an 'access' type
-    PACKAGE;
+    PACKAGE(0),
 
+    STATIC(1),
+
+    FINAL(2),
+    VOLATILE(2),
+
+    TRANSIENT(3),
+    ;
+
+    private final int group;
+
+    FieldModifier(int group) {
+        this.group = group;
+    }
+
+    private static final int GROUPS = 4;
 
     public static FieldModifier from(Modifier m) {
         return FieldModifier.valueOf(m.getKeyword().toString().toUpperCase());
@@ -36,5 +54,17 @@ public enum FieldModifier {
 
     public String toJava() {
         return name().toLowerCase();
+    }
+
+
+    public static String toJava(Set<FieldModifier> modifiers) {
+        FieldModifier[] array = new FieldModifier[GROUPS];
+        for (FieldModifier methodModifier : modifiers) {
+            if (array[methodModifier.group] != null)
+                throw new UnsupportedOperationException("? already have " + array[methodModifier.group]);
+            array[methodModifier.group] = methodModifier;
+        }
+        return Arrays.stream(array).filter(Objects::nonNull).map(FieldModifier::toJava).collect(Collectors.joining(" "))
+                + (modifiers.isEmpty() ? "" : " ");
     }
 }

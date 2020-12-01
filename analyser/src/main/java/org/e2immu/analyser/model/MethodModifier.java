@@ -20,8 +20,23 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.Modifier;
 
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 public enum MethodModifier {
-    PUBLIC, ABSTRACT, PRIVATE, PROTECTED, FINAL, STATIC, SYNCHRONIZED, DEFAULT;
+    PUBLIC(0), PRIVATE(0), PROTECTED(0),
+    ABSTRACT(1), DEFAULT(1),
+    FINAL(2), STATIC(2),
+    SYNCHRONIZED(3);
+
+    private final int group;
+    private static final int GROUPS = 4;
+
+    MethodModifier(int group) {
+        this.group = group;
+    }
 
     public static MethodModifier from(Modifier modifier) {
         return MethodModifier.valueOf(modifier.getKeyword().asString().toUpperCase());
@@ -29,5 +44,16 @@ public enum MethodModifier {
 
     public String toJava() {
         return name().toLowerCase();
+    }
+
+    public static String toJava(Set<MethodModifier> modifiers) {
+        MethodModifier[] array = new MethodModifier[GROUPS];
+        for (MethodModifier methodModifier : modifiers) {
+            if (array[methodModifier.group] != null)
+                throw new UnsupportedOperationException("? already have " + array[methodModifier.group]);
+            array[methodModifier.group] = methodModifier;
+        }
+        return Arrays.stream(array).filter(Objects::nonNull).map(MethodModifier::toJava).collect(Collectors.joining(" "))
+                + (modifiers.isEmpty() ? "" : " ");
     }
 }

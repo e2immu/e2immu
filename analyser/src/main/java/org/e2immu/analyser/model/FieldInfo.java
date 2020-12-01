@@ -118,7 +118,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
                 });
             }
             FieldInspection fieldInspection = this.fieldInspection.get();
-            sb.append(fieldInspection.getModifiers().stream().map(m -> m.toJava() + " ").collect(Collectors.joining()));
+            sb.append(FieldModifier.toJava(fieldInspection.getModifiers()));
         }
         sb.append(type.print())
                 .append(" ")

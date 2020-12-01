@@ -55,7 +55,7 @@ public class AndValue extends PrimitiveValue {
     }
 
     private enum Action {
-        SKIP, REPLACE, FALSE, TRUE, ADD
+        SKIP, REPLACE, FALSE, TRUE, ADD, ADD_CHANGE
     }
 
     // we try to maintain a CNF
@@ -123,6 +123,10 @@ public class AndValue extends PrimitiveValue {
                     case ADD:
                         newConcat.add(value);
                         break;
+                    case ADD_CHANGE:
+                        newConcat.add(value);
+                        changes = true;
+                        break;
                     case REPLACE:
                         newConcat.set(newConcat.size() - 1, value);
                         changes = true;
@@ -168,11 +172,10 @@ public class AndValue extends PrimitiveValue {
             newConcat.add(conditionalValue.ifTrue);
             return Action.SKIP;
         }
-        // !A && A ? B : C --> !A && C
-        if (value instanceof ConditionalValue conditionalValue && conditionalValue.condition.
-                equals(NegatedValue.negate(evaluationContext, prev))) {
-            newConcat.add(conditionalValue.ifFalse);
-            return Action.SKIP;
+        // A ? B : C && !A --> !A && C
+        if (prev instanceof ConditionalValue conditionalValue && conditionalValue.condition.equals(NegatedValue.negate(evaluationContext, value))) {
+            newConcat.set(newConcat.size() - 1, conditionalValue.ifFalse); // full replace
+            return Action.ADD_CHANGE;
         }
 
         // A && (!A || ...) ==> we can remove the !A
