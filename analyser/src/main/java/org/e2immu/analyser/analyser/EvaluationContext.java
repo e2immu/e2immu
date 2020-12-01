@@ -79,6 +79,10 @@ public interface EvaluationContext {
         throw new UnsupportedOperationException();
     }
 
+    default EvaluationContext child(Value condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
+        return child(condition);
+    }
+
     default Value currentValue(Variable variable) {
         return UnknownValue.NO_VALUE;
     }
@@ -193,5 +197,9 @@ public interface EvaluationContext {
         if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
         // always a new one with empty state -- we cannot be bothered here.
         return new Instance(variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+    }
+
+    default boolean disableEvaluationOfMethodCallsUsingCompanionMethods() {
+        return getAnalyserContext().inAnnotatedAPIAnalysis();
     }
 }

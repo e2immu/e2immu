@@ -42,7 +42,7 @@ public class BasicCompanionMethods_9 {
 
         set.add("c");
 
-        assert !set.contains("b");    // 10
+        assert !set.contains("b");    // 10 OK
         boolean removed2 = set.remove("b");
         assert !removed2;             // 12 OK
 

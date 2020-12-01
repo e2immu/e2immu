@@ -1094,9 +1094,21 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
+        private final boolean disableEvaluationOfMethodCallsUsingCompanionMethods;
 
         private EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
+            this(iteration, conditionManager, false);
+        }
+
+        private EvaluationContextImpl(int iteration, ConditionManager conditionManager,
+                                      boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
             super(iteration, conditionManager);
+            this.disableEvaluationOfMethodCallsUsingCompanionMethods = disableEvaluationOfMethodCallsUsingCompanionMethods;
+        }
+
+        @Override
+        public boolean disableEvaluationOfMethodCallsUsingCompanionMethods() {
+            return getAnalyserContext().inAnnotatedAPIAnalysis() || disableEvaluationOfMethodCallsUsingCompanionMethods;
         }
 
         @Override
@@ -1146,7 +1158,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public EvaluationContext child(Value condition) {
-            return new EvaluationContextImpl(iteration, conditionManager.addCondition(this, condition));
+            return child(condition, false);
+        }
+
+        @Override
+        public EvaluationContext child(Value condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
+            return new EvaluationContextImpl(iteration, conditionManager.addCondition(this, condition),
+                    disableEvaluationOfMethodCallsUsingCompanionMethods);
         }
 
         @Override

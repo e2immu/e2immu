@@ -34,10 +34,10 @@ public class BasicCompanionMethods_8 {
 
         boolean added1 = set.add("a");
         assert added1; // always true               3 - OK
-        assert !set.isEmpty(); // always true       4
+        assert !set.isEmpty(); // always true       4 OK
 
         set.clear();
-        assert set.isEmpty(); // always true        6
+        assert set.isEmpty(); // always true        6 OK
 
         boolean added2 = set.add("a");
         assert added2;  // always true              8 - OK
@@ -45,7 +45,7 @@ public class BasicCompanionMethods_8 {
         assert !added3;  // always true             10 -OK
 
         assert set.contains("a"); // always true    11 - OK
-        assert !set.contains("b"); // always true
+        assert !set.contains("b"); // always true   12 OK
 
         return set.size();
     }

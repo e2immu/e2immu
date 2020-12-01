@@ -84,33 +84,33 @@ public class EvaluateMethodCall {
             return builder.setValue(evaluationOnConstant).build();
         }
 
-        if (!evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis()) {
+        if (!evaluationContext.disableEvaluationOfMethodCallsUsingCompanionMethods()) {
             // boolean added = set.add(e);  -- if the set is empty, we know the result will be "true"
             Value assistedByCompanion = valueAssistedByCompanion(builder, evaluationContext,
                     objectValue, methodInfo, methodAnalysis, parameters);
             if (assistedByCompanion != null) {
                 return builder.setValue(assistedByCompanion).build();
             }
-
-            if (modified == Level.FALSE) {
-
+        }
+        if (modified == Level.FALSE) {
+            if (!evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis()) {
                 // new object returned, with a transfer of the aspect; 5 == stringBuilder.length() in aspect -> 5 == stringBuilder.toString().length()
                 Value newInstance = newInstanceWithTransferCompanion(builder, evaluationContext, objectValue, methodInfo, methodAnalysis, parameters);
                 if (newInstance != null) {
                     return builder.setValue(newInstance).build();
                 }
-
-                // evaluation on Instance, with state; check companion methods
-                // TYPE 1: boolean expression of aspect; e.g., xx == aspect method (5 == string.length())
-                // TYPE 2: boolean clause; e.g., contains("a")
-                Filter.FilterResult<MethodValue> evaluationOnInstance =
-                        computeEvaluationOnInstance(builder, evaluationContext, methodInfo, objectValue, parameters);
-                if (evaluationOnInstance != null && !evaluationOnInstance.accepted().isEmpty()) {
-                    Value value = evaluationOnInstance.accepted().values().stream().findFirst().orElseThrow();
-                    return builder.setValue(value).build();
-                }
+            }
+            // evaluation on Instance, with state; check companion methods
+            // TYPE 1: boolean expression of aspect; e.g., xx == aspect method (5 == string.length())
+            // TYPE 2: boolean clause; e.g., contains("a")
+            Filter.FilterResult<MethodValue> evaluationOnInstance =
+                    computeEvaluationOnInstance(builder, evaluationContext, methodInfo, objectValue, parameters);
+            if (evaluationOnInstance != null && !evaluationOnInstance.accepted().isEmpty()) {
+                Value value = evaluationOnInstance.accepted().values().stream().findFirst().orElseThrow();
+                return builder.setValue(value).build();
             }
         }
+
 
         // @Identity as method annotation
         Value identity = computeIdentity(evaluationContext, methodAnalysis, parameters, objectFlowOfResult);
@@ -224,7 +224,7 @@ public class EvaluateMethodCall {
                         parameterValues, ObjectFlow.NO_FLOW));
         */
         // we might encounter isFact or isKnown, so we add the instance's state to the context
-        EvaluationContext child = evaluationContext.child(instance.state);
+        EvaluationContext child = evaluationContext.child(instance.state, true);
         Value resultingValue = companionValue.reEvaluate(child, translationMap).value;
         if (instance.state != UnknownValue.EMPTY && resultingValue != UnknownValue.EMPTY) {
             if (Primitives.isBoolean(methodInfo.returnType().typeInfo)) {

@@ -405,7 +405,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
             }
         };
 
-        testClass("BasicCompanionMethods_8", 0, 7, new DebugConfiguration.Builder()
+        testClass("BasicCompanionMethods_8", 0, 8, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
