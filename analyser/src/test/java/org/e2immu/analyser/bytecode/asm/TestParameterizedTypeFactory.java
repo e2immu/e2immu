@@ -20,7 +20,6 @@ package org.e2immu.analyser.bytecode.asm;
 
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.TypeParameterImpl;
 import org.e2immu.analyser.parser.TypeMapImpl;
 import org.e2immu.analyser.util.Logger;
 import org.junit.Assert;
@@ -92,19 +91,28 @@ public class TestParameterizedTypeFactory {
     @Test
     public void testWildcard() {
         ParameterizedType pt = create("Ljava/lang/Class<*>;").parameterizedType;
-        Assert.assertEquals("java.lang.Class",
-                Objects.requireNonNull(pt.typeInfo).fullyQualifiedName);
+        Assert.assertEquals("java.lang.Class",                Objects.requireNonNull(pt.typeInfo).fullyQualifiedName);
         Assert.assertEquals(1, pt.parameters.size());
-        Assert.assertEquals("java.lang.Class<?>", pt.detailedString());
+        ParameterizedType tp0 = pt.parameters.get(0);
+        Assert.assertSame(ParameterizedType.WildCard.UNBOUND, tp0.wildCard);
+    }
+
+    @Test
+    public void testWildcardSuper() {
+        ParameterizedType pt = create("Ljava/lang/Class<-Ljava/lang/Number;>;").parameterizedType;
+        Assert.assertEquals("java.lang.Class", Objects.requireNonNull(pt.typeInfo).fullyQualifiedName);
+        Assert.assertEquals(1, pt.parameters.size());
+        ParameterizedType tp0 = pt.parameters.get(0);
+        Assert.assertSame(ParameterizedType.WildCard.SUPER, tp0.wildCard);
     }
 
     @Test
     public void testWildcardExtends() {
         ParameterizedType pt = create("Ljava/lang/Class<+Ljava/lang/Number;>;").parameterizedType;
-        Assert.assertEquals("java.lang.Class",
-                Objects.requireNonNull(pt.typeInfo).fullyQualifiedName);
+        Assert.assertEquals("java.lang.Class", Objects.requireNonNull(pt.typeInfo).fullyQualifiedName);
         Assert.assertEquals(1, pt.parameters.size());
-        Assert.assertEquals("java.lang.Class<? extends java.lang.Number>", pt.detailedString());
+        ParameterizedType tp0 = pt.parameters.get(0);
+        Assert.assertSame(ParameterizedType.WildCard.EXTENDS, tp0.wildCard);
     }
 
     @Test

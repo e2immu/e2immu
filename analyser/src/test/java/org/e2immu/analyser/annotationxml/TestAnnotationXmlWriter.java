@@ -17,12 +17,20 @@
 
 package org.e2immu.analyser.annotationxml;
 
-import org.e2immu.analyser.cli.Main;
+import org.e2immu.analyser.config.AnnotatedAPIConfiguration;
+import org.e2immu.analyser.config.AnnotationXmlConfiguration;
 import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.config.InputConfiguration;
+import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.e2immu.analyser.util.Logger.LogTarget.ANNOTATION_XML_READER;
+import static org.e2immu.analyser.util.Logger.LogTarget.ANNOTATION_XML_WRITER;
 
 /*
   description = "Convert all annotations in the annotatedAPIs to annotation.xml files"
@@ -42,7 +50,25 @@ public class TestAnnotationXmlWriter {
 
     @Test
     public void test() throws IOException {
-        Configuration configuration = new Configuration.Builder().build();
+        InputConfiguration.Builder inputConfigurationBuilder = new InputConfiguration.Builder()
+                .addSources("some/empty/dir")
+                .addClassPath(InputConfiguration.DEFAULT_CLASSPATH)
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "com/google/common/collect")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/junit")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "org/slf4j")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "ch/qos/logback/core/spi")
+                .addClassPath(Input.JAR_WITH_PATH_PREFIX + "io/vertx/core")
+                .addAnnotatedAPISources("../annotatedAPIs/src/main/java");
+        AnnotationXmlConfiguration.Builder annotationXml = new AnnotationXmlConfiguration.Builder()
+                .addAnnotationXmlPackages("java.lang", "java.util")
+                .setWriteAnnotationXmlDir("build/annotations")
+                .setAnnotationXml(true);
+        Configuration configuration = new Configuration.Builder()
+                .addDebugLogTargets(List.of(ANNOTATION_XML_READER, ANNOTATION_XML_WRITER)
+                        .stream().map(Enum::toString).collect(Collectors.joining(",")))
+                .setInputConfiguration(inputConfigurationBuilder.build())
+                .setWriteAnnotationXmConfiguration(annotationXml.build())
+                .build();
         configuration.initializeLoggers();
         new Parser(configuration).run();
     }

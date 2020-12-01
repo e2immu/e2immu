@@ -18,7 +18,6 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Primitives;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,13 +32,14 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
                         ParameterizedType parameterizedType,
                         boolean varargs,
                         boolean withoutArrays) {
-        return print(inspectionProvider, parameterizedType, varargs, withoutArrays, new HashSet<>());
+        return print(inspectionProvider, parameterizedType, varargs, withoutArrays, true, new HashSet<>());
     }
 
     public String print(InspectionProvider inspectionProvider,
                         ParameterizedType parameterizedType,
                         boolean varargs,
                         boolean withoutArrays,
+                        boolean keepItSimple,
                         Set<TypeParameter> visitedTypeParameters) {
         StringBuilder sb = new StringBuilder();
         switch (parameterizedType.wildCard) {
@@ -67,14 +67,14 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
             }
         } else if (parameterizedType.typeInfo != null) {
             if (parameterizedType.parameters.isEmpty()) {
-                sb.append(typeName(parameterizedType.typeInfo));
+                sb.append(typeName(parameterizedType.typeInfo, keepItSimple, false));
             } else {
                 TypeInspection typeInspection = inspectionProvider.getTypeInspection(parameterizedType.typeInfo);
                 if (typeInspection.isStatic()) { // shortcut
-                    sb.append(singleType(inspectionProvider, parameterizedType.typeInfo, true,
+                    sb.append(singleType(inspectionProvider, parameterizedType.typeInfo, keepItSimple, false,
                             parameterizedType.parameters, visitedTypeParameters));
                 } else {
-                    sb.append(distributeTypeParameters(inspectionProvider, parameterizedType, visitedTypeParameters));
+                    sb.append(distributeTypeParameters(inspectionProvider, parameterizedType, visitedTypeParameters, keepItSimple));
                 }
             }
         }
@@ -91,9 +91,15 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
         return sb.toString();
     }
 
-    private String typeName(TypeInfo typeInfo) {
+    private String typeName(TypeInfo typeInfo, boolean keepItSimple, boolean forceSimple) {
+        if (forceSimple) {
+            return typeInfo.simpleName;
+        }
         if (fullyQualified) {
             return typeInfo.fullyQualifiedName;
+        }
+        if (keepItSimple) {
+            return typeInfo.simpleName;
         }
         // join up to primary type...
         return recursivelyUpToPrimaryType(typeInfo);
@@ -110,7 +116,8 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
     // we should write them there
     private String distributeTypeParameters(InspectionProvider inspectionProvider,
                                             ParameterizedType parameterizedType,
-                                            Set<TypeParameter> visitedTypeParameters) {
+                                            Set<TypeParameter> visitedTypeParameters,
+                                            boolean keepItSimple) {
         TypeInfo typeInfo = parameterizedType.typeInfo;
         assert typeInfo != null;
         List<TypeAndParameters> taps = new LinkedList<>();
@@ -136,7 +143,7 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
             typeInfo = next;
         }
         return taps.stream().map(tap -> singleType(inspectionProvider,
-                tap.typeInfo, tap.isPrimaryType, tap.typeParameters, visitedTypeParameters))
+                tap.typeInfo, keepItSimple, !tap.isPrimaryType, tap.typeParameters, visitedTypeParameters))
                 .collect(Collectors.joining("."));
     }
 
@@ -144,18 +151,15 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
     }
 
     private String singleType(InspectionProvider inspectionProvider,
-                              TypeInfo typeInfo, boolean isPrimaryType,
+                              TypeInfo typeInfo,
+                              boolean keepItSimple,
+                              boolean forceSimple,
                               List<ParameterizedType> typeParameters,
                               Set<TypeParameter> visitedTypeParameters) {
-        StringBuilder sb = new StringBuilder();
-        if (fullyQualified && isPrimaryType) {
-            sb.append(typeInfo.fullyQualifiedName);
-        } else {
-            sb.append(typeInfo.simpleName);
-        }
+        StringBuilder sb = new StringBuilder(typeName(typeInfo, keepItSimple, forceSimple));
         if (!typeParameters.isEmpty()) {
             sb.append("<");
-            sb.append(typeParameters.stream().map(tp -> print(inspectionProvider, tp, false, false,
+            sb.append(typeParameters.stream().map(tp -> print(inspectionProvider, tp, false, false, false,
                     visitedTypeParameters)).collect(Collectors.joining(", ")));
             sb.append(">");
         }

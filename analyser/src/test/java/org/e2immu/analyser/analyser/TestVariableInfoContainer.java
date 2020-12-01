@@ -21,12 +21,19 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.util.Logger;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Map;
 
 public class TestVariableInfoContainer extends CommonVariableInfo {
+
+    @BeforeClass
+    public static void beforeClass() {
+        Logger.activate();
+    }
 
     @Test
     public void test1() {
@@ -111,6 +118,7 @@ public class TestVariableInfoContainer extends CommonVariableInfo {
 
         vic.assignment(VariableInfoContainer.LEVEL_4_SUMMARY);
         Assert.assertEquals(VariableInfoContainer.LEVEL_4_SUMMARY, vic.getCurrentLevel());
+        vic.setValueOnAssignment(VariableInfoContainer.LEVEL_4_SUMMARY, three, Map.of());
         Assert.assertSame(three, vic.current().getValue());
 
     }

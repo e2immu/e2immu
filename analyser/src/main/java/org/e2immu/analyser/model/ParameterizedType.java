@@ -181,8 +181,8 @@ public class ParameterizedType {
         return ParameterizedTypePrinter.DEFAULT.print(inspectionProvider, this, varargs, false);
     }
 
-    public String print(InspectionProvider inspectionProvider, boolean varargs, Set<TypeParameter> visitedTypeParameters) {
-        return ParameterizedTypePrinter.DEFAULT.print(inspectionProvider, this, varargs, false, visitedTypeParameters);
+    public String print(InspectionProvider inspectionProvider, boolean varargs, Set<TypeParameter> visitedTypeParameters, boolean keepItSimple) {
+        return ParameterizedTypePrinter.DEFAULT.print(inspectionProvider, this, varargs, false, keepItSimple, visitedTypeParameters);
     }
 
     /**

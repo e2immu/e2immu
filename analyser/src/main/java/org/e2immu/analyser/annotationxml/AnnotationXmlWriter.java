@@ -67,9 +67,7 @@ public class AnnotationXmlWriter {
             base = new File(System.getProperty("user.dir"));
         }
         Set<TypeInfo> typesToWrite = new HashSet<>();
-        typeMap.visit(new String[0], (packageSplit, types) -> {
-            typesToWrite.addAll(types);
-        });
+        typeMap.visit(new String[0], (packageSplit, types) -> typesToWrite.addAll(types));
         Map<String, List<TypeItem>> typeItemsPerPackage = new HashMap<>();
         boolean isEmpty = configuration.writeAnnotationXmlPackages.isEmpty();
         typesToWrite.forEach(typeInfo -> {
@@ -123,41 +121,49 @@ public class AnnotationXmlWriter {
 
     private static void add(Document document, Element root, TypeItem typeItem) {
         if (!typeItem.getAnnotations().isEmpty()) {
-            add(document, root, typeItem.name, typeItem.getAnnotations());
+            add(document, root, typeItem.name, typeItem.getAnnotations(), null);
         }
         typeItem.getFieldItems().values().stream().sorted().forEach(fieldItem ->
                 add(document, root, typeItem.name, fieldItem));
         typeItem.getMethodItems().values().stream().sorted().forEach(methodItem ->
-                add(document, root, typeItem.name, methodItem));
+                add(document, root, typeItem.name, methodItem, false));
     }
 
     private static void add(Document document, Element root, String typeName, FieldItem fieldItem) {
         if (!fieldItem.getAnnotations().isEmpty()) {
             String fieldName = typeName + " " + fieldItem.name;
-            add(document, root, fieldName, fieldItem.getAnnotations());
+            add(document, root, fieldName, fieldItem.getAnnotations(), null);
         }
     }
 
-    private static void add(Document document, Element root, String typeName, MethodItem methodItem) {
+    private static void add(Document document, Element root, String typeName, MethodItem methodItem, boolean isCompanion) {
         String methodName = typeName + (methodItem.returnType != null ? " " + methodItem.returnType : "") + " " + methodItem.name;
         if (!methodItem.getAnnotations().isEmpty()) {
-            add(document, root, methodName, methodItem.getAnnotations());
+            add(document, root, methodName, methodItem.getAnnotations(), isCompanion ? methodItem.getCompanionValue() : null);
         }
         if (!methodItem.getParameterItems().isEmpty()) {
             methodItem.getParameterItems().stream().sorted().forEach(parameterItem -> add(document, root, methodName, parameterItem));
+        }
+        if (!isCompanion) {
+            for (MethodItem companionItem : methodItem.getCompanionMethods()) {
+                add(document, root, typeName, companionItem, true);
+            }
         }
     }
 
     private static void add(Document document, Element root, String methodName, ParameterItem parameterItem) {
         if (!parameterItem.getAnnotations().isEmpty()) {
             String parameterName = methodName + " " + parameterItem.index;
-            add(document, root, parameterName, parameterItem.getAnnotations());
+            add(document, root, parameterName, parameterItem.getAnnotations(), null);
         }
     }
 
-    private static void add(Document document, Element root, String itemName, Collection<Annotation> annotations) {
+    private static void add(Document document, Element root, String itemName, Collection<Annotation> annotations, String companionValue) {
         Element item = document.createElement("item");
         item.setAttribute("name", itemName);
+        if (companionValue != null && !companionValue.isBlank()) {
+            item.setAttribute("definition", companionValue);
+        }
         root.appendChild(item);
         for (Annotation annotation : annotations) {
             Element annotationElement = document.createElement("annotation");

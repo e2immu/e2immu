@@ -100,7 +100,7 @@ public class TestParseGenerics {
 
         Set<TypeParameter> visited = new HashSet<>();
         visited.add(K);
-        Assert.assertEquals("Enum<K>", typeBoundK.print(newTypeContext, false, visited));
+        Assert.assertEquals("Enum<K>", typeBoundK.print(newTypeContext, false, visited, true));
         Assert.assertSame(K, typeBoundK.parameters.get(0).typeParameter);
 
         Assert.assertEquals("EnumMap<K extends Enum<K>, V>", typeInfo.asParameterizedType(typeContext)
@@ -134,7 +134,7 @@ public class TestParseGenerics {
         Assert.assertSame(splitr, typeBoundSplitr.parameters.get(2).typeParameter);
         Set<TypeParameter> visited = new HashSet<>();
         visited.add(splitr);
-        Assert.assertEquals("T_SPLITR extends OfPrimitive<T, T_CONS, T_SPLITR>", splitr.print(typeContext, visited));
+        Assert.assertEquals("T_SPLITR extends Spliterator.OfPrimitive<T, T_CONS, T_SPLITR>", splitr.print(typeContext, visited));
 
         Assert.assertEquals("OfPrimitive<T, T_CONS, T_SPLITR extends Spliterator.OfPrimitive<T, T_CONS, T_SPLITR>>",
                 pt.print(typeContext, false));

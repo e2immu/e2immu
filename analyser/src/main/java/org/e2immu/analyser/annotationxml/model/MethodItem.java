@@ -19,6 +19,8 @@
 package org.e2immu.analyser.annotationxml.model;
 
 import com.google.common.collect.ImmutableList;
+import org.e2immu.analyser.analyser.CompanionAnalysis;
+import org.e2immu.analyser.model.CompanionMethodName;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.annotation.E2Immutable;
@@ -33,14 +35,17 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
     public final String name;
     public final String returnType;
     private List<ParameterItem> parameterItems = new ArrayList<>();
+    private List<MethodItem> companionMethods = new ArrayList<>();
+    public final String companionValue;
 
     public MethodItem(String name, String returnType) {
         this.name = name;
         this.returnType = returnType;
+        companionValue = "";
     }
 
     //@Mark("freeze")
-    public MethodItem(MethodInfo methodInfo) {
+    public MethodItem(MethodInfo methodInfo, CompanionAnalysis companionAnalysis) {
         returnType = methodInfo.returnType().print();
         String parameters;
         if (methodInfo.methodInspection.isSet()) {
@@ -51,8 +56,20 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
                 parameterTypes.add(parameterInfo.parameterizedType.print());
             }
             parameters = String.join(", ", parameterTypes);
+
+            if (companionAnalysis != null) {
+                companionValue = companionAnalysis.getValue().toString();
+            } else {
+                companionValue = "";
+                for (Map.Entry<CompanionMethodName, MethodInfo> entry : methodInfo.methodInspection.get().getCompanionMethods().entrySet()) {
+                    CompanionAnalysis ca = methodInfo.methodAnalysis.get().getCompanionAnalyses().get(entry.getKey());
+                    MethodItem companionItem = new MethodItem(entry.getValue(), ca);
+                    companionMethods.add(companionItem);
+                }
+            }
         } else {
             parameters = "";
+            companionValue = "";
         }
         name = methodInfo.name + "(" + parameters + ")";
         addAnnotations(methodInfo.methodInspection.isSet() ? methodInfo.methodInspection.get().getAnnotations() : List.of(),
@@ -67,10 +84,20 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
         return parameterItems;
     }
 
+    public List<MethodItem> getCompanionMethods() {
+        return companionMethods;
+    }
+
+    public String getCompanionValue() {
+        return companionValue;
+    }
+
     void freeze() {
         super.freeze();
         parameterItems = ImmutableList.copyOf(parameterItems);
         parameterItems.forEach(ParameterItem::freeze);
+        companionMethods = ImmutableList.copyOf(companionMethods);
+        companionMethods.forEach(MethodItem::freeze);
     }
 
     @Override

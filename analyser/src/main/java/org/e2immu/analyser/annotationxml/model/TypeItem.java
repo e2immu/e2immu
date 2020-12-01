@@ -46,7 +46,7 @@ public class TypeItem extends HasAnnotations implements Comparable<TypeItem> {
                                 .collect(Collectors.toList()) : List.of());
         if (haveTypeInspection) {
             for (MethodInfo methodInfo : typeInfo.typeInspection.get().methods(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)) {
-                MethodItem methodItem = new MethodItem(methodInfo);
+                MethodItem methodItem = new MethodItem(methodInfo, null);
                 methodItems.put(methodItem.name, methodItem);
             }
             for (FieldInfo fieldInfo : typeInfo.typeInspection.get().fields()) {

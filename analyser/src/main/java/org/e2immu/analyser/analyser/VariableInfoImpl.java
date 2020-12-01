@@ -259,13 +259,15 @@ class VariableInfoImpl implements VariableInfo {
         if (!existingValuesWillBeOverwritten && currentValue == NO_VALUE) return NO_VALUE;
         boolean haveANoValue = merge.stream().anyMatch(v -> !v.stateOnAssignmentIsSet());
         if (haveANoValue) return NO_VALUE;
-        boolean allValuesIdentical = merge.stream().allMatch(v -> currentValue.equals(v.getValue()));
-        if (allValuesIdentical) return currentValue;
 
         if (merge.isEmpty()) {
             if (existingValuesWillBeOverwritten) throw new UnsupportedOperationException();
             return currentValue;
         }
+
+        boolean allValuesIdentical = merge.stream().allMatch(v -> currentValue.equals(v.getValue()));
+        if (allValuesIdentical) return currentValue;
+
 
         if (merge.size() == 1) {
             if (existingValuesWillBeOverwritten) return merge.get(0).getValue();
