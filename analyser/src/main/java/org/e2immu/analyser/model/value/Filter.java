@@ -71,39 +71,36 @@ public class Filter {
     private static <X> FilterResult<X> internalFilter(EvaluationContext evaluationContext, Value value, FilterMode filterMode, List<FilterMethod<X>> filterMethods) {
         AtomicReference<FilterResult<X>> filterResult = new AtomicReference<>();
         value.visit(v -> {
-            if (v == UnknownValue.EMPTY) return false;
-            if (v instanceof NegatedValue negatedValue) {
-                FilterResult<X> resultOfNegated = internalFilter(evaluationContext, negatedValue.value, filterMode, filterMethods);
-                if (resultOfNegated != null) {
-                    FilterResult<X> negatedResult = new FilterResult<>(resultOfNegated.accepted.entrySet().stream()
-                            .collect(Collectors.toMap(Map.Entry::getKey,
-                                    e -> NegatedValue.negate(evaluationContext, e.getValue()), (v1, v2) -> v1)),
-                            NegatedValue.negate(evaluationContext, resultOfNegated.rest));
-                    filterResult.set(negatedResult);
-                }
-                return false;
-            }
-            if (v instanceof AndValue andValue) {
-                if (filterMode == FilterMode.ACCEPT || filterMode == FilterMode.ALL) {
-                    filterResult.set(processAndOr(evaluationContext, andValue.values, filterMode, filterMethods));
-                }
-                return false; // do not go deeper
-            }
-            if (v instanceof OrValue orValue) {
-                if (filterMode == FilterMode.REJECT || filterMode == FilterMode.ALL) {
-                    filterResult.set(processAndOr(evaluationContext, orValue.values, filterMode, filterMethods));
-                }
-                return false;
-            }
-            for (FilterMethod<X> filterMethod : filterMethods) {
-                FilterResult<X> res = filterMethod.apply(v);
-                if (res != null) {
-                    // we have a hit
-                    filterResult.set(res);
-                    return false; // no need to go deeper
+            if (v != UnknownValue.EMPTY) {
+                if (v instanceof NegatedValue negatedValue) {
+                    FilterResult<X> resultOfNegated = internalFilter(evaluationContext, negatedValue.value, filterMode, filterMethods);
+                    if (resultOfNegated != null) {
+                        FilterResult<X> negatedResult = new FilterResult<>(resultOfNegated.accepted.entrySet().stream()
+                                .collect(Collectors.toMap(Map.Entry::getKey,
+                                        e -> NegatedValue.negate(evaluationContext, e.getValue()), (v1, v2) -> v1)),
+                                NegatedValue.negate(evaluationContext, resultOfNegated.rest));
+                        filterResult.set(negatedResult);
+                    }
+                } else if (v instanceof AndValue andValue) {
+                    if (filterMode == FilterMode.ACCEPT || filterMode == FilterMode.ALL) {
+                        filterResult.set(processAndOr(evaluationContext, andValue.values, filterMode, filterMethods));
+                    }
+                } else if (v instanceof OrValue orValue) {
+                    if (filterMode == FilterMode.REJECT || filterMode == FilterMode.ALL) {
+                        filterResult.set(processAndOr(evaluationContext, orValue.values, filterMode, filterMethods));
+                    }
+                } else {
+                    for (FilterMethod<X> filterMethod : filterMethods) {
+                        FilterResult<X> res = filterMethod.apply(v);
+                        if (res != null) {
+                            // we have a hit
+                            filterResult.set(res);
+                            break;
+                        }
+                    }
                 }
             }
-            return true; // go deeper
+            return false; // do not go deeper
         });
         return filterResult.get();
     }

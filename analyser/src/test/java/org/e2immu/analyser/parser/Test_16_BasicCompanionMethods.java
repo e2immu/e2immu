@@ -339,7 +339,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
             TypeInfo collection = typeMap.get(Collection.class);
             MethodInfo clear = collection.findUniqueMethod("clear", 0);
             CompanionAnalysis clearCompanion = clear.methodAnalysis.get().getCompanionAnalyses()
-                    .get(new CompanionMethodName("clear", CompanionMethodName.Action.CLEAR, null));
+                    .get(new CompanionMethodName("clear", CompanionMethodName.Action.CLEAR, "Size"));
             Assert.assertNotNull(clearCompanion);
             Assert.assertEquals(Level.TRUE, clear.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
 
@@ -450,4 +450,26 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                 .build());
     }
 
+    @Test
+    public void test10() throws IOException {
+        final String SIZE = "java.util.Collection.this.size()";
+        final String IN = "org.e2immu.analyser.testexample.BasicCompanionMethods_10.test(Collection<java.lang.String>):0:in";
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
+                if ("5".equals(d.statementId())) {
+                    Assert.assertEquals("instance type java.util.HashSet[("+SIZE+" + (-("+IN+".size()))) >= 0]", d.currentValue().toString());
+                }
+            }
+        };
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "8".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                Assert.assertEquals("set.size()", d.evaluationResult().value.toString());
+            }
+        };
+        testClass("BasicCompanionMethods_10", 0, 3, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .build());
+    }
 }

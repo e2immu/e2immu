@@ -36,8 +36,9 @@ public record CompanionMethodName(String methodName, Action action,
         // define
         ASPECT(0, true, true, "Aspect", 0, 0),
 
-        CLEAR(1, false, false, "Clear", 0, 0),
-        // a clause that is valid at all times, e.g. size() >= 0
+        CLEAR(1, false, true, "Clear", 1, 1),
+
+        // a clause that is valid at all times, e.g. size() >= 0,
         INVARIANT(2, false, true, "Invariant", 1, 1),
 
         // a clause that must be true before the method starts; otherwise an exception is thrown
@@ -89,7 +90,7 @@ public record CompanionMethodName(String methodName, Action action,
 
     public static final EnumSet<Action> MODIFYING_METHOD_OR_CONSTRUCTOR = EnumSet.of(Action.CLEAR,
             Action.MODIFICATION, Action.REMOVE, Action.POSTCONDITION);
-    public static final EnumSet<Action> NO_CODE = EnumSet.of(Action.ASPECT, Action.CLEAR);
+    public static final EnumSet<Action> NO_CODE = EnumSet.of(Action.ASPECT);
 
     public int numAspectVariables(boolean modifyingMethod) {
         return aspect == null ? 0 : (modifyingMethod ? action.aspectVariablesModifying : action.aspectVariablesNonModifying);

@@ -63,8 +63,7 @@ public class JavaUtil extends AnnotatedAPI {
         @Independent
         boolean addAll(@NotNull1 java.util.Collection<? extends E> collection) { return true; }
 
-        void clear$Clear() { } // executed before $Modification$Size; removes all
-        boolean clear$Modification$Size(int i, int j) { return i == 0; }
+        boolean clear$Clear$Size(int i) { return i == 0; }
         @Modified
         void clear() { }
 
@@ -202,27 +201,25 @@ public class JavaUtil extends AnnotatedAPI {
         <T> T[] toArray(@NotNull1 T[] a) { return null; }
     }
 
+    // IMPROVE for now we have to repeat the method+companions from Collection, as companions are not inherited
 
     @Container
     // this is not in line with the JDK, but we will block null keys!
     static class Set$<E> {
 
         // note that with the $, we're really in java.util.Set, so we have no knowledge of addModificationHelper unless we add it to the
-        // type context (but that is possible) IMPROVE
+        // type context IMPROVE not really trivial to sort out
         boolean add$Modification$Size(int i, int j, E e) { return org.e2immu.annotatedapi.JavaUtil.setAddModificationHelper(i, j, contains(e)); }
         boolean add$Value$Size(int size, E e, boolean retVal) { return org.e2immu.annotatedapi.JavaUtil.setAddValueHelper(size, contains(e), retVal); }
         boolean add$Remove(E e) { return !contains(e); }
         boolean add$Postcondition(E e) { return contains(e); }
         boolean add(@NotNull E e) { return true; }
 
-        boolean addAll$Modification$Size(int i, int j, java.util.Collection<? extends E> c) { return i >= j && i <= j + c.size(); }
+        boolean addAll$Clear$Size(int i, Collection<? extends E> c) { return i >= c.size(); } // do NOT add isKnown()
         @Independent
         boolean addAll(@NotNull1 java.util.Collection<? extends E> collection) { return true; }
 
-        // IMPROVE for now we have to repeat the method+companions from Collection, as companions are not inherited
-        void clear$Clear() { } // executed before $Modification$Size; removes all
-        boolean clear$Modification$Size(int i, int j) { return i == 0; }
-        boolean clear$Postcondition() { return org.e2immu.annotatedapi.AnnotatedAPI.isKnown(false); }
+        boolean clear$Clear$Size(int i) { return i == 0 && org.e2immu.annotatedapi.AnnotatedAPI.isKnown(false); }
         @Modified
         void clear() { }
 

@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.model.*;
@@ -252,10 +251,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 .filter(e -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(e.action()))
                 .sorted()
                 .forEach(companionMethodName -> {
-                    if (companionMethodName.action() == CompanionMethodName.Action.CLEAR) {
-                        newState.set(UnknownValue.EMPTY);
-                        return;
-                    }
                     CompanionAnalysis companionAnalysis = methodAnalysis.getCompanionAnalyses().get(companionMethodName);
                     MethodInfo aspectMethod;
                     if (companionMethodName.aspect() != null) {
@@ -265,20 +260,28 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         aspectMethod = null;
                     }
 
-                    // in the case of java.util.List.add(), the aspect is Size, there are 3+ "parameters":
-                    // pre, post, and the parameter(s) of the add method.
-                    // post is already OK (it is the new value of the aspect method)
-                    // pre is the "old" value, which has to be obtained. If that's impossible, we bail out.
-                    // the parameters are available
-                    FilterResultAndTranslationMap translation = createTranslationMap(evaluationContext, aspectMethod,
-                            companionAnalysis, newState.get(), methodInfo.isConstructor, parameterValues);
+                    Filter.FilterResult<MethodValue> filterResult;
 
-                    Value companionValue = companionAnalysis.getValue();
-                    EvaluationContext child = evaluationContext.child(instance.state);
-                    EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(child, translation.translationMap);
-                    // no need to compose: this is a separate operation. builder.compose(companionValueTranslationResult);
-                    Value companionValueTranslated = companionValueTranslationResult.value;
-                    // IMPROVE the object flow and the state from the precondition!!
+                    if (companionMethodName.action() == CompanionMethodName.Action.CLEAR) {
+                        newState.set(UnknownValue.EMPTY);
+                        filterResult = null; // there is no "pre"
+                    } else {
+                        // in the case of java.util.List.add(), the aspect is Size, there are 3+ "parameters":
+                        // pre, post, and the parameter(s) of the add method.
+                        // post is already OK (it is the new value of the aspect method)
+                        // pre is the "old" value, which has to be obtained. If that's impossible, we bail out.
+                        // the parameters are available
+
+                        if (aspectMethod != null && !methodInfo.isConstructor) {
+                            // first: pre (POSTCONDITION, MODIFICATION)
+                            filterResult = EvaluateMethodCall.filter(evaluationContext, aspectMethod, newState.get(), List.of());
+                        } else {
+                            filterResult = null;
+                        }
+                    }
+
+                    Value companionValueTranslated = translateCompanionValue(evaluationContext, companionAnalysis,
+                            filterResult, newState.get(), parameterValues);
 
                     boolean remove = companionMethodName.action() == CompanionMethodName.Action.REMOVE;
                     if (remove) {
@@ -288,12 +291,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                             newState.set(res.rest());
                         }
                     } else {
-                        if (translation.filterResult != null) {
+                        if (filterResult != null) {
                             // there is an old "pre" value that needs to be removed
-                            if (translation.filterResult.rest() == UnknownValue.EMPTY) {
+                            if (filterResult.rest() == UnknownValue.EMPTY) {
                                 newState.set(companionValueTranslated);
                             } else {
-                                newState.set(new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, translation.filterResult.rest(),
+                                newState.set(new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, filterResult.rest(),
                                         companionValueTranslated));
                             }
                         } else {
@@ -319,6 +322,29 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return modifiedInstance;
     }
 
+    private static Value translateCompanionValue(EvaluationContext evaluationContext,
+                                                 CompanionAnalysis companionAnalysis,
+                                                 Filter.FilterResult<MethodValue> filterResult,
+                                                 Value instanceState,
+                                                 List<Value> parameterValues) {
+        Map<Value, Value> translationMap = new HashMap<>();
+        if (filterResult != null) {
+            Value preAspectVariableValue = companionAnalysis.getPreAspectVariableValue();
+            translationMap.put(preAspectVariableValue, filterResult.accepted().values().stream()
+                    .findFirst()
+                    // it is possible that no pre- information can be found... that's OK as long as it isn't used
+                    .orElse(UnknownValue.EMPTY));
+        }
+        // parameters
+        ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
+
+        Value companionValue = companionAnalysis.getValue();
+        EvaluationContext child = evaluationContext.child(instanceState);
+        EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(child, translationMap);
+        // no need to compose: this is a separate operation. builder.compose(companionValueTranslationResult);
+        return companionValueTranslationResult.value;
+    }
+
     /*
     Modifying method
 
@@ -338,39 +364,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         return result;
     }
-
-    // the "pre" clause
-    private record FilterResultAndTranslationMap(Filter.FilterResult<MethodValue> filterResult,
-                                                 Map<Value, Value> translationMap) {
-    }
-
-    // for modifying methods only. there is a "Pre" variable when there are aspects.
-    // the filter result contains the pre-clause and the rest.
-    private static FilterResultAndTranslationMap createTranslationMap(EvaluationContext evaluationContext,
-                                                                      MethodInfo aspectMethod,
-                                                                      CompanionAnalysis companionAnalysis,
-                                                                      Value stateOfInstance,
-                                                                      boolean mainMethodIsConstructor,
-                                                                      List<Value> parameterValues) {
-        ImmutableMap.Builder<Value, Value> translationMap = new ImmutableMap.Builder<>();
-        Filter.FilterResult<MethodValue> filterResult;
-        Value preAspectVariableValue = companionAnalysis.getPreAspectVariableValue();
-
-        if (aspectMethod != null && !mainMethodIsConstructor) {
-            // first: pre
-            filterResult = EvaluateMethodCall.filter(evaluationContext, aspectMethod, stateOfInstance, List.of());
-            translationMap.put(preAspectVariableValue, filterResult.accepted().values().stream()
-                    .findFirst()
-                    // it is possible that no pre- information can be found... that's OK as long as it isn't used
-                    .orElse(UnknownValue.EMPTY));
-        } else {
-            filterResult = null;
-        }
-        // parameters
-        ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
-        return new FilterResultAndTranslationMap(filterResult, translationMap.build());
-    }
-
 
     private int notNullRequirementOnScope(int notNullRequirement) {
         if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() && MultiLevel.isEffectivelyNotNull(notNullRequirement)) {
