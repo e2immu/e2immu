@@ -387,9 +387,27 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                             d.currentValue().toString());
                 }
             }
+            if ("test".equals(d.methodInfo().name) && "added1".equals(d.variableName())) {
+                if ("2".equals(d.statementId())) {
+                    Assert.assertEquals("true", d.currentValue().toString());
+                }
+            }
+            if ("test".equals(d.methodInfo().name) && "added3".equals(d.variableName())) {
+                if ("2".equals(d.statementId())) {
+                    Assert.assertEquals("false", d.currentValue().toString());
+                }
+            }
         };
-        testClass("BasicCompanionMethods_8", 0, 5, new DebugConfiguration.Builder()
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                Assert.assertEquals("true", d.evaluationResult().value.toString());
+            }
+        };
+
+        testClass("BasicCompanionMethods_8", 0, 7, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

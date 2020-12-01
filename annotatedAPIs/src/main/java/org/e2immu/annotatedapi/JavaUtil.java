@@ -220,6 +220,10 @@ public class JavaUtil extends AnnotatedAPI {
         @NotModified
         boolean contains(@NotNull Object object) { return true; }
 
+        boolean isEmpty$Value$Size(int i, boolean retVal) { return i == 0; }
+        @NotModified
+        boolean isEmpty() { return true; }
+        
         @NotNull1
         java.util.Iterator<E> iterator() { return null; }
 

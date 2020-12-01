@@ -213,9 +213,19 @@ public class EvaluateMethodCall {
         Map<Value, Value> translationMap = new HashMap<>();
 
         // parameters of companionAnalysis look like: aspect (if present) | main method parameters | retVal
+        // the aspect has been replaced+taken care of by the CompanionAnalyser
+        // we must put a replacement in the translation map for each of the parameters
+        // we do not bother with the retVal (which is of type VariableValue(ReturnVariable))
         ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues)
                 .forEach(pair -> translationMap.put(pair.k, pair.v));
-        Value resultingValue = companionValue.reEvaluate(evaluationContext, translationMap).value;
+        /*
+        translationMap.put(new VariableValue(new ReturnVariable(methodInfo)),
+                new MethodValue(methodInfo, new VariableValue(new This(evaluationContext.getAnalyserContext(), methodInfo.typeInfo)),
+                        parameterValues, ObjectFlow.NO_FLOW));
+        */
+        // we might encounter isFact or isKnown, so we add the instance's state to the context
+        EvaluationContext child = evaluationContext.child(instance.state);
+        Value resultingValue = companionValue.reEvaluate(child, translationMap).value;
         if (instance.state != UnknownValue.EMPTY && resultingValue != UnknownValue.EMPTY) {
             if (Primitives.isBoolean(methodInfo.returnType().typeInfo)) {
                 // State is: (org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and 0 == java.util.Collection.this.size())
@@ -223,6 +233,10 @@ public class EvaluateMethodCall {
                 Value reduced = new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, instance.state, resultingValue);
                 if (reduced instanceof BoolValue) {
                     return reduced;
+                }
+                if (reduced.equals(instance.state)) {
+                    // only truths have been added
+                    return BoolValue.createTrue(evaluationContext.getPrimitives());
                 }
             } else throw new UnsupportedOperationException("Not yet implemented");
             // unsuccessful

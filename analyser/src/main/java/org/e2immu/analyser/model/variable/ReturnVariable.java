@@ -22,6 +22,8 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
 
+import java.util.Objects;
+
 public class ReturnVariable implements Variable {
     public final ParameterizedType returnType;
     public final String simpleName;
@@ -31,6 +33,20 @@ public class ReturnVariable implements Variable {
         this.returnType = methodInfo.returnType();
         simpleName = methodInfo.name;
         fqn = methodInfo.fullyQualifiedName();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ReturnVariable that = (ReturnVariable) o;
+        return returnType.equals(that.returnType) &&
+                fqn.equals(that.fqn);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(returnType, fqn);
     }
 
     @Override

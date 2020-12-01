@@ -30,21 +30,21 @@ public class BasicCompanionMethods_8 {
     @Constant("1")
     static int test() {
         Set<String> set = new HashSet<>();
-        assert !set.contains("b"); // always true
+        assert !set.contains("b"); // always true   1 - OK
 
         boolean added1 = set.add("a");
-        assert added1; // always true
-        assert !set.isEmpty(); // always true
+        assert added1; // always true               3 - OK
+        assert !set.isEmpty(); // always true       4
 
         set.clear();
-        assert set.isEmpty(); // always true
+        assert set.isEmpty(); // always true        6
 
         boolean added2 = set.add("a");
-        assert added2;  // always true
+        assert added2;  // always true              8 - OK
         boolean added3 = set.add("a");
-        assert !added3;  // always true
+        assert !added3;  // always true             10 -OK
 
-        assert set.contains("a"); // always true
+        assert set.contains("a"); // always true    11 - OK
         assert !set.contains("b"); // always true
 
         return set.size();

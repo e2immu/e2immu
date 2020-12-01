@@ -97,6 +97,16 @@ public class ConditionalValue implements Value {
             return conditionalValueConditionResolved(evaluationContext, negatedCondition.value, ifFalse, ifTrue, objectFlow);
         }
 
+        // isFact needs to be caught as soon as, because we're ONLY looking in the condition
+        // must be checked before edgeCases (which may change the Value into an AndValue)
+        // and after negation checking (so that !isFact works as well)
+        if (!evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis()) {
+            Value isFact = isFact(evaluationContext, condition, ifTrue, ifFalse);
+            if (isFact != null) return builder.setValue(isFact).build();
+            Value isKnown = isKnown(evaluationContext, condition, ifTrue, ifFalse);
+            if (isKnown != null) return builder.setValue(isKnown).build();
+        }
+
         ConditionalValue secondCv;
         // x ? (x? a: b): c == x ? a : c
         if ((secondCv = ifTrue.asInstanceOf(ConditionalValue.class)) != null && secondCv.condition.equals(condition)) {
@@ -106,12 +116,6 @@ public class ConditionalValue implements Value {
         Value edgeCase = edgeCases(evaluationContext, evaluationContext.getPrimitives(), condition, ifTrue, ifFalse);
         if (edgeCase != null) return builder.setValue(edgeCase).build();
 
-        if (!evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis()) {
-            Value isFact = isFact(evaluationContext, condition, ifTrue, ifFalse);
-            if (isFact != null) return builder.setValue(isFact).build();
-            Value isKnown = isKnown(evaluationContext, condition, ifTrue, ifFalse);
-            if (isKnown != null) return builder.setValue(isKnown).build();
-        }
         // standardization... we swap!
         // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form
 
