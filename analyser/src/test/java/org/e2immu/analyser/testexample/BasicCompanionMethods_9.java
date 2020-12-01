@@ -37,14 +37,14 @@ public class BasicCompanionMethods_9 {
         boolean removed1 = set.remove("a");
         assert removed1;              // 5 OK
         assert !set.contains("a");    // 6 OK
-        assert set.size() == 0;       // 7
+        assert set.size() == 0;       // 7 OK
         assert set.isEmpty();         // 8 OK
 
         set.add("c");
 
-        assert !set.contains("b");
+        assert !set.contains("b");    // 10
         boolean removed2 = set.remove("b");
-        assert !removed2;
+        assert !removed2;             // 12 OK
 
         return set.size();
     }

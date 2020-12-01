@@ -414,10 +414,34 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
     @Test
     public void test9() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-
+            if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals("instance type java.util.HashSet[(java.util.Set.this.contains(a) and " +
+                            "org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and " +
+                            "1 == java.util.Collection.this.size())]", d.currentValue().toString());
+                }
+                if ("4".equals(d.statementId())) {
+                    Assert.assertEquals("instance type java.util.HashSet[(not (java.util.Set.this.contains(a)) and " +
+                            "org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) " +
+                            "and 0 == java.util.Collection.this.size())]", d.currentValue().toString());
+                }
+                if ("9".equals(d.statementId())) {
+                    Assert.assertEquals("instance type java.util.HashSet[(not (java.util.Set.this.contains(a)) and " +
+                            "java.util.Set.this.contains(c) and " +
+                            "org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and " +
+                            "1 == java.util.Collection.this.size())]", d.currentValue().toString());
+                }
+            }
         };
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-
+            if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
+                Assert.assertEquals("true", d.evaluationResult().value.toString());
+            }
+            if ("test".equals(d.methodInfo().name) && "7".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                Assert.assertEquals("true", d.evaluationResult().value.toString());
+            }
         };
 
         testClass("BasicCompanionMethods_9", 0, 8, new DebugConfiguration.Builder()
