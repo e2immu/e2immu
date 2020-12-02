@@ -130,7 +130,7 @@ public interface EvaluationContext {
         return currentValue(variable).getObjectFlow();
     }
 
-    default int getProperty(Value value, VariableProperty variableProperty) {
+    default int getProperty(Expression value, VariableProperty variableProperty) {
         if (value instanceof VariableValue variableValue) {
             if (variableValue.variable instanceof ParameterInfo parameterInfo) {
                 return getParameterAnalysis(parameterInfo).getProperty(variableProperty);

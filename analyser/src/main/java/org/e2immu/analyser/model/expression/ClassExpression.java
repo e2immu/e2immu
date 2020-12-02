@@ -18,28 +18,29 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.ClassValue;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
 
 @E2Container
-public class ClassExpression implements ConstantExpression<ParameterizedType> {
-    @NotNull
-    public final ParameterizedType parameterizedType;
-    @NotNull
-    public final ParameterizedType parameterizedClassType;
-    private final Primitives primitives;
+public record ClassExpression(Primitives primitives,
+                              ParameterizedType parameterizedType,
+                              ParameterizedType parameterizedClassType,
+                              ObjectFlow objectFlow) implements ConstantExpression<ParameterizedType> {
 
-    public ClassExpression(Primitives primitives, @NotNull ParameterizedType parameterizedType) {
-        this.parameterizedType = Objects.requireNonNull(parameterizedType);
-        this.parameterizedClassType = new ParameterizedType(primitives.classTypeInfo, List.of(parameterizedType));
-        this.primitives = primitives;
+    public ClassExpression(Primitives primitives, ParameterizedType parameterizedType) {
+        this(primitives, parameterizedType,
+                new ParameterizedType(primitives.classTypeInfo, List.of(parameterizedType)),
+                ObjectFlow.NO_FLOW);
     }
 
     @Override
@@ -61,13 +62,33 @@ public class ClassExpression implements ConstantExpression<ParameterizedType> {
     }
 
     @Override
-    public Value newValue() {
-        return new ClassValue(primitives, parameterizedType);
+    public int internalCompareTo(Expression v) {
+        return parameterizedType.print().compareTo(((ClassExpression) v).parameterizedType.print());
+    }
+
+    @Override
+    public ParameterizedType type() {
+        return parameterizedType;
+    }
+
+    @Override
+    public int order() {
+        return ExpressionComparator.ORDER_CONSTANT_CLASS;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override
     public ParameterizedType returnType() {
         return parameterizedClassType;
+    }
+
+    @Override
+    public String toString() {
+        return parameterizedType().print() + ".class";
     }
 
     @Override
@@ -87,6 +108,6 @@ public class ClassExpression implements ConstantExpression<ParameterizedType> {
 
     @Override
     public ParameterizedType getValue() {
-        return parameterizedClassType;
+        return parameterizedType;
     }
 }

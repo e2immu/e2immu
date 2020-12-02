@@ -18,30 +18,41 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.ConditionalValue;
-import org.e2immu.analyser.model.value.NegatedValue;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
+import org.e2immu.analyser.model.expression.util.MultiExpression;
+import org.e2immu.analyser.model.value.Instance;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.NotNull;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Predicate;
 
 public class InlineConditionalOperator implements Expression {
     public final Expression condition;
     public final Expression ifTrue;
     public final Expression ifFalse;
+    public final ObjectFlow objectFlow;
 
-    public InlineConditionalOperator(@NotNull Expression condition,
-                                     @NotNull Expression ifTrue,
-                                     @NotNull Expression ifFalse) {
+    public InlineConditionalOperator( Expression condition,
+                                      Expression ifTrue,
+                                      Expression ifFalse) {
+        this(condition, ifTrue, ifFalse, ObjectFlow.NO_FLOW);
+    }
+
+    public InlineConditionalOperator( Expression condition,
+                                      Expression ifTrue,
+                                      Expression ifFalse,
+                                     ObjectFlow objectFlow) {
         this.condition = Objects.requireNonNull(condition);
         this.ifFalse = Objects.requireNonNull(ifFalse);
         this.ifTrue = Objects.requireNonNull(ifTrue);
+        this.objectFlow = Objects.requireNonNull(objectFlow);
     }
 
     @Override
@@ -67,6 +78,124 @@ public class InlineConditionalOperator implements Expression {
                 translationMap.translateExpression(ifFalse));
     }
 
+
+    @Override
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+        EvaluationResult reCondition = condition.reEvaluate(evaluationContext, translation);
+        EvaluationResult reTrue = ifTrue.reEvaluate(evaluationContext, translation);
+        EvaluationResult reFalse = ifFalse.reEvaluate(evaluationContext, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reCondition, reTrue, reFalse);
+        EvaluationResult res = EvaluateInlineConditional.conditionalValueConditionResolved(
+                evaluationContext, reCondition.value, reTrue.value, reFalse.value, objectFlow);
+        return builder.setExpression(res.value).build();
+    }
+
+
+    @Override
+    public int internalCompareTo(Expression v) {
+        return condition.internalCompareTo(v);
+    }
+
+    @Override
+    public String toString() {
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        return condition.print(printMode) + "?" + ifTrue.print(printMode) + ":" + ifFalse.print(printMode);
+    }
+
+    private static final int NO_PATTERN = -2;
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        int inCondition = lookForPatterns(evaluationContext, variableProperty);
+        if (inCondition != NO_PATTERN) return inCondition;
+        return new MultiExpression(condition, ifTrue, ifFalse).getProperty(evaluationContext, variableProperty);
+    }
+
+    /*
+    There are a few patterns that we can look out for.
+
+    (1) a == null ? xx : a
+
+    (3)-(4) same wit SIZE, e.g.
+    (3) 0 == a.size() ? xx : a
+    (4) (-3) + a.size() >= 0 ? a : x
+     */
+    private int lookForPatterns(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        if (variableProperty == VariableProperty.NOT_NULL) {
+            Expression c = condition;
+            boolean not = false;
+            if (c.isInstanceOf(NegatedExpression.class)) {
+                c = ((NegatedExpression) c).expression;
+                not = true;
+            }
+            EqualsExpression equalsValue;
+            if ((equalsValue = c.asInstanceOf(EqualsExpression.class)) != null && equalsValue.lhs.isInstanceOf(NullConstant.class)) {
+                // null == rhs or not (null == rhs), now check that rhs appears left or right
+                Expression rhs = equalsValue.rhs;
+                if (ifTrue.equals(rhs)) {
+                    // null == a ? a : something;  null != a ? a : something
+                    return not ? evaluationContext.getProperty(ifFalse, variableProperty) : MultiLevel.NULLABLE;
+                }
+                if (ifFalse.equals(rhs)) {
+                    // null == a ? something: a
+                    return not ? MultiLevel.NULLABLE : evaluationContext.getProperty(ifTrue, variableProperty);
+                }
+            }
+        }
+        return NO_PATTERN;
+    }
+
+    @Override
+    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
+        Set<Variable> result = null;
+        for (Variable variable : variables()) {
+            Set<Variable> links = evaluationContext.linkedVariables(variable);
+            if (links == null) {
+                return null;
+            }
+            if (result == null) {
+                result = new HashSet<>(links);
+            } else {
+                result.addAll(links);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public int order() {
+        return condition.order();
+    }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        if (Primitives.isPrimitiveExcludingVoid(type())) return null;
+        return new Instance(type(), getObjectFlow(), EmptyExpression.EMPTY_EXPRESSION);
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(this)) {
+            condition.visit(predicate);
+            ifTrue.visit(predicate);
+            ifFalse.visit(predicate);
+        }
+    }
+
+    @Override
+    public List<Variable> variables() {
+        return ListUtil.immutableConcat(condition.variables(), ifTrue.variables(), ifFalse.variables());
+    }
+
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult conditionResult = condition.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
@@ -77,19 +206,19 @@ public class InlineConditionalOperator implements Expression {
         EvaluationResult ifTrueResult = ifTrue.evaluate(copyForThen, forwardEvaluationInfo);
         builder.compose(ifTrueResult);
 
-        EvaluationContext copyForElse = evaluationContext.child(NegatedValue.negate(evaluationContext, conditionResult.value));
+        EvaluationContext copyForElse = evaluationContext.child(NegatedExpression.negate(evaluationContext, conditionResult.value));
         EvaluationResult ifFalseResult = ifFalse.evaluate(copyForElse, forwardEvaluationInfo);
         builder.compose(ifFalseResult);
 
-        if (conditionResult.value == UnknownValue.NO_VALUE ||
-                ifTrueResult.value == UnknownValue.NO_VALUE ||
-                ifFalseResult.value == UnknownValue.NO_VALUE) {
+        if (conditionResult.value == EmptyExpression.NO_VALUE ||
+                ifTrueResult.value == EmptyExpression.NO_VALUE ||
+                ifFalseResult.value == EmptyExpression.NO_VALUE) {
             return builder.build();
         }
         // TODO ObjectFlow
-        EvaluationResult cv = ConditionalValue.conditionalValueCurrentState(evaluationContext,
+        EvaluationResult cv = EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext,
                 conditionResult.value, ifTrueResult.value, ifFalseResult.value, ObjectFlow.NO_FLOW);
-        return builder.setValue(cv.value).compose(cv).build();
+        return builder.setExpression(cv.value).compose(cv).build();
     }
 
     @Override

@@ -18,15 +18,14 @@
 package org.e2immu.analyser.model.expression;
 
 import com.google.common.collect.ImmutableList;
-import javassist.expr.Expr;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
@@ -67,7 +66,7 @@ public record AndExpression(Primitives primitives,
 
         // STEP 1: trivial reductions
 
-        if (this.expressions.isEmpty() && values.length == 1 && values[0] instanceof AndValue) return values[0];
+        if (this.expressions.isEmpty() && values.length == 1 && values[0] instanceof AndExpression) return values[0];
 
         // STEP 2: concat everything
 
@@ -81,9 +80,9 @@ public record AndExpression(Primitives primitives,
 
         // STEP 3: one-off observations
 
-        if (concat.stream().anyMatch(v -> v instanceof UnknownValue)) {
+        if (concat.stream().anyMatch(Expression::isUnknown)) {
             log(CNF, "Return Unknown value in And, found Unknown value");
-            return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
+            return PrimitiveExpression.PRIMITIVE_EXPRESSION;
         }
 
         // STEP 4: loop
@@ -99,12 +98,12 @@ public record AndExpression(Primitives primitives,
             // STEP 4b: observations
 
             for (Expression value : concat) {
-                if (value instanceof BoolValue && !((BoolValue) value).value) {
+                if (value instanceof BooleanConstant bc && !bc.constant()) {
                     log(CNF, "Return FALSE in And, found FALSE", value);
                     return new BooleanConstant(primitives, false);
                 }
             }
-            concat.removeIf(value -> value instanceof BoolValue); // TRUE can go
+            concat.removeIf(value -> value instanceof BooleanConstant); // TRUE can go
 
             // STEP 4c: reductions
 
@@ -168,12 +167,13 @@ public record AndExpression(Primitives primitives,
         }
 
         // A && A ? B : C --> A && B
-        if (value instanceof ConditionalValue conditionalValue && conditionalValue.condition.equals(prev)) {
+        if (value instanceof InlineConditionalOperator conditionalValue && conditionalValue.condition.equals(prev)) {
             newConcat.add(conditionalValue.ifTrue);
             return Action.SKIP;
         }
         // A ? B : C && !A --> !A && C
-        if (prev instanceof ConditionalValue conditionalValue && conditionalValue.condition.equals(NegatedValue.negate(evaluationContext, value))) {
+        if (prev instanceof InlineConditionalOperator conditionalValue &&
+                conditionalValue.condition.equals(NegatedExpression.negate(evaluationContext, value))) {
             newConcat.set(newConcat.size() - 1, conditionalValue.ifFalse); // full replace
             return Action.ADD_CHANGE;
         }
@@ -227,7 +227,7 @@ public record AndExpression(Primitives primitives,
             }
         }
         // A || B &&  A || !B ==> A
-        if (value instanceof OrExpression && prev instanceof OrValue) {
+        if (value instanceof OrExpression && prev instanceof OrExpression) {
             List<Expression> components = components(value);
             List<Expression> prevComponents = components(prev);
             List<Expression> equal = new ArrayList<>();
@@ -260,9 +260,8 @@ public record AndExpression(Primitives primitives,
 
         // combinations with equality
 
-        if (prev instanceof NegatedExpression negatedPrev && negatedPrev.expression instanceof EqualsExpression) {
+        if (prev instanceof NegatedExpression negatedPrev && negatedPrev.expression instanceof EqualsExpression ev1) {
             if (value instanceof EqualsExpression ev2) {
-                EqualsValue ev1 = (EqualsValue) ((NegatedValue) prev).value;
                 // not (3 == a) && (4 == a)  (the situation 3 == a && not (3 == a) has been solved as A && not A == False
                 if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
                     newConcat.remove(newConcat.size() - 1); // full replace
@@ -271,8 +270,8 @@ public record AndExpression(Primitives primitives,
             }
         }
 
-        if (prev instanceof EqualsValue ev1) {
-            if (value instanceof EqualsValue ev2) {
+        if (prev instanceof EqualsExpression ev1) {
+            if (value instanceof EqualsExpression ev2) {
                 // 3 == a && 4 == a
                 if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
                     return Action.FALSE;
@@ -280,7 +279,7 @@ public record AndExpression(Primitives primitives,
             }
 
             // EQ and NOT EQ
-            if (value instanceof NegatedExpression ne && ne.expression instanceof EqualsValue ev2) {
+            if (value instanceof NegatedExpression ne && ne.expression instanceof EqualsExpression ev2) {
                 // 3 == a && not (4 == a)  (the situation 3 == a && not (3 == a) has been solved as A && not A == False
                 if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
                     return Action.SKIP;
@@ -288,18 +287,18 @@ public record AndExpression(Primitives primitives,
             }
 
             // GE and EQ (note: GE always comes after EQ)
-            if (value instanceof GreaterThanZeroValue ge) {
-                GreaterThanZeroValue.XB xb = ge.extract(evaluationContext);
-                if (ev1.lhs instanceof NumericValue && ev1.rhs.equals(xb.x)) {
-                    double y = ((NumericValue) ev1.lhs).getNumber().doubleValue();
-                    if (xb.lessThan) {
+            if (value instanceof GreaterThanZero ge) {
+                GreaterThanZero.XB xb = ge.extract(evaluationContext);
+                if (ev1.lhs instanceof Numeric ev1ln && ev1.rhs.equals(xb.x())) {
+                    double y = ev1ln.doubleValue();
+                    if (xb.lessThan()) {
                         // y==x and x <= b
-                        if (ge.allowEquals && y <= xb.b || !ge.allowEquals && y < xb.b) {
+                        if (ge.allowEquals() && y <= xb.b() || !ge.allowEquals() && y < xb.b()) {
                             return Action.SKIP;
                         }
                     } else {
                         // y==x and x >= b
-                        if (ge.allowEquals && y >= xb.b || !ge.allowEquals && y > xb.b) {
+                        if (ge.allowEquals() && y >= xb.b() || !ge.allowEquals() && y > xb.b()) {
                             return Action.SKIP;
                         }
                     }
@@ -310,51 +309,52 @@ public record AndExpression(Primitives primitives,
         }
 
         //  GE and NOT EQ
-        if (value instanceof GreaterThanZeroValue ge && prev instanceof NegatedValue && ((NegatedValue) prev).value instanceof EqualsValue equalsValue) {
-            GreaterThanZeroValue.XB xb = ge.extract(evaluationContext);
-            if (equalsValue.lhs instanceof NumericValue && equalsValue.rhs.equals(xb.x)) {
-                double y = ((NumericValue) equalsValue.lhs).getNumber().doubleValue();
+        if (value instanceof GreaterThanZero ge && prev instanceof NegatedExpression prevNeg &&
+                prevNeg.expression instanceof EqualsExpression equalsValue) {
+            GreaterThanZero.XB xb = ge.extract(evaluationContext);
+            if (equalsValue.lhs instanceof Numeric eqLn && equalsValue.rhs.equals(xb.x())) {
+                double y = eqLn.doubleValue();
 
                 // y != x && -b + x >= 0, in other words, x!=y && x >= b
-                if (ge.allowEquals && y < xb.b || !ge.allowEquals && y <= xb.b) {
+                if (ge.allowEquals() && y < xb.b() || !ge.allowEquals() && y <= xb.b()) {
                     return Action.REPLACE;
                 }
             }
         }
 
         // GE and GE
-        if (value instanceof GreaterThanZeroValue ge2 && prev instanceof GreaterThanZeroValue ge1) {
-            GreaterThanZeroValue.XB xb1 = ge1.extract(evaluationContext);
-            GreaterThanZeroValue.XB xb2 = ge2.extract(evaluationContext);
-            if (xb1.x.equals(xb2.x)) {
+        if (value instanceof GreaterThanZero ge2 && prev instanceof GreaterThanZero ge1) {
+            GreaterThanZero.XB xb1 = ge1.extract(evaluationContext);
+            GreaterThanZero.XB xb2 = ge2.extract(evaluationContext);
+            if (xb1.x().equals(xb2.x())) {
                 // x>= b1 && x >= b2, with < or > on either
-                if (xb1.lessThan && xb2.lessThan) {
+                if (xb1.lessThan() && xb2.lessThan()) {
                     // x <= b1 && x <= b2
                     // (1) b1 > b2 -> keep b2
-                    if (xb1.b > xb2.b) return Action.REPLACE;
+                    if (xb1.b() > xb2.b()) return Action.REPLACE;
                     // (2) b1 < b2 -> keep b1
-                    if (xb1.b < xb2.b) return Action.SKIP;
-                    if (ge1.allowEquals) return Action.REPLACE;
+                    if (xb1.b() < xb2.b()) return Action.SKIP;
+                    if (ge1.allowEquals()) return Action.REPLACE;
                     return Action.SKIP;
                 }
-                if (!xb1.lessThan && !xb2.lessThan) {
+                if (!xb1.lessThan() && !xb2.lessThan()) {
                     // x >= b1 && x >= b2
                     // (1) b1 > b2 -> keep b1
-                    if (xb1.b > xb2.b) return Action.SKIP;
+                    if (xb1.b() > xb2.b()) return Action.SKIP;
                     // (2) b1 < b2 -> keep b2
-                    if (xb1.b < xb2.b) return Action.REPLACE;
+                    if (xb1.b() < xb2.b()) return Action.REPLACE;
                     // (3) b1 == b2 -> > or >=
-                    if (ge1.allowEquals) return Action.REPLACE;
+                    if (ge1.allowEquals()) return Action.REPLACE;
                     return Action.SKIP;
                 }
 
                 // !xb1.lessThan: x >= b1 && x <= b2; otherwise: x <= b1 && x >= b2
-                if (xb1.b > xb2.b) return !xb1.lessThan ? Action.FALSE : Action.ADD;
-                if (xb1.b < xb2.b) return !xb1.lessThan ? Action.ADD : Action.FALSE;
-                if (ge1.allowEquals && ge2.allowEquals) {
+                if (xb1.b() > xb2.b()) return !xb1.lessThan() ? Action.FALSE : Action.ADD;
+                if (xb1.b() < xb2.b()) return !xb1.lessThan() ? Action.ADD : Action.FALSE;
+                if (ge1.allowEquals() && ge2.allowEquals()) {
                     Expression newValue = EqualsExpression.equals(evaluationContext,
-                            IntConstant.intOrDouble(primitives, xb1.b, ge1.getObjectFlow()),
-                            xb1.x, ge1.getObjectFlow()); // null-checks are irrelevant here
+                            IntConstant.intOrDouble(primitives, xb1.b(), ge1.getObjectFlow()),
+                            xb1.x(), ge1.getObjectFlow()); // null-checks are irrelevant here
                     newConcat.set(newConcat.size() - 1, newValue);
                     return Action.SKIP;
                 }
@@ -417,7 +417,7 @@ public record AndExpression(Primitives primitives,
 
     @Override
     public int precedence() {
-        return ExpressionComparator.ORDER_AND;
+        return BinaryOperator.LOGICAL_AND_PRECEDENCE;
     }
 
     @Override
@@ -472,5 +472,10 @@ public record AndExpression(Primitives primitives,
         if (predicate.test(this)) {
             expressions.forEach(v -> v.visit(predicate));
         }
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return PrimitiveExpression.primitiveGetProperty(variableProperty);
     }
 }

@@ -19,6 +19,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -52,7 +53,7 @@ public class EqualsExpression extends BinaryOperator {
     public static Expression equals(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l.equals(r)) return new BooleanConstant(primitives, true, objectFlow);
-        if (l.isUnknown() || r.isUnknown()) return EmptyExpression.UNKNOWN_PRIMITIVE;
+        if (l.isUnknown() || r.isUnknown()) return PrimitiveExpression.PRIMITIVE_EXPRESSION;
 
         if (l instanceof NullConstant && evaluationContext.isNotNull0(r) ||
                 r instanceof NullConstant && evaluationContext.isNotNull0(l))
@@ -63,6 +64,11 @@ public class EqualsExpression extends BinaryOperator {
         }
         return l.compareTo(r) < 0 ? new EqualsExpression(primitives, l, r, objectFlow) :
                 new EqualsExpression(primitives, r, l, objectFlow);
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return PrimitiveExpression.primitiveGetProperty(variableProperty);
     }
 
     @Override

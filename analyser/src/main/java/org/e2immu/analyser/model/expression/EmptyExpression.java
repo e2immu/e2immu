@@ -38,7 +38,6 @@ public record EmptyExpression(String msg) implements Expression {
 
     public static final EmptyExpression RETURN_VALUE = new EmptyExpression("<return value>");
     public static final EmptyExpression NO_RETURN_VALUE = new EmptyExpression("<no return value>");
-    public static final EmptyExpression UNKNOWN_PRIMITIVE = new EmptyExpression("<unknown primitive>") ;
 
     @Override
     public boolean equals(Object obj) {

@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
@@ -78,7 +79,7 @@ public record OrExpression(Primitives primitives,
 
         if (concat.stream().anyMatch(v -> v instanceof EmptyExpression)) {
             log(CNF, "Return Instance in Or, found unknown value");
-            return EmptyExpression.UNKNOWN_PRIMITIVE;
+            return PrimitiveExpression.PRIMITIVE_EXPRESSION;
         }
         // STEP 4: loop
 
@@ -191,7 +192,7 @@ public record OrExpression(Primitives primitives,
 
     @Override
     public int precedence() {
-        return 0;
+        return BinaryOperator.LOGICAL_OR_PRECEDENCE;
     }
 
     @Override
@@ -249,5 +250,10 @@ public record OrExpression(Primitives primitives,
         if (predicate.test(this)) {
             expressions.forEach(v -> v.visit(predicate));
         }
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return PrimitiveExpression.primitiveGetProperty(variableProperty);
     }
 }

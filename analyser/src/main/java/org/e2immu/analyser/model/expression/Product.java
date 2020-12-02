@@ -19,6 +19,7 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -59,7 +60,7 @@ public class Product extends BinaryOperator {
             return IntConstant.intOrDouble(primitives, ln.doubleValue() * rn.doubleValue(), ObjectFlow.NO_FLOW);
 
         // any unknown lingering
-        if (l.isUnknown() || r.isUnknown()) return EmptyExpression.UNKNOWN_PRIMITIVE;
+        if (l.isUnknown() || r.isUnknown()) return PrimitiveExpression.PRIMITIVE_EXPRESSION;
 
         if (r instanceof Sum sum) {
             return Sum.sum(evaluationContext, product(evaluationContext, l, sum.lhs, objectFlow),
@@ -110,5 +111,10 @@ public class Product extends BinaryOperator {
     @Override
     public boolean isNumeric() {
         return true;
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return PrimitiveExpression.primitiveGetProperty(variableProperty);
     }
 }

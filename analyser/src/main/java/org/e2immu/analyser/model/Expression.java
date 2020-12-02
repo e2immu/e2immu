@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NegatedExpression;
 import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -124,7 +125,7 @@ public interface Expression extends Element, Comparable<Expression> {
 
     default boolean isNotNull() {
         NegatedExpression negatedValue = asInstanceOf(NegatedExpression.class);
-        return negatedValue != null && negatedValue.value.isInstanceOf(NullValue.class);
+        return negatedValue != null && negatedValue.expression.isInstanceOf(NullConstant.class);
     }
 
     default boolean isNull() {
@@ -132,7 +133,7 @@ public interface Expression extends Element, Comparable<Expression> {
     }
 
     default boolean isComputeProperties() {
-        return this != UnknownValue.RETURN_VALUE;
+        return this != EmptyExpression.RETURN_VALUE;
     }
 
     default boolean isBoolValueTrue() {

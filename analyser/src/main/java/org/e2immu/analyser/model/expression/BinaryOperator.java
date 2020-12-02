@@ -22,6 +22,7 @@ import com.github.javaparser.ast.expr.BinaryExpr;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.model.variable.Variable;
@@ -95,6 +96,11 @@ public class BinaryOperator implements Expression {
     }
 
     @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        throw new UnsupportedOperationException("Not yet evaluated");
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(lhs, rhs, operator);
     }
@@ -163,7 +169,7 @@ public class BinaryOperator implements Expression {
         Expression r = right.value;
 
         if (l == EmptyExpression.NO_VALUE || r == EmptyExpression.NO_VALUE) return EmptyExpression.NO_VALUE;
-        if (l.isUnknown() || r.isUnknown()) return EmptyExpression.UNKNOWN_PRIMITIVE;
+        if (l.isUnknown() || r.isUnknown()) return PrimitiveExpression.PRIMITIVE_EXPRESSION;
 
         if (operator == primitives.equalsOperatorObject) {
             if (l.equals(r)) return new BooleanConstant(primitives, true);
@@ -235,7 +241,7 @@ public class BinaryOperator implements Expression {
             return GreaterThanZero.greater(evaluationContext, l, r, false, booleanObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.bitwiseAndOperatorInt) {
-            return BitwiseAndValue.bitwiseAnd(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
+            return BitwiseAnd.bitwiseAnd(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
         }
         /*
             if (operator == primitives.bitwiseOrOperatorInt) {

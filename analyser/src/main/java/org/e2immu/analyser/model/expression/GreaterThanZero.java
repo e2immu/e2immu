@@ -20,6 +20,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -133,7 +134,7 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
     public static Expression greater(EvaluationContext evaluationContext, Expression l, Expression r, boolean allowEquals, ObjectFlow objectFlow) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l.equals(r) && !allowEquals) return new BooleanConstant(primitives, false);
-        if (l.isUnknown() || r.isUnknown()) return EmptyExpression.UNKNOWN_PRIMITIVE;
+        if (l.isUnknown() || r.isUnknown()) return PrimitiveExpression.PRIMITIVE_EXPRESSION;
 
 
         if (l instanceof Numeric ln && r instanceof Numeric rn) {
@@ -175,7 +176,7 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
     public static Expression less(EvaluationContext evaluationContext, Expression l, Expression r, boolean allowEquals, ObjectFlow objectFlow) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l.equals(r) && !allowEquals) return new BooleanConstant(primitives, false);
-        if (l.isUnknown() || r.isUnknown()) return EmptyExpression.UNKNOWN_PRIMITIVE;
+        if (l.isUnknown() || r.isUnknown()) return PrimitiveExpression.PRIMITIVE_EXPRESSION;
 
 
         if (l instanceof Numeric ln && r instanceof Numeric rn) {
@@ -211,6 +212,11 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
 
         return new GreaterThanZero(primitives.booleanParameterizedType, Sum.sum(evaluationContext,
                 NegatedExpression.negate(evaluationContext, l), r, objectFlowSum), allowEquals, objectFlow);
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return PrimitiveExpression.primitiveGetProperty(variableProperty);
     }
 
     @Override

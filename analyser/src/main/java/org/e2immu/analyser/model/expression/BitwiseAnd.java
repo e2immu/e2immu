@@ -23,49 +23,54 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.value.BitwiseAndValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
-import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.Map;
 import java.util.Objects;
 
-public class Remainder extends BinaryOperator {
+public class BitwiseAnd extends BinaryOperator {
     private final Primitives primitives;
 
-    private Remainder(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
-        super(lhs, primitives.remainderOperatorInt, rhs, BinaryOperator.MULTIPLICATIVE_PRECEDENCE, objectFlow);
+    private BitwiseAnd(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
+        super(lhs, primitives.bitwiseAndOperatorInt, rhs, BinaryOperator.AND_PRECEDENCE, objectFlow);
         this.primitives = primitives;
     }
 
-    public static EvaluationResult remainder(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        if (l instanceof Numeric ln && ln.doubleValue() == 0) return builder.setExpression(l).build();
-        if (r instanceof Numeric rn && rn.doubleValue() == 0) {
-            builder.raiseError(Message.DIVISION_BY_ZERO);
-            return builder.setExpression(l).build();
-        }
-        if (r instanceof Numeric rn && rn.doubleValue() == 1) return builder.setExpression(l).build();
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+        EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
+        EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
+        return builder.setExpression(BitwiseAnd.bitwiseAnd(evaluationContext, reLhs.value, reRhs.value, getObjectFlow())).build();
+    }
+
+    // we try to maintain a sum of products
+    public static Expression bitwiseAnd(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {
+        if (l instanceof Numeric ln && ln.doubleValue() == 0) return l;
+        if (r instanceof Numeric rn && rn.doubleValue() == 0) return r;
+        if (r instanceof Numeric rn && rn.doubleValue() == 1) return l;
         Primitives primitives = evaluationContext.getPrimitives();
         if (l instanceof IntConstant li && r instanceof IntConstant ri)
-            return builder.setExpression(new IntConstant(primitives, li.constant() % ri.constant(), objectFlow)).build();
+            return new IntConstant(primitives, li.constant() & ri.constant(), objectFlow);
 
         // any unknown lingering
-        if (l.isUnknown() || r.isUnknown()) return builder.setExpression(PrimitiveExpression.PRIMITIVE_EXPRESSION).build();
+        if (l.isUnknown() || r.isUnknown()) return PrimitiveExpression.PRIMITIVE_EXPRESSION;
 
-        return builder.setExpression(new Remainder(primitives, l, r, objectFlow)).build();
+        return new BitwiseAnd(primitives, l, r, objectFlow);
     }
 
     @Override
-    public boolean isNumeric() {
-        return true;
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return PrimitiveExpression.primitiveGetProperty(variableProperty);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Remainder orValue = (Remainder) o;
+        BitwiseAnd orValue = (BitwiseAnd) o;
         return lhs.equals(orValue.lhs) &&
                 rhs.equals(orValue.rhs);
     }
@@ -82,12 +87,12 @@ public class Remainder extends BinaryOperator {
 
     @Override
     public String print(PrintMode printMode) {
-        return lhs.print(printMode) + " % " + rhs.print(printMode);
+        return lhs.print(printMode) + " & " + rhs.print(printMode);
     }
 
     @Override
     public int order() {
-        return ExpressionComparator.ORDER_REMAINDER;
+        return ExpressionComparator.ORDER_BITWISE_AND;
     }
 
     @Override
@@ -96,7 +101,7 @@ public class Remainder extends BinaryOperator {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return PrimitiveExpression.primitiveGetProperty(variableProperty);
+    public boolean isNumeric() {
+        return true;
     }
 }

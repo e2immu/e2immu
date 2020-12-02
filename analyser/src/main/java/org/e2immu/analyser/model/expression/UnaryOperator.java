@@ -22,6 +22,7 @@ import com.github.javaparser.ast.expr.UnaryExpr;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -118,18 +119,18 @@ public class UnaryOperator implements Expression {
         if (operator == primitives.bitWiseNotOperatorInt) {
             if (v instanceof IntConstant ic)
                 return new IntConstant(primitives, ~ic.constant(), v.getObjectFlow());
-            return EmptyExpression.UNKNOWN_PRIMITIVE;
+            return PrimitiveExpression.PRIMITIVE_EXPRESSION;
         }
         if (operator == primitives.postfixDecrementOperatorInt
                 || operator == primitives.prefixDecrementOperatorInt) {
             if (v instanceof IntConstant ic)
                 return new IntConstant(primitives, ic.constant() - 1, v.getObjectFlow());
-            return EmptyExpression.UNKNOWN_PRIMITIVE;
+            return PrimitiveExpression.PRIMITIVE_EXPRESSION;
         }
         if (operator == primitives.postfixIncrementOperatorInt || operator == primitives.prefixIncrementOperatorInt) {
             if (v instanceof IntConstant ic)
                 return new IntConstant(primitives, ic.constant() + 1, v.getObjectFlow());
-            return EmptyExpression.UNKNOWN_PRIMITIVE;
+            return PrimitiveExpression.PRIMITIVE_EXPRESSION;
         }
         throw new UnsupportedOperationException();
     }
@@ -186,5 +187,10 @@ public class UnaryOperator implements Expression {
     @Override
     public List<? extends Element> subElements() {
         return List.of(expression);
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        throw new UnsupportedOperationException("Not yet evaluated");
     }
 }

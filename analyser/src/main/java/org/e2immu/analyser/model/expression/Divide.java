@@ -19,22 +19,17 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.SetUtil;
 
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.function.Predicate;
+
 
 public class Divide extends BinaryOperator {
     private final Primitives primitives;
@@ -60,7 +55,7 @@ public class Divide extends BinaryOperator {
 
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) {
-            return builder.setExpression(EmptyExpression.UNKNOWN_PRIMITIVE).build();
+            return builder.setExpression(PrimitiveExpression.PRIMITIVE_EXPRESSION).build();
         }
 
         return builder.setExpression(new Divide(primitives, l, r, objectFlow)).build();
@@ -103,5 +98,10 @@ public class Divide extends BinaryOperator {
     @Override
     public ParameterizedType type() {
         return primitives.widestType(lhs.type(), rhs.type());
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return PrimitiveExpression.primitiveGetProperty(variableProperty);
     }
 }
