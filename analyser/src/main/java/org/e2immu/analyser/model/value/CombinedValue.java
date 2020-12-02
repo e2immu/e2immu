@@ -78,11 +78,6 @@ public class CombinedValue implements Value {
     }
 
     @Override
-    public boolean hasConstantProperties() {
-        return false;
-    }
-
-    @Override
     public int order() {
         return ORDER_COMBINED;
     }

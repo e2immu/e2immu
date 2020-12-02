@@ -19,9 +19,12 @@
 package org.e2immu.analyser.model.expression;
 
 
+import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.value.CharValue;
+import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
@@ -30,21 +33,18 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public class CharConstant implements ConstantExpression<Character> {
-    private final Primitives primitives;
+public record CharConstant(Primitives primitives,
+                           char constant,
+                           ObjectFlow objectFlow) implements ConstantExpression<Character> {
+
+    public CharConstant(Primitives primitives, char constant) {
+        this(primitives, constant, ObjectFlow.NO_FLOW);
+    }
 
     @Override
     @NotNull
     public ParameterizedType returnType() {
         return primitives.charParameterizedType;
-    }
-
-    @NotNull
-    public final char constant;
-
-    public CharConstant(Primitives primitives, char constant) {
-        this.primitives = primitives;
-        this.constant = constant;
     }
 
     @Override
@@ -61,19 +61,18 @@ public class CharConstant implements ConstantExpression<Character> {
     }
 
     @Override
-    @NotNull
-    public String expressionString(int indent) {
+    public String toString() {
         return "'" + constant + "'";
     }
 
     @Override
-    public int precedence() {
-        return 17; // highest
+    public int order() {
+        return ExpressionComparator.ORDER_CONSTANT_CHAR;
     }
 
     @Override
-    public Value newValue() {
-        return new CharValue(primitives, constant, ObjectFlow.NO_FLOW);
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override

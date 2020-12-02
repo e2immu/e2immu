@@ -23,9 +23,8 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.NegatedValue;
-import org.e2immu.analyser.model.value.UnknownPrimitiveValue;
-import org.e2immu.analyser.model.value.IntValue;
+import org.e2immu.analyser.model.value.Instance;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
@@ -72,6 +71,21 @@ public class UnaryOperator implements Expression {
         return new UnaryOperator(operator, translationMap.translateExpression(expression), precedence);
     }
 
+    @Override
+    public int order() {
+        throw new UnsupportedOperationException("Not yet evaluated");
+    }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return ObjectFlow.NO_FLOW;
+    }
+
     public static int precedence(@NotNull @NotModified UnaryExpr.Operator operator) {
         return switch (operator) {
             case POSTFIX_DECREMENT, POSTFIX_INCREMENT -> PRECEDENCE_POST_INCREMENT;
@@ -86,38 +100,36 @@ public class UnaryOperator implements Expression {
         EvaluationResult evaluationResult = expression.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         return new EvaluationResult.Builder(evaluationContext)
                 .compose(evaluationResult)
-                .setValue(computeValue(evaluationContext,
-                        evaluationContext.getPrimitives(), evaluationResult))
+                .setExpression(computeValue(evaluationContext, evaluationContext.getPrimitives(), evaluationResult))
                 .build();
     }
 
-    private Value computeValue(EvaluationContext evaluationContext, Primitives primitives, EvaluationResult evaluationResult) {
-        Value v = evaluationResult.value;
+    private Expression computeValue(EvaluationContext evaluationContext, Primitives primitives, EvaluationResult evaluationResult) {
+        Expression v = evaluationResult.value;
 
         if (v.isUnknown()) return v;
 
-        if (operator == primitives.logicalNotOperatorBool ||
-                operator == primitives.unaryMinusOperatorInt) {
-            return NegatedValue.negate(evaluationContext, v);
+        if (operator == primitives.logicalNotOperatorBool || operator == primitives.unaryMinusOperatorInt) {
+            return NegatedExpression.negate(evaluationContext, v);
         }
         if (operator == primitives.unaryPlusOperatorInt) {
             return v;
         }
         if (operator == primitives.bitWiseNotOperatorInt) {
-            if (v instanceof IntValue)
-                return new IntValue(primitives, ~((IntValue) v).value, v.getObjectFlow());
-            return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
+            if (v instanceof IntConstant ic)
+                return new IntConstant(primitives, ~ic.constant(), v.getObjectFlow());
+            return EmptyExpression.UNKNOWN_PRIMITIVE;
         }
         if (operator == primitives.postfixDecrementOperatorInt
                 || operator == primitives.prefixDecrementOperatorInt) {
-            if (v instanceof IntValue)
-                return new IntValue(primitives, ((IntValue) v).value - 1, v.getObjectFlow());
-            return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
+            if (v instanceof IntConstant ic)
+                return new IntConstant(primitives, ic.constant() - 1, v.getObjectFlow());
+            return EmptyExpression.UNKNOWN_PRIMITIVE;
         }
         if (operator == primitives.postfixIncrementOperatorInt || operator == primitives.prefixIncrementOperatorInt) {
-            if (v instanceof IntValue)
-                return new IntValue(primitives, ((IntValue) v).value + 1, v.getObjectFlow());
-            return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
+            if (v instanceof IntConstant ic)
+                return new IntConstant(primitives, ic.constant() + 1, v.getObjectFlow());
+            return EmptyExpression.UNKNOWN_PRIMITIVE;
         }
         throw new UnsupportedOperationException();
     }

@@ -24,16 +24,19 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
  * From https://introcs.cs.princeton.edu/java/11precedence/
@@ -56,6 +59,7 @@ public class BinaryOperator implements Expression {
     public final Expression rhs;
     public final int precedence;
     public final MethodInfo operator;
+    public final ObjectFlow objectFlow;
 
     public static final int MULTIPLICATIVE_PRECEDENCE = 12;
     public static final int ADDITIVE_PRECEDENCE = 11;
@@ -68,15 +72,16 @@ public class BinaryOperator implements Expression {
     public static final int LOGICAL_AND_PRECEDENCE = 4;
     public static final int LOGICAL_OR_PRECEDENCE = 3;
 
-    public BinaryOperator(
-            @NotNull Expression lhs,
-            @NotNull MethodInfo operator,
-            @NotNull Expression rhs,
-            int precedence) {
+    public BinaryOperator(Expression lhs, MethodInfo operator, Expression rhs, int precedence, ObjectFlow objectFlow) {
         this.lhs = Objects.requireNonNull(lhs);
         this.rhs = Objects.requireNonNull(rhs);
         this.precedence = precedence;
         this.operator = Objects.requireNonNull(operator);
+        this.objectFlow = objectFlow;
+    }
+
+    public BinaryOperator(Expression lhs, MethodInfo operator, Expression rhs, int precedence) {
+        this(lhs, operator, rhs, precedence, ObjectFlow.NO_FLOW);
     }
 
     @Override
@@ -100,6 +105,34 @@ public class BinaryOperator implements Expression {
                 operator, translationMap.translateExpression(rhs), precedence);
     }
 
+    @Override
+    public int order() {
+        throw new UnsupportedOperationException("Unevaluated expression");
+    }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
+    }
+
+    @Override
+    public List<Variable> variables() {
+        return ListUtil.immutableConcat(lhs.variables(), rhs.variables());
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(this)) {
+            lhs.visit(predicate);
+            rhs.visit(predicate);
+        }
+    }
+
     // NOTE: we're not visiting here!
 
     @Override
@@ -117,89 +150,89 @@ public class BinaryOperator implements Expression {
         EvaluationResult leftResult = lhs.evaluate(evaluationContext, forward);
         EvaluationResult rightResult = rhs.evaluate(evaluationContext, forward);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(leftResult, rightResult);
-        builder.setValue(determineValue(primitives, builder, leftResult, rightResult, evaluationContext));
+        builder.setExpression(determineValue(primitives, builder, leftResult, rightResult, evaluationContext));
         return builder.build();
     }
 
-    private Value determineValue(Primitives primitives,
-                                 EvaluationResult.Builder builder,
-                                 EvaluationResult left,
-                                 EvaluationResult right,
-                                 EvaluationContext evaluationContext) {
-        Value l = left.value;
-        Value r = right.value;
+    private Expression determineValue(Primitives primitives,
+                                      EvaluationResult.Builder builder,
+                                      EvaluationResult left,
+                                      EvaluationResult right,
+                                      EvaluationContext evaluationContext) {
+        Expression l = left.value;
+        Expression r = right.value;
 
-        if (l == UnknownValue.NO_VALUE || r == UnknownValue.NO_VALUE) return UnknownValue.NO_VALUE;
-        if (l.isUnknown() || r.isUnknown()) return UnknownPrimitiveValue.UNKNOWN_PRIMITIVE;
+        if (l == EmptyExpression.NO_VALUE || r == EmptyExpression.NO_VALUE) return EmptyExpression.NO_VALUE;
+        if (l.isUnknown() || r.isUnknown()) return EmptyExpression.UNKNOWN_PRIMITIVE;
 
         if (operator == primitives.equalsOperatorObject) {
-            if (l.equals(r)) return BoolValue.createTrue(primitives);
+            if (l.equals(r)) return new BooleanConstant(primitives, true);
 
             // HERE are the ==null checks
-            if (l == NullValue.NULL_VALUE && right.isNotNull0(evaluationContext) ||
-                    r == NullValue.NULL_VALUE && left.isNotNull0(evaluationContext)) {
-                return BoolValue.createFalse(primitives);
+            if (l == NullConstant.NULL_CONSTANT && right.isNotNull0(evaluationContext) ||
+                    r == NullConstant.NULL_CONSTANT && left.isNotNull0(evaluationContext)) {
+                return new BooleanConstant(primitives, false);
             }
-            return EqualsValue.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext));
+            return EqualsExpression.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.equalsOperatorInt) {
-            if (l.equals(r)) return BoolValue.createTrue(primitives);
-            if (l == NullValue.NULL_VALUE || r == NullValue.NULL_VALUE) {
+            if (l.equals(r)) return new BooleanConstant(primitives, true);
+            if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
                 // TODO need more resolution here to distinguish int vs Integer comparison throw new UnsupportedOperationException();
             }
-            return EqualsValue.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext));
+            return EqualsExpression.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.notEqualsOperatorObject) {
-            if (l.equals(r)) BoolValue.createFalse(primitives);
+            if (l.equals(r)) new BooleanConstant(primitives, false);
 
             // HERE are the !=null checks
-            if (l == NullValue.NULL_VALUE && right.isNotNull0(evaluationContext) ||
-                    r == NullValue.NULL_VALUE && left.isNotNull0(evaluationContext)) {
-                return BoolValue.createTrue(primitives);
+            if (l == NullConstant.NULL_CONSTANT && right.isNotNull0(evaluationContext) ||
+                    r == NullConstant.NULL_CONSTANT && left.isNotNull0(evaluationContext)) {
+                return new BooleanConstant(primitives, true);
             }
-            return NegatedValue.negate(evaluationContext,
-                    EqualsValue.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext)));
+            return NegatedExpression.negate(evaluationContext,
+                    EqualsExpression.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext)));
         }
         if (operator == primitives.notEqualsOperatorInt) {
-            if (l.equals(r)) return BoolValue.createFalse(primitives);
-            if (l == NullValue.NULL_VALUE || r == NullValue.NULL_VALUE) {
+            if (l.equals(r)) return new BooleanConstant(primitives, false);
+            if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
                 // TODO need more resolution throw new UnsupportedOperationException();
             }
-            return NegatedValue.negate(evaluationContext,
-                    EqualsValue.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext)));
+            return NegatedExpression.negate(evaluationContext,
+                    EqualsExpression.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext)));
         }
 
         // from here on, straightforward operations
         if (operator == primitives.plusOperatorInt) {
-            return SumValue.sum(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
+            return Sum.sum(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.minusOperatorInt) {
-            return SumValue.sum(evaluationContext, l, NegatedValue.negate(evaluationContext, r), intObjectFlow(primitives, evaluationContext));
+            return Sum.sum(evaluationContext, l, NegatedExpression.negate(evaluationContext, r), intObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.multiplyOperatorInt) {
-            return ProductValue.product(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
+            return Product.product(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.divideOperatorInt) {
-            EvaluationResult er = DivideValue.divide(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
+            EvaluationResult er = Divide.divide(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
             builder.compose(er);
             return er.value;
         }
         if (operator == primitives.remainderOperatorInt) {
-            EvaluationResult er = RemainderValue.remainder(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
+            EvaluationResult er = Remainder.remainder(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
             builder.compose(er);
             return er.value;
         }
         if (operator == primitives.lessEqualsOperatorInt) {
-            return GreaterThanZeroValue.less(evaluationContext, l, r, true, booleanObjectFlow(primitives, evaluationContext));
+            return GreaterThanZero.less(evaluationContext, l, r, true, booleanObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.lessOperatorInt) {
-            return GreaterThanZeroValue.less(evaluationContext, l, r, false, booleanObjectFlow(primitives, evaluationContext));
+            return GreaterThanZero.less(evaluationContext, l, r, false, booleanObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.greaterEqualsOperatorInt) {
-            return GreaterThanZeroValue.greater(evaluationContext, l, r, true, booleanObjectFlow(primitives, evaluationContext));
+            return GreaterThanZero.greater(evaluationContext, l, r, true, booleanObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.greaterOperatorInt) {
-            return GreaterThanZeroValue.greater(evaluationContext, l, r, false, booleanObjectFlow(primitives, evaluationContext));
+            return GreaterThanZero.greater(evaluationContext, l, r, false, booleanObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.bitwiseAndOperatorInt) {
             return BitwiseAndValue.bitwiseAnd(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
@@ -239,29 +272,29 @@ public class BinaryOperator implements Expression {
         Primitives primitives = evaluationContext.getPrimitives();
 
         EvaluationResult l = lhs.evaluate(evaluationContext, forward);
-        Value constant = and ? BoolValue.createFalse(primitives) : BoolValue.createTrue(primitives);
+        Expression constant = new BooleanConstant(primitives, !and);
         if (l.value == constant) {
             builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return builder.compose(l).build();
         }
 
-        Value condition = and ? l.value : NegatedValue.negate(evaluationContext, l.value);
+        Expression condition = and ? l.value : NegatedExpression.negate(evaluationContext, l.value);
         EvaluationContext child = evaluationContext.child(condition);
         EvaluationResult r = rhs.evaluate(child, forward);
         builder.compose(l, r);
-        if (r.value == constant) {
+        if (r.value.isInstanceOf(BooleanConstant.class)) {
             builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return builder.build();
         }
-        if (l.value == UnknownValue.NO_VALUE || r.value == UnknownValue.NO_VALUE) {
-            return builder.setValue(UnknownValue.NO_VALUE).build();
+        if (l.value == EmptyExpression.NO_VALUE || r.value == EmptyExpression.NO_VALUE) {
+            return builder.setExpression(EmptyExpression.NO_VALUE).build();
         }
         ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(),
                 evaluationContext.getPrimitives().booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
         if (and) {
-            builder.setValue(new AndValue(primitives, objectFlow).append(evaluationContext, l.value, r.value));
+            builder.setExpression(new AndExpression(primitives, objectFlow).append(evaluationContext, l.value, r.value));
         } else {
-            builder.setValue(new OrValue(primitives, objectFlow).append(evaluationContext, l.value, r.value));
+            builder.setExpression(new OrExpression(primitives, objectFlow).append(evaluationContext, l.value, r.value));
         }
         return builder.build();
     }
@@ -423,5 +456,15 @@ public class BinaryOperator implements Expression {
     @Override
     public List<? extends Element> subElements() {
         return List.of(lhs, rhs);
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) {
+        // comparing 2 or values...compare lhs
+        int c = lhs.compareTo(((BinaryOperator) v).lhs);
+        if (c == 0) {
+            c = rhs.compareTo(((BinaryOperator) v).rhs);
+        }
+        return c;
     }
 }

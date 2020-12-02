@@ -22,21 +22,32 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.value.Instance;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.E2Container;
 
 @E2Container
-public class EmptyExpression implements Expression {
-    public static final Expression EMPTY_EXPRESSION = new EmptyExpression();
+public record EmptyExpression(String msg) implements Expression {
+    public static final Expression EMPTY_EXPRESSION = new EmptyExpression("");
 
-    public static final Expression DEFAULT_EXPRESSION = new EmptyExpression(); // negation of the disjunction of all earlier conditions
-    public static final Expression FINALLY_EXPRESSION = new EmptyExpression(); // always true condition
+    public static final EmptyExpression DEFAULT_EXPRESSION = new EmptyExpression("<default>"); // negation of the disjunction of all earlier conditions
+    public static final EmptyExpression FINALLY_EXPRESSION = new EmptyExpression("<finally>"); // always true condition
 
-    private EmptyExpression() {
-    }
+    public static final EmptyExpression NO_VALUE = new EmptyExpression("<no value>");
+
+    public static final EmptyExpression RETURN_VALUE = new EmptyExpression("<return value>");
+    public static final EmptyExpression NO_RETURN_VALUE = new EmptyExpression("<no return value>");
+    public static final EmptyExpression UNKNOWN_PRIMITIVE = new EmptyExpression("<unknown primitive>") ;
 
     @Override
     public boolean equals(Object obj) {
         return this == obj;
+    }
+
+    @Override
+    public String toString() {
+        return msg;
     }
 
     @Override
@@ -46,7 +57,7 @@ public class EmptyExpression implements Expression {
 
     @Override
     public String expressionString(int indent) {
-        return "";
+        return msg;
     }
 
     @Override
@@ -57,5 +68,25 @@ public class EmptyExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         return new EvaluationResult.Builder(evaluationContext).build();
+    }
+
+    @Override
+    public int order() {
+        return ExpressionComparator.ORDER_NO_VALUE;
+    }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return ObjectFlow.NO_FLOW;
+    }
+
+    @Override
+    public boolean isUnknown() {
+        return true;
     }
 }

@@ -19,9 +19,9 @@
 package org.e2immu.analyser.model.expression;
 
 
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.DoubleValue;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
@@ -30,8 +30,13 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public class DoubleConstant implements ConstantExpression<Double> {
-    private final Primitives primitives;
+public record DoubleConstant(Primitives primitives,
+                             double constant,
+                             ObjectFlow objectFlow) implements ConstantExpression<Double>, Numeric {
+
+    public DoubleConstant(Primitives primitives, double constant) {
+        this(primitives, constant, ObjectFlow.NO_FLOW);
+    }
 
     @Override
     @NotNull
@@ -39,12 +44,14 @@ public class DoubleConstant implements ConstantExpression<Double> {
         return primitives.doubleParameterizedType;
     }
 
-    @NotNull
-    public final double constant;
+    @Override
+    public int order() {
+        return ExpressionComparator.ORDER_CONSTANT_DOUBLE;
+    }
 
-    public DoubleConstant(Primitives primitives, double constant) {
-        this.constant = constant;
-        this.primitives = primitives;
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override
@@ -61,23 +68,27 @@ public class DoubleConstant implements ConstantExpression<Double> {
     }
 
     @Override
-    @NotNull
-    public String expressionString(int indent) {
+    public String toString() {
         return Double.toString(constant);
-    }
-
-    @Override
-    public int precedence() {
-        return 17; // highest
-    }
-
-    @Override
-    public Value newValue() {
-        return new DoubleValue(primitives, constant, ObjectFlow.NO_FLOW);
     }
 
     @Override
     public Double getValue() {
         return constant;
+    }
+
+    @Override
+    public Expression negate() {
+        return new DoubleConstant(primitives, -constant, objectFlow);
+    }
+
+    @Override
+    public Number getNumber() {
+        return constant;
+    }
+
+    @Override
+    public boolean isNumeric() {
+        return true;
     }
 }

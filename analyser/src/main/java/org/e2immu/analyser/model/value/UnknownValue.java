@@ -47,11 +47,6 @@ public class UnknownValue implements Value {
     }
 
     @Override
-    public boolean hasConstantProperties() {
-        return true;
-    }
-
-    @Override
     public int order() {
         return ORDER_NO_VALUE;
     }

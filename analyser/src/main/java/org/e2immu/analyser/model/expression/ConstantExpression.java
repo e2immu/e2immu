@@ -20,7 +20,14 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.annotation.NotNull;
+
+import java.util.Map;
 
 public interface ConstantExpression<T> extends Expression, Constant<T> {
 
@@ -28,8 +35,84 @@ public interface ConstantExpression<T> extends Expression, Constant<T> {
     default EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         builder.createLiteralObjectFlow(returnType());
-        return builder.setValue(newValue()).build();
+        return builder.setExpression(this).build();
     }
 
-    Value newValue();
+    @Override
+    default EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+        return new EvaluationResult.Builder().setExpression(this).build();
+    }
+
+    @Override
+    @NotNull
+    default String expressionString(int indent) {
+        return toString();
+    }
+
+    @Override
+    default int precedence() {
+        return 17; // highest
+    }
+
+    @Override
+    default boolean isConstant() {
+        return true;
+    }
+
+    @Override
+    default Instance getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    default int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        switch (variableProperty) {
+            case CONTAINER:
+                return Level.TRUE;
+            case IMMUTABLE:
+                return MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            case NOT_NULL:
+                return MultiLevel.EFFECTIVELY_NOT_NULL;
+            case MODIFIED:
+            case NOT_MODIFIED_1:
+            case METHOD_DELAY:
+            case IGNORE_MODIFICATIONS:
+            case IDENTITY:
+                return Level.FALSE;
+        }
+        throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
+    }
+
+    static Value nullValue(Primitives primitives, TypeInfo typeInfo) {
+        if (typeInfo != null) {
+            if (Primitives.isBoolean(typeInfo)) return new BoolValue(primitives, false, ObjectFlow.NO_FLOW);
+            if (Primitives.isInt(typeInfo)) return new IntValue(primitives, 0, ObjectFlow.NO_FLOW);
+            if (Primitives.isLong(typeInfo)) return new LongValue(primitives, 0L, ObjectFlow.NO_FLOW);
+            if (Primitives.isShort(typeInfo)) return new ShortValue(primitives, (short) 0, ObjectFlow.NO_FLOW);
+            if (Primitives.isByte(typeInfo)) return new ByteValue(primitives, (byte) 0, ObjectFlow.NO_FLOW);
+            if (Primitives.isFloat(typeInfo)) return new FloatValue(primitives, 0, ObjectFlow.NO_FLOW);
+            if (Primitives.isDouble(typeInfo)) return new DoubleValue(primitives, 0, ObjectFlow.NO_FLOW);
+            if (Primitives.isChar(typeInfo)) return new CharValue(primitives, '\0', ObjectFlow.NO_FLOW);
+        }
+        return NullValue.NULL_VALUE;
+    }
+
+    static Expression equalsExpression(Primitives primitives, ConstantExpression<?> l, ConstantExpression<?> r) {
+        if (l instanceof NullConstant || r instanceof NullConstant)
+            throw new UnsupportedOperationException("Not for me");
+
+        if (l instanceof StringConstant ls && r instanceof StringConstant rs) {
+            return new BooleanConstant(primitives, ls.constant().equals(rs.constant()));
+        }
+        if (l instanceof BooleanConstant lb && r instanceof BooleanConstant lr) {
+            return new BooleanConstant(primitives, lb.constant() == lr.constant());
+        }
+        if (l instanceof CharConstant lc && r instanceof CharConstant rc) {
+            return new BooleanConstant(primitives, lc.constant() == rc.constant());
+        }
+        if (l instanceof Numeric ln && r instanceof Numeric rn) {
+            return new BooleanConstant(primitives, ln.getNumber().equals(rn.getNumber()));
+        }
+        throw new UnsupportedOperationException("l = " + l + ", r = " + r);
+    }
 }

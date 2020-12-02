@@ -19,8 +19,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.StringValue;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
@@ -29,20 +28,18 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public class StringConstant implements ConstantExpression<String> {
-    private final Primitives primitives;
+public record StringConstant(Primitives primitives,
+                             String constant,
+                             ObjectFlow objectFlow) implements ConstantExpression<String> {
 
-    @Override
-    public ParameterizedType returnType() {
-        return primitives.stringParameterizedType;
+    public StringConstant(Primitives primitives, String constant) {
+        this(primitives, constant, ObjectFlow.NO_FLOW);
     }
 
+    @Override
     @NotNull
-    public final String constant;
-
-    public StringConstant(Primitives primitives, @NotNull String constant) {
-        this.primitives = primitives;
-        this.constant = Objects.requireNonNull(constant);
+    public ParameterizedType returnType() {
+        return primitives.stringParameterizedType;
     }
 
     @Override
@@ -59,22 +56,22 @@ public class StringConstant implements ConstantExpression<String> {
     }
 
     @Override
-    public Value newValue() {
-        return new StringValue(primitives, constant, ObjectFlow.NO_FLOW);
+    public int order() {
+        return ExpressionComparator.ORDER_CONSTANT_STRING;
     }
 
     @Override
-    public String expressionString(int indent) {
-        return "\"" + constant.replace("\"", "\\\"") + "\"";
-    }
-
-    @Override
-    public int precedence() {
-        return 17;
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override
     public String getValue() {
         return constant;
+    }
+
+    @Override
+    public String toString() {
+        return "\"" + constant.replace("\"", "\\\"");
     }
 }

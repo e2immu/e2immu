@@ -104,10 +104,6 @@ public interface Value extends Comparable<Value> {
         return false;
     }
 
-    default boolean hasConstantProperties() {
-        return true;
-    }
-
     default boolean isDiscreteType() {
         ParameterizedType type = type();
         return type != null && Primitives.isDiscrete(type);

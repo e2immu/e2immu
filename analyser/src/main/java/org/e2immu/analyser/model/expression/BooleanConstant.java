@@ -19,9 +19,10 @@
 package org.e2immu.analyser.model.expression;
 
 
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.BoolValue;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -29,20 +30,18 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public class BooleanConstant implements ConstantExpression<Boolean> {
-    private final Primitives primitives;
+public record BooleanConstant(Primitives primitives,
+                              boolean constant,
+                              ObjectFlow objectFlow) implements ConstantExpression<Boolean>, Negatable {
+
+    public BooleanConstant(Primitives primitives, boolean constant) {
+        this(primitives, constant, ObjectFlow.NO_FLOW);
+    }
 
     @Override
     @NotNull
     public ParameterizedType returnType() {
         return primitives.booleanParameterizedType;
-    }
-
-    public final boolean constant;
-
-    public BooleanConstant(Primitives primitives, boolean constant) {
-        this.primitives = primitives;
-        this.constant = constant;
     }
 
     @Override
@@ -54,19 +53,23 @@ public class BooleanConstant implements ConstantExpression<Boolean> {
     }
 
     @Override
+    public String toString() {
+        return Boolean.toString(constant);
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(constant);
     }
 
     @Override
-    @NotNull
-    public String expressionString(int indent) {
-        return Boolean.toString(constant);
+    public int order() {
+        return ExpressionComparator.ORDER_CONSTANT_BOOLEAN;
     }
 
     @Override
-    public int precedence() {
-        return 17; // highest
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override
@@ -74,8 +77,7 @@ public class BooleanConstant implements ConstantExpression<Boolean> {
         return constant;
     }
 
-    @Override
-    public Value newValue() {
-        return new BoolValue(primitives, constant);
+    public Expression negate() {
+        return new BooleanConstant(primitives, !constant, objectFlow);
     }
 }

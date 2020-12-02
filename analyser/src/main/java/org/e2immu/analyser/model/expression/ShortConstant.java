@@ -19,9 +19,9 @@
 package org.e2immu.analyser.model.expression;
 
 
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.ShortValue;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
@@ -30,21 +30,18 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public class ShortConstant implements ConstantExpression<Short> {
-    private final Primitives primitives;
+public record ShortConstant(Primitives primitives,
+                            short constant,
+                            ObjectFlow objectFlow) implements ConstantExpression<Short>, Numeric {
+
+    public ShortConstant(Primitives primitives, short constant) {
+        this(primitives, constant, ObjectFlow.NO_FLOW);
+    }
 
     @Override
     @NotNull
     public ParameterizedType returnType() {
         return primitives.shortParameterizedType;
-    }
-
-    @NotNull
-    public final short constant;
-
-    public ShortConstant(Primitives primitives, short constant) {
-        this.primitives = primitives;
-        this.constant = constant;
     }
 
     @Override
@@ -61,23 +58,37 @@ public class ShortConstant implements ConstantExpression<Short> {
     }
 
     @Override
-    @NotNull
-    public String expressionString(int indent) {
-        return Short.toString(constant);
+    public int order() {
+        return ExpressionComparator.ORDER_CONSTANT_SHORT;
     }
 
     @Override
-    public int precedence() {
-        return 17; // highest
-    }
-
-    @Override
-    public Value newValue() {
-        return new ShortValue(primitives, constant, ObjectFlow.NO_FLOW);
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override
     public Short getValue() {
         return constant;
+    }
+
+    @Override
+    public String toString() {
+        return Short.toString(constant);
+    }
+
+    @Override
+    public Expression negate() {
+        return new ShortConstant(primitives, (short) (-constant), objectFlow);
+    }
+
+    @Override
+    public Number getNumber() {
+        return constant;
+    }
+
+    @Override
+    public boolean isNumeric() {
+        return true;
     }
 }

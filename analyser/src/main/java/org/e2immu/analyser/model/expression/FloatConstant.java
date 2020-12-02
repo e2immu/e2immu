@@ -18,9 +18,9 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.FloatValue;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
@@ -29,21 +29,18 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public class FloatConstant implements ConstantExpression<Float> {
-    private final ParameterizedType floatParameterizedType;
+public record FloatConstant(Primitives primitives,
+                            float constant,
+                            ObjectFlow objectFlow) implements ConstantExpression<Float>, Numeric {
+
+    public FloatConstant(Primitives primitives, float constant) {
+        this(primitives, constant, ObjectFlow.NO_FLOW);
+    }
 
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return floatParameterizedType;
-    }
-
-    @NotNull
-    public final FloatValue constant;
-
-    public FloatConstant(Primitives primitives, float constant) {
-        this.constant = new FloatValue(primitives, constant, ObjectFlow.NO_FLOW);
-        this.floatParameterizedType = primitives.floatParameterizedType;
+        return primitives.floatParameterizedType;
     }
 
     @Override
@@ -51,7 +48,7 @@ public class FloatConstant implements ConstantExpression<Float> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         FloatConstant that = (FloatConstant) o;
-        return constant.equals(that.constant);
+        return constant == that.constant;
     }
 
     @Override
@@ -60,23 +57,37 @@ public class FloatConstant implements ConstantExpression<Float> {
     }
 
     @Override
-    @NotNull
-    public String expressionString(int indent) {
-        return Float.toString(constant.value);
+    public int order() {
+        return ExpressionComparator.ORDER_CONSTANT_FLOAT;
     }
 
     @Override
-    public int precedence() {
-        return 17; // highest
-    }
-
-    @Override
-    public Value newValue() {
-        return constant;
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override
     public Float getValue() {
-        return constant.value;
+        return constant;
+    }
+
+    @Override
+    public Number getNumber() {
+        return constant;
+    }
+
+    @Override
+    public String toString() {
+        return Float.toString(constant);
+    }
+
+    @Override
+    public Expression negate() {
+        return new FloatConstant(primitives, -constant, objectFlow);
+    }
+
+    @Override
+    public boolean isNumeric() {
+        return true;
     }
 }

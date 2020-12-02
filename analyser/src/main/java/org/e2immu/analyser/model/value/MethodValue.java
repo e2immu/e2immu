@@ -137,11 +137,6 @@ public class MethodValue implements Value {
         return evaluationContext.getMethodAnalysis(methodInfo).getProperty(variableProperty);
     }
 
-    @Override
-    public boolean hasConstantProperties() {
-        return false;
-    }
-
     /* We're in the situation of a = b.method(c, d), and we are computing the variables that `a` will be linked
      * to. There is no need to consider linking between `b`, `c` and `d` here because that linking takes place in the method's
      * definition itself. We consider 4 cases:

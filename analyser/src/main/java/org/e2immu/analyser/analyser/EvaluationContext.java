@@ -75,7 +75,7 @@ public interface EvaluationContext {
     }
 
     // on top of the normal condition and state in the current statement, we can add decisions from the ?: operator
-    default EvaluationContext child(Value condition) {
+    default EvaluationContext child(Expression condition) {
         throw new UnsupportedOperationException();
     }
 
@@ -173,7 +173,7 @@ public interface EvaluationContext {
         return null;
     }
 
-    default boolean isNotNull0(Value value) {
+    default boolean isNotNull0(Expression value) {
         return true;
     }
 

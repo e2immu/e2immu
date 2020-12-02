@@ -19,9 +19,10 @@
 package org.e2immu.analyser.model.expression;
 
 
+import com.google.common.math.DoubleMath;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.IntValue;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
@@ -30,21 +31,29 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public class IntConstant implements ConstantExpression<Integer> {
-    private final Primitives primitives;
+public record IntConstant(Primitives primitives,
+                          int constant,
+                          ObjectFlow objectFlow) implements ConstantExpression<Integer>, Negatable, Numeric {
+
+    public IntConstant(Primitives primitives, int constant) {
+        this(primitives, constant, ObjectFlow.NO_FLOW);
+    }
+
+    public static Expression intOrDouble(Primitives primitives, double b, ObjectFlow objectFlow) {
+        if (DoubleMath.isMathematicalInteger(b)) {
+            long l = Math.round(b);
+            if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {
+                return new LongConstant(primitives, l, objectFlow);
+            }
+            return new IntConstant(primitives, (int) l, objectFlow);
+        }
+        return new DoubleConstant(primitives, b, objectFlow);
+    }
 
     @Override
     @NotNull
     public ParameterizedType returnType() {
         return primitives.intParameterizedType;
-    }
-
-    @NotNull
-    public final int constant;
-
-    public IntConstant(Primitives primitives, int constant) {
-        this.primitives = primitives;
-        this.constant = constant;
     }
 
     @Override
@@ -61,19 +70,13 @@ public class IntConstant implements ConstantExpression<Integer> {
     }
 
     @Override
-    @NotNull
-    public String expressionString(int indent) {
-        return Integer.toString(constant);
+    public int order() {
+        return ExpressionComparator.ORDER_CONSTANT_INT;
     }
 
     @Override
-    public int precedence() {
-        return 17; // highest
-    }
-
-    @Override
-    public Value newValue() {
-        return new IntValue(primitives, constant, ObjectFlow.NO_FLOW);
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override
@@ -82,7 +85,22 @@ public class IntConstant implements ConstantExpression<Integer> {
     }
 
     @Override
+    public Number getNumber() {
+        return constant;
+    }
+
+    @Override
     public String toString() {
-        return expressionString(0);
+        return Integer.toString(constant);
+    }
+
+    @Override
+    public Expression negate() {
+        return new IntConstant(primitives, -constant, objectFlow);
+    }
+
+    @Override
+    public boolean isNumeric() {
+        return true;
     }
 }

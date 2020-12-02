@@ -18,9 +18,9 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.LongValue;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
@@ -29,21 +29,18 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public class LongConstant implements ConstantExpression<Long> {
-    private final Primitives primitives;
+public record LongConstant(Primitives primitives,
+                           long constant,
+                           ObjectFlow objectFlow) implements ConstantExpression<Long>, Numeric {
+
+    public LongConstant(Primitives primitives, long constant) {
+        this(primitives, constant, ObjectFlow.NO_FLOW);
+    }
 
     @Override
     @NotNull
     public ParameterizedType returnType() {
         return primitives.longParameterizedType;
-    }
-
-    @NotNull
-    public final long constant;
-
-    public LongConstant(Primitives primitives, long constant) {
-        this.constant = constant;
-        this.primitives = primitives;
     }
 
     @Override
@@ -60,23 +57,37 @@ public class LongConstant implements ConstantExpression<Long> {
     }
 
     @Override
-    @NotNull
-    public String expressionString(int indent) {
-        return Long.toString(constant);
+    public int order() {
+        return ExpressionComparator.ORDER_CONSTANT_LONG;
     }
 
     @Override
-    public int precedence() {
-        return 17; // highest
-    }
-
-    @Override
-    public Value newValue() {
-        return new LongValue(primitives, constant, ObjectFlow.NO_FLOW);
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override
     public Long getValue() {
         return constant;
+    }
+
+    @Override
+    public Number getNumber() {
+        return constant;
+    }
+
+    @Override
+    public String toString() {
+        return Long.toString(constant);
+    }
+
+    @Override
+    public Expression negate() {
+        return new LongConstant(primitives, -constant, objectFlow);
+    }
+
+    @Override
+    public boolean isNumeric() {
+        return true;
     }
 }

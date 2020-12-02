@@ -182,11 +182,6 @@ public class Instance implements Value {
     }
 
     @Override
-    public boolean hasConstantProperties() {
-        return false;
-    }
-
-    @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
     }

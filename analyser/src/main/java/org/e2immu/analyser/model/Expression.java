@@ -21,14 +21,28 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.NegatedExpression;
+import org.e2immu.analyser.model.expression.NullConstant;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.Nullable;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
 
 @E2Container
-public interface Expression extends Element {
+public interface Expression extends Element, Comparable<Expression> {
 
     @NotModified
     ParameterizedType returnType();
@@ -60,4 +74,115 @@ public interface Expression extends Element {
         return this;
     }
 
+    // ********************************
+
+    int order();
+
+    default boolean isNumeric() {
+        return false;
+    }
+
+    @Override
+    default int compareTo(Expression v) {
+        return ExpressionComparator.SINGLETON.compare(this, v);
+    }
+
+    default int internalCompareTo(Expression v) {
+        return 0;
+    }
+
+    default boolean isConstant() {
+        return false;
+    }
+
+    default boolean isUnknown() {
+        return false;
+    }
+
+    default boolean isDiscreteType() {
+        ParameterizedType type = type();
+        return type != null && Primitives.isDiscrete(type);
+    }
+
+    // only called from EvaluationContext.getProperty().
+    // Use that method as the general way of obtaining a value for a property from a Value object
+    // do NOT fall back on evaluationContext.getProperty(this, ...) because that'll be an infinite loop!
+
+    default int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        throw new UnsupportedOperationException("For type " + getClass() + ", property " + variableProperty);
+    }
+
+    /**
+     * @param evaluationContext to compute properties
+     * @return null in case of delay
+     */
+    @Nullable
+    @NotModified
+    default Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
+        return Set.of();
+    }
+
+    default boolean isNotNull() {
+        NegatedExpression negatedValue = asInstanceOf(NegatedExpression.class);
+        return negatedValue != null && negatedValue.value.isInstanceOf(NullValue.class);
+    }
+
+    default boolean isNull() {
+        return isInstanceOf(NullConstant.class);
+    }
+
+    default boolean isComputeProperties() {
+        return this != UnknownValue.RETURN_VALUE;
+    }
+
+    default boolean isBoolValueTrue() {
+        BooleanConstant boolValue;
+        return ((boolValue = this.asInstanceOf(BooleanConstant.class)) != null) && boolValue.getValue();
+    }
+
+    default boolean isBoolValueFalse() {
+        BooleanConstant boolValue;
+        return ((boolValue = this.asInstanceOf(BooleanConstant.class)) != null) && !boolValue.getValue();
+    }
+
+    Instance getInstance(EvaluationContext evaluationContext);
+
+    /**
+     * @return the type, if we are certain; used in WidestType for operators
+     */
+    default ParameterizedType type() {
+        return null;
+    }
+
+    default EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+        Expression inMap = translation.get(this);
+        return new EvaluationResult.Builder().setValue(inMap == null ? this : inMap).build();
+    }
+
+    ObjectFlow getObjectFlow();
+
+    /**
+     * Tests the value first, and only if true, visit deeper.
+     *
+     * @param predicate return true if the search is to be continued deeper
+     */
+    default void visit(Predicate<Expression> predicate) {
+        predicate.test(this);
+    }
+
+
+    default boolean isInstanceOf(Class<? extends Expression> clazz) {
+        return clazz.isAssignableFrom(getClass());
+    }
+
+    default <T extends Expression> T asInstanceOf(Class<T> clazz) {
+        if (clazz.isAssignableFrom(getClass())) {
+            return (T) this;
+        }
+        return null;
+    }
+
+    default String print(PrintMode printMode) {
+        return toString();
+    }
 }

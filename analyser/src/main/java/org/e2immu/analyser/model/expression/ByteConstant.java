@@ -19,9 +19,9 @@
 package org.e2immu.analyser.model.expression;
 
 
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.ByteValue;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
@@ -30,8 +30,9 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Container
-public class ByteConstant implements ConstantExpression<Byte> {
-    private final Primitives primitives;
+public record ByteConstant(Primitives primitives,
+                           byte constant,
+                           ObjectFlow objectFlow) implements ConstantExpression<Byte>, Numeric {
 
     @Override
     @NotNull
@@ -39,12 +40,8 @@ public class ByteConstant implements ConstantExpression<Byte> {
         return primitives.byteParameterizedType;
     }
 
-    @NotNull
-    public final byte constant;
-
     public ByteConstant(Primitives primitives, byte constant) {
-        this.constant = constant;
-        this.primitives = primitives;
+        this(primitives, constant, ObjectFlow.NO_FLOW);
     }
 
     @Override
@@ -61,23 +58,37 @@ public class ByteConstant implements ConstantExpression<Byte> {
     }
 
     @Override
-    @NotNull
-    public String expressionString(int indent) {
+    public String toString() {
         return Byte.toString(constant);
     }
 
     @Override
-    public int precedence() {
-        return 17; // highest
+    public int order() {
+        return ExpressionComparator.ORDER_CONSTANT_BYTE;
     }
 
     @Override
-    public Value newValue() {
-        return new ByteValue(primitives, constant, ObjectFlow.NO_FLOW);
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override
     public Byte getValue() {
         return constant;
+    }
+
+    @Override
+    public Number getNumber() {
+        return constant;
+    }
+
+    @Override
+    public Expression negate() {
+        return new ByteConstant(primitives, (byte) (-constant), objectFlow);
+    }
+
+    @Override
+    public boolean isNumeric() {
+        return true;
     }
 }

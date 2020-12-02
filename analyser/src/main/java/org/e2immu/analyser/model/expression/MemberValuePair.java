@@ -22,6 +22,9 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.value.Instance;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
@@ -76,6 +79,21 @@ public class MemberValuePair implements Expression {
     @Override
     public Expression translate(TranslationMap translationMap) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int order() {
+        return ExpressionComparator.ORDER_MVP;
+    }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return ObjectFlow.NO_FLOW;
     }
 
     @Override

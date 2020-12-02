@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
+import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.DEBUG_MODIFY_CONTENT;
 import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
 import static org.e2immu.analyser.util.Logger.log;
@@ -50,11 +50,11 @@ public class EvaluationResult {
 
     // all object flows created
     private final List<ObjectFlow> objectFlows;
-    public final Value value;
+    public final Expression value;
     public final int iteration;
 
     // a map of value changes, which can be overwritten; only the last one holds
-    public final Map<Variable, ValueChangeData> valueChanges;
+    public final Map<Variable, ExpressionChangeData> valueChanges;
 
     // a map of variable linking, which is also cumulative
     public final Map<Variable, Set<Variable>> linkedVariables;
@@ -71,7 +71,7 @@ public class EvaluationResult {
         return stateChanges.stream();
     }
 
-    public Stream<Map.Entry<Variable, ValueChangeData>> getValueChangeStream() {
+    public Stream<Map.Entry<Variable, ExpressionChangeData>> getExpressionChangeStream() {
         return valueChanges.entrySet().stream();
     }
 
@@ -83,17 +83,17 @@ public class EvaluationResult {
         return linkedVariables == null;
     }
 
-    public Value getValue() {
+    public Expression getExpression() {
         return value;
     }
 
     private EvaluationResult(int iteration,
-                             Value value,
+                             Expression value,
                              List<StatementAnalyser.StatementAnalysisModification> modifications,
                              List<StatementAnalysis.StateChange> stateChanges,
                              List<ObjectFlow> objectFlows,
                              Map<Variable, Set<Variable>> linkedVariables,
-                             Map<Variable, ValueChangeData> valueChanges) {
+                             Map<Variable, ExpressionChangeData> valueChanges) {
         this.modifications = modifications;
         this.stateChanges = stateChanges;
         this.objectFlows = objectFlows;
@@ -125,7 +125,7 @@ public class EvaluationResult {
      * Any of the three can be used independently: possibly we want to mark assignment, but still have NO_VALUE for the value.
      * The stateOnAssignment can also still be NO_VALUE while the value is known, and vice versa.
      */
-    public record ValueChangeData(Value value, Value stateOnAssignment, boolean markAssignment) {
+    public record ExpressionChangeData(Expression value, Expression stateOnAssignment, boolean markAssignment) {
     }
 
     // lazy creation of lists
@@ -135,8 +135,8 @@ public class EvaluationResult {
         private List<StatementAnalyser.StatementAnalysisModification> modifications;
         private List<StatementAnalysis.StateChange> stateChanges;
         private List<ObjectFlow> objectFlows;
-        private Value value;
-        private final Map<Variable, ValueChangeData> valueChanges = new HashMap<>();
+        private Expression value;
+        private final Map<Variable, ExpressionChangeData> valueChanges = new HashMap<>();
         private final Map<Variable, Set<Variable>> linkedVariables = new HashMap<>();
         private boolean linkedVariablesDelay;
 
@@ -169,7 +169,7 @@ public class EvaluationResult {
             return this;
         }
 
-        public Builder composeIgnoreValue(EvaluationResult... previousResults) {
+        public Builder composeIgnoreExpression(EvaluationResult... previousResults) {
             assert previousResults != null;
             for (EvaluationResult evaluationResult : previousResults) {
                 append(true, evaluationResult);
@@ -184,8 +184,8 @@ public class EvaluationResult {
             return this;
         }
 
-        private void append(boolean ignoreValue, EvaluationResult evaluationResult) {
-            if (!ignoreValue && evaluationResult.value != null && (value == null || value != NO_VALUE)) {
+        private void append(boolean ignoreExpression, EvaluationResult evaluationResult) {
+            if (!ignoreExpression && evaluationResult.value != null && (value == null || value != NO_VALUE)) {
                 value = evaluationResult.value;
             }
 
@@ -212,7 +212,7 @@ public class EvaluationResult {
         }
 
         // also sets result of expression, but cannot overwrite NO_VALUE
-        public Builder setValue(Value value) {
+        public Builder setExpression(Expression value) {
             Objects.requireNonNull(value);
             if (this.value != NO_VALUE) {
                 this.value = value;
@@ -220,7 +220,7 @@ public class EvaluationResult {
             return this;
         }
 
-        public Value getValue() {
+        public Expression getExpression() {
             return value;
         }
 
@@ -238,7 +238,7 @@ public class EvaluationResult {
                     valueChanges);
         }
 
-        public void variableOccursInNotNullContext(Variable variable, Value value, int notNullRequired) {
+        public void variableOccursInNotNullContext(Variable variable, Expression value, int notNullRequired) {
             if (value == NO_VALUE) {
                 if (variable instanceof ParameterInfo) {
                     // we will mark this, so that the parameter analyser knows that it should wait
@@ -320,21 +320,21 @@ public class EvaluationResult {
             return this;
         }
 
-        public Value currentValue(Variable variable) {
-            ValueChangeData currentValue = valueChanges.get(variable);
-            if (currentValue == null || currentValue.value == NO_VALUE) return evaluationContext.currentValue(variable);
-            return currentValue.value;
+        public Expression currentExpression(Variable variable) {
+            ExpressionChangeData currentExpression = valueChanges.get(variable);
+            if (currentExpression == null || currentExpression.value == NO_VALUE) return evaluationContext.currentExpression(variable);
+            return currentExpression.value;
         }
 
-        public Instance currentInstance(Variable variable, ObjectFlow objectFlowForCreation, Value stateFromPreconditions) {
-            ValueChangeData currentValue = valueChanges.get(variable);
-            if (currentValue != null && currentValue.value instanceof Instance instance) return instance;
+        public Instance currentInstance(Variable variable, ObjectFlow objectFlowForCreation, Expression stateFromPreconditions) {
+            ExpressionChangeData currentExpression = valueChanges.get(variable);
+            if (currentExpression != null && currentExpression.value instanceof Instance instance) return instance;
 
             Instance inContext = evaluationContext.currentInstance(variable);
             if (inContext != null) return inContext;
             // there is no instance yet... we'll have to create one, but only if the value can have an instance
             if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
-            Value value = currentValue(variable);
+            Expression value = currentExpression(variable);
             if (value.isConstant()) return null;
             Instance instance = new Instance(variable.parameterizedType(), objectFlowForCreation,
                     stateFromPreconditions);
@@ -343,17 +343,17 @@ public class EvaluationResult {
         }
 
         private void assignInstanceToVariable(Variable variable, Instance instance) {
-            ValueChangeData current = valueChanges.get(variable);
-            ValueChangeData newVcd;
+            ExpressionChangeData current = valueChanges.get(variable);
+            ExpressionChangeData newVcd;
             if (current == null) {
-                newVcd = new ValueChangeData(instance, NO_VALUE, false);
+                newVcd = new ExpressionChangeData(instance, NO_VALUE, false);
             } else {
-                newVcd = new ValueChangeData(instance, current.stateOnAssignment, current.markAssignment);
+                newVcd = new ExpressionChangeData(instance, current.stateOnAssignment, current.markAssignment);
             }
             valueChanges.put(variable, newVcd);
         }
 
-        public Stream<Map.Entry<Variable, ValueChangeData>> getCurrentValuesStream() {
+        public Stream<Map.Entry<Variable, ExpressionChangeData>> getCurrentExpressionsStream() {
             return valueChanges.entrySet().stream();
         }
 
@@ -383,11 +383,11 @@ public class EvaluationResult {
             }
         }
 
-        public void variableOccursInNotModified1Context(Variable variable, Value currentValue) {
-            if (currentValue == NO_VALUE) return; // not yet
+        public void variableOccursInNotModified1Context(Variable variable, Expression currentExpression) {
+            if (currentExpression == NO_VALUE) return; // not yet
 
             // if we already know that the variable is NOT @NotNull, then we'll raise an error
-            int notModified1 = evaluationContext.getProperty(currentValue, VariableProperty.NOT_MODIFIED_1);
+            int notModified1 = evaluationContext.getProperty(currentExpression, VariableProperty.NOT_MODIFIED_1);
             if (notModified1 == Level.FALSE) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.MODIFICATION_NOT_ALLOWED, variable.simpleName());
                 addToModifications(statementAnalyser.new RaiseErrorMessage(message));
@@ -408,8 +408,8 @@ public class EvaluationResult {
         /*
         Called from Assignment and from LocalVariableCreation.
          */
-        public Builder assignment(Variable assignmentTarget, Value resultOfExpression, boolean assignmentToNonEmptyExpression, int iteration) {
-            ValueChangeData valueChangeData = new ValueChangeData(resultOfExpression, evaluationContext.getConditionManager().state,
+        public Builder assignment(Variable assignmentTarget, Expression resultOfExpression, boolean assignmentToNonEmptyExpression, int iteration) {
+            ExpressionChangeData valueChangeData = new ExpressionChangeData(resultOfExpression, evaluationContext.getConditionManager().state,
                     iteration == 0 && assignmentToNonEmptyExpression);
             valueChanges.put(assignmentTarget, valueChangeData);
             return this;
@@ -420,15 +420,15 @@ public class EvaluationResult {
             addToModifications(statementAnalyser.new SetProperty(variable, property, value));
         }
 
-        public void addPrecondition(Value rest) {
+        public void addPrecondition(Expression rest) {
             // TODO inheritance of preconditions
         }
 
-        public void addCallOut(boolean b, ObjectFlow destination, Value parameterValue) {
+        public void addCallOut(boolean b, ObjectFlow destination, Expression parameterExpression) {
             // TODO part of object flow
         }
 
-        public void addAccess(boolean b, MethodAccess methodAccess, Value object) {
+        public void addAccess(boolean b, MethodAccess methodAccess, Expression object) {
             // TODO part of object flow
         }
 

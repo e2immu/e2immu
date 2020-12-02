@@ -27,11 +27,6 @@ public abstract class ConstantValue implements Value {
     }
 
     @Override
-    public boolean hasConstantProperties() {
-        return true;
-    }
-
-    @Override
     public Instance getInstance(EvaluationContext evaluationContext) {
         return null;
     }

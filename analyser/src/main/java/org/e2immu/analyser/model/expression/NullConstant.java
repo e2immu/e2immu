@@ -23,15 +23,21 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.model.value.NullValue;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
+import static org.e2immu.analyser.model.Level.FALSE;
+import static org.e2immu.analyser.model.Level.TRUE;
+
 @E2Container
-public class NullConstant implements Expression, Constant<Object> {
+public class NullConstant implements ConstantExpression<Object> {
     public static final NullConstant NULL_CONSTANT = new NullConstant();
-    public static final EvaluationResult NULL_RESULT = new EvaluationResult.Builder().setValue(NullValue.NULL_VALUE).build();
+    public static final EvaluationResult NULL_RESULT = new EvaluationResult.Builder().setExpression(NULL_CONSTANT).build();
 
     @Override
     @NotNull
@@ -40,14 +46,8 @@ public class NullConstant implements Expression, Constant<Object> {
     }
 
     @Override
-    @NotNull
-    public String expressionString(int indent) {
+    public String toString() {
         return "null";
-    }
-
-    @Override
-    public int precedence() {
-        return 17;
     }
 
     @Override
@@ -58,9 +58,31 @@ public class NullConstant implements Expression, Constant<Object> {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL) > MultiLevel.NULLABLE) {
-            return new EvaluationResult.Builder().raiseError(Message.NULL_POINTER_EXCEPTION).setValue(NullValue.NULL_VALUE).build();
+            return new EvaluationResult.Builder().raiseError(Message.NULL_POINTER_EXCEPTION)
+                    .setExpression(NULL_CONSTANT).build();
         }
         return NULL_RESULT;
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return switch (variableProperty) {
+            case NOT_NULL -> MultiLevel.NULLABLE;
+            case MODIFIED, METHOD_DELAY, IGNORE_MODIFICATIONS, NOT_MODIFIED_1, IDENTITY -> FALSE;
+            case IMMUTABLE -> MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+            case CONTAINER -> TRUE;
+            default -> throw new UnsupportedOperationException("Asking for " + variableProperty);
+        };
+    }
+
+    @Override
+    public int order() {
+        return ExpressionComparator.ORDER_CONSTANT_NULL;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return ObjectFlow.NO_FLOW;
     }
 
     @Override
