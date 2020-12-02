@@ -57,7 +57,7 @@ public class IfElseStatement extends StatementWithExpression {
         return builder.build();
     }
 
-    private static FlowData.Execution standardExecution(Value v) {
+    private static FlowData.Execution standardExecution(Expression v) {
         if (v.isBoolValueTrue()) return FlowData.Execution.ALWAYS;
         if (v.isBoolValueFalse()) return FlowData.Execution.NEVER;
         return FlowData.Execution.CONDITIONALLY;

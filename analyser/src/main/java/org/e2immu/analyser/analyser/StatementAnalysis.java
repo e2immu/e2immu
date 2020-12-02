@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.Structure;
@@ -33,7 +34,10 @@ import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
-import org.e2immu.analyser.parser.*;
+import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.resolver.Resolver;
 import org.e2immu.analyser.util.AddOnceSet;
 import org.e2immu.analyser.util.SetOnce;
@@ -49,8 +53,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.analyser.StatementAnalysis.FieldReferenceState.*;
+import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
 import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
 import static org.e2immu.analyser.util.Logger.log;
@@ -423,13 +427,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // assignment will be at LEVEL 3
             vic.setLinkedVariablesFromAnalyser(Set.of());
         } else if (variable instanceof This) {
-            vic.setInitialValueFromAnalyser(new Instance(variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION),
+            vic.setInitialValueFromAnalyser(new NewObject(null, variable.parameterizedType(), List.of(), EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW),
                     propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo));
             vic.setLinkedVariablesFromAnalyser(Set.of());
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
             // TODO copy state from known preconditions
-            Instance instance = new Instance(parameterInfo.parameterizedType, objectFlow, EmptyExpression.EMPTY_EXPRESSION);
+            NewObject instance = new NewObject(null, parameterInfo.parameterizedType, List.of(), EmptyExpression.EMPTY_EXPRESSION, objectFlow);
             vic.setInitialValueFromAnalyser(instance, propertyMap(analyserContext, parameterInfo));
             vic.setLinkedVariablesFromAnalyser(Set.of());
         } else if (variable instanceof FieldReference fieldReference) {

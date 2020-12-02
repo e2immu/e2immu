@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.model.expression;
 
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -25,6 +27,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
+import java.util.List;
 import java.util.Objects;
 
 @E2Container
@@ -73,5 +76,21 @@ public record StringConstant(Primitives primitives,
     @Override
     public String toString() {
         return "\"" + constant.replace("\"", "\\\"");
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        // TODO static flow
+        // TODO apply code from method call to produce a decent state
+        return new NewObject(oneParameterConstructor(), primitives.stringParameterizedType,
+                List.of(this), EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW);
+    }
+
+    private MethodInfo oneParameterConstructor() {
+        return primitives.stringTypeInfo.typeInspection.get().methods().stream()
+                .filter(mi -> mi.isConstructor && mi.methodInspection.get().getParameters().size() == 1 &&
+                        mi.methodInspection.get().getParameters().get(0).parameterizedType().typeInfo ==
+                                primitives.stringTypeInfo)
+                .findFirst().orElse(null);
     }
 }

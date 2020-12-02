@@ -80,13 +80,12 @@ public class ReturnStatement extends StatementWithExpression {
     }
 
     private static boolean isFirstParameter(Expression expression) {
-        return (expression instanceof VariableExpression) && ((VariableExpression) expression).variable instanceof ParameterInfo &&
-                (((ParameterInfo) ((VariableExpression) expression).variable).index == 0);
+        return expression instanceof VariableExpression ve && ve.variable() instanceof ParameterInfo pi &&
+                pi.index == 0;
     }
 
     private boolean isThis() {
-        return (expression instanceof VariableExpression) &&
-                ((VariableExpression) expression).variable instanceof This;
+        return expression instanceof VariableExpression ve && ve.variable() instanceof This;
     }
 
     @Override

@@ -18,6 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -322,27 +323,27 @@ public class EvaluationResult {
 
         public Expression currentExpression(Variable variable) {
             ExpressionChangeData currentExpression = valueChanges.get(variable);
-            if (currentExpression == null || currentExpression.value == NO_VALUE) return evaluationContext.currentExpression(variable);
+            if (currentExpression == null || currentExpression.value == NO_VALUE) return evaluationContext.currentValue(variable);
             return currentExpression.value;
         }
 
-        public Instance currentInstance(Variable variable, ObjectFlow objectFlowForCreation, Expression stateFromPreconditions) {
+        public NewObject currentInstance(Variable variable, ObjectFlow objectFlowForCreation, Expression stateFromPreconditions) {
             ExpressionChangeData currentExpression = valueChanges.get(variable);
-            if (currentExpression != null && currentExpression.value instanceof Instance instance) return instance;
+            if (currentExpression != null && currentExpression.value instanceof NewObject instance) return instance;
 
-            Instance inContext = evaluationContext.currentInstance(variable);
+            NewObject inContext = evaluationContext.currentInstance(variable);
             if (inContext != null) return inContext;
             // there is no instance yet... we'll have to create one, but only if the value can have an instance
             if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
             Expression value = currentExpression(variable);
             if (value.isConstant()) return null;
-            Instance instance = new Instance(variable.parameterizedType(), objectFlowForCreation,
-                    stateFromPreconditions);
+            NewObject instance = new NewObject(null, variable.parameterizedType(), List.of(),
+                    stateFromPreconditions, objectFlowForCreation);
             assignInstanceToVariable(variable, instance);
             return instance;
         }
 
-        private void assignInstanceToVariable(Variable variable, Instance instance) {
+        private void assignInstanceToVariable(Variable variable, NewObject instance) {
             ExpressionChangeData current = valueChanges.get(variable);
             ExpressionChangeData newVcd;
             if (current == null) {
@@ -432,7 +433,7 @@ public class EvaluationResult {
             // TODO part of object flow
         }
 
-        public void modifyingMethodAccess(Variable variable, Instance newInstance, Set<Variable> linkedVariables) {
+        public void modifyingMethodAccess(Variable variable, NewObject newInstance, Set<Variable> linkedVariables) {
             add(new StateData.RemoveVariableFromState(evaluationContext, variable));
             assignInstanceToVariable(variable, newInstance);
             linkVariables(variable, linkedVariables);

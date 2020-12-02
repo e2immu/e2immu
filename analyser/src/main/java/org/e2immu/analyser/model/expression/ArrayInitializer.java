@@ -25,17 +25,12 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
-import org.e2immu.analyser.model.value.ArrayValue;
 import org.e2immu.analyser.model.value.Instance;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
-import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.NotModified;
-import org.e2immu.annotation.NotNull;
 
 import java.util.Arrays;
 import java.util.List;
@@ -73,7 +68,7 @@ public class ArrayInitializer implements Expression {
     public Expression translate(TranslationMap translationMap) {
         return new ArrayInitializer(primitives, ObjectFlow.NO_FLOW,
                 multiExpression.stream().map(translationMap::translateExpression)
-                .collect(Collectors.toList()));
+                        .collect(Collectors.toList()));
     }
 
     @Override
@@ -174,7 +169,7 @@ public class ArrayInitializer implements Expression {
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
-        return new Instance(type(), getObjectFlow(), EmptyExpression.EMPTY_EXPRESSION);
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        return new NewObject(null, type(), List.of(), EmptyExpression.EMPTY_EXPRESSION, getObjectFlow());
     }
 }

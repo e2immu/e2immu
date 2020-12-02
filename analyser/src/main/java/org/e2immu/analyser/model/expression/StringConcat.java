@@ -19,18 +19,17 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.*;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.SetUtil;
 
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-import java.util.function.Predicate;
 
 public class StringConcat extends BinaryOperator {
     private final Primitives primitives;
@@ -113,7 +112,7 @@ public class StringConcat extends BinaryOperator {
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
-        return new Instance(type(), getObjectFlow(), EmptyExpression.EMPTY_EXPRESSION);
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        return new NewObject(null, type(), List.of(), EmptyExpression.EMPTY_EXPRESSION, getObjectFlow());
     }
 }

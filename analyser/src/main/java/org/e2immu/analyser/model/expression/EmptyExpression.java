@@ -75,7 +75,7 @@ public record EmptyExpression(String msg) implements Expression {
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationContext evaluationContext) {
         return null;
     }
 

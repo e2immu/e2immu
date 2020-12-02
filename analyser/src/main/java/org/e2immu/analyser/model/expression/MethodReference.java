@@ -108,7 +108,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             ObjectFlow objectFlow = builder.createInternalObjectFlow(location, methodInfo.returnType(), Origin.NEW_OBJECT_CREATION);
             MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
             Instance initialInstance = new Instance(methodInfo.returnType(), methodInfo, List.of(), objectFlow, EmptyExpression.EMPTY_EXPRESSION);
-            Instance instance = MethodCall.checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
+            NewObject instance = MethodCall.checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
                     methodAnalysis, initialInstance, List.of());
             builder.setExpression(instance);
         } else {
@@ -122,11 +122,11 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 // we're in a @NotNul context, and the method is decidedly NOT @NotNull...
                 builder.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Result of method reference " + methodInfo.distinguishingName());
             }
-            Value result;
+            Expression result;
             ObjectFlow objectFlow = ObjectFlow.NO_FLOW; // TODO
-            Value singleReturnValue = methodAnalysis.getSingleReturnValue();
+            Expression singleReturnValue = methodAnalysis.getSingleReturnValue();
             if (singleReturnValue != null) {
-                if (!(singleReturnValue.isInstanceOf(UnknownValue.class)) && methodInfo.cannotBeOverridden()) {
+                if (!singleReturnValue.isUnknown() && methodInfo.cannotBeOverridden()) {
                     result = singleReturnValue;
                 } else {
                     if (scopeResult.value.isInstanceOf(NullConstant.class)) {

@@ -177,16 +177,16 @@ public class Filter {
 
     // EXAMPLE: 0 == java.util.Collection.this.size()  --> map java.util.Collection.this.size() onto 0
     // EXAMPLE: java.util.Collection.this.size() == o.e.a.t.BasicCompanionMethods_6.test(Set<java.lang.String>):0:strings.size() --> copy lhs onto rhs
-    public static record ValueEqualsMethodCallNoParameters(MethodInfo methodInfo) implements FilterMethod<MethodValue> {
+    public static record ValueEqualsMethodCallNoParameters(MethodInfo methodInfo) implements FilterMethod<MethodCall> {
 
         @Override
-        public FilterResult<MethodValue> apply(Expression value) {
+        public FilterResult<MethodCall> apply(Expression value) {
             if (value instanceof EqualsExpression equalsValue) {
-                MethodValue r = compatibleMethodValue(equalsValue.rhs);
+                MethodCall r = compatibleMethodValue(equalsValue.rhs);
                 if (r != null) {
                     return new FilterResult<>(Map.of(r, equalsValue.lhs), EmptyExpression.EMPTY_EXPRESSION);
                 }
-                MethodValue l = compatibleMethodValue(equalsValue.lhs);
+                MethodCall l = compatibleMethodValue(equalsValue.lhs);
                 if (l != null) {
                     return new FilterResult<>(Map.of(l, equalsValue.rhs), EmptyExpression.EMPTY_EXPRESSION);
                 }
@@ -194,10 +194,10 @@ public class Filter {
             return null;
         }
 
-        private MethodValue compatibleMethodValue(Expression value) {
-            if (value instanceof MethodValue methodValue &&
+        private MethodCall compatibleMethodValue(Expression value) {
+            if (value instanceof MethodCall methodValue &&
                     methodValue.object instanceof VariableExpression vv &&
-                    vv.variable instanceof This &&
+                    vv.variable() instanceof This &&
                     compatibleMethod(methodInfo, methodValue.methodInfo)) {
                 return methodValue;
             }
@@ -217,19 +217,19 @@ public class Filter {
     // EXAMPLE: java.util.List.contains("a")
 
     public static record MethodCallBooleanResult(MethodInfo methodInfo, List<Expression> parameterValues,
-                                                 Expression boolValueTrue) implements FilterMethod<MethodValue> {
+                                                 Expression boolValueTrue) implements FilterMethod<MethodCall> {
 
         @Override
-        public FilterResult<MethodValue> apply(Expression value) {
-            if (value instanceof MethodValue methodValue && compatible(methodValue)) {
+        public FilterResult<MethodCall> apply(Expression value) {
+            if (value instanceof MethodCall methodValue && compatible(methodValue)) {
                 return new FilterResult<>(Map.of(methodValue, boolValueTrue), EmptyExpression.EMPTY_EXPRESSION);
             }
             return null;
         }
 
-        private boolean compatible(MethodValue methodValue) {
+        private boolean compatible(MethodCall methodValue) {
             return compatibleMethod(methodInfo, methodValue.methodInfo) &&
-                    compatibleParameters(parameterValues, methodValue.parameters);
+                    compatibleParameters(parameterValues, methodValue.getParameterExpressions());
         }
     }
 
@@ -237,7 +237,8 @@ public class Filter {
 
         @Override
         public FilterResult<Expression> apply(Expression value) {
-            if (this.value.equals(value)) return new FilterResult<>(Map.of(value, value), EmptyExpression.EMPTY_EXPRESSION);
+            if (this.value.equals(value))
+                return new FilterResult<>(Map.of(value, value), EmptyExpression.EMPTY_EXPRESSION);
             return null;
         }
     }

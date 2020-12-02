@@ -60,7 +60,7 @@ public interface ConstantExpression<T> extends Expression, Constant<T> {
     }
 
     @Override
-    default Instance getInstance(EvaluationContext evaluationContext) {
+    default NewObject getInstance(EvaluationContext evaluationContext) {
         return null;
     }
 

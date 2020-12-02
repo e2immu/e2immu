@@ -7,6 +7,8 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.StringUtil;
@@ -101,6 +103,21 @@ public class TryStatement extends StatementWithStructure {
         @Override
         public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int order() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public NewObject getInstance(EvaluationContext evaluationContext) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ObjectFlow getObjectFlow() {
+            return ObjectFlow.NO_FLOW;
         }
     }
 

@@ -20,11 +20,10 @@ package org.e2immu.analyser.model.expression.util;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.Filter;
-import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.Filter;
+import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
@@ -39,13 +38,13 @@ import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 public class EvaluateParameters {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(EvaluateParameters.class);
 
-    public static Pair<EvaluationResult.Builder, List<Value>> transform(List<Expression> parameterExpressions,
+    public static Pair<EvaluationResult.Builder, List<Expression>> transform(List<Expression> parameterExpressions,
                                                                         EvaluationContext evaluationContext,
                                                                         MethodInfo methodInfo,
                                                                         int notModified1Scope,
-                                                                        Value scopeObject) {
+                                                                        Expression scopeObject) {
         int n = methodInfo == null ? 10 : methodInfo.methodInspection.get().getParameters().size();
-        List<Value> parameterValues = new ArrayList<>(n);
+        List<Expression> parameterValues = new ArrayList<>(n);
         List<EvaluationResult> parameterResults = new ArrayList<>(n);
         int i = 0;
         int minNotNullOverParameters = MultiLevel.EFFECTIVELY_NOT_NULL;
@@ -53,7 +52,7 @@ public class EvaluateParameters {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(parameterResults);
 
         for (Expression parameterExpression : parameterExpressions) {
-            Value parameterValue;
+            Expression parameterValue;
             EvaluationResult parameterResult;
             if (methodInfo != null) {
                 List<ParameterInfo> params = methodInfo.methodInspection.get().getParameters();
@@ -136,43 +135,43 @@ public class EvaluateParameters {
             i++;
         }
 
-        VariableValue scopeVariable;
+        VariableExpression scopeVariable;
         if (minNotNullOverParameters == MultiLevel.EFFECTIVELY_NOT_NULL &&
                 i > 0 &&
                 methodInfo != null &&
                 scopeObject != null &&
                 methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
-                (scopeVariable = scopeObject.asInstanceOf(VariableValue.class)) != null) {
-            builder.setProperty(scopeVariable.variable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL);
+                (scopeVariable = scopeObject.asInstanceOf(VariableExpression.class)) != null) {
+            builder.setProperty(scopeVariable.variable(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL);
         }
 
 
         if (methodInfo != null) {
             MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
-            Value precondition = methodAnalysis.getPrecondition();
+            Expression precondition = methodAnalysis.getPrecondition();
             if (precondition != null && precondition != EmptyExpression.EMPTY_EXPRESSION) {
                 // there is a precondition, and we have a list of values... let's see what we can learn
                 // the precondition is using parameter info's as variables so we'll have to substitute
-                Map<Value, Value> translationMap = translationMap(evaluationContext, methodInfo, parameterValues);
+                Map<Expression, Expression> translationMap = translationMap(evaluationContext, methodInfo, parameterValues);
                 EvaluationResult eRreEvaluated = precondition.reEvaluate(evaluationContext, translationMap);
-                Value reEvaluated = eRreEvaluated.value;
+                Expression reEvaluated = eRreEvaluated.value;
                 builder.compose(eRreEvaluated);
 
                 // from the result we either may infer another condition, or values to be set...
 
                 // NOT_NULL
-                Map<ParameterInfo, Value> individualNullClauses = Filter.filter(evaluationContext, reEvaluated,
+                Map<ParameterInfo, Expression> individualNullClauses = Filter.filter(evaluationContext, reEvaluated,
                         Filter.FilterMode.ACCEPT,
                         Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE_ON_PARAMETER).accepted();
-                for (Map.Entry<ParameterInfo, Value> nullClauseEntry : individualNullClauses.entrySet()) {
-                    if (nullClauseEntry.getValue() != NullValue.NULL_VALUE) {
+                for (Map.Entry<ParameterInfo, Expression> nullClauseEntry : individualNullClauses.entrySet()) {
+                    if (nullClauseEntry.getValue() != NullConstant.NULL_CONSTANT) {
                         builder.setProperty(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                     }
                 }
 
                 // all the rest: preconditions
                 // TODO: also weed out conditions that are not on parameters, and not on `this`
-                Value rest = Filter.filter(evaluationContext, reEvaluated,
+                Expression rest = Filter.filter(evaluationContext, reEvaluated,
                         Filter.FilterMode.ACCEPT, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE_ON_PARAMETER).rest();
                 if (rest != null) {
                     builder.addPrecondition(rest);
@@ -182,12 +181,12 @@ public class EvaluateParameters {
         return new Pair<>(builder, parameterValues);
     }
 
-    public static Map<Value, Value> translationMap(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Value> parameters) {
-        ImmutableMap.Builder<Value, Value> builder = new ImmutableMap.Builder<>();
+    public static Map<Expression, Expression> translationMap(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Expression> parameters) {
+        ImmutableMap.Builder<Expression, Expression> builder = new ImmutableMap.Builder<>();
         int i = 0;
-        for (Value parameterValue : parameters) {
+        for (Expression parameterValue : parameters) {
             ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(i);
-            Value vv = new VariableValue(parameterInfo, parameterValue.getObjectFlow());
+            Expression vv = new VariableExpression(parameterInfo, parameterValue.getObjectFlow());
             builder.put(vv, parameterValue);
             i++;
         }
@@ -198,8 +197,8 @@ public class EvaluateParameters {
     // we should normally look at the value, but there is a chicken and egg problem
     public static Boolean tryToDetectUndeclared(EvaluationContext evaluationContext, Expression scope) {
         if (scope instanceof VariableExpression variableExpression) {
-            if (variableExpression.variable instanceof ParameterInfo) return true;
-            Value value = evaluationContext.currentValue(variableExpression.variable);
+            if (variableExpression.variable() instanceof ParameterInfo) return true;
+            Expression value = evaluationContext.currentValue(variableExpression.variable());
             if (value == EmptyExpression.NO_VALUE) return null; // delay
             // TODO
             return true;

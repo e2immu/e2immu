@@ -18,11 +18,13 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
-import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
@@ -39,15 +41,15 @@ public class InlineConditionalOperator implements Expression {
     public final Expression ifFalse;
     public final ObjectFlow objectFlow;
 
-    public InlineConditionalOperator( Expression condition,
-                                      Expression ifTrue,
-                                      Expression ifFalse) {
+    public InlineConditionalOperator(Expression condition,
+                                     Expression ifTrue,
+                                     Expression ifFalse) {
         this(condition, ifTrue, ifFalse, ObjectFlow.NO_FLOW);
     }
 
-    public InlineConditionalOperator( Expression condition,
-                                      Expression ifTrue,
-                                      Expression ifFalse,
+    public InlineConditionalOperator(Expression condition,
+                                     Expression ifTrue,
+                                     Expression ifFalse,
                                      ObjectFlow objectFlow) {
         this.condition = Objects.requireNonNull(condition);
         this.ifFalse = Objects.requireNonNull(ifFalse);
@@ -172,9 +174,9 @@ public class InlineConditionalOperator implements Expression {
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationContext evaluationContext) {
         if (Primitives.isPrimitiveExcludingVoid(type())) return null;
-        return new Instance(type(), getObjectFlow(), EmptyExpression.EMPTY_EXPRESSION);
+        return new NewObject(null, type(), List.of(), EmptyExpression.EMPTY_EXPRESSION, getObjectFlow());
     }
 
     @Override

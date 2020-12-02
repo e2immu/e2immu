@@ -21,7 +21,11 @@ package org.e2immu.analyser.inspector.expr;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.PackagePrefix;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 
 class PackagePrefixExpression implements Expression {
     public final PackagePrefix packagePrefix;
@@ -48,5 +52,20 @@ class PackagePrefixExpression implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int order() {
+        return 0;
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return ObjectFlow.NO_FLOW;
     }
 }

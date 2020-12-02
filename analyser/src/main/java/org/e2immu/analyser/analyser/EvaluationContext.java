@@ -19,6 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -29,6 +30,7 @@ import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -193,10 +195,11 @@ public interface EvaluationContext {
     This default implementation is the correct one for basic tests and the companion analyser (we cannot use companions in the
     companion analyser, that would be chicken-and-egg).
      */
-    default Instance currentInstance(Variable variable) {
+    default NewObject currentInstance(Variable variable) {
         if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
         // always a new one with empty state -- we cannot be bothered here.
-        return new Instance(variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
+        return new NewObject(null, variable.parameterizedType(), List.of(),
+                EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW);
     }
 
     default boolean disableEvaluationOfMethodCallsUsingCompanionMethods() {

@@ -23,7 +23,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.NegatedValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
@@ -54,8 +53,8 @@ public class Sum extends BinaryOperator {
                 new IntConstant(primitives, 2, ObjectFlow.NO_FLOW), l, objectFlow);
         if (l instanceof IntConstant li && li.constant() == 0) return r;
         if (r instanceof IntConstant ri && ri.constant() == 0) return l;
-        if (l instanceof NegatedValue && ((NegatedValue) l).value.equals(r) ||
-                r instanceof NegatedValue && ((NegatedValue) r).value.equals(l)) {
+        if (l instanceof NegatedExpression ln && ln.expression.equals(r) ||
+                r instanceof NegatedExpression rn && rn.expression.equals(l)) {
             return new IntConstant(primitives, 0, ObjectFlow.NO_FLOW);
         }
         if (l instanceof Numeric ln && r instanceof Numeric rn)

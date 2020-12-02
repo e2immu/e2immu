@@ -23,7 +23,6 @@ import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateMethodCall;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
-import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -150,20 +149,20 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 VariableProperty.MODIFIED, modified), true));
 
         // null scope
-        Value objectValue = objectResult.value;
-        if (objectValue.isInstanceOf(NullValue.class)) {
+        Expression objectValue = objectResult.value;
+        if (objectValue.isInstanceOf(NullConstant.class)) {
             builder.raiseError(Message.NULL_POINTER_EXCEPTION);
         }
 
         // process parameters
         int notModified1Scope = evaluationContext.getProperty(objectValue, VariableProperty.NOT_MODIFIED_1);
-        Pair<EvaluationResult.Builder, List<Value>> res = EvaluateParameters.transform(parameterExpressions, evaluationContext, methodInfo, notModified1Scope, objectValue);
-        List<Value> parameterValues = res.v;
+        Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions, evaluationContext, methodInfo, notModified1Scope, objectValue);
+        List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 
         if (parameterValues.stream().anyMatch(pv -> pv == EmptyExpression.NO_VALUE)) {
             Logger.log(DELAYED, "Delayed method call because one of the parameter values is delayed: {}, {}", methodInfo.name, parameterValues);
-            builder.setValue(EmptyExpression.NO_VALUE);
+            builder.setExpression(EmptyExpression.NO_VALUE);
             return builder.build();
         }
 
@@ -175,14 +174,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         methodInfo.fullyQualifiedName());
                 objectFlow.delay();
             } else {
-                List<ObjectFlow> flowsOfArguments = parameterValues.stream().map(Value::getObjectFlow).collect(Collectors.toList());
+                List<ObjectFlow> flowsOfArguments = parameterValues.stream().map(Expression::getObjectFlow).collect(Collectors.toList());
                 MethodAccess methodAccess = new MethodAccess(methodInfo, flowsOfArguments);
                 builder.addAccess(modified == Level.TRUE, methodAccess, objectValue);
             }
         }
 
         // companion methods
-        Instance modifiedInstance;
+        NewObject modifiedInstance;
         if (modified == Level.TRUE) {
             modifiedInstance = checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
                     methodAnalysis, objectValue, parameterValues);
@@ -208,7 +207,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             objectFlowOfResult = ObjectFlow.NO_FLOW;
         }
 
-        Value result;
+        Expression result;
         if (!methodInfo.isVoid()) {
             MethodInspection methodInspection = methodInfo.methodInspection.get();
             complianceWithForwardRequirements(builder, methodAnalysis, methodInspection, forwardEvaluationInfo, contentNotNullRequired);
@@ -222,31 +221,31 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 result = mv.value;
             }
         } else {
-            result = UnknownValue.NO_RETURN_VALUE;
+            result = EmptyExpression.NO_RETURN_VALUE;
         }
-        builder.setValue(result);
+        builder.setExpression(result);
 
         checkCommonErrors(builder, evaluationContext, objectValue);
 
         return builder.build();
     }
 
-    static Instance checkCompanionMethodsModifying(
+    static NewObject checkCompanionMethodsModifying(
             EvaluationResult.Builder builder,
             EvaluationContext evaluationContext,
             MethodInfo methodInfo,
             MethodAnalysis methodAnalysis,
-            Value objectValue,
-            List<Value> parameterValues) {
-        Instance instance;
-        if (objectValue instanceof VariableValue variableValue) {
-            instance = builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
+            Expression objectValue,
+            List<Expression> parameterValues) {
+        NewObject instance;
+        if (objectValue instanceof VariableExpression variableValue) {
+            instance = builder.currentInstance(variableValue.variable(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
         } else {
             instance = objectValue.getInstance(evaluationContext);
         }
         Objects.requireNonNull(instance, "Modifying method on constant or primitive? Impossible");
 
-        AtomicReference<Value> newState = new AtomicReference<>(instance.state);
+        AtomicReference<Expression> newState = new AtomicReference<>(instance.state);
         methodInfo.methodInspection.get().getCompanionMethods().keySet().stream()
                 .filter(e -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(e.action()))
                 .sorted()
@@ -280,13 +279,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         }
                     }
 
-                    Value companionValueTranslated = translateCompanionValue(evaluationContext, companionAnalysis,
+                    Expression companionValueTranslated = translateCompanionValue(evaluationContext, companionAnalysis,
                             filterResult, newState.get(), parameterValues);
 
                     boolean remove = companionMethodName.action() == CompanionMethodName.Action.REMOVE;
                     if (remove) {
                         if (newState.get() != EmptyExpression.EMPTY_EXPRESSION) {
-                            Filter.FilterResult<Value> res = Filter.filter(evaluationContext, newState.get(),
+                            Filter.FilterResult<Expression> res = Filter.filter(evaluationContext, newState.get(),
                                     Filter.FilterMode.ACCEPT, new Filter.ExactValue(companionValueTranslated));
                             newState.set(res.rest());
                         }
@@ -296,7 +295,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                             if (filterResult.rest() == EmptyExpression.EMPTY_EXPRESSION) {
                                 newState.set(companionValueTranslated);
                             } else {
-                                newState.set(new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, filterResult.rest(),
+                                newState.set(new AndExpression(evaluationContext.getPrimitives()).append(evaluationContext, filterResult.rest(),
                                         companionValueTranslated));
                             }
                         } else {
@@ -304,32 +303,32 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                             if (newState.get() == EmptyExpression.EMPTY_EXPRESSION) {
                                 newState.set(companionValueTranslated);
                             } else {
-                                newState.set(new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, newState.get(),
+                                newState.set(new AndExpression(evaluationContext.getPrimitives()).append(evaluationContext, newState.get(),
                                         companionValueTranslated));
                             }
                         }
                     }
                 });
-        Instance modifiedInstance = methodInfo.isConstructor ? new Instance(instance, newState.get()) :
+        NewObject modifiedInstance = methodInfo.isConstructor ? new NewObject(instance, newState.get()) :
                 // we clear the constructor and its arguments after calling a modifying method on the object
-                new Instance(instance.parameterizedType, null, List.of(), instance.objectFlow, newState.get());
+                new NewObject(instance.parameterizedType, null, List.of(), instance.objectFlow(), newState.get());
 
         // update the object of the modifying call
-        if (objectValue instanceof VariableValue variableValue) {
+        if (objectValue instanceof VariableExpression variableValue) {
             Set<Variable> linkedVariables = variablesLinkedToScopeVariableInModifyingMethod(evaluationContext, parameterValues);
-            builder.modifyingMethodAccess(variableValue.variable, modifiedInstance, linkedVariables);
+            builder.modifyingMethodAccess(variableValue.variable(), modifiedInstance, linkedVariables);
         }
         return modifiedInstance;
     }
 
-    private static Value translateCompanionValue(EvaluationContext evaluationContext,
+    private static Expression translateCompanionValue(EvaluationContext evaluationContext,
                                                  CompanionAnalysis companionAnalysis,
-                                                 Filter.FilterResult<MethodValue> filterResult,
-                                                 Value instanceState,
-                                                 List<Value> parameterValues) {
-        Map<Value, Value> translationMap = new HashMap<>();
+                                                 Filter.FilterResult<MethodCall> filterResult,
+                                                 Expression instanceState,
+                                                 List<Expression> parameterValues) {
+        Map<Expression, Expression> translationMap = new HashMap<>();
         if (filterResult != null) {
-            Value preAspectVariableValue = companionAnalysis.getPreAspectVariableValue();
+            Expression preAspectVariableValue = companionAnalysis.getPreAspectVariableValue();
             translationMap.put(preAspectVariableValue, filterResult.accepted().values().stream()
                     .findFirst()
                     // it is possible that no pre- information can be found... that's OK as long as it isn't used
@@ -338,7 +337,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // parameters
         ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
 
-        Value companionValue = companionAnalysis.getValue();
+        Expression companionValue = companionAnalysis.getValue();
         EvaluationContext child = evaluationContext.child(instanceState);
         EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(child, translationMap);
         // no need to compose: this is a separate operation. builder.compose(companionValueTranslationResult);
@@ -355,9 +354,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     Null value means delays, as per convention.
      */
     private static Set<Variable> variablesLinkedToScopeVariableInModifyingMethod(EvaluationContext evaluationContext,
-                                                                                 List<Value> parameterValues) {
+                                                                                 List<Expression> parameterValues) {
         Set<Variable> result = new HashSet<>();
-        for (Value p : parameterValues) {
+        for (Expression p : parameterValues) {
             Set<Variable> cd = evaluationContext.linkedVariables(p);
             if (cd == null) return null;
             result.addAll(cd);
@@ -395,7 +394,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
     }
 
-    private void checkCommonErrors(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Value objectValue) {
+    private void checkCommonErrors(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Expression objectValue) {
         if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
             ParameterizedType type = objectValue.type();
             if (type != null && type.typeInfo != null && type.typeInfo ==
@@ -405,8 +404,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         MethodInfo method;
-        if (objectValue instanceof InlineValue) {
-            method = ((InlineValue) objectValue).methodInfo;
+        if (objectValue instanceof InlineConditionalOperator ico) {
+            method = ico.methodInfo;
         } else {
             method = methodInfo;
         }
@@ -474,7 +473,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 return SideEffect.STATIC_ONLY;
         }
         if (object instanceof VariableExpression variableExpression) {
-            if (variableExpression.variable.isStatic() && params.lessThan(SideEffect.SIDE_EFFECT))
+            if (variableExpression.variable().isStatic() && params.lessThan(SideEffect.SIDE_EFFECT))
                 return SideEffect.STATIC_ONLY;
         }
         if (object != null) {

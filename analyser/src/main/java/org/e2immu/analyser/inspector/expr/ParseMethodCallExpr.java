@@ -61,7 +61,7 @@ public class ParseMethodCallExpr {
         } else {
             scopeType = scope.returnType();
             if (scope instanceof VariableExpression variableExpression) {
-                if (variableExpression.variable instanceof This v) {
+                if (variableExpression.variable() instanceof This v) {
                     if (v.writeSuper) {
                         scopeType = inspectionProvider.getTypeInspection(v.typeInfo).parentClass();
                     }

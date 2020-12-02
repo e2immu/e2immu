@@ -21,37 +21,59 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
-import org.e2immu.analyser.model.value.ArrayValue;
-import org.e2immu.analyser.model.value.Instance;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class NewObject implements HasParameterExpressions {
-    public final ParameterizedType parameterizedType;
-    public final List<Expression> parameterExpressions;
-    public final TypeInfo anonymousClass;
-    public final MethodInfo constructor;
-    public final ArrayInitializer arrayInitializer;
+/*
+ Represents first a newly constructed object, then after applying modifying methods, a "used" object
 
-    public NewObject(@NotNull MethodInfo constructor,
-                     @NotNull ParameterizedType parameterizedType,
-                     @NotNull List<Expression> parameterExpressions,
-                     ArrayInitializer arrayInitializer) {
+ */
+public class NewObject implements HasParameterExpressions {
+    public final MethodInfo constructor;   // ... = new HashSet<>()
+    public final ParameterizedType parameterizedType; // HashSet<String>
+    public final List<Expression> parameterExpressions; // = new HashSet<>(strings)
+    public final TypeInfo anonymousClass;  // ... = new Function<String, String>() { ... }
+    public final ArrayInitializer arrayInitializer; // int[] a = {1, 2, 3}
+    public final Expression state;  // ... information about the object from companion methods
+    public final ObjectFlow objectFlow; // generally a new flow
+
+    public NewObject(MethodInfo constructor,
+                     ParameterizedType parameterizedType,
+                     List<Expression> parameterExpressions,
+                     Expression state,
+                     ObjectFlow objectFlow) {
+        this(constructor, parameterizedType, parameterExpressions, null, state, objectFlow);
+    }
+
+    public NewObject(MethodInfo constructor,
+                     ParameterizedType parameterizedType,
+                     List<Expression> parameterExpressions,
+                     ArrayInitializer arrayInitializer,
+                     Expression state,
+                     ObjectFlow objectFlow) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
-        this.constructor = Objects.requireNonNull(constructor);
+        this.constructor = constructor; // can be null after modification (constructor lost)
         this.anonymousClass = null;
         this.arrayInitializer = arrayInitializer;
+        this.state = Objects.requireNonNull(state);
+        this.objectFlow = Objects.requireNonNull(objectFlow);
     }
 
     // constructor can be null, when we create an anonymous class that doesn't derive from a class with constructor
@@ -62,6 +84,8 @@ public class NewObject implements HasParameterExpressions {
         this.parameterExpressions = List.of();
         this.constructor = null;
         this.arrayInitializer = null;
+        this.state = EmptyExpression.EMPTY_EXPRESSION;
+        this.objectFlow = ObjectFlow.NO_FLOW; // TODO
     }
 
     @Override
@@ -86,7 +110,134 @@ public class NewObject implements HasParameterExpressions {
         return new NewObject(constructor,
                 translationMap.translateType(parameterizedType),
                 parameterExpressions.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                TranslationMap.ensureExpressionType(arrayInitializer, ArrayInitializer.class));
+                TranslationMap.ensureExpressionType(arrayInitializer, ArrayInitializer.class),
+                state, objectFlow);
+    }
+
+    @Override
+    public int order() {
+        return ExpressionComparator.ORDER_INSTANCE;
+    }
+
+
+    @Override
+    public String toString() {
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        return "instance type " + parameterizedType.detailedString()
+                + (constructor == null ? "" : (
+                "(" + parameterExpressions.stream()
+                        .map(Expression::toString)
+                        .collect(Collectors.joining(", ")) + ")"))
+                + (state == EmptyExpression.EMPTY_EXPRESSION ? "" : "[" + state.print(printMode) + "]");
+    }
+
+    private static final Set<Variable> NO_LINKS = Set.of();
+
+    /*
+     * Rules, assuming the notation b = new B(c, d)
+     *
+     * 1. no explicit constructor, no parameters on a static type: independent
+     * 2. constructor is @Independent: independent
+     * 3. B is @E2Immutable: independent
+     *
+     * the default case is a dependence on c and d
+     */
+    @Override
+    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
+        // RULE 1
+        if (parameterExpressions == null || constructor == null) return NO_LINKS;
+        if (parameterExpressions.isEmpty() && constructor.typeInfo.isStatic()) {
+            return NO_LINKS;
+        }
+
+        // RULE 2, 3
+        boolean notSelf = constructor.typeInfo != evaluationContext.getCurrentType();
+        if (notSelf) {
+            TypeAnalysis typeAnalysisOfConstructor = evaluationContext.getTypeAnalysis(constructor.typeInfo);
+            int immutable = typeAnalysisOfConstructor.getProperty(VariableProperty.IMMUTABLE);
+            int typeIndependent = typeAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
+            MethodAnalysis methodAnalysisOfConstructor = evaluationContext.getMethodAnalysis(constructor);
+            int independent = methodAnalysisOfConstructor.getProperty(VariableProperty.INDEPENDENT);
+
+            if (MultiLevel.isE2Immutable(immutable) || independent == MultiLevel.EFFECTIVE
+                    || typeIndependent == MultiLevel.EFFECTIVE) { // RULE 3
+                return NO_LINKS;
+            }
+            if (independent == Level.DELAY) return null;
+            if (immutable == MultiLevel.DELAY) return null;
+            if (typeIndependent == MultiLevel.DELAY) return null;
+        }
+
+        // default case
+        Set<Variable> result = new HashSet<>();
+        for (Expression value : parameterExpressions) {
+            Set<Variable> sub = evaluationContext.linkedVariables(value);
+            if (sub == null) return null; // DELAY
+            result.addAll(sub);
+        }
+        return result;
+    }
+
+    @Override
+    public ParameterizedType type() {
+        return parameterizedType;
+    }
+
+
+    @Override
+    public int internalCompareTo(Expression v) {
+        return parameterizedType.detailedString()
+                .compareTo(((NewObject) v).parameterizedType.detailedString());
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        return this;
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        switch (variableProperty) {
+            case NOT_NULL: {
+                TypeInfo bestType = parameterizedType.bestTypeInfo();
+                return bestType == null ? MultiLevel.EFFECTIVELY_NOT_NULL :
+                        MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
+                                evaluationContext.getTypeAnalysis(bestType).getProperty(VariableProperty.NOT_NULL));
+            }
+            case MODIFIED:
+            case NOT_MODIFIED_1:
+            case METHOD_DELAY:
+            case IDENTITY:
+            case IGNORE_MODIFICATIONS:
+                return Level.FALSE;
+
+            case IMMUTABLE:
+            case CONTAINER: {
+                TypeInfo bestType = parameterizedType.bestTypeInfo();
+                return bestType == null ? variableProperty.falseValue :
+                        Math.max(variableProperty.falseValue,
+                                evaluationContext.getTypeAnalysis(bestType).getProperty(variableProperty));
+            }
+            default:
+        }
+        // @NotModified should not be asked here
+        throw new UnsupportedOperationException("Asking for " + variableProperty);
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(this)) {
+            parameterExpressions.forEach(predicate::test);
+        }
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
     }
 
     @Override
@@ -139,25 +290,31 @@ public class NewObject implements HasParameterExpressions {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+
+        // arrayInitializer variant
+
         if (arrayInitializer != null) {
             EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-            List<EvaluationResult> results = arrayInitializer.expressions.stream()
+            List<EvaluationResult> results = arrayInitializer.multiExpression.stream()
                     .map(e -> e.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT))
                     .collect(Collectors.toList());
             builder.compose(results);
-            List<Value> values = results.stream().map(EvaluationResult::getValue).collect(Collectors.toList());
-            ObjectFlow objectFlow = builder.createLiteralObjectFlow(arrayInitializer.commonType);
-            builder.setValue(new ArrayValue(evaluationContext.getPrimitives(), objectFlow, values));
+            List<Expression> values = results.stream().map(EvaluationResult::getExpression).collect(Collectors.toList());
+            ObjectFlow objectFlow = builder.createLiteralObjectFlow(arrayInitializer.returnType());
+            builder.setExpression(new ArrayInitializer(evaluationContext.getPrimitives(), objectFlow, values));
             return builder.build();
-
         }
-        Pair<EvaluationResult.Builder, List<Value>> res = EvaluateParameters.transform(parameterExpressions,
+
+        // "normal"
+
+        Pair<EvaluationResult.Builder, List<Expression>> res = EvaluateParameters.transform(parameterExpressions,
                 evaluationContext, constructor, Level.FALSE, null);
         Location location = evaluationContext.getLocation(this);
         ObjectFlow objectFlow = res.k.createInternalObjectFlow(location, parameterizedType, Origin.NEW_OBJECT_CREATION);
 
-        Instance initialInstance = new Instance(parameterizedType, constructor, res.v, objectFlow, EmptyExpression.EMPTY_EXPRESSION);
-        Instance instance;
+        NewObject initialInstance = new NewObject(constructor, parameterizedType, res.v,
+                EmptyExpression.EMPTY_EXPRESSION, objectFlow);
+        NewObject instance;
         if (constructor != null) {
             // check state changes of companion methods
             MethodAnalysis constructorAnalysis = evaluationContext.getMethodAnalysis(constructor);
@@ -166,7 +323,7 @@ public class NewObject implements HasParameterExpressions {
         } else {
             instance = initialInstance;
         }
-        res.k.setValue(instance);
+        res.k.setExpression(instance);
         return res.k.build();
     }
 

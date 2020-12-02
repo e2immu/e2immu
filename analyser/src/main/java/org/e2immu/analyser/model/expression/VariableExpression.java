@@ -24,8 +24,6 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.Instance;
-import org.e2immu.analyser.model.value.VariableValue;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -63,7 +61,7 @@ public record VariableExpression(Variable variable,
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof VariableValue that)) return false;
+        if (!(o instanceof VariableExpression that)) return false;
         if (!variable.equals(that.variable)) return false;
         return !variableField;
     }
@@ -105,7 +103,7 @@ public record VariableExpression(Variable variable,
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationContext evaluationContext) {
         return evaluationContext.currentInstance(variable);
     }
 

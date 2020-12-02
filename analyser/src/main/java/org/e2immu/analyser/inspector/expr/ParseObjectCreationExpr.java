@@ -24,8 +24,10 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.NamedType;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,6 +57,7 @@ public class ParseObjectCreationExpr {
                         newParameterExpressions, singleAbstractMethod, new HashMap<>(), "constructor",
                         parameterizedType, objectCreationExpr.getBegin().orElseThrow());
         if (method == null) return new UnevaluatedMethodCall(parameterizedType.detailedString() + "::new");
-        return new NewObject(method.methodInspection.getMethodInfo(), parameterizedType, newParameterExpressions, null);
+        return new NewObject(method.methodInspection.getMethodInfo(), parameterizedType, newParameterExpressions,
+                EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW);
     }
 }

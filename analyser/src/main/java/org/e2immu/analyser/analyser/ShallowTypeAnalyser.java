@@ -21,7 +21,9 @@ import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.StringConstant;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -128,7 +130,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         builder.setProperty(VariableProperty.CONTAINER, Level.FALSE);
         builder.companionAnalyses.freeze();
         builder.singleReturnValueImmutable.set(MultiLevel.MUTABLE);
-        builder.singleReturnValue.set(new InlineValue(methodInfo, new VariableValue(parameterInfo), InlineValue.Applicability.EVERYWHERE));
+        builder.singleReturnValue.set(new InlinedMethod(methodInfo, new VariableExpression(parameterInfo), InlinedMethod.Applicability.EVERYWHERE));
         log(ANALYSER, "Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
         methodInfo.setAnalysis(builder.build());
     }

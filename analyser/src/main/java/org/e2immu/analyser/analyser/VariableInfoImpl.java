@@ -17,9 +17,11 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NegatedExpression;
+import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -227,7 +229,7 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     void setValue(Expression value) {
-        if(value instanceof VariableExpression variableValue && variableValue.variable() == variable) {
+        if (value instanceof VariableExpression variableValue && variableValue.variable() == variable) {
             throw new UnsupportedOperationException("Cannot redirect to myself");
         }
         this.value.set(value);
@@ -256,8 +258,8 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     private Expression mergeValue(EvaluationContext evaluationContext,
-                             boolean existingValuesWillBeOverwritten,
-                             List<VariableInfo> merge) {
+                                  boolean existingValuesWillBeOverwritten,
+                                  List<VariableInfo> merge) {
         Expression currentValue = getValue();
         if (!existingValuesWillBeOverwritten && currentValue == NO_VALUE) return NO_VALUE;
         boolean haveANoValue = merge.stream().anyMatch(v -> !v.stateOnAssignmentIsSet());
@@ -297,7 +299,7 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     private Expression noConclusion() {
-        return new Instance(variable.parameterizedType(), getObjectFlow(), EmptyExpression.EMPTY_EXPRESSION);
+        return new NewObject(null, variable.parameterizedType(), List.of(), EmptyExpression.EMPTY_EXPRESSION, getObjectFlow());
     }
 
     private Expression inlineSwitch(boolean existingValuesWillBeOverwritten, Expression currentValue, Variable variable, List<VariableInfo> merge) {

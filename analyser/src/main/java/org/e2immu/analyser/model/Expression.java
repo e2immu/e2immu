@@ -22,12 +22,8 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NegatedExpression;
-import org.e2immu.analyser.model.expression.NullConstant;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -146,7 +142,7 @@ public interface Expression extends Element, Comparable<Expression> {
         return ((boolValue = this.asInstanceOf(BooleanConstant.class)) != null) && !boolValue.getValue();
     }
 
-    Instance getInstance(EvaluationContext evaluationContext);
+    NewObject getInstance(EvaluationContext evaluationContext);
 
     /**
      * @return the type, if we are certain; used in WidestType for operators

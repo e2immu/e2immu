@@ -18,9 +18,9 @@
 package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
-import org.e2immu.analyser.model.Value;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
 
@@ -54,7 +54,7 @@ public class DependentVariable extends VariableWithConcreteReturnType {
     }
 
     // array access
-    public static String dependentVariableName(Value array, Value index) {
+    public static String dependentVariableName(Expression array, Expression index) {
         return array.toString() + "[" + index.toString() + "]";
     }
 

@@ -180,7 +180,7 @@ public class ConditionManager {
                 return new Filter.FilterResult<>(Map.of(rhs.variable(), value), EmptyExpression.EMPTY_EXPRESSION);
             }
         }
-        if (value.isInstanceOf(MethodValue.class) && value.variables().contains(variable)) {
+        if (value.isInstanceOf(MethodCall.class) && value.variables().contains(variable)) {
             return new Filter.FilterResult<>(Map.of(variable, value), EmptyExpression.EMPTY_EXPRESSION);
         }
         return null;

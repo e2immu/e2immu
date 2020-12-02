@@ -19,7 +19,7 @@ package org.e2immu.analyser.model.expression.util;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -41,8 +41,8 @@ public class EvaluateMethodCall {
                                                EvaluationContext evaluationContext,
                                                MethodInfo methodInfo,
                                                MethodAnalysis methodAnalysis,
-                                               Value objectValue,
-                                               List<Value> parameters,
+                                               Expression objectValue,
+                                               List<Expression> parameters,
                                                ObjectFlow objectFlowOfResult) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
@@ -50,54 +50,54 @@ public class EvaluateMethodCall {
 
         // no value (method call on field that does not have effective value yet)
         if (objectValue == EmptyExpression.NO_VALUE) {
-            return builder.setValue(EmptyExpression.NO_VALUE).build(); // this will delay
+            return builder.setExpression(EmptyExpression.NO_VALUE).build(); // this will delay
         }
 
         if (ShallowTypeAnalyser.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
                 !evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis() &&
-                parameters.get(0) instanceof BoolValue boolValue) {
-            Value object = new VariableValue(new This(evaluationContext.getAnalyserContext(), methodInfo.typeInfo));
-            Value clause = new MethodValue(methodInfo, object, List.of(BoolValue.createTrue(evaluationContext.getPrimitives())), objectFlowOfResult);
-            if (boolValue.value) {
+                parameters.get(0) instanceof BooleanConstant boolValue) {
+            Expression object = new VariableExpression(new This(evaluationContext.getAnalyserContext(), methodInfo.typeInfo));
+            Expression clause = new MethodValue(methodInfo, object, List.of(new BooleanConstant(evaluationContext.getPrimitives(), true)), objectFlowOfResult);
+            if (boolValue.constant()) {
                 // isKnown(true) -> return BoolValue.TRUE or BoolValue.FALSE, depending on state
-                Filter.FilterResult<Value> res = Filter.filter(evaluationContext, evaluationContext.getConditionManager().state,
+                Filter.FilterResult<Expression> res = Filter.filter(evaluationContext, evaluationContext.getConditionManager().state,
                         Filter.FilterMode.ACCEPT, new Filter.ExactValue(clause));
                 boolean isKnown = !res.accepted().isEmpty();
-                Value result = BoolValue.create(evaluationContext.getPrimitives(), isKnown);
-                return builder.setValue(result).build();
+                Expression result = new BooleanConstant(evaluationContext.getPrimitives(), isKnown);
+                return builder.setExpression(result).build();
             } else {
                 // isKnown(false)-> return MethodValue
-                return builder.setValue(clause).build();
+                return builder.setExpression(clause).build();
             }
         }
 
         // static eval: Integer.toString(3)
-        Value knownStaticEvaluation = computeStaticEvaluation(evaluationContext.getPrimitives(), methodInfo, parameters);
+        Expression knownStaticEvaluation = computeStaticEvaluation(evaluationContext.getPrimitives(), methodInfo, parameters);
         if (knownStaticEvaluation != null) {
-            return builder.setValue(knownStaticEvaluation).build();
+            return builder.setExpression(knownStaticEvaluation).build();
         }
 
         // eval on constant, like "abc".length()
-        Value evaluationOnConstant = computeEvaluationOnConstant(evaluationContext.getPrimitives(),
+        Expression evaluationOnConstant = computeEvaluationOnConstant(evaluationContext.getPrimitives(),
                 methodInfo, objectValue);
         if (evaluationOnConstant != null) {
-            return builder.setValue(evaluationOnConstant).build();
+            return builder.setExpression(evaluationOnConstant).build();
         }
 
         if (!evaluationContext.disableEvaluationOfMethodCallsUsingCompanionMethods()) {
             // boolean added = set.add(e);  -- if the set is empty, we know the result will be "true"
-            Value assistedByCompanion = valueAssistedByCompanion(builder, evaluationContext,
+            Expression assistedByCompanion = valueAssistedByCompanion(builder, evaluationContext,
                     objectValue, methodInfo, methodAnalysis, parameters);
             if (assistedByCompanion != null) {
-                return builder.setValue(assistedByCompanion).build();
+                return builder.setExpression(assistedByCompanion).build();
             }
         }
         if (modified == Level.FALSE) {
             if (!evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis()) {
                 // new object returned, with a transfer of the aspect; 5 == stringBuilder.length() in aspect -> 5 == stringBuilder.toString().length()
-                Value newInstance = newInstanceWithTransferCompanion(builder, evaluationContext, objectValue, methodInfo, methodAnalysis, parameters);
+                Expression newInstance = newInstanceWithTransferCompanion(builder, evaluationContext, objectValue, methodInfo, methodAnalysis, parameters);
                 if (newInstance != null) {
-                    return builder.setValue(newInstance).build();
+                    return builder.setExpression(newInstance).build();
                 }
             }
             // evaluation on Instance, with state; check companion methods
@@ -106,98 +106,97 @@ public class EvaluateMethodCall {
             Filter.FilterResult<MethodValue> evaluationOnInstance =
                     computeEvaluationOnInstance(builder, evaluationContext, methodInfo, objectValue, parameters);
             if (evaluationOnInstance != null && !evaluationOnInstance.accepted().isEmpty()) {
-                Value value = evaluationOnInstance.accepted().values().stream().findFirst().orElseThrow();
-                return builder.setValue(value).build();
+                Expression value = evaluationOnInstance.accepted().values().stream().findFirst().orElseThrow();
+                return builder.setExpression(value).build();
             }
         }
 
 
         // @Identity as method annotation
-        Value identity = computeIdentity(evaluationContext, methodAnalysis, parameters, objectFlowOfResult);
+        Expression identity = computeIdentity(evaluationContext, methodAnalysis, parameters, objectFlowOfResult);
         if (identity != null) {
-            return builder.setValue(identity).build();
+            return builder.setExpression(identity).build();
         }
 
         // @Fluent as method annotation
         // fluent methods are modifying
-        Value fluent = computeFluent(methodAnalysis, objectValue);
+        Expression fluent = computeFluent(methodAnalysis, objectValue);
         if (fluent != null) {
-            return builder.setValue(fluent).build();
+            return builder.setExpression(fluent).build();
         }
 
-        InlineValue inlineValue;
+        InlinedMethod inlineValue;
         if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
-                (inlineValue = objectValue.asInstanceOf(InlineValue.class)) != null &&
+                (inlineValue = objectValue.asInstanceOf(InlinedMethod.class)) != null &&
                 inlineValue.canBeApplied(evaluationContext)) {
-            Map<Value, Value> translationMap = EvaluateParameters.translationMap(evaluationContext, methodInfo, parameters);
+            Map<Expression, Expression> translationMap = EvaluateParameters.translationMap(evaluationContext, methodInfo, parameters);
             EvaluationResult reInline = inlineValue.reEvaluate(evaluationContext, translationMap);
-            return builder.compose(reInline).setValue(reInline.value).build();
+            return builder.compose(reInline).setExpression(reInline.value).build();
         }
 
         // singleReturnValue implies non-modifying
         if (methodAnalysis.isBeingAnalysed() && methodAnalysis.getSingleReturnValue() != null) {
             // if this method was identity?
-            Value srv = methodAnalysis.getSingleReturnValue();
-            if (srv.isInstanceOf(InlineValue.class)) {
-                InlineValue iv = srv.asInstanceOf(InlineValue.class);
+            Expression srv = methodAnalysis.getSingleReturnValue();
+            if (srv.isInstanceOf(InlinedMethod.class)) {
+                InlinedMethod iv = srv.asInstanceOf(InlinedMethod.class);
 
                 // special situation
                 // we have an instance object, like new Pair("a", "b"), and then a getter applying to this instance object
                 // this we can resolve immediately
-                if (objectValue instanceof Instance && iv.value instanceof VariableValue) {
-                    Variable variable = ((VariableValue) iv.value).variable;
+                if (objectValue instanceof NewObject ovNo && iv.expression() instanceof VariableExpression ve) {
+                    Variable variable = ve.variable();
                     if (variable instanceof FieldReference) {
                         FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
                         FieldAnalysis fieldAnalysis = evaluationContext.getFieldAnalysis(fieldInfo);
                         if (fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.TRUE) {
-                            Instance instance = (Instance) objectValue;
                             int i = 0;
                             List<ParameterAnalysis> parameterAnalyses = evaluationContext
-                                    .getParameterAnalyses(instance.constructor).collect(Collectors.toList());
+                                    .getParameterAnalyses(ovNo.constructor).collect(Collectors.toList());
                             for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
                                 if (parameterAnalysis.getAssignedToField() == fieldInfo) {
-                                    return builder.setValue(instance.constructorParameterValues.get(i)).build();
+                                    return builder.setExpression(ovNo.getParameterExpressions().get(i)).build();
                                 }
                                 i++;
                             }
                         }
                     }
                 }
-                Map<Value, Value> translationMap = EvaluateParameters.translationMap(evaluationContext,
+                Map<Expression, Expression> translationMap = EvaluateParameters.translationMap(evaluationContext,
                         methodInfo, parameters);
                 EvaluationResult reSrv = srv.reEvaluate(evaluationContext, translationMap);
-                return builder.compose(reSrv).setValue(reSrv.value).build();
+                return builder.compose(reSrv).setExpression(reSrv.value).build();
             }
             if (srv.isConstant()) {
-                return builder.setValue(srv).build();
+                return builder.setExpression(srv).build();
             }
         } else if (methodAnalysis.isBeingAnalysed()) {
             // we will, at some point, analyse this method
-            return builder.setValue(EmptyExpression.NO_VALUE).build();
+            return builder.setExpression(EmptyExpression.NO_VALUE).build();
         }
 
         // normal method value
-        MethodValue methodValue = new MethodValue(methodInfo, objectValue, parameters, objectFlowOfResult);
-        return builder.setValue(methodValue).build();
+        MethodCall methodValue = new MethodCall(methodInfo, objectValue, parameters, objectFlowOfResult);
+        return builder.setExpression(methodValue).build();
     }
 
-    private static Instance obtainInstance(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Value objectValue) {
-        if (objectValue instanceof Instance theInstance) {
+    private static NewObject obtainInstance(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Expression objectValue) {
+        if (objectValue instanceof NewObject theInstance) {
             return theInstance;
         }
-        if (objectValue instanceof VariableValue variableValue) {
-            return builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
+        if (objectValue instanceof VariableExpression variableValue) {
+            return builder.currentInstance(variableValue.variable(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
         }
         return null;
     }
 
-    private static Value valueAssistedByCompanion(EvaluationResult.Builder builder,
-                                                  EvaluationContext evaluationContext,
-                                                  Value objectValue,
-                                                  MethodInfo methodInfo,
-                                                  MethodAnalysis methodAnalysis,
-                                                  List<Value> parameterValues) {
-        Instance instance = obtainInstance(builder, evaluationContext, objectValue);
+    private static Expression valueAssistedByCompanion(EvaluationResult.Builder builder,
+                                                       EvaluationContext evaluationContext,
+                                                       Expression objectValue,
+                                                       MethodInfo methodInfo,
+                                                       MethodAnalysis methodAnalysis,
+                                                       List<Expression> parameterValues) {
+        NewObject instance = obtainInstance(builder, evaluationContext, objectValue);
         if (instance == null) {
             return null;
         }
@@ -209,8 +208,8 @@ public class EvaluateMethodCall {
             return null;
         }
         CompanionAnalysis companionAnalysis = optValue.get().getValue();
-        Value companionValue = companionAnalysis.getValue();
-        Map<Value, Value> translationMap = new HashMap<>();
+        Expression companionValue = companionAnalysis.getValue();
+        Map<Expression, Expression> translationMap = new HashMap<>();
 
         // parameters of companionAnalysis look like: aspect (if present) | main method parameters | retVal
         // the aspect has been replaced+taken care of by the CompanionAnalyser
@@ -225,18 +224,18 @@ public class EvaluateMethodCall {
         */
         // we might encounter isFact or isKnown, so we add the instance's state to the context
         EvaluationContext child = evaluationContext.child(instance.state, true);
-        Value resultingValue = companionValue.reEvaluate(child, translationMap).value;
+        Expression resultingValue = companionValue.reEvaluate(child, translationMap).value;
         if (instance.state != EmptyExpression.EMPTY_EXPRESSION && resultingValue != EmptyExpression.EMPTY_EXPRESSION) {
             if (Primitives.isBoolean(methodInfo.returnType().typeInfo)) {
                 // State is: (org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and 0 == java.util.Collection.this.size())
                 // Resulting value: (java.util.Set.contains(java.lang.Object) and not (0 == java.util.Collection.this.size()))
-                Value reduced = new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, instance.state, resultingValue);
-                if (reduced instanceof BoolValue) {
+                Expression reduced = new AndExpression(evaluationContext.getPrimitives()).append(evaluationContext, instance.state, resultingValue);
+                if (reduced instanceof BooleanConstant) {
                     return reduced;
                 }
                 if (reduced.equals(instance.state)) {
                     // only truths have been added
-                    return BoolValue.createTrue(evaluationContext.getPrimitives());
+                    return new BooleanConstant(evaluationContext.getPrimitives(), true);
                 }
             } else throw new UnsupportedOperationException("Not yet implemented");
             // unsuccessful
@@ -245,16 +244,16 @@ public class EvaluateMethodCall {
     }
 
     // IMPROVE add parameters
-    private static Value newInstanceWithTransferCompanion(EvaluationResult.Builder builder,
-                                                          EvaluationContext evaluationContext,
-                                                          Value objectValue, MethodInfo methodInfo,
-                                                          MethodAnalysis methodAnalysis,
-                                                          List<Value> parameterValues) {
-        Instance instance = obtainInstance(builder, evaluationContext, objectValue);
+    private static Expression newInstanceWithTransferCompanion(EvaluationResult.Builder builder,
+                                                               EvaluationContext evaluationContext,
+                                                               Expression objectValue, MethodInfo methodInfo,
+                                                               MethodAnalysis methodAnalysis,
+                                                               List<Expression> parameterValues) {
+        NewObject instance = obtainInstance(builder, evaluationContext, objectValue);
         if (instance == null) {
             return null;
         }
-        Map<Value, Value> translationMap = new HashMap<>();
+        Map<Expression, Expression> translationMap = new HashMap<>();
         methodAnalysis.getCompanionAnalyses().entrySet().stream()
                 .filter(e -> e.getKey().action() == CompanionMethodName.Action.TRANSFER && e.getKey().aspect() != null)
                 .forEach(e -> {
@@ -262,12 +261,12 @@ public class EvaluateMethodCall {
                     CompanionMethodName cmn = e.getKey();
                     MethodInfo oldAspectMethod = evaluationContext.getTypeAnalysis(instance.parameterizedType.typeInfo)
                             .getAspects().get(cmn.aspect());
-                    Value oldValue = new MethodValue(oldAspectMethod,
-                            new VariableValue(new This(evaluationContext.getAnalyserContext(), oldAspectMethod.typeInfo)),
+                    Expression oldValue = new MethodValue(oldAspectMethod,
+                            new VariableExpression(new This(evaluationContext.getAnalyserContext(), oldAspectMethod.typeInfo)),
                             List.of(), ObjectFlow.NO_FLOW);
                     MethodInfo newAspectMethod = evaluationContext.getTypeAnalysis(methodInfo.typeInfo).getAspects().get(cmn.aspect());
-                    Value newValue = new MethodValue(newAspectMethod,
-                            new VariableValue(new This(evaluationContext.getAnalyserContext(), newAspectMethod.typeInfo)),
+                    Expression newValue = new MethodValue(newAspectMethod,
+                            new VariableExpression(new This(evaluationContext.getAnalyserContext(), newAspectMethod.typeInfo)),
                             List.of(), ObjectFlow.NO_FLOW);
                     translationMap.put(oldValue, newValue);
                     CompanionAnalysis companionAnalysis = e.getValue();
@@ -276,57 +275,57 @@ public class EvaluateMethodCall {
                 });
 
         if (translationMap.isEmpty()) return null;
-        Value newState = instance.state.reEvaluate(evaluationContext, translationMap).value;
+        Expression newState = instance.state.reEvaluate(evaluationContext, translationMap).value;
         // TODO object flow
-        return new Instance(methodInfo.returnType(), null, List.of(), ObjectFlow.NO_FLOW, newState);
+        return new NewObject(null, methodInfo.returnType(), List.of(), newState, ObjectFlow.NO_FLOW);
     }
 
     // example 1: instance type java.util.ArrayList()[0 == java.util.ArrayList.this.size()].size()
     // this approach is independent of the companion methods: it simply searches for clauses related to the method
     // in the instance state
-    private static Filter.FilterResult<MethodValue> computeEvaluationOnInstance(EvaluationResult.Builder builder,
-                                                                                EvaluationContext evaluationContext,
-                                                                                MethodInfo methodInfo,
-                                                                                Value objectValue,
-                                                                                List<Value> parameterValues) {
+    private static Filter.FilterResult<MethodCall> computeEvaluationOnInstance(EvaluationResult.Builder builder,
+                                                                               EvaluationContext evaluationContext,
+                                                                               MethodInfo methodInfo,
+                                                                               Expression objectValue,
+                                                                               List<Expression> parameterValues) {
         // look for a clause that has "this.methodInfo" as a MethodValue
-        Instance instance = obtainInstance(builder, evaluationContext, objectValue);
+        NewObject instance = obtainInstance(builder, evaluationContext, objectValue);
         if (instance == null) {
             return null;
         }
         return filter(evaluationContext, methodInfo, instance.state, parameterValues);
     }
 
-    public static Filter.FilterResult<MethodValue> filter(EvaluationContext evaluationContext,
-                                                          MethodInfo methodInfo,
-                                                          Value state,
-                                                          List<Value> parameterValues) {
-        List<Filter.FilterMethod<MethodValue>> filters = List.of(
+    public static Filter.FilterResult<MethodCall> filter(EvaluationContext evaluationContext,
+                                                         MethodInfo methodInfo,
+                                                         Expression state,
+                                                         List<Expression> parameterValues) {
+        List<Filter.FilterMethod<MethodCall>> filters = List.of(
                 new Filter.MethodCallBooleanResult(methodInfo, parameterValues,
-                        BoolValue.createTrue(evaluationContext.getPrimitives())),
+                        new BooleanConstant(evaluationContext.getPrimitives(), true)),
                 new Filter.ValueEqualsMethodCallNoParameters(methodInfo));
         return Filter.filter(evaluationContext, state, Filter.FilterMode.ACCEPT, filters);
     }
 
-    private static Value computeStaticEvaluation(Primitives primitives, MethodInfo methodInfo, List<Value> parameters) {
+    private static Expression computeStaticEvaluation(Primitives primitives, MethodInfo methodInfo, List<Expression> parameters) {
         if ("java.lang.Integer.toString(int)".equals(methodInfo.fullyQualifiedName()) &&
                 parameters.get(0).isConstant()) {
-            return new StringValue(primitives, Integer.toString(((IntValue) parameters.get(0)).getValue()));
+            return new StringConstant(primitives, Integer.toString(((IntConstant) parameters.get(0)).constant()));
         }
         return null;
     }
 
-    private static Value computeEvaluationOnConstant(Primitives primitives, MethodInfo methodInfo, Value objectValue) {
+    private static Expression computeEvaluationOnConstant(Primitives primitives, MethodInfo methodInfo, Expression objectValue) {
         if (!objectValue.isConstant()) return null;
-        StringValue stringValue;
+        StringConstant stringValue;
         if ("java.lang.String.length()".equals(methodInfo.fullyQualifiedName()) &&
-                (stringValue = objectValue.asInstanceOf(StringValue.class)) != null) {
-            return new IntValue(primitives, stringValue.value.length(), ObjectFlow.NO_FLOW);
+                (stringValue = objectValue.asInstanceOf(StringConstant.class)) != null) {
+            return new IntConstant(primitives, stringValue.constant().length(), ObjectFlow.NO_FLOW);
         }
         return null;
     }
 
-    private static Value computeFluent(MethodAnalysis methodAnalysis, Value scope) {
+    private static Expression computeFluent(MethodAnalysis methodAnalysis, Expression scope) {
         int fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
         if (fluent == Level.DELAY && methodAnalysis.isBeingAnalysed()) return EmptyExpression.NO_VALUE;
         if (fluent != Level.TRUE) return null;
@@ -334,10 +333,10 @@ public class EvaluateMethodCall {
     }
 
 
-    private static Value computeIdentity(EvaluationContext evaluationContext,
-                                         MethodAnalysis methodAnalysis,
-                                         List<Value> parameters,
-                                         ObjectFlow objectFlowOfResult) {
+    private static Expression computeIdentity(EvaluationContext evaluationContext,
+                                              MethodAnalysis methodAnalysis,
+                                              List<Expression> parameters,
+                                              ObjectFlow objectFlowOfResult) {
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
         if (identity == Level.DELAY && methodAnalysis.isBeingAnalysed()) return EmptyExpression.NO_VALUE; // delay
         if (identity != Level.TRUE) return null;

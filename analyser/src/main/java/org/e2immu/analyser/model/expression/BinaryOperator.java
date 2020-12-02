@@ -117,7 +117,7 @@ public class BinaryOperator implements Expression {
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationContext evaluationContext) {
         return null;
     }
 

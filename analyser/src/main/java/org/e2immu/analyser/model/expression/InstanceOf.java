@@ -110,7 +110,7 @@ public record InstanceOf(Primitives primitives,
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationContext evaluationContext) {
         return null;
     }
 

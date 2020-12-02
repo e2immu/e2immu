@@ -46,6 +46,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.analyser.FlowData.Execution.*;
+import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
 import static org.e2immu.analyser.util.Logger.log;
@@ -445,9 +446,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         // the condition is copied from the evaluation context
         // CURRENTLY only used for removing variables from the state when a modifying operation has been run on them
         // Tested by: TODO find out which test
-        Function<Value, Value> composite = evaluationResult.getStateChangeStream()
+        Function<Expression, Expression> composite = evaluationResult.getStateChangeStream()
                 .reduce(v -> v, (f1, f2) -> v -> f2.apply(f1.apply(v)));
-        Value reducedState = composite.apply(localConditionManager.state);
+        Expression reducedState = composite.apply(localConditionManager.state);
         if (reducedState != localConditionManager.state) {
             localConditionManager = new ConditionManager(localConditionManager.condition, reducedState);
         }
@@ -455,9 +456,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         // first assignments, because they may create a new level in VariableInfoContainer
         Set<Variable> createdAssignmentLevel = new HashSet<>();
 
-        evaluationResult.getValueChangeStream().forEach(e -> {
+        evaluationResult.getExpressionChangeStream().forEach(e -> {
             Variable variable = e.getKey();
-            EvaluationResult.ValueChangeData valueChangeData = e.getValue();
+            EvaluationResult.ExpressionChangeData valueChangeData = e.getValue();
 
             VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, variable);
             VariableInfo vi = vic.best(level);
@@ -466,7 +467,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             vic.assignment(level);
             createdAssignmentLevel.add(variable);
-            Value value = valueChangeData.value();
+            Expression value = valueChangeData.value();
             if (value != NO_VALUE) {
                 log(ANALYSER, "Write value {} to variable {}", value, variable.fullyQualifiedName());
                 Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(value);
@@ -477,7 +478,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             }
             // simply copy the READ value; nothing has changed here
             vic.setProperty(level, VariableProperty.READ, read);
-            Value stateOnAssignment = valueChangeData.stateOnAssignment();
+            Expression stateOnAssignment = valueChangeData.stateOnAssignment();
             if (stateOnAssignment != NO_VALUE) {
                 vic.setStateOnAssignment(level, stateOnAssignment);
             }
@@ -539,7 +540,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private AnalysisStatus checkPrecondition(SharedState sharedState) {
         if (isEscapeAlwaysExecutedInCurrentBlock() && !statementAnalysis.stateData.precondition.isSet()) {
             EvaluationResult er = statementAnalysis.stateData.getConditionManager().escapeCondition(sharedState.evaluationContext);
-            Value precondition = er.value;
+            Expression precondition = er.value;
             if (precondition != EmptyExpression.EMPTY_EXPRESSION) {
                 boolean atLeastFieldOrParameterInvolved = precondition.variables().stream()
                         .anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
@@ -627,7 +628,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             } else if (assignedInLoop) {
                 propertiesToSet.put(VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
             }
-            vic.setValueOnAssignment(l1, new VariableValue(lvr), propertiesToSet);
+            vic.setValueOnAssignment(l1, new VariableExpression(lvr), propertiesToSet);
         }
 
         // part 2: initialisers
@@ -650,7 +651,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 AnalysisStatus status = apply(sharedState, result, saToCreate, VariableInfoContainer.LEVEL_1_INITIALISER, STEP_1);
                 if (status == DELAYS) haveDelays = true;
 
-                Value value = result.value;
+                Expression value = result.value;
                 if (value == NO_VALUE) haveDelays = true;
 
                 // IMPROVE move to a place where *every* assignment is verified (assignment-basics)
@@ -721,7 +722,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             }
 
             // the evaluation system should be pretty good at always returning NO_VALUE when a NO_VALUE has been encountered
-            Value value = result.value;
+            Expression value = result.value;
             boolean delays = value == NO_VALUE;
 
             if (statementAnalysis.statement instanceof ForEachStatement) {
@@ -745,12 +746,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     // a special case, which allows us to set not null
     // IMPROVE this can be generalised, as ArrayValue should have isNotNull1
-    private void step3_ForEach(SharedState sharedState, Value value) {
+    private void step3_ForEach(SharedState sharedState, Expression value) {
         Objects.requireNonNull(value);
 
-        ArrayValue arrayValue;
-        if (((arrayValue = value.asInstanceOf(ArrayValue.class)) != null) &&
-                arrayValue.values.stream().allMatch(sharedState.evaluationContext::isNotNull0)) {
+        ArrayInitializer arrayValue;
+        if (((arrayValue = value.asInstanceOf(ArrayInitializer.class)) != null) &&
+                arrayValue.multiExpression.stream().allMatch(sharedState.evaluationContext::isNotNull0)) {
             Structure structure = statementAnalysis.statement.getStructure();
             LocalVariableReference localVariableReference = new LocalVariableReference(
                     analyserContext, structure.localVariableCreation, List.of());
@@ -760,19 +761,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    private Value step3_IfElse_Switch_Assert(EvaluationContext evaluationContext, Value value) {
+    private Expression step3_IfElse_Switch_Assert(EvaluationContext evaluationContext, Expression value) {
         Objects.requireNonNull(value);
 
-        Value previousConditional = localConditionManager.condition;
-        Value combinedWithCondition = localConditionManager.evaluateWithCondition(evaluationContext, value);
-        Value combinedWithState = localConditionManager.evaluateWithState(evaluationContext, value);
+        Expression previousConditional = localConditionManager.condition;
+        Expression combinedWithCondition = localConditionManager.evaluateWithCondition(evaluationContext, value);
+        Expression combinedWithState = localConditionManager.evaluateWithState(evaluationContext, value);
 
         boolean noEffect = combinedWithCondition != NO_VALUE && combinedWithState != NO_VALUE &&
                 (combinedWithCondition.equals(previousConditional) || combinedWithState.isConstant())
                 || combinedWithCondition.isConstant();
 
         if (noEffect && !statementAnalysis.stateData.statementContributesToPrecondition.isSet()) {
-            Value constant = combinedWithCondition.equals(previousConditional) ? BoolValue.createTrue(analyserContext.getPrimitives())
+            Expression constant = combinedWithCondition.equals(previousConditional) ? new BooleanConstant(analyserContext.getPrimitives(), true)
                     : combinedWithState.isConstant() ? combinedWithState : combinedWithCondition;
             String message;
             List<Optional<StatementAnalysis>> blocks = statementAnalysis.navigationData.blocks.get();
@@ -831,7 +832,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             analysisStatus = step4_haveSubBlocks(sharedState, startOfBlocks);
         } else {
             if (statementAnalysis.statement instanceof AssertStatement) {
-                Value assertion = statementAnalysis.stateData.valueOfExpression.get();
+                Expression assertion = statementAnalysis.stateData.valueOfExpression.get();
                 localConditionManager = localConditionManager.addToState(sharedState.evaluationContext, assertion);
                 boolean atLeastFieldOrParameterInvolved = assertion.variables().stream()
                         .anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
@@ -851,7 +852,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private record ExecutionOfBlock(FlowData.Execution execution, StatementAnalyser startOfBlock,
-                                    ConditionManager conditionManager, Value condition, boolean isDefault,
+                                    ConditionManager conditionManager, Expression condition, boolean isDefault,
                                     boolean inCatch) {
         public boolean escapesAlways() {
             return execution != NEVER && startOfBlock != null && startOfBlock.statementAnalysis.flowData.interruptStatus() == ALWAYS;
@@ -887,7 +888,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             statementAnalysis.copyBackLocalCopies(evaluationContext, lastStatements, atLeastOneBlockExecuted, sharedState.previous);
 
             // compute the escape situation of the sub-blocks
-            Value addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
+            Expression addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
             if (addToStateAfterStatement != EmptyExpression.EMPTY_EXPRESSION) {
                 localConditionManager = localConditionManager.addToState(evaluationContext, addToStateAfterStatement);
                 log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", addToStateAfterStatement);
@@ -905,12 +906,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 list.stream().allMatch(e -> e.execution == CONDITIONALLY && e.startOfBlock != null);
     }
 
-    private Value addToStateAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {
+    private Expression addToStateAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {
         if (statementAnalysis.statement instanceof IfElseStatement) {
             ExecutionOfBlock e0 = list.get(0);
             if (list.size() == 1) {
                 if (e0.escapesAlways()) {
-                    return NegatedValue.negate(evaluationContext, list.get(0).condition);
+                    return NegatedExpression.negate(evaluationContext, list.get(0).condition);
                 }
                 return EmptyExpression.EMPTY_EXPRESSION;
             }
@@ -920,7 +921,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (e0.escapesAlways()) {
                     if (escape1) {
                         // both if and else escape
-                        return BoolValue.createFalse(evaluationContext.getPrimitives());
+                        return new BooleanConstant(evaluationContext.getPrimitives(), false);
                     }
                     // if escapes
                     return list.get(1).condition;
@@ -937,9 +938,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         // make an And of NOTs for all those conditions where the switch entry escapes
         if (statementAnalysis.statement instanceof SwitchStatement) {
-            Value[] components = list.stream().filter(ExecutionOfBlock::escapesAlways).map(e -> e.condition).toArray(Value[]::new);
+            Expression[] components = list.stream().filter(ExecutionOfBlock::escapesAlways).map(e -> e.condition).toArray(Expression[]::new);
             if (components.length == 0) return EmptyExpression.EMPTY_EXPRESSION;
-            return new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, components);
+            return new AndExpression(evaluationContext.getPrimitives()).append(evaluationContext, components);
         }
         // TODO SwitchExpressions?
         return EmptyExpression.EMPTY_EXPRESSION;
@@ -949,7 +950,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private List<ExecutionOfBlock> step4a_determineExecution(SharedState sharedState, List<Optional<StatementAnalyser>> startOfBlocks) {
         List<ExecutionOfBlock> executions = new ArrayList<>(startOfBlocks.size());
 
-        Value value = statementAnalysis.stateData.getValueOfExpression();
+        Expression value = statementAnalysis.stateData.getValueOfExpression();
         Structure structure = statementAnalysis.statement.getStructure();
         EvaluationContext evaluationContext = sharedState.evaluationContext;
 
@@ -965,7 +966,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         for (int count = 1; count < startOfBlocks.size(); count++) {
             Structure subStatements = structure.subStatements.get(count - 1);
-            Value conditionForSubStatement;
+            Expression conditionForSubStatement;
 
             boolean isDefault = false;
             FlowData.Execution statementsExecution = subStatements.statementExecution.apply(value, evaluationContext);
@@ -976,12 +977,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 else if (conditionForSubStatement.isBoolValueTrue()) statementsExecution = ALWAYS;
                 else statementsExecution = CONDITIONALLY;
             } else if (statementsExecution == ALWAYS) {
-                conditionForSubStatement = BoolValue.createTrue(statementAnalysis.primitives);
+                conditionForSubStatement = new BooleanConstant(statementAnalysis.primitives, true);
             } else if (statementsExecution == NEVER) {
                 conditionForSubStatement = null; // will not be executed anyway
             } else if (statement() instanceof SwitchEntry switchEntry) {
-                Value constant = switchEntry.switchVariableAsExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT).value;
-                conditionForSubStatement = EqualsValue.equals(evaluationContext, value, constant, ObjectFlow.NO_FLOW);
+                Expression constant = switchEntry.switchVariableAsExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT).value;
+                conditionForSubStatement = EqualsExpression.equals(evaluationContext, value, constant, ObjectFlow.NO_FLOW);
             } else throw new UnsupportedOperationException();
 
             FlowData.Execution execution = statementAnalysis.flowData.execution(statementsExecution);
@@ -994,14 +995,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return executions;
     }
 
-    private Value defaultCondition(EvaluationContext evaluationContext, List<ExecutionOfBlock> executions) {
+    private Expression defaultCondition(EvaluationContext evaluationContext, List<ExecutionOfBlock> executions) {
         Primitives primitives = evaluationContext.getPrimitives();
-        List<Value> previousConditions = executions.stream().map(e -> e.condition).collect(Collectors.toList());
+        List<Expression> previousConditions = executions.stream().map(e -> e.condition).collect(Collectors.toList());
         if (previousConditions.isEmpty()) {
-            return BoolValue.createTrue(primitives);
+            return new BooleanConstant(primitives, true);
         }
-        Value[] negated = previousConditions.stream().map(c -> NegatedValue.negate(evaluationContext, c)).toArray(Value[]::new);
-        return new AndValue(primitives, ObjectFlow.NO_FLOW).append(evaluationContext, negated);
+        Expression[] negated = previousConditions.stream().map(c -> NegatedExpression.negate(evaluationContext, c))
+                .toArray(Expression[]::new);
+        return new AndExpression(primitives, ObjectFlow.NO_FLOW).append(evaluationContext, negated);
     }
 
     /**
@@ -1155,22 +1157,22 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public EvaluationContext child(Value condition) {
+        public EvaluationContext child(Expression condition) {
             return child(condition, false);
         }
 
         @Override
-        public EvaluationContext child(Value condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
+        public EvaluationContext child(Expression condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
             return new EvaluationContextImpl(iteration, conditionManager.addCondition(this, condition),
                     disableEvaluationOfMethodCallsUsingCompanionMethods);
         }
 
         @Override
-        public int getProperty(Value value, VariableProperty variableProperty) {
+        public int getProperty(Expression value, VariableProperty variableProperty) {
 
             // IMPORTANT: here we do not want to catch VariableValues wrapped in the PropertyWrapper
-            if (value instanceof VariableValue) {
-                Variable variable = ((VariableValue) value).variable;
+            if (value instanceof VariableExpression) {
+                Variable variable = ((VariableExpression) value).variable();
                 if (VariableProperty.NOT_NULL == variableProperty && notNullAccordingToConditionManager(variable)) {
                     return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
                             statementAnalysis.getProperty(analyserContext, variable, variableProperty));
@@ -1193,24 +1195,24 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public Value currentValue(Variable variable) {
+        public Expression currentValue(Variable variable) {
             VariableInfo vi = statementAnalysis.find(analyserContext, variable);
-            Value value = vi.getValue();
-            return value instanceof Instance ? new VariableValue(variable, vi.getObjectFlow(), vi.isVariableField()) : value;
+            Expression value = vi.getValue();
+            return value instanceof NewObject ? new VariableExpression(variable, vi.getObjectFlow(), vi.isVariableField()) : value;
         }
 
         @Override
-        public Instance currentInstance(Variable variable) {
+        public NewObject currentInstance(Variable variable) {
             VariableInfo vi = statementAnalysis.find(analyserContext, variable);
-            Value value = vi.getValue();
+            Expression value = vi.getValue();
 
             // redirect to other variable
-            if (value instanceof VariableValue variableValue) {
-                assert variableValue.variable != variable :
+            if (value instanceof VariableExpression variableValue) {
+                assert variableValue.variable() != variable :
                         "Variable " + variable.fullyQualifiedName() + " has been assigned a VariableValue value pointing to itself";
-                return currentInstance(variableValue.variable);
+                return currentInstance(variableValue.variable());
             }
-            if (value instanceof Instance instance) return instance;
+            if (value instanceof NewObject instance) return instance;
             return null;
         }
 
@@ -1231,10 +1233,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public Set<Variable> linkedVariables(Value value) {
+        public Set<Variable> linkedVariables(Expression value) {
             assert value != null;
-            if (value instanceof VariableValue variableValue) {
-                return linkedVariables(variableValue.variable);
+            if (value instanceof VariableExpression variableValue) {
+                return linkedVariables(variableValue.variable());
             }
             return value.linkedVariables(this);
         }

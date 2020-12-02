@@ -540,9 +540,9 @@ public class MethodAnalyser extends AbstractAnalyser {
                 return DELAYS;
             }
             if (modified == Level.FALSE) {
-                InlineValue.Applicability applicability = applicability(value);
-                if (applicability != InlineValue.Applicability.NONE) {
-                    value = new InlineValue(methodInfo, value, applicability);
+                InlinedMethod.Applicability applicability = applicability(value);
+                if (applicability != InlinedMethod.Applicability.NONE) {
+                    value = new InlinedMethod(methodInfo, value, applicability);
                     immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
                 }
             }
@@ -575,28 +575,28 @@ public class MethodAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private InlineValue.Applicability applicabilityField(FieldInfo fieldInfo) {
+    private InlinedMethod.Applicability applicabilityField(FieldInfo fieldInfo) {
         Set<FieldModifier> fieldModifiers = fieldInfo.fieldInspection.get().getModifiers();
-        if (fieldModifiers.contains(FieldModifier.PRIVATE)) return InlineValue.Applicability.TYPE;
-        if (fieldModifiers.contains(FieldModifier.PUBLIC)) return InlineValue.Applicability.EVERYWHERE;
-        return InlineValue.Applicability.PACKAGE;
+        if (fieldModifiers.contains(FieldModifier.PRIVATE)) return InlinedMethod.Applicability.TYPE;
+        if (fieldModifiers.contains(FieldModifier.PUBLIC)) return InlinedMethod.Applicability.EVERYWHERE;
+        return InlinedMethod.Applicability.PACKAGE;
     }
 
-    private InlineValue.Applicability applicability(Value value) {
-        AtomicReference<InlineValue.Applicability> applicability = new AtomicReference<>(InlineValue.Applicability.EVERYWHERE);
+    private InlinedMethod.Applicability applicability(Expression value) {
+        AtomicReference<InlinedMethod.Applicability> applicability = new AtomicReference<>(InlinedMethod.Applicability.EVERYWHERE);
         value.visit(v -> {
             if (v.isUnknown()) {
-                applicability.set(InlineValue.Applicability.NONE);
+                applicability.set(InlinedMethod.Applicability.NONE);
             }
-            VariableValue valueWithVariable;
-            if ((valueWithVariable = v.asInstanceOf(VariableValue.class)) != null) {
-                Variable variable = valueWithVariable.variable;
+            VariableExpression valueWithVariable;
+            if ((valueWithVariable = v.asInstanceOf(VariableExpression.class)) != null) {
+                Variable variable = valueWithVariable.variable();
                 if (variable.isLocal()) {
                     // TODO make a distinction between a local variable, and a local var outside a lambda
-                    applicability.set(InlineValue.Applicability.NONE);
+                    applicability.set(InlinedMethod.Applicability.NONE);
                 } else if (variable instanceof FieldReference) {
-                    InlineValue.Applicability fieldApplicability = applicabilityField(((FieldReference) variable).fieldInfo);
-                    InlineValue.Applicability current = applicability.get();
+                    InlinedMethod.Applicability fieldApplicability = applicabilityField(((FieldReference) variable).fieldInfo);
+                    InlinedMethod.Applicability current = applicability.get();
                     applicability.set(current.mostRestrictive(fieldApplicability));
                 }
             }

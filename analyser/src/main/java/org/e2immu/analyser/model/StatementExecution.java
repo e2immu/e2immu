@@ -23,7 +23,7 @@ import org.e2immu.analyser.analyser.FlowData;
 import java.util.function.BiFunction;
 
 @FunctionalInterface
-public interface StatementExecution extends BiFunction<Value, EvaluationContext, FlowData.Execution> {
+public interface StatementExecution extends BiFunction<Expression, EvaluationContext, FlowData.Execution> {
     StatementExecution NEVER = (x, y) -> FlowData.Execution.NEVER;
     StatementExecution ALWAYS = (x, y) -> FlowData.Execution.ALWAYS;
     StatementExecution CONDITIONALLY = (x, y) -> FlowData.Execution.CONDITIONALLY;
