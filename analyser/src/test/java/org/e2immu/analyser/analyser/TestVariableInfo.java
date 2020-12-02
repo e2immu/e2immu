@@ -68,12 +68,12 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testOneOverwrite() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Value x =  new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+        Value x =  new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
         viA.setValue(three);
-        viA.stateOnAssignment.set(UnknownValue.EMPTY);
+        viA.stateOnAssignment.set(EmptyExpression.EMPTY_EXPRESSION);
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
@@ -98,12 +98,12 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testOneCisAIfXThenB() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
         viA.setValue(three);
-        viA.stateOnAssignment.set(UnknownValue.EMPTY);
+        viA.stateOnAssignment.set(EmptyExpression.EMPTY_EXPRESSION);
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
@@ -142,7 +142,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         ret.setValue(UnknownValue.RETURN_VALUE);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
         viX.setValue(x);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
@@ -190,7 +190,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         ret.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalIntVar("x"));
-        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
         viX.setValue(x);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
@@ -261,12 +261,12 @@ public class TestVariableInfo extends CommonVariableInfo {
     public void testOneCisAIfUnclearThenB() {
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
         viA.setValue(three);
-        viA.stateOnAssignment.set(UnknownValue.EMPTY);
+        viA.stateOnAssignment.set(EmptyExpression.EMPTY_EXPRESSION);
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(four);
-        viB.stateOnAssignment.set(UnknownValue.EMPTY); // no real idea what the condition is
+        viB.stateOnAssignment.set(EmptyExpression.EMPTY_EXPRESSION); // no real idea what the condition is
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         // situation:
@@ -275,8 +275,8 @@ public class TestVariableInfo extends CommonVariableInfo {
         // if(some obscure condition) c = b;
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
-        viC.setValue(new Instance(viA.variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY));
-        viC.stateOnAssignment.set(UnknownValue.EMPTY);
+        viC.setValue(new Instance(viA.variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION));
+        viC.stateOnAssignment.set(EmptyExpression.EMPTY_EXPRESSION);
         VariableInfoImpl viC2 = viC.merge(minimalEvaluationContext, null, false, List.of(viB));
         Assert.assertNotSame(viA, viC2);
         Assert.assertEquals("instance type int", viC2.getValue().toString());
@@ -289,7 +289,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testTwoOverwriteCisIfXThenAElseB() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
@@ -319,7 +319,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testTwoOverwriteCisIfXThenAElseA() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));

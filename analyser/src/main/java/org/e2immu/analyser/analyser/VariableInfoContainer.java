@@ -17,7 +17,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
@@ -93,11 +93,11 @@ public interface VariableInfoContainer {
 
 
     // writing operations
-    void setValueOnAssignment(int level, Value value, Map<VariableProperty, Integer> propertiesToSet);
+    void setValueOnAssignment(int level, Expression value, Map<VariableProperty, Integer> propertiesToSet);
 
-    void setValueAndStateOnAssignment(int level, Value value, Value state, Map<VariableProperty, Integer> propertiesToSet);
+    void setValueAndStateOnAssignment(int level, Expression value, Expression state, Map<VariableProperty, Integer> propertiesToSet);
 
-    void setStateOnAssignment(int level, Value state);
+    void setStateOnAssignment(int level, Expression state);
 
     /**
      * Typically in the 1st iteration for effectively final fields, this method
@@ -105,7 +105,7 @@ public interface VariableInfoContainer {
      *
      * @param initialValue the value coming from the field analyser
      */
-    void setInitialValueFromAnalyser(Value initialValue, Map<VariableProperty, Integer> propertiesToSet);
+    void setInitialValueFromAnalyser(Expression initialValue, Map<VariableProperty, Integer> propertiesToSet);
 
     void setProperty(int level, VariableProperty variableProperty, int value);
 

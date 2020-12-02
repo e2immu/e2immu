@@ -66,7 +66,7 @@ public class PropertyWrapper implements Value, ValueWrapper {
         return builder.setValue(PropertyWrapper.propertyWrapper(evaluationContext, reValue.value, properties, getObjectFlow())).build();
     }
 
-    public static Value propertyWrapper(EvaluationContext evaluationContext, Value value,
+    public static Value propertyWrapper(EvaluationContext evaluationContext, Expression value,
                                         Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
         Map<VariableProperty, Integer> newMap = new HashMap<>();
         for (Map.Entry<VariableProperty, Integer> entry : properties.entrySet()) {

@@ -18,10 +18,10 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableMap;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Statement;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.statement.*;
-import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetOnce;
 
@@ -110,7 +110,7 @@ public class FlowData {
     public boolean computeGuaranteedToBeReachedReturnUnreachable(Primitives primitives,
                                                                  StatementAnalysis previousStatement,
                                                                  Execution blockExecution,
-                                                                 Value state) {
+                                                                 Expression state) {
         if(guaranteedToBeReachedInMethod.isSet()) {
             return false; // already done!
         }
@@ -130,7 +130,7 @@ public class FlowData {
         Execution prev = previousStatement.flowData.guaranteedToBeReachedInCurrentBlock.get();
         // ALWAYS = always interrupted, NEVER = never interrupted, CONDITIONALLY = potentially interrupted
         Execution interrupt = previousStatement.flowData.interruptStatus().complement();
-        Execution execBasedOnState = state.equals(BoolValue.createFalse(primitives)) ? Execution.NEVER : Execution.ALWAYS;
+        Execution execBasedOnState = state.equals(new BooleanConstant(primitives, false)) ? Execution.NEVER : Execution.ALWAYS;
         Execution executionInCurrentBlock = prev.worst(interrupt).worst(execBasedOnState);
 
         guaranteedToBeReachedInCurrentBlock.set(executionInCurrentBlock);

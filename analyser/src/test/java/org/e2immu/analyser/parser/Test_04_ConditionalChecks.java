@@ -52,11 +52,11 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
             }
             if ("3".equals(d.statementId())) {
                 if (CC_I.equals(d.variableName())) {
-                    String expectValue = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : CC_I; // that's the variable value
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : CC_I; // that's the variable value
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
                 if (RETURN5.equals(d.variableName())) {
-                    String expectValue = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : RETURN_5_VALUE;
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : RETURN_5_VALUE;
                     Assert.assertEquals(expectValue, d.currentValue().toString());
                     Assert.assertEquals(VariableInfoContainer.LEVEL_3_EVALUATION, d.variableInfoContainer().getCurrentLevel());
                 }
@@ -71,7 +71,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
             // after if(a&&b) return 1
             if ("0".equals(d.statementId())) {
                 Assert.assertEquals("(" + A1 + " and " + B1 + ")?1:<return value>", d.currentValue().toString());
-                Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
+                Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.variableInfo().getStateOnAssignment());
             }
             if ("1.0.0".equals(d.statementId())) {
                 Assert.assertEquals("2", d.currentValue().toString());
@@ -79,20 +79,20 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
             }
             // after if (!a && !b) return 2;
             if ("1".equals(d.statementId())) {
-                Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
+                Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.variableInfo().getStateOnAssignment());
                 // we do NOT expect a regression to the ReturnVariable
                 Assert.assertEquals("(not (" + A1 + ") and not (" + B1 + "))?2:(" + A1 + " and " + B1 + ")?1:<return value>",
                         d.currentValue().toString());
             }
             if ("2".equals(d.statementId())) {
-                Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
+                Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.variableInfo().getStateOnAssignment());
                 // we do NOT expect a regression to the ReturnVariable
                 Assert.assertEquals("(" + A1 + " and not (" + B1 + "))?3:" +
                                 "(not (" + A1 + ") and not (" + B1 + "))?2:(" + A1 + " and " + B1 + ")?1:<return value>",
                         d.currentValue().toString());
             }
             if ("3".equals(d.statementId())) {
-                Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
+                Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.variableInfo().getStateOnAssignment());
                 // we do NOT expect a regression to the ReturnVariable
                 Assert.assertEquals(RETURN_1_VALUE, d.currentValue().toString());
             }
@@ -128,12 +128,12 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                 Assert.assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.Execution.ALWAYS), interruptsFlow);
             }
             if ("0".equals(d.statementId())) {
-                Assert.assertSame(UnknownValue.EMPTY, d.condition());
+                Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.condition());
                 Assert.assertEquals("(not (" + A1 + ") or not (" + B1 + "))", d.state().toString());
                 Assert.assertEquals(FlowData.Execution.ALWAYS, inBlock);
                 Assert.assertEquals(FlowData.Execution.ALWAYS, inMethod);
                 Assert.assertEquals(Map.of(InterruptsFlow.RETURN, FlowData.Execution.CONDITIONALLY), interruptsFlow);
-                Assert.assertEquals(UnknownValue.EMPTY.toString(), d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
+                Assert.assertEquals(EmptyExpression.EMPTY_EXPRESSION.toString(), d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
             }
             if ("1.0.0".equals(d.statementId())) {
                 Assert.assertEquals("(not (" + A1 + ") and not (" + B1 + "))", d.condition().toString());
@@ -145,7 +145,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                 Assert.assertEquals("((" + A1 + " or " + B1 + ") and (not (" + A1 + ") or not (" + B1 + ")))", d.state().toString());
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
-                Assert.assertEquals(UnknownValue.EMPTY.toString(), d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
+                Assert.assertEquals(EmptyExpression.EMPTY_EXPRESSION.toString(), d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
             }
             if ("2".equals(d.statementId())) {
                 Assert.assertEquals("(" + A1 + " and not (" + B1 + "))", d.statementAnalysis().stateData.valueOfExpression.get().toString());
@@ -161,7 +161,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                         d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inBlock);
                 Assert.assertEquals(FlowData.Execution.CONDITIONALLY, inMethod);
-                Assert.assertEquals(UnknownValue.EMPTY.toString(), d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
+                Assert.assertEquals(EmptyExpression.EMPTY_EXPRESSION.toString(), d.statementAnalysis().methodLevelData.combinedPrecondition.get().toString());
             }
             // unreachable statement
             if ("4".equals(d.statementId())) {
@@ -183,7 +183,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
         if ("method3".equals(d.methodInfo().name)) {
             if (d.iteration() == 0) {
                 if ("0".equals(d.statementId())) {
-                    Assert.assertSame(UnknownValue.EMPTY, d.condition());
+                    Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.condition());
                     Assert.assertEquals("not (null == " + A3 + ")", d.state().toString());
                     Assert.assertTrue(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
                 }
@@ -194,7 +194,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
                     Assert.assertFalse(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
                 }
                 if ("1".equals(d.statementId())) {
-                    Assert.assertSame(UnknownValue.EMPTY, d.condition());
+                    Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.condition());
                     Assert.assertEquals("(not (null == " + A3 + ") " + "and not (null == " + B3 + "))", d.state().toString());
                     Assert.assertTrue(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
                 }
@@ -226,7 +226,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(1).getProperty(VariableProperty.NOT_NULL));
         }
         if ("method1".equals(d.methodInfo().name)) {
-            Assert.assertSame(UnknownValue.EMPTY, d.methodAnalysis().getPrecondition());
+            Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.methodAnalysis().getPrecondition());
             Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
             Assert.assertEquals(RETURN_1_VALUE, d.methodAnalysis().getSingleReturnValue().toString());
         }
@@ -261,7 +261,7 @@ public class Test_04_ConditionalChecks extends CommonTestRunner {
             }
             if ("3".equals(d.statementId())) {
                 // there will be two iterations, in the second one, i will not have value "NO_VALUE" anymore
-                String expectValueString = d.iteration() == 0 ? UnknownValue.NO_VALUE.toString() : I + " == " + I + "#" + O5;
+                String expectValueString = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : I + " == " + I + "#" + O5;
                 Assert.assertEquals(expectValueString, d.evaluationResult().value.toString());
                 if (d.iteration() == 0) {
                     // markRead is only done in the first iteration

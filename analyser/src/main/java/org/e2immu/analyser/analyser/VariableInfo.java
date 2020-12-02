@@ -17,9 +17,9 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Map;
@@ -42,10 +42,10 @@ public interface VariableInfo {
 
     ObjectFlow getObjectFlow();
 
-    Value getValue();
+    Expression getValue();
 
     default boolean valueIsSet() {
-        return getValue() != UnknownValue.NO_VALUE;
+        return getValue() != EmptyExpression.NO_VALUE;
     }
 
     /**
@@ -54,7 +54,7 @@ public interface VariableInfo {
      *
      * @return Returns NO_VALUE when not yet set.
      */
-    Value getStateOnAssignment();
+    Expression getStateOnAssignment();
 
     int getProperty(VariableProperty variableProperty);
 
@@ -75,7 +75,7 @@ public interface VariableInfo {
     Stream<Map.Entry<VariableProperty, Integer>> propertyStream();
 
     default boolean stateOnAssignmentIsSet() {
-        return getStateOnAssignment() != UnknownValue.NO_VALUE;
+        return getStateOnAssignment() != EmptyExpression.NO_VALUE;
     }
 
     boolean isVariableField();

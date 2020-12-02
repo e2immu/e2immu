@@ -20,6 +20,8 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.config.CompanionAnalyserVisitor;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -73,7 +75,7 @@ public class CompanionAnalyser {
             }
             if (CompanionMethodName.NO_CODE.contains(companionMethodName.action())) {
                 // there is no code, and the type analyser deals with it
-                companionAnalysis.value.set(UnknownValue.EMPTY);
+                companionAnalysis.value.set(EmptyExpression.EMPTY_EXPRESSION);
                 visit(iteration, DONE, null, null);
                 return DONE;
             }
@@ -92,7 +94,7 @@ public class CompanionAnalyser {
                     .getMethodBody().structure.statements.get(0);
             EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
             EvaluationResult evaluationResult = returnStatement.expression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-            if (evaluationResult.value == UnknownValue.NO_VALUE) {
+            if (evaluationResult.value == EmptyExpression.NO_VALUE) {
                 log(DELAYED, "Delaying companion analysis of {} of {}, delay in evaluation",
                         companionMethodName, mainMethod.fullyQualifiedName());
                 visit(iteration, DELAYS, evaluationContext, evaluationResult);
@@ -121,34 +123,34 @@ public class CompanionAnalyser {
 
     private void computeRemapParameters(boolean modifyingMainMethod) {
         int aspectVariables = companionMethodName.numAspectVariables(modifyingMainMethod);
-        ImmutableMap.Builder<String, Value> remap = new ImmutableMap.Builder<>();
+        ImmutableMap.Builder<String, Expression> remap = new ImmutableMap.Builder<>();
         int numIndices = companionMethod.methodInspection.get().getParameters().size();
         int mainIndices = mainMethod.methodInspection.get().getParameters().size();
-        List<Value> parameterValues = new ArrayList<>();
+        List<Expression> parameterValues = new ArrayList<>();
         for (ParameterInfo parameterInfo : companionMethod.methodInspection.get().getParameters()) {
-            Value value;
+            Expression value;
             if (aspectVariables >= 1 && parameterInfo.index == 0) {
                 // this is the aspect as a method call
                 MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
-                Value scope = new VariableValue(new This(analyserContext, aspectMethod.typeInfo));
+                Expression scope = new VariableExpression(new This(analyserContext, aspectMethod.typeInfo));
                 value = new MethodValue(aspectMethod, scope, List.of(), ObjectFlow.NO_FLOW);
             } else if (aspectVariables >= 2 && parameterInfo.index == 1) {
                 // this is the initial aspect value in a Modification$Aspect
                 MethodInfo aspectMethod = typeAnalysis.getAspects().get(companionMethodName.aspect());
                 ParameterizedType returnType = aspectMethod.returnType();
                 // the value that we store is the same as that for the post-variable (see previous if-statement)
-                Value scope = new VariableValue(new This(analyserContext, aspectMethod.typeInfo));
+                Expression scope = new VariableExpression(new This(analyserContext, aspectMethod.typeInfo));
                 MethodValue methodValue = new MethodValue(aspectMethod, scope, List.of(), ObjectFlow.NO_FLOW);
-                value = new VariableValue(new PreAspectVariable(returnType, methodValue));
+                value = new VariableExpression(new PreAspectVariable(returnType, methodValue));
                 companionAnalysis.preAspectVariableValue.set(value);
             } else {
                 ParameterInfo parameterInMain = parameterInfo.index - aspectVariables < mainIndices ?
                         mainMethod.methodInspection.get().getParameters().get(parameterInfo.index - aspectVariables) : null;
                 if (parameterInMain != null && parameterInfo.parameterizedType().equalsErased(parameterInMain.parameterizedType())) {
-                    value = new VariableValue(parameterInMain);
+                    value = new VariableExpression(parameterInMain);
                 } else if (parameterInfo.index == numIndices - 1 && !mainMethod.isVoid() &&
                         parameterInfo.concreteReturnType().equalsErased(mainMethod.returnType())) {
-                    value = new VariableValue(new ReturnVariable(mainMethod));
+                    value = new VariableExpression(new ReturnVariable(mainMethod));
                 } else {
                     throw new UnsupportedOperationException("Cannot map parameter " + parameterInfo.index + " of " +
                             companionMethodName + " of " + mainMethod.fullyQualifiedName());
@@ -206,22 +208,22 @@ public class CompanionAnalyser {
         }
 
         @Override
-        public EvaluationContext child(Value condition) {
+        public EvaluationContext child(Expression condition) {
             return new EvaluationContextImpl(iteration, conditionManager.addCondition(this, condition));
         }
 
         @Override
-        public Value currentValue(Variable variable) {
+        public Expression currentValue(Variable variable) {
             if (variable instanceof ParameterInfo parameterInfo) {
-                Map<String, Value> remapping = companionAnalysis.remapParameters.getOrElse(null);
-                if (remapping == null) return UnknownValue.NO_VALUE; // delay!
+                Map<String, Expression> remapping = companionAnalysis.remapParameters.getOrElse(null);
+                if (remapping == null) return EmptyExpression.NO_VALUE; // delay!
                 return Objects.requireNonNull(remapping.get(parameterInfo.name));
             }
-            return new VariableValue(variable);
+            return new VariableExpression(variable);
         }
 
         @Override
-        public Set<Variable> linkedVariables(Value value) {
+        public Set<Variable> linkedVariables(Expression value) {
             return Set.of(); // not interested
         }
     }

@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.e2immu.analyser.model.value;
+package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterInfo;
-import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -43,13 +43,13 @@ public class Filter {
      *
      * @param <X> depends on the filter method. Sometimes we filter on variables, sometimes on values.
      */
-    public record FilterResult<X>(Map<X, Value> accepted, Value rest) {
+    public record FilterResult<X>(Map<X, Expression> accepted, Expression rest) {
     }
 
 
     @FunctionalInterface
     public interface FilterMethod<X> {
-        FilterResult<X> apply(Value value);
+        FilterResult<X> apply(Expression value);
     }
 
     public enum FilterMode {
@@ -72,22 +72,22 @@ public class Filter {
         AtomicReference<FilterResult<X>> filterResult = new AtomicReference<>();
         value.visit(v -> {
             if (v != EmptyExpression.EMPTY_EXPRESSION) {
-                if (v instanceof NegatedValue negatedValue) {
-                    FilterResult<X> resultOfNegated = internalFilter(evaluationContext, negatedValue.value, filterMode, filterMethods);
+                if (v instanceof NegatedExpression negatedValue) {
+                    FilterResult<X> resultOfNegated = internalFilter(evaluationContext, negatedValue.expression, filterMode, filterMethods);
                     if (resultOfNegated != null) {
                         FilterResult<X> negatedResult = new FilterResult<>(resultOfNegated.accepted.entrySet().stream()
                                 .collect(Collectors.toMap(Map.Entry::getKey,
-                                        e -> NegatedValue.negate(evaluationContext, e.getValue()), (v1, v2) -> v1)),
-                                NegatedValue.negate(evaluationContext, resultOfNegated.rest));
+                                        e -> NegatedExpression.negate(evaluationContext, e.getValue()), (v1, v2) -> v1)),
+                                NegatedExpression.negate(evaluationContext, resultOfNegated.rest));
                         filterResult.set(negatedResult);
                     }
-                } else if (v instanceof AndValue andValue) {
+                } else if (v instanceof AndExpression andValue) {
                     if (filterMode == FilterMode.ACCEPT || filterMode == FilterMode.ALL) {
-                        filterResult.set(processAndOr(evaluationContext, andValue.values, filterMode, filterMethods));
+                        filterResult.set(processAndOr(evaluationContext, andValue.expressions(), filterMode, filterMethods));
                     }
-                } else if (v instanceof OrValue orValue) {
+                } else if (v instanceof OrExpression orValue) {
                     if (filterMode == FilterMode.REJECT || filterMode == FilterMode.ALL) {
-                        filterResult.set(processAndOr(evaluationContext, orValue.values, filterMode, filterMethods));
+                        filterResult.set(processAndOr(evaluationContext, orValue.expressions(), filterMode, filterMethods));
                     }
                 } else {
                     for (FilterMethod<X> filterMethod : filterMethods) {
@@ -105,22 +105,22 @@ public class Filter {
         return filterResult.get();
     }
 
-    private static <X> FilterResult<X> processAndOr(EvaluationContext evaluationContext, List<Value> values,
+    private static <X> FilterResult<X> processAndOr(EvaluationContext evaluationContext, List<Expression> values,
                                                     FilterMode filterMode, List<FilterMethod<X>> filterMethods) {
         List<FilterResult<X>> results = values.stream().map(v -> {
             FilterResult<X> sub = Filter.internalFilter(evaluationContext, v, filterMode, filterMethods);
             return sub == null ? new FilterResult<X>(Map.of(), v) : sub;
         }).collect(Collectors.toList());
 
-        List<Value> restList = results.stream().map(r -> r.rest).filter(r -> r != EmptyExpression.EMPTY_EXPRESSION).collect(Collectors.toList());
-        Map<X, Value> acceptedCombined = results.stream().flatMap(r -> r.accepted.entrySet().stream())
+        List<Expression> restList = results.stream().map(r -> r.rest).filter(r -> r != EmptyExpression.EMPTY_EXPRESSION).collect(Collectors.toList());
+        Map<X, Expression> acceptedCombined = results.stream().flatMap(r -> r.accepted.entrySet().stream())
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1));
 
-        Value rest;
+        Expression rest;
         if (restList.isEmpty()) rest = EmptyExpression.EMPTY_EXPRESSION;
         else if (restList.size() == 1) rest = restList.get(0);
         else {
-            rest = new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, restList.toArray(Value[]::new));
+            rest = new AndExpression(evaluationContext.getPrimitives()).append(evaluationContext, restList.toArray(Expression[]::new));
         }
         return new FilterResult<>(acceptedCombined, rest);
     }
@@ -131,7 +131,7 @@ public class Filter {
     // EXAMPLE: field == null, field == constant, ...
 
     public static final FilterMethod<FieldReference> INDIVIDUAL_FIELD_CLAUSE = value -> {
-        if (value instanceof EqualsValue equalsValue) {
+        if (value instanceof EqualsExpression equalsValue) {
             FieldReference l = extractFieldReference(equalsValue.lhs);
             FieldReference r = extractFieldReference(equalsValue.rhs);
             if (l != null && r == null)
@@ -142,19 +142,20 @@ public class Filter {
         return null;
     };
 
-    private static FieldReference extractFieldReference(Value value) {
-        return value instanceof VariableValue variableValue && variableValue.variable instanceof FieldReference fieldReference ? fieldReference : null;
+    private static FieldReference extractFieldReference(Expression value) {
+        return value instanceof VariableExpression variableValue &&
+                variableValue.variable() instanceof FieldReference fieldReference ? fieldReference : null;
     }
 
     // EXAMPLE: p == null, field != null
 
 
     public static final FilterMethod<Variable> INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE = value -> {
-        if (value instanceof EqualsValue equalsValue) {
+        if (value instanceof EqualsExpression equalsValue) {
             boolean lhsIsNull = equalsValue.lhs.isNull();
             boolean lhsIsNotNull = equalsValue.lhs.isNotNull();
-            if ((lhsIsNull || lhsIsNotNull) && equalsValue.rhs instanceof VariableValue v) {
-                return new FilterResult<Variable>(Map.of(v.variable, value), EmptyExpression.EMPTY_EXPRESSION);
+            if ((lhsIsNull || lhsIsNotNull) && equalsValue.rhs instanceof VariableExpression v) {
+                return new FilterResult<Variable>(Map.of(v.variable(), value), EmptyExpression.EMPTY_EXPRESSION);
             }
         }
         return null;
@@ -164,10 +165,10 @@ public class Filter {
     // EXAMPLE: p == null, p != null
 
     public static final FilterMethod<ParameterInfo> INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE_ON_PARAMETER = value -> {
-        if (value instanceof EqualsValue equalsValue) {
+        if (value instanceof EqualsExpression equalsValue) {
             boolean lhsIsNull = equalsValue.lhs.isNull();
             boolean lhsIsNotNull = equalsValue.lhs.isNotNull();
-            if ((lhsIsNull || lhsIsNotNull) && equalsValue.rhs instanceof VariableValue v && v.variable instanceof ParameterInfo p) {
+            if ((lhsIsNull || lhsIsNotNull) && equalsValue.rhs instanceof VariableExpression v && v.variable() instanceof ParameterInfo p) {
                 return new FilterResult<ParameterInfo>(Map.of(p, value), EmptyExpression.EMPTY_EXPRESSION);
             }
         }
@@ -179,8 +180,8 @@ public class Filter {
     public static record ValueEqualsMethodCallNoParameters(MethodInfo methodInfo) implements FilterMethod<MethodValue> {
 
         @Override
-        public FilterResult<MethodValue> apply(Value value) {
-            if (value instanceof EqualsValue equalsValue) {
+        public FilterResult<MethodValue> apply(Expression value) {
+            if (value instanceof EqualsExpression equalsValue) {
                 MethodValue r = compatibleMethodValue(equalsValue.rhs);
                 if (r != null) {
                     return new FilterResult<>(Map.of(r, equalsValue.lhs), EmptyExpression.EMPTY_EXPRESSION);
@@ -193,9 +194,9 @@ public class Filter {
             return null;
         }
 
-        private MethodValue compatibleMethodValue(Value value) {
+        private MethodValue compatibleMethodValue(Expression value) {
             if (value instanceof MethodValue methodValue &&
-                    methodValue.object instanceof VariableValue vv &&
+                    methodValue.object instanceof VariableExpression vv &&
                     vv.variable instanceof This &&
                     compatibleMethod(methodInfo, methodValue.methodInfo)) {
                 return methodValue;
@@ -204,7 +205,7 @@ public class Filter {
         }
     }
 
-    private static boolean compatibleParameters(List<Value> parameters, List<Value> parametersInClause) {
+    private static boolean compatibleParameters(List<Expression> parameters, List<Expression> parametersInClause) {
         return ListUtil.joinLists(parameters, parametersInClause).allMatch(pair -> pair.k.equals(pair.v));
     }
 
@@ -215,11 +216,11 @@ public class Filter {
 
     // EXAMPLE: java.util.List.contains("a")
 
-    public static record MethodCallBooleanResult(MethodInfo methodInfo, List<Value> parameterValues,
-                                                 Value boolValueTrue) implements FilterMethod<MethodValue> {
+    public static record MethodCallBooleanResult(MethodInfo methodInfo, List<Expression> parameterValues,
+                                                 Expression boolValueTrue) implements FilterMethod<MethodValue> {
 
         @Override
-        public FilterResult<MethodValue> apply(Value value) {
+        public FilterResult<MethodValue> apply(Expression value) {
             if (value instanceof MethodValue methodValue && compatible(methodValue)) {
                 return new FilterResult<>(Map.of(methodValue, boolValueTrue), EmptyExpression.EMPTY_EXPRESSION);
             }
@@ -232,10 +233,10 @@ public class Filter {
         }
     }
 
-    public static record ExactValue(Value value) implements FilterMethod<Value> {
+    public static record ExactValue(Expression value) implements FilterMethod<Expression> {
 
         @Override
-        public FilterResult<Value> apply(Value value) {
+        public FilterResult<Expression> apply(Expression value) {
             if (this.value.equals(value)) return new FilterResult<>(Map.of(value, value), EmptyExpression.EMPTY_EXPRESSION);
             return null;
         }

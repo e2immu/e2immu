@@ -83,18 +83,18 @@ public interface ConstantExpression<T> extends Expression, Constant<T> {
         throw new UnsupportedOperationException("No info about " + variableProperty + " for value " + getClass());
     }
 
-    static Value nullValue(Primitives primitives, TypeInfo typeInfo) {
+    static Expression nullValue(Primitives primitives, TypeInfo typeInfo) {
         if (typeInfo != null) {
-            if (Primitives.isBoolean(typeInfo)) return new BoolValue(primitives, false, ObjectFlow.NO_FLOW);
-            if (Primitives.isInt(typeInfo)) return new IntValue(primitives, 0, ObjectFlow.NO_FLOW);
-            if (Primitives.isLong(typeInfo)) return new LongValue(primitives, 0L, ObjectFlow.NO_FLOW);
-            if (Primitives.isShort(typeInfo)) return new ShortValue(primitives, (short) 0, ObjectFlow.NO_FLOW);
-            if (Primitives.isByte(typeInfo)) return new ByteValue(primitives, (byte) 0, ObjectFlow.NO_FLOW);
-            if (Primitives.isFloat(typeInfo)) return new FloatValue(primitives, 0, ObjectFlow.NO_FLOW);
-            if (Primitives.isDouble(typeInfo)) return new DoubleValue(primitives, 0, ObjectFlow.NO_FLOW);
-            if (Primitives.isChar(typeInfo)) return new CharValue(primitives, '\0', ObjectFlow.NO_FLOW);
+            if (Primitives.isBoolean(typeInfo)) return new BooleanConstant(primitives, false, ObjectFlow.NO_FLOW);
+            if (Primitives.isInt(typeInfo)) return new IntConstant(primitives, 0, ObjectFlow.NO_FLOW);
+            if (Primitives.isLong(typeInfo)) return new LongConstant(primitives, 0L, ObjectFlow.NO_FLOW);
+            if (Primitives.isShort(typeInfo)) return new ShortConstant(primitives, (short) 0, ObjectFlow.NO_FLOW);
+            if (Primitives.isByte(typeInfo)) return new ByteConstant(primitives, (byte) 0, ObjectFlow.NO_FLOW);
+            if (Primitives.isFloat(typeInfo)) return new FloatConstant(primitives, 0, ObjectFlow.NO_FLOW);
+            if (Primitives.isDouble(typeInfo)) return new DoubleConstant(primitives, 0, ObjectFlow.NO_FLOW);
+            if (Primitives.isChar(typeInfo)) return new CharConstant(primitives, '\0', ObjectFlow.NO_FLOW);
         }
-        return NullValue.NULL_VALUE;
+        return NullConstant.NULL_CONSTANT;
     }
 
     static Expression equalsExpression(Primitives primitives, ConstantExpression<?> l, ConstantExpression<?> r) {

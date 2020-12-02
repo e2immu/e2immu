@@ -18,7 +18,10 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NegatedExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -29,7 +32,7 @@ import java.util.*;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
+import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 
 class VariableInfoImpl implements VariableInfo {
     public final Variable variable;
@@ -40,9 +43,9 @@ class VariableInfoImpl implements VariableInfo {
 
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
 
-    private final SetOnce<Value> value = new SetOnce<>(); // value from step 3 (initialisers)
+    private final SetOnce<Expression> value = new SetOnce<>(); // value from step 3 (initialisers)
 
-    public final SetOnce<Value> stateOnAssignment = new SetOnce<>();
+    public final SetOnce<Expression> stateOnAssignment = new SetOnce<>();
 
     public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
     public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
@@ -93,13 +96,13 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
-    public Value getValue() {
-        return value.getOrElse(UnknownValue.NO_VALUE);
+    public Expression getValue() {
+        return value.getOrElse(NO_VALUE);
     }
 
     @Override
-    public Value getStateOnAssignment() {
-        return stateOnAssignment.getOrElse(UnknownValue.NO_VALUE);
+    public Expression getStateOnAssignment() {
+        return stateOnAssignment.getOrElse(NO_VALUE);
     }
 
     @Override
@@ -152,8 +155,8 @@ class VariableInfoImpl implements VariableInfo {
         return properties.isSet(variableProperty);
     }
 
-    public void writeValue(Value value) {
-        if (value != UnknownValue.NO_VALUE) {
+    public void writeValue(Expression value) {
+        if (value != NO_VALUE) {
             setValue(value);
         }
     }
@@ -202,8 +205,8 @@ class VariableInfoImpl implements VariableInfo {
                                   VariableInfoImpl newObject,
                                   boolean existingValuesWillBeOverwritten,
                                   List<VariableInfo> merge) {
-        Value mergedValue = mergeValue(evaluationContext, existingValuesWillBeOverwritten, merge);
-        Value currentValue = getValue();
+        Expression mergedValue = mergeValue(evaluationContext, existingValuesWillBeOverwritten, merge);
+        Expression currentValue = getValue();
         if (mergedValue == NO_VALUE || currentValue.equals(mergedValue))
             return newObject == null ? this : newObject; // no need to create
         if (newObject == null) {
@@ -223,8 +226,8 @@ class VariableInfoImpl implements VariableInfo {
         return newObject;
     }
 
-    void setValue(Value value) {
-        if(value instanceof VariableValue variableValue && variableValue.variable == variable) {
+    void setValue(Expression value) {
+        if(value instanceof VariableExpression variableValue && variableValue.variable() == variable) {
             throw new UnsupportedOperationException("Cannot redirect to myself");
         }
         this.value.set(value);
@@ -252,10 +255,10 @@ class VariableInfoImpl implements VariableInfo {
         }
     }
 
-    private Value mergeValue(EvaluationContext evaluationContext,
+    private Expression mergeValue(EvaluationContext evaluationContext,
                              boolean existingValuesWillBeOverwritten,
                              List<VariableInfo> merge) {
-        Value currentValue = getValue();
+        Expression currentValue = getValue();
         if (!existingValuesWillBeOverwritten && currentValue == NO_VALUE) return NO_VALUE;
         boolean haveANoValue = merge.stream().anyMatch(v -> !v.stateOnAssignmentIsSet());
         if (haveANoValue) return NO_VALUE;
@@ -271,17 +274,17 @@ class VariableInfoImpl implements VariableInfo {
 
         if (merge.size() == 1) {
             if (existingValuesWillBeOverwritten) return merge.get(0).getValue();
-            Value result = oneNotOverwritten(evaluationContext, currentValue, merge.get(0));
+            Expression result = oneNotOverwritten(evaluationContext, currentValue, merge.get(0));
             if (result != null) return result;
         }
 
         if (merge.size() == 2) {
-            Value result = existingValuesWillBeOverwritten ? twoOverwritten(evaluationContext, merge.get(0), merge.get(1))
+            Expression result = existingValuesWillBeOverwritten ? twoOverwritten(evaluationContext, merge.get(0), merge.get(1))
                     : two(evaluationContext, currentValue, merge.get(0), merge.get(1));
             if (result != null) return result;
         }
 
-        boolean noneEmpty = merge.stream().noneMatch(vi -> vi.getStateOnAssignment() == UnknownValue.EMPTY);
+        boolean noneEmpty = merge.stream().noneMatch(vi -> vi.getStateOnAssignment() == EmptyExpression.EMPTY_EXPRESSION);
         if (noneEmpty) {
             Variable variable = allInvolveConstantsEqualToAVariable(merge);
             if (variable != null) {
@@ -293,11 +296,11 @@ class VariableInfoImpl implements VariableInfo {
         return noConclusion();
     }
 
-    private Value noConclusion() {
-        return new Instance(variable.parameterizedType(), getObjectFlow(), UnknownValue.EMPTY);
+    private Expression noConclusion() {
+        return new Instance(variable.parameterizedType(), getObjectFlow(), EmptyExpression.EMPTY_EXPRESSION);
     }
 
-    private Value inlineSwitch(boolean existingValuesWillBeOverwritten, Value currentValue, Variable variable, List<VariableInfo> merge) {
+    private Expression inlineSwitch(boolean existingValuesWillBeOverwritten, Expression currentValue, Variable variable, List<VariableInfo> merge) {
         // TODO
         // fail
         return noConclusion();
@@ -309,49 +312,49 @@ class VariableInfoImpl implements VariableInfo {
     }
 
 
-    private Value oneNotOverwritten(EvaluationContext evaluationContext, Value a, VariableInfo vi) {
-        Value b = vi.getValue();
-        Value x = vi.getStateOnAssignment();
+    private Expression oneNotOverwritten(EvaluationContext evaluationContext, Expression a, VariableInfo vi) {
+        Expression b = vi.getValue();
+        Expression x = vi.getStateOnAssignment();
 
         // int c = a; if(x) c = b;  --> c = x?b:a
-        if (x != UnknownValue.EMPTY) {
-            return safe(ConditionalValue.conditionalValueConditionResolved(evaluationContext, x, b, a, ObjectFlow.NO_FLOW));
+        if (x != EmptyExpression.EMPTY_EXPRESSION) {
+            return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, x, b, a, ObjectFlow.NO_FLOW));
         }
 
         return noConclusion();
     }
 
-    private Value two(EvaluationContext evaluationContext, Value x, VariableInfo vi1, VariableInfo vi2) {
-        Value s1 = vi1.getStateOnAssignment();
-        Value s2 = vi2.getStateOnAssignment();
+    private Expression two(EvaluationContext evaluationContext, Expression x, VariableInfo vi1, VariableInfo vi2) {
+        Expression s1 = vi1.getStateOnAssignment();
+        Expression s2 = vi2.getStateOnAssignment();
 
         // silly situation, twice the same condition
         // int c = ex; if(s1) c = a; if(s1) c =b;
-        if (s1.equals(s2) && s1 != UnknownValue.EMPTY) {
-            return safe(ConditionalValue.conditionalValueConditionResolved(evaluationContext, s1, vi2.getValue(), x, ObjectFlow.NO_FLOW));
+        if (s1.equals(s2) && s1 != EmptyExpression.EMPTY_EXPRESSION) {
+            return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s1, vi2.getValue(), x, ObjectFlow.NO_FLOW));
         }
         // int c = x; if(s1) c = a; if(s2) c = b; --> s1?a:(s2?b:x)
-        if (s1 != UnknownValue.EMPTY && s2 != UnknownValue.EMPTY) {
-            Value s2bx = safe(ConditionalValue.conditionalValueConditionResolved(evaluationContext, s2, vi2.getValue(), x, ObjectFlow.NO_FLOW));
-            return safe(ConditionalValue.conditionalValueConditionResolved(evaluationContext, s1, vi1.getValue(), s2bx, ObjectFlow.NO_FLOW));
+        if (s1 != EmptyExpression.EMPTY_EXPRESSION && s2 != EmptyExpression.EMPTY_EXPRESSION) {
+            Expression s2bx = safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s2, vi2.getValue(), x, ObjectFlow.NO_FLOW));
+            return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s1, vi1.getValue(), s2bx, ObjectFlow.NO_FLOW));
         }
         return noConclusion();
     }
 
-    private Value twoOverwritten(EvaluationContext evaluationContext, VariableInfo vi1, VariableInfo vi2) {
-        Value s1 = vi1.getStateOnAssignment();
-        Value s2 = vi2.getStateOnAssignment();
+    private Expression twoOverwritten(EvaluationContext evaluationContext, VariableInfo vi1, VariableInfo vi2) {
+        Expression s1 = vi1.getStateOnAssignment();
+        Expression s2 = vi2.getStateOnAssignment();
 
-        if (s1 != UnknownValue.EMPTY && s2 != UnknownValue.EMPTY) {
+        if (s1 != EmptyExpression.EMPTY_EXPRESSION && s2 != EmptyExpression.EMPTY_EXPRESSION) {
             // int c; if(s1) c = a; else c = b;
-            if (NegatedValue.negate(evaluationContext, s1).equals(s2)) {
-                return safe(ConditionalValue.conditionalValueConditionResolved(evaluationContext, s1, vi1.getValue(), vi2.getValue(), ObjectFlow.NO_FLOW));
+            if (NegatedExpression.negate(evaluationContext, s1).equals(s2)) {
+                return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s1, vi1.getValue(), vi2.getValue(), ObjectFlow.NO_FLOW));
             } else throw new UnsupportedOperationException("? impossible situation");
         }
         return noConclusion();
     }
 
-    private Value safe(EvaluationResult result) {
+    private Expression safe(EvaluationResult result) {
         if (result.getModificationStream().anyMatch(m -> m instanceof StatementAnalyser.RaiseErrorMessage)) {
             // something gone wrong, retreat
             return noConclusion();

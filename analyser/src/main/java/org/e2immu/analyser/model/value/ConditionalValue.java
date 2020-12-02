@@ -124,7 +124,7 @@ public class ConditionalValue implements Value {
     }
 
     private static Value checkState(EvaluationContext evaluationContext, Primitives primitives, Value state, Value condition) {
-        if (state == UnknownValue.EMPTY) return condition;
+        if (state == EmptyExpression.EMPTY_EXPRESSION) return condition;
         Value and = new AndValue(primitives).append(evaluationContext, state, condition);
         if (and.equals(condition)) {
             return BoolValue.createTrue(primitives);
@@ -301,6 +301,6 @@ public class ConditionalValue implements Value {
     @Override
     public Instance getInstance(EvaluationContext evaluationContext) {
         if (Primitives.isPrimitiveExcludingVoid(type())) return null;
-        return new Instance(type(), getObjectFlow(), UnknownValue.EMPTY);
+        return new Instance(type(), getObjectFlow(), EmptyExpression.EMPTY_EXPRESSION);
     }
 }

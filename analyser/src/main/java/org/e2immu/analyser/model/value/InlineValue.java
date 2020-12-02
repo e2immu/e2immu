@@ -64,7 +64,7 @@ public class InlineValue implements Value {
     public final Value value;
     public final Applicability applicability;
 
-    public InlineValue(MethodInfo methodInfo, Value value, Applicability applicability) {
+    public InlineValue(MethodInfo methodInfo, Expression value, Applicability applicability) {
         this.methodInfo = methodInfo;
         this.value = value;
         this.applicability = applicability;

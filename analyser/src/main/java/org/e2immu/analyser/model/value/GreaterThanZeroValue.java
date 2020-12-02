@@ -126,7 +126,7 @@ public class GreaterThanZeroValue extends PrimitiveValue {
         return new XB(x, 0.0d, lessThan);
     }
 
-    private GreaterThanZeroValue(ParameterizedType booleanParameterizedType, Value value, boolean allowEquals, ObjectFlow objectFlow) {
+    private GreaterThanZeroValue(ParameterizedType booleanParameterizedType, Expression value, boolean allowEquals, ObjectFlow objectFlow) {
         super(objectFlow);
         this.value = value;
         this.allowEquals = allowEquals;

@@ -18,9 +18,8 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.Instance;
-import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -79,12 +78,12 @@ public interface EvaluationContext {
         throw new UnsupportedOperationException();
     }
 
-    default EvaluationContext child(Value condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
+    default EvaluationContext child(Expression condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
         return child(condition);
     }
 
-    default Value currentValue(Variable variable) {
-        return UnknownValue.NO_VALUE;
+    default Expression currentValue(Variable variable) {
+        return EmptyExpression.NO_VALUE;
     }
 
     default AnalyserContext getAnalyserContext() {
@@ -131,20 +130,21 @@ public interface EvaluationContext {
     }
 
     default int getProperty(Expression value, VariableProperty variableProperty) {
-        if (value instanceof VariableValue variableValue) {
-            if (variableValue.variable instanceof ParameterInfo parameterInfo) {
+        if (value instanceof VariableExpression variableValue) {
+            Variable variable = variableValue.variable();
+            if (variable instanceof ParameterInfo parameterInfo) {
                 return getParameterAnalysis(parameterInfo).getProperty(variableProperty);
             }
-            if (variableValue.variable instanceof FieldReference fieldReference) {
+            if (variable instanceof FieldReference fieldReference) {
                 return getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
             }
-            if (variableValue.variable instanceof This thisVariable) {
+            if (variable instanceof This thisVariable) {
                 return getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
             }
-            if (variableValue.variable instanceof PreAspectVariable pre) {
+            if (variable instanceof PreAspectVariable pre) {
                 return pre.valueForProperties.getProperty(this, variableProperty);
             }
-            throw new UnsupportedOperationException("Variable value of type " + variableValue.variable.getClass());
+            throw new UnsupportedOperationException("Variable value of type " + variable.getClass());
         }
         return value.getProperty(this, variableProperty); // will work in many cases
     }
@@ -177,7 +177,7 @@ public interface EvaluationContext {
         return true;
     }
 
-    default Set<Variable> linkedVariables(Value value) {
+    default Set<Variable> linkedVariables(Expression value) {
         return value.linkedVariables(this);
     }
 
@@ -185,7 +185,7 @@ public interface EvaluationContext {
         return Set.of();
     }
 
-    default Map<VariableProperty, Integer> getValueProperties(Value value) {
+    default Map<VariableProperty, Integer> getValueProperties(Expression value) {
         return VariableProperty.VALUE_PROPERTIES.stream().collect(Collectors.toMap(vp -> vp, vp -> getProperty(value, vp)));
     }
 
@@ -196,7 +196,7 @@ public interface EvaluationContext {
     default Instance currentInstance(Variable variable) {
         if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
         // always a new one with empty state -- we cannot be bothered here.
-        return new Instance(variable.parameterizedType(), ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+        return new Instance(variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
     }
 
     default boolean disableEvaluationOfMethodCallsUsingCompanionMethods() {

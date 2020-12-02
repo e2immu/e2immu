@@ -75,11 +75,11 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                 Assert.assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
             }
             if ("2".equals(d.statementId()) && S2.equals(d.variableName())) {
-                Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
+                Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.variableInfo().getStateOnAssignment());
             }
             if ("3".equals(d.statementId()) && S2.equals(d.variableName())) {
                 // stateOnAssignment has to be copied from statement 1
-                Assert.assertSame(UnknownValue.EMPTY, d.variableInfo().getStateOnAssignment());
+                Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.variableInfo().getStateOnAssignment());
             }
             if (S5.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
@@ -145,7 +145,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         if (FINAL_CHECKS_FQN.equals(d.methodInfo().fullyQualifiedName()) && "2".equals(d.statementId())) {
             Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
             EvaluationResult.ValueChangeData valueChangeData = d.findValueChange(S2);
-            Assert.assertSame(UnknownValue.EMPTY, valueChangeData.stateOnAssignment());
+            Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, valueChangeData.stateOnAssignment());
         }
     };
 

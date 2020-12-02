@@ -49,8 +49,8 @@ public class EvaluateMethodCall {
         Objects.requireNonNull(evaluationContext);
 
         // no value (method call on field that does not have effective value yet)
-        if (objectValue == UnknownValue.NO_VALUE) {
-            return builder.setValue(UnknownValue.NO_VALUE).build(); // this will delay
+        if (objectValue == EmptyExpression.NO_VALUE) {
+            return builder.setValue(EmptyExpression.NO_VALUE).build(); // this will delay
         }
 
         if (ShallowTypeAnalyser.IS_KNOWN_FQN.equals(methodInfo.fullyQualifiedName) &&
@@ -173,7 +173,7 @@ public class EvaluateMethodCall {
             }
         } else if (methodAnalysis.isBeingAnalysed()) {
             // we will, at some point, analyse this method
-            return builder.setValue(UnknownValue.NO_VALUE).build();
+            return builder.setValue(EmptyExpression.NO_VALUE).build();
         }
 
         // normal method value
@@ -186,7 +186,7 @@ public class EvaluateMethodCall {
             return theInstance;
         }
         if (objectValue instanceof VariableValue variableValue) {
-            return builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+            return builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
         }
         return null;
     }
@@ -226,7 +226,7 @@ public class EvaluateMethodCall {
         // we might encounter isFact or isKnown, so we add the instance's state to the context
         EvaluationContext child = evaluationContext.child(instance.state, true);
         Value resultingValue = companionValue.reEvaluate(child, translationMap).value;
-        if (instance.state != UnknownValue.EMPTY && resultingValue != UnknownValue.EMPTY) {
+        if (instance.state != EmptyExpression.EMPTY_EXPRESSION && resultingValue != EmptyExpression.EMPTY_EXPRESSION) {
             if (Primitives.isBoolean(methodInfo.returnType().typeInfo)) {
                 // State is: (org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and 0 == java.util.Collection.this.size())
                 // Resulting value: (java.util.Set.contains(java.lang.Object) and not (0 == java.util.Collection.this.size()))
@@ -328,7 +328,7 @@ public class EvaluateMethodCall {
 
     private static Value computeFluent(MethodAnalysis methodAnalysis, Value scope) {
         int fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
-        if (fluent == Level.DELAY && methodAnalysis.isBeingAnalysed()) return UnknownValue.NO_VALUE;
+        if (fluent == Level.DELAY && methodAnalysis.isBeingAnalysed()) return EmptyExpression.NO_VALUE;
         if (fluent != Level.TRUE) return null;
         return scope;
     }
@@ -339,7 +339,7 @@ public class EvaluateMethodCall {
                                          List<Value> parameters,
                                          ObjectFlow objectFlowOfResult) {
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
-        if (identity == Level.DELAY && methodAnalysis.isBeingAnalysed()) return UnknownValue.NO_VALUE; // delay
+        if (identity == Level.DELAY && methodAnalysis.isBeingAnalysed()) return EmptyExpression.NO_VALUE; // delay
         if (identity != Level.TRUE) return null;
 
         Map<VariableProperty, Integer> map = new HashMap<>();

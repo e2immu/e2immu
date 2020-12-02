@@ -39,7 +39,7 @@ public class TestFilter extends CommonAbstractValue {
 
         Filter.FilterResult<Variable> filterResult2 = Filter.filter(minimalEvaluationContext, andValue, Filter.FilterMode.ALL, value -> {
             if (value instanceof VariableValue variableValue && variableValue.variable == b.variable) {
-                return new Filter.FilterResult<Variable>(Map.of(b.variable, b), UnknownValue.EMPTY);
+                return new Filter.FilterResult<Variable>(Map.of(b.variable, b), EmptyExpression.EMPTY_EXPRESSION);
             }
             return null;
         });
@@ -58,7 +58,7 @@ public class TestFilter extends CommonAbstractValue {
         Filter.FilterResult<Variable> filterResult = Filter.filter(minimalEvaluationContext, andValue, Filter.FilterMode.ALL, value -> {
             if (value instanceof EqualsValue equalsValue) {
                 if (equalsValue.rhs instanceof VariableValue && ((VariableValue) equalsValue.rhs).variable == s.variable) {
-                    return new Filter.FilterResult<Variable>(Map.of(s.variable, s), UnknownValue.EMPTY);
+                    return new Filter.FilterResult<Variable>(Map.of(s.variable, s), EmptyExpression.EMPTY_EXPRESSION);
                 }
             }
             return null;

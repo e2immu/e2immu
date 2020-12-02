@@ -62,7 +62,7 @@ public class TestConditionalValue extends CommonAbstractValue {
         Value isFactB = new MethodValue(isFact, new TypeValue(annotatedAPIPt, ObjectFlow.NO_FLOW), List.of(b), ObjectFlow.NO_FLOW);
         Assert.assertEquals("org.e2immu.annotatedapi.AnnotatedAPI.isFact(b)", isFactB.toString());
 
-        Assert.assertSame(UnknownValue.EMPTY, minimalEvaluationContext.getConditionManager().state);
+        Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, minimalEvaluationContext.getConditionManager().state);
         Value cv1 = ConditionalValue.conditionalValueConditionResolved(minimalEvaluationContext, isFactA, a, b, ObjectFlow.NO_FLOW).value;
         Assert.assertSame(b, cv1);
 

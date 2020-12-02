@@ -19,7 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -57,8 +57,8 @@ public interface MethodAnalysis extends Analysis {
     /**
      * @return null when not yet decided
      */
-    default Value getSingleReturnValue() {
-        return UnknownValue.NO_VALUE;
+    default Expression getSingleReturnValue() {
+        return EmptyExpression.NO_VALUE;
     }
 
     default Set<MethodAnalysis> getOverrides(AnalysisProvider analysisProvider) {
@@ -82,7 +82,7 @@ public interface MethodAnalysis extends Analysis {
     }
 
     // the value here (size will be one)
-    default List<Value> getPreconditionForMarkAndOnly() {
+    default List<Expression> getPreconditionForMarkAndOnly() {
         return List.of();
     }
 
@@ -120,8 +120,8 @@ public interface MethodAnalysis extends Analysis {
     /**
      * @return null when not yet computed, EMPTY when no precondition
      */
-    default Value getPrecondition() {
-        return UnknownValue.EMPTY;
+    default Expression getPrecondition() {
+        return EmptyExpression.EMPTY_EXPRESSION;
     }
 
     default MethodLevelData methodLevelData() {
@@ -203,18 +203,7 @@ public interface MethodAnalysis extends Analysis {
 
     // the name refers to the @Mark and @Only annotations. It is the data for this annotation.
 
-    class MarkAndOnly {
-        public final List<Value> preconditions;
-        public final String markLabel;
-        public final boolean mark;
-        public final Boolean after; // null for a @Mark without @Only
-
-        public MarkAndOnly(List<Value> preconditions, String markLabel, boolean mark, Boolean after) {
-            this.preconditions = preconditions;
-            this.mark = mark;
-            this.markLabel = markLabel;
-            this.after = after;
-        }
+    record MarkAndOnly(List<Expression> preconditions,String markLabel, boolean mark,Boolean after) { // null for a @Mark without @Only
 
         @Override
         public String toString() {

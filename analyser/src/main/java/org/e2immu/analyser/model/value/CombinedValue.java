@@ -123,7 +123,7 @@ public class CombinedValue implements Value {
     @Override
     public Instance getInstance(EvaluationContext evaluationContext) {
         if (Primitives.isPrimitiveExcludingVoid(type())) return null;
-        return new Instance(type(), getObjectFlow(), UnknownValue.EMPTY);
+        return new Instance(type(), getObjectFlow(), EmptyExpression.EMPTY_EXPRESSION);
     }
 
     @Override

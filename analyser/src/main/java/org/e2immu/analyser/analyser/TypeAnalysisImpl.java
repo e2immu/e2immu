@@ -36,19 +36,19 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     private final TypeInfo typeInfo;
     private final Set<ObjectFlow> objectFlows;
-    private final Map<String, Value> approvedPreconditions;
+    private final Map<String, Expression> approvedPreconditions;
     private final Set<ParameterizedType> implicitlyImmutableDataTypes;
     private final Map<String, MethodInfo> aspects;
-    private final List<Value> invariants;
+    private final List<Expression> invariants;
 
     private TypeAnalysisImpl(TypeInfo typeInfo,
                              Map<VariableProperty, Integer> properties,
                              Map<AnnotationExpression, Boolean> annotations,
                              Set<ObjectFlow> objectFlows,
-                             Map<String, Value> approvedPreconditions,
+                             Map<String, Expression> approvedPreconditions,
                              Set<ParameterizedType> implicitlyImmutableDataTypes,
                              Map<String, MethodInfo> aspects,
-                             List<Value> invariants) {
+                             List<Expression> invariants) {
         super(properties, annotations);
         this.typeInfo = typeInfo;
         this.approvedPreconditions = approvedPreconditions;
@@ -59,7 +59,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public List<Value> getInvariants() {
+    public List<Expression> getInvariants() {
         return invariants;
     }
 
@@ -89,7 +89,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
     }
 
     @Override
-    public Map<String, Value> getApprovedPreconditions() {
+    public Map<String, Expression> getApprovedPreconditions() {
         return approvedPreconditions;
     }
 
@@ -103,11 +103,11 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public final AddOnceSet<ObjectFlow> constantObjectFlows = new AddOnceSet<>();
 
         // from label to condition BEFORE (used by @Mark and @Only(before="label"))
-        public final SetOnceMap<String, Value> approvedPreconditions = new SetOnceMap<>();
+        public final SetOnceMap<String, Expression> approvedPreconditions = new SetOnceMap<>();
         public final SetOnce<Set<ParameterizedType>> implicitlyImmutableDataTypes = new SetOnce<>();
 
         public final SetOnceMap<String, MethodInfo> aspects = new SetOnceMap<>();
-        public final SetOnce<List<Value>> invariants = new SetOnce<>();
+        public final SetOnce<List<Expression>> invariants = new SetOnce<>();
 
         public Builder(Primitives primitives, TypeInfo typeInfo) {
             super(primitives, typeInfo.simpleName);
@@ -125,7 +125,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public List<Value> getInvariants() {
+        public List<Expression> getInvariants() {
             return invariants.getOrElse(null);
         }
 
@@ -150,7 +150,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public Map<String, Value> getApprovedPreconditions() {
+        public Map<String, Expression> getApprovedPreconditions() {
             return approvedPreconditions.toImmutableMap();
         }
 

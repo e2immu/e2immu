@@ -18,7 +18,7 @@ public class CheckOnly {
         if (annotationExpression == null) return; // nothing to verify
 
         AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
-        boolean noData = markAndOnly == null || markAndOnly.mark;
+        boolean noData = markAndOnly == null || markAndOnly.mark();
         if (parameters.absent()) {
             if (noData) return; // fine!
             messages.add(Message.newMessage(new Location(methodInfo),
@@ -32,31 +32,31 @@ public class CheckOnly {
         }
         String before = annotationExpression.extract("before", "");
         if (before.isEmpty()) {
-            if (!markAndOnly.after) {
+            if (!markAndOnly.after()) {
                 messages.add(Message.newMessage(new Location(methodInfo),
-                        Message.ONLY_WRONG_MARK_LABEL, "Missing before=\"" + markAndOnly.markLabel + "\""));
+                        Message.ONLY_WRONG_MARK_LABEL, "Missing before=\"" + markAndOnly.markLabel() + "\""));
                 return;
             }
         } else {
-            if (markAndOnly.after) {
+            if (markAndOnly.after()) {
                 messages.add(Message.newMessage(new Location(methodInfo),
-                        Message.ONLY_WRONG_MARK_LABEL, "Got before=\"" + before + "\" but found after=\"" + markAndOnly.markLabel + "\""));
+                        Message.ONLY_WRONG_MARK_LABEL, "Got before=\"" + before + "\" but found after=\"" + markAndOnly.markLabel() + "\""));
                 return;
             }
-            if (!before.equals(markAndOnly.markLabel)) {
+            if (!before.equals(markAndOnly.markLabel())) {
                 messages.add(Message.newMessage(new Location(methodInfo),
-                        Message.ONLY_WRONG_MARK_LABEL, "Got before=\"" + before + "\" but computed before=\"" + markAndOnly.markLabel + "\""));
+                        Message.ONLY_WRONG_MARK_LABEL, "Got before=\"" + before + "\" but computed before=\"" + markAndOnly.markLabel() + "\""));
             }
             return;
         }
         String after = annotationExpression.extract("after", "");
         if (after.isEmpty()) {
             messages.add(Message.newMessage(new Location(methodInfo),
-                    Message.ONLY_WRONG_MARK_LABEL, "Missing after=\"" + markAndOnly.markLabel + "\""));
+                    Message.ONLY_WRONG_MARK_LABEL, "Missing after=\"" + markAndOnly.markLabel() + "\""));
         } else {
-            if (!after.equals(markAndOnly.markLabel)) {
+            if (!after.equals(markAndOnly.markLabel())) {
                 messages.add(Message.newMessage(new Location(methodInfo),
-                        Message.ONLY_WRONG_MARK_LABEL, "Got after=\"" + after + "\" but computed after=\"" + markAndOnly.markLabel + "\""));
+                        Message.ONLY_WRONG_MARK_LABEL, "Got after=\"" + after + "\" but computed after=\"" + markAndOnly.markLabel() + "\""));
             }
         }
     }
@@ -67,7 +67,7 @@ public class CheckOnly {
         if (annotationExpression == null) return; // nothing to verify
 
         AnnotationParameters parameters = annotationExpression.e2ImmuAnnotationParameters();
-        boolean noData = markAndOnly == null || !markAndOnly.mark;
+        boolean noData = markAndOnly == null || !markAndOnly.mark();
         if (parameters.absent()) {
             if (noData) return; // fine!
             messages.add(Message.newMessage(new Location(methodInfo),
@@ -82,10 +82,10 @@ public class CheckOnly {
         String value = annotationExpression.extract("value", "");
         if (value.isEmpty()) {
             messages.add(Message.newMessage(new Location(methodInfo),
-                    Message.ONLY_WRONG_MARK_LABEL, "Missing value \"" + markAndOnly.markLabel + "\""));
-        } else if (!value.equals(markAndOnly.markLabel)) {
+                    Message.ONLY_WRONG_MARK_LABEL, "Missing value \"" + markAndOnly.markLabel() + "\""));
+        } else if (!value.equals(markAndOnly.markLabel())) {
             messages.add(Message.newMessage(new Location(methodInfo),
-                    Message.ONLY_WRONG_MARK_LABEL, "Got \"" + value + "\" but computed \"" + markAndOnly.markLabel + "\""));
+                    Message.ONLY_WRONG_MARK_LABEL, "Got \"" + value + "\" but computed \"" + markAndOnly.markLabel() + "\""));
         }
     }
 }

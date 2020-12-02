@@ -57,7 +57,7 @@ public class TestNotModifiedChecks extends CommonTestRunner {
         }
         if ("NotModifiedChecks".equals(d.methodInfo().name) && "NotModifiedChecks.this.s2".equals(d.variableName())) {
             if (d.iteration() < 2) {
-                Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue());
+                Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
             } else {
                 Assert.assertEquals("set2", d.currentValue().toString());
             }

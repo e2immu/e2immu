@@ -29,7 +29,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         if ("add3".equals(d.methodInfo().name) && "local3".equals(d.variableName())) {
             if ("0".equals(d.statementId())) {
                 if (d.iteration() == 0) {
-                    Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue());
+                    Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
                 } else {
                     Assert.assertTrue(d.currentValue() instanceof VariableValue);
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.FINAL));
@@ -42,7 +42,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         if ("add4".equals(d.methodInfo().name) && "local4".equals(d.variableName())) {
             if ("0".equals(d.statementId())) {
                 if (d.iteration() == 0) {
-                    Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue());
+                    Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
                 } else {
                     Assert.assertTrue(d.currentValue() instanceof VariableValue);
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.FINAL));
@@ -58,7 +58,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
         if ("add4".equals(d.methodInfo().name) && "Example4.this.set4".equals(d.variableName())) {
             if ("1".equals(d.statementId())) {
                 if (d.iteration() == 0) {
-                    Assert.assertSame(UnknownValue.NO_VALUE, d.currentValue());
+                    Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
                 } else {
                     Assert.assertTrue(d.currentValue() instanceof VariableValue);
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.FINAL));

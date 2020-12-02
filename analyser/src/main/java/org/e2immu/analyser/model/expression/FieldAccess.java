@@ -109,7 +109,7 @@ public class FieldAccess implements Expression {
 
         if (scopeResult.value instanceof NullValue) {
             builder.raiseError(Message.NULL_POINTER_EXCEPTION);
-        } else if (scopeResult.value != UnknownValue.NO_VALUE && !evaluationContext.isNotNull0(scopeResult.value)) {
+        } else if (scopeResult.value != EmptyExpression.NO_VALUE && !evaluationContext.isNotNull0(scopeResult.value)) {
             builder.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Scope " + scopeResult.value);
         }
 

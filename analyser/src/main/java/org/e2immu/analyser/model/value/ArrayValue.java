@@ -45,7 +45,7 @@ public class ArrayValue implements Value {
     public ArrayValue(Primitives primitives, ObjectFlow objectFlow, List<Value> values) {
         this.objectFlow = Objects.requireNonNull(objectFlow);
         this.values = ImmutableList.copyOf(values);
-        combinedValue = values.isEmpty() ? UnknownValue.NO_VALUE : CombinedValue.create(primitives, values);
+        combinedValue = values.isEmpty() ? EmptyExpression.NO_VALUE : CombinedValue.create(primitives, values);
     }
 
     @Override
@@ -120,6 +120,6 @@ public class ArrayValue implements Value {
 
     @Override
     public Instance getInstance(EvaluationContext evaluationContext) {
-        return new Instance(type(), getObjectFlow(), UnknownValue.EMPTY);
+        return new Instance(type(), getObjectFlow(), EmptyExpression.EMPTY_EXPRESSION);
     }
 }

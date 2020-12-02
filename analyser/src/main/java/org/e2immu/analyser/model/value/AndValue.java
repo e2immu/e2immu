@@ -77,8 +77,8 @@ public class AndValue extends PrimitiveValue {
         recursivelyAdd(concat, Arrays.stream(values).collect(Collectors.toList()));
 
         // some protection against EMPTY, coming in from state and preconditions
-        concat.removeIf(v -> v == UnknownValue.EMPTY);
-        if (concat.isEmpty()) return UnknownValue.EMPTY;
+        concat.removeIf(v -> v == EmptyExpression.EMPTY_EXPRESSION);
+        if (concat.isEmpty()) return EmptyExpression.EMPTY_EXPRESSION;
 
         // STEP 3: one-off observations
 

@@ -7,6 +7,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 
@@ -25,7 +26,7 @@ public class CheckLinks {
     public AnnotationExpression createLinkAnnotation(E2ImmuAnnotationExpressions typeContext, Set<Variable> links) {
         List<Expression> linkNameList = links.stream().map(variable -> new StringConstant(primitives,
                 variable.simpleName())).collect(Collectors.toList());
-        Expression linksStringArray = new MemberValuePair("to", new ArrayInitializer(primitives, linkNameList));
+        Expression linksStringArray = new MemberValuePair("to", new ArrayInitializer(primitives, ObjectFlow.NO_FLOW, linkNameList));
         List<Expression> expressions = List.of(linksStringArray);
         return new AnnotationExpressionImpl(typeContext.linked.typeInfo(), expressions);
     }

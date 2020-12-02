@@ -150,7 +150,7 @@ public class EvaluateParameters {
         if (methodInfo != null) {
             MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
             Value precondition = methodAnalysis.getPrecondition();
-            if (precondition != null && precondition != UnknownValue.EMPTY) {
+            if (precondition != null && precondition != EmptyExpression.EMPTY_EXPRESSION) {
                 // there is a precondition, and we have a list of values... let's see what we can learn
                 // the precondition is using parameter info's as variables so we'll have to substitute
                 Map<Value, Value> translationMap = translationMap(evaluationContext, methodInfo, parameterValues);
@@ -200,7 +200,7 @@ public class EvaluateParameters {
         if (scope instanceof VariableExpression variableExpression) {
             if (variableExpression.variable instanceof ParameterInfo) return true;
             Value value = evaluationContext.currentValue(variableExpression.variable);
-            if (value == UnknownValue.NO_VALUE) return null; // delay
+            if (value == EmptyExpression.NO_VALUE) return null; // delay
             // TODO
             return true;
         }

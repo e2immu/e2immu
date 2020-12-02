@@ -1,7 +1,7 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.output.PrintMode;
@@ -23,8 +23,8 @@ public class CheckConstant {
     }
 
     public void checkConstantForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
-        Value singleReturnValue = fieldAnalysis.getEffectivelyFinalValue() != null ?
-                fieldAnalysis.getEffectivelyFinalValue() : UnknownValue.NO_VALUE;
+        Expression singleReturnValue = fieldAnalysis.getEffectivelyFinalValue() != null ?
+                fieldAnalysis.getEffectivelyFinalValue() : EmptyExpression.NO_VALUE;
         checkConstant(messages,
                 singleReturnValue,
                 fieldInfo.fieldInspection.get().getAnnotations(),
@@ -32,14 +32,14 @@ public class CheckConstant {
     }
 
     public void checkConstantForMethods(Messages messages, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
-        Value singleReturnValue = methodAnalysis.getSingleReturnValue();
+        Expression singleReturnValue = methodAnalysis.getSingleReturnValue();
         checkConstant(messages,
                 singleReturnValue,
                 methodInfo.methodInspection.get().getAnnotations(),
                 new Location(methodInfo));
     }
 
-    private void checkConstant(Messages messages, Value singleReturnValue, List<AnnotationExpression> annotations, Location where) {
+    private void checkConstant(Messages messages, Expression singleReturnValue, List<AnnotationExpression> annotations, Location where) {
         Optional<AnnotationExpression> oConstant = annotations.stream()
                 .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(Constant.class.getName())).findFirst();
         if (oConstant.isEmpty()) {
@@ -67,7 +67,7 @@ public class CheckConstant {
     }
 
 
-    public AnnotationExpression createConstantAnnotation(E2ImmuAnnotationExpressions typeContext, Value value) {
+    public AnnotationExpression createConstantAnnotation(E2ImmuAnnotationExpressions typeContext, Expression value) {
         String constant = value.print(PrintMode.FOR_ANNOTATIONS);
         Expression valueExpression = new MemberValuePair("stringValue", new StringConstant(primitives, constant));
         List<Expression> expressions = List.of(valueExpression);

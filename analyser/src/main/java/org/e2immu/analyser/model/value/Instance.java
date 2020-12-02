@@ -97,7 +97,7 @@ public class Instance implements Value {
                 "(" + constructorParameterValues.stream()
                         .map(Value::toString)
                         .collect(Collectors.joining(", ")) + ")"))
-                + (state == UnknownValue.EMPTY ? "" : "[" + state.print(printMode) + "]");
+                + (state == EmptyExpression.EMPTY_EXPRESSION ? "" : "[" + state.print(printMode) + "]");
     }
 
     private static final Set<Variable> NO_LINKS = Set.of();

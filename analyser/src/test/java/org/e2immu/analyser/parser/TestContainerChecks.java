@@ -55,7 +55,7 @@ public class TestContainerChecks extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("add2b".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
             if (d.iteration() == 0) {
-                Assert.assertSame(UnknownValue.NO_VALUE, d.condition());
+                Assert.assertSame(EmptyExpression.NO_VALUE, d.condition());
             } else {
                 Assert.assertEquals("not (null == org.e2immu.analyser.testexample.ContainerChecks.Container2b.strings2b)", d.condition().toString());
             }

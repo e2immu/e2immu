@@ -63,7 +63,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         if (("debug".equals(d.methodInfo().name) || "toString".equals(d.methodInfo().name))) {
             FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
             if (d.iteration() == 0) {
-                Assert.assertSame(UnknownValue.NO_VALUE, d.getFieldAsVariable(input).getValue());
+                Assert.assertSame(EmptyExpression.NO_VALUE, d.getFieldAsVariable(input).getValue());
                 Assert.assertEquals(AnalysisStatus.PROGRESS, d.result().analysisStatus);
             } else {
                 int notNull = d.getFieldAsVariable(input).getProperty(VariableProperty.NOT_NULL);
@@ -107,7 +107,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         }
         if ((d.methodInfo().name.equals("debug") || d.methodInfo().name.equals("toString"))) {
             if(d.iteration() == 0) {
-                Assert.assertSame(UnknownValue.NO_VALUE, vi.getValue());
+                Assert.assertSame(EmptyExpression.NO_VALUE, vi.getValue());
             } else {
                 Assert.assertEquals(INPUT, vi.getValue().toString());
             }

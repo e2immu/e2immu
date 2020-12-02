@@ -78,7 +78,7 @@ public class TestLazy extends CommonTestRunner {
 
         if ("Lazy".equals(d.methodInfo().name)) {
             VariableInfo tv = d.getFieldAsVariable(supplier);
-            Assert.assertNotSame(tv.getValue(), UnknownValue.NO_VALUE);
+            Assert.assertNotSame(tv.getValue(), EmptyExpression.NO_VALUE);
 
             ParameterInfo supplierParam = d.methodInfo().methodInspection.get().getParameters().get(0);
             Assert.assertEquals("supplierParam", supplierParam.name);

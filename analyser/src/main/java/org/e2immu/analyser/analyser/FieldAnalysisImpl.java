@@ -18,7 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -40,8 +40,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     public final ObjectFlow objectFlow;
     public final boolean fieldError;
     public final Set<Variable> variablesLinkedToMe;
-    public final Value effectivelyFinalValue;
-    public final Value initialValue;  // value from the initialiser
+    public final Expression effectivelyFinalValue;
+    public final Expression initialValue;  // value from the initialiser
 
     private FieldAnalysisImpl(FieldInfo fieldInfo,
                               boolean isOfImplicitlyImmutableDataType,
@@ -49,8 +49,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                               Set<ObjectFlow> internalObjectFlows,
                               boolean fieldError,
                               Set<Variable> variablesLinkedToMe,
-                              Value effectivelyFinalValue,
-                              Value initialValue,
+                              Expression effectivelyFinalValue,
+                              Expression initialValue,
                               Map<VariableProperty, Integer> properties,
                               Map<AnnotationExpression, Boolean> annotations) {
         super(properties, annotations);
@@ -65,7 +65,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     }
 
     @Override
-    public Value getEffectivelyFinalValue() {
+    public Expression getEffectivelyFinalValue() {
         return effectivelyFinalValue;
     }
 
@@ -105,7 +105,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     }
 
     @Override
-    public Value getInitialValue() {
+    public Expression getInitialValue() {
         return initialValue;
     }
 
@@ -122,7 +122,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         public final MethodInfo sam;
         private final TypeAnalysis typeAnalysisOfOwner;
         private final AnalysisProvider analysisProvider;
-        public final SetOnce<Value> initialValue = new SetOnce<>();
+        public final SetOnce<Expression> initialValue = new SetOnce<>();
 
         public Builder(Primitives primitives, AnalysisProvider analysisProvider, @NotModified FieldInfo fieldInfo, TypeAnalysis typeAnalysisOfOwner) {
             super(primitives, fieldInfo.name);
@@ -140,8 +140,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         @Override
-        public Value getInitialValue() {
-            return initialValue.getOrElse(UnknownValue.NO_VALUE);
+        public Expression getInitialValue() {
+            return initialValue.getOrElse(EmptyExpression.NO_VALUE);
         }
 
         @Override
@@ -155,7 +155,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         // if the field turns out to be effectively final, it can have a value
-        public final SetOnce<Value> effectivelyFinalValue = new SetOnce<>();
+        public final SetOnce<Expression> effectivelyFinalValue = new SetOnce<>();
 
         // end product of the dependency analysis of linkage between the variables in a method
         // if A links to B, and A is modified, then B must be too.
@@ -180,7 +180,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         @Override
-        public Value getEffectivelyFinalValue() {
+        public Expression getEffectivelyFinalValue() {
             return effectivelyFinalValue.getOrElse(null);
         }
 

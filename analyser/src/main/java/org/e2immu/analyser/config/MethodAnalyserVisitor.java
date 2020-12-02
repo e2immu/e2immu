@@ -17,7 +17,7 @@ public interface MethodAnalyserVisitor {
                 MethodAnalysis methodAnalysis,
                 List<ParameterAnalysis> parameterAnalyses, Map<String, AnalysisStatus> statuses) {
 
-        public int getProperty(Value value, VariableProperty variableProperty) {
+        public int getProperty(Expression value, VariableProperty variableProperty) {
             return evaluationContext.getProperty(value, variableProperty);
         }
 

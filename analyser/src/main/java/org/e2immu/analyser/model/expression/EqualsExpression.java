@@ -35,8 +35,8 @@ public class EqualsExpression extends BinaryOperator {
     private final Primitives primitives;
 
     // public for testing
-    private EqualsExpression(Primitives primitives,
-                             Expression lhs, Expression rhs, ObjectFlow objectFlow) {
+    public EqualsExpression(Primitives primitives,
+                            Expression lhs, Expression rhs, ObjectFlow objectFlow) {
         super(lhs, lhs.isNumeric() ? primitives.equalsOperatorInt : primitives.equalsOperatorObject,
                 rhs, BinaryOperator.EQUALITY_PRECEDENCE, objectFlow);
         this.primitives = primitives;

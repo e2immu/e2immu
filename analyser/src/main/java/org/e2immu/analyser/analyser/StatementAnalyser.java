@@ -24,7 +24,6 @@ import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
-import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -47,7 +46,6 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.analyser.FlowData.Execution.*;
-import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
 import static org.e2immu.analyser.util.Logger.log;
@@ -542,7 +540,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (isEscapeAlwaysExecutedInCurrentBlock() && !statementAnalysis.stateData.precondition.isSet()) {
             EvaluationResult er = statementAnalysis.stateData.getConditionManager().escapeCondition(sharedState.evaluationContext);
             Value precondition = er.value;
-            if (precondition != UnknownValue.EMPTY) {
+            if (precondition != EmptyExpression.EMPTY_EXPRESSION) {
                 boolean atLeastFieldOrParameterInvolved = precondition.variables().stream()
                         .anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
                 if (atLeastFieldOrParameterInvolved) {
@@ -698,7 +696,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         Structure structure = statementAnalysis.statement.getStructure();
         if (structure.expression == EmptyExpression.EMPTY_EXPRESSION) {
             // try-statement has no main expression
-            statementAnalysis.stateData.valueOfExpression.set(UnknownValue.EMPTY);
+            statementAnalysis.stateData.valueOfExpression.set(EmptyExpression.EMPTY_EXPRESSION);
             return DONE;
         }
         try {
@@ -890,7 +888,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             // compute the escape situation of the sub-blocks
             Value addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
-            if (addToStateAfterStatement != UnknownValue.EMPTY) {
+            if (addToStateAfterStatement != EmptyExpression.EMPTY_EXPRESSION) {
                 localConditionManager = localConditionManager.addToState(evaluationContext, addToStateAfterStatement);
                 log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", addToStateAfterStatement);
             }
@@ -914,7 +912,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (e0.escapesAlways()) {
                     return NegatedValue.negate(evaluationContext, list.get(0).condition);
                 }
-                return UnknownValue.EMPTY;
+                return EmptyExpression.EMPTY_EXPRESSION;
             }
             if (list.size() == 2) {
                 ExecutionOfBlock e1 = list.get(1);
@@ -931,7 +929,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     // else escapes
                     return list.get(0).condition;
                 }
-                return UnknownValue.EMPTY;
+                return EmptyExpression.EMPTY_EXPRESSION;
             }
             throw new UnsupportedOperationException("Impossible, if {} else {} has 2 blocks maximum.");
         }
@@ -940,11 +938,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         // make an And of NOTs for all those conditions where the switch entry escapes
         if (statementAnalysis.statement instanceof SwitchStatement) {
             Value[] components = list.stream().filter(ExecutionOfBlock::escapesAlways).map(e -> e.condition).toArray(Value[]::new);
-            if (components.length == 0) return UnknownValue.EMPTY;
+            if (components.length == 0) return EmptyExpression.EMPTY_EXPRESSION;
             return new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, components);
         }
         // TODO SwitchExpressions?
-        return UnknownValue.EMPTY;
+        return EmptyExpression.EMPTY_EXPRESSION;
     }
 
 

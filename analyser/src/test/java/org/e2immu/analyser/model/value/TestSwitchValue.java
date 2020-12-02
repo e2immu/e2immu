@@ -42,7 +42,7 @@ public class TestSwitchValue extends CommonAbstractValue {
     @Test
     public void testCleanup2() {
         List<SwitchValue.SwitchValueEntry> entries = List.of(
-                newEntry(newString("c"), UnknownValue.EMPTY),
+                newEntry(newString("c"), EmptyExpression.EMPTY_EXPRESSION),
                 newEntry(newString("b"), newInt(0)),
                 newEntry(newString("a"), newInt(4), newInt(3)),
                 newEntry(newString("a"), newInt(1), newInt(2), newInt(2)));
@@ -60,7 +60,7 @@ public class TestSwitchValue extends CommonAbstractValue {
     @Test
     public void testCleanup3() {
         List<SwitchValue.SwitchValueEntry> entries = List.of(
-                newEntry(newString("a"), UnknownValue.EMPTY),
+                newEntry(newString("a"), EmptyExpression.EMPTY_EXPRESSION),
                 newEntry(newString("a"), newInt(0)),
                 newEntry(newString("a"), newInt(4), newInt(3)),
                 newEntry(newString("a"), newInt(1), newInt(2), newInt(2)));

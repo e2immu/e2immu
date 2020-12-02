@@ -70,8 +70,8 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
         if ("setPositive1".equals(d.methodInfo().name)) {
             if ("0.0.0".equals(d.statementId())) {
                 if (d.iteration() == 0) {
-                    Assert.assertSame(UnknownValue.NO_VALUE, d.condition());
-                    Assert.assertSame(UnknownValue.NO_VALUE, d.state());
+                    Assert.assertSame(EmptyExpression.NO_VALUE, d.condition());
+                    Assert.assertSame(EmptyExpression.NO_VALUE, d.state());
                 } else if (d.iteration() == 1) {
                     Assert.assertEquals("((-1) + (-this.i)) >= 0", d.condition().toString());
                     Assert.assertEquals("((-1) + (-this.i)) >= 0", d.state().toString());
@@ -84,10 +84,10 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
             }
             if ("0".equals(d.statementId())) {
                 if (d.iteration() == 0) {
-                    Assert.assertSame(UnknownValue.NO_VALUE, d.condition()); // condition is EMPTY, but because state is NO_VALUE, not written
-                    Assert.assertSame(UnknownValue.NO_VALUE, d.state());
+                    Assert.assertSame(EmptyExpression.NO_VALUE, d.condition()); // condition is EMPTY, but because state is NO_VALUE, not written
+                    Assert.assertSame(EmptyExpression.NO_VALUE, d.state());
                 } else {
-                    Assert.assertSame(UnknownValue.EMPTY, d.condition());
+                    Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.condition());
                     Assert.assertEquals("this.i >= 0", d.state().toString());
                 }
             }

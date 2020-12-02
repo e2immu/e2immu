@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Analysis;
 import org.e2immu.analyser.model.AnnotationExpression;
 import org.e2immu.analyser.model.Level;

@@ -17,7 +17,7 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
@@ -45,7 +45,7 @@ public abstract class AbstractAnalyser implements Analyser {
 
     protected AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
 
-    protected Value getVariableValue(Variable variable) {
+    protected Expression getVariableValue(Variable variable) {
         throw new UnsupportedOperationException();
     }
 

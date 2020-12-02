@@ -147,7 +147,7 @@ public class Lambda implements Expression {
             }
         }
         if (result == null) {
-            result = new Instance(parameterizedType, objectFlow, UnknownValue.EMPTY);
+            result = new Instance(parameterizedType, objectFlow, EmptyExpression.EMPTY_EXPRESSION);
         }
 
         builder.setValue(result);

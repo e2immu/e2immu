@@ -17,11 +17,11 @@
 
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.AndExpression;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NegatedExpression;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.model.value.AndValue;
-import org.e2immu.analyser.model.value.NegatedValue;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Freezable;
 import org.slf4j.Logger;
@@ -124,25 +124,25 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void setValueOnAssignment(int level, Value value, Map<VariableProperty, Integer> propertiesToSet) {
+    public void setValueOnAssignment(int level, Expression value, Map<VariableProperty, Integer> propertiesToSet) {
         ensureNotFrozen();
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        if (value != UnknownValue.NO_VALUE) {
+        if (value != EmptyExpression.NO_VALUE) {
             variableInfo.setValue(value);
         }
         propertiesToSet.forEach(variableInfo::setProperty);
     }
 
     @Override
-    public void setValueAndStateOnAssignment(int level, Value value, Value state, Map<VariableProperty, Integer> propertiesToSet) {
+    public void setValueAndStateOnAssignment(int level, Expression value, Expression state, Map<VariableProperty, Integer> propertiesToSet) {
         ensureNotFrozen();
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        if (value != UnknownValue.NO_VALUE) {
+        if (value != EmptyExpression.NO_VALUE) {
             variableInfo.setValue(value);
         }
-        if (state != UnknownValue.NO_VALUE) {
+        if (state != EmptyExpression.NO_VALUE) {
             variableInfo.stateOnAssignment.set(state);
         }
         propertiesToSet.forEach(variableInfo::setProperty);
@@ -150,11 +150,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
 
     @Override
-    public void setStateOnAssignment(int level, Value state) {
+    public void setStateOnAssignment(int level, Expression state) {
         ensureNotFrozen();
         Objects.requireNonNull(state);
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        if (state != UnknownValue.NO_VALUE && (!variableInfo.stateOnAssignment.isSet() || !state.equals(variableInfo.stateOnAssignment.get()))) {
+        if (state != EmptyExpression.NO_VALUE && (!variableInfo.stateOnAssignment.isSet() || !state.equals(variableInfo.stateOnAssignment.get()))) {
             variableInfo.stateOnAssignment.set(state);
         }
     }
@@ -178,16 +178,16 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void setInitialValueFromAnalyser(Value value, Map<VariableProperty, Integer> propertiesToSet) {
+    public void setInitialValueFromAnalyser(Expression value, Map<VariableProperty, Integer> propertiesToSet) {
         internalSetValue(LEVEL_1_INITIALISER, value);
         propertiesToSet.forEach((vp, i) -> setProperty(LEVEL_1_INITIALISER, vp, i));
     }
 
-    private void internalSetValue(int level, Value value) {
+    private void internalSetValue(int level, Expression value) {
         ensureNotFrozen();
 
         Objects.requireNonNull(value);
-        if (value == UnknownValue.NO_VALUE) {
+        if (value == EmptyExpression.NO_VALUE) {
             throw new IllegalArgumentException("Value should not be NO_VALUE");
         }
         int writeLevel = findLevelForWriting(level);
@@ -198,11 +198,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         }
     }
 
-    private void internalSetStateOnAssignment(int level, Value state) {
+    private void internalSetStateOnAssignment(int level, Expression state) {
         ensureNotFrozen();
 
         Objects.requireNonNull(state);
-        if (state == UnknownValue.NO_VALUE) {
+        if (state == EmptyExpression.NO_VALUE) {
             throw new IllegalArgumentException("State should not be NO_VALUE");
         }
         int writeLevel = findLevelForWriting(level);
@@ -328,7 +328,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             data[level] = merged;
             currentLevel = level;
         }
-        Value mergedValue = merged.getValue();
+        Expression mergedValue = merged.getValue();
 
         /*
          the following condition explicitly catches a situation with merging return value objects:
@@ -341,7 +341,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
          The second statement should be read as: if(!x) retVal2 = b, or retVal2 = !x?b:<return value>
          Merging the two gives the correct result, but <return value> keeps lingering, which has a nefarious effect on properties.
          */
-        if (mergedValue != UnknownValue.NO_VALUE && !existingValuesWillBeOverwritten &&
+        if (mergedValue != EmptyExpression.NO_VALUE && !existingValuesWillBeOverwritten &&
                 notExistingStateEqualsAndMergeStates(evaluationContext, existing, merge)) {
             VariableProperty.VALUE_PROPERTIES.forEach(vp -> merged.setProperty(vp, mergedValue.getProperty(evaluationContext, vp)));
         } else {
@@ -362,14 +362,14 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     private static boolean notExistingStateEqualsAndMergeStates(EvaluationContext evaluationContext, VariableInfo oneSide, List<VariableInfo> merge) {
-        if (!oneSide.stateOnAssignmentIsSet() || oneSide.getStateOnAssignment() == UnknownValue.EMPTY) return false;
-        if (merge.stream().anyMatch(vi -> !vi.stateOnAssignmentIsSet() || vi.getStateOnAssignment() == UnknownValue.EMPTY))
+        if (!oneSide.stateOnAssignmentIsSet() || oneSide.getStateOnAssignment() == EmptyExpression.EMPTY_EXPRESSION) return false;
+        if (merge.stream().anyMatch(vi -> !vi.stateOnAssignmentIsSet() || vi.getStateOnAssignment() == EmptyExpression.EMPTY_EXPRESSION))
             return false;
 
-        Value notOne = NegatedValue.negate(evaluationContext, oneSide.getStateOnAssignment());
+        Expression notOne = NegatedExpression.negate(evaluationContext, oneSide.getStateOnAssignment());
 
-        Value andOtherSide = new AndValue(evaluationContext.getPrimitives()).append(evaluationContext,
-                merge.stream().map(VariableInfo::getStateOnAssignment).toArray(Value[]::new));
+        Expression andOtherSide = new AndExpression(evaluationContext.getPrimitives()).append(evaluationContext,
+                merge.stream().map(VariableInfo::getStateOnAssignment).toArray(Expression[]::new));
         return notOne.equals(andOtherSide);
     }
 }

@@ -114,6 +114,6 @@ public class StringConcat extends BinaryOperator {
 
     @Override
     public Instance getInstance(EvaluationContext evaluationContext) {
-        return new Instance(type(), getObjectFlow(), UnknownValue.EMPTY);
+        return new Instance(type(), getObjectFlow(), EmptyExpression.EMPTY_EXPRESSION);
     }
 }

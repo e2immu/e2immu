@@ -27,10 +27,8 @@ import org.e2immu.analyser.analyser.check.CheckPrecondition;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.MemberValuePair;
-import org.e2immu.analyser.model.expression.StringConstant;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
-import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -372,7 +370,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     private AnalysisStatus computeOnlyMarkAnnotate(SharedState sharedState) {
         assert !methodAnalysis.markAndOnly.isSet();
 
-        SetOnceMap<String, Value> approvedPreconditions = ((TypeAnalysisImpl.Builder) typeAnalysis).approvedPreconditions;
+        SetOnceMap<String, Expression> approvedPreconditions = ((TypeAnalysisImpl.Builder) typeAnalysis).approvedPreconditions;
         if (!approvedPreconditions.isFrozen()) {
             log(DELAYED, "No decision on approved preconditions yet for {}", methodInfo.distinguishingName());
             return DELAYS;
@@ -390,24 +388,24 @@ public class MethodAnalyser extends AbstractAnalyser {
             log(DELAYED, "Waiting for preconditions to be resolved in {}", methodInfo.distinguishingName());
             return DELAYS;
         }
-        List<Value> preconditions = methodAnalysis.preconditionForMarkAndOnly.get();
+        List<Expression> preconditions = methodAnalysis.preconditionForMarkAndOnly.get();
 
         boolean mark = false;
         Boolean after = null;
         EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration, ConditionManager.INITIAL);
-        for (Value precondition : preconditions) {
+        for (Expression precondition : preconditions) {
             String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(precondition);
             if (!approvedPreconditions.isSet(markLabel)) {
                 // not going to work...
                 continue;
             }
-            Value before = approvedPreconditions.get(markLabel);
+            Expression before = approvedPreconditions.get(markLabel);
             // TODO parameters have different owners, so a precondition containing them cannot be the same in a different method
             // we need a better solution
             if (before.toString().equals(precondition.toString())) {
                 after = false;
             } else {
-                Value negated = NegatedValue.negate(evaluationContext, precondition);
+                Expression negated = NegatedExpression.negate(evaluationContext, precondition);
                 if (before.toString().equals(negated.toString())) {
                     if (after == null) after = true;
                 } else {
@@ -485,8 +483,8 @@ public class MethodAnalyser extends AbstractAnalyser {
             log(DELAYED, "Delaying compute @Only and @Mark, precondition not set (weird, should be set by now)");
             return DELAYS;
         }
-        Value precondition = methodAnalysis.precondition.get();
-        if (precondition == UnknownValue.EMPTY) {
+        Expression precondition = methodAnalysis.precondition.get();
+        if (precondition == EmptyExpression.EMPTY_EXPRESSION) {
             log(MARK, "No @Mark @Only annotation in {}, as no precondition", methodInfo.distinguishingName());
             methodAnalysis.preconditionForMarkAndOnly.set(List.of());
             return DONE;
@@ -501,7 +499,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             methodAnalysis.preconditionForMarkAndOnly.set(List.of());
             return DONE;
         }
-        List<Value> preconditionParts = new ArrayList<>(filterResult.accepted().values());
+        List<Expression> preconditionParts = new ArrayList<>(filterResult.accepted().values());
         log(MARK, "Did prep work for @Only, @Mark, found precondition on variables {} in {}", precondition,
                 filterResult.accepted().keySet(), methodInfo.distinguishingName());
         methodAnalysis.preconditionForMarkAndOnly.set(preconditionParts);
@@ -514,8 +512,8 @@ public class MethodAnalyser extends AbstractAnalyser {
         assert !methodAnalysis.singleReturnValue.isSet();
 
         VariableInfo variableInfo = getReturnAsVariable();
-        Value value = variableInfo.getValue();
-        if (value == UnknownValue.NO_VALUE) {
+        Expression value = variableInfo.getValue();
+        if (value == EmptyExpression.NO_VALUE) {
             log(DELAYED, "Not all return values have been set yet for {}, delaying", methodInfo.distinguishingName());
             return DELAYS;
         }
@@ -531,7 +529,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             methodAnalysis.objectFlow.set(objectFlow);
         }
 
-        Value valueBeforeInlining = value;
+        Expression valueBeforeInlining = value;
         int immutable = Level.DELAY;
         if (value.isConstant()) {
             immutable = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
@@ -564,8 +562,8 @@ public class MethodAnalyser extends AbstractAnalyser {
         methodAnalysis.setProperty(VariableProperty.CONSTANT, Level.fromBool(isConstant));
         log(CONSTANT, "Mark method {} as @Constant? {}", methodInfo.fullyQualifiedName(), isConstant);
 
-        boolean isFluent = valueBeforeInlining instanceof VariableValue vv &&
-                vv.variable instanceof This thisVar &&
+        boolean isFluent = valueBeforeInlining instanceof VariableExpression vv &&
+                vv.variable() instanceof This thisVar &&
                 thisVar.typeInfo == methodInfo.typeInfo;
         methodAnalysis.setProperty(VariableProperty.FLUENT, Level.fromBool(isFluent));
         log(FLUENT, "Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
@@ -970,7 +968,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public int getProperty(Value value, VariableProperty variableProperty) {
+        public int getProperty(Expression value, VariableProperty variableProperty) {
             return value.getProperty(this, variableProperty);
         }
     }

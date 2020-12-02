@@ -23,28 +23,49 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.value.Instance;
+import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
 
 @E2Container
-public class VariableExpression implements Expression {
-    public final Variable variable;
+public record VariableExpression(Variable variable,
+                                 String name,
+                                 boolean variableField,
+                                 ObjectFlow objectFlow) implements Expression {
 
-    public VariableExpression(@NotNull Variable variable) {
-        this.variable = Objects.requireNonNull(variable);
+    public VariableExpression(Variable variable) {
+        this(variable, ObjectFlow.NO_FLOW);
+    }
+
+    public VariableExpression(Variable variable, ObjectFlow objectFlow) {
+        this(variable, objectFlow, false);
+    }
+
+    public VariableExpression(Variable variable, ObjectFlow objectFlow, boolean variableField) {
+        this(variable, variable.fullyQualifiedName(), variableField, objectFlow);
+    }
+
+    @Override
+    public ParameterizedType type() {
+        return variable.concreteReturnType();
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        VariableExpression that = (VariableExpression) o;
-        return variable.equals(that.variable);
+        if (!(o instanceof VariableValue that)) return false;
+        if (!variable.equals(that.variable)) return false;
+        return !variableField;
     }
 
     @Override
@@ -62,6 +83,38 @@ public class VariableExpression implements Expression {
     }
 
     @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int order() {
+        return ExpressionComparator.ORDER_VARIABLE_VALUE;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) {
+        VariableExpression variableValue = (VariableExpression) v;
+        return name.compareTo(variableValue.name);
+    }
+
+    @Override
+    public boolean isNumeric() {
+        TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
+        return Primitives.isNumeric(typeInfo);
+    }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        return evaluationContext.currentInstance(variable);
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
+    }
+
+    @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         return evaluate(evaluationContext, forwardEvaluationInfo, variable);
     }
@@ -69,11 +122,11 @@ public class VariableExpression implements Expression {
     // code also used by FieldAccess
     public static EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo, Variable variable) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        Value currentValue = builder.currentValue(variable);
-        builder.setValue(currentValue);
+        Expression currentValue = builder.currentExpression(variable);
+        builder.setExpression(currentValue);
 
         // no statement analyser... we're in the shallow analyser
-        if(evaluationContext.getCurrentStatement() == null) return builder.build();
+        if (evaluationContext.getCurrentStatement() == null) return builder.build();
 
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
             builder.markRead(variable, evaluationContext.getIteration());
@@ -129,6 +182,23 @@ public class VariableExpression implements Expression {
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
         return variable.sideEffect(Objects.requireNonNull(evaluationContext));
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        if (printMode.forAnnotations()) {
+            if (variable instanceof ParameterInfo parameterInfo) return parameterInfo.name;
+            if (variable instanceof FieldReference fieldReference) {
+                String scope;
+                if (fieldReference.scope == null) {
+                    scope = fieldReference.fieldInfo.owner.simpleName;
+                } else {
+                    scope = fieldReference.scope.print(printMode);
+                }
+                return scope + "." + fieldReference.fieldInfo.name;
+            }
+        }
+        return name;
     }
 
     @Override

@@ -18,7 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableMap;
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.util.ListUtil;
 
 import java.util.List;
@@ -30,7 +30,7 @@ public interface CompanionAnalysis {
     /**
      * @return the value that represents the companion.
      */
-    Value getValue();
+    Expression getValue();
 
     /**
      * The variable value referring to the "pre" aspect variable.
@@ -39,7 +39,7 @@ public interface CompanionAnalysis {
      *
      * @return NO_VALUE when there is none
      */
-    Value getPreAspectVariableValue();
+    Expression getPreAspectVariableValue();
 
     /**
      * The values of the parameters, part of the getValue() value.
@@ -47,7 +47,7 @@ public interface CompanionAnalysis {
      *
      * @return a list of parameters, never null.
      */
-    List<Value> getParameterValues();
+    List<Expression> getParameterValues();
 
     /**
      * Re-evaluate the companion method with concrete parameters and object
@@ -55,8 +55,8 @@ public interface CompanionAnalysis {
      * @param evaluationContext the evaluation context
      * @return a re-evaluated Value
      */
-    default Value reEvaluate(EvaluationContext evaluationContext, List<Value> parameterValues) {
-        ImmutableMap.Builder<Value, Value> translationMap = new ImmutableMap.Builder<>();
+    default Expression reEvaluate(EvaluationContext evaluationContext, List<Expression> parameterValues) {
+        ImmutableMap.Builder<Expression, Expression> translationMap = new ImmutableMap.Builder<>();
         ListUtil.joinLists(getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
         return getValue().reEvaluate(evaluationContext, translationMap.build()).value;
     }

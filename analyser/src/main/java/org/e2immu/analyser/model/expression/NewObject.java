@@ -156,7 +156,7 @@ public class NewObject implements HasParameterExpressions {
         Location location = evaluationContext.getLocation(this);
         ObjectFlow objectFlow = res.k.createInternalObjectFlow(location, parameterizedType, Origin.NEW_OBJECT_CREATION);
 
-        Instance initialInstance = new Instance(parameterizedType, constructor, res.v, objectFlow, UnknownValue.EMPTY);
+        Instance initialInstance = new Instance(parameterizedType, constructor, res.v, objectFlow, EmptyExpression.EMPTY_EXPRESSION);
         Instance instance;
         if (constructor != null) {
             // check state changes of companion methods

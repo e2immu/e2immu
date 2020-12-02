@@ -12,7 +12,7 @@ public interface StatementAnalyserVisitor {
                 int iteration,
                 EvaluationContext evaluationContext,
                 MethodInfo methodInfo, StatementAnalysis statementAnalysis,
-                String statementId, Value condition, Value state, Map<String, AnalysisStatus> statusesAsMap) {
+                String statementId, Expression condition, Expression state, Map<String, AnalysisStatus> statusesAsMap) {
 
         // shortcut
 
@@ -23,7 +23,7 @@ public interface StatementAnalyserVisitor {
                     .findFirst()
                     .orElse(null);
         }
-        public int getProperty(Value value, VariableProperty variableProperty) {
+        public int getProperty(Expression value, VariableProperty variableProperty) {
             return evaluationContext.getProperty(value, variableProperty);
         }
 

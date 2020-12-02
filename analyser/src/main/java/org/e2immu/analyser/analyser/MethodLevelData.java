@@ -18,8 +18,8 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.AndValue;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.expression.AndExpression;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -57,7 +57,7 @@ public class MethodLevelData {
     public final SetOnceMap<MethodInfo, Boolean> copyModificationStatusFrom = new SetOnceMap<>();
 
     // aggregates the preconditions on individual statements
-    public final SetOnce<Value> combinedPrecondition = new SetOnce<>();
+    public final SetOnce<Expression> combinedPrecondition = new SetOnce<>();
 
     // no delays when frozen
     public final AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
@@ -107,19 +107,19 @@ public class MethodLevelData {
 
     private AnalysisStatus combinePrecondition(SharedState sharedState) {
         if (!combinedPrecondition.isSet()) {
-            Value result;
+            Expression result;
 
             if (sharedState.previous == null) {
-                result = sharedState.stateData.precondition.isSet() ? sharedState.stateData.precondition.get() : UnknownValue.EMPTY;
+                result = sharedState.stateData.precondition.isSet() ? sharedState.stateData.precondition.get() : EmptyExpression.EMPTY_EXPRESSION;
             } else {
-                Value v1 = sharedState.previous.combinedPrecondition.get();
-                Value v2 = sharedState.stateData.precondition.get();
-                if (v1 == UnknownValue.EMPTY) {
+                Expression v1 = sharedState.previous.combinedPrecondition.get();
+                Expression v2 = sharedState.stateData.precondition.get();
+                if (v1 == EmptyExpression.EMPTY_EXPRESSION) {
                     result = v2;
-                } else if (v2 == UnknownValue.EMPTY) {
+                } else if (v2 == EmptyExpression.EMPTY_EXPRESSION) {
                     result = v1;
                 } else {
-                    result = new AndValue(sharedState.evaluationContext.getPrimitives())
+                    result = new AndExpression(sharedState.evaluationContext.getPrimitives())
                             .append(sharedState.evaluationContext, v1, v2);
                 }
             }

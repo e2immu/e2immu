@@ -31,9 +31,9 @@ import org.e2immu.analyser.output.PrintMode;
  */
 public class PreAspectVariable implements Variable {
     private final ParameterizedType returnType;
-    public final Value valueForProperties;
+    public final Expression valueForProperties;
 
-    public PreAspectVariable(ParameterizedType returnType, Value valueForProperties) {
+    public PreAspectVariable(ParameterizedType returnType, Expression valueForProperties) {
         this.returnType = returnType;
         this.valueForProperties = valueForProperties;
     }

@@ -1,36 +1,34 @@
 package org.e2immu.analyser.analyser;
 
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ConditionManager {
 
-    public static final ConditionManager INITIAL = new ConditionManager(UnknownValue.EMPTY, UnknownValue.EMPTY);
-    public static final ConditionManager DELAYED = new ConditionManager(UnknownValue.NO_VALUE, UnknownValue.NO_VALUE);
+    public static final ConditionManager INITIAL = new ConditionManager(EmptyExpression.EMPTY_EXPRESSION, EmptyExpression.EMPTY_EXPRESSION);
+    public static final ConditionManager DELAYED = new ConditionManager(EmptyExpression.NO_VALUE, EmptyExpression.NO_VALUE);
 
-    public final Value condition;
-    public final Value state;
+    public final Expression condition;
+    public final Expression state;
 
     public ConditionManager() {
-        this(UnknownValue.EMPTY, UnknownValue.EMPTY);
+        this(EmptyExpression.EMPTY_EXPRESSION, EmptyExpression.EMPTY_EXPRESSION);
     }
 
-    public ConditionManager(Value condition, Value state) {
+    public ConditionManager(Expression condition, Expression state) {
         this.condition = checkBoolean(Objects.requireNonNull(condition));
         this.state = checkBoolean(Objects.requireNonNull(state));
     }
 
-    private static Value checkBoolean(Value v) {
-        if (v != UnknownValue.EMPTY && v != UnknownValue.NO_VALUE
+    private static Expression checkBoolean(Expression v) {
+        if (v != EmptyExpression.EMPTY_EXPRESSION && v != EmptyExpression.NO_VALUE
                 && (v.type() == null || Primitives.isNotBooleanOrBoxedBoolean(v.type()))) {
             throw new UnsupportedOperationException("Need a boolean value in the condition manager; got " + v);
         }
@@ -38,14 +36,14 @@ public class ConditionManager {
     }
 
     // adding a condition always adds to the state as well (testing only)
-    public ConditionManager addCondition(EvaluationContext evaluationContext, Value value) {
-        if (value == null || value == UnknownValue.EMPTY) return this;
+    public ConditionManager addCondition(EvaluationContext evaluationContext, Expression value) {
+        if (value == null || value == EmptyExpression.EMPTY_EXPRESSION) return this;
         if (value.isBoolValueTrue()) return this;
         if (value.isBoolValueFalse()) return new ConditionManager(value, value);
         return new ConditionManager(combineWithCondition(evaluationContext, value), combineWithState(evaluationContext, value));
     }
 
-    public ConditionManager addToState(EvaluationContext evaluationContext, Value value) {
+    public ConditionManager addToState(EvaluationContext evaluationContext, Expression value) {
         if (value.isBoolValueTrue()) return this;
         if (value.isBoolValueFalse()) return new ConditionManager(value, value);
         return new ConditionManager(condition, combineWithState(evaluationContext, value));
@@ -57,46 +55,46 @@ public class ConditionManager {
      * @param value the restriction given by the program
      * @return the computed, real restriction
      */
-    public Value evaluateWithCondition(EvaluationContext evaluationContext, Value value) {
+    public Expression evaluateWithCondition(EvaluationContext evaluationContext, Expression value) {
         return evaluateWith(evaluationContext, condition, value);
     }
 
-    public Value evaluateWithState(EvaluationContext evaluationContext, Value value) {
+    public Expression evaluateWithState(EvaluationContext evaluationContext, Expression value) {
         return evaluateWith(evaluationContext, state, value);
     }
 
-    private static Value evaluateWith(EvaluationContext evaluationContext, Value condition, Value value) {
-        if (condition == UnknownValue.EMPTY) return value; // allow to go delayed
+    private static Expression evaluateWith(EvaluationContext evaluationContext, Expression condition, Expression value) {
+        if (condition == EmptyExpression.EMPTY_EXPRESSION) return value; // allow to go delayed
         // one delayed, all delayed
-        if (isDelayed(condition) || value == UnknownValue.NO_VALUE) return UnknownValue.NO_VALUE;
+        if (isDelayed(condition) || value == EmptyExpression.NO_VALUE) return EmptyExpression.NO_VALUE;
 
         // we take the condition as a given, and see if the value agrees
 
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the condition
-        Value result = new AndValue(evaluationContext.getPrimitives(), value.getObjectFlow())
+        Expression result = new AndExpression(evaluationContext.getPrimitives(), value.getObjectFlow())
                 .append(evaluationContext, condition, value);
         if (result.equals(condition)) {
             // constant true: adding the value has no effect at all
-            return BoolValue.createTrue(evaluationContext.getPrimitives());
+            return new BooleanConstant(evaluationContext.getPrimitives(), true);
         }
         return result;
     }
 
-    public Value combineWithCondition(EvaluationContext evaluationContext, Value value) {
+    public Expression combineWithCondition(EvaluationContext evaluationContext, Expression value) {
         return combineWith(evaluationContext, condition, value);
     }
 
-    public Value combineWithState(EvaluationContext evaluationContext, Value value) {
+    public Expression combineWithState(EvaluationContext evaluationContext, Expression value) {
         return combineWith(evaluationContext, state, value);
     }
 
-    public static Value combineWith(EvaluationContext evaluationContext, Value condition, Value value) {
+    public static Expression combineWith(EvaluationContext evaluationContext, Expression condition, Expression value) {
         Objects.requireNonNull(value);
-        if (condition == UnknownValue.EMPTY) return value;
-        if (value == UnknownValue.EMPTY) return condition;
-        if (isDelayed(condition) || isDelayed(value)) return UnknownValue.NO_VALUE;
-        return new AndValue(evaluationContext.getPrimitives(), value.getObjectFlow())
+        if (condition == EmptyExpression.EMPTY_EXPRESSION) return value;
+        if (value == EmptyExpression.EMPTY_EXPRESSION) return condition;
+        if (isDelayed(condition) || isDelayed(value)) return EmptyExpression.NO_VALUE;
+        return new AndExpression(evaluationContext.getPrimitives(), value.getObjectFlow())
                 .append(evaluationContext, condition, value);
     }
 
@@ -124,19 +122,19 @@ public class ConditionManager {
      *
      * @return individual variables that appear in a top-level disjunction as variable == null
      */
-    private static Set<Variable> findIndividualNull(Value value, EvaluationContext evaluationContext, Filter.FilterMode filterMode, boolean requireEqualsNull) {
-        if (value == UnknownValue.EMPTY || isDelayed(value)) {
+    private static Set<Variable> findIndividualNull(Expression value, EvaluationContext evaluationContext, Filter.FilterMode filterMode, boolean requireEqualsNull) {
+        if (value == EmptyExpression.EMPTY_EXPRESSION || isDelayed(value)) {
             return Set.of();
         }
-        Map<Variable, Value> individualNullClauses = Filter.filter(evaluationContext, value, filterMode, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE).accepted();
+        Map<Variable, Expression> individualNullClauses = Filter.filter(evaluationContext, value, filterMode, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE).accepted();
         return individualNullClauses.entrySet()
                 .stream()
-                .filter(e -> requireEqualsNull == (e.getValue() == NullValue.NULL_VALUE))
+                .filter(e -> requireEqualsNull == (e.getValue() == NullConstant.NULL_CONSTANT))
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 
     public boolean haveNonEmptyState() {
-        return state != UnknownValue.EMPTY;
+        return state != EmptyExpression.EMPTY_EXPRESSION;
     }
 
     // we need a system to be able to delay conditionals, when they are based on the value of fields
@@ -148,12 +146,12 @@ public class ConditionManager {
         return !isDelayed(state);
     }
 
-    static boolean isDelayed(Value value) {
-        return value == UnknownValue.NO_VALUE;
+    static boolean isDelayed(Expression value) {
+        return value == EmptyExpression.NO_VALUE;
     }
 
     public boolean inErrorState(Primitives primitives) {
-        return BoolValue.createFalse(primitives).equals(state);
+        return new BooleanConstant(primitives, false).equals(state);
     }
 
     // used in assignments (it gets a new value, so whatever was known, must go)
@@ -166,24 +164,24 @@ public class ConditionManager {
         return new ConditionManager(condition, removeClausesInvolving(evaluationContext, state, variable, false));
     }
 
-    private static Filter.FilterResult<Variable> removeVariableFilter(Variable variable, Value value, boolean removeEqualityOnVariable) {
-        VariableValue variableValue;
-        if ((variableValue = value.asInstanceOf(VariableValue.class)) != null && variable.equals(variableValue.variable)) {
-            return new Filter.FilterResult<>(Map.of(variable, value), UnknownValue.EMPTY);
+    private static Filter.FilterResult<Variable> removeVariableFilter(Variable variable, Expression value, boolean removeEqualityOnVariable) {
+        VariableExpression variableValue;
+        if ((variableValue = value.asInstanceOf(VariableExpression.class)) != null && variable.equals(variableValue.variable())) {
+            return new Filter.FilterResult<>(Map.of(variable, value), EmptyExpression.EMPTY_EXPRESSION);
         }
-        EqualsValue equalsValue;
-        if (removeEqualityOnVariable && (equalsValue = value.asInstanceOf(EqualsValue.class)) != null) {
-            VariableValue lhs;
-            if ((lhs = equalsValue.lhs.asInstanceOf(VariableValue.class)) != null && variable.equals(lhs.variable)) {
-                return new Filter.FilterResult<>(Map.of(lhs.variable, value), UnknownValue.EMPTY);
+        EqualsExpression equalsValue;
+        if (removeEqualityOnVariable && (equalsValue = value.asInstanceOf(EqualsExpression.class)) != null) {
+            VariableExpression lhs;
+            if ((lhs = equalsValue.lhs.asInstanceOf(VariableExpression.class)) != null && variable.equals(lhs.variable())) {
+                return new Filter.FilterResult<>(Map.of(lhs.variable(), value), EmptyExpression.EMPTY_EXPRESSION);
             }
-            VariableValue rhs;
-            if ((rhs = equalsValue.rhs.asInstanceOf(VariableValue.class)) != null && variable.equals(rhs.variable)) {
-                return new Filter.FilterResult<>(Map.of(rhs.variable, value), UnknownValue.EMPTY);
+            VariableExpression rhs;
+            if ((rhs = equalsValue.rhs.asInstanceOf(VariableExpression.class)) != null && variable.equals(rhs.variable())) {
+                return new Filter.FilterResult<>(Map.of(rhs.variable(), value), EmptyExpression.EMPTY_EXPRESSION);
             }
         }
         if (value.isInstanceOf(MethodValue.class) && value.variables().contains(variable)) {
-            return new Filter.FilterResult<>(Map.of(variable, value), UnknownValue.EMPTY);
+            return new Filter.FilterResult<>(Map.of(variable, value), EmptyExpression.EMPTY_EXPRESSION);
         }
         return null;
     }
@@ -196,8 +194,8 @@ public class ConditionManager {
      * @param variable                 the variable to be removed
      * @param removeEqualityOnVariable in the case of modifying method access, clauses with equality should STAY rather than be removed
      */
-    public static Value removeClausesInvolving(EvaluationContext evaluationContext,
-                                               Value conditional, Variable variable, boolean removeEqualityOnVariable) {
+    public static Expression removeClausesInvolving(EvaluationContext evaluationContext,
+                                                    Expression conditional, Variable variable, boolean removeEqualityOnVariable) {
         Filter.FilterResult<Variable> filterResult = Filter.filter(evaluationContext, conditional, Filter.FilterMode.ALL,
                 value -> removeVariableFilter(variable, value, removeEqualityOnVariable));
         return filterResult.rest();
@@ -207,47 +205,47 @@ public class ConditionManager {
     public EvaluationResult escapeCondition(EvaluationContext evaluationContext) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
-        if (condition == UnknownValue.EMPTY || delayedCondition()) {
-            return builder.setValue(UnknownValue.EMPTY).build();
+        if (condition == EmptyExpression.EMPTY_EXPRESSION || delayedCondition()) {
+            return builder.setExpression(EmptyExpression.EMPTY_EXPRESSION).build();
         }
 
         // TRUE: parameters only FALSE: preconditionSide; OR of 2 filters
         Filter.FilterResult<ParameterInfo> filterResult = Filter.filter(evaluationContext, condition,
                 Filter.FilterMode.REJECT, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE_ON_PARAMETER);
         // those parts that have nothing to do with individual clauses
-        if (filterResult.rest() == UnknownValue.EMPTY) {
-            return builder.setValue(UnknownValue.EMPTY).build();
+        if (filterResult.rest() == EmptyExpression.EMPTY_EXPRESSION) {
+            return builder.setExpression(EmptyExpression.EMPTY_EXPRESSION).build();
         }
         // replace all VariableValues in the rest by VVPlaceHolders
-        Map<Value, Value> translation = new HashMap<>();
+        Map<Expression, Expression> translation = new HashMap<>();
         filterResult.rest().visit(v -> {
-            VariableValue variableValue;
-            if ((variableValue = v.asInstanceOf(VariableValue.class)) != null) {
+            VariableExpression variableValue;
+            if ((variableValue = v.asInstanceOf(VariableExpression.class)) != null) {
                 // null evalContext -> do not copy properties (the condition+state may hold a not null, which can
                 // be copied in the property, which can reEvaluate later to constant true/false
-                Variable variable = variableValue.variable;
-                translation.put(v, new VariableValue(variable, ObjectFlow.NO_FLOW));
+                Variable variable = variableValue.variable();
+                translation.put(v, new VariableExpression(variable, ObjectFlow.NO_FLOW));
             }
             return true;
         });
 
         // and negate. This will become the precondition or "initial state"
         EvaluationResult reRest = filterResult.rest().reEvaluate(evaluationContext, translation);
-        return builder.compose(reRest).setValue(NegatedValue.negate(evaluationContext, reRest.value)).build();
+        return builder.compose(reRest).setExpression(NegatedExpression.negate(evaluationContext, reRest.value)).build();
     }
 
-    private static Filter.FilterResult<Variable> obtainVariableFilter(Variable variable, Value value) {
-        Set<Variable> variables = value.variables();
+    private static Filter.FilterResult<Variable> obtainVariableFilter(Variable variable, Expression value) {
+        List<Variable> variables = value.variables();
         if (variables.size() == 1 && variable.equals(variables.stream().findAny().orElseThrow())) {
-            return new Filter.FilterResult<>(Map.of(variable, value), UnknownValue.EMPTY);
+            return new Filter.FilterResult<>(Map.of(variable, value), EmptyExpression.EMPTY_EXPRESSION);
         }
         return null;
     }
 
     // note: very similar to remove, except that here we're interested in the actual value
-    public Value individualStateInfo(EvaluationContext evaluationContext, Variable variable) {
+    public Expression individualStateInfo(EvaluationContext evaluationContext, Variable variable) {
         Filter.FilterResult<Variable> filterResult = Filter.filter(evaluationContext, state, Filter.FilterMode.ACCEPT,
                 value -> obtainVariableFilter(variable, value));
-        return filterResult.accepted().getOrDefault(variable, UnknownValue.EMPTY);
+        return filterResult.accepted().getOrDefault(variable, EmptyExpression.EMPTY_EXPRESSION);
     }
 }

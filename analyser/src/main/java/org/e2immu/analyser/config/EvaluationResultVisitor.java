@@ -57,11 +57,11 @@ public interface EvaluationResultVisitor {
         }
 
         public boolean haveValueChange(String variableName) {
-            return evaluationResult().getValueChangeStream().anyMatch(e -> e.getKey().fullyQualifiedName().equals(variableName));
+            return evaluationResult().getExpressionChangeStream().anyMatch(e -> e.getKey().fullyQualifiedName().equals(variableName));
         }
 
-        public EvaluationResult.ValueChangeData findValueChange(String variableName) {
-            return evaluationResult().getValueChangeStream().filter(e -> e.getKey().fullyQualifiedName().equals(variableName))
+        public EvaluationResult.ExpressionChangeData findValueChange(String variableName) {
+            return evaluationResult().getExpressionChangeStream().filter(e -> e.getKey().fullyQualifiedName().equals(variableName))
                     .map(Map.Entry::getValue).findFirst().orElseThrow();
         }
     }

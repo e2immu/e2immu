@@ -23,15 +23,13 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
+import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.ConstantExpression;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.CombinedValue;
-import org.e2immu.analyser.model.value.VariableValue;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.value.ConstantValue;
-import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
@@ -46,7 +44,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
 import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
-import static org.e2immu.analyser.model.value.UnknownValue.NO_VALUE;
+import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -180,7 +178,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (fieldInitialiser.initialiser() != EmptyExpression.EMPTY_EXPRESSION) {
                 EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
                 EvaluationResult evaluationResult = fieldInitialiser.initialiser().evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-                Value initialiserValue = evaluationResult.value;
+                Expression initialiserValue = evaluationResult.value;
                 if (initialiserValue != NO_VALUE) {
                     fieldAnalysis.initialValue.set(initialiserValue);
                 }
@@ -189,7 +187,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 return resultOfObjectFlow.combine(initialiserValue == NO_VALUE ? DELAYS : DONE);
             }
         }
-        fieldAnalysis.initialValue.set(ConstantValue.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo()));
+        fieldAnalysis.initialValue.set(ConstantExpression.nullValue(analyserContext.getPrimitives(), fieldInfo.type.bestTypeInfo()));
         return DONE;
     }
 
@@ -451,7 +449,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         allMethodsAndConstructors.forEach(m -> {
             if (m.haveFieldAsVariable(fieldInfo)) {
                 VariableInfo tv = m.getFieldAsVariable(fieldInfo);
-                Value value = tv.getValue();
+                Expression value = tv.getValue();
                 if (value != NO_VALUE) {
                     int v = evaluationContext.getProperty(value, property);
                     values.add(v);
@@ -468,7 +466,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus analyseFinalValue() {
-        List<Value> values = new LinkedList<>();
+        List<Expression> values = new LinkedList<>();
         if (haveInitialiser) {
             if (fieldAnalysis.getInitialValue() == NO_VALUE) {
                 log(DELAYED, "Delaying consistent value for field " + fieldInfo.fullyQualifiedName());
@@ -483,7 +481,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 if (methodAnalyser.haveFieldAsVariable(fieldInfo)) {
                     VariableInfo vi = methodAnalyser.getFieldAsVariable(fieldInfo);
                     if (vi.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) {
-                        Value value = vi.getValue();
+                        Expression value = vi.getValue();
                         if (value != NO_VALUE) {
                             values.add(value);
                         } else {
@@ -505,7 +503,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             log(DELAYED, "Delaying effectively final value because internal object flows not yet known, {}", fieldInfo.fullyQualifiedName());
             //      return DELAYS; TODO see TestFieldNotRead, but for now waiting until we sort out internalObjectFlows
         }
-        Value effectivelyFinalValue = determineEffectivelyFinalValue(values);
+        Expression effectivelyFinalValue = determineEffectivelyFinalValue(values);
 
         ObjectFlow objectFlow = effectivelyFinalValue.getObjectFlow();
         if (objectFlow != ObjectFlow.NO_FLOW && !fieldAnalysis.objectFlow.isSet()) {
@@ -539,16 +537,11 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private Value determineEffectivelyFinalValue(List<Value> values) {
-        Value combinedValue;
-        if (values.isEmpty()) {
-            combinedValue = NullValue.NULL_VALUE;
-        } else if (values.size() == 1) {
-            Value value = values.get(0);
+    private Expression determineEffectivelyFinalValue(List<Expression> values) {
+        //Expression combinedValue;
+        if (values.size() == 1) {
+            Expression value = values.get(0);
             if (value.isConstant()) return value;
-            combinedValue = value;
-        } else {
-            combinedValue = CombinedValue.create(analyserContext.getPrimitives(), values);
         }
         This thisVariable = new This(analyserContext, fieldInfo.owner);
         FieldReference fieldReference = new FieldReference(analyserContext,
@@ -560,7 +553,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
         Set<Variable> linkedVariables = fieldAnalysis.variablesLinkedToMe.isSet() ? fieldAnalysis.variablesLinkedToMe.get() : Set.of();
          */
-        return new VariableValue(fieldReference, combinedValue.getObjectFlow());
+        // TODO combined object flow
+        return new VariableExpression(fieldReference, ObjectFlow.NO_FLOW);
     }
 
     private AnalysisStatus analyseLinked() {
@@ -714,18 +708,18 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    protected Value getVariableValue(Variable variable) {
+    protected Expression getVariableValue(Variable variable) {
         FieldReference fieldReference = (FieldReference) variable;
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysers().get(fieldReference.fieldInfo).fieldAnalysis;
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effectivelyFinal == Level.DELAY) return NO_VALUE;
         ObjectFlow objectFlow = fieldAnalysis.getObjectFlow();
         if (effectivelyFinal == Level.FALSE) {
-            return new VariableValue(variable, objectFlow, true);
+            return new VariableExpression(variable, objectFlow, true);
         }
-        Value effectivelyFinalValue = fieldAnalysis.getEffectivelyFinalValue();
+        Expression effectivelyFinalValue = fieldAnalysis.getEffectivelyFinalValue();
         return Objects.requireNonNullElseGet(effectivelyFinalValue,
-                () -> new VariableValue(variable, objectFlow, false));
+                () -> new VariableExpression(variable, objectFlow, false));
     }
 
     @Override
@@ -820,7 +814,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         // used in short-circuiting, inline conditional, and lambda
 
         @Override
-        public EvaluationContext child(Value condition) {
+        public EvaluationContext child(Expression condition) {
             return FieldAnalyser.this.new EvaluationContextImpl(iteration, conditionManager.addCondition(this, condition));
         }
 
@@ -830,24 +824,25 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public int getProperty(Value value, VariableProperty variableProperty) {
-            if (value instanceof VariableValue variableValue) {
-                if (variableValue.variable instanceof FieldReference fieldReference) {
+        public int getProperty(Expression value, VariableProperty variableProperty) {
+            if (value instanceof VariableExpression variableValue) {
+                Variable variable = variableValue.variable();
+                if (variable instanceof FieldReference fieldReference) {
                     return getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
                 }
-                if (variableValue.variable instanceof This thisVariable) {
+                if (variable instanceof This thisVariable) {
                     return getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
                 }
-                if (variableValue.variable instanceof ParameterInfo parameterInfo) {
+                if (variable instanceof ParameterInfo parameterInfo) {
                     return getParameterAnalysis(parameterInfo).getProperty(variableProperty);
                 }
-                throw new UnsupportedOperationException("?? variable of " + variableValue.variable.getClass());
+                throw new UnsupportedOperationException("?? variable of " + variable.getClass());
             }
             return value.getProperty(this, variableProperty);
         }
 
         @Override
-        public Value currentValue(Variable variable) {
+        public Expression currentValue(Variable variable) {
             if (variable instanceof FieldReference) {
                 return getVariableValue(variable);
             }

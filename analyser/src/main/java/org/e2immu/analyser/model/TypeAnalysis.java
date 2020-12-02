@@ -30,7 +30,7 @@ public interface TypeAnalysis extends Analysis {
 
     Set<ObjectFlow> getConstantObjectFlows();
 
-    Map<String, Value> getApprovedPreconditions();
+    Map<String, Expression> getApprovedPreconditions();
 
     default boolean isEventual() {
         return !getApprovedPreconditions().isEmpty();
@@ -65,7 +65,7 @@ public interface TypeAnalysis extends Analysis {
      *
      * @return a list of values, each of boolean return type, describing invariants.
      */
-    List<Value> getInvariants();
+    List<Expression> getInvariants();
 
     default boolean aspectsIsSet(String aspect) {
         return getAspects().containsKey(aspect);

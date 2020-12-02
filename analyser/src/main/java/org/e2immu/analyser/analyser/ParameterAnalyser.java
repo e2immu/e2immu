@@ -19,7 +19,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -127,13 +127,13 @@ public class ParameterAnalyser {
                 if (effFinal == Level.DELAY) {
                     delays = true;
                 } else if (effFinal == Level.TRUE) {
-                    Value effectivelyFinal = fieldAnalysis.getEffectivelyFinalValue();
+                    Expression effectivelyFinal = fieldAnalysis.getEffectivelyFinalValue();
                     if (effectivelyFinal == null) {
                         delays = true;
                     } else {
-                        VariableValue variableValue;
-                        if ((variableValue = effectivelyFinal.asInstanceOf(VariableValue.class)) != null
-                                && variableValue.variable == parameterInfo) {
+                        VariableExpression variableValue;
+                        if ((variableValue = effectivelyFinal.asInstanceOf(VariableExpression.class)) != null
+                                && variableValue.variable() == parameterInfo) {
                             // we have a hit
                             parameterAnalysis.assignedToField.set(fieldInfo);
                             changed = true;

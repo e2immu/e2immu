@@ -107,10 +107,10 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             Location location = evaluationContext.getLocation(this);
             ObjectFlow objectFlow = builder.createInternalObjectFlow(location, methodInfo.returnType(), Origin.NEW_OBJECT_CREATION);
             MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
-            Instance initialInstance = new Instance(methodInfo.returnType(), methodInfo, List.of(), objectFlow, UnknownValue.EMPTY);
+            Instance initialInstance = new Instance(methodInfo.returnType(), methodInfo, List.of(), objectFlow, EmptyExpression.EMPTY_EXPRESSION);
             Instance instance = MethodCall.checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
                     methodAnalysis, initialInstance, List.of());
-            builder.setValue(instance);
+            builder.setExpression(instance);
         } else {
             // normal method call, very similar to MethodCall.evaluate
             MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
@@ -129,20 +129,20 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 if (!(singleReturnValue.isInstanceOf(UnknownValue.class)) && methodInfo.cannotBeOverridden()) {
                     result = singleReturnValue;
                 } else {
-                    if (scopeResult.value.isInstanceOf(NullValue.class)) {
+                    if (scopeResult.value.isInstanceOf(NullConstant.class)) {
                         builder.raiseError(Message.NULL_POINTER_EXCEPTION);
                     }
                     result = new MethodValue(methodInfo, scopeResult.value, List.of(), objectFlow);
                 }
             } else if (methodInfo.hasStatements()) {
-                result = UnknownValue.NO_VALUE; // delay, waiting
+                result = EmptyExpression.NO_VALUE; // delay, waiting
             } else {
                 if (scopeResult.value instanceof NullValue) {
                     builder.raiseError(Message.NULL_POINTER_EXCEPTION);
                 }
                 result = new MethodValue(methodInfo, scopeResult.value, List.of(), objectFlow);
             }
-            builder.setValue(result);
+            builder.setExpression(result);
         }
         return builder.build();
     }

@@ -22,9 +22,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.AndValue;
-import org.e2immu.analyser.model.value.NegatedValue;
-import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.expression.AndExpression;
+import org.e2immu.analyser.model.expression.NegatedExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -362,13 +362,13 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     @Override
-    protected Value getVariableValue(Variable variable) {
+    protected Expression getVariableValue(Variable variable) {
         if (variable instanceof DependentVariable) {
             throw new UnsupportedOperationException("NYI");
         }
         if (variable instanceof This) {
             ObjectFlow objectFlow = new ObjectFlow(new Location(typeInfo), typeInfo.asParameterizedType(analyserContext), Origin.NO_ORIGIN);
-            return new VariableValue(variable, objectFlow);
+            return new VariableExpression(variable, objectFlow);
         }
         throw new UnsupportedOperationException();
     }
@@ -403,12 +403,12 @@ public class TypeAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
-        Map<String, Value> tempApproved = new HashMap<>();
+        Map<String, Expression> tempApproved = new HashMap<>();
         for (MethodAnalyser methodAnalyser : myMethodAnalysersExcludingSAMs) {
             int modified = methodAnalyser.methodAnalysis.getProperty(VariableProperty.MODIFIED);
             if (modified == Level.TRUE) {
-                List<Value> preconditions = methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.get();
-                for (Value precondition : preconditions) {
+                List<Expression> preconditions = methodAnalyser.methodAnalysis.preconditionForMarkAndOnly.get();
+                for (Expression precondition : preconditions) {
                     handlePrecondition(methodAnalyser, precondition, tempApproved, iteration);
                 }
             }
@@ -427,11 +427,11 @@ public class TypeAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private void handlePrecondition(@NotModified MethodAnalyser methodAnalyser, Value precondition, Map<String, Value> tempApproved, int iteration) {
+    private void handlePrecondition(@NotModified MethodAnalyser methodAnalyser, Expression precondition, Map<String, Expression> tempApproved, int iteration) {
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
-        Value negated = NegatedValue.negate(evaluationContext, precondition);
+        Expression negated = NegatedExpression.negate(evaluationContext, precondition);
         String label = labelOfPreconditionForMarkAndOnly(precondition);
-        Value inMap = tempApproved.get(label);
+        Expression inMap = tempApproved.get(label);
 
         boolean isMark = assignmentIncompatibleWithPrecondition(evaluationContext, precondition, methodAnalyser);
         if (isMark) {
@@ -451,9 +451,9 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     public static boolean assignmentIncompatibleWithPrecondition(EvaluationContext evaluationContext,
-                                                                 Value precondition,
+                                                                 Expression precondition,
                                                                  MethodAnalyser methodAnalyser) {
-        Set<Variable> variables = precondition.variables();
+        Set<Variable> variables = new HashSet<>( precondition.variables());
         for (Variable variable : variables) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
             // fieldSummaries are set after the first iteration
@@ -462,7 +462,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                 boolean assigned = tv.getProperty(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
                 log(MARK, "Field {} is assigned in {}? {}", variable.fullyQualifiedName(), methodAnalyser.methodInfo.distinguishingName(), assigned);
 
-                Value state = tv.getStateOnAssignment();
+                Expression state = tv.getStateOnAssignment();
                 if (assigned && state != null && isCompatible(evaluationContext, state, precondition)) {
                     log(MARK, "We checked, and found the state {} compatible with the precondition {}", state, precondition);
                     return false;
@@ -473,16 +473,16 @@ public class TypeAnalyser extends AbstractAnalyser {
         return false;
     }
 
-    private static boolean isCompatible(EvaluationContext evaluationContext, Value v1, Value v2) {
-        Value and = new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, v1, v2);
+    private static boolean isCompatible(EvaluationContext evaluationContext, Expression v1, Expression v2) {
+        Expression and = new AndExpression(evaluationContext.getPrimitives()).append(evaluationContext, v1, v2);
         return v1.equals(and) || v2.equals(and);
     }
 
-    public static String labelOfPreconditionForMarkAndOnly(List<Value> values) {
+    public static String labelOfPreconditionForMarkAndOnly(List<Expression> values) {
         return values.stream().map(TypeAnalyser::labelOfPreconditionForMarkAndOnly).sorted().collect(Collectors.joining(","));
     }
 
-    public static String labelOfPreconditionForMarkAndOnly(Value value) {
+    public static String labelOfPreconditionForMarkAndOnly(Expression value) {
         return value.variables().stream().map(Variable::simpleName).distinct().sorted().collect(Collectors.joining("+"));
     }
 

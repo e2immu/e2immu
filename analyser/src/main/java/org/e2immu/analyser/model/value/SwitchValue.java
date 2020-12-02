@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
  * This is the multi-entry variant of ConditionalValue; it is generally created from the evaluation
  * of a SwitchExpression, in cases where that makes sense.
  * <p>
- * The default label is represented by UnknownValue.EMPTY
+ * The default label is represented by EmptyExpression.EMPTY_EXPRESSION
  */
 public class SwitchValue implements Value {
 
@@ -41,7 +41,7 @@ public class SwitchValue implements Value {
     public final ObjectFlow objectFlow;
 
     // the default entry has an empty label set
-    public record SwitchValueEntry(Set<Value> labels, Value value,
+    public record SwitchValueEntry(Set<Value> labels, Expression value,
                                    ObjectFlow objectFlow) implements Comparable<SwitchValueEntry> {
 
 
@@ -70,7 +70,7 @@ public class SwitchValue implements Value {
         }
 
         public String print(PrintMode printMode) {
-            if (labels.contains(UnknownValue.EMPTY)) {
+            if (labels.contains(EmptyExpression.EMPTY_EXPRESSION)) {
                 return "default->" + value.print(printMode);
             }
             return "case " + labels.stream().map(v -> v.print(printMode)).collect(Collectors.joining(",")) + "->" + value.print(printMode);
@@ -102,7 +102,7 @@ public class SwitchValue implements Value {
         entries.forEach(e -> {
             Objects.requireNonNull(e.value);
             Objects.requireNonNull(e.labels);
-            if (e.labels.contains(UnknownValue.EMPTY) && e.labels.size() != 1)
+            if (e.labels.contains(EmptyExpression.EMPTY_EXPRESSION) && e.labels.size() != 1)
                 throw new UnsupportedOperationException();
             if (e.labels.isEmpty()) throw new UnsupportedOperationException();
         });
@@ -115,15 +115,15 @@ public class SwitchValue implements Value {
         List<SwitchValueEntry> entries = cleanUpEntries(originalEntries);
 
         // we intercept some silly cases here
-        if (selector == UnknownValue.NO_VALUE || entries.stream().anyMatch(e -> e.value == UnknownValue.NO_VALUE)) {
+        if (selector == EmptyExpression.NO_VALUE || entries.stream().anyMatch(e -> e.value == EmptyExpression.NO_VALUE)) {
             return new EvaluationResult.Builder().setValue(selector).build();
         }
 
         // direct hit?
         if (selector.isConstant()) {
             Value singleResult = entries.stream().filter(e -> e.labels.contains(selector)).findFirst()
-                    .map(e -> e.value).orElse(UnknownValue.NO_VALUE);
-            return new EvaluationResult.Builder().setValue(singleResult != UnknownValue.NO_VALUE ?
+                    .map(e -> e.value).orElse(EmptyExpression.NO_VALUE);
+            return new EvaluationResult.Builder().setValue(singleResult != EmptyExpression.NO_VALUE ?
                     singleResult : // one of the cases
                     entries.get(entries.size() - 1).value)  // default, otherwise we would have found the result
                     .build();
@@ -151,8 +151,8 @@ public class SwitchValue implements Value {
                 ++i;
             }
             if (newLabels != null) {
-                if (newLabels.contains(UnknownValue.EMPTY)) {
-                    newLabels = Set.of(UnknownValue.EMPTY);
+                if (newLabels.contains(EmptyExpression.EMPTY_EXPRESSION)) {
+                    newLabels = Set.of(EmptyExpression.EMPTY_EXPRESSION);
                 }
                 SwitchValueEntry newSve = new SwitchValueEntry(newLabels, array[i].value, array[i].objectFlow);
                 result.add(newSve);
@@ -220,7 +220,7 @@ public class SwitchValue implements Value {
     @Override
     public Instance getInstance(EvaluationContext evaluationContext) {
         if (Primitives.isPrimitiveExcludingVoid(type())) return null;
-        return new Instance(type(), getObjectFlow(), UnknownValue.EMPTY);
+        return new Instance(type(), getObjectFlow(), EmptyExpression.EMPTY_EXPRESSION);
     }
 
     @Override

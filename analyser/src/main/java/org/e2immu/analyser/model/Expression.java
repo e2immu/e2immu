@@ -157,7 +157,7 @@ public interface Expression extends Element, Comparable<Expression> {
 
     default EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         Expression inMap = translation.get(this);
-        return new EvaluationResult.Builder().setValue(inMap == null ? this : inMap).build();
+        return new EvaluationResult.Builder().setExpression(inMap == null ? this : inMap).build();
     }
 
     ObjectFlow getObjectFlow();

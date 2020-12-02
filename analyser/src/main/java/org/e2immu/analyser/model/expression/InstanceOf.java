@@ -22,10 +22,12 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.value.*;
-import org.e2immu.analyser.model.value.ClassValue;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -34,18 +36,18 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 
 @E2Container
-public class InstanceOf implements Expression {
-    public final ParameterizedType parameterizedType;
-    public final Expression expression;
-    private final ParameterizedType booleanParameterizedType;
+public record InstanceOf(Primitives primitives,
+                         ParameterizedType parameterizedType,
+                         Expression expression,
+                         Variable variable,
+                         ObjectFlow objectFlow) implements Expression {
 
-    public InstanceOf(Expression expression, ParameterizedType parameterizedType, ParameterizedType booleanParameterizedType) {
-        this.parameterizedType = Objects.requireNonNull(parameterizedType);
-        this.expression = Objects.requireNonNull(expression);
-        this.booleanParameterizedType = Objects.requireNonNull(booleanParameterizedType);
+    public InstanceOf(Primitives primitives, ParameterizedType parameterizedType, Expression expression) {
+        this(primitives, parameterizedType, expression, null, ObjectFlow.NO_FLOW);
     }
 
     @Override
@@ -54,64 +56,104 @@ public class InstanceOf implements Expression {
         if (o == null || getClass() != o.getClass()) return false;
         InstanceOf that = (InstanceOf) o;
         return parameterizedType.equals(that.parameterizedType) &&
-                expression.equals(that.expression);
+                expression == null ? variable.equals(that.variable) : expression.equals(that.expression);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(parameterizedType, expression);
+        return Objects.hash(parameterizedType, expression, variable);
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new InstanceOf(translationMap.translateExpression(expression),
+        return new InstanceOf(primitives,
                 translationMap.translateType(parameterizedType),
-                booleanParameterizedType);
+                translationMap.translateExpression(expression));
+    }
+
+    @Override
+    public int order() {
+        return ExpressionComparator.ORDER_INSTANCE_OF;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) {
+        int c = variable.fullyQualifiedName().compareTo(((InstanceOfValue) v).variable.fullyQualifiedName());
+        if (c == 0) c = parameterizedType.detailedString()
+                .compareTo(((InstanceOfValue) v).parameterizedType.detailedString());
+        return c;
+    }
+
+    @Override
+    public String toString() {
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        return variable.print(printMode) + " instanceof " + parameterizedType.print(printMode);
+    }
+
+    @Override
+    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
+        return evaluationContext.linkedVariables(variable);
+    }
+
+    @Override
+    public ParameterizedType type() {
+        return primitives.booleanParameterizedType;
+    }
+
+    @Override
+    public List<Variable> variables() {
+        return List.of(variable);
+    }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return null;
     }
 
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult evaluationResult = expression.evaluate(evaluationContext, forwardEvaluationInfo);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(evaluationResult);
-        return localEvaluation(builder, evaluationContext, evaluationResult.value);
+        return localEvaluation(builder, evaluationContext, evaluationResult.getExpression());
     }
 
-    private EvaluationResult localEvaluation(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Value value) {
+    private EvaluationResult localEvaluation(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Expression value) {
+        Primitives primitives = evaluationContext.getPrimitives();
+
         if (value.isUnknown()) {
-            return builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE).build();
+            return builder.setExpression(PrimitiveExpression.PRIMITIVE_EXPRESSION).build();
         }
         if (value instanceof NullValue) {
-            return builder.setValue(new BoolValue(evaluationContext.getPrimitives(), false)).build();
+            return builder.setExpression(new BooleanConstant(evaluationContext.getPrimitives(), false)).build();
 
         }
-        if (value instanceof CombinedValue combinedValue) {
-            if (combinedValue.values.size() == 1) {
-                return localEvaluation(builder, evaluationContext, combinedValue.values.get(0));
-            }
-            return builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE).build();
-        }
-        if (value instanceof VariableValue) {
+        if (value instanceof VariableExpression ve) {
             Location location = evaluationContext.getLocation(this);
-            Primitives primitives = evaluationContext.getPrimitives();
             ObjectFlow objectFlow = builder.createInternalObjectFlow(location, primitives.booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
-            return builder.setValue(new InstanceOfValue(primitives, ((VariableValue) value).variable, parameterizedType, objectFlow)).build();
+            return builder.setExpression(new InstanceOf(primitives, parameterizedType, null, ve.variable(), objectFlow)).build();
         }
         if (value instanceof Instance) {
-            Primitives primitives = evaluationContext.getPrimitives();
             EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
                     ((Instance) value).parameterizedType),
                     evaluationContext.getLocation(this), evaluationContext, Origin.RESULT_OF_OPERATOR);
-            return builder.compose(er).setValue(er.value).build();
+            return builder.compose(er).setExpression(er.value).build();
         }
         if (value instanceof MethodValue) {
-            return builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE).build(); // no clue, too deep
+            return builder.setExpression(PrimitiveExpression.PRIMITIVE_EXPRESSION).build(); // no clue, too deep
         }
-        if (value instanceof ClassValue) {
-            Primitives primitives = evaluationContext.getPrimitives();
-            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
-                    ((ClassValue) value).value),
-                    evaluationContext.getLocation(this), evaluationContext, Origin.RESULT_OF_OPERATOR);
-            return builder.compose(er).setValue(er.value).build();
+        if (value instanceof ClassExpression ce) {
+            EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
+                    ce.parameterizedType()), evaluationContext.getLocation(this), evaluationContext, Origin.RESULT_OF_OPERATOR);
+            return builder.compose(er).setExpression(er.value).build();
         }
         // this error occurs with a TypeExpression, probably due to our code giving priority to types rather than
         // variable names, when you use a type name as a variable name, which is perfectly allowed in Java but is
@@ -122,7 +164,7 @@ public class InstanceOf implements Expression {
     @Override
     @NotNull
     public ParameterizedType returnType() {
-        return booleanParameterizedType;
+        return primitives.booleanParameterizedType;
     }
 
     @Override

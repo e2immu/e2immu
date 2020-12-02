@@ -19,10 +19,15 @@
 package org.e2immu.analyser.model.expression;
 
 
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -50,6 +55,13 @@ public record BooleanConstant(Primitives primitives,
         if (o == null || getClass() != o.getClass()) return false;
         BooleanConstant that = (BooleanConstant) o;
         return constant == that.constant;
+    }
+
+    public static EvaluationResult of(boolean b, Location location, EvaluationContext evaluationContext, Origin origin) {
+        Primitives primitives = evaluationContext.getPrimitives();
+        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        ObjectFlow objectFlow = builder.createInternalObjectFlow(location, primitives.booleanParameterizedType, origin);
+        return builder.setExpression(new BooleanConstant(primitives, b, objectFlow)).build();
     }
 
     @Override

@@ -23,11 +23,11 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.ArrayValue;
+import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.model.value.VariableValue;
-import org.e2immu.analyser.model.value.NumericValue;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
@@ -35,8 +35,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * We do not override variablesMarkRead(), because both the array and the index will be read in the initial
- * evaluations; so an empty list is what is needed.
+ * Only not evaluated. Replaced by VariableValue
  */
 @E2Container
 public class ArrayAccess implements Expression {
@@ -63,7 +62,7 @@ public class ArrayAccess implements Expression {
 
     private static Variable singleVariable(Expression expression) {
         if (expression instanceof VariableExpression variableExpression) {
-            return variableExpression.variable;
+            return variableExpression.variable();
         }
         if (expression instanceof FieldAccess fieldAccess) {
             return fieldAccess.variable;
@@ -88,6 +87,26 @@ public class ArrayAccess implements Expression {
     @Override
     public Expression translate(TranslationMap translationMap) {
         return new ArrayAccess(translationMap.translateExpression(expression), translationMap.translateExpression(index));
+    }
+
+    @Override
+    public int order() {
+        return 0;
+    }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return ObjectFlow.NO_FLOW;
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        throw new UnsupportedOperationException("Not yet evaluated");
     }
 
     @Override
@@ -116,13 +135,13 @@ public class ArrayAccess implements Expression {
         EvaluationResult indexValue = index.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(array, indexValue);
 
-        if (array.value instanceof ArrayValue arrayValue && indexValue.value instanceof NumericValue) {
+        if (array.value instanceof ArrayInitializer arrayValue && indexValue.value instanceof Numeric in) {
             // known array, known index (a[] = {1,2,3}, a[2] == 3)
-            int intIndex = indexValue.value.toInt().value;
-            if (intIndex < 0 || intIndex >= arrayValue.values.size()) {
+            int intIndex = in.getNumber().intValue();
+            if (intIndex < 0 || intIndex >= arrayValue.multiExpression.expressions().length) {
                 throw new ArrayIndexOutOfBoundsException();
             }
-            builder.setValue(arrayValue.values.get(intIndex));
+            builder.setExpression(arrayValue.multiExpression.expressions()[intIndex]);
         } else {
             // we have to make an effort to see if we can evaluate the components; maybe there's another variable to be had
             Variable arrayVariable = variableTarget == null ? null : variableTarget.arrayVariable;
@@ -139,16 +158,16 @@ public class ArrayAccess implements Expression {
             }
             if (forwardEvaluationInfo.isNotAssignmentTarget()) {
                 builder.markRead(variableTarget, evaluationContext.getIteration());
-                Value variableValue = builder.currentValue(dependentVariable);
-                builder.setValue(variableValue);
+                Expression variableValue = builder.currentExpression(dependentVariable);
+                builder.setExpression(variableValue);
             } else {
-                builder.setValue(new VariableValue(dependentVariable));
+                builder.setExpression(new VariableExpression(dependentVariable));
             }
         }
 
         int notNullRequired = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
-        if (notNullRequired > MultiLevel.NULLABLE && builder.getValue() instanceof VariableValue) {
-            builder.variableOccursInNotNullContext(((VariableValue) builder.getValue()).variable, builder.getValue(), notNullRequired);
+        if (notNullRequired > MultiLevel.NULLABLE && builder.getExpression() instanceof VariableValue) {
+            builder.variableOccursInNotNullContext(((VariableValue) builder.getExpression()).variable, builder.getExpression(), notNullRequired);
         }
         return builder.build();
     }

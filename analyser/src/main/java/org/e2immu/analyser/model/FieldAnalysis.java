@@ -31,7 +31,7 @@ public interface FieldAnalysis extends Analysis {
     /**
      * @return null means: not decided yet, or field is not effectively final
      */
-    Value getEffectivelyFinalValue();
+    Expression getEffectivelyFinalValue();
 
     // end product of the dependency analysis of linkage between the variables in a method
     // if A links to B, and A is modified, then B must be too.
@@ -89,5 +89,5 @@ public interface FieldAnalysis extends Analysis {
                 analysisProvider.getTypeAnalysis(bestType).getProperty(VariableProperty.IMMUTABLE);
     }
 
-    Value getInitialValue();
+    Expression getInitialValue();
 }

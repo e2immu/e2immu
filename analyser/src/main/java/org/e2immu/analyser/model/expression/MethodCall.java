@@ -161,9 +161,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<Value> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 
-        if (parameterValues.stream().anyMatch(pv -> pv == UnknownValue.NO_VALUE)) {
+        if (parameterValues.stream().anyMatch(pv -> pv == EmptyExpression.NO_VALUE)) {
             Logger.log(DELAYED, "Delayed method call because one of the parameter values is delayed: {}, {}", methodInfo.name, parameterValues);
-            builder.setValue(UnknownValue.NO_VALUE);
+            builder.setValue(EmptyExpression.NO_VALUE);
             return builder.build();
         }
 
@@ -240,7 +240,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             List<Value> parameterValues) {
         Instance instance;
         if (objectValue instanceof VariableValue variableValue) {
-            instance = builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, UnknownValue.EMPTY);
+            instance = builder.currentInstance(variableValue.variable, ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
         } else {
             instance = objectValue.getInstance(evaluationContext);
         }
@@ -263,7 +263,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     Filter.FilterResult<MethodValue> filterResult;
 
                     if (companionMethodName.action() == CompanionMethodName.Action.CLEAR) {
-                        newState.set(UnknownValue.EMPTY);
+                        newState.set(EmptyExpression.EMPTY_EXPRESSION);
                         filterResult = null; // there is no "pre"
                     } else {
                         // in the case of java.util.List.add(), the aspect is Size, there are 3+ "parameters":
@@ -285,7 +285,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
                     boolean remove = companionMethodName.action() == CompanionMethodName.Action.REMOVE;
                     if (remove) {
-                        if (newState.get() != UnknownValue.EMPTY) {
+                        if (newState.get() != EmptyExpression.EMPTY_EXPRESSION) {
                             Filter.FilterResult<Value> res = Filter.filter(evaluationContext, newState.get(),
                                     Filter.FilterMode.ACCEPT, new Filter.ExactValue(companionValueTranslated));
                             newState.set(res.rest());
@@ -293,7 +293,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     } else {
                         if (filterResult != null) {
                             // there is an old "pre" value that needs to be removed
-                            if (filterResult.rest() == UnknownValue.EMPTY) {
+                            if (filterResult.rest() == EmptyExpression.EMPTY_EXPRESSION) {
                                 newState.set(companionValueTranslated);
                             } else {
                                 newState.set(new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, filterResult.rest(),
@@ -301,7 +301,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                             }
                         } else {
                             // no pre-value to be removed
-                            if (newState.get() == UnknownValue.EMPTY) {
+                            if (newState.get() == EmptyExpression.EMPTY_EXPRESSION) {
                                 newState.set(companionValueTranslated);
                             } else {
                                 newState.set(new AndValue(evaluationContext.getPrimitives()).append(evaluationContext, newState.get(),
@@ -333,7 +333,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             translationMap.put(preAspectVariableValue, filterResult.accepted().values().stream()
                     .findFirst()
                     // it is possible that no pre- information can be found... that's OK as long as it isn't used
-                    .orElse(UnknownValue.EMPTY));
+                    .orElse(EmptyExpression.EMPTY_EXPRESSION));
         }
         // parameters
         ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));

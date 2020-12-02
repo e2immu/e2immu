@@ -17,7 +17,7 @@ public interface StatementAnalyserVariableVisitor {
                 String statementId,
                 String variableName,
                 Variable variable,
-                Value currentValue,
+                Expression currentValue,
                 Map<VariableProperty, Integer> properties,
                 VariableInfo variableInfo,
                 VariableInfoContainer variableInfoContainer) {

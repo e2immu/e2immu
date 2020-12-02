@@ -22,6 +22,8 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.value.Instance;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
@@ -54,6 +56,21 @@ public class Cast implements Expression {
     @Override
     public Expression translate(TranslationMap translationMap) {
         return new Cast(translationMap.translateExpression(expression), translationMap.translateType(parameterizedType));
+    }
+
+    @Override
+    public int order() {
+        return 0;
+    }
+
+    @Override
+    public Instance getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return ObjectFlow.NO_FLOW;
     }
 
     @Override

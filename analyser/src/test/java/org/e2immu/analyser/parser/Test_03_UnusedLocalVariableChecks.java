@@ -32,7 +32,7 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
         if ("method1".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
                 Assert.assertEquals(d.toString(), AnalysisStatus.DONE, analysisStatus);
-                Assert.assertEquals(UnknownValue.EMPTY.toString(), d.state().toString());
+                Assert.assertEquals(EmptyExpression.EMPTY_EXPRESSION.toString(), d.state().toString());
             }
             if ("1".equals(d.statementId()) || "1.0.0".equals(d.statementId())) {
                Assert.assertEquals(d.toString(), AnalysisStatus.DONE, analysisStatus);

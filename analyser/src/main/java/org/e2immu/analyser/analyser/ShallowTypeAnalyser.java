@@ -20,11 +20,8 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.config.Configuration;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.StringConstant;
-import org.e2immu.analyser.model.value.InlineValue;
-import org.e2immu.analyser.model.value.StringValue;
-import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.analyser.model.value.VariableValue;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -156,7 +153,7 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         builder.setProperty(VariableProperty.CONTAINER, Level.FALSE);
         builder.companionAnalyses.freeze();
         builder.singleReturnValueImmutable.set(MultiLevel.EFFECTIVELY_E2IMMUTABLE);
-        builder.singleReturnValue.set(UnknownValue.RETURN_VALUE);
+        builder.singleReturnValue.set(EmptyExpression.RETURN_VALUE);
         log(ANALYSER, "Provided analysis of dedicated method {}", methodInfo.fullyQualifiedName());
         methodInfo.setAnalysis(builder.build());
     }
@@ -327,11 +324,11 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         }
         if (fieldAnalysisBuilder.getProperty(VariableProperty.FINAL) == Level.TRUE && fieldInfo.fieldInspection.get().fieldInitialiserIsSet()) {
             Expression initialiser = fieldInfo.fieldInspection.get().getFieldInitialiser().initialiser();
-            Value value;
+            Expression value;
             if (initialiser instanceof StringConstant stringConstant) {
-                value = new StringValue(getPrimitives(), stringConstant.constant);
+                value = stringConstant;
             } else {
-                value = UnknownValue.NO_VALUE; // IMPROVE
+                value = EmptyExpression.NO_VALUE; // IMPROVE
             }
             fieldAnalysisBuilder.effectivelyFinalValue.set(value);
         }

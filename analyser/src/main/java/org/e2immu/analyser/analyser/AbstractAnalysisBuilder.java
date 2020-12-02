@@ -18,7 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.ContractMark;
+import org.e2immu.analyser.model.expression.ContractMark;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -260,7 +260,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         }
         if (mark != null && only == null) {
             String markValue = mark.extract("value", "");
-            List<Value> values = safeSplit(markValue).stream().map(ContractMark::new).collect(Collectors.toList());
+            List<Expression> values = safeSplit(markValue).stream().map(ContractMark::new).collect(Collectors.toList());
             ((MethodAnalysisImpl.Builder) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, markValue, true, null));
         } else if (only != null) {
             String markValue = mark == null ? null : mark.extract("value", "");
@@ -272,7 +272,7 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
             if (markValue != null && !onlyMark.equals(markValue)) {
                 LOGGER.warn("Have both @Only and @Mark, with different values? {} vs {}", onlyMark, markValue);
             }
-            List<Value> values = safeSplit(onlyMark).stream().map(ContractMark::new).collect(Collectors.toList());
+            List<Expression> values = safeSplit(onlyMark).stream().map(ContractMark::new).collect(Collectors.toList());
             ((MethodAnalysisImpl.Builder) this).writeMarkAndOnly(new MethodAnalysis.MarkAndOnly(values, onlyMark, mark != null, isAfter));
         }
         return messages;

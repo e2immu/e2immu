@@ -20,8 +20,8 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.ContractMark;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.expression.ContractMark;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -47,26 +47,26 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final MethodInfo methodInfo;
     public final ObjectFlow objectFlow;
     public final Set<ObjectFlow> internalObjectFlows;
-    public final List<Value> preconditionForMarkAndOnly;
+    public final List<Expression> preconditionForMarkAndOnly;
     public final MarkAndOnly markAndOnly;
     public final boolean complainedAboutMissingStaticModifier;
     public final boolean complainedAboutApprovedPreconditions;
-    public final Value precondition;
-    public final Value singleReturnValue;
+    public final Expression precondition;
+    public final Expression singleReturnValue;
     public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
 
     private MethodAnalysisImpl(MethodInfo methodInfo,
                                StatementAnalysis firstStatement,
                                StatementAnalysis lastStatement,
                                List<ParameterAnalysis> parameterAnalyses,
-                               Value singleReturnValue,
+                               Expression singleReturnValue,
                                ObjectFlow objectFlow,
                                Set<ObjectFlow> internalObjectFlows,
-                               List<Value> preconditionForMarkAndOnly,
+                               List<Expression> preconditionForMarkAndOnly,
                                MarkAndOnly markAndOnly,
                                boolean complainedAboutMissingStaticModifier,
                                boolean complainedAboutApprovedPreconditions,
-                               Value precondition,
+                               Expression precondition,
                                Map<VariableProperty, Integer> properties,
                                Map<AnnotationExpression, Boolean> annotations,
                                Map<CompanionMethodName, CompanionAnalysis> companionAnalyses) {
@@ -92,7 +92,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public Value getSingleReturnValue() {
+    public Expression getSingleReturnValue() {
         return singleReturnValue;
     }
 
@@ -122,7 +122,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public List<Value> getPreconditionForMarkAndOnly() {
+    public List<Expression> getPreconditionForMarkAndOnly() {
         return preconditionForMarkAndOnly;
     }
 
@@ -152,7 +152,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     }
 
     @Override
-    public Value getPrecondition() {
+    public Expression getPrecondition() {
         return precondition;
     }
 
@@ -179,13 +179,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         private final AnalysisProvider analysisProvider;
 
         // the value here (size will be one)
-        public final SetOnce<List<Value>> preconditionForMarkAndOnly = new SetOnce<>();
+        public final SetOnce<List<Expression>> preconditionForMarkAndOnly = new SetOnce<>();
         public final SetOnce<MarkAndOnly> markAndOnly = new SetOnce<>();
 
         public final SetOnce<Boolean> complainedAboutMissingStaticModifier = new SetOnce<>();
         public final SetOnce<Boolean> complainedAboutApprovedPreconditions = new SetOnce<>();
 
-        public final SetOnce<Value> singleReturnValue = new SetOnce<>();
+        public final SetOnce<Expression> singleReturnValue = new SetOnce<>();
         public final SetOnce<Integer> singleReturnValueImmutable = new SetOnce<>();
 
         // ************* object flow
@@ -196,7 +196,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         // ************** PRECONDITION
 
-        public final SetOnce<Value> precondition = new SetOnce<>();
+        public final SetOnce<Expression> precondition = new SetOnce<>();
         public final SetOnceMap<CompanionMethodName, CompanionAnalysis> companionAnalyses = new SetOnceMap<>();
 
         public final boolean isBeingAnalysed;
@@ -226,7 +226,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public Value getPrecondition() {
+        public Expression getPrecondition() {
             return precondition.getOrElse(null);
         }
 
@@ -266,7 +266,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     markAndOnly.getOrElse(null),
                     complainedAboutMissingStaticModifier.getOrElse(false),
                     complainedAboutApprovedPreconditions.getOrElse(false),
-                    precondition.getOrElse(UnknownValue.EMPTY),
+                    precondition.getOrElse(EmptyExpression.EMPTY_EXPRESSION),
                     properties.toImmutableMap(),
                     annotations.toImmutableMap(),
                     getCompanionAnalyses());
@@ -278,7 +278,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public Value getSingleReturnValue() {
+        public Expression getSingleReturnValue() {
             return singleReturnValue.getOrElse(null);
         }
 
@@ -313,8 +313,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
             // @Precondition
             if (precondition.isSet()) {
-                Value value = precondition.get();
-                if (value != UnknownValue.EMPTY) {
+                Expression value = precondition.get();
+                if (value != EmptyExpression.EMPTY_EXPRESSION) {
                     AnnotationExpression ae = e2ImmuAnnotationExpressions.precondition
                             .copyWith(primitives, "value", value.toString());
                     annotations.put(ae, true);
@@ -369,7 +369,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         // the name refers to the @Mark and @Only annotations. It is the data for this annotation.
         protected void writeMarkAndOnly(MarkAndOnly markAndOnly) {
-            ContractMark contractMark = new ContractMark(markAndOnly.markLabel);
+            ContractMark contractMark = new ContractMark(markAndOnly.markLabel());
             preconditionForMarkAndOnly.set(List.of(contractMark));
             this.markAndOnly.set(markAndOnly);
         }
@@ -397,7 +397,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public List<Value> getPreconditionForMarkAndOnly() {
+        public List<Expression> getPreconditionForMarkAndOnly() {
             return null;
         }
 

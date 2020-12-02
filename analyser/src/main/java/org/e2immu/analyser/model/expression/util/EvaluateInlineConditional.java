@@ -21,11 +21,9 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.value.Filter;
+import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.value.MethodValue;
-import org.e2immu.analyser.model.value.VariableValue;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
@@ -34,7 +32,7 @@ import org.e2immu.analyser.parser.Primitives;
 public class EvaluateInlineConditional {
 
     public static EvaluationResult conditionalValueCurrentState(EvaluationContext evaluationContext, Expression conditionBeforeState, Expression ifTrue, Expression ifFalse, ObjectFlow objectFlow) {
-        Value condition = checkState(evaluationContext,
+        Expression condition = checkState(evaluationContext,
                 evaluationContext.getPrimitives(),
                 evaluationContext.getConditionManager().state, conditionBeforeState);
         return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalse, objectFlow);
@@ -141,7 +139,7 @@ public class EvaluateInlineConditional {
         if (condition instanceof MethodValue methodValue &&
                 ShallowTypeAnalyser.IS_KNOWN_FQN.equals(methodValue.methodInfo.fullyQualifiedName) &&
                 methodValue.parameters.get(0) instanceof BooleanConstant boolValue && boolValue.constant()) {
-            VariableValue object = new VariableValue(new This(evaluationContext.getAnalyserContext(), methodValue.methodInfo.typeInfo));
+            VariableExpression object = new VariableExpression(new This(evaluationContext.getAnalyserContext(), methodValue.methodInfo.typeInfo));
             Expression knownValue = new MethodValue(methodValue.methodInfo, object, methodValue.parameters, methodValue.objectFlow);
             return inState(evaluationContext, knownValue) ? ifTrue : ifFalse;
         }
