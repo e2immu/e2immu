@@ -19,25 +19,27 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.*;
-import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateMethodCall;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
+import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
-import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Only;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
@@ -46,43 +48,123 @@ import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
 public class MethodCall extends ExpressionWithMethodReferenceResolution implements HasParameterExpressions {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MethodCall.class);
 
+    public final boolean objectIsImplicit; // irrelevant after evaluation
     public final Expression object;
-    public final Expression computedScope;
     public final List<Expression> parameterExpressions;
-    public final MethodTypeParameterMap methodTypeParameterMap;
+    public final ObjectFlow objectFlow;
 
-    public MethodCall(@NotNull Expression object,
-                      @NotNull Expression computedScope,
-                      @NotNull MethodTypeParameterMap methodTypeParameterMap,
-                      @NotNull List<Expression> parameterExpressions) {
-        super(methodTypeParameterMap.methodInspection.getMethodInfo(), methodTypeParameterMap.getConcreteReturnType());
-        this.object = object;
+    public MethodCall(Expression object,
+                      MethodInfo methodInfo,
+                      List<Expression> parameterExpressions,
+                      ObjectFlow objectFlow) {
+        this(false, object, methodInfo, methodInfo.returnType(), parameterExpressions, objectFlow);
+    }
+
+    public MethodCall(boolean objectIsImplicit,
+                      Expression object,
+                      MethodInfo methodInfo,
+                      ParameterizedType returnType,
+                      List<Expression> parameterExpressions,
+                      ObjectFlow objectFlow) {
+        super(methodInfo, returnType);
+        this.object = Objects.requireNonNull(object);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
-        this.computedScope = Objects.requireNonNull(computedScope);
-        this.methodTypeParameterMap = methodTypeParameterMap;
+        this.objectIsImplicit = objectIsImplicit;
+        this.objectFlow = Objects.requireNonNull(objectFlow);
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new MethodCall(object == null ? null : translationMap.translateExpression(object),
-                translationMap.translateExpression(computedScope),
-                methodTypeParameterMap.translate(translationMap),
-                parameterExpressions.stream().map(translationMap::translateExpression).collect(Collectors.toList()));
+        return new MethodCall(objectIsImplicit,
+                translationMap.translateExpression(object),
+                methodInfo,
+                concreteReturnType,
+                parameterExpressions.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
+                objectFlow);
     }
+
+    @Override
+    public int order() {
+        return ExpressionComparator.ORDER_METHOD;
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        if (Primitives.isPrimitiveExcludingVoid(type())) return null;
+        return new NewObject(null, type(), List.of(), EmptyExpression.EMPTY_EXPRESSION, objectFlow);
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return objectFlow;
+    }
+
+    @Override
+    public ParameterizedType type() {
+        return concreteReturnType;
+    }
+
+    @Override
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(this)) {
+            object.visit(predicate);
+            parameterExpressions.forEach(p -> p.visit(predicate));
+        }
+    }
+
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         MethodCall that = (MethodCall) o;
-        return computedScope.equals(that.computedScope) &&
+        boolean sameMethod = methodInfo.equals(that.methodInfo) ||
+                checkSpecialCasesWhereDifferentMethodsAreEquals(methodInfo, that.methodInfo);
+        return sameMethod &&
                 parameterExpressions.equals(that.parameterExpressions) &&
-                methodTypeParameterMap.equals(that.methodTypeParameterMap);
+                object.equals(that.object) &&
+                methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE;
+    }
+
+    /*
+     the interface and the implementation, or the interface and sub-interface
+     */
+    private boolean checkSpecialCasesWhereDifferentMethodsAreEquals(MethodInfo m1, MethodInfo m2) {
+        Set<MethodInfo> overrides1 = m1.methodResolution.get().overrides();
+        if (m2.typeInfo.isInterface() && overrides1.contains(m2)) return true;
+        Set<MethodInfo> overrides2 = m2.methodResolution.get().overrides();
+        return m1.typeInfo.isInterface() && overrides2.contains(m1);
+
+        // any other?
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(computedScope, parameterExpressions, methodTypeParameterMap);
+        return Objects.hash(object, parameterExpressions, methodInfo);
+    }
+
+    @Override
+    public String toString() {
+        return print(PrintMode.FOR_DEBUG);
+    }
+
+    @Override
+    public String print(PrintMode printMode) {
+        return object.print(printMode) + "." + methodInfo.name
+                + parameterExpressions.stream()
+                .map(p -> p.print(printMode)).collect(Collectors.joining(", ", "(", ")"));
+    }
+
+    @Override
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
+        List<EvaluationResult> reParams = parameterExpressions.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
+        EvaluationResult reObject = object.reEvaluate(evaluationContext, translation);
+        List<Expression> reParamValues = reParams.stream().map(er -> er.value).collect(Collectors.toList());
+        int modified = evaluationContext.getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED);
+        EvaluationResult mv = EvaluateMethodCall.methodValue(modified, evaluationContext, methodInfo,
+                evaluationContext.getMethodAnalysis(methodInfo), reObject.value, reParamValues, getObjectFlow());
+        return new EvaluationResult.Builder(evaluationContext).compose(reParams).compose(reObject, mv)
+                .setExpression(mv.value).build();
     }
 
     @Override
@@ -113,7 +195,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
             boolean undeclaredFunctionalInterface;
             if (methodInfo.isSingleAbstractMethod()) {
-                Boolean b = EvaluateParameters.tryToDetectUndeclared(evaluationContext, computedScope);
+                Boolean b = EvaluateParameters.tryToDetectUndeclared(evaluationContext, object);
                 undeclaredFunctionalInterface = b != null && b;
                 delayUndeclared = b == null;
             } else {
@@ -142,7 +224,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         boolean contentNotNullRequired = notNullForward == MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL;
 
         // scope
-        EvaluationResult objectResult = computedScope.evaluate(evaluationContext, new ForwardEvaluationInfo(Map.of(
+        EvaluationResult objectResult = object.evaluate(evaluationContext, new ForwardEvaluationInfo(Map.of(
                 VariableProperty.NOT_NULL, notNullForward,
                 VariableProperty.METHOD_CALLED, Level.TRUE,
                 VariableProperty.METHOD_DELAY, methodDelay,
@@ -259,7 +341,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         aspectMethod = null;
                     }
 
-                    Filter.FilterResult<MethodValue> filterResult;
+                    Filter.FilterResult<MethodCall> filterResult;
 
                     if (companionMethodName.action() == CompanionMethodName.Action.CLEAR) {
                         newState.set(EmptyExpression.EMPTY_EXPRESSION);
@@ -311,7 +393,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 });
         NewObject modifiedInstance = methodInfo.isConstructor ? new NewObject(instance, newState.get()) :
                 // we clear the constructor and its arguments after calling a modifying method on the object
-                new NewObject(instance.parameterizedType, null, List.of(), instance.objectFlow(), newState.get());
+                new NewObject(null, instance.parameterizedType, List.of(), newState.get(), instance.getObjectFlow());
 
         // update the object of the modifying call
         if (objectValue instanceof VariableExpression variableValue) {
@@ -322,10 +404,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     private static Expression translateCompanionValue(EvaluationContext evaluationContext,
-                                                 CompanionAnalysis companionAnalysis,
-                                                 Filter.FilterResult<MethodCall> filterResult,
-                                                 Expression instanceState,
-                                                 List<Expression> parameterValues) {
+                                                      CompanionAnalysis companionAnalysis,
+                                                      Filter.FilterResult<MethodCall> filterResult,
+                                                      Expression instanceState,
+                                                      List<Expression> parameterValues) {
         Map<Expression, Expression> translationMap = new HashMap<>();
         if (filterResult != null) {
             Expression preAspectVariableValue = companionAnalysis.getPreAspectVariableValue();
@@ -404,8 +486,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
 
         MethodInfo method;
-        if (objectValue instanceof InlineConditionalOperator ico) {
-            method = ico.methodInfo;
+        if (objectValue instanceof InlinedMethod ico) {
+            method = ico.methodInfo();
         } else {
             method = methodInfo;
         }
@@ -456,7 +538,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public List<? extends Element> subElements() {
-        return ListUtil.immutableConcat(parameterExpressions, List.of(computedScope));
+        return ListUtil.immutableConcat(parameterExpressions, List.of(object));
     }
 
     @Override
@@ -510,4 +592,93 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         return SideEffect.SIDE_EFFECT;
     }
+
+
+    @Override
+    public int internalCompareTo(Expression v) {
+        MethodCall mv = (MethodCall) v;
+        int c = methodInfo.fullyQualifiedName().compareTo(mv.methodInfo.fullyQualifiedName());
+        if (c != 0) return c;
+        int i = 0;
+        while (i < parameterExpressions.size()) {
+            if (i >= mv.parameterExpressions.size()) return 1;
+            c = parameterExpressions.get(i).compareTo(mv.parameterExpressions.get(i));
+            if (c != 0) return c;
+            i++;
+        }
+        return object.compareTo(mv.object);
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        boolean recursiveCall = evaluationContext.getCurrentMethod() != null && methodInfo == evaluationContext.getCurrentMethod().methodInfo;
+        if (recursiveCall) {
+            return variableProperty.best;
+        }
+        if (variableProperty == VariableProperty.NOT_NULL) {
+            int fluent = evaluationContext.getMethodAnalysis(methodInfo).getProperty(VariableProperty.FLUENT);
+            if (fluent == Level.TRUE) return Level.best(MultiLevel.EFFECTIVELY_NOT_NULL,
+                    evaluationContext.getTypeAnalysis(methodInfo.typeInfo).getProperty(VariableProperty.NOT_NULL));
+        }
+        return evaluationContext.getMethodAnalysis(methodInfo).getProperty(variableProperty);
+    }
+
+
+    private static final Set<Variable> NOT_LINKED = Set.of();
+
+    @Override
+    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
+
+        // RULE 0: void method cannot link
+        ParameterizedType returnType = methodInfo.returnType();
+        if (Primitives.isVoid(returnType)) return NOT_LINKED; // no assignment
+
+        MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
+
+        // RULE 1: if the return type is E2IMMU, then no links at all
+        boolean notSelf = returnType.typeInfo != evaluationContext.getCurrentType();
+        if (notSelf) {
+            int immutable = MultiLevel.value(methodAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
+            if (immutable == MultiLevel.DELAY) return null;
+            if (immutable >= MultiLevel.EVENTUAL) {
+                return NOT_LINKED;
+            }
+        }
+
+        // RULE 2: E2IMMU parameters cannot link: implemented recursively by rule 1 applied to the parameter!
+
+        Set<Variable> result = new HashSet<>();
+        for (Expression p : parameterExpressions) {
+            // the parameter value is not E2IMMU
+            Set<Variable> cd = evaluationContext.linkedVariables(p);
+            if (cd == null) return null;
+            result.addAll(cd);
+        }
+
+        // RULE 3: E2IMMU object cannot link
+        // RULE 4: independent method: no link to object
+
+        int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
+        int objectE2Immutable = MultiLevel.value(evaluationContext.getProperty(object, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
+        if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY) return null;
+        boolean objectOfSameType = methodInfo.typeInfo == evaluationContext.getCurrentType();
+        if (objectOfSameType || (objectE2Immutable < MultiLevel.EVENTUAL_AFTER && independent == MultiLevel.FALSE)) {
+            Set<Variable> b = evaluationContext.linkedVariables(object);
+            if (b == null) return null;
+            result.addAll(b);
+        }
+
+        return result;
+    }
+
+    @Override
+    public boolean isNumeric() {
+        return Primitives.isNumeric(methodInfo.returnType().bestTypeInfo());
+    }
+
+    @Override
+    public List<Variable> variables() {
+        return object.variables();
+    }
+
 }

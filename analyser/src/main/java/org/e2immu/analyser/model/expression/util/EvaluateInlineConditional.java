@@ -23,7 +23,6 @@ import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.Filter;
-import org.e2immu.analyser.model.value.MethodValue;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
@@ -121,8 +120,9 @@ public class EvaluateInlineConditional {
     // it will bypass ConditionalValue and return ifTrue or ifFalse accordingly
     // note that we don't need to check for !isFact() because the inversion has already taken place
     private static Expression isFact(EvaluationContext evaluationContext, Expression condition, Expression ifTrue, Expression ifFalse) {
-        if (condition instanceof MethodValue methodValue && ShallowTypeAnalyser.IS_FACT_FQN.equals(methodValue.methodInfo.fullyQualifiedName)) {
-            return inState(evaluationContext, methodValue.parameters.get(0)) ? ifTrue : ifFalse;
+        if (condition instanceof MethodCall methodValue &&
+                ShallowTypeAnalyser.IS_FACT_FQN.equals(methodValue.methodInfo.fullyQualifiedName)) {
+            return inState(evaluationContext, methodValue.parameterExpressions.get(0)) ? ifTrue : ifFalse;
         }
         return null;
     }
@@ -136,11 +136,11 @@ public class EvaluateInlineConditional {
     // whilst isKnown is also caught at the level of MethodCall, we grab it here to avoid warnings for
     // constant evaluation
     private static Expression isKnown(EvaluationContext evaluationContext, Expression condition, Expression ifTrue, Expression ifFalse) {
-        if (condition instanceof MethodValue methodValue &&
+        if (condition instanceof MethodCall methodValue &&
                 ShallowTypeAnalyser.IS_KNOWN_FQN.equals(methodValue.methodInfo.fullyQualifiedName) &&
-                methodValue.parameters.get(0) instanceof BooleanConstant boolValue && boolValue.constant()) {
+                methodValue.parameterExpressions.get(0) instanceof BooleanConstant boolValue && boolValue.constant()) {
             VariableExpression object = new VariableExpression(new This(evaluationContext.getAnalyserContext(), methodValue.methodInfo.typeInfo));
-            Expression knownValue = new MethodValue(methodValue.methodInfo, object, methodValue.parameters, methodValue.objectFlow);
+            Expression knownValue = new MethodCall(object, methodValue.methodInfo, methodValue.parameterExpressions, methodValue.objectFlow);
             return inState(evaluationContext, knownValue) ? ifTrue : ifFalse;
         }
         return null;

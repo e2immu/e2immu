@@ -53,6 +53,11 @@ public class NewObject implements HasParameterExpressions {
     public final Expression state;  // ... information about the object from companion methods
     public final ObjectFlow objectFlow; // generally a new flow
 
+    public NewObject(NewObject newObject, Expression newState) {
+        this(newObject.constructor, newObject.parameterizedType, newObject.parameterExpressions,
+                newObject.anonymousClass, newObject.arrayInitializer, newState, newObject.objectFlow);
+    }
+
     public NewObject(MethodInfo constructor,
                      ParameterizedType parameterizedType,
                      List<Expression> parameterExpressions,
@@ -67,25 +72,30 @@ public class NewObject implements HasParameterExpressions {
                      ArrayInitializer arrayInitializer,
                      Expression state,
                      ObjectFlow objectFlow) {
-        this.parameterizedType = Objects.requireNonNull(parameterizedType);
-        this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
-        this.constructor = constructor; // can be null after modification (constructor lost)
-        this.anonymousClass = null;
-        this.arrayInitializer = arrayInitializer;
-        this.state = Objects.requireNonNull(state);
-        this.objectFlow = Objects.requireNonNull(objectFlow);
+        this(constructor, parameterizedType, parameterExpressions, null, arrayInitializer, state, objectFlow);
     }
 
     // constructor can be null, when we create an anonymous class that doesn't derive from a class with constructor
     // in that case, there is a default, parameterless constructor
     public NewObject(@NotNull ParameterizedType parameterizedType, @NotNull TypeInfo anonymousClass) {
-        this.anonymousClass = Objects.requireNonNull(anonymousClass);
+        this(null, parameterizedType, List.of(), anonymousClass, null, EmptyExpression.EMPTY_EXPRESSION,
+                ObjectFlow.NO_FLOW);
+    }
+
+    private NewObject(MethodInfo constructor,
+                      ParameterizedType parameterizedType,
+                      List<Expression> parameterExpressions,
+                      TypeInfo anonymousClass,
+                      ArrayInitializer arrayInitializer,
+                      Expression state,
+                      ObjectFlow objectFlow) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
-        this.parameterExpressions = List.of();
-        this.constructor = null;
-        this.arrayInitializer = null;
-        this.state = EmptyExpression.EMPTY_EXPRESSION;
-        this.objectFlow = ObjectFlow.NO_FLOW; // TODO
+        this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
+        this.constructor = constructor; // can be null after modification (constructor lost)
+        this.anonymousClass = anonymousClass;
+        this.arrayInitializer = arrayInitializer;
+        this.state = Objects.requireNonNull(state);
+        this.objectFlow = Objects.requireNonNull(objectFlow);
     }
 
     @Override

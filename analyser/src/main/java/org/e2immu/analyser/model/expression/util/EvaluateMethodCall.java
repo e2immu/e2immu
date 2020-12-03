@@ -57,7 +57,8 @@ public class EvaluateMethodCall {
                 !evaluationContext.getAnalyserContext().inAnnotatedAPIAnalysis() &&
                 parameters.get(0) instanceof BooleanConstant boolValue) {
             Expression object = new VariableExpression(new This(evaluationContext.getAnalyserContext(), methodInfo.typeInfo));
-            Expression clause = new MethodValue(methodInfo, object, List.of(new BooleanConstant(evaluationContext.getPrimitives(), true)), objectFlowOfResult);
+            Expression clause = new MethodCall(object, methodInfo,
+                    List.of(new BooleanConstant(evaluationContext.getPrimitives(), true)), objectFlowOfResult);
             if (boolValue.constant()) {
                 // isKnown(true) -> return BoolValue.TRUE or BoolValue.FALSE, depending on state
                 Filter.FilterResult<Expression> res = Filter.filter(evaluationContext, evaluationContext.getConditionManager().state,
@@ -103,7 +104,7 @@ public class EvaluateMethodCall {
             // evaluation on Instance, with state; check companion methods
             // TYPE 1: boolean expression of aspect; e.g., xx == aspect method (5 == string.length())
             // TYPE 2: boolean clause; e.g., contains("a")
-            Filter.FilterResult<MethodValue> evaluationOnInstance =
+            Filter.FilterResult<MethodCall> evaluationOnInstance =
                     computeEvaluationOnInstance(builder, evaluationContext, methodInfo, objectValue, parameters);
             if (evaluationOnInstance != null && !evaluationOnInstance.accepted().isEmpty()) {
                 Expression value = evaluationOnInstance.accepted().values().stream().findFirst().orElseThrow();
@@ -176,7 +177,7 @@ public class EvaluateMethodCall {
         }
 
         // normal method value
-        MethodCall methodValue = new MethodCall(methodInfo, objectValue, parameters, objectFlowOfResult);
+        MethodCall methodValue = new MethodCall(objectValue, methodInfo, parameters, objectFlowOfResult);
         return builder.setExpression(methodValue).build();
     }
 
@@ -261,13 +262,13 @@ public class EvaluateMethodCall {
                     CompanionMethodName cmn = e.getKey();
                     MethodInfo oldAspectMethod = evaluationContext.getTypeAnalysis(instance.parameterizedType.typeInfo)
                             .getAspects().get(cmn.aspect());
-                    Expression oldValue = new MethodValue(oldAspectMethod,
+                    Expression oldValue = new MethodCall(
                             new VariableExpression(new This(evaluationContext.getAnalyserContext(), oldAspectMethod.typeInfo)),
-                            List.of(), ObjectFlow.NO_FLOW);
+                            oldAspectMethod, List.of(), ObjectFlow.NO_FLOW);
                     MethodInfo newAspectMethod = evaluationContext.getTypeAnalysis(methodInfo.typeInfo).getAspects().get(cmn.aspect());
-                    Expression newValue = new MethodValue(newAspectMethod,
+                    Expression newValue = new MethodCall(
                             new VariableExpression(new This(evaluationContext.getAnalyserContext(), newAspectMethod.typeInfo)),
-                            List.of(), ObjectFlow.NO_FLOW);
+                            newAspectMethod, List.of(), ObjectFlow.NO_FLOW);
                     translationMap.put(oldValue, newValue);
                     CompanionAnalysis companionAnalysis = e.getValue();
                     ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues)
