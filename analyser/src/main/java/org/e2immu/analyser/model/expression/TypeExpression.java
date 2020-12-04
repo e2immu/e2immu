@@ -22,9 +22,14 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.value.TypeValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -34,9 +39,15 @@ import java.util.Objects;
 @E2Container
 public class TypeExpression implements Expression {
     public final ParameterizedType parameterizedType;
+    public final ObjectFlow objectFlow;
 
     public TypeExpression(@NotNull ParameterizedType parameterizedType) {
+        this(parameterizedType, ObjectFlow.NYE);
+    }
+
+    public TypeExpression(ParameterizedType parameterizedType, ObjectFlow objectFlow) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
+        this.objectFlow = Objects.requireNonNull(objectFlow);
     }
 
     @Override
@@ -58,8 +69,13 @@ public class TypeExpression implements Expression {
     }
 
     @Override
-    public String expressionString(int indent) {
-        return parameterizedType.print(); // TODO but there could be occasions where we need the FQN
+    public String toString() {
+        return minimalOutput();
+    }
+
+    @Override
+    public OutputBuilder output() {
+        return new OutputBuilder().add(parameterizedType.output());
     }
 
     @Override
@@ -76,11 +92,31 @@ public class TypeExpression implements Expression {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
         ObjectFlow objectFlow = builder.createLiteralObjectFlow(parameterizedType);
-        return builder.setValue(new TypeValue(parameterizedType, objectFlow)).build();
+        return builder.setExpression(new TypeExpression(parameterizedType, objectFlow)).build();
     }
 
     @Override
     public Expression translate(TranslationMap translationMap) {
         return new TypeExpression(translationMap.translateType(parameterizedType));
+    }
+
+    @Override
+    public int order() {
+        return ExpressionComparator.ORDER_TYPE;
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) {
+        return parameterizedType.detailedString().compareTo(((TypeValue) v).parameterizedType.detailedString());
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return ObjectFlow.NYE;
     }
 }

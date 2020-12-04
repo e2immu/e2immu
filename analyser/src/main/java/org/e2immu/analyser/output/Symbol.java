@@ -32,6 +32,7 @@ public record Symbol(String symbol, Space left, Space right) implements OutputEl
     // a ? b : c;
     public static final Symbol QUESTION_MARK = new Symbol("?", ONE_LR, ONE_LR);
     public static final Symbol COLON = new Symbol(":", ONE_LR, ONE_LR);
+    public static final Symbol DOUBLE_COLON = new Symbol(":", NEVER, NEVER);
 
     public static final Symbol DOT = new Symbol(".", EASY, NEVER);
 
@@ -49,6 +50,9 @@ public record Symbol(String symbol, Space left, Space right) implements OutputEl
     public static final Symbol LOGICAL_AND = new Symbol("&&", ONE_LR, ONE_LR);
     public static final Symbol LOGICAL_OR = new Symbol("||", ONE_LR, ONE_LR);
     public static final Symbol LAMBDA = new Symbol("->", ONE_LR, ONE_LR);
+
+    public static final Symbol LEFT_BLOCK_COMMENT = new Symbol("/*", NEVER, NEVER);
+    public static final Symbol RIGHT_BLOCK_COMMENT = new Symbol("*/", NEVER, NEVER);
 
     public static Symbol plusPlusPrefix(String s) {
         return new Symbol(s, EASY, NEVER);

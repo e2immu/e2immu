@@ -36,18 +36,10 @@ import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.T
 import static org.e2immu.analyser.util.Logger.LogTarget.INSPECT;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class ParseAndInspect {
+public record ParseAndInspect(Resources classPath,
+                              TypeMapImpl.Builder typeMapBuilder,
+                              Trie<TypeInfo> sourceTypes) {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParseAndInspect.class);
-
-    private final TypeMapImpl.Builder typeMapBuilder;
-    private final Trie<TypeInfo> sourceTypes;
-    private final Resources classPath;
-
-    public ParseAndInspect(Resources classPath, TypeMapImpl.Builder typeMapBuilder, Trie<TypeInfo> sourceTypes) {
-        this.typeMapBuilder = typeMapBuilder;
-        this.sourceTypes = sourceTypes;
-        this.classPath = classPath;
-    }
 
     // NOTE: there is a bit of optimization we can do if we parse/analyse per package
 

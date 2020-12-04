@@ -23,12 +23,12 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.Instance;
-import org.e2immu.analyser.model.value.MethodValue;
 import org.e2immu.analyser.model.value.NullValue;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
@@ -66,9 +66,29 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
-    public String expressionString(int indent) {
+    public int order() {
+        return 0;
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return ObjectFlow.NYE;
+    }
+
+    @Override
+    public OutputBuilder output() {
         String methodName = methodInfo.isConstructor ? "new" : methodInfo.name;
-        return scope.expressionString(0) + "::" + methodName;
+        return new OutputBuilder().add(scope.output()).add(Symbol.DOUBLE_COLON).add(new Text(methodName));
+    }
+
+    @Override
+    public String toString() {
+        return minimalOutput();
     }
 
     @Override
@@ -107,7 +127,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             Location location = evaluationContext.getLocation(this);
             ObjectFlow objectFlow = builder.createInternalObjectFlow(location, methodInfo.returnType(), Origin.NEW_OBJECT_CREATION);
             MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
-            Instance initialInstance = new Instance(methodInfo.returnType(), methodInfo, List.of(), objectFlow, EmptyExpression.EMPTY_EXPRESSION);
+            NewObject initialInstance = new NewObject(methodInfo, methodInfo.returnType(), List.of(), EmptyExpression.EMPTY_EXPRESSION, objectFlow);
             NewObject instance = MethodCall.checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
                     methodAnalysis, initialInstance, List.of());
             builder.setExpression(instance);
@@ -132,7 +152,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                     if (scopeResult.value.isInstanceOf(NullConstant.class)) {
                         builder.raiseError(Message.NULL_POINTER_EXCEPTION);
                     }
-                    result = new MethodValue(methodInfo, scopeResult.value, List.of(), objectFlow);
+                    result = new MethodCall(scopeResult.value, methodInfo, List.of(), objectFlow);
                 }
             } else if (methodInfo.hasStatements()) {
                 result = EmptyExpression.NO_VALUE; // delay, waiting
@@ -140,7 +160,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 if (scopeResult.value instanceof NullValue) {
                     builder.raiseError(Message.NULL_POINTER_EXCEPTION);
                 }
-                result = new MethodValue(methodInfo, scopeResult.value, List.of(), objectFlow);
+                result = new MethodCall(scopeResult.value, methodInfo, List.of(), objectFlow);
             }
             builder.setExpression(result);
         }

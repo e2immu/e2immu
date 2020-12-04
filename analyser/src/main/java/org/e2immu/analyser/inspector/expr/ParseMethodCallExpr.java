@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.util.Pair;
@@ -40,13 +41,8 @@ import static org.e2immu.analyser.model.ParameterizedType.NOT_ASSIGNABLE;
 import static org.e2immu.analyser.util.Logger.LogTarget.METHOD_CALL;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class ParseMethodCallExpr {
+public record ParseMethodCallExpr(InspectionProvider inspectionProvider) {
     private static final Logger LOGGER = LoggerFactory.getLogger(ParseMethodCallExpr.class);
-    private final InspectionProvider inspectionProvider;
-
-    public ParseMethodCallExpr(InspectionProvider inspectionProvider) {
-        this.inspectionProvider = inspectionProvider;
-    }
 
     public Expression parse(ExpressionContext expressionContext, MethodCallExpr methodCallExpr, MethodTypeParameterMap singleAbstractMethod) {
         log(METHOD_CALL, "Start parsing method call {}, method name {}, single abstract {}", methodCallExpr,
@@ -98,10 +94,12 @@ public class ParseMethodCallExpr {
                 methodCallExpr, StringUtil.join(newParameterExpressions, Expression::returnType),
                 method.getConcreteReturnType().detailedString(), mapExpansion);
 
+        MethodInfo methodInfo = method.methodInspection.getMethodInfo();
         Expression computedScope;
-        if (scope == null) {
+        boolean objectIsImplicit = scope == null;
+        if (objectIsImplicit) {
             if (method.methodInspection.isStatic()) {
-                computedScope = new TypeExpression(method.methodInspection.getMethodInfo().typeInfo.asParameterizedType(inspectionProvider));
+                computedScope = new TypeExpression(methodInfo.typeInfo.asParameterizedType(inspectionProvider));
             } else {
                 Variable thisVariable = new This(inspectionProvider, expressionContext.enclosingType);
                 computedScope = new VariableExpression(thisVariable);
@@ -109,7 +107,10 @@ public class ParseMethodCallExpr {
         } else {
             computedScope = scope;
         }
-        return new MethodCall(scope, computedScope, mapExpansion.isEmpty() ? method : method.expand(mapExpansion), newParameterExpressions);
+        // TODO check that getConcreteReturnType() is correct here (20201204)
+        return new MethodCall(objectIsImplicit, computedScope, methodInfo, mapExpansion.isEmpty() ? method.getConcreteReturnType() :
+                method.expand(mapExpansion).getConcreteReturnType(), newParameterExpressions,
+                ObjectFlow.NYE);
     }
 
     MethodTypeParameterMap chooseCandidateAndEvaluateCall(ExpressionContext expressionContext,
@@ -155,7 +156,7 @@ public class ParseMethodCallExpr {
         // methods with implicit type conversions, varargs, etc. etc.
         if (methodCandidates.isEmpty()) {
             log(METHOD_CALL, "Evaluated expressions for {}: ", methodNameForErrorReporting);
-            evaluatedExpressions.forEach((i, expr) -> LOGGER.warn("  {} = {}", i, expr.expressionString(0)));
+            evaluatedExpressions.forEach((i, expr) -> LOGGER.warn("  {} = {}", i, expr.debugOutput()));
             log(METHOD_CALL, "No candidate found for {} in type {} at position {}", methodNameForErrorReporting,
                     startingPointForErrorReporting.detailedString(), positionForErrorReporting);
             return null;
@@ -241,7 +242,7 @@ public class ParseMethodCallExpr {
                 }
                 Expression reParsed = expressionContext.parseExpression(expressions.get(i), mapForEvaluation);
                 if (reParsed instanceof UnevaluatedMethodCall || reParsed instanceof UnevaluatedLambdaExpression) {
-                    log(METHOD_CALL, "Reevaluation of {} fails, have {}", methodNameForErrorReporting, reParsed.expressionString(0));
+                    log(METHOD_CALL, "Reevaluation of {} fails, have {}", methodNameForErrorReporting, reParsed.debugOutput());
                     return null;
                 }
                 newParameterExpressions.add(reParsed);

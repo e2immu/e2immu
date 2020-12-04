@@ -22,21 +22,16 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
-import java.util.Objects;
 
 public class StringConcat extends BinaryOperator {
-    private final Primitives primitives;
 
     private StringConcat(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
-        super(lhs, primitives.plusOperatorInt, rhs, BinaryOperator.ADDITIVE_PRECEDENCE, objectFlow);
-        this.primitives = primitives;
+        super(primitives, lhs, primitives.plusOperatorInt, rhs, BinaryOperator.ADDITIVE_PRECEDENCE, objectFlow);
     }
 
     public static Expression stringConcat(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {
@@ -82,33 +77,12 @@ public class StringConcat extends BinaryOperator {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(lhs, rhs);
-    }
-
-
-    @Override
-    public String print(PrintMode printMode) {
-        return lhs.print(printMode) + " + " + rhs.print(printMode);
-    }
-
-    @Override
     public int order() {
         return ExpressionComparator.ORDER_SUM;
     }
 
     @Override
-    public ParameterizedType type() {
-        return primitives.stringParameterizedType;
-    }
-
-    @Override
-    public ObjectFlow getObjectFlow() {
-        return objectFlow;
-    }
-
-    @Override
     public NewObject getInstance(EvaluationContext evaluationContext) {
-        return new NewObject(null, type(), List.of(), EmptyExpression.EMPTY_EXPRESSION, getObjectFlow());
+        return new NewObject(null, returnType(), List.of(), EmptyExpression.EMPTY_EXPRESSION, getObjectFlow());
     }
 }

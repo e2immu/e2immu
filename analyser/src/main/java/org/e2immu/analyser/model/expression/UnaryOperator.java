@@ -24,8 +24,9 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.NotNull;
@@ -84,7 +85,7 @@ public class UnaryOperator implements Expression {
 
     @Override
     public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NO_FLOW;
+        return ObjectFlow.NYE;
     }
 
     public static int precedence(@NotNull @NotModified UnaryExpr.Operator operator) {
@@ -171,12 +172,18 @@ public class UnaryOperator implements Expression {
     }
 
     @Override
-    @NotNull
-    public String expressionString(int indent) {
-        if (precedence == 15) {
-            return bracketedExpressionString(indent, expression) + operator.name;
+    public OutputBuilder output() {
+        if (precedence == PRECEDENCE_POST_INCREMENT) {
+            return new OutputBuilder().add(outputInParenthesis(precedence, expression))
+                    .add(Symbol.plusPlusSuffix(operator.name));
         }
-        return operator.name + bracketedExpressionString(indent, expression);
+        return new OutputBuilder().add(Symbol.plusPlusSuffix(operator.name))
+                .add(outputInParenthesis(precedence, expression));
+    }
+
+    @Override
+    public String toString() {
+        return minimalOutput();
     }
 
     @Override

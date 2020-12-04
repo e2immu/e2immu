@@ -27,6 +27,8 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -47,7 +49,12 @@ public class NullConstant implements ConstantExpression<Object> {
 
     @Override
     public String toString() {
-        return "null";
+        return minimalOutput();
+    }
+
+    @Override
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new Text("null"));
     }
 
     @Override

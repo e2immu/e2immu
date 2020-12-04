@@ -31,6 +31,7 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.*;
@@ -114,6 +115,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public String stream(int indent) {
         return stream(indent, true);
+    }
+
+    public OutputBuilder output() {
     }
 
     public String stream(int indent, boolean doTypeDeclaration) {
@@ -335,8 +339,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return new ParameterizedType(this, inspectionProvider.getTypeInspection(this).typeParameters()
                 .stream().map(tp -> new ParameterizedType(tp, 0, ParameterizedType.WildCard.NONE)).collect(Collectors.toList()));
     }
-
     // to be called before type inspection has been built
+
     public ParameterizedType asSimpleParameterizedType() {
         return new ParameterizedType(this, List.of());
     }
@@ -521,8 +525,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             return packageNameOrEnclosingType.getLeft();
         return packageNameOrEnclosingType.getRight().packageName();
     }
-
     // this type implements a functional interface, and we need to find the single abstract method
+
     public MethodInfo findOverriddenSingleAbstractMethod() {
         return typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM)
                 .map(mi -> mi.methodInspection.get())

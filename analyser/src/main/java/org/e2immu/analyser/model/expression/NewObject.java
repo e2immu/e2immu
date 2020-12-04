@@ -28,7 +28,10 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
-import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Spacer;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
@@ -132,17 +135,7 @@ public class NewObject implements HasParameterExpressions {
 
     @Override
     public String toString() {
-        return print(PrintMode.FOR_DEBUG);
-    }
-
-    @Override
-    public String print(PrintMode printMode) {
-        return "instance type " + parameterizedType.detailedString()
-                + (constructor == null ? "" : (
-                "(" + parameterExpressions.stream()
-                        .map(Expression::toString)
-                        .collect(Collectors.joining(", ")) + ")"))
-                + (state == EmptyExpression.EMPTY_EXPRESSION ? "" : "[" + state.print(printMode) + "]");
+        return minimalOutput();
     }
 
     private static final Set<Variable> NO_LINKS = Set.of();
@@ -191,12 +184,6 @@ public class NewObject implements HasParameterExpressions {
         }
         return result;
     }
-
-    @Override
-    public ParameterizedType type() {
-        return parameterizedType;
-    }
-
 
     @Override
     public int internalCompareTo(Expression v) {
@@ -266,19 +253,31 @@ public class NewObject implements HasParameterExpressions {
     }
 
     @Override
-    public String expressionString(int indent) {
-        String expressionString;
-        if (parameterizedType.arrays > 0) {
-            expressionString = parameterExpressions.stream().map(expression -> "[" + expression.expressionString(indent) + "]")
-                    .collect(Collectors.joining(", "));
+    public OutputBuilder output() {
+        OutputBuilder outputBuilder = new OutputBuilder();
+        if (constructor != null) {
+            outputBuilder.add(new Text("new")).add(Spacer.ONE).add(parameterizedType.output());
+            if (parameterExpressions.isEmpty()) {
+                outputBuilder.add(Symbol.OPEN_CLOSE_BRACKET);
+            } else {
+                outputBuilder
+                        .add(Symbol.LEFT_PARENTHESIS)
+                        .add(parameterExpressions.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                        .add(Symbol.RIGHT_PARENTHESIS);
+            }
         } else {
-            expressionString = "(" +
-                    parameterExpressions.stream().map(expression -> expression.expressionString(indent)).collect(Collectors.joining(", ")) +
-                    ")";
+            outputBuilder.add(parameterizedType.output());
         }
-        String anon = (anonymousClass == null ? "" : anonymousClass.stream(indent, false)).stripTrailing();
-        String arrayInit = arrayInitializer == null ? "" : arrayInitializer.expressionString(0);
-        return "new " + parameterizedType.streamWithoutArrays() + expressionString + anon + arrayInit;
+        if (anonymousClass != null) {
+            outputBuilder.add(anonymousClass.output());
+        }
+        if (arrayInitializer != null) {
+            outputBuilder.add(arrayInitializer.output());
+        }
+        if (state != EmptyExpression.EMPTY_EXPRESSION) {
+            outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT).add(state.output()).add(Symbol.RIGHT_BLOCK_COMMENT);
+        }
+        return outputBuilder;
     }
 
     @Override

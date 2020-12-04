@@ -1,7 +1,14 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Element;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Spacer;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
@@ -26,17 +33,12 @@ public class AssertStatement extends StatementWithStructure {
     }
 
     @Override
-    public String statementString(int indent, StatementAnalysis statementAnalysis) {
-        StringBuilder sb = new StringBuilder();
-        StringUtil.indent(sb, indent);
-        sb.append("assert ");
-        sb.append(structure.expression.expressionString(0));
-        if (message != null) {
-            sb.append(", ");
-            sb.append(message.expressionString(0));
-        }
-        sb.append(";\n");
-        return sb.toString();
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new Text("assert"))
+                .add(Spacer.ONE)
+                .add(structure.expression.output())
+                .add(message != null ? new OutputBuilder().add(Symbol.COMMA).add(message.output()) : new OutputBuilder())
+                .add(Symbol.SEMICOLON);
     }
 
     @Override

@@ -19,23 +19,17 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
-import java.util.Objects;
 
 public class Sum extends BinaryOperator {
-    private final Primitives primitives;
 
     private Sum(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
-        super(lhs, primitives.plusOperatorInt, rhs, BinaryOperator.ADDITIVE_PRECEDENCE, objectFlow);
-        this.primitives = primitives;
+        super(primitives, lhs, primitives.plusOperatorInt, rhs, BinaryOperator.ADDITIVE_PRECEDENCE, objectFlow);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
@@ -84,26 +78,6 @@ public class Sum extends BinaryOperator {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Sum orValue = (Sum) o;
-        return lhs.equals(orValue.lhs) &&
-                rhs.equals(orValue.rhs);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(lhs, rhs);
-    }
-
-
-    @Override
-    public String print(PrintMode printMode) {
-        return "(" + lhs.print(printMode) + " + " + rhs.print(printMode) + ")";
-    }
-
-    @Override
     public int order() {
         return ExpressionComparator.ORDER_SUM;
     }
@@ -116,17 +90,8 @@ public class Sum extends BinaryOperator {
     }
 
     @Override
-    public ParameterizedType type() {
-        return primitives.widestType(lhs.type(), rhs.type());
-    }
-
-    @Override
     public boolean isNumeric() {
         return true;
     }
 
-    @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return PrimitiveExpression.primitiveGetProperty(variableProperty);
-    }
 }

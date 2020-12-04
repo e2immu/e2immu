@@ -22,7 +22,13 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
@@ -61,10 +67,15 @@ public class UnevaluatedLambdaExpression implements Expression {
         throw new UnsupportedOperationException();
     }
 
+
     @Override
-    @NotNull
-    public String expressionString(int indent) {
-        return "<unevaluated lambda with " + numberOfParameters + " parameters>";
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new Text("", "<unevaluated lambda with " + numberOfParameters + " parameters>"));
+    }
+
+    @Override
+    public String toString() {
+        return minimalOutput();
     }
 
     @Override
@@ -85,5 +96,20 @@ public class UnevaluatedLambdaExpression implements Expression {
     @Override
     public Expression translate(TranslationMap translationMap) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int order() {
+        return 0;
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return ObjectFlow.NYE;
     }
 }

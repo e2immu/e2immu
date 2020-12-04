@@ -15,23 +15,29 @@
  * limitations under the License.
  */
 
-package org.e2immu.analyser.model.value;
+package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class PropertyWrapper implements Value, ValueWrapper {
+public class PropertyWrapper implements Expression, ExpressionWrapper {
 
     /*
 
@@ -39,18 +45,18 @@ public class PropertyWrapper implements Value, ValueWrapper {
      Alternatively, we wrap a dedicated object flow
 
      */
-    public final Value value;
+    public final Expression value;
     public final Map<VariableProperty, Integer> properties;
     public final ObjectFlow overwriteObjectFlow;
 
-    private PropertyWrapper(Value value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
+    private PropertyWrapper(Expression value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
         this.value = value;
         this.properties = properties;
         overwriteObjectFlow = objectFlow;
     }
 
     @Override
-    public Value getValue() {
+    public Expression getValue() {
         return value;
     }
 
@@ -60,14 +66,14 @@ public class PropertyWrapper implements Value, ValueWrapper {
     }
 
     @Override
-    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Value, Value> translation) {
+    public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         EvaluationResult reValue = value.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reValue);
-        return builder.setValue(PropertyWrapper.propertyWrapper(evaluationContext, reValue.value, properties, getObjectFlow())).build();
+        return builder.setExpression(PropertyWrapper.propertyWrapper(evaluationContext, reValue.value, properties, getObjectFlow())).build();
     }
 
-    public static Value propertyWrapper(EvaluationContext evaluationContext, Expression value,
-                                        Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
+    public static Expression propertyWrapper(EvaluationContext evaluationContext, Expression value,
+                                             Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
         Map<VariableProperty, Integer> newMap = new HashMap<>();
         for (Map.Entry<VariableProperty, Integer> entry : properties.entrySet()) {
             int newPropertyValue = evaluationContext.getProperty(value, entry.getKey());
@@ -79,36 +85,44 @@ public class PropertyWrapper implements Value, ValueWrapper {
         if (newMap.isEmpty() && objectFlow == null) return value;
 
         // second, we always want the negation to be on the outside
-        if (value instanceof NegatedValue) {
+        if (value instanceof NegatedExpression) {
             throw new UnsupportedOperationException(); // this makes no sense!!
         }
         return new PropertyWrapper(value, properties, objectFlow);
     }
 
     @Override
+    public ParameterizedType returnType() {
+        return value.returnType();
+    }
+
+    @Override
+    public int precedence() {
+        return value.precedence();
+    }
+
+    @Override
+    public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public int order() {
+        return value.order();
+    }
+
+    @Override
+    public int internalCompareTo(Expression v) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public int internalCompareTo(Value v) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String toString() {
-        return print(PrintMode.FOR_DEBUG);
-    }
-
-    @Override
-    public String print(PrintMode printMode) {
-        if (printMode.forDebug()) {
-            return value.print(printMode) + "," + properties.entrySet().stream()
-                    .filter(e -> e.getValue() > e.getKey().falseValue)
-                    .map(e -> e.getKey().toString()).sorted().collect(Collectors.joining(","));
-        }
-        // transparent
-        return value.print(printMode);
+    public OutputBuilder output() {
+        return new OutputBuilder().add(value.output())
+                .add(Symbol.LEFT_BLOCK_COMMENT)
+                .add(new Text(properties.entrySet().stream().filter(e -> e.getValue() > e.getKey().falseValue)
+                        .map(e -> e.getKey().toString()).sorted().collect(Collectors.joining(","))))
+                .add(Symbol.RIGHT_BLOCK_COMMENT);
     }
 
     @Override
@@ -129,7 +143,7 @@ public class PropertyWrapper implements Value, ValueWrapper {
     }
 
     @Override
-    public Set<Variable> variables() {
+    public List<Variable> variables() {
         return value.variables();
     }
 
@@ -139,29 +153,24 @@ public class PropertyWrapper implements Value, ValueWrapper {
     }
 
     @Override
-    public void visit(Predicate<Value> predicate) {
-        if(predicate.test(this)) {
+    public void visit(Predicate<Expression> predicate) {
+        if (predicate.test(this)) {
             value.visit(predicate);
         }
     }
 
     @Override
-    public <T extends Value> T asInstanceOf(Class<T> clazz) {
+    public <T extends Expression> T asInstanceOf(Class<T> clazz) {
         return value.asInstanceOf(clazz);
     }
 
     @Override
-    public boolean isInstanceOf(Class<? extends Value> clazz) {
+    public boolean isInstanceOf(Class<? extends Expression> clazz) {
         return value.isInstanceOf(clazz);
     }
 
     @Override
-    public ParameterizedType type() {
-        return value.type();
-    }
-
-    @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationContext evaluationContext) {
         return value.getInstance(evaluationContext);
     }
 }

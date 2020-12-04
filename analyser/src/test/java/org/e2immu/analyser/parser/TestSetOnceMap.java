@@ -27,7 +27,7 @@ import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.config.TypeMapVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.value.InlineValue;
-import org.e2immu.analyser.model.value.PropertyWrapper;
+import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
 import org.junit.Test;

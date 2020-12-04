@@ -27,7 +27,6 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -172,28 +171,19 @@ public record OrExpression(Primitives primitives,
 
     @Override
     public String toString() {
-        return print(PrintMode.FOR_DEBUG);
+        return minimalOutput();
     }
 
     @Override
-    public String print(PrintMode printMode) {
-        return "(" + expressions.stream().map(v -> v.print(printMode)).collect(Collectors.joining(" or ")) + ")";
-    }
-
-    public OutputBuilder output(PrintMode printMode) {
+    public OutputBuilder output() {
+        int precedence = precedence();
         return new OutputBuilder()
-                .add(Symbol.LEFT_PARENTHESIS)
-                .add(expressions.stream().map(v -> v.output(printMode)).collect(OutputBuilder.joining(Symbol.LOGICAL_OR)))
-                .add(Symbol.RIGHT_PARENTHESIS);
+                .add(expressions.stream().map(e -> e.outputInParenthesis(precedence, e))
+                        .collect(OutputBuilder.joining(Symbol.LOGICAL_OR)));
     }
 
     @Override
     public ParameterizedType returnType() {
-        return null;
-    }
-
-    @Override
-    public String expressionString(int indent) {
         return null;
     }
 
@@ -226,11 +216,6 @@ public record OrExpression(Primitives primitives,
     @Override
     public List<Variable> variables() {
         return expressions.stream().flatMap(v -> v.variables().stream()).collect(Collectors.toList());
-    }
-
-    @Override
-    public ParameterizedType type() {
-        return primitives.booleanParameterizedType;
     }
 
     @Override

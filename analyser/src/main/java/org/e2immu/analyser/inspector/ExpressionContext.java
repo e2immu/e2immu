@@ -440,7 +440,7 @@ public class ExpressionContext {
                     typeInfo = null;
                 }
                 MethodInfo operatorMethod = BinaryOperator.getOperator(typeContext.getPrimitives(), binaryExpr.getOperator(), typeInfo);
-                return new BinaryOperator(lhs, operatorMethod, rhs,
+                return new BinaryOperator(typeContext.getPrimitives(), lhs, operatorMethod, rhs,
                         BinaryOperator.precedence(typeContext.getPrimitives(), operatorMethod));
             }
             if (expression.isUnaryExpr()) {

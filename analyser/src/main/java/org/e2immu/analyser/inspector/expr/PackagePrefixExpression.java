@@ -26,13 +26,9 @@ import org.e2immu.analyser.model.PackagePrefix;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
 
-class PackagePrefixExpression implements Expression {
-    public final PackagePrefix packagePrefix;
-
-    public PackagePrefixExpression(PackagePrefix packagePrefix) {
-        this.packagePrefix = packagePrefix;
-    }
+record PackagePrefixExpression(PackagePrefix packagePrefix) implements Expression {
 
     @Override
     public ParameterizedType returnType() {
@@ -40,7 +36,7 @@ class PackagePrefixExpression implements Expression {
     }
 
     @Override
-    public String expressionString(int indent) {
+    public OutputBuilder output() {
         throw new UnsupportedOperationException();
     }
 

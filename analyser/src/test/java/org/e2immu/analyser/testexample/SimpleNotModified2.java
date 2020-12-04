@@ -17,7 +17,7 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.analyser.model.value.PropertyWrapper;
+import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.value.VariableValue;
 import org.e2immu.annotation.E1Immutable;
 import org.e2immu.annotation.Modified;

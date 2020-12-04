@@ -21,17 +21,20 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.statement.SwitchEntry;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Spacer;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class SwitchExpression implements Expression {
-
-    public final Expression selector;
-    public final List<SwitchEntry> switchEntries;
-    public final ParameterizedType returnType;
+public record SwitchExpression(Expression selector,
+                               List<SwitchEntry> switchEntries,
+                               ParameterizedType returnType) implements Expression {
 
     public SwitchExpression(Expression selector, List<SwitchEntry> switchEntries, ParameterizedType returnType) {
         this.selector = selector;
@@ -40,15 +43,19 @@ public class SwitchExpression implements Expression {
     }
 
     @Override
-    public ParameterizedType returnType() {
-        return returnType;
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new Text("switch"))
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(selector.output())
+                .add(Symbol.RIGHT_PARENTHESIS)
+                .add(Symbol.LEFT_BRACE)
+                .add(switchEntries.stream().map(SwitchEntry::output).collect(OutputBuilder.joining(Spacer.EASY)))
+                .add(Symbol.RIGHT_BRACE);
     }
 
-    // switch(selector) { case X, Y, Z -> expression or block; ...; default -> expression or block }
     @Override
-    public String expressionString(int indent) {
-        String blocks = switchEntries.stream().map(switchEntry -> switchEntry.statementString(indent + 4, null)).collect(Collectors.joining("\n"));
-        return "switch(" + selector.expressionString(0) + ") {" + blocks + "}";
+    public String toString() {
+        return minimalOutput();
     }
 
     @Override
@@ -60,5 +67,20 @@ public class SwitchExpression implements Expression {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         throw new UnsupportedOperationException("NYI");
         //return SwitchValue.switchValue(evaluationContext, selectorValue, entries, objectFlow);
+    }
+
+    @Override
+    public int order() {
+        return 0;
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return null;
     }
 }

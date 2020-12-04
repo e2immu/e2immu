@@ -25,18 +25,13 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Text;
 
-public class PrimitiveExpression implements Expression {
+public record PrimitiveExpression(String msg) implements Expression {
 
     public static final PrimitiveExpression PRIMITIVE_EXPRESSION = new PrimitiveExpression("<unknown primitive>");
-
-    public final String msg;
-
-    private PrimitiveExpression(String msg) {
-        this.msg = msg;
-    }
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
@@ -65,8 +60,13 @@ public class PrimitiveExpression implements Expression {
     }
 
     @Override
-    public String expressionString(int indent) {
-        return msg;
+    public String toString() {
+        return minimalOutput();
+    }
+
+    @Override
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new Text("", msg));
     }
 
     @Override
@@ -85,7 +85,7 @@ public class PrimitiveExpression implements Expression {
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationContext evaluationContext) {
         return null;
     }
 

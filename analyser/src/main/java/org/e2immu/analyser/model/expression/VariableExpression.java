@@ -24,10 +24,9 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
@@ -51,11 +50,6 @@ public record VariableExpression(Variable variable,
 
     public VariableExpression(Variable variable, ObjectFlow objectFlow, boolean variableField) {
         this(variable, variable.fullyQualifiedName(), variableField, objectFlow);
-    }
-
-    @Override
-    public ParameterizedType type() {
-        return variable.concreteReturnType();
     }
 
     @Override
@@ -163,11 +157,6 @@ public record VariableExpression(Variable variable,
     }
 
     @Override
-    public String expressionString(int indent) {
-        return variable.simpleName();
-    }
-
-    @Override
     public int precedence() {
         return 17;
     }
@@ -183,25 +172,13 @@ public record VariableExpression(Variable variable,
     }
 
     @Override
-    public String print(PrintMode printMode) {
-        if (printMode.forAnnotations()) {
-            if (variable instanceof ParameterInfo parameterInfo) return parameterInfo.name;
-            if (variable instanceof FieldReference fieldReference) {
-                String scope;
-                if (fieldReference.scope == null) {
-                    scope = fieldReference.fieldInfo.owner.simpleName;
-                } else {
-                    scope = fieldReference.scope.print(printMode);
-                }
-                return scope + "." + fieldReference.fieldInfo.name;
-            }
-        }
-        return name;
+    public OutputBuilder output() {
+        return new OutputBuilder().add(variable.output());
     }
 
     @Override
     public String toString() {
-        return expressionString(0);
+        return minimalOutput();
     }
 
     @Override

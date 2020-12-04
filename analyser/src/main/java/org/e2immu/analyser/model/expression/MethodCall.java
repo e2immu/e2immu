@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateMethodCall;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -302,7 +301,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             EvaluationResult mv = EvaluateMethodCall.methodValue(modified, evaluationContext, methodInfo,
                     methodAnalysis, objectValue, parameterValues, objectFlowOfResult);
             builder.compose(mv);
-            if (mv.value == objectValue && mv.value instanceof Instance && modifiedInstance != null) {
+            if (mv.value == objectValue && mv.value instanceof NewObject && modifiedInstance != null) {
                 result = modifiedInstance;
             } else {
                 result = mv.value;

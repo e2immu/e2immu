@@ -41,7 +41,7 @@ public class ParseFieldAccessExpr {
         String name = fieldAccessExpr.getName().asString();
 
         if (object instanceof PackagePrefixExpression) {
-            PackagePrefix packagePrefix = ((PackagePrefixExpression) object).packagePrefix;
+            PackagePrefix packagePrefix = ((PackagePrefixExpression) object).packagePrefix();
             PackagePrefix combined = packagePrefix.append(name);
             if (expressionContext.typeContext.isPackagePrefix(combined)) {
                 return new PackagePrefixExpression(combined);

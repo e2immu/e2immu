@@ -21,7 +21,13 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Immutable;
 import org.e2immu.annotation.NotNull;
@@ -29,12 +35,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.Objects;
 
 @E2Immutable
-public class UnevaluatedMethodCall implements Expression {
-    public final String methodName;
-
-    public UnevaluatedMethodCall(String methodName) {
-        this.methodName = methodName;
-    }
+public record UnevaluatedMethodCall(String methodName) implements Expression {
 
     @Override
     public boolean equals(Object o) {
@@ -57,9 +58,13 @@ public class UnevaluatedMethodCall implements Expression {
     }
 
     @Override
-    @NotNull
-    public String expressionString(int indent) {
-        return "<unevaluated method call " + methodName + ">";
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new Text("", "<unevaluated method call to " + methodName + ">"));
+    }
+
+    @Override
+    public String toString() {
+        return minimalOutput();
     }
 
     @Override
@@ -69,7 +74,7 @@ public class UnevaluatedMethodCall implements Expression {
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
-        throw new UnsupportedOperationException("Types referenced of "+methodName);
+        throw new UnsupportedOperationException("Types referenced of " + methodName);
     }
 
     @Override
@@ -80,5 +85,20 @@ public class UnevaluatedMethodCall implements Expression {
     @Override
     public Expression translate(TranslationMap translationMap) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int order() {
+        return 0;
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return null;
     }
 }
