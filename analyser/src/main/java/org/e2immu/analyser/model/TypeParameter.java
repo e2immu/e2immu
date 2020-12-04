@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.Either;
 
@@ -48,6 +49,8 @@ public interface TypeParameter extends NamedType {
                 .stream().map(pt -> pt.print(inspectionProvider, false, visitedTypeParameters, false))
                 .collect(Collectors.joining(" & "));
     }
+
+    OutputBuilder output();
 
     @Override
     default String simpleName() {

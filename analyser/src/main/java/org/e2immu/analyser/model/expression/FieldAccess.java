@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TranslationMap;
-import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -132,7 +131,7 @@ public record FieldAccess(Expression expression,
         EvaluationResult evaluationResult = VariableExpression.evaluate(evaluationContext, forwardEvaluationInfo, newVar);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(scopeResult, evaluationResult);
 
-        if (scopeResult.value instanceof NullValue) {
+        if (scopeResult.value instanceof NullConstant) {
             builder.raiseError(Message.NULL_POINTER_EXCEPTION);
         } else if (scopeResult.value != EmptyExpression.NO_VALUE && !evaluationContext.isNotNull0(scopeResult.value)) {
             builder.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Scope " + scopeResult.value);

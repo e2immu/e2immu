@@ -20,6 +20,8 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.statement.Structure;
+import org.e2immu.analyser.output.Guide;
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.annotation.E2Container;
 
 @E2Container
@@ -32,5 +34,5 @@ public interface Statement extends Element {
         return this;
     }
 
-    String statementString(int indent, StatementAnalysis statementAnalysis);
+    OutputBuilder output(Guide.GuideGenerator guideGenerator, StatementAnalysis firstStatement);
 }

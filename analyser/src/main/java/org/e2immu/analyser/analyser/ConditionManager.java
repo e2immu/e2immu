@@ -29,7 +29,7 @@ public class ConditionManager {
 
     private static Expression checkBoolean(Expression v) {
         if (v != EmptyExpression.EMPTY_EXPRESSION && v != EmptyExpression.NO_VALUE
-                && (v.type() == null || Primitives.isNotBooleanOrBoxedBoolean(v.type()))) {
+                && (v.returnType() == null || Primitives.isNotBooleanOrBoxedBoolean(v.returnType()))) {
             throw new UnsupportedOperationException("Need a boolean value in the condition manager; got " + v);
         }
         return v;

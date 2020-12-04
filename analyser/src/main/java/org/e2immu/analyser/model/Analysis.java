@@ -19,6 +19,9 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.annotation.AnnotationMode;
 
 import java.util.Map;
@@ -45,30 +48,35 @@ public interface Analysis {
         return AnnotationMode.DEFENSIVE;
     }
 
-    default void peekIntoAnnotations(AnnotationExpression annotation, Set<TypeInfo> annotationsSeen, StringBuilder sb) {
+    default OutputBuilder peekIntoAnnotations(AnnotationExpression annotation, Set<TypeInfo> annotationsSeen) {
         AnnotationParameters parameters = annotation.e2ImmuAnnotationParameters();
-        if (parameters == null) return;
-        if (!parameters.contract()) {
-            // so we have one of our own annotations, and we know its type
-            Boolean verified = getAnnotation(annotation);
-            if (verified != null) {
-                boolean ok = verified && !parameters.absent() || !verified && parameters.absent();
-                annotationsSeen.add(annotation.typeInfo());
-                if (ok) {
-                    sb.append("/*OK*/");
+        OutputBuilder outputBuilder = new OutputBuilder();
+        if (parameters != null) {
+            if (!parameters.contract()) {
+                outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT);
+                // so we have one of our own annotations, and we know its type
+                Boolean verified = getAnnotation(annotation);
+                if (verified != null) {
+                    boolean ok = verified && !parameters.absent() || !verified && parameters.absent();
+                    annotationsSeen.add(annotation.typeInfo());
+                    if (ok) {
+                        outputBuilder.add(new Text("OK"));
+                    } else {
+                        outputBuilder.add(new Text("FAIL"));
+                    }
                 } else {
-                    sb.append("/*FAIL*/");
+                    if (!parameters.absent()) {
+                        outputBuilder.add(new Text("FAIL:DELAYED"));
+                    } else {
+                        outputBuilder.add(new Text("OK:DELAYED"));
+                    }
                 }
+                outputBuilder.add(Symbol.RIGHT_BLOCK_COMMENT);
             } else {
-                if (!parameters.absent()) {
-                    sb.append("/*FAIL:DELAYED*/");
-                } else {
-                    sb.append("/*OK:DELAYED*/");
-                }
+                if (!parameters.absent()) annotationsSeen.add(annotation.typeInfo());
             }
-        } else {
-            if (!parameters.absent()) annotationsSeen.add(annotation.typeInfo());
         }
+        return new OutputBuilder();
     }
 
     default Analysis build() {

@@ -25,7 +25,6 @@ import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TranslationMap;
-import org.e2immu.analyser.model.value.ArrayValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
@@ -115,8 +114,9 @@ public record ArrayLengthExpression(Primitives primitives,
         EvaluationResult result = scope.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(result);
 
-        if (result.value instanceof ArrayValue arrayValue) {
-            Expression size = new IntConstant(evaluationContext.getPrimitives(), arrayValue.values.size(), ObjectFlow.NO_FLOW);
+        if (result.value instanceof ArrayInitializer arrayInitializer) {
+            Expression size = new IntConstant(evaluationContext.getPrimitives(), arrayInitializer.multiExpression.expressions().length,
+                    ObjectFlow.NO_FLOW);
             builder.setExpression(size);
         } else {
             builder.setExpression(PrimitiveExpression.PRIMITIVE_EXPRESSION);

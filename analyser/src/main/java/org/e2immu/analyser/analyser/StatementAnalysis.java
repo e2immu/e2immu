@@ -32,6 +32,8 @@ import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
+import org.e2immu.analyser.output.Guide;
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
@@ -259,6 +261,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return null; // statements will not have been analysed yet?
         }
         return variables.get(variableName).current();
+    }
+
+    public OutputBuilder output(Guide.GuideGenerator guideGenerator) {
     }
 
     public interface StateChange extends Function<Expression, Expression> {

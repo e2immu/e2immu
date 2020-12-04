@@ -21,6 +21,8 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Spacer;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.output.VariableName;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -119,33 +121,33 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
         return parameterInspection.get();
     }
 
-    // the in-line method
-    public String stream() {
-        StringBuilder sb = new StringBuilder();
+    public OutputBuilder outputDeclaration() {
+        OutputBuilder outputBuilder = new OutputBuilder();
         ParameterInspection parameterInspection = this.parameterInspection.get();
         Set<TypeInfo> annotationsSeen = new HashSet<>();
         for (AnnotationExpression annotation : parameterInspection.getAnnotations()) {
-            sb.append(annotation.stream());
+            outputBuilder.add(annotation.output());
             if (parameterAnalysis.isSet()) {
-                parameterAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen, sb);
+                outputBuilder.add(parameterAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen));
             }
-            sb.append(" ");
+            outputBuilder.add(Spacer.ONE);
         }
         if (parameterAnalysis.isSet()) {
             parameterAnalysis.get().getAnnotationStream().forEach(entry -> {
                 boolean present = entry.getValue();
                 AnnotationExpression annotation = entry.getKey();
                 if (present && !annotationsSeen.contains(annotation.typeInfo())) {
-                    sb.append(annotation.stream()).append(" ");
+                    outputBuilder.add(annotation.output());
+                    outputBuilder.add(Spacer.ONE);
                 }
             });
         }
         if (parameterizedType != ParameterizedType.NO_TYPE_GIVEN_IN_LAMBDA) {
-            sb.append(parameterizedType.print(parameterInspection.isVarArgs()));
-            sb.append(" ");
+            outputBuilder.add(parameterizedType.output(parameterInspection.isVarArgs()));
+            outputBuilder.add(Spacer.ONE);
         }
-        sb.append(name);
-        return sb.toString();
+        outputBuilder.add(new Text(name));
+        return outputBuilder;
     }
 
     @Override
@@ -184,6 +186,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
                         : UpgradableBooleanMap.of());
     }
 
+    // as variable
     @Override
     public OutputBuilder output() {
         return new OutputBuilder().add(new VariableName(name, owner, VariableName.Nature.LOCAL));

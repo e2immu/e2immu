@@ -36,11 +36,10 @@ public class Value {
     public Value(Expression expression) {
         if (expression instanceof Constant) {
             name = null; // default name = 'value'
-            val = expression.expressionString(0); // "abc", 3.14, true, 'C'
-        } else if (expression instanceof MemberValuePair) {
-            MemberValuePair mvp = (MemberValuePair) expression;
-            name = mvp.name;
-            val = mvp.value.expressionString(0); // Constant, VariableExpression, FieldAccess
+            val = expression.minimalOutput(); // "abc", 3.14, true, 'C'
+        } else if (expression instanceof MemberValuePair mvp) {
+            name = mvp.name();
+            val = mvp.value().minimalOutput(); // Constant, VariableExpression, FieldAccess
         } else throw new UnsupportedOperationException("Did not expect expression of type " + expression.getClass());
     }
 }

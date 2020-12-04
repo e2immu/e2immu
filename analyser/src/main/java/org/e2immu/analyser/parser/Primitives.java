@@ -209,6 +209,10 @@ public class Primitives {
                 !typeInfo.fullyQualifiedName.startsWith("jdk.internal");
     }
 
+    public static boolean isJavaLang(TypeInfo typeInfo) {
+        return typeInfo != null && !typeInfo.fullyQualifiedName.startsWith("java.lang.");
+    }
+
     private MethodInfo createOperator(TypeInfo owner, String name, List<ParameterizedType> parameterizedTypes, ParameterizedType returnType) {
         int i = 0;
         MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(owner, name).setStatic(true);

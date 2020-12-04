@@ -39,30 +39,61 @@ public class OutputBuilder {
     }
 
     public static Collector<OutputBuilder, OutputBuilder, OutputBuilder> joining(OutputElement outputElement) {
+        Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
         return new Collector<>() {
             @Override
             public Supplier<OutputBuilder> supplier() {
-                return OutputBuilder::new;
+                return () -> new OutputBuilder().add(guideGenerator.start());
             }
 
             @Override
             public BiConsumer<OutputBuilder, OutputBuilder> accumulator() {
-                return (a, b) -> new OutputBuilder().add(a).add(outputElement).add(b);
+                return (a, b) -> a.add(guideGenerator.mid()).add(outputElement).add(b);
             }
 
             @Override
             public BinaryOperator<OutputBuilder> combiner() {
-                return (a, b) -> new OutputBuilder().add(a, b);
+                return OutputBuilder::add;
             }
 
             @Override
             public Function<OutputBuilder, OutputBuilder> finisher() {
-                return t -> t;
+                return t -> t.add(guideGenerator.end());
             }
 
             @Override
             public Set<Characteristics> characteristics() {
-                return Set.of(Characteristics.CONCURRENT, Characteristics.IDENTITY_FINISH);
+                return Set.of(Characteristics.CONCURRENT);
+            }
+        };
+    }
+
+    public static Collector<OutputElement, OutputBuilder, OutputBuilder> joinElements(OutputElement outputElement) {
+        Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
+        return new Collector<>() {
+            @Override
+            public Supplier<OutputBuilder> supplier() {
+                return () -> new OutputBuilder().add(guideGenerator.start());
+            }
+
+            @Override
+            public BiConsumer<OutputBuilder, OutputElement> accumulator() {
+                return (a, b) -> a.add(guideGenerator.mid()).add(outputElement).add(b);
+            }
+
+            @Override
+            public BinaryOperator<OutputBuilder> combiner() {
+                return OutputBuilder::add;
+            }
+
+            @Override
+            public Function<OutputBuilder, OutputBuilder> finisher() {
+                return t -> t.add(guideGenerator.end());
+            }
+
+            @Override
+            public Set<Characteristics> characteristics() {
+                return Set.of(Characteristics.CONCURRENT);
             }
         };
     }

@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -93,7 +94,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
         return owner.primaryType();
     }
 
-    public String stream(int indent) {
+    public OutputBuilder output() {
         StringBuilder sb = new StringBuilder();
         StringUtil.indent(sb, indent);
         if (fieldInspection.isSet()) {

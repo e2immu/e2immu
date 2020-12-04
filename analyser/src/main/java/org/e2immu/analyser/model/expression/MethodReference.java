@@ -23,7 +23,6 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -157,7 +156,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             } else if (methodInfo.hasStatements()) {
                 result = EmptyExpression.NO_VALUE; // delay, waiting
             } else {
-                if (scopeResult.value instanceof NullValue) {
+                if (scopeResult.value instanceof NullConstant) {
                     builder.raiseError(Message.NULL_POINTER_EXCEPTION);
                 }
                 result = new MethodCall(scopeResult.value, methodInfo, List.of(), objectFlow);

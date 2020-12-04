@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.model;
 
+import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.expression.FieldAccess;
@@ -26,9 +27,9 @@ import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.SwitchStatement;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.E2Immutable;
@@ -36,7 +37,6 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 @Container
 @E2Immutable(after = "TypeAnalyser.analyse()") // and not MethodAnalyser.analyse(), given the back reference
@@ -153,65 +153,69 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return typeInfo.primaryType();
     }
 
-    public String stream(int indent) {
-        StringBuilder sb = new StringBuilder();
+    public OutputBuilder output() {
+        OutputBuilder outputBuilder = new OutputBuilder();
         MethodInspection inspection = methodInspection.get();
 
+        outputAnnotations(inspection, outputBuilder);
+
+        outputBuilder.add(Arrays.stream(MethodModifier.sort(inspection.getModifiers())).map(Text::new)
+                .collect(OutputBuilder.joinElements(Spacer.ONE)));
+
+        if (!inspection.getTypeParameters().isEmpty()) {
+            outputBuilder.add(Symbol.LEFT_ANGLE_BRACKET);
+            outputBuilder.add(inspection.getTypeParameters().stream().map(TypeParameter::output).collect(OutputBuilder.joining(Symbol.COMMA)));
+            outputBuilder.add(Symbol.RIGHT_ANGLE_BRACKET).add(Spacer.HARD);
+        }
+
+        if (!isConstructor) {
+            outputBuilder.add(inspection.getReturnType().output()).add(Spacer.HARD);
+        }
+        outputBuilder.add(new Text(name));
+        if (inspection.getParameters().isEmpty()) {
+            outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
+        } else {
+            outputBuilder.add(Symbol.LEFT_PARENTHESIS)
+                    .add(inspection.getParameters().stream().map(ParameterInfo::outputDeclaration).collect(OutputBuilder.joining(Symbol.COMMA)))
+                    .add(Symbol.RIGHT_PARENTHESIS);
+        }
+        if (!inspection.getExceptionTypes().isEmpty()) {
+            outputBuilder.add(Spacer.HARD).add(new Text("throws")).add(Spacer.HARD)
+                    .add(inspection.getExceptionTypes().stream()
+                            .map(ParameterizedType::output).collect(OutputBuilder.joining(Symbol.COMMA)));
+        }
+        if (hasBeenInspected()) {
+            Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
+            outputBuilder.add(guideGenerator.start());
+            StatementAnalysis firstStatement = methodAnalysis.isSet() ? methodAnalysis.get().getFirstStatement() : null;
+            outputBuilder.add(inspection.getMethodBody().output(guideGenerator, firstStatement));
+        } else {
+            outputBuilder.add(Spacer.ONE).add(Symbol.LEFT_BRACE).add(Symbol.RIGHT_BRACE);
+        }
+        return outputBuilder;
+    }
+
+    private void outputAnnotations(MethodInspection methodInspection, OutputBuilder outputBuilder) {
+        Guide.GuideGenerator annotationGG = new Guide.GuideGenerator();
+        outputBuilder.add(annotationGG.start());
         Set<TypeInfo> annotationsSeen = new HashSet<>();
-        for (AnnotationExpression annotation : inspection.getAnnotations()) {
-            StringUtil.indent(sb, indent);
-            sb.append(annotation.stream());
+        for (AnnotationExpression annotation : methodInspection.getAnnotations()) {
+            outputBuilder.add(annotationGG.mid()).add(annotation.output());
             if (methodAnalysis.isSet()) {
-                methodAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen, sb);
+                outputBuilder.add(methodAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen));
             }
-            sb.append("\n");
+            outputBuilder.add(Spacer.EASY);
         }
         if (methodAnalysis.isSet()) {
             methodAnalysis.get().getAnnotationStream().forEach(entry -> {
                 boolean present = entry.getValue();
                 AnnotationExpression annotation = entry.getKey();
                 if (present && !annotationsSeen.contains(annotation.typeInfo())) {
-                    StringUtil.indent(sb, indent);
-                    sb.append(annotation.stream());
-                    sb.append("\n");
+                    outputBuilder.add(annotationGG.mid()).add(annotation.output()).add(Spacer.EASY);
                 }
             });
         }
-
-        StringUtil.indent(sb, indent);
-        sb.append(MethodModifier.toJava(inspection.getModifiers()));
-        MethodInspection methodInspection = this.methodInspection.get();
-
-        if (!methodInspection.getTypeParameters().isEmpty()) {
-            sb.append("<");
-            sb.append(methodInspection.getTypeParameters().stream().map(TypeParameter::getName).collect(Collectors.joining(", ")));
-            sb.append("> ");
-        }
-
-        if (!isConstructor) {
-            sb.append(inspection.getReturnType().print());
-            sb.append(" ");
-        }
-        sb.append(name);
-        sb.append("(");
-
-        sb.append(inspection.getParameters().stream().map(ParameterInfo::stream).collect(Collectors.joining(", ")));
-        sb.append(")");
-        if (!inspection.getExceptionTypes().isEmpty()) {
-            sb.append(" throws ");
-            sb.append(inspection.getExceptionTypes().stream()
-                    .map(ParameterizedType::print).collect(Collectors.joining(", ")));
-        }
-        if (hasBeenInspected()) {
-            if (methodAnalysis.isSet() && methodAnalysis.get().getFirstStatement() != null) {
-                sb.append(inspection.getMethodBody().statementString(indent, methodAnalysis.get().getFirstStatement()));
-            } else {
-                sb.append(inspection.getMethodBody().statementString(indent, null));
-            }
-        } else {
-            sb.append(" { }");
-        }
-        return sb.toString();
+        outputBuilder.add(annotationGG.end());
     }
 
     public String fullyQualifiedName() {
@@ -306,7 +310,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
             // a.method() -> type of a cannot be replaced by unbound type parameter
             if (element instanceof MethodCall mc) {
-                result.add(mc.computedScope.returnType());
+                result.add(mc.object.returnType());
                 addTypesFromParameters(result, mc.methodInfo);
             }
 
@@ -320,7 +324,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
             // a.b -> type of a cannot be replaced by unbound type parameter
             if (element instanceof FieldAccess fieldAccess) {
-                result.add(fieldAccess.expression.returnType());
+                result.add(fieldAccess.expression().returnType());
             }
 
             // for(E e: list) -> type of list cannot be replaced by unbound type parameter

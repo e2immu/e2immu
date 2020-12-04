@@ -109,22 +109,14 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.isSet();
     }
 
-    public String stream() {
-        return stream(0);
-    }
-
-    public String stream(int indent) {
-        return stream(indent, true);
-    }
-
     public OutputBuilder output() {
+        return output(true);
     }
 
-    public String stream(int indent, boolean doTypeDeclaration) {
-        boolean isSubType = indent > 0;
+    public OutputBuilder output(boolean doTypeDeclaration) {
         String typeNature;
         Set<AnnotationExpression> annotations = new HashSet<>();
-        Set<String> imports = isSubType ? Collections.emptySet() : imports(typeInspection.get());
+        Set<String> imports = isPrimaryType() ? Collections.emptySet() : imports(typeInspection.get());
         Stream<String> typeModifiers;
         List<FieldInfo> fields;
         List<MethodInfo> constructors;
@@ -157,15 +149,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             subTypes = List.of();
         }
 
-        Stream<String> fieldsStream = fields.stream().map(field -> field.stream(indent + 4));
-        Stream<String> constructorsStream = constructors.stream().map(method -> method.stream(indent + 4));
-        Stream<String> methodsStream = methods.stream().map(method -> method.stream(indent + 4));
-        Stream<String> subTypesStream = subTypes.stream().map(subType -> subType.stream(indent + 4));
-
-        boolean isMainType = indent == 0;
+        Stream<OutputBuilder> fieldsStream = fields.stream().map(FieldInfo::output);
+        Stream<OutputBuilder> constructorsStream = constructors.stream().map(MethodInfo::output);
+        Stream<OutputBuilder> methodsStream = methods.stream().map(MethodInfo::output);
+        Stream<OutputBuilder> subTypesStream = subTypes.stream().map(TypeInfo::output);
 
         StringBuilder sb = new StringBuilder();
-        if (isMainType) {
+        if (isPrimaryType()) {
             String packageName = packageNameOrEnclosingType.getLeftOrElse("");
             if (!packageName.isEmpty()) {
                 sb.append("package ");
@@ -270,11 +260,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         });
         if (cnt.get() > 0)
             sb.append(suffix);
-    }
-
-    public boolean isJavaLang() {
-        if (Primitives.isPrimitiveExcludingVoid(this)) return true;
-        return Primitives.JAVA_LANG.equals(packageName());
     }
 
     @Override

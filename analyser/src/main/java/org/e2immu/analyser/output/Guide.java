@@ -19,21 +19,38 @@ package org.e2immu.analyser.output;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class Guide implements OutputElement {
+public record Guide(int index, Position position) implements OutputElement {
     private static final AtomicInteger generator = new AtomicInteger();
 
-    public final int index;
-    public final boolean start;
+    public enum Position {
+        START("S"), MID(""), END("E");
+        private final String msg;
 
-    public Guide() {
-        start = true;
-        index = generator.incrementAndGet();
+        Position(String msg) {
+            this.msg = msg;
+        }
     }
 
-    public Guide(Guide start) {
-        this.start = false;
-        index = start.index;
+    public static class GuideGenerator {
+        public final int index;
+
+        public GuideGenerator() {
+            index = generator.incrementAndGet();
+        }
+
+        public Guide start() {
+            return new Guide(index, Position.START);
+        }
+
+        public Guide mid() {
+            return new Guide(index, Position.MID);
+        }
+
+        public Guide end() {
+            return new Guide(index, Position.END);
+        }
     }
+
 
     @Override
     public String minimal() {
@@ -42,6 +59,6 @@ public class Guide implements OutputElement {
 
     @Override
     public String debug() {
-        return "/*" + (start ? "S" : "") + index + "*/";
+        return "/*" + position.msg + index + "*/";
     }
 }

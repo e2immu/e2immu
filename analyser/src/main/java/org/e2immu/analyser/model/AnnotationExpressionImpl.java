@@ -93,7 +93,7 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
 
     @Override
     public Set<String> imports() {
-        if (!typeInfo.isJavaLang()) return Set.of(typeInfo.fullyQualifiedName);
+        if (!Primitives.isJavaLang(typeInfo)) return Set.of(typeInfo.fullyQualifiedName);
         return Set.of();
     }
 

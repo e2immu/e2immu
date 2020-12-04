@@ -19,7 +19,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;

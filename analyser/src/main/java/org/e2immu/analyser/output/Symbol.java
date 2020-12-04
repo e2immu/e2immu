@@ -47,6 +47,11 @@ public record Symbol(String symbol, Space left, Space right) implements OutputEl
     public static final Symbol RIGHT_BRACKET = new Symbol("]", NEVER, EASY);
     public static final Symbol OPEN_CLOSE_BRACKET = new Symbol("[]", NEVER, EASY);
 
+    public static final Symbol LEFT_ANGLE_BRACKET = new Symbol("<", NEVER, EASY);
+    public static final Symbol RIGHT_ANGLE_BRACKET = new Symbol(">", EASY, EASY);
+    public static final Symbol DIAMOND = new Symbol("<>", NEVER, EASY);
+
+
     public static final Symbol LOGICAL_AND = new Symbol("&&", ONE_LR, ONE_LR);
     public static final Symbol LOGICAL_OR = new Symbol("||", ONE_LR, ONE_LR);
     public static final Symbol LAMBDA = new Symbol("->", ONE_LR, ONE_LR);

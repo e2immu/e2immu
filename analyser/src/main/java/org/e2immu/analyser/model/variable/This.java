@@ -79,7 +79,7 @@ public class This implements Variable {
 
     @Override
     public OutputBuilder output() {
-        return new OutputBuilder().add(new VariableName(writeSuper ? "super" : "this", typeInfo, true));
+        return new OutputBuilder().add(new VariableName(writeSuper ? "super" : "this", typeInfo, VariableName.Nature.STATIC));
     }
 
     @Override

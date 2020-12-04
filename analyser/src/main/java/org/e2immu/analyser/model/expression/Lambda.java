@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.output.Guide;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -128,9 +129,11 @@ public class Lambda implements Expression {
         if (singleExpression != null) {
             outputBuilder.add(outputInParenthesis(precedence(), singleExpression));
         } else {
+            Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
+            outputBuilder.add(guideGenerator.start());
             outputBuilder.add(Symbol.LEFT_BRACE);
             StatementAnalysis firstStatement = methodInfo.methodAnalysis.get().getFirstStatement().followReplacements();
-            outputBuilder.add(firstStatement.statement().output());
+            outputBuilder.add(firstStatement.output(guideGenerator));
             outputBuilder.add(Symbol.RIGHT_BRACE);
         }
         return outputBuilder;

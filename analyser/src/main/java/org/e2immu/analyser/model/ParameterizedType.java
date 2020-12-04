@@ -24,7 +24,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -163,6 +162,8 @@ public class ParameterizedType {
 
     public OutputBuilder output() {
         // FIXME
+    }
+    public OutputBuilder output(boolean varArgs) {
     }
 
     @Override

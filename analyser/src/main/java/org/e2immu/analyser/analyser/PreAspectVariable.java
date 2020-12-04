@@ -19,24 +19,18 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Text;
 
 /**
  * Purpose: describe the state of the aspect before the modification.
  * Example:
- *
+ * <p>
  * add$Modification$Size(int post, int pre, E e) --> post will be mapped to "size()", while "pre" in the
  * expression will describe the "size()" before the modification took place.
- *
  */
-public class PreAspectVariable implements Variable {
-    private final ParameterizedType returnType;
-    public final Expression valueForProperties;
-
-    public PreAspectVariable(ParameterizedType returnType, Expression valueForProperties) {
-        this.returnType = returnType;
-        this.valueForProperties = valueForProperties;
-    }
+public record PreAspectVariable(ParameterizedType returnType,
+                                Expression valueForProperties) implements Variable {
 
     @Override
     public ParameterizedType concreteReturnType() {
@@ -74,7 +68,7 @@ public class PreAspectVariable implements Variable {
     }
 
     @Override
-    public String print(PrintMode printMode) {
-        return "pre";
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new Text("pre"));
     }
 }

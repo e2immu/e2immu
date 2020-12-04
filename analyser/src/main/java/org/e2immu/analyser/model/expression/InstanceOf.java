@@ -23,7 +23,6 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -79,9 +78,9 @@ public record InstanceOf(Primitives primitives,
 
     @Override
     public int internalCompareTo(Expression v) {
-        int c = variable.fullyQualifiedName().compareTo(((InstanceOfValue) v).variable.fullyQualifiedName());
+        int c = variable.fullyQualifiedName().compareTo(((InstanceOf) v).variable.fullyQualifiedName());
         if (c == 0) c = parameterizedType.detailedString()
-                .compareTo(((InstanceOfValue) v).parameterizedType.detailedString());
+                .compareTo(((InstanceOf) v).parameterizedType.detailedString());
         return c;
     }
 
@@ -125,7 +124,7 @@ public record InstanceOf(Primitives primitives,
         if (value.isUnknown()) {
             return builder.setExpression(PrimitiveExpression.PRIMITIVE_EXPRESSION).build();
         }
-        if (value instanceof NullValue) {
+        if (value instanceof NullConstant) {
             return builder.setExpression(new BooleanConstant(evaluationContext.getPrimitives(), false)).build();
 
         }
@@ -134,13 +133,13 @@ public record InstanceOf(Primitives primitives,
             ObjectFlow objectFlow = builder.createInternalObjectFlow(location, primitives.booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
             return builder.setExpression(new InstanceOf(primitives, parameterizedType, null, ve.variable(), objectFlow)).build();
         }
-        if (value instanceof Instance) {
-            EvaluationResult er = BoolValue.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
-                    ((Instance) value).parameterizedType),
+        if (value instanceof NewObject newObject) {
+            EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
+                    newObject.parameterizedType),
                     evaluationContext.getLocation(this), evaluationContext, Origin.RESULT_OF_OPERATOR);
             return builder.compose(er).setExpression(er.value).build();
         }
-        if (value instanceof MethodValue) {
+        if (value instanceof MethodCall) {
             return builder.setExpression(PrimitiveExpression.PRIMITIVE_EXPRESSION).build(); // no clue, too deep
         }
         if (value instanceof ClassExpression ce) {

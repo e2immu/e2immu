@@ -381,17 +381,17 @@ public class Resolver {
         void visit(Element element) {
             element.visit(e -> {
                 if (e instanceof FieldAccess fieldAccess) {
-                    methodsAndFields.add(((FieldReference) fieldAccess.variable).fieldInfo);
+                    methodsAndFields.add(((FieldReference) fieldAccess.variable()).fieldInfo);
                 } else if (e instanceof VariableExpression variableExpression) {
-                    if (variableExpression.variable instanceof FieldReference) {
-                        methodsAndFields.add(((FieldReference) variableExpression.variable).fieldInfo);
+                    if (variableExpression.variable() instanceof FieldReference fieldReference) {
+                        methodsAndFields.add(fieldReference.fieldInfo);
                     }
-                } else if (e instanceof MethodCall) {
-                    methodsAndFields.add(((MethodCall) e).methodInfo);
-                } else if (e instanceof MethodReference) {
-                    methodsAndFields.add(((MethodReference) e).methodInfo);
-                } else if (e instanceof NewObject) {
-                    MethodInfo constructor = ((NewObject) e).constructor; // can be null!
+                } else if (e instanceof MethodCall methodCall) {
+                    methodsAndFields.add(methodCall.methodInfo);
+                } else if (e instanceof MethodReference methodReference) {
+                    methodsAndFields.add(methodReference.methodInfo);
+                } else if (e instanceof NewObject newObject) {
+                    MethodInfo constructor = newObject.constructor; // can be null!
                     if (constructor != null) {
                         methodsAndFields.add(constructor);
                     }

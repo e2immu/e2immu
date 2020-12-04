@@ -27,7 +27,6 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.TypeValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -112,7 +111,7 @@ public class TypeExpression implements Expression {
 
     @Override
     public int internalCompareTo(Expression v) {
-        return parameterizedType.detailedString().compareTo(((TypeValue) v).parameterizedType.detailedString());
+        return parameterizedType.detailedString().compareTo(((TypeExpression) v).parameterizedType.detailedString());
     }
 
     @Override
