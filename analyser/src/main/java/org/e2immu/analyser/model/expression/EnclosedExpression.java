@@ -21,19 +21,20 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Element;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.annotation.E2Container;
 
 import java.util.List;
 import java.util.Objects;
 
 @E2Container
-public class EnclosedExpression implements Expression {
-    public final Expression inner;
-
-    public EnclosedExpression(Expression inner) {
-        this.inner = inner;
-    }
+public record EnclosedExpression(Expression inner) implements Expression {
 
     @Override
     public boolean equals(Object o) {
@@ -54,13 +55,33 @@ public class EnclosedExpression implements Expression {
     }
 
     @Override
+    public int order() {
+        return inner.order();
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        return inner.getInstance(evaluationContext);
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return inner.getObjectFlow();
+    }
+
+    @Override
     public ParameterizedType returnType() {
         return inner.returnType();
     }
 
     @Override
-    public String expressionString(int indent) {
-        return "(" + inner.expressionString(indent) + ")";
+    public String toString() {
+        return minimalOutput();
+    }
+
+    @Override
+    public OutputBuilder output() {
+        return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(inner.output()).add(Symbol.RIGHT_PARENTHESIS);
     }
 
     @Override

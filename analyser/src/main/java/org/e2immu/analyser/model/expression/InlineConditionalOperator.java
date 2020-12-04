@@ -27,14 +27,18 @@ import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.function.Predicate;
 
+/**
+ * a ? b : c
+ *
+ */
 public class InlineConditionalOperator implements Expression {
     public final Expression condition;
     public final Expression ifTrue;
@@ -100,12 +104,16 @@ public class InlineConditionalOperator implements Expression {
 
     @Override
     public String toString() {
-        return print(PrintMode.FOR_DEBUG);
+        return minimalOutput();
     }
 
     @Override
-    public String print(PrintMode printMode) {
-        return condition.print(printMode) + "?" + ifTrue.print(printMode) + ":" + ifFalse.print(printMode);
+    public OutputBuilder output() {
+        return new OutputBuilder().add(outputInParenthesis(precedence(), condition))
+                .add(Symbol.QUESTION_MARK)
+                .add(outputInParenthesis(precedence(), ifTrue))
+                .add(Symbol.COLON)
+                .add(outputInParenthesis(precedence(), ifFalse));
     }
 
     private static final int NO_PATTERN = -2;
@@ -175,8 +183,8 @@ public class InlineConditionalOperator implements Expression {
 
     @Override
     public NewObject getInstance(EvaluationContext evaluationContext) {
-        if (Primitives.isPrimitiveExcludingVoid(type())) return null;
-        return new NewObject(null, type(), List.of(), EmptyExpression.EMPTY_EXPRESSION, getObjectFlow());
+        if (Primitives.isPrimitiveExcludingVoid(returnType())) return null;
+        return new NewObject(null, returnType(), List.of(), EmptyExpression.EMPTY_EXPRESSION, getObjectFlow());
     }
 
     @Override
@@ -226,13 +234,6 @@ public class InlineConditionalOperator implements Expression {
     @Override
     public ParameterizedType returnType() {
         return ifTrue.returnType();
-    }
-
-    @Override
-    @NotNull
-    public String expressionString(int indent) {
-        return bracketedExpressionString(indent, condition) + " ? " + bracketedExpressionString(indent, ifTrue)
-                + " : " + bracketedExpressionString(indent, ifFalse);
     }
 
     @Override

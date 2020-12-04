@@ -25,10 +25,10 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
-import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 
@@ -66,19 +66,9 @@ public class ArrayInitializer implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new ArrayInitializer(primitives, ObjectFlow.NO_FLOW,
+        return new ArrayInitializer(primitives, ObjectFlow.NYE,
                 multiExpression.stream().map(translationMap::translateExpression)
                         .collect(Collectors.toList()));
-    }
-
-    @Override
-    public String toString() {
-        return print(PrintMode.FOR_DEBUG);
-    }
-
-    @Override
-    public String print(PrintMode printMode) {
-        return "{" + multiExpression.stream().map(v -> v.print(printMode)).collect(Collectors.joining(",")) + "}";
     }
 
     @Override
@@ -87,9 +77,15 @@ public class ArrayInitializer implements Expression {
     }
 
     @Override
-    public String expressionString(int indent) {
-        return multiExpression.stream().map(e -> e.expressionString(indent)).collect(Collectors.joining(", ", "{", "}"));
+    public String toString() {
+        return minimalOutput();
+    }
 
+    public OutputBuilder output() {
+        return new OutputBuilder()
+                .add(Symbol.LEFT_BRACE)
+                .add(multiExpression.stream().map(Element::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                .add(Symbol.RIGHT_BRACE);
     }
 
     @Override
@@ -170,6 +166,6 @@ public class ArrayInitializer implements Expression {
 
     @Override
     public NewObject getInstance(EvaluationContext evaluationContext) {
-        return new NewObject(null, type(), List.of(), EmptyExpression.EMPTY_EXPRESSION, getObjectFlow());
+        return new NewObject(null, returnType(), List.of(), EmptyExpression.EMPTY_EXPRESSION, getObjectFlow());
     }
 }

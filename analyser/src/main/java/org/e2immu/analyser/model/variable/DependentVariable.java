@@ -21,6 +21,8 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.NotNull1;
 
@@ -64,6 +66,11 @@ public class DependentVariable extends VariableWithConcreteReturnType {
         if (o == null || getClass() != o.getClass()) return false;
         DependentVariable that = (DependentVariable) o;
         return name.equals(that.name);
+    }
+
+    @Override
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new Text(name)); // TODO this can/should be more complex
     }
 
     @Override

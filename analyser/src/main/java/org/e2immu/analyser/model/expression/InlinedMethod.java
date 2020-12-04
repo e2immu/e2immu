@@ -25,11 +25,12 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Text;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 
 /*
@@ -43,7 +44,8 @@ import java.util.function.Predicate;
 
  Properties that rely on the return value, should come from the Value. Properties to do with modification, should come from the method.
  */
-public record InlinedMethod(MethodInfo methodInfo, Expression expression, Applicability applicability) implements Expression {
+public record InlinedMethod(MethodInfo methodInfo, Expression expression,
+                            Applicability applicability) implements Expression {
 
     public enum Applicability {
         EVERYWHERE(0), // no references to fields, static or otherwise, unless they are public
@@ -66,11 +68,6 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression, Applic
     }
 
     @Override
-    public ParameterizedType type() {
-        return expression.type(); // maybe better than methodInfo.returnType()
-    }
-
-    @Override
     public boolean isNumeric() {
         return expression.isNumeric();
     }
@@ -81,8 +78,9 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression, Applic
     }
 
     @Override
-    public String expressionString(int indent) {
-        return expression.expressionString(indent);
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new Text("", "/* inline " + methodInfo.name + "*/"))
+                .add(expression.output());
     }
 
     @Override
@@ -96,8 +94,13 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression, Applic
     }
 
     @Override
+    public boolean hasBeenEvaluated() {
+        return true;
+    }
+
+    @Override
     public int order() {
-        return ExpressionComparator. ORDER_INLINE_METHOD;
+        return ExpressionComparator.ORDER_INLINE_METHOD;
     }
 
     @Override
@@ -120,23 +123,21 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression, Applic
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return false;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        InlinedMethod that = (InlinedMethod) o;
+        return methodInfo.equals(that.methodInfo) && expression.equals(that.expression);
     }
 
     @Override
     public int hashCode() {
-        return 0;
+        return Objects.hash(methodInfo, expression);
     }
 
     @Override
     public String toString() {
-        return print(PrintMode.FOR_DEBUG);
-    }
-
-    @Override
-    public String print(PrintMode printMode) {
-        return "inline " + methodInfo.name + " on " + expression.print(printMode);
+        return minimalOutput();
     }
 
     @Override
@@ -146,7 +147,7 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression, Applic
 
     @Override
     public void visit(Predicate<Expression> predicate) {
-        if(predicate.test(this)) {
+        if (predicate.test(this)) {
             expression.visit(predicate);
         }
     }
@@ -165,6 +166,6 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression, Applic
     @Override
     public NewObject getInstance(EvaluationContext evaluationContext) {
         // TODO verify this
-       return expression.getInstance(evaluationContext);
+        return expression.getInstance(evaluationContext);
     }
 }

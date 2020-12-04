@@ -15,30 +15,36 @@
  * limitations under the License.
  */
 
-package org.e2immu.analyser.model.variable;
+package org.e2immu.analyser.output;
 
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.annotation.NotNull;
+import com.google.common.math.DoubleMath;
+import org.e2immu.analyser.model.expression.FloatConstant;
+import org.e2immu.analyser.model.expression.Numeric;
 
-import java.util.Objects;
+public record Text(String text, String debug) implements OutputElement {
 
-// see ExpressionWithMethodReferenceResolution, try to do something similar
+    public Text(String text) {
+        this(text, text);
+    }
 
-public abstract class VariableWithConcreteReturnType implements Variable {
 
-    public final ParameterizedType concreteReturnType;
-
-    protected VariableWithConcreteReturnType(@NotNull ParameterizedType concreteReturnType) {
-        this.concreteReturnType = Objects.requireNonNull(concreteReturnType);
+    public static String formatNumber(double d, Class<? extends Numeric> clazz) {
+        if (DoubleMath.isMathematicalInteger(d)) {
+            return Long.toString((long) d);
+        }
+        if (clazz.equals(FloatConstant.class)) {
+            return d + "f";
+        }
+        return Double.toString(d);
     }
 
     @Override
-    public ParameterizedType concreteReturnType() {
-        return concreteReturnType;
+    public String minimal() {
+        return text;
     }
 
     @Override
-    public String toString() {
-        return output().toString();
+    public String debug() {
+        return debug;
     }
 }

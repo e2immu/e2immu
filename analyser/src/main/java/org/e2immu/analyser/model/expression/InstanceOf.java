@@ -27,7 +27,8 @@ import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
-import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -85,23 +86,15 @@ public record InstanceOf(Primitives primitives,
     }
 
     @Override
-    public String toString() {
-        return print(PrintMode.FOR_DEBUG);
-    }
-
-    @Override
-    public String print(PrintMode printMode) {
-        return variable.print(printMode) + " instanceof " + parameterizedType.print(printMode);
+    public OutputBuilder output() {
+        return new OutputBuilder().add(variable.output())
+                .add(Symbol.INSTANCE_OF)
+                .add(parameterizedType.output());
     }
 
     @Override
     public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
         return evaluationContext.linkedVariables(variable);
-    }
-
-    @Override
-    public ParameterizedType type() {
-        return primitives.booleanParameterizedType;
     }
 
     @Override
@@ -165,12 +158,6 @@ public record InstanceOf(Primitives primitives,
     @NotNull
     public ParameterizedType returnType() {
         return primitives.booleanParameterizedType;
-    }
-
-    @Override
-    @NotNull
-    public String expressionString(int indent) {
-        return bracketedExpressionString(indent, expression) + " instanceof " + parameterizedType.print();
     }
 
     @Override

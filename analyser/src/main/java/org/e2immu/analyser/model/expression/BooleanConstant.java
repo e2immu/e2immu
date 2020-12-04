@@ -25,9 +25,10 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Location;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.BoolValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -65,8 +66,13 @@ public record BooleanConstant(Primitives primitives,
     }
 
     @Override
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new Text(Boolean.toString(constant)));
+    }
+
+    @Override
     public String toString() {
-        return Boolean.toString(constant);
+        return minimalOutput();
     }
 
     @Override

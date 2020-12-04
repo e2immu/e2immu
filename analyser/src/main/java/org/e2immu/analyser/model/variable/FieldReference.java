@@ -21,6 +21,9 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.VariableName;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.Objects;
@@ -73,6 +76,22 @@ public class FieldReference extends VariableWithConcreteReturnType {
             return fieldInfo.fullyQualifiedName();
         }
         return fieldInfo.fullyQualifiedName() + "#" + scope.fullyQualifiedName();
+    }
+
+    @Override
+    public OutputBuilder output() {
+        if (scope == null) {
+            return new OutputBuilder().add(new VariableName(fieldInfo.name, fieldInfo.owner, VariableName.Nature.STATIC));
+        }
+        if (scope instanceof This thisVar) {
+            return new OutputBuilder().add(new VariableName(fieldInfo.name, thisVar.typeInfo, VariableName.Nature.INSTANCE));
+        }
+        return new OutputBuilder().add(scope.output()).add(Symbol.DOT).add(new VariableName(simpleName(), null, VariableName.Nature.LOCAL));
+    }
+
+    @Override
+    public String toString() {
+        return output().toString();
     }
 
     @Override

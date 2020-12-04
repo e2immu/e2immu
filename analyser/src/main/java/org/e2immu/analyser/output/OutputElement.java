@@ -17,14 +17,8 @@
 
 package org.e2immu.analyser.output;
 
-public interface PrintMode {
+public interface OutputElement {
 
-    PrintMode FOR_ANNOTATIONS = () -> true;
-    PrintMode FOR_DEBUG = () -> false;
-
-    boolean forAnnotations();
-
-    default boolean forDebug() {
-        return !forAnnotations();
-    }
+    String minimal();
+    String debug();
 }

@@ -15,30 +15,21 @@
  * limitations under the License.
  */
 
-package org.e2immu.analyser.model.variable;
+package org.e2immu.analyser.output;
 
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.annotation.NotNull;
+public enum Spacer implements OutputElement {
 
-import java.util.Objects;
+    NEVER, // never split here (e.g. between class and class name)
+    HARD,  // split here unless no other option
+    EASY;
 
-// see ExpressionWithMethodReferenceResolution, try to do something similar
-
-public abstract class VariableWithConcreteReturnType implements Variable {
-
-    public final ParameterizedType concreteReturnType;
-
-    protected VariableWithConcreteReturnType(@NotNull ParameterizedType concreteReturnType) {
-        this.concreteReturnType = Objects.requireNonNull(concreteReturnType);
+    @Override
+    public String minimal() {
+        return "";
     }
 
     @Override
-    public ParameterizedType concreteReturnType() {
-        return concreteReturnType;
-    }
-
-    @Override
-    public String toString() {
-        return output().toString();
+    public String debug() {
+        return " ";
     }
 }

@@ -21,6 +21,8 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.VariableName;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
@@ -76,8 +78,13 @@ public class This implements Variable {
     }
 
     @Override
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new VariableName(writeSuper ? "super" : "this", typeInfo, true));
+    }
+
+    @Override
     public String toString() {
-        return fullyQualifiedName();
+        return output().toString();
     }
 
     @Override

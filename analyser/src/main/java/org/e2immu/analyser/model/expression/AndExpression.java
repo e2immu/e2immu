@@ -25,10 +25,10 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -51,7 +51,7 @@ public record AndExpression(Primitives primitives,
     public AndExpression(Primitives primitives, ObjectFlow objectFlow) {
         this(primitives, List.of(), objectFlow);
     }
-    
+
     private enum Action {
         SKIP, REPLACE, FALSE, TRUE, ADD, ADD_CHANGE
     }
@@ -60,7 +60,7 @@ public record AndExpression(Primitives primitives,
     public Expression append(EvaluationContext evaluationContext, Expression... values) {
 
         // STEP 0: check that all values return boolean!
-        if (Arrays.stream(values).anyMatch(v -> v.type() == null || Primitives.isNotBooleanOrBoxedBoolean(v.type()))) {
+        if (Arrays.stream(values).anyMatch(v -> v.returnType() == null || Primitives.isNotBooleanOrBoxedBoolean(v.returnType()))) {
             throw new UnsupportedOperationException("Internal error, values are " + Arrays.toString(values));
         }
 
@@ -149,7 +149,7 @@ public record AndExpression(Primitives primitives,
             log(CNF, "And reduced to 1 component: {}", concat.get(0));
             return concat.get(0);
         }
-        AndExpression res = new AndExpression(primitives, ImmutableList.copyOf(concat),  objectFlow);
+        AndExpression res = new AndExpression(primitives, ImmutableList.copyOf(concat), objectFlow);
         log(CNF, "Constructed {}", res);
         return res;
     }
@@ -397,22 +397,25 @@ public record AndExpression(Primitives primitives,
 
     @Override
     public String toString() {
-        return print(PrintMode.FOR_DEBUG);
+        return minimalOutput();
     }
 
     @Override
-    public String print(PrintMode printMode) {
-        return "(" + expressions.stream().map(v -> v.print(printMode)).collect(Collectors.joining(" && ")) + ")";
+    public boolean hasBeenEvaluated() {
+        assert objectFlow != ObjectFlow.NYE;
+        return true;
+    }
+
+    public OutputBuilder output() {
+        int precedence = precedence();
+        return new OutputBuilder()
+                .add(expressions.stream().map(e -> e.outputInParenthesis(precedence, e))
+                        .collect(OutputBuilder.joining(Symbol.LOGICAL_AND)));
     }
 
     @Override
     public ParameterizedType returnType() {
         return primitives.booleanParameterizedType;
-    }
-
-    @Override
-    public String expressionString(int indent) {
-        return toString();
     }
 
     @Override
@@ -431,7 +434,7 @@ public record AndExpression(Primitives primitives,
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationContext evaluationContext) {
         return null;
     }
 
@@ -439,11 +442,6 @@ public record AndExpression(Primitives primitives,
     public int internalCompareTo(Expression v) {
         AndExpression andValue = (AndExpression) v;
         return ListUtil.compare(expressions, andValue.expressions);
-    }
-
-    @Override
-    public ParameterizedType type() {
-        return primitives.booleanParameterizedType;
     }
 
     @Override

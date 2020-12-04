@@ -23,12 +23,12 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
 
@@ -110,7 +110,7 @@ public record OrExpression(Primitives primitives,
 
                 // this works because of sorting
                 // A || !A will always sit next to each other
-                if (value instanceof NegatedValue && ((NegatedValue) value).value.equals(prev)) {
+                if (value instanceof NegatedExpression ne && ne.expression.equals(prev)) {
                     log(CNF, "Return TRUE in Or, found opposites {}", value);
                     return new BooleanConstant(primitives, true);
                 }
@@ -180,6 +180,13 @@ public record OrExpression(Primitives primitives,
         return "(" + expressions.stream().map(v -> v.print(printMode)).collect(Collectors.joining(" or ")) + ")";
     }
 
+    public OutputBuilder output(PrintMode printMode) {
+        return new OutputBuilder()
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(expressions.stream().map(v -> v.output(printMode)).collect(OutputBuilder.joining(Symbol.LOGICAL_OR)))
+                .add(Symbol.RIGHT_PARENTHESIS);
+    }
+
     @Override
     public ParameterizedType returnType() {
         return null;
@@ -206,7 +213,7 @@ public record OrExpression(Primitives primitives,
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationContext evaluationContext) {
         return null;
     }
 

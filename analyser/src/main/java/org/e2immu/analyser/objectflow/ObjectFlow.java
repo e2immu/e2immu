@@ -16,6 +16,10 @@ import java.util.stream.Stream;
 public class ObjectFlow {
 
     public static final ObjectFlow NO_FLOW = new ObjectFlow(Location.NO_LOCATION, ParameterizedType.TYPE_OF_NO_FLOW, Origin.NO_ORIGIN);
+    /**
+     * Not yet evaluated.
+     */
+    public static final ObjectFlow NYE = new ObjectFlow(Location.NO_LOCATION, ParameterizedType.TYPE_OF_NO_FLOW, Origin.NO_ORIGIN);
 
     // where does this take place?
     public final Location location;

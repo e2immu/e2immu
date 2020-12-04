@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.output.OutputBuilder;
 
 import java.util.Objects;
 
@@ -67,6 +68,16 @@ public class ReturnVariable implements Variable {
     @Override
     public String fullyQualifiedName() {
         return fqn;
+    }
+
+    @Override
+    public OutputBuilder output() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String toString() {
+        return simpleName;
     }
 
     @Override

@@ -20,6 +20,8 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.VariableName;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.Container;
@@ -180,6 +182,11 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
                 hasBeenInspected() ?
                         parameterInspection.get().getAnnotations().stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
                         : UpgradableBooleanMap.of());
+    }
+
+    @Override
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new VariableName(name, owner, VariableName.Nature.LOCAL));
     }
 
     @Override

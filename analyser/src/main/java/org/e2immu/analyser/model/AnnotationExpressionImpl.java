@@ -74,7 +74,7 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
 
     public String stream() {
         StringBuilder sb = new StringBuilder("@" + typeInfo.simpleName);
-        if(!expressions.isEmpty()) {
+        if (!expressions.isEmpty()) {
             sb.append("(");
             boolean first = true;
             for (Expression expression : expressions) {
@@ -124,9 +124,9 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         // it is always possible that the return type is an array, but only one value is present...
 
         if (expression instanceof ArrayInitializer arrayInitializer) {
-            Object[] array = createArray(arrayInitializer.returnType(), arrayInitializer.expressions.size());
+            Object[] array = createArray(arrayInitializer.returnType(), arrayInitializer.multiExpression.expressions().length);
             int i = 0;
-            for (Expression element : arrayInitializer.expressions) {
+            for (Expression element : arrayInitializer.multiExpression.expressions()) {
                 array[i++] = returnValueOfNonArrayExpression(arrayInitializer.returnType(), element);
             }
             return array;
@@ -148,16 +148,15 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         }
 
         // direct reference with import static
-        if (expression instanceof VariableExpression && ((VariableExpression) expression).variable instanceof FieldReference) {
-            FieldInfo fieldInfo = ((FieldReference) (((VariableExpression) expression).variable)).fieldInfo;
-            return enumInstance(returnType, fieldInfo.owner, fieldInfo.name);
+        if (expression instanceof VariableExpression ve && ve.variable() instanceof FieldReference fieldReference) {
+            return enumInstance(returnType, fieldReference.fieldInfo.owner, fieldReference.fieldInfo.name);
         }
 
         // Type.CONSTANT
         if (expression instanceof FieldAccess fieldAccess) {
-            if (fieldAccess.expression instanceof TypeExpression typeExpression) {
-                return enumInstance(returnType, typeExpression.parameterizedType.typeInfo, fieldAccess.variable.simpleName());
-            } else throw new UnsupportedOperationException("? did not expect " + fieldAccess.expression.getClass());
+            if (fieldAccess.expression() instanceof TypeExpression typeExpression) {
+                return enumInstance(returnType, typeExpression.parameterizedType.typeInfo, fieldAccess.variable().simpleName());
+            } else throw new UnsupportedOperationException("? did not expect " + fieldAccess.expression().getClass());
         }
 
         // -123

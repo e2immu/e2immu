@@ -24,12 +24,12 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.Instance;
-import org.e2immu.analyser.model.value.UnknownPrimitiveValue;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
-import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
@@ -220,28 +220,27 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
     }
 
     @Override
-    public String toString() {
-        return print(PrintMode.FOR_DEBUG);
+    public OutputBuilder output() {
+        Symbol operator = Symbol.binaryOperator(allowEquals ? ">=" : ">");
+        if (expression instanceof Sum sum) {
+            // -1 + a >= 0 will be written as a >= 1
+            if (sum.lhs instanceof Numeric ln && ln.doubleValue() < 0) {
+                return new OutputBuilder().add(outputInParenthesis(precedence(), sum.rhs))
+                        .add(operator).add(new Text(Text.formatNumber(ln.doubleValue(), ln.getClass())));
+            }
+            // according to sorting, the rhs cannot be numeric
+        }
+        return new OutputBuilder().add(outputInParenthesis(precedence(), expression)).add(operator).add(new Text("0"));
     }
 
     @Override
-    public String print(PrintMode printMode) {
-        if (printMode.forDebug()) {
-            String op = allowEquals ? ">=" : ">";
-            return expression + " " + op + " 0";
-        }
-        // transparent
-        return expression.print(printMode);
+    public String toString() {
+        return minimalOutput();
     }
 
     @Override
     public ParameterizedType returnType() {
-        return null;
-    }
-
-    @Override
-    public String expressionString(int indent) {
-        return null;
+        return booleanParameterizedType;
     }
 
     @Override
@@ -260,7 +259,7 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationContext evaluationContext) {
         return null;
     }
 
@@ -270,13 +269,8 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
     }
 
     @Override
-    public ParameterizedType type() {
-        return booleanParameterizedType;
-    }
-
-    @Override
     public ObjectFlow getObjectFlow() {
-        return null;
+        return objectFlow;
     }
 
     @Override

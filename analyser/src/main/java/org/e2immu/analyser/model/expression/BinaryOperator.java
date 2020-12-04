@@ -24,10 +24,11 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -56,6 +57,7 @@ import java.util.function.Predicate;
  */
 @E2Container
 public class BinaryOperator implements Expression {
+    protected final Primitives primitives;
     public final Expression lhs;
     public final Expression rhs;
     public final int precedence;
@@ -73,16 +75,17 @@ public class BinaryOperator implements Expression {
     public static final int LOGICAL_AND_PRECEDENCE = 4;
     public static final int LOGICAL_OR_PRECEDENCE = 3;
 
-    public BinaryOperator(Expression lhs, MethodInfo operator, Expression rhs, int precedence, ObjectFlow objectFlow) {
+    public BinaryOperator(Primitives primitives, Expression lhs, MethodInfo operator, Expression rhs, int precedence, ObjectFlow objectFlow) {
         this.lhs = Objects.requireNonNull(lhs);
         this.rhs = Objects.requireNonNull(rhs);
         this.precedence = precedence;
         this.operator = Objects.requireNonNull(operator);
         this.objectFlow = objectFlow;
+        this.primitives = primitives;
     }
 
-    public BinaryOperator(Expression lhs, MethodInfo operator, Expression rhs, int precedence) {
-        this(lhs, operator, rhs, precedence, ObjectFlow.NO_FLOW);
+    public BinaryOperator(Primitives primitives, Expression lhs, MethodInfo operator, Expression rhs, int precedence) {
+        this(primitives, lhs, operator, rhs, precedence, ObjectFlow.NYE);
     }
 
     @Override
@@ -96,7 +99,15 @@ public class BinaryOperator implements Expression {
     }
 
     @Override
+    public boolean hasBeenEvaluated() {
+        return objectFlow != ObjectFlow.NYE;
+    }
+
+    @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        if(hasBeenEvaluated()) {
+            return PrimitiveExpression.primitiveGetProperty(variableProperty);
+        }
         throw new UnsupportedOperationException("Not yet evaluated");
     }
 
@@ -107,7 +118,7 @@ public class BinaryOperator implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new BinaryOperator(translationMap.translateExpression(lhs),
+        return new BinaryOperator(primitives, translationMap.translateExpression(lhs),
                 operator, translationMap.translateExpression(rhs), precedence);
     }
 
@@ -279,7 +290,7 @@ public class BinaryOperator implements Expression {
 
         EvaluationResult l = lhs.evaluate(evaluationContext, forward);
         Expression constant = new BooleanConstant(primitives, !and);
-        if (l.value == constant) {
+        if (l.value.equals(constant)) {
             builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return builder.compose(l).build();
         }
@@ -446,12 +457,19 @@ public class BinaryOperator implements Expression {
     // TODO needs cleanup
     @Override
     public ParameterizedType returnType() {
-        return operator.returnType();
+        return primitives.widestType(lhs.returnType(), rhs.returnType());
     }
 
     @Override
-    public String expressionString(int indent) {
-        return bracketedExpressionString(indent, lhs) + " " + operator.name + " " + bracketedExpressionString(indent, rhs);
+    public OutputBuilder output() {
+        return new OutputBuilder().add(outputInParenthesis(precedence(), lhs))
+                .add(Symbol.binaryOperator(operator.name))
+                .add(outputInParenthesis(precedence(), rhs));
+    }
+
+    @Override
+    public String toString() {
+        return minimalOutput();
     }
 
     @Override

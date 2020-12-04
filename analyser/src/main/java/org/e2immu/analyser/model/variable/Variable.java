@@ -21,7 +21,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.Set;
@@ -63,8 +63,5 @@ public interface Variable {
         return false;
     }
 
-    default String print(PrintMode printMode) {
-        if (printMode.forAnnotations()) return simpleName();
-        return fullyQualifiedName();
-    }
+    OutputBuilder output();
 }

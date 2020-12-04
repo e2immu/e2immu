@@ -22,6 +22,8 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.VariableName;
 import org.e2immu.analyser.parser.InspectionProvider;
 
 import java.util.List;
@@ -67,6 +69,16 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
     @Override
     public String fullyQualifiedName() {
         return variable.name;
+    }
+
+    @Override
+    public String toString() {
+        return output().toString();
+    }
+
+    @Override
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new VariableName(simpleName(), null, VariableName.Nature.LOCAL));
     }
 
     @Override

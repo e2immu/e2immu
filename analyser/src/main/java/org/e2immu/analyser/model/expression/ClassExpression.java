@@ -24,6 +24,9 @@ import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.E2Container;
@@ -31,10 +34,14 @@ import org.e2immu.annotation.E2Container;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Represents an expression like String.class
+ *
+ */
 @E2Container
 public record ClassExpression(Primitives primitives,
-                              ParameterizedType parameterizedType,
-                              ParameterizedType parameterizedClassType,
+                              ParameterizedType parameterizedType, // String
+                              ParameterizedType parameterizedClassType, // Class<String>
                               ObjectFlow objectFlow) implements ConstantExpression<ParameterizedType> {
 
     public ClassExpression(Primitives primitives, ParameterizedType parameterizedType) {
@@ -67,11 +74,6 @@ public record ClassExpression(Primitives primitives,
     }
 
     @Override
-    public ParameterizedType type() {
-        return parameterizedType;
-    }
-
-    @Override
     public int order() {
         return ExpressionComparator.ORDER_CONSTANT_CLASS;
     }
@@ -88,12 +90,12 @@ public record ClassExpression(Primitives primitives,
 
     @Override
     public String toString() {
-        return parameterizedType().print() + ".class";
+        return minimalOutput();
     }
 
     @Override
-    public String expressionString(int indent) {
-        return parameterizedType.print() + ".class";
+    public OutputBuilder output() {
+        return new OutputBuilder().add(parameterizedType.output()).add(Symbol.DOT).add(new Text("class"));
     }
 
     @Override

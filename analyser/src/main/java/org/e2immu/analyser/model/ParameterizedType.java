@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.inspector.MethodTypeParameterMap;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -160,8 +161,8 @@ public class ParameterizedType {
         return new ParameterizedType(this.typeInfo, arrays - 1, wildCard, parameters, typeParameter);
     }
 
-    public String print(PrintMode printMode) {
-        return printMode.forDebug() ? detailedString() : print();
+    public OutputBuilder output() {
+        // FIXME
     }
 
     @Override

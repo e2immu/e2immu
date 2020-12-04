@@ -21,11 +21,15 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Element;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.value.ArrayValue;
-import org.e2immu.analyser.model.value.UnknownPrimitiveValue;
-import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -34,10 +38,8 @@ import java.util.List;
 import java.util.Objects;
 
 @E2Container
-public class ArrayLengthExpression implements Expression {
-
-    public final Expression scope;
-    private final Primitives primitives;
+public record ArrayLengthExpression(Primitives primitives,
+                                    Expression scope) implements Expression {
 
     public ArrayLengthExpression(Primitives primitives,
                                  @NotNull Expression scope) {
@@ -54,6 +56,11 @@ public class ArrayLengthExpression implements Expression {
     }
 
     @Override
+    public boolean hasBeenEvaluated() {
+        return false;
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(scope);
     }
@@ -61,6 +68,21 @@ public class ArrayLengthExpression implements Expression {
     @Override
     public Expression translate(TranslationMap translationMap) {
         return new ArrayLengthExpression(primitives, translationMap.translateExpression(scope));
+    }
+
+    @Override
+    public int order() {
+        return 0;
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return ObjectFlow.NYE;
     }
 
     @Override
@@ -74,8 +96,13 @@ public class ArrayLengthExpression implements Expression {
     }
 
     @Override
-    public String expressionString(int indent) {
-        return "length";
+    public String toString() {
+        return minimalOutput();
+    }
+
+    @Override
+    public OutputBuilder output() {
+        return new OutputBuilder().add(outputInParenthesis(precedence(), scope)).add(Symbol.DOT).add(new Text("length"));
     }
 
     @Override
@@ -89,10 +116,10 @@ public class ArrayLengthExpression implements Expression {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(result);
 
         if (result.value instanceof ArrayValue arrayValue) {
-            Value size = new IntValue(evaluationContext.getPrimitives(), arrayValue.values.size(), ObjectFlow.NO_FLOW);
-            builder.setValue(size);
+            Expression size = new IntConstant(evaluationContext.getPrimitives(), arrayValue.values.size(), ObjectFlow.NO_FLOW);
+            builder.setExpression(size);
         } else {
-            builder.setValue(UnknownPrimitiveValue.UNKNOWN_PRIMITIVE);
+            builder.setExpression(PrimitiveExpression.PRIMITIVE_EXPRESSION);
         }
         return builder.build();
     }

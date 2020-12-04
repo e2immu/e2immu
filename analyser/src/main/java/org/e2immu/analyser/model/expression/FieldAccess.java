@@ -21,24 +21,25 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.Element;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.value.NullValue;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.annotation.E2Immutable;
-import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
 
 @E2Immutable
-public class FieldAccess implements Expression {
-    public final Expression expression;
-    public final Variable variable;
-
+public record FieldAccess(Expression expression,
+                          Variable variable) implements Expression {
     public FieldAccess(Expression expression, Variable variable) {
         this.variable = Objects.requireNonNull(variable);
         this.expression = Objects.requireNonNull(expression);
@@ -68,14 +69,38 @@ public class FieldAccess implements Expression {
     }
 
     @Override
+    public int order() {
+        return 0;
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return ObjectFlow.NYE;
+    }
+
+    @Override
+    public boolean hasBeenEvaluated() {
+        return false;
+    }
+
+    @Override
     public ParameterizedType returnType() {
         return variable.concreteReturnType();
     }
 
     @Override
-    @NotNull
-    public String expressionString(int indent) {
-        return bracketedExpressionString(indent, expression) + "." + variable.simpleName();
+    public String toString() {
+        return minimalOutput();
+    }
+
+    @Override
+    public OutputBuilder output() {
+        return new OutputBuilder().add(outputInParenthesis(precedence(), expression)).add(Symbol.DOT).add(variable.output());
     }
 
     @Override
@@ -98,9 +123,9 @@ public class FieldAccess implements Expression {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult scopeResult = expression.evaluate(evaluationContext, forwardEvaluationInfo.copyModificationEnsureNotNull());
         Variable newVar;
-        if (scopeResult.value instanceof VariableValue variableValue && variable instanceof FieldReference fieldReference) {
+        if (scopeResult.value instanceof VariableExpression variableValue && variable instanceof FieldReference fieldReference) {
             newVar = new FieldReference(evaluationContext.getAnalyserContext(),
-                    fieldReference.fieldInfo, variableValue.variable);
+                    fieldReference.fieldInfo, variableValue.variable());
         } else {
             newVar = variable;
         }

@@ -19,27 +19,20 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
-import java.util.Objects;
 
 public class EqualsExpression extends BinaryOperator {
-    private final Primitives primitives;
 
     // public for testing
     public EqualsExpression(Primitives primitives,
                             Expression lhs, Expression rhs, ObjectFlow objectFlow) {
-        super(lhs, lhs.isNumeric() ? primitives.equalsOperatorInt : primitives.equalsOperatorObject,
+        super(primitives, lhs, lhs.isNumeric() ? primitives.equalsOperatorInt : primitives.equalsOperatorObject,
                 rhs, BinaryOperator.EQUALITY_PRECEDENCE, objectFlow);
-        this.primitives = primitives;
     }
 
     @Override
@@ -67,43 +60,7 @@ public class EqualsExpression extends BinaryOperator {
     }
 
     @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return PrimitiveExpression.primitiveGetProperty(variableProperty);
-    }
-
-    @Override
-    public String toString() {
-        return print(PrintMode.FOR_DEBUG);
-    }
-
-    @Override
-    public String print(PrintMode printMode) {
-        return lhs.print(printMode) + " == " + rhs.print(printMode);
-    }
-
-    @Override
     public int order() {
         return ExpressionComparator.ORDER_EQUALS;
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        EqualsExpression that = (EqualsExpression) o;
-        return lhs.equals(that.lhs) &&
-                rhs.equals(that.rhs);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(lhs, rhs);
-    }
-
-
-    @Override
-    public ParameterizedType type() {
-        return primitives.booleanParameterizedType;
-    }
-
 }

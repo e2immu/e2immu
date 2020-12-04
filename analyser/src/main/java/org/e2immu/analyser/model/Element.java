@@ -20,6 +20,7 @@ package org.e2immu.analyser.model;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.ArrayList;
@@ -87,5 +88,17 @@ public interface Element {
 
     default List<Variable> variables() {
         return subElements().stream().flatMap(e -> e.variables().stream()).collect(Collectors.toList());
+    }
+
+    default OutputBuilder output() {
+        return new OutputBuilder();
+    }
+
+    default String minimalOutput() {
+        return output().toString();
+    }
+
+    default String debugOutput() {
+        return output().debug();
     }
 }

@@ -23,12 +23,13 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.VariableValue;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.NotNull;
 
@@ -36,7 +37,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.e2immu.analyser.model.value.EmptyExpression.NO_VALUE;
+import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
 import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
 import static org.e2immu.analyser.util.Logger.log;
@@ -72,13 +73,13 @@ public class Assignment implements Expression {
         binaryOperator = assignmentOperator == null ? null : BinaryOperator.fromAssignmentOperatorToNormalOperator(primitives, assignmentOperator);
         this.primitives = primitives;
         if (target instanceof VariableExpression variableExpression) {
-            variableTarget = variableExpression.variable;
+            variableTarget = variableExpression.variable();
         } else if (target instanceof FieldAccess fieldAccess) {
-            variableTarget = fieldAccess.variable;
+            variableTarget = fieldAccess.variable();
         } else if (target instanceof ArrayAccess arrayAccess) {
             variableTarget = arrayAccess.variableTarget;
         } else {
-            String name = target.expressionString(0) + "[" + value.expressionString(0) + "]";
+            String name = target.minimalOutput() + "[" + value.minimalOutput() + "]";
             variableTarget = new DependentVariable(name, target.returnType(), value.variables(), null);
         }
     }
@@ -103,6 +104,26 @@ public class Assignment implements Expression {
     public Expression translate(TranslationMap translationMap) {
         return new Assignment(primitives, translationMap.translateExpression(target),
                 translationMap.translateExpression(value), assignmentOperator, prefixPrimitiveOperator);
+    }
+
+    @Override
+    public boolean hasBeenEvaluated() {
+        return false;
+    }
+
+    @Override
+    public int order() {
+        return 0;
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return ObjectFlow.NYE;
     }
 
     @NotNull
@@ -132,24 +153,30 @@ public class Assignment implements Expression {
     }
 
     @Override
-    public String expressionString(int indent) {
+    public String toString() {
+        return minimalOutput();
+    }
+
+    @Override
+    public OutputBuilder output() {
         if (prefixPrimitiveOperator != null) {
             String operator = assignmentOperator == primitives.assignPlusOperatorInt ? "++" : "--";
             if (prefixPrimitiveOperator) {
-                return operator + target.expressionString(indent);
+                return new OutputBuilder().add(Symbol.plusPlusPrefix(operator)).add(outputInParenthesis(precedence(), target));
             }
-            return target.expressionString(indent) + operator;
+            return new OutputBuilder().add(outputInParenthesis(precedence(), target)).add(Symbol.plusPlusSuffix(operator));
         }
         //  != null && primitiveOperator != primitives.assignOperatorInt ? "=" + primitiveOperator.name : "=";
         String operator = assignmentOperator == null ? "=" : assignmentOperator.name;
-        return target.expressionString(indent) + " " + operator + " " + value.expressionString(indent);
+        return new OutputBuilder().add(outputInParenthesis(precedence(), target))
+                .add(Symbol.assignment(operator))
+                .add(outputInParenthesis(precedence(), value));
     }
 
     @Override
     public int precedence() {
         return 1; // lowest precedence
     }
-
 
     @Override
     public List<? extends Element> subElements() {
@@ -170,16 +197,16 @@ public class Assignment implements Expression {
         EvaluationResult valueResult = value.evaluate(evaluationContext, forwardEvaluationInfo);
         EvaluationResult targetResult = target.evaluate(evaluationContext, ForwardEvaluationInfo.ASSIGNMENT_TARGET);
         builder.compose(valueResult);
-        builder.composeIgnoreValue(targetResult);
+        builder.composeIgnoreExpression(targetResult);
 
-        Variable newVariableTarget = targetResult.value instanceof VariableValue variableValue ? variableValue.variable : variableTarget;
+        Variable newVariableTarget = targetResult.value instanceof VariableExpression variableValue ? variableValue.variable() : variableTarget;
 
         log(VARIABLE_PROPERTIES, "Assignment: {} = {}", newVariableTarget.fullyQualifiedName(), value);
 
-        Value resultOfExpression;
-        Value assignedToTarget;
+        Expression resultOfExpression;
+        Expression assignedToTarget;
         if (binaryOperator != null) {
-            BinaryOperator operation = new BinaryOperator(new VariableExpression(newVariableTarget), binaryOperator, value,
+            BinaryOperator operation = new BinaryOperator(primitives, new VariableExpression(newVariableTarget), binaryOperator, value,
                     BinaryOperator.precedence(evaluationContext.getPrimitives(), binaryOperator));
             EvaluationResult operationResult = operation.evaluate(evaluationContext, forwardEvaluationInfo);
             builder.compose(operationResult);
@@ -200,10 +227,10 @@ public class Assignment implements Expression {
         assert assignedToTarget != EmptyExpression.EMPTY_EXPRESSION;
         doAssignmentWork(builder, evaluationContext, newVariableTarget, assignedToTarget);
         assert resultOfExpression != null;
-        return builder.setValue(resultOfExpression).build();
+        return builder.setExpression(resultOfExpression).build();
     }
 
-    private void doAssignmentWork(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Variable at, Value resultOfExpression) {
+    private void doAssignmentWork(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Variable at, Expression resultOfExpression) {
 
         // see if we need to raise an error (writing to fields outside our class, etc.)
         if (at instanceof FieldReference) {

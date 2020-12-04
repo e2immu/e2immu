@@ -21,15 +21,17 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.annotation.E2Container;
 
 @E2Container
 public record EmptyExpression(String msg) implements Expression {
-    public static final Expression EMPTY_EXPRESSION = new EmptyExpression("");
+    public static final Expression EMPTY_EXPRESSION = new EmptyExpression("<empty>");
 
     public static final EmptyExpression DEFAULT_EXPRESSION = new EmptyExpression("<default>"); // negation of the disjunction of all earlier conditions
     public static final EmptyExpression FINALLY_EXPRESSION = new EmptyExpression("<finally>"); // always true condition
@@ -54,9 +56,10 @@ public record EmptyExpression(String msg) implements Expression {
         throw new UnsupportedOperationException();
     }
 
+
     @Override
-    public String expressionString(int indent) {
-        return msg;
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new Text("", msg));
     }
 
     @Override

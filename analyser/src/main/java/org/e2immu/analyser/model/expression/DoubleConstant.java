@@ -23,6 +23,8 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -69,7 +71,12 @@ public record DoubleConstant(Primitives primitives,
 
     @Override
     public String toString() {
-        return Double.toString(constant);
+        return minimalOutput();
+    }
+
+    @Override
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new Text(Double.toString(constant)));
     }
 
     @Override

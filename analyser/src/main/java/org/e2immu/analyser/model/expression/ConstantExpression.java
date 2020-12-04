@@ -44,12 +44,6 @@ public interface ConstantExpression<T> extends Expression, Constant<T> {
     }
 
     @Override
-    @NotNull
-    default String expressionString(int indent) {
-        return toString();
-    }
-
-    @Override
     default int precedence() {
         return 17; // highest
     }

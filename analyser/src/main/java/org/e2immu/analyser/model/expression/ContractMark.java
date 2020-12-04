@@ -24,22 +24,14 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.OutputBuilder;
 
 /**
  * Specifically used to transfer @Mark(" ...") at CONTRACT level.
  */
-public class ContractMark implements Expression {
-
-    public final String mark;
-
-    public ContractMark(String mark) {
-        this.mark = mark;
-    }
+public record ContractMark(String mark) implements Expression {
 
     @Override
     public boolean isUnknown() {
@@ -49,11 +41,6 @@ public class ContractMark implements Expression {
     @Override
     public ParameterizedType returnType() {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String expressionString(int indent) {
-        return toString();
     }
 
     @Override
@@ -77,8 +64,8 @@ public class ContractMark implements Expression {
     }
 
     @Override
-    public String print(PrintMode printMode) {
-        return mark;
+    public OutputBuilder output() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -88,11 +75,11 @@ public class ContractMark implements Expression {
 
     @Override
     public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NO_FLOW;
+        return ObjectFlow.NYE;
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationContext evaluationContext) {
         throw new UnsupportedOperationException();
     }
 }

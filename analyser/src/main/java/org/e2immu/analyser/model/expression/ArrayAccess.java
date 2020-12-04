@@ -23,11 +23,11 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.Instance;
-import org.e2immu.analyser.model.value.VariableValue;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Only not evaluated. Replaced by VariableValue
+ * Only not evaluated. Replaced by VariableExpression
  */
 @E2Container
 public class ArrayAccess implements Expression {
@@ -55,8 +55,8 @@ public class ArrayAccess implements Expression {
     private static DependentVariable arrayAccessVariableTarget(Expression expression, Expression index, ParameterizedType returnType) {
         Variable arrayVariable = singleVariable(expression);
         Variable indexVariable = singleVariable(index);
-        String name = (arrayVariable == null ? expression.expressionString(0) : arrayVariable.fullyQualifiedName())
-                + "[" + (indexVariable == null ? index.expressionString(0) : indexVariable.fullyQualifiedName()) + "]";
+        String name = (arrayVariable == null ? expression.minimalOutput() : arrayVariable.fullyQualifiedName())
+                + "[" + (indexVariable == null ? index.minimalOutput() : indexVariable.fullyQualifiedName()) + "]";
         return new DependentVariable(name, returnType, indexVariable == null ? List.of() : List.of(indexVariable), arrayVariable);
     }
 
@@ -65,9 +65,14 @@ public class ArrayAccess implements Expression {
             return variableExpression.variable();
         }
         if (expression instanceof FieldAccess fieldAccess) {
-            return fieldAccess.variable;
+            return fieldAccess.variable();
         }
         return null;
+    }
+
+    @Override
+    public boolean hasBeenEvaluated() {
+        return false;
     }
 
     @Override
@@ -95,13 +100,13 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationContext evaluationContext) {
         return null;
     }
 
     @Override
     public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NO_FLOW;
+        return ObjectFlow.NYE;
     }
 
     @Override
@@ -115,8 +120,14 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
-    public String expressionString(int indent) {
-        return bracketedExpressionString(indent, expression) + "[" + index.expressionString(indent) + "]";
+    public OutputBuilder output() {
+        return new OutputBuilder().add(outputInParenthesis(precedence(), expression))
+                .add(Symbol.LEFT_BRACKET).add(index.output()).add(Symbol.RIGHT_BRACKET);
+    }
+
+    @Override
+    public String toString() {
+        return minimalOutput();
     }
 
     @Override
@@ -145,8 +156,8 @@ public class ArrayAccess implements Expression {
         } else {
             // we have to make an effort to see if we can evaluate the components; maybe there's another variable to be had
             Variable arrayVariable = variableTarget == null ? null : variableTarget.arrayVariable;
-            if (array.value instanceof VariableValue evaluatedArrayValue) {
-                arrayVariable = evaluatedArrayValue.variable;
+            if (array.value instanceof VariableExpression evaluatedArrayValue) {
+                arrayVariable = evaluatedArrayValue.variable();
             }
             String index = indexValue.value.toString();
             String name = (arrayVariable != null ? arrayVariable.fullyQualifiedName() : array.value.toString()) + "[" + index + "]";
@@ -166,8 +177,8 @@ public class ArrayAccess implements Expression {
         }
 
         int notNullRequired = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
-        if (notNullRequired > MultiLevel.NULLABLE && builder.getExpression() instanceof VariableValue) {
-            builder.variableOccursInNotNullContext(((VariableValue) builder.getExpression()).variable, builder.getExpression(), notNullRequired);
+        if (notNullRequired > MultiLevel.NULLABLE && builder.getExpression() instanceof VariableExpression e) {
+            builder.variableOccursInNotNullContext(e.variable(), builder.getExpression(), notNullRequired);
         }
         return builder.build();
     }

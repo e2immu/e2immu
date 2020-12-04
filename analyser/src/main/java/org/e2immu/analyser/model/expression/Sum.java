@@ -97,10 +97,6 @@ public class Sum extends BinaryOperator {
         return Objects.hash(lhs, rhs);
     }
 
-    @Override
-    public String toString() {
-        return print(PrintMode.FOR_DEBUG);
-    }
 
     @Override
     public String print(PrintMode printMode) {

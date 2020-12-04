@@ -19,24 +19,16 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.output.PrintMode;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 
-import java.util.Objects;
-
-
 public class Divide extends BinaryOperator {
-    private final Primitives primitives;
 
     private Divide(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
-        super(lhs, primitives.divideOperatorInt, rhs, BinaryOperator.MULTIPLICATIVE_PRECEDENCE, objectFlow);
-        this.primitives = primitives;
+        super(primitives, lhs, primitives.divideOperatorInt, rhs, BinaryOperator.MULTIPLICATIVE_PRECEDENCE, objectFlow);
     }
 
     public static EvaluationResult divide(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {
@@ -67,41 +59,8 @@ public class Divide extends BinaryOperator {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Divide orValue = (Divide) o;
-        return lhs.equals(orValue.lhs) &&
-                rhs.equals(orValue.rhs);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(lhs, rhs);
-    }
-
-    @Override
-    public String toString() {
-        return print(PrintMode.FOR_DEBUG);
-    }
-
-    @Override
-    public String print(PrintMode printMode) {
-        return lhs.print(printMode) + " / " + rhs.print(printMode);
-    }
-
-    @Override
     public int order() {
         return ExpressionComparator.ORDER_DIVIDE;
     }
 
-    @Override
-    public ParameterizedType type() {
-        return primitives.widestType(lhs.type(), rhs.type());
-    }
-
-    @Override
-    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return PrimitiveExpression.primitiveGetProperty(variableProperty);
-    }
 }

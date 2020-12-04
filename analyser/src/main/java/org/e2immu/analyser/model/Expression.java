@@ -27,7 +27,8 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotModified;
@@ -45,21 +46,10 @@ public interface Expression extends Element, Comparable<Expression> {
     ParameterizedType returnType();
 
     @NotModified
-    String expressionString(int indent);
-
-    @NotModified
     int precedence();
 
     @NotModified
     EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo);
-
-    @NotModified
-    default String bracketedExpressionString(int indent, Expression expression) {
-        if (expression.precedence() < precedence()) {
-            return "(" + expression.expressionString(indent) + ")";
-        }
-        return expression.expressionString(indent);
-    }
 
     @NotModified
     default List<LocalVariableReference> newLocalVariables() {
@@ -97,7 +87,7 @@ public interface Expression extends Element, Comparable<Expression> {
     }
 
     default boolean isDiscreteType() {
-        ParameterizedType type = type();
+        ParameterizedType type = returnType();
         return type != null && Primitives.isDiscrete(type);
     }
 
@@ -144,13 +134,6 @@ public interface Expression extends Element, Comparable<Expression> {
 
     NewObject getInstance(EvaluationContext evaluationContext);
 
-    /**
-     * @return the type, if we are certain; used in WidestType for operators
-     */
-    default ParameterizedType type() {
-        return null;
-    }
-
     default EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         Expression inMap = translation.get(this);
         return new EvaluationResult.Builder().setExpression(inMap == null ? this : inMap).build();
@@ -179,7 +162,14 @@ public interface Expression extends Element, Comparable<Expression> {
         return null;
     }
 
-    default String print(PrintMode printMode) {
-        return toString();
+    default OutputBuilder outputInParenthesis(int precedence, Expression expression) {
+        if (precedence < precedence()) {
+            return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(expression.output()).add(Symbol.RIGHT_PARENTHESIS);
+        }
+        return expression.output();
+    }
+
+    default boolean hasBeenEvaluated() {
+        return getObjectFlow() != ObjectFlow.NYE;
     }
 }

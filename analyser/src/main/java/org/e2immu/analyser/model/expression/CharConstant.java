@@ -19,13 +19,11 @@
 package org.e2immu.analyser.model.expression;
 
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.Value;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.CharValue;
-import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
@@ -61,8 +59,28 @@ public record CharConstant(Primitives primitives,
     }
 
     @Override
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new Text("'" + escaped(constant) + "'"));
+    }
+
+    public static String escaped(char constant) {
+        return switch (constant) {
+            case '\t' -> "\\t";
+            case '\b' -> "\\b";
+            case '\n' -> "\\n";
+            case '\r' -> "\\r";
+            case '\f' -> "\\f";
+            case '\'' -> "\\'";
+            case '\"' -> "\\\"";
+            case '\\' -> "\\\\";
+            default -> constant >= 32 && constant <= 127 ? Character.toString(constant) :
+                    "\\u" + Integer.toString(constant, 16);
+        };
+    }
+
+    @Override
     public String toString() {
-        return "'" + constant + "'";
+        return minimalOutput();
     }
 
     @Override

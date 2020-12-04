@@ -15,30 +15,33 @@
  * limitations under the License.
  */
 
-package org.e2immu.analyser.model.variable;
+package org.e2immu.analyser.output;
 
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.annotation.NotNull;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import java.util.Objects;
+public class Guide implements OutputElement {
+    private static final AtomicInteger generator = new AtomicInteger();
 
-// see ExpressionWithMethodReferenceResolution, try to do something similar
+    public final int index;
+    public final boolean start;
 
-public abstract class VariableWithConcreteReturnType implements Variable {
+    public Guide() {
+        start = true;
+        index = generator.incrementAndGet();
+    }
 
-    public final ParameterizedType concreteReturnType;
-
-    protected VariableWithConcreteReturnType(@NotNull ParameterizedType concreteReturnType) {
-        this.concreteReturnType = Objects.requireNonNull(concreteReturnType);
+    public Guide(Guide start) {
+        this.start = false;
+        index = start.index;
     }
 
     @Override
-    public ParameterizedType concreteReturnType() {
-        return concreteReturnType;
+    public String minimal() {
+        return "";
     }
 
     @Override
-    public String toString() {
-        return output().toString();
+    public String debug() {
+        return "/*" + (start ? "S" : "") + index + "*/";
     }
 }

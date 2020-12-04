@@ -22,19 +22,18 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
 
-public class Cast implements Expression {
-    public final Expression expression;
-    public final ParameterizedType parameterizedType;
+public record Cast(Expression expression,
+                   ParameterizedType parameterizedType) implements Expression {
 
-    public Cast(@NotNull Expression expression, @NotNull ParameterizedType parameterizedType) {
+    public Cast(Expression expression, ParameterizedType parameterizedType) {
         this.expression = Objects.requireNonNull(expression);
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
     }
@@ -64,13 +63,18 @@ public class Cast implements Expression {
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
+    public boolean hasBeenEvaluated() {
+        return false;
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
         return null;
     }
 
     @Override
     public ObjectFlow getObjectFlow() {
-        return ObjectFlow.NO_FLOW;
+        return ObjectFlow.NYE;
     }
 
     @Override
@@ -86,8 +90,9 @@ public class Cast implements Expression {
     }
 
     @Override
-    public String expressionString(int indent) {
-        return "(" + parameterizedType.print() + ")" + bracketedExpressionString(indent, expression);
+    public OutputBuilder output() {
+        return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(parameterizedType.output()).add(Symbol.RIGHT_PARENTHESIS)
+                .add(outputInParenthesis(precedence(), expression));
     }
 
     @Override
