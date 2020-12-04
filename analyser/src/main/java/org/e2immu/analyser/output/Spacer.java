@@ -21,7 +21,8 @@ public enum Spacer implements OutputElement {
 
     ONE, // never split here (e.g. between class and class name); two NEVERs collapse into one
     HARD,  // split here unless no other option
-    EASY;
+    EASY,
+    NEWLINE;
 
     @Override
     public String minimal() {

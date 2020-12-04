@@ -31,14 +31,13 @@ import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.*;
 import org.e2immu.annotation.NotNull;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -117,7 +116,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         String typeNature;
         Set<AnnotationExpression> annotations = new HashSet<>();
         Set<String> imports = isPrimaryType() ? Collections.emptySet() : imports(typeInspection.get());
-        Stream<String> typeModifiers;
+        String[] typeModifiers;
         List<FieldInfo> fields;
         List<MethodInfo> constructors;
         List<MethodInfo> methods;
@@ -129,7 +128,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (hasBeenInspected()) {
             TypeInspection typeInspection = this.typeInspection.get();
             typeNature = typeInspection.typeNature().toJava();
-            typeModifiers = typeInspection.modifiers().stream().map(TypeModifier::toJava);
+            typeModifiers = TypeModifier.sort(typeInspection.modifiers());
             annotations.addAll(typeInspection.getAnnotations());
             fields = typeInspection.fields();
             constructors = typeInspection.constructors();
@@ -142,7 +141,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                     .map(TypeParameter::print).collect(Collectors.joining(", "));
         } else {
             typeNature = "class"; // we really have no idea what it is
-            typeModifiers = List.of("abstract").stream();
+            typeModifiers = new String[]{"abstract"};
             fields = List.of();
             constructors = List.of();
             methods = List.of();
@@ -154,80 +153,72 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         Stream<OutputBuilder> methodsStream = methods.stream().map(MethodInfo::output);
         Stream<OutputBuilder> subTypesStream = subTypes.stream().map(TypeInfo::output);
 
-        StringBuilder sb = new StringBuilder();
+        OutputBuilder outputBuilder = new OutputBuilder();
         if (isPrimaryType()) {
             String packageName = packageNameOrEnclosingType.getLeftOrElse("");
             if (!packageName.isEmpty()) {
-                sb.append("package ");
-                sb.append(packageName);
-                sb.append(";\n\n");
+                outputBuilder.add(new Text("package")).add(Spacer.HARD).add(new Text(packageName)).add(Symbol.SEMICOLON)
+                        .add(Spacer.NEWLINE);
             }
             if (!imports.isEmpty()) {
                 imports.stream().sorted().forEach(i ->
-                        sb.append("import ")
-                                .append(i)
-                                .append(";\n"));
-                sb.append("\n");
+                        outputBuilder.add(new Text("import")).add(Spacer.HARD).add(new Text(i)).add(Symbol.SEMICOLON)
+                                .add(Spacer.NEWLINE));
             }
         }
         Set<TypeInfo> annotationsSeen = new HashSet<>();
+        Guide.GuideGenerator annotationGg = new Guide.GuideGenerator();
+        outputBuilder.add(annotationGg.start());
         for (AnnotationExpression annotation : annotations) {
-            StringUtil.indent(sb, indent);
-            sb.append(annotation.stream());
+            outputBuilder.add(annotationGg.mid()).add(annotation.output());
             if (typeAnalysis.isSet()) {
-                typeAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen, sb);
+                outputBuilder.add(typeAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen));
             }
-            sb.append("\n");
         }
         if (typeAnalysis.isSet()) {
             typeAnalysis.get().getAnnotationStream().forEach(entry -> {
                 boolean present = entry.getValue();
                 AnnotationExpression annotation = entry.getKey();
                 if (present && !annotationsSeen.contains(annotation.typeInfo())) {
-                    StringUtil.indent(sb, indent);
-                    sb.append(annotation.stream());
-                    sb.append("\n");
+                    outputBuilder.add(annotationGg.mid()).add(annotation.output());
                 }
             });
         }
+        outputBuilder.add(annotationGg.end());
+
         if (doTypeDeclaration) {
             // the class name
-            StringUtil.indent(sb, indent);
-            sb.append(typeModifiers.map(s -> s + " ").collect(Collectors.joining()));
-            sb.append(typeNature);
-            sb.append(" ");
-            sb.append(simpleName);
+            outputBuilder.add(Arrays.stream(typeModifiers).map(Text::new).collect(OutputBuilder.joinElements(Spacer.ONE)))
+                    .add(Spacer.ONE).add(new Text(typeNature))
+                    .add(Spacer.ONE).add(new Text(simpleName));
+
             if (!typeParametersCsv.isEmpty()) {
-                sb.append("<");
+                outputBuilder.add(Symbol.LEFT_ANGLE_BRACKET);
                 sb.append(typeParametersCsv);
-                sb.append(">");
+                outputBuilder.add(Symbol.RIGHT_ANGLE_BRACKET);
             }
             if (!parentClass.isEmpty()) {
-                sb.append(" extends ");
-                sb.append(parentClass);
+                outputBuilder.add(Spacer.HARD).add(new Text("extends")).add(Spacer.HARD).add(parentClass);
             }
             if (!interfacesCsv.isEmpty()) {
-                sb.append(" implements ");
+                outputBuilder.add(Spacer.HARD).add(new Text("implements")).add(Spacer.HARD);
                 sb.append(interfacesCsv);
             }
         }
-        sb.append(" {\n\n");
+        outputBuilder.add(Symbol.LEFT_BRACE);
+        Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
+        outputBuilder.add(guideGenerator.start());
 
-        // these already have indentation built in
-        niceStream(sb, subTypesStream, "\n\n", "");
-        niceStream(sb, fieldsStream, "\n", "\n");
-        niceStream(sb, constructorsStream, "\n\n", "\n");
-        niceStream(sb, methodsStream, "\n\n", "\n");
+        Stream.concat(Stream.concat(Stream.concat(fieldsStream, subTypesStream), constructorsStream), methodsStream)
+                .forEach(ob -> outputBuilder.add(guideGenerator.mid()).add(ob).add(Spacer.NEWLINE));
 
-        StringUtil.indent(sb, indent);
-        sb.append("}\n");
-        return sb.toString();
+        return outputBuilder.add(guideGenerator.end()).add(Symbol.RIGHT_BRACE);
     }
 
     private Set<String> imports(TypeInspection typeInspection) {
         Set<TypeInfo> typesReferenced = typeInspection.typesReferenced().stream().filter(Map.Entry::getValue)
-                .filter(e -> !e.getKey().isJavaLang())
                 .map(Map.Entry::getKey)
+                .filter(typeInfo -> !Primitives.isJavaLang(typeInfo))
                 .collect(Collectors.toSet());
         Map<String, List<TypeInfo>> perPackage = new HashMap<>();
         String myPackage = packageName();
@@ -249,17 +240,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             }
         }
         return result;
-    }
-
-    private static void niceStream(StringBuilder sb, Stream<String> stream, String separator, String suffix) {
-        AtomicInteger cnt = new AtomicInteger();
-        stream.forEach(s -> {
-            sb.append(s);
-            sb.append(separator);
-            cnt.incrementAndGet();
-        });
-        if (cnt.get() > 0)
-            sb.append(suffix);
     }
 
     @Override
@@ -401,7 +381,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         }
         Block block = new Block.BlockBuilder().addStatement(statement).build();
 
-        log(LAMBDA, "Result of translating block: {}", block.statementString(0, null));
+        if (Logger.isLogEnabled(LAMBDA)) {
+            log(LAMBDA, "Result of translating block: {}", block.output(null));
+        }
         methodBuilder.setInspectedBlock(block).build(expressionContext.typeContext);
         typeInfo.typeInspection.set(builder.build());
         expressionContext.addNewlyCreatedType(typeInfo);
@@ -412,7 +394,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     private Expression methodCallNoParameters(MethodInfo interfaceMethod, MethodInspection concreteMethod) {
         Expression newScope = new VariableExpression(interfaceMethod.methodInspection.get().getParameters().get(0));
         MethodTypeParameterMap methodTypeParameterMap = new MethodTypeParameterMap(concreteMethod, Map.of());
-        return new MethodCall(newScope, newScope, methodTypeParameterMap, List.of());
+        return new MethodCall(newScope, methodTypeParameterMap, List.of());
     }
 
     private Expression methodCallCopyAllParameters(Expression scope, MethodInspection concreteMethod, MethodInspection interfaceMethod) {
