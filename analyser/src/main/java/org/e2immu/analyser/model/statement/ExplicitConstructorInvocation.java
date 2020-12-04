@@ -19,7 +19,13 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Element;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
@@ -40,14 +46,16 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
     }
 
     @Override
-    public String statementString(int indent, StatementAnalysis statementAnalysis) {
-        StringBuilder sb = new StringBuilder();
-        StringUtil.indent(sb, indent);
-        sb.append("this(")
-                .append(structure.updaters.stream()
-                        .map(e -> e.expressionString(indent)).collect(Collectors.joining(", ")))
-                .append(");\n");
-        return sb.toString();
+    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("this"));
+        if (structure.updaters.isEmpty()) {
+            outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
+        } else {
+            outputBuilder.add(Symbol.LEFT_PARENTHESIS)
+                    .add(structure.updaters.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                    .add(Symbol.RIGHT_PARENTHESIS);
+        }
+        return outputBuilder.add(Symbol.SEMICOLON);
     }
 
     @Override

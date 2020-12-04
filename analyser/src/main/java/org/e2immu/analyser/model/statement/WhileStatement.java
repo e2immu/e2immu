@@ -22,6 +22,9 @@ import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.StringUtil;
 
 public class WhileStatement extends LoopStatement {
@@ -47,18 +50,13 @@ public class WhileStatement extends LoopStatement {
                 translationMap.translateBlock(structure.block));
     }
 
+
     @Override
-    public String statementString(int indent, StatementAnalysis statementAnalysis) {
-        StringBuilder sb = new StringBuilder();
-        StringUtil.indent(sb, indent);
-        if (label != null) {
-            sb.append(label).append(": ");
-        }
-        sb.append("while (");
-        sb.append(expression.expressionString(indent));
-        sb.append(")");
-        sb.append(structure.block.statementString(indent, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
-        sb.append("\n");
-        return sb.toString();
+    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        return new OutputBuilder().add(new Text("while"))
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(structure.expression.output())
+                .add(Symbol.RIGHT_PARENTHESIS)
+                .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 }

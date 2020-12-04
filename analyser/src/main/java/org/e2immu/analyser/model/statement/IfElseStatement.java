@@ -24,6 +24,10 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Spacer;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
@@ -72,19 +76,18 @@ public class IfElseStatement extends StatementWithExpression {
     }
 
     @Override
-    public String statementString(int indent, StatementAnalysis statementAnalysis) {
-        StringBuilder sb = new StringBuilder();
-        StringUtil.indent(sb, indent);
-        sb.append("if (");
-        sb.append(expression.expressionString(indent));
-        sb.append(")");
-        sb.append(structure.block.statementString(indent, startOfBlock(statementAnalysis, 0)));
+    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("if"))
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(structure.expression.output())
+                .add(Symbol.RIGHT_PARENTHESIS)
+                .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
         if (elseBlock != Block.EMPTY_BLOCK) {
-            sb.append(" else");
-            sb.append(elseBlock.statementString(indent, startOfBlock(statementAnalysis, 1)));
+            outputBuilder.add(Spacer.HARD)
+                    .add(new Text("else"))
+                    .add(elseBlock.output(StatementAnalysis.startOfBlock(statementAnalysis, 1)));
         }
-        sb.append("\n");
-        return sb.toString();
+        return outputBuilder;
     }
 
     @Override

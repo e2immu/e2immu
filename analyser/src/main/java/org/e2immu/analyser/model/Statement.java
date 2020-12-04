@@ -34,5 +34,5 @@ public interface Statement extends Element {
         return this;
     }
 
-    OutputBuilder output(Guide.GuideGenerator guideGenerator, StatementAnalysis firstStatement);
+    OutputBuilder output(StatementAnalysis statementAnalysis);
 }

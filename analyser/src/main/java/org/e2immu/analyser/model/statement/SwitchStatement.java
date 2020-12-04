@@ -3,7 +3,14 @@ package org.e2immu.analyser.model.statement;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Element;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.output.Guide;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.StringUtil;
 
@@ -33,20 +40,18 @@ public class SwitchStatement extends StatementWithExpression {
     }
 
     @Override
-    public String statementString(int indent, StatementAnalysis statementAnalysis) {
-        StringBuilder sb = new StringBuilder();
-        StringUtil.indent(sb, indent);
-        sb.append("switch(");
-        sb.append(expression.expressionString(0));
-        sb.append(") {\n");
+    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("switch"))
+                .add(Symbol.LEFT_PARENTHESIS).add(expression.output()).add(Symbol.RIGHT_PARENTHESIS)
+                .add(Symbol.LEFT_BRACE);
+        Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
+        outputBuilder.add(guideGenerator.start());
         int i = 0;
         for (SwitchEntry switchEntry : switchEntries) {
-            sb.append(switchEntry.statementString(indent + 4, StatementAnalysis.startOfBlock(statementAnalysis, i)));
+            outputBuilder.add(switchEntry.output(guideGenerator, StatementAnalysis.startOfBlock(statementAnalysis, i)));
             i++;
         }
-        StringUtil.indent(sb, indent);
-        sb.append("}\n");
-        return sb.toString();
+        return outputBuilder.add(guideGenerator.end()).add(Symbol.RIGHT_BRACE);
     }
 
     @Override

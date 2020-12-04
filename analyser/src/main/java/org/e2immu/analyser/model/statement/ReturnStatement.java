@@ -24,7 +24,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.analyser.output.*;
 
 import java.util.List;
 
@@ -39,16 +39,13 @@ public class ReturnStatement extends StatementWithExpression {
     }
 
     @Override
-    public String statementString(int indent, StatementAnalysis statementAnalysis) {
-        StringBuilder sb = new StringBuilder();
-        StringUtil.indent(sb, indent);
-        sb.append(isYield ? "yield" : "return");
+    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        OutputBuilder outputBuilder = new OutputBuilder().add(new Text(isYield ? "yield" : "return"));
         if (expression != EmptyExpression.EMPTY_EXPRESSION) {
-            sb.append(" ");
-            sb.append(expression.expressionString(indent));
+            outputBuilder.add(Spacer.HARD).add(expression.output());
         }
-        sb.append(";\n");
-        return sb.toString();
+        outputBuilder.add(Symbol.SEMICOLON);
+        return outputBuilder;
     }
 
     @Override

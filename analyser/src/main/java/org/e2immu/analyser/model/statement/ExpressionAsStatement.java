@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
@@ -53,12 +54,8 @@ public class ExpressionAsStatement extends StatementWithExpression {
     }
 
     @Override
-    public String statementString(int indent, StatementAnalysis statementAnalysis) {
-        StringBuilder sb = new StringBuilder();
-        StringUtil.indent(sb, indent);
-        sb.append(expression.expressionString(indent));
-        sb.append(";\n");
-        return sb.toString();
+    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        return new OutputBuilder().add(expression.output()).add(Symbol.SEMICOLON);
     }
 
     @Override

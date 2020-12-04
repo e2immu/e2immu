@@ -2,8 +2,10 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,22 +41,20 @@ public class ForStatement extends LoopStatement {
     }
 
     @Override
-    public String statementString(int indent, StatementAnalysis statementAnalysis) {
-        StringBuilder sb = new StringBuilder();
-        StringUtil.indent(sb, indent);
+    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        OutputBuilder outputBuilder = new OutputBuilder();
         if (label != null) {
-            sb.append(label).append(": ");
+            outputBuilder.add(new Text(label)).add(Symbol.COLON_LABEL);
         }
-        sb.append("for(");
-        sb.append(structure.initialisers.stream().map(i -> i.expressionString(0)).collect(Collectors.joining(", ")));
-        sb.append("; ");
-        sb.append(expression.expressionString(0));
-        sb.append("; ");
-        sb.append(structure.updaters.stream().map(u -> u.expressionString(0)).collect(Collectors.joining(", ")));
-        sb.append(")");
-        sb.append(structure.block.statementString(indent, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
-        sb.append("\n");
-        return sb.toString();
+        return outputBuilder.add(new Text("for"))
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(structure.initialisers.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                .add(Symbol.SEMICOLON)
+                .add(structure.expression.output())
+                .add(Symbol.SEMICOLON)
+                .add(structure.updaters.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                .add(Symbol.RIGHT_PARENTHESIS)
+                .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 
     @Override

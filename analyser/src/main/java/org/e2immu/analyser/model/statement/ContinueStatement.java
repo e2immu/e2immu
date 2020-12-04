@@ -1,7 +1,7 @@
 package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.analyser.output.*;
 
 public class ContinueStatement extends BreakOrContinueStatement {
 
@@ -10,15 +10,12 @@ public class ContinueStatement extends BreakOrContinueStatement {
     }
 
     @Override
-    public String statementString(int indent, StatementAnalysis statementAnalysis) {
-        StringBuilder sb = new StringBuilder();
-        StringUtil.indent(sb, indent);
-        sb.append("continue");
+    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("continue"));
         if (label != null) {
-            sb.append(" ");
-            sb.append(label);
+            outputBuilder.add(Spacer.HARD).add(new Text(label));
         }
-        sb.append(";\n");
-        return sb.toString();
+        outputBuilder.add(Symbol.SEMICOLON);
+        return outputBuilder;
     }
 }

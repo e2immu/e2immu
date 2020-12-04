@@ -22,9 +22,12 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.output.Guide;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.e2immu.annotation.Fluent;
 import org.e2immu.annotation.NotModified;
@@ -74,53 +77,50 @@ public class Block extends StatementWithStructure {
     }
 
     @Override
-    public String statementString(int indent, StatementAnalysis statementAnalysis) {
-        StringBuilder sb = new StringBuilder();
+    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        OutputBuilder outputBuilder = new OutputBuilder();
         if (label != null) {
-            sb.append(label);
-            sb.append(":");
+            outputBuilder.add(new Text(label)).add(Symbol.COLON_LABEL);
         }
-        sb.append(" {");
+        outputBuilder.add(Symbol.LEFT_BRACE);
         if (statementAnalysis == null) {
-            if (structure.statements.isEmpty()) {
-                sb.append(" }\n");
-            } else {
-                sb.append("\n");
+            if (!structure.statements.isEmpty()) {
+                Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
+                outputBuilder.add(guideGenerator.start());
                 for (Statement statement : structure.statements) {
-                    sb.append(statement.statementString(indent + 4, null));
+                    outputBuilder.add(guideGenerator.mid()).add(statement.output(null));
                 }
-                StringUtil.indent(sb, indent);
-                sb.append("}");
+                outputBuilder.add(guideGenerator.end());
             }
         } else {
-            sb.append("\n");
-            sb.append(statementsString(indent + 4, statementAnalysis));
-            StringUtil.indent(sb, indent);
-            sb.append("}");
+            Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
+            outputBuilder.add(guideGenerator.start());
+            statementsString(outputBuilder, guideGenerator, statementAnalysis);
+            outputBuilder.add(guideGenerator.end());
         }
-        return sb.toString();
+        outputBuilder.add(Symbol.RIGHT_BRACE);
+        return outputBuilder;
     }
 
-    private String statementsString(int indent, StatementAnalysis statementAnalysis) {
+    public static void statementsString(OutputBuilder outputBuilder, Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis) {
         StatementAnalysis sa = statementAnalysis;
-        StringBuilder sb = new StringBuilder();
         while (sa != null) {
             if (sa.navigationData.replacement.isSet()) {
-                StringUtil.indent(sb, indent);
-                sb.append("/* code will be replaced\n");
-                sb.append(sa.statement.statementString(indent, sa));
+                outputBuilder.add(guideGenerator.mid())
+                        .add(Symbol.LEFT_BLOCK_COMMENT)
+                        .add(new Text("code will be replaced"))
+                        .add(guideGenerator.mid())
+                        .add(sa.statement.output(sa));
                 StatementAnalysis moreReplaced = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
                 if (moreReplaced != null) {
-                    sb.append(statementsString(indent, moreReplaced));
+                    statementsString(outputBuilder, guideGenerator, moreReplaced); // recursion!
                 }
-                StringUtil.indent(sb, indent);
-                sb.append("*/\n");
+                outputBuilder.add(guideGenerator.mid()).add(Symbol.RIGHT_BLOCK_COMMENT);
                 sa = sa.navigationData.replacement.get();
             }
-            sb.append(sa.statement.statementString(indent, sa));
+            outputBuilder.add(guideGenerator.mid()).add(sa.statement.output(sa));
             sa = sa.navigationData.next.isSet() ? sa.navigationData.next.get().orElse(null) : null;
         }
-        return sb.toString();
     }
 
     public ParameterizedType mostSpecificReturnType(InspectionProvider inspectionProvider) {

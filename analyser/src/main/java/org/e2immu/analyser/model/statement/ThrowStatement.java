@@ -21,8 +21,11 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.output.*;
 
 public class ThrowStatement extends StatementWithExpression {
 
@@ -37,13 +40,9 @@ public class ThrowStatement extends StatementWithExpression {
     }
 
     @Override
-    public String statementString(int indent, StatementAnalysis statementAnalysis) {
-        StringBuilder sb = new StringBuilder();
-        StringUtil.indent(sb, indent);
-        sb.append("throw ");
-        sb.append(expression.expressionString(indent));
-        sb.append(";\n");
-        return sb.toString();
+    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        return new OutputBuilder().add(new Text("throws"))
+                .add(Spacer.HARD).add(expression.output()).add(Symbol.SEMICOLON);
     }
 
     @Override

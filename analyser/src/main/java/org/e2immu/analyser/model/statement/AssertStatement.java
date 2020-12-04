@@ -5,11 +5,7 @@ import org.e2immu.analyser.model.Element;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.TranslationMap;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Spacer;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
-import org.e2immu.analyser.util.StringUtil;
+import org.e2immu.analyser.output.*;
 
 import java.util.List;
 
@@ -33,8 +29,9 @@ public class AssertStatement extends StatementWithStructure {
     }
 
     @Override
-    public OutputBuilder output() {
-        return new OutputBuilder().add(new Text("assert"))
+    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        return new OutputBuilder()
+                .add(new Text("assert"))
                 .add(Spacer.ONE)
                 .add(structure.expression.output())
                 .add(message != null ? new OutputBuilder().add(Symbol.COMMA).add(message.output()) : new OutputBuilder())

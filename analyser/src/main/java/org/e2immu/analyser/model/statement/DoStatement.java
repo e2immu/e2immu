@@ -20,7 +20,14 @@ package org.e2immu.analyser.model.statement;
 
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.StatementExecution;
+import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Spacer;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.StringUtil;
 
 public class DoStatement extends LoopStatement {
@@ -42,19 +49,15 @@ public class DoStatement extends LoopStatement {
                 translationMap.translateBlock(structure.block));
     }
 
-    @Override
-    public String statementString(int indent, StatementAnalysis statementAnalysis) {
-        StringBuilder sb = new StringBuilder();
-        StringUtil.indent(sb, indent);
-        if (label != null) {
-            sb.append(label).append(": ");
-        }
-        sb.append("do {");
-        sb.append(structure.block.statementString(indent, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
-        sb.append(" while(");
-        sb.append(expression.expressionString(indent));
-        sb.append(");\n");
-        return sb.toString();
-    }
 
+    @Override
+    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        return new OutputBuilder().add(new Text("do"))
+                .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)))
+                .add(Spacer.HARD)
+                .add(new Text("while"))
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(structure.expression.output())
+                .add(Symbol.RIGHT_PARENTHESIS);
+    }
 }

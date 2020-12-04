@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.statement;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
@@ -43,15 +44,12 @@ public class SynchronizedStatement extends StatementWithExpression {
     }
 
     @Override
-    public String statementString(int indent, StatementAnalysis statementAnalysis) {
-        StringBuilder sb = new StringBuilder();
-        StringUtil.indent(sb, indent);
-        sb.append("synchronized (");
-        sb.append(structure.expression.expressionString(indent));
-        sb.append(")");
-        sb.append(structure.block.statementString(indent, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
-        sb.append("\n");
-        return sb.toString();
+    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        return new OutputBuilder().add(new Text("synchronized"))
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(structure.expression.output())
+                .add(Symbol.RIGHT_PARENTHESIS)
+                .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 
     @Override

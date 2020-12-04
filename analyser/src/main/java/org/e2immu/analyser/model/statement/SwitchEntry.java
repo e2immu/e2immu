@@ -22,9 +22,9 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,23 +44,20 @@ public abstract class SwitchEntry extends StatementWithStructure {
         this.primitives = primitives;
     }
 
-    protected void appendLabels(StringBuilder sb, int indent, boolean java12Style, boolean newLine) {
+    protected void appendLabels(OutputBuilder outputBuilder, boolean java12Style, Guide.GuideGenerator guideGenerator) {
         if (labels.isEmpty()) {
-            StringUtil.indent(sb, indent);
-            sb.append("default:");
-            if (newLine) sb.append("\n");
+            outputBuilder.add(guideGenerator.mid()).add(new Text("default")).add(Symbol.COLON_LABEL);
         } else if (java12Style) {
-            sb.append(labels.stream().map(l -> l.expressionString(0)).collect(Collectors.joining(", ")));
-            sb.append(" ->");
-            if (newLine) sb.append("\n");
+            outputBuilder.add(guideGenerator.mid())
+                    .add(labels.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                    .add(Symbol.LAMBDA);
         } else {
-            boolean multiLine = labels.size() > 1 || newLine;
             for (Expression label : labels) {
-                StringUtil.indent(sb, indent);
-                sb.append("case ");
-                sb.append(label.expressionString(0));
-                sb.append(":");
-                if (multiLine) sb.append("\n");
+                outputBuilder.add(guideGenerator.mid())
+                        .add(new Text("case"))
+                        .add(Spacer.HARD)
+                        .add(label.output())
+                        .add(Symbol.COLON_LABEL);
             }
         }
     }
@@ -72,24 +69,26 @@ public abstract class SwitchEntry extends StatementWithStructure {
             return EmptyExpression.DEFAULT_EXPRESSION; // this will become the negation of the disjunction of all previous expressions
         }
         MethodInfo operator = operator(primitives, switchVariableAsExpression);
-        Expression or = equality(labels.get(0), switchVariableAsExpression, operator);
+        Expression or = equality(primitives, labels.get(0), switchVariableAsExpression, operator);
         // we group multiple "labels" into one disjunction
         for (int i = 1; i < labels.size(); i++) {
-            or = new BinaryOperator(or, primitives.orOperatorBool,
-                    equality(labels.get(i), switchVariableAsExpression, operator),
+            or = new BinaryOperator(primitives, or, primitives.orOperatorBool,
+                    equality(primitives, labels.get(i), switchVariableAsExpression, operator),
                     BinaryOperator.LOGICAL_OR_PRECEDENCE);
         }
         return or;
     }
 
-    private static Expression equality(Expression label, Expression switchVariableAsExpression, MethodInfo operator) {
-        return new BinaryOperator(switchVariableAsExpression, operator, label, BinaryOperator.EQUALITY_PRECEDENCE);
+    private static Expression equality(Primitives primitives, Expression label, Expression switchVariableAsExpression, MethodInfo operator) {
+        return new BinaryOperator(primitives, switchVariableAsExpression, operator, label, BinaryOperator.EQUALITY_PRECEDENCE);
     }
 
     private static MethodInfo operator(Primitives primitives, Expression switchVariableAsExpression) {
         boolean primitive = Primitives.isPrimitiveExcludingVoid(switchVariableAsExpression.variables().get(0).concreteReturnType());
         return primitive ? primitives.equalsOperatorInt : primitives.equalsOperatorObject;
     }
+
+    abstract OutputBuilder output(Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis);
 
     public boolean isNotDefault() {
         return !labels.isEmpty();
@@ -129,21 +128,26 @@ public abstract class SwitchEntry extends StatementWithStructure {
         }
 
         @Override
-        public String statementString(int indent, StatementAnalysis statementAnalysis) {
-            StringBuilder sb = new StringBuilder();
+        public OutputBuilder output() {
+            throw new UnsupportedOperationException(); // need to use a different method!
+        }
 
-            // TODO use the method from Block to catch replacements!
+        @Override
+        public OutputBuilder output(StatementAnalysis statementAnalysis) {
+            throw new UnsupportedOperationException(); // need to use a different method!
+        }
 
-            appendLabels(sb, indent, java12Style, structure.statements.size() > 1);
-            if (structure.statements.size() == 1) {
-                sb.append(" ");
-                sb.append(structure.statements.get(0).statementString(0, statementAnalysis));
-            } else {
-                for (Statement statement : structure.statements) {
-                    sb.append(statement.statementString(indent + 4, statementAnalysis));
-                }
-            }
-            return sb.toString();
+        @Override
+        public OutputBuilder output(Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis) {
+            OutputBuilder outputBuilder = new OutputBuilder();
+            appendLabels(outputBuilder, java12Style, guideGenerator);
+
+            Guide.GuideGenerator ggStatements = new Guide.GuideGenerator();
+            outputBuilder.add(ggStatements.start());
+            Block.statementsString(outputBuilder, ggStatements, statementAnalysis);
+            outputBuilder.add(ggStatements.end());
+
+            return outputBuilder;
         }
 
         @Override
@@ -171,11 +175,21 @@ public abstract class SwitchEntry extends StatementWithStructure {
         }
 
         @Override
-        public String statementString(int indent, StatementAnalysis statementAnalysis) {
-            StringBuilder sb = new StringBuilder();
-            appendLabels(sb, indent, true, false);
-            sb.append(structure.block.statementString(indent, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
-            return sb.toString();
+        public OutputBuilder output() {
+            throw new UnsupportedOperationException(); // need to use a different method!
+        }
+
+        @Override
+        public OutputBuilder output(StatementAnalysis statementAnalysis) {
+            throw new UnsupportedOperationException(); // need to use a different method!
+        }
+
+        @Override
+        public OutputBuilder output(Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis) {
+            OutputBuilder outputBuilder = new OutputBuilder();
+            appendLabels(outputBuilder, true, guideGenerator);
+            outputBuilder.add(structure.block.output(statementAnalysis));
+            return outputBuilder;
         }
 
         @Override

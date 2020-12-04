@@ -9,9 +9,9 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
-import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.List;
@@ -69,11 +69,8 @@ public class TryStatement extends StatementWithStructure {
                 translationMap.translateBlock(finallyBlock));
     }
 
-    public static class CatchParameter implements Expression {
-        public final LocalVariable localVariable;
-
-        public final List<ParameterizedType> unionOfTypes;
-
+    public static record CatchParameter(LocalVariable localVariable,
+                                        List<ParameterizedType> unionOfTypes) implements Expression {
         public CatchParameter(LocalVariable localVariable, List<ParameterizedType> unionOfTypes) {
             this.localVariable = localVariable;
             this.unionOfTypes = ImmutableList.copyOf(unionOfTypes);
@@ -90,9 +87,9 @@ public class TryStatement extends StatementWithStructure {
         }
 
         @Override
-        public String expressionString(int indent) {
-            return unionOfTypes.stream().map(type -> type.typeInfo.simpleName).collect(Collectors.joining(" | "))
-                    + " " + localVariable.name;
+        public OutputBuilder output() {
+            return new OutputBuilder().add(unionOfTypes.stream().map(pt -> new TypeName(pt.typeInfo)).collect(OutputBuilder.joinElements(Symbol.PIPE)))
+                    .add(Spacer.HARD).add(new Text(localVariable.name));
         }
 
         @Override
@@ -121,31 +118,30 @@ public class TryStatement extends StatementWithStructure {
         }
     }
 
+    // TODO we may want to change output to have the GuideGenerator in the parameter to align catch and finally
     @Override
-    public String statementString(int indent, StatementAnalysis statementAnalysis) {
-        StringBuilder sb = new StringBuilder();
-        StringUtil.indent(sb, indent);
-        sb.append("try");
+    public OutputBuilder output(StatementAnalysis statementAnalysis) {
+        OutputBuilder outputBuilder = new OutputBuilder().add(new Text("try"));
         if (!resources.isEmpty()) {
-            sb.append("(");
-            sb.append(resources.stream().map(r -> r.expressionString(0)).collect(Collectors.joining("; ")));
-            sb.append(")");
+            outputBuilder.add(Symbol.LEFT_PARENTHESIS)
+                    .add(resources.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.SEMICOLON)))
+                    .add(Symbol.RIGHT_PARENTHESIS);
         }
-        sb.append(structure.block.statementString(indent, StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+        outputBuilder.add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
         int i = 1;
         for (Pair<CatchParameter, Block> pair : catchClauses) {
-            sb.append(" catch(");
-            sb.append(pair.k.expressionString(0));
-            sb.append(")");
-            sb.append(pair.v.statementString(indent, StatementAnalysis.startOfBlock(statementAnalysis, i)));
+            outputBuilder.add(new Text("catch"))
+                    .add(Symbol.LEFT_PARENTHESIS)
+                    .add(pair.k.output()).add(Symbol.RIGHT_PARENTHESIS)
+                    .add(pair.v.output(StatementAnalysis.startOfBlock(statementAnalysis, i)));
             i++;
         }
         if (finallyBlock != Block.EMPTY_BLOCK) {
-            sb.append(" finally");
-            sb.append(finallyBlock.statementString(indent, StatementAnalysis.startOfBlock(statementAnalysis, i)));
+            outputBuilder
+                    .add(new Text("finally"))
+                    .add(finallyBlock.output(StatementAnalysis.startOfBlock(statementAnalysis, i)));
         }
-        sb.append("\n");
-        return sb.toString();
+        return outputBuilder;
     }
 
     @Override

@@ -26,12 +26,15 @@ public record Symbol(String symbol, Space left, Space right) implements OutputEl
     public static final Symbol UNARY_MINUS = new Symbol("-", NOT_FOR_LEFT_PARENTHESIS, NEVER);
     public static final Symbol AT = new Symbol("@", NOT_FOR_LEFT_PARENTHESIS, NEVER);
 
+    public static final Symbol PIPE = new Symbol("|", ONE_LR, ONE_LR);
+
     public static final Symbol COMMA = new Symbol(",", NEVER, EASY);
     public static final Symbol SEMICOLON = new Symbol(";", NEVER, EASY);
 
     // a ? b : c;
     public static final Symbol QUESTION_MARK = new Symbol("?", ONE_LR, ONE_LR);
     public static final Symbol COLON = new Symbol(":", ONE_LR, ONE_LR);
+    public static final Symbol COLON_LABEL = new Symbol(":", NEVER, EASY);
     public static final Symbol DOUBLE_COLON = new Symbol(":", NEVER, NEVER);
 
     public static final Symbol DOT = new Symbol(".", EASY, NEVER);
