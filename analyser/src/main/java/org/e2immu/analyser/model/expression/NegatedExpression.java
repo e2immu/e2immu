@@ -21,11 +21,10 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.value.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
@@ -114,15 +113,13 @@ public class NegatedExpression extends UnaryOperator implements ExpressionWrappe
 
     @Override
     public String toString() {
-        return print(PrintMode.FOR_DEBUG);
+        return minimalOutput();
     }
 
     @Override
-    public String print(PrintMode printMode) {
-        if (expression.isNumeric()) {
-            return "(-(" + expression.print(printMode) + "))";
-        }
-        return "not (" + expression.print(printMode) + ")";
+    public OutputBuilder output() {
+        return new OutputBuilder().add(expression.isNumeric() ? Symbol.UNARY_MINUS : Symbol.UNARY_BOOLEAN_NOT)
+                .add(outputInParenthesis(precedence(), expression));
     }
 
     @Override
@@ -131,7 +128,7 @@ public class NegatedExpression extends UnaryOperator implements ExpressionWrappe
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationContext evaluationContext) {
         return null;
     }
 
@@ -143,11 +140,6 @@ public class NegatedExpression extends UnaryOperator implements ExpressionWrappe
     @Override
     public List<Variable> variables() {
         return expression.variables();
-    }
-
-    @Override
-    public ParameterizedType type() {
-        return expression.type();
     }
 
     @Override

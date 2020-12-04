@@ -22,6 +22,9 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.TypeName;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
@@ -72,27 +75,20 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         return Objects.hash(typeInfo);
     }
 
-    public String stream() {
-        StringBuilder sb = new StringBuilder("@" + typeInfo.simpleName);
+    @Override
+    public OutputBuilder output() {
+        OutputBuilder outputBuilder = new OutputBuilder().add(Symbol.AT).add(new TypeName(typeInfo));
         if (!expressions.isEmpty()) {
-            sb.append("(");
-            boolean first = true;
-            for (Expression expression : expressions) {
-                if (first) first = false;
-                else sb.append(", ");
-                if (expression instanceof Constant) {
-                    sb.append(expression.expressionString(0));
-                } else if (expression instanceof MemberValuePair memberValuePair) {
-                    if (!memberValuePair.name.equals("value")) {
-                        sb.append(memberValuePair.name);
-                        sb.append("=");
-                    }
-                    sb.append(memberValuePair.value.expressionString(0));
-                }
-            }
-            sb.append(")");
+            outputBuilder.add(Symbol.LEFT_PARENTHESIS)
+                    .add(expressions.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                    .add(Symbol.RIGHT_PARENTHESIS);
         }
-        return sb.toString();
+        return outputBuilder;
+    }
+
+    @Override
+    public String toString() {
+        return output().toString();
     }
 
     @Override
@@ -110,8 +106,8 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
                     .findFirst()
                     .map(MethodInfo::returnType).orElseThrow();
             if (expression instanceof MemberValuePair mvp) {
-                if (mvp.name.equals(fieldName)) {
-                    return (T) returnValueOfAnnotationExpression(returnType, mvp.value);
+                if (mvp.name().equals(fieldName)) {
+                    return (T) returnValueOfAnnotationExpression(returnType, mvp.value());
                 }
             } else if ("value".equals(fieldName)) {
                 return (T) returnValueOfAnnotationExpression(returnType, expression);

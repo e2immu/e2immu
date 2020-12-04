@@ -21,9 +21,7 @@ package org.e2immu.analyser.model;
 import com.github.javaparser.ast.Modifier;
 
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public enum FieldModifier {
 
@@ -57,14 +55,13 @@ public enum FieldModifier {
     }
 
 
-    public static String toJava(Set<FieldModifier> modifiers) {
+    public static String[] toJava(Set<FieldModifier> modifiers) {
         FieldModifier[] array = new FieldModifier[GROUPS];
         for (FieldModifier methodModifier : modifiers) {
             if (array[methodModifier.group] != null)
                 throw new UnsupportedOperationException("? already have " + array[methodModifier.group]);
             array[methodModifier.group] = methodModifier;
         }
-        return Arrays.stream(array).filter(Objects::nonNull).map(FieldModifier::toJava).collect(Collectors.joining(" "))
-                + (modifiers.isEmpty() ? "" : " ");
+        return Arrays.stream(array).filter(m -> m != null && m != PACKAGE).map(FieldModifier::toJava).toArray(String[]::new);
     }
 }

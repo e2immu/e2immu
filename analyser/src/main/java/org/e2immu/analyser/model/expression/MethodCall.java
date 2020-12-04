@@ -28,7 +28,9 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
-import org.e2immu.analyser.output.PrintMode;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -90,18 +92,13 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public NewObject getInstance(EvaluationContext evaluationContext) {
-        if (Primitives.isPrimitiveExcludingVoid(type())) return null;
-        return new NewObject(null, type(), List.of(), EmptyExpression.EMPTY_EXPRESSION, objectFlow);
+        if (Primitives.isPrimitiveExcludingVoid(returnType())) return null;
+        return new NewObject(null, returnType(), List.of(), EmptyExpression.EMPTY_EXPRESSION, objectFlow);
     }
 
     @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
-    }
-
-    @Override
-    public ParameterizedType type() {
-        return concreteReturnType;
     }
 
     @Override
@@ -145,14 +142,22 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public String toString() {
-        return print(PrintMode.FOR_DEBUG);
+        return minimalOutput();
     }
 
     @Override
-    public String print(PrintMode printMode) {
-        return object.print(printMode) + "." + methodInfo.name
-                + parameterExpressions.stream()
-                .map(p -> p.print(printMode)).collect(Collectors.joining(", ", "(", ")"));
+    public OutputBuilder output() {
+        OutputBuilder outputBuilder = new OutputBuilder();
+        if(object != null) {
+            outputBuilder.add(outputInParenthesis(precedence(), object)).add(Symbol.DOT);
+        }
+        outputBuilder.add(new Text(methodInfo.name));
+        if(parameterExpressions.isEmpty()) {
+            outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
+        } else {
+            outputBuilder.add(parameterExpressions.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)));
+        }
+        return outputBuilder;
     }
 
     @Override
@@ -478,7 +483,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     private void checkCommonErrors(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Expression objectValue) {
         if (methodInfo.fullyQualifiedName().equals("java.lang.String.toString()")) {
-            ParameterizedType type = objectValue.type();
+            ParameterizedType type = objectValue.returnType();
             if (type != null && type.typeInfo != null && type.typeInfo ==
                     evaluationContext.getPrimitives().stringTypeInfo) {
                 builder.raiseError(Message.UNNECESSARY_METHOD_CALL);
@@ -496,7 +501,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         int immutable = evaluationContext.getProperty(objectValue, VariableProperty.IMMUTABLE);
         if (modified == Level.TRUE && immutable >= MultiLevel.EVENTUALLY_E2IMMUTABLE) {
             builder.raiseError(Message.CALLING_MODIFYING_METHOD_ON_E2IMMU,
-                    "Method: " + methodInfo.distinguishingName() + ", Type: " + objectValue.type());
+                    "Method: " + methodInfo.distinguishingName() + ", Type: " + objectValue.returnType());
         }
     }
 
@@ -521,17 +526,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public String expressionString(int indent) {
-        String scope = "";
-        if (object != null) {
-            scope = bracketedExpressionString(indent, object) + ".";
-        }
-        return scope + methodInfo.name +
-                "(" + parameterExpressions.stream().map(expression -> expression.expressionString(indent))
-                .collect(Collectors.joining(", ")) + ")";
-    }
-
-    @Override
     public int precedence() {
         return 16;
     }
@@ -551,7 +545,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // look at the object... if it is static, we're in the same boat
         if (object instanceof FieldAccess fieldAccess) {
-            if (fieldAccess.variable.isStatic() && params.lessThan(SideEffect.SIDE_EFFECT))
+            if (fieldAccess.variable().isStatic() && params.lessThan(SideEffect.SIDE_EFFECT))
                 return SideEffect.STATIC_ONLY;
         }
         if (object instanceof VariableExpression variableExpression) {

@@ -23,19 +23,17 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.InlineValue;
-import org.e2immu.analyser.model.value.Instance;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class Lambda implements Expression {
     public final MethodInfo methodInfo;
@@ -84,6 +82,21 @@ public class Lambda implements Expression {
         //return new Lambda(translationMap.translateType(abstractFunctionalType), translationMap.translateType(implementation));
     }
 
+    @Override
+    public int order() {
+        return 0;
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return ObjectFlow.NYE;
+    }
+
     private Expression singleExpression() {
         if (block.structure.statements.size() != 1) return null;
         Statement statement = block.structure.statements.get(0);
@@ -98,23 +111,34 @@ public class Lambda implements Expression {
     }
 
     @Override
-    public String expressionString(int indent) {
-        String blockString;
+    public OutputBuilder output() {
+        OutputBuilder outputBuilder = new OutputBuilder();
+        if (parameters.isEmpty()) {
+            outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
+        } else if (parameters.size() == 1) {
+            outputBuilder.add(parameters.get(0).output());
+        } else {
+            outputBuilder.add(Symbol.LEFT_PARENTHESIS)
+                    .add(parameters.stream().map(ParameterInfo::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                    .add(Symbol.RIGHT_PARENTHESIS);
+        }
+        outputBuilder.add(Symbol.LAMBDA);
+
         Expression singleExpression = singleExpression();
         if (singleExpression != null) {
-            blockString = singleExpression.expressionString(indent);
+            outputBuilder.add(outputInParenthesis(precedence(), singleExpression));
         } else {
-            if (block.structure.statements.isEmpty()) blockString = "{ }";
-            else {
-                StatementAnalysis firstStatement = methodInfo.methodAnalysis.get().getFirstStatement().followReplacements();
-                blockString = block.statementString(indent, firstStatement);
-            }
+            outputBuilder.add(Symbol.LEFT_BRACE);
+            StatementAnalysis firstStatement = methodInfo.methodAnalysis.get().getFirstStatement().followReplacements();
+            outputBuilder.add(firstStatement.statement().output());
+            outputBuilder.add(Symbol.RIGHT_BRACE);
         }
-        if (parameters.size() == 1) {
-            return parameters.get(0).stream() + " -> " + blockString;
-        }
-        return "(" + parameters.stream().map(ParameterInfo::stream).collect(Collectors.joining(", ")) + ")"
-                + " -> " + blockString;
+        return outputBuilder;
+    }
+
+    @Override
+    public String toString() {
+        return minimalOutput();
     }
 
     @Override
@@ -136,21 +160,21 @@ public class Lambda implements Expression {
         ParameterizedType parameterizedType = methodInfo.typeInfo.asParameterizedType(evaluationContext.getAnalyserContext());
         Location location = evaluationContext.getLocation(this);
         ObjectFlow objectFlow = builder.createInternalObjectFlow(location, parameterizedType, Origin.NEW_OBJECT_CREATION);
-        Value result = null;
+        Expression result = null;
 
         MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
-        Value srv = methodAnalysis.getSingleReturnValue();
+        Expression srv = methodAnalysis.getSingleReturnValue();
         if (srv != null) {
-            InlineValue inlineValue = srv.asInstanceOf(InlineValue.class);
+            InlinedMethod inlineValue = srv.asInstanceOf(InlinedMethod.class);
             if (inlineValue != null) {
                 result = inlineValue;
             }
         }
         if (result == null) {
-            result = new Instance(parameterizedType, objectFlow, EmptyExpression.EMPTY_EXPRESSION);
+            result = new NewObject(null, parameterizedType, List.of(), EmptyExpression.EMPTY_EXPRESSION, objectFlow);
         }
 
-        builder.setValue(result);
+        builder.setExpression(result);
         return builder.build();
     }
 

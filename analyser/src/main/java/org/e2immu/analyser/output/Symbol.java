@@ -24,6 +24,7 @@ public record Symbol(String symbol, Space left, Space right) implements OutputEl
     public static final Symbol INSTANCE_OF = new Symbol("instanceof", MUST_HAVE_ONE, MUST_HAVE_ONE);
     public static final Symbol UNARY_BOOLEAN_NOT = new Symbol("!", NOT_FOR_LEFT_PARENTHESIS, NEVER);
     public static final Symbol UNARY_MINUS = new Symbol("-", NOT_FOR_LEFT_PARENTHESIS, NEVER);
+    public static final Symbol AT = new Symbol("@", NOT_FOR_LEFT_PARENTHESIS, NEVER);
 
     public static final Symbol COMMA = new Symbol(",", NEVER, EASY);
     public static final Symbol SEMICOLON = new Symbol(";", NEVER, EASY);
@@ -47,6 +48,7 @@ public record Symbol(String symbol, Space left, Space right) implements OutputEl
 
     public static final Symbol LOGICAL_AND = new Symbol("&&", ONE_LR, ONE_LR);
     public static final Symbol LOGICAL_OR = new Symbol("||", ONE_LR, ONE_LR);
+    public static final Symbol LAMBDA = new Symbol("->", ONE_LR, ONE_LR);
 
     public static Symbol plusPlusPrefix(String s) {
         return new Symbol(s, EASY, NEVER);

@@ -21,10 +21,15 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Element;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
-import org.e2immu.analyser.model.value.Instance;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
@@ -32,10 +37,7 @@ import java.util.List;
 import java.util.Objects;
 
 @E2Container
-public class MemberValuePair implements Expression {
-
-    public final String name;
-    public final Expression value;
+public record MemberValuePair(String name, Expression value) implements Expression {
 
     public MemberValuePair(@NotNull String name, @NotNull Expression value) {
         this.value = Objects.requireNonNull(value);
@@ -67,8 +69,9 @@ public class MemberValuePair implements Expression {
     }
 
     @Override
-    public String expressionString(int indent) {
-        return name + " = " + value.expressionString(indent);
+    public OutputBuilder output() {
+        if ("value".equals(name)) return new OutputBuilder().add(value.output());
+        return new OutputBuilder().add(new Text(name)).add(Symbol.assignment("=")).add(value.output());
     }
 
     @Override
@@ -87,7 +90,7 @@ public class MemberValuePair implements Expression {
     }
 
     @Override
-    public Instance getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationContext evaluationContext) {
         return null;
     }
 

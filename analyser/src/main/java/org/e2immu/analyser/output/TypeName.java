@@ -17,19 +17,17 @@
 
 package org.e2immu.analyser.output;
 
-public enum Spacer implements OutputElement {
+import org.e2immu.analyser.model.TypeInfo;
 
-    ONE, // never split here (e.g. between class and class name); two NEVERs collapse into one
-    HARD,  // split here unless no other option
-    EASY;
+public record TypeName(TypeInfo typeInfo) implements OutputElement {
 
     @Override
     public String minimal() {
-        return "";
+        return typeInfo.simpleName;
     }
 
     @Override
     public String debug() {
-        return " ";
+        return typeInfo.fullyQualifiedName;
     }
 }

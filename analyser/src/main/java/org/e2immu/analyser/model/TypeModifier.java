@@ -20,11 +20,25 @@ package org.e2immu.analyser.model;
 
 import com.github.javaparser.ast.Modifier;
 
-public enum TypeModifier {
-    ABSTRACT, PUBLIC, PROTECTED, PRIVATE, FINAL, STATIC,
+import java.util.Arrays;
+import java.util.Set;
 
+public enum TypeModifier {
+    PUBLIC(0), PROTECTED(0), PRIVATE(0),
     // added to be able to use this type for access privileges
-    PACKAGE;
+    PACKAGE(0),
+
+    ABSTRACT(1), STATIC(1),
+
+    FINAL(2), SEALED(2),
+    ;
+
+    TypeModifier(int group) {
+        this.group = group;
+    }
+
+    private final int group;
+    private static final int GROUPS = 3;
 
     public static TypeModifier from(Modifier modifier) {
         Modifier.Keyword keyword = modifier.getKeyword();
@@ -33,5 +47,15 @@ public enum TypeModifier {
 
     public String toJava() {
         return name().toLowerCase();
+    }
+
+    public static String[] sort(Set<TypeModifier> modifiers) {
+        TypeModifier[] array = new TypeModifier[GROUPS];
+        for (TypeModifier modifier : modifiers) {
+            if (array[modifier.group] != null)
+                throw new UnsupportedOperationException("? already have " + array[modifier.group]);
+            array[modifier.group] = modifier;
+        }
+        return Arrays.stream(array).filter(m -> m != null && m != PACKAGE).map(TypeModifier::toJava).toArray(String[]::new);
     }
 }

@@ -23,7 +23,6 @@ import com.github.javaparser.ast.Modifier;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public enum MethodModifier {
     PUBLIC(0), PRIVATE(0), PROTECTED(0),
@@ -46,14 +45,13 @@ public enum MethodModifier {
         return name().toLowerCase();
     }
 
-    public static String toJava(Set<MethodModifier> modifiers) {
+    public static String[] sort(Set<MethodModifier> modifiers) {
         MethodModifier[] array = new MethodModifier[GROUPS];
         for (MethodModifier methodModifier : modifiers) {
             if (array[methodModifier.group] != null)
                 throw new UnsupportedOperationException("? already have " + array[methodModifier.group]);
             array[methodModifier.group] = methodModifier;
         }
-        return Arrays.stream(array).filter(Objects::nonNull).map(MethodModifier::toJava).collect(Collectors.joining(" "))
-                + (modifiers.isEmpty() ? "" : " ");
+        return Arrays.stream(array).filter(Objects::nonNull).map(MethodModifier::toJava).toArray(String[]::new);
     }
 }

@@ -20,18 +20,16 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.annotation.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class LocalVariable {
     public final List<AnnotationExpression> annotations;
-    public final List<LocalVariableModifier> modifiers;
+    public final Set<LocalVariableModifier> modifiers;
     public final ParameterizedType parameterizedType;
     @NotNull
     public final String name;
 
-    public LocalVariable(List<LocalVariableModifier> modifiers, @NotNull String name, ParameterizedType parameterizedType, List<AnnotationExpression> annotations) {
+    public LocalVariable(Set<LocalVariableModifier> modifiers, @NotNull String name, ParameterizedType parameterizedType, List<AnnotationExpression> annotations) {
         this.parameterizedType = parameterizedType;
         this.name = Objects.requireNonNull(name);
         this.modifiers = modifiers;
@@ -62,7 +60,7 @@ public class LocalVariable {
 
     public static class LocalVariableBuilder {
         private final List<AnnotationExpression> annotations = new ArrayList<>();
-        private final List<LocalVariableModifier> modifiers = new ArrayList<>();
+        private final Set<LocalVariableModifier> modifiers = new HashSet<>();
         private ParameterizedType parameterizedType;
         private String name;
 

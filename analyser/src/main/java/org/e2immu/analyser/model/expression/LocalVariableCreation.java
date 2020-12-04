@@ -22,16 +22,20 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.UnknownValue;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Spacer;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class LocalVariableCreation implements Expression {
 
@@ -72,22 +76,45 @@ public class LocalVariableCreation implements Expression {
     }
 
     @Override
+    public int order() {
+        return 0;
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationContext evaluationContext) {
+        return null;
+    }
+
+    @Override
+    public ObjectFlow getObjectFlow() {
+        return ObjectFlow.NYE;
+    }
+
+    @Override
     public ParameterizedType returnType() {
         return inspectionProvider.getPrimitives().voidParameterizedType;
     }
 
     @Override
-    public String expressionString(int indent) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(localVariable.annotations.stream().map(ann -> ann.stream() + " ").collect(Collectors.joining()))
-                .append(localVariable.modifiers.stream().map(modifier -> modifier.toJava() + " ").collect(Collectors.joining()))
-                .append(localVariable.parameterizedType.print())
-                .append(" ")
-                .append(localVariable.name);
+    public OutputBuilder output() {
+        OutputBuilder outputBuilder = new OutputBuilder()
+                .add(localVariable.annotations.stream().map(AnnotationExpression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                .add(Spacer.ONE)
+                .add(Arrays.stream(LocalVariableModifier.toJava(localVariable.modifiers)).map(s -> new OutputBuilder().add(new Text(s)))
+                        .collect(OutputBuilder.joining(Spacer.ONE)))
+                .add(Spacer.ONE)
+                .add(localVariable.parameterizedType.output())
+                .add(Spacer.ONE)
+                .add(new Text(localVariable.name));
         if (expression != EmptyExpression.EMPTY_EXPRESSION) {
-            sb.append(" = ").append(expression.expressionString(indent));
+            outputBuilder.add(Symbol.assignment("=")).add(expression.output());
         }
-        return sb.toString();
+        return outputBuilder;
+    }
+
+    @Override
+    public String toString() {
+        return minimalOutput();
     }
 
     @Override
@@ -124,7 +151,7 @@ public class LocalVariableCreation implements Expression {
         if (expression == EmptyExpression.EMPTY_EXPRESSION) {
             return new EvaluationResult.Builder(evaluationContext)
                     .assignment(localVariableReference, null, false, evaluationContext.getIteration())
-                    .setValue(EmptyExpression.EMPTY_EXPRESSION).build();
+                    .setExpression(EmptyExpression.EMPTY_EXPRESSION).build();
         }
         Assignment assignment = new Assignment(evaluationContext.getPrimitives(),
                 new VariableExpression(localVariableReference), expression);

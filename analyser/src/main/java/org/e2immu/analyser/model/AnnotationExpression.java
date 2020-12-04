@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnnotationParameters;
+import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
@@ -32,8 +33,6 @@ public interface AnnotationExpression {
 
     List<Expression> expressions();
 
-    String stream();
-
     Set<String> imports();
 
     <T> T extract(String fieldName, T defaultValue);
@@ -43,4 +42,6 @@ public interface AnnotationExpression {
     UpgradableBooleanMap<TypeInfo> typesReferenced();
 
     AnnotationParameters e2ImmuAnnotationParameters();
+
+    OutputBuilder output();
 }
