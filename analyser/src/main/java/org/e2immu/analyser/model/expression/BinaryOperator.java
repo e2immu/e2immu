@@ -40,6 +40,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+import static org.e2immu.analyser.model.expression.Precedence.*;
+
 /**
  * From https://introcs.cs.princeton.edu/java/11precedence/
  * All associativity is from left to right for binary operators: a+b+c = (a+b)+c
@@ -60,22 +62,12 @@ public class BinaryOperator implements Expression {
     protected final Primitives primitives;
     public final Expression lhs;
     public final Expression rhs;
-    public final int precedence;
+    public final Precedence precedence;
     public final MethodInfo operator;
     public final ObjectFlow objectFlow;
 
-    public static final int MULTIPLICATIVE_PRECEDENCE = 12;
-    public static final int ADDITIVE_PRECEDENCE = 11;
-    public static final int SHIFT_PRECEDENCE = 10;
-    public static final int COMPARISON_PRECEDENCE = 9;
-    public static final int EQUALITY_PRECEDENCE = 8;
-    public static final int AND_PRECEDENCE = 7;
-    public static final int XOR_PRECEDENCE = 6;
-    public static final int OR_PRECEDENCE = 5;
-    public static final int LOGICAL_AND_PRECEDENCE = 4;
-    public static final int LOGICAL_OR_PRECEDENCE = 3;
 
-    public BinaryOperator(Primitives primitives, Expression lhs, MethodInfo operator, Expression rhs, int precedence, ObjectFlow objectFlow) {
+    public BinaryOperator(Primitives primitives, Expression lhs, MethodInfo operator, Expression rhs, Precedence precedence, ObjectFlow objectFlow) {
         this.lhs = Objects.requireNonNull(lhs);
         this.rhs = Objects.requireNonNull(rhs);
         this.precedence = precedence;
@@ -84,7 +76,7 @@ public class BinaryOperator implements Expression {
         this.primitives = primitives;
     }
 
-    public BinaryOperator(Primitives primitives, Expression lhs, MethodInfo operator, Expression rhs, int precedence) {
+    public BinaryOperator(Primitives primitives, Expression lhs, MethodInfo operator, Expression rhs, Precedence precedence) {
         this(primitives, lhs, operator, rhs, precedence, ObjectFlow.NYE);
     }
 
@@ -420,36 +412,36 @@ public class BinaryOperator implements Expression {
         throw new UnsupportedOperationException("TODO! " + methodInfo.distinguishingName());
     }
 
-    public static int precedence(@NotNull Primitives primitives, @NotNull @NotModified MethodInfo methodInfo) {
+    public static Precedence precedence(@NotNull Primitives primitives, @NotNull @NotModified MethodInfo methodInfo) {
         if (primitives.divideOperatorInt == methodInfo || primitives.remainderOperatorInt == methodInfo || primitives.multiplyOperatorInt == methodInfo) {
-            return MULTIPLICATIVE_PRECEDENCE;
+            return MULTIPLICATIVE;
         }
         if (primitives.minusOperatorInt == methodInfo || primitives.plusOperatorInt == methodInfo || primitives.plusOperatorString == methodInfo) {
-            return ADDITIVE_PRECEDENCE;
+            return ADDITIVE;
         }
         if (primitives.signedRightShiftOperatorInt == methodInfo || primitives.unsignedRightShiftOperatorInt == methodInfo || primitives.leftShiftOperatorInt == methodInfo) {
-            return SHIFT_PRECEDENCE;
+            return SHIFT;
         }
         if (primitives.greaterEqualsOperatorInt == methodInfo || primitives.greaterOperatorInt == methodInfo || primitives.lessEqualsOperatorInt == methodInfo || primitives.lessOperatorInt == methodInfo) {
-            return COMPARISON_PRECEDENCE;
+            return RELATIONAL;
         }
         if (primitives.equalsOperatorInt == methodInfo || primitives.equalsOperatorObject == methodInfo || primitives.notEqualsOperatorInt == methodInfo || primitives.notEqualsOperatorObject == methodInfo) {
-            return EQUALITY_PRECEDENCE;
+            return EQUALITY;
         }
         if (primitives.bitwiseAndOperatorInt == methodInfo) {
-            return AND_PRECEDENCE;
+            return AND;
         }
         if (primitives.bitwiseXorOperatorInt == methodInfo) {
-            return XOR_PRECEDENCE;
+            return XOR;
         }
         if (primitives.bitwiseOrOperatorInt == methodInfo) {
-            return OR_PRECEDENCE;
+            return OR;
         }
         if (primitives.andOperatorBool == methodInfo) {
-            return LOGICAL_AND_PRECEDENCE;
+            return LOGICAL_AND;
         }
         if (primitives.orOperatorBool == methodInfo) {
-            return LOGICAL_OR_PRECEDENCE;
+            return LOGICAL_OR;
         }
         throw new UnsupportedOperationException("? unknown operator " + methodInfo.distinguishingName());
     }
@@ -473,7 +465,7 @@ public class BinaryOperator implements Expression {
     }
 
     @Override
-    public int precedence() {
+    public Precedence precedence() {
         return precedence;
     }
 

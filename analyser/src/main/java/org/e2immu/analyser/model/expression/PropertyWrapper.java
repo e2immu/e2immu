@@ -97,7 +97,7 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
     }
 
     @Override
-    public int precedence() {
+    public Precedence precedence() {
         return value.precedence();
     }
 

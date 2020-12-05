@@ -79,8 +79,8 @@ public class UnevaluatedLambdaExpression implements Expression {
     }
 
     @Override
-    public int precedence() {
-        return 16;
+    public Precedence precedence() {
+        return Precedence.BOTTOM;
     }
 
     @Override

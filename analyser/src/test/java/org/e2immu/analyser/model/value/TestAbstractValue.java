@@ -33,7 +33,7 @@ public class TestAbstractValue extends CommonAbstractValue {
     @Test
     public void test() {
         Expression notA = Negation.negate(minimalEvaluationContext, a);
-        Assert.assertEquals("not (a)", notA.toString());
+        Assert.assertEquals("!a", notA.toString());
         Expression notA2 = Negation.negate(minimalEvaluationContext, a);
         Assert.assertEquals(notA, notA2);
         Assert.assertEquals(a, Negation.negate(minimalEvaluationContext, notA));
@@ -88,13 +88,13 @@ public class TestAbstractValue extends CommonAbstractValue {
     @Test
     public void testInstanceOf() {
         Expression iva = new InstanceOf(PRIMITIVES, PRIMITIVES.stringParameterizedType, null, va, ObjectFlow.NO_FLOW);
-        Assert.assertEquals("a instanceof java.lang.String", iva.toString());
+        Assert.assertEquals("a instanceof String", iva.toString());
         Expression ivb = new InstanceOf(PRIMITIVES, PRIMITIVES.stringParameterizedType, null, vb, ObjectFlow.NO_FLOW);
         Expression or = newOrAppend(ivb, iva);
-        Assert.assertEquals("(a instanceof java.lang.String or b instanceof java.lang.String)", or.toString());
+        Assert.assertEquals("a instanceof String||b instanceof String", or.toString());
         Expression iva2 = new InstanceOf(PRIMITIVES, PRIMITIVES.objectParameterizedType, null, va, ObjectFlow.NO_FLOW);
         Expression or2 = newOrAppend(iva, iva2);
-        Assert.assertEquals("(a instanceof java.lang.Object or a instanceof java.lang.String)", or2.toString());
+        Assert.assertEquals("a instanceof Object||a instanceof String", or2.toString());
     }
 
     Map<Variable, Boolean> nullClauses(Expression v, Filter.FilterMode filterMode) {
@@ -181,10 +181,10 @@ public class TestAbstractValue extends CommonAbstractValue {
     @Test
     public void testCompare() {
         Expression aGt4 = GreaterThanZero.greater(minimalEvaluationContext, a, newInt(4), true);
-        Assert.assertEquals("((-4) + a) >= 0", aGt4.toString());
+        Assert.assertEquals("a>=4", aGt4.toString());
 
         Expression n4ltB = GreaterThanZero.less(minimalEvaluationContext, newInt(4), b, false);
-        Assert.assertEquals("((-5) + b) >= 0", n4ltB.toString());
+        Assert.assertEquals("b>=5", n4ltB.toString());
 
         Expression n4lt8 = GreaterThanZero.less(minimalEvaluationContext, newInt(4), newInt(8), false);
         Assert.assertEquals(TRUE, n4lt8);

@@ -44,8 +44,8 @@ public interface ConstantExpression<T> extends Expression {
     T getValue();
 
     @Override
-    default int precedence() {
-        return 17; // highest
+    default Precedence precedence() {
+        return Precedence.TOP;
     }
 
     @Override

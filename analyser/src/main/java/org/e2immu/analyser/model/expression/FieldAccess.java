@@ -103,10 +103,9 @@ public record FieldAccess(Expression expression,
     }
 
     @Override
-    public int precedence() {
-        return 16;
+    public Precedence precedence() {
+        return Precedence.ARRAY_ACCESS;
     }
-
 
     @Override
     public List<? extends Element> subElements() {

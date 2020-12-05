@@ -174,8 +174,8 @@ public class Assignment implements Expression {
     }
 
     @Override
-    public int precedence() {
-        return 1; // lowest precedence
+    public Precedence precedence() {
+        return Precedence.ASSIGNMENT;
     }
 
     @Override

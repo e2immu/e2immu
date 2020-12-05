@@ -46,7 +46,7 @@ public interface Expression extends Element, Comparable<Expression> {
     ParameterizedType returnType();
 
     @NotModified
-    int precedence();
+    Precedence precedence();
 
     @NotModified
     EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo);
@@ -162,8 +162,8 @@ public interface Expression extends Element, Comparable<Expression> {
         return null;
     }
 
-    default OutputBuilder outputInParenthesis(int precedence, Expression expression) {
-        if (precedence < precedence()) {
+    default OutputBuilder outputInParenthesis(Precedence precedence, Expression expression) {
+        if (precedence.greaterThan(precedence())) {
             return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(expression.output()).add(Symbol.RIGHT_PARENTHESIS);
         }
         return expression.output();

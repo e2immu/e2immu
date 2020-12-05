@@ -157,8 +157,8 @@ public record VariableExpression(Variable variable,
     }
 
     @Override
-    public int precedence() {
-        return 17;
+    public Precedence precedence() {
+        return Precedence.TOP;
     }
 
     @Override

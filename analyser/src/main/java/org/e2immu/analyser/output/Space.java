@@ -17,27 +17,45 @@
 
 package org.e2immu.analyser.output;
 
-public enum Space {
+public enum Space implements OutputElement {
 
     // (almost) never split here
     // e.g. semicolon left
-    NEVER,
+    NEVER("", ""),
 
     // almost always introduce a space, except when there's a (
     // && !a; b = !a; but (!a && !b)
 
-    NOT_FOR_LEFT_PARENTHESIS,
+    NOT_FOR_LEFT_PARENTHESIS("", ""),
 
     // easy either left or right, but consistently according to preferences
     // e.g. && either at beginning of line in sequence, or always at end
-    EASY_LR,
+    EASY_LR("", ""),
 
     // normally add one space; if break, break consistently left or right
-    ONE_LR,
+    ONE_LR("", ""),
 
-    EASY,
+    EASY("", ""),
 
     // must have at least white space
-    MUST_HAVE_ONE,
+    MUST_HAVE_ONE(" ", " "),
+    ;
 
+    private final String minimal;
+    private final String debug;
+
+    Space(String minimal, String debug) {
+        this.minimal = minimal;
+        this.debug = debug;
+    }
+
+    @Override
+    public String minimal() {
+        return minimal;
+    }
+
+    @Override
+    public String debug() {
+        return debug;
+    }
 }

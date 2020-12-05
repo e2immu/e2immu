@@ -56,7 +56,7 @@ public record InstanceOf(Primitives primitives,
         if (o == null || getClass() != o.getClass()) return false;
         InstanceOf that = (InstanceOf) o;
         return parameterizedType.equals(that.parameterizedType) &&
-                expression == null ? variable.equals(that.variable) : expression.equals(that.expression);
+                (expression == null ? variable.equals(that.variable) : expression.equals(that.expression));
     }
 
     @Override
@@ -89,6 +89,11 @@ public record InstanceOf(Primitives primitives,
         return new OutputBuilder().add(variable.output())
                 .add(Symbol.INSTANCE_OF)
                 .add(parameterizedType.output());
+    }
+
+    @Override
+    public String toString() {
+        return minimalOutput();
     }
 
     @Override
@@ -160,8 +165,8 @@ public record InstanceOf(Primitives primitives,
     }
 
     @Override
-    public int precedence() {
-        return 9;
+    public Precedence precedence() {
+        return Precedence.INSTANCE_OF;
     }
 
     @Override

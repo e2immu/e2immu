@@ -29,7 +29,7 @@ import java.util.Map;
 public class Sum extends BinaryOperator {
 
     private Sum(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
-        super(primitives, lhs, primitives.plusOperatorInt, rhs, BinaryOperator.ADDITIVE_PRECEDENCE, objectFlow);
+        super(primitives, lhs, primitives.plusOperatorInt, rhs, Precedence.ADDITIVE, objectFlow);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {

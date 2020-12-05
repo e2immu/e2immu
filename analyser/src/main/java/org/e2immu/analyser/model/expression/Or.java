@@ -176,7 +176,7 @@ public record Or(Primitives primitives,
 
     @Override
     public OutputBuilder output() {
-        int precedence = precedence();
+        Precedence precedence = precedence();
         return new OutputBuilder()
                 .add(expressions.stream().map(e -> e.outputInParenthesis(precedence, e))
                         .collect(OutputBuilder.joining(Symbol.LOGICAL_OR)));
@@ -188,8 +188,8 @@ public record Or(Primitives primitives,
     }
 
     @Override
-    public int precedence() {
-        return BinaryOperator.LOGICAL_OR_PRECEDENCE;
+    public Precedence precedence() {
+        return Precedence.LOGICAL_OR;
     }
 
     @Override

@@ -237,8 +237,8 @@ public class InlineConditional implements Expression {
     }
 
     @Override
-    public int precedence() {
-        return 2;
+    public Precedence precedence() {
+        return Precedence.TERNARY;
     }
 
 

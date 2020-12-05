@@ -89,8 +89,8 @@ public class ArrayInitializer implements Expression {
     }
 
     @Override
-    public int precedence() {
-        return 1;
+    public Precedence precedence() {
+        return Precedence.BOTTOM;
     }
 
 

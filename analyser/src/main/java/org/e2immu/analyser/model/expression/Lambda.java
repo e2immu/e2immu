@@ -145,8 +145,8 @@ public class Lambda implements Expression {
     }
 
     @Override
-    public int precedence() {
-        return 16;
+    public Precedence precedence() {
+        return Precedence.BOTTOM;
     }
 
     // TODO: the "true" in the types referenced of the parameter is not necessarily true (probably even false!)

@@ -31,7 +31,7 @@ import java.util.List;
 public class StringConcat extends BinaryOperator {
 
     private StringConcat(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
-        super(primitives, lhs, primitives.plusOperatorInt, rhs, BinaryOperator.ADDITIVE_PRECEDENCE, objectFlow);
+        super(primitives, lhs, primitives.plusOperatorInt, rhs, Precedence.STRING_CONCAT, objectFlow);
     }
 
     public static Expression stringConcat(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {

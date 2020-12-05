@@ -85,8 +85,8 @@ public record EnclosedExpression(Expression inner) implements Expression {
     }
 
     @Override
-    public int precedence() {
-        return 16;
+    public Precedence precedence() {
+        return Precedence.TOP;
     }
 
     @Override

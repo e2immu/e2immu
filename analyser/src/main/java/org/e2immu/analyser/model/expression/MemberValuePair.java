@@ -75,8 +75,8 @@ public record MemberValuePair(String name, Expression value) implements Expressi
     }
 
     @Override
-    public int precedence() {
-        return 1;
+    public Precedence precedence() {
+        throw new UnsupportedOperationException();
     }
 
     @Override

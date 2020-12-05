@@ -44,7 +44,7 @@ public record ContractMark(String mark) implements Expression {
     }
 
     @Override
-    public int precedence() {
+    public Precedence precedence() {
         throw new UnsupportedOperationException();
     }
 

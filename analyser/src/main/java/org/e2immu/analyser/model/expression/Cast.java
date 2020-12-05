@@ -96,8 +96,8 @@ public record Cast(Expression expression,
     }
 
     @Override
-    public int precedence() {
-        return 13;
+    public Precedence precedence() {
+        return Precedence.UNARY;
     }
 
     @Override

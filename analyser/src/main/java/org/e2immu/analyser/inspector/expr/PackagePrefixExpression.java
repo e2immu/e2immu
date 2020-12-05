@@ -25,6 +25,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.PackagePrefix;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.Precedence;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 
@@ -41,7 +42,7 @@ record PackagePrefixExpression(PackagePrefix packagePrefix) implements Expressio
     }
 
     @Override
-    public int precedence() {
+    public Precedence precedence() {
         throw new UnsupportedOperationException();
     }
 

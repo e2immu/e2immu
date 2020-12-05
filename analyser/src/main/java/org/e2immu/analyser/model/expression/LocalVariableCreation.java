@@ -118,8 +118,8 @@ public class LocalVariableCreation implements Expression {
     }
 
     @Override
-    public int precedence() {
-        return 0;
+    public Precedence precedence() {
+        return Precedence.BOTTOM;
     }
 
     @Override

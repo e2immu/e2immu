@@ -239,7 +239,7 @@ public class TestTypeInfoStream {
                         new Block.BlockBuilder().addStatement(
                                 new ReturnStatement(false,
                                         new BinaryOperator(primitives,
-                                                new VariableExpression(x), primitives.plusOperatorInt, new VariableExpression(y), BinaryOperator.ADDITIVE_PRECEDENCE
+                                                new VariableExpression(x), primitives.plusOperatorInt, new VariableExpression(y), Precedence.ADDITIVE
                                         ))
                         ).build())
                 .build(IP).getMethodInfo();

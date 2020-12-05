@@ -73,8 +73,8 @@ public record SwitchExpression(Expression selector,
     }
 
     @Override
-    public int precedence() {
-        return 16; // TODO verify this is correct
+    public Precedence precedence() {
+        return Precedence.TERNARY; // TODO verify this is correct
     }
 
     @Override

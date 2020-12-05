@@ -84,8 +84,8 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression,
     }
 
     @Override
-    public int precedence() {
-        return 1;
+    public Precedence precedence() {
+        return Precedence.TERNARY;
     }
 
     @Override

@@ -70,8 +70,8 @@ public record PrimitiveExpression(String msg) implements Expression {
     }
 
     @Override
-    public int precedence() {
-        return 0;
+    public Precedence precedence() {
+        return Precedence.TOP;
     }
 
     @Override

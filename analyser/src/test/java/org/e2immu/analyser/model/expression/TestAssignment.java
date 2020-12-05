@@ -14,6 +14,7 @@ public class TestAssignment {
 
     private final Primitives primitives = new Primitives();
     private final InspectionProvider inspectionProvider = InspectionProvider.defaultFrom(primitives);
+
     @Test
     public void testNormal() {
         LocalVariable lvi = new LocalVariable(Set.of(), "i", primitives.intParameterizedType, List.of());
@@ -46,11 +47,11 @@ public class TestAssignment {
         LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0));
 
         Expression iPlusPlus = new UnaryOperator(primitives.postfixIncrementOperatorInt,
-                new VariableExpression(i.localVariableReference), UnaryOperator.PRECEDENCE_POST_INCREMENT);
+                new VariableExpression(i.localVariableReference), Precedence.PLUSPLUS);
         Assert.assertEquals("i++", iPlusPlus.minimalOutput());
 
         Expression plusPlusI = new UnaryOperator(primitives.prefixIncrementOperatorInt,
-                new VariableExpression(i.localVariableReference), UnaryOperator.DEFAULT_PRECEDENCE);
+                new VariableExpression(i.localVariableReference), Precedence.UNARY);
         Assert.assertEquals("++i", plusPlusI.minimalOutput());
     }
 }

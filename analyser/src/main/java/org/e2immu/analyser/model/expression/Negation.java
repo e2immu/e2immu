@@ -46,7 +46,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     }
 
     private Negation(MethodInfo operator, Expression value) {
-        super(operator, value, DEFAULT_PRECEDENCE);
+        super(operator, value, value.isNumeric() ? Precedence.PLUSPLUS : Precedence.UNARY);
         this.objectFlow = value.getObjectFlow();
         if (value.isInstanceOf(Negation.class)) throw new UnsupportedOperationException();
     }

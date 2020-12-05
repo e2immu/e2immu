@@ -19,18 +19,24 @@ package org.e2immu.analyser.output;
 
 public enum Spacer implements OutputElement {
 
-    ONE, // never split here (e.g. between class and class name); two NEVERs collapse into one
-    HARD,  // split here unless no other option
-    EASY,
-    NEWLINE;
+    ONE(" "), // never split here (e.g. between class and class name); two ONEs collapse into one
+    HARD(""),  // split here unless no other option
+    EASY(""),
+    NEWLINE("\n");
+
+    private final String minimal;
+
+    Spacer(String minimal) {
+        this.minimal = minimal;
+    }
 
     @Override
     public String minimal() {
-        return "";
+        return minimal;
     }
 
     @Override
     public String debug() {
-        return " ";
+        return minimal;
     }
 }

@@ -131,8 +131,8 @@ public class ArrayAccess implements Expression {
     }
 
     @Override
-    public int precedence() {
-        return 16;
+    public Precedence precedence() {
+        return Precedence.ARRAY_ACCESS;
     }
 
     @Override

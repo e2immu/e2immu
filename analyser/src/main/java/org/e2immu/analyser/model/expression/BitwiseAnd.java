@@ -29,7 +29,7 @@ import java.util.Map;
 public class BitwiseAnd extends BinaryOperator {
 
     private BitwiseAnd(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
-        super(primitives, lhs, primitives.bitwiseAndOperatorInt, rhs, BinaryOperator.AND_PRECEDENCE, objectFlow);
+        super(primitives, lhs, primitives.bitwiseAndOperatorInt, rhs, Precedence.AND, objectFlow);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {

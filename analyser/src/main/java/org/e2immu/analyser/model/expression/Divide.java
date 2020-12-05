@@ -28,7 +28,7 @@ import org.e2immu.analyser.parser.Primitives;
 public class Divide extends BinaryOperator {
 
     private Divide(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
-        super(primitives, lhs, primitives.divideOperatorInt, rhs, BinaryOperator.MULTIPLICATIVE_PRECEDENCE, objectFlow);
+        super(primitives, lhs, primitives.divideOperatorInt, rhs, Precedence.MULTIPLICATIVE, objectFlow);
     }
 
     public static EvaluationResult divide(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {

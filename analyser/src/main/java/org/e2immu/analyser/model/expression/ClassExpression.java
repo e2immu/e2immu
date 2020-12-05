@@ -99,8 +99,8 @@ public record ClassExpression(Primitives primitives,
     }
 
     @Override
-    public int precedence() {
-        return 17;
+    public Precedence precedence() {
+        return Precedence.UNARY;
     }
 
     @Override

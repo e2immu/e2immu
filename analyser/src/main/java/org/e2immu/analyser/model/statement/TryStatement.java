@@ -8,6 +8,7 @@ import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.Precedence;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.ListUtil;
@@ -93,8 +94,8 @@ public class TryStatement extends StatementWithStructure {
         }
 
         @Override
-        public int precedence() {
-            return 0;
+        public Precedence precedence() {
+            throw new UnsupportedOperationException();
         }
 
         @Override

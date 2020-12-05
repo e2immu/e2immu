@@ -80,11 +80,11 @@ public record Symbol(String symbol, Space left, Space right) implements OutputEl
 
     @Override
     public String minimal() {
-        return symbol;
+        return left.minimal() + symbol + right.minimal();
     }
 
     @Override
     public String debug() {
-        return symbol;
+        return left.debug() + symbol + right.debug();
     }
 }

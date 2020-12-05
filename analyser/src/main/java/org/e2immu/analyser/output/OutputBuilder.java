@@ -48,12 +48,18 @@ public class OutputBuilder {
 
             @Override
             public BiConsumer<OutputBuilder, OutputBuilder> accumulator() {
-                return (a, b) -> a.add(guideGenerator.mid()).add(outputElement).add(b);
+                return (a, b) -> {
+                    a.add(guideGenerator.mid());
+                    if (!a.onlyGuides()) {
+                        a.add(outputElement);
+                    }
+                    a.add(b);
+                };
             }
 
             @Override
             public BinaryOperator<OutputBuilder> combiner() {
-                return OutputBuilder::add;
+                return (a, b) -> a.add(guideGenerator.mid()).add(outputElement).add(b);
             }
 
             @Override
@@ -66,6 +72,10 @@ public class OutputBuilder {
                 return Set.of(Characteristics.CONCURRENT);
             }
         };
+    }
+
+    private boolean onlyGuides() {
+        return list.stream().allMatch(outputElement -> outputElement instanceof Guide);
     }
 
     public static Collector<OutputElement, OutputBuilder, OutputBuilder> joinElements(OutputElement outputElement) {

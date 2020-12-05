@@ -22,6 +22,7 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.BinaryOperator;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.Precedence;
 import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
@@ -74,13 +75,13 @@ public abstract class SwitchEntry extends StatementWithStructure {
         for (int i = 1; i < labels.size(); i++) {
             or = new BinaryOperator(primitives, or, primitives.orOperatorBool,
                     equality(primitives, labels.get(i), switchVariableAsExpression, operator),
-                    BinaryOperator.LOGICAL_OR_PRECEDENCE);
+                    Precedence.LOGICAL_OR);
         }
         return or;
     }
 
     private static Expression equality(Primitives primitives, Expression label, Expression switchVariableAsExpression, MethodInfo operator) {
-        return new BinaryOperator(primitives, switchVariableAsExpression, operator, label, BinaryOperator.EQUALITY_PRECEDENCE);
+        return new BinaryOperator(primitives, switchVariableAsExpression, operator, label, Precedence.EQUALITY);
     }
 
     private static MethodInfo operator(Primitives primitives, Expression switchVariableAsExpression) {
@@ -89,10 +90,6 @@ public abstract class SwitchEntry extends StatementWithStructure {
     }
 
     abstract OutputBuilder output(Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis);
-
-    public boolean isNotDefault() {
-        return !labels.isEmpty();
-    }
 
     public FlowData.Execution statementExecution(Expression value, EvaluationContext evaluationContext) {
         if (switchVariableAsExpression == EmptyExpression.DEFAULT_EXPRESSION) return FlowData.Execution.DEFAULT;

@@ -32,7 +32,7 @@ public class Equals extends BinaryOperator {
     public Equals(Primitives primitives,
                   Expression lhs, Expression rhs, ObjectFlow objectFlow) {
         super(primitives, lhs, lhs.isNumeric() ? primitives.equalsOperatorInt : primitives.equalsOperatorObject,
-                rhs, BinaryOperator.EQUALITY_PRECEDENCE, objectFlow);
+                rhs, Precedence.EQUALITY, objectFlow);
     }
 
     @Override

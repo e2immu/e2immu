@@ -286,8 +286,8 @@ public class NewObject implements HasParameterExpressions {
     }
 
     @Override
-    public int precedence() {
-        return 13;
+    public Precedence precedence() {
+        return Precedence.UNARY;
     }
 
     @Override

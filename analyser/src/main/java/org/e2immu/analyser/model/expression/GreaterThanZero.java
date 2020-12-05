@@ -226,7 +226,7 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
             // -1 + a >= 0 will be written as a >= 1
             if (sum.lhs instanceof Numeric ln && ln.doubleValue() < 0) {
                 return new OutputBuilder().add(outputInParenthesis(precedence(), sum.rhs))
-                        .add(operator).add(new Text(Text.formatNumber(ln.doubleValue(), ln.getClass())));
+                        .add(operator).add(new Text(Text.formatNumber(-ln.doubleValue(), ln.getClass())));
             }
             // according to sorting, the rhs cannot be numeric
         }
@@ -244,8 +244,8 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
     }
 
     @Override
-    public int precedence() {
-        return 0;
+    public Precedence precedence() {
+        return Precedence.RELATIONAL;
     }
 
     @Override

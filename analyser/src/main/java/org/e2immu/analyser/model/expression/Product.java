@@ -29,7 +29,7 @@ import java.util.Map;
 public class Product extends BinaryOperator {
 
     private Product(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
-        super(primitives, lhs, primitives.multiplyOperatorInt, rhs, BinaryOperator.MULTIPLICATIVE_PRECEDENCE, objectFlow);
+        super(primitives, lhs, primitives.multiplyOperatorInt, rhs, Precedence.MULTIPLICATIVE, objectFlow);
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {

@@ -525,8 +525,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public int precedence() {
-        return 16;
+    public Precedence precedence() {
+        return Precedence.ARRAY_ACCESS;
     }
 
     @Override

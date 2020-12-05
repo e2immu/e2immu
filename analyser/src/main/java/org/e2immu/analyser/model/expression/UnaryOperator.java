@@ -34,21 +34,12 @@ import org.e2immu.annotation.NotNull;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * From https://introcs.cs.princeton.edu/java/11precedence/
- * <p>
- * precedence 15: ++, -- post-increment
- * precedence 14: ++, -- pre-increment, +, -, !, ~
- */
 public class UnaryOperator implements Expression {
     public final Expression expression;
-    public final int precedence;
+    public final Precedence precedence;
     public final MethodInfo operator;
 
-    public static final int PRECEDENCE_POST_INCREMENT = 15;
-    public static final int DEFAULT_PRECEDENCE = 14;
-
-    public UnaryOperator(@NotNull MethodInfo operator, @NotNull Expression expression, int precedence) {
+    public UnaryOperator(@NotNull MethodInfo operator, @NotNull Expression expression, Precedence precedence) {
         this.expression = Objects.requireNonNull(expression);
         this.precedence = precedence;
         this.operator = Objects.requireNonNull(operator);
@@ -88,10 +79,10 @@ public class UnaryOperator implements Expression {
         return ObjectFlow.NYE;
     }
 
-    public static int precedence(@NotNull @NotModified UnaryExpr.Operator operator) {
+    public static Precedence precedence(@NotNull @NotModified UnaryExpr.Operator operator) {
         return switch (operator) {
-            case POSTFIX_DECREMENT, POSTFIX_INCREMENT -> PRECEDENCE_POST_INCREMENT;
-            default -> DEFAULT_PRECEDENCE;
+            case POSTFIX_DECREMENT, POSTFIX_INCREMENT, PLUS, MINUS -> Precedence.PLUSPLUS;
+            default -> Precedence.UNARY;
         };
     }
 
@@ -173,10 +164,6 @@ public class UnaryOperator implements Expression {
 
     @Override
     public OutputBuilder output() {
-        if (precedence == PRECEDENCE_POST_INCREMENT) {
-            return new OutputBuilder().add(outputInParenthesis(precedence, expression))
-                    .add(Symbol.plusPlusSuffix(operator.name));
-        }
         return new OutputBuilder().add(Symbol.plusPlusSuffix(operator.name))
                 .add(outputInParenthesis(precedence, expression));
     }
@@ -187,7 +174,7 @@ public class UnaryOperator implements Expression {
     }
 
     @Override
-    public int precedence() {
+    public Precedence precedence() {
         return precedence;
     }
 
