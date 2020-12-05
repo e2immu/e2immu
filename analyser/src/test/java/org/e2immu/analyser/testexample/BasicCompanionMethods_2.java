@@ -29,7 +29,7 @@ public class BasicCompanionMethods_2 {
         List<String> list = new ArrayList<>();
         list.add("a");
         list.add("b");
-        return list.contains("a") && list.contains("b") && list.size() == 2;
+        return list.contains("a") && list.contains("b") && list.size() == 2; // evaluates to constant
     }
 
 }

@@ -221,16 +221,34 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
 
     @Override
     public OutputBuilder output() {
-        Symbol operator = Symbol.binaryOperator(allowEquals ? ">=" : ">");
+        Symbol gt = Symbol.binaryOperator(allowEquals ? ">=" : ">");
+        Symbol lt = Symbol.binaryOperator(allowEquals ? "<=" : "<");
         if (expression instanceof Sum sum) {
-            // -1 + a >= 0 will be written as a >= 1
             if (sum.lhs instanceof Numeric ln && ln.doubleValue() < 0) {
-                return new OutputBuilder().add(outputInParenthesis(precedence(), sum.rhs))
-                        .add(operator).add(new Text(Text.formatNumber(-ln.doubleValue(), ln.getClass())));
+                // -1 -a >= 0 will be written as a <= -1
+                if (sum.rhs instanceof Negation neg) {
+                    return new OutputBuilder().add(outputInParenthesis(precedence(), neg.expression)).add(lt).add(sum.lhs.output());
+                }
+                // -1 + a >= 0 will be written as a >= 1
+                Text negNumber = new Text(Text.formatNumber(-ln.doubleValue(), ln.getClass()));
+                return new OutputBuilder().add(outputInParenthesis(precedence(), sum.rhs)).add(gt).add(negNumber);
             }
             // according to sorting, the rhs cannot be numeric
+
+            // -x + a >= 0 will be written as a >= x
+            if (sum.lhs instanceof Negation neg && !(sum.rhs instanceof Negation)) {
+                return new OutputBuilder().add(outputInParenthesis(precedence(), sum.rhs))
+                        .add(gt).add(outputInParenthesis(precedence(), neg.expression));
+            }
+            // a + -x >= 0 will be written as a >= x
+            if (sum.rhs instanceof Negation neg && !(sum.lhs instanceof Negation)) {
+                return new OutputBuilder().add(outputInParenthesis(precedence(), sum.lhs))
+                        .add(gt).add(outputInParenthesis(precedence(), neg.expression));
+            }
+        } else if (expression instanceof Negation neg) {
+            return new OutputBuilder().add(outputInParenthesis(precedence(), neg.expression)).add(lt).add(new Text("0"));
         }
-        return new OutputBuilder().add(outputInParenthesis(precedence(), expression)).add(operator).add(new Text("0"));
+        return new OutputBuilder().add(outputInParenthesis(precedence(), expression)).add(gt).add(new Text("0"));
     }
 
     @Override

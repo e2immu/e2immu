@@ -19,8 +19,10 @@ package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -142,5 +144,15 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
         if (predicate.test(this)) {
             expression.visit(predicate);
         }
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return evaluationContext.getProperty(expression, variableProperty);
+    }
+
+    @Override
+    public ParameterizedType returnType() {
+        return expression.returnType();
     }
 }

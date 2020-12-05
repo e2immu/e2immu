@@ -97,7 +97,7 @@ public class BinaryOperator implements Expression {
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        if(hasBeenEvaluated()) {
+        if (hasBeenEvaluated()) {
             return PrimitiveExpression.primitiveGetProperty(variableProperty);
         }
         throw new UnsupportedOperationException("Not yet evaluated");
@@ -416,7 +416,10 @@ public class BinaryOperator implements Expression {
         if (primitives.divideOperatorInt == methodInfo || primitives.remainderOperatorInt == methodInfo || primitives.multiplyOperatorInt == methodInfo) {
             return MULTIPLICATIVE;
         }
-        if (primitives.minusOperatorInt == methodInfo || primitives.plusOperatorInt == methodInfo || primitives.plusOperatorString == methodInfo) {
+        if (primitives.plusOperatorString == methodInfo) {
+            return STRING_CONCAT;
+        }
+        if (primitives.minusOperatorInt == methodInfo || primitives.plusOperatorInt == methodInfo) {
             return ADDITIVE;
         }
         if (primitives.signedRightShiftOperatorInt == methodInfo || primitives.unsignedRightShiftOperatorInt == methodInfo || primitives.leftShiftOperatorInt == methodInfo) {
@@ -449,6 +452,9 @@ public class BinaryOperator implements Expression {
     // TODO needs cleanup
     @Override
     public ParameterizedType returnType() {
+        Precedence precedence = precedence();
+        if (!precedence.greaterThan(RELATIONAL)) return primitives.booleanParameterizedType;
+        if (precedence == STRING_CONCAT) return primitives.stringParameterizedType;
         return primitives.widestType(lhs.returnType(), rhs.returnType());
     }
 

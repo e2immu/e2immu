@@ -24,7 +24,7 @@ import java.util.List;
 
 public class BasicCompanionMethods_1 {
 
-    @Constant("false")
+    @Constant("true")
     static boolean test() {
         List<String> list = new ArrayList<>();
         list.add("a");
@@ -32,6 +32,6 @@ public class BasicCompanionMethods_1 {
         if (!b) { // constant eval
             return false; // statement not reached
         }
-        return list.size() == 1 && list.contains("a");
+        return list.size() == 1 && list.contains("a"); // constant eval
     }
 }

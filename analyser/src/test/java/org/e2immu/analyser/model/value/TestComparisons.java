@@ -13,7 +13,7 @@ public class TestComparisons extends CommonAbstractValue {
         GreaterThanZero gt3 = (GreaterThanZero) GreaterThanZero.greater(minimalEvaluationContext, i, newInt(3), false);
         Assert.assertEquals("i>=4", gt3.toString()); // i >= 4
         GreaterThanZero notGt3 = (GreaterThanZero) gt3.negate(minimalEvaluationContext);
-        Assert.assertEquals("3+-i>=0", notGt3.toString()); // i <= 3
+        Assert.assertEquals("3>=i", notGt3.toString()); // i <= 3
     }
 
     @Test
@@ -31,7 +31,7 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void testXb2() {
         GreaterThanZero lt3 = (GreaterThanZero) GreaterThanZero.less(minimalEvaluationContext, i, newInt(3), false);
-        Assert.assertEquals("2+-i>=0", lt3.toString());
+        Assert.assertEquals("2>=i", lt3.toString());
         GreaterThanZero.XB xb = lt3.extract(minimalEvaluationContext);
         Assert.assertNotNull(xb);
         Assert.assertTrue(lt3.allowEquals());
@@ -126,9 +126,9 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void test2() {
         Expression iLe0 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(0), true);
-        Assert.assertEquals("-i>=0", iLe0.toString());
+        Assert.assertEquals("i<=0", iLe0.toString());
         Expression iLe3 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(3), true);
-        Assert.assertEquals("3+-i>=0", iLe3.toString()); // even though ugly, formatting is correct
+        Assert.assertEquals("3>=i", iLe3.toString()); // even though ugly, formatting is correct
         Expression and = newAndAppend(iLe0, iLe3);
         Assert.assertEquals(iLe0, and);
     }
@@ -136,7 +136,7 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void test3() {
         Expression iLe0 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(0), true);
-        Assert.assertEquals("-i>=0", iLe0.toString());
+        Assert.assertEquals("i<=0", iLe0.toString());
         Expression iGe3 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(3), true);
         Assert.assertEquals("i>=3", iGe3.toString());
         Expression and = newAndAppend(iLe0, iGe3);
@@ -150,7 +150,7 @@ public class TestComparisons extends CommonAbstractValue {
         Expression iGe0 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(0), true);
         Assert.assertEquals("i>=0", iGe0.toString());
         Expression iLe3 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(3), true);
-        Assert.assertEquals("3+-i>=0", iLe3.toString());
+        Assert.assertEquals("3>=i", iLe3.toString());
         Expression and = newAndAppend(iGe0, iLe3);
         Assert.assertTrue(and instanceof And);
         Expression and2 = newAndAppend(iLe3, iGe0);
@@ -172,7 +172,7 @@ public class TestComparisons extends CommonAbstractValue {
         Expression iGe0 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(0), true);
         Assert.assertEquals("i>=0", iGe0.toString());
         Expression iLe0 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(0), true);
-        Assert.assertEquals("-i>=0", iLe0.toString());
+        Assert.assertEquals("i<=0", iLe0.toString());
         Expression and = newAndAppend(iGe0, iLe0);
         Assert.assertEquals("0==i", and.toString());
     }
@@ -182,7 +182,7 @@ public class TestComparisons extends CommonAbstractValue {
         Expression iGe0 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(0), false);
         Assert.assertEquals("i>=1", iGe0.toString());
         Expression iLe0 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(0), false);
-        Assert.assertEquals("-i>=1", iLe0.toString());
+        Assert.assertEquals("i<=-1", iLe0.toString());
         Expression and = newAndAppend(iGe0, iLe0);
         Assert.assertEquals(FALSE, and);
         Expression and2 = newAndAppend(iLe0, iGe0);
@@ -191,9 +191,8 @@ public class TestComparisons extends CommonAbstractValue {
 
     @Test
     public void testGEZeroLZero() {
-        // (((-1) + (-this.i)) >= 0 and this.i >= 0): if this fails, the problem is that this.i != this.i
         Expression iLt0 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(0), false);
-        Assert.assertEquals("-i>=1", iLt0.toString());
+        Assert.assertEquals("i<=-1", iLt0.toString());
         Expression iGe0 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(0), true);
         Assert.assertEquals("i>=0", iGe0.toString());
 

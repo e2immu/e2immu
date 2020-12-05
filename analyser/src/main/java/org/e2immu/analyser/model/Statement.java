@@ -35,4 +35,12 @@ public interface Statement extends Element {
     }
 
     OutputBuilder output(StatementAnalysis statementAnalysis);
+
+    @Override
+    default OutputBuilder output() { throw new UnsupportedOperationException("Use other output method"); }
+
+    @Override
+    default String minimalOutput() {
+        return output(null).toString();
+    }
 }

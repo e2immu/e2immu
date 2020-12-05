@@ -90,9 +90,7 @@ public interface Element {
         return subElements().stream().flatMap(e -> e.variables().stream()).collect(Collectors.toList());
     }
 
-    default OutputBuilder output() {
-        return new OutputBuilder();
-    }
+    OutputBuilder output();
 
     default String minimalOutput() {
         return output().toString();

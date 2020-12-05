@@ -22,6 +22,8 @@ import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Space;
+import org.e2immu.analyser.output.Text;
 
 import java.util.Objects;
 
@@ -72,7 +74,7 @@ public class ReturnVariable implements Variable {
 
     @Override
     public OutputBuilder output() {
-        throw new UnsupportedOperationException();
+        return new OutputBuilder().add(new Text("return "+simpleName));
     }
 
     @Override
