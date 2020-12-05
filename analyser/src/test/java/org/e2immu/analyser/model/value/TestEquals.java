@@ -17,9 +17,9 @@
 
 package org.e2immu.analyser.model.value;
 
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.EqualsExpression;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.util.Logger;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -32,9 +32,9 @@ public class TestEquals extends CommonAbstractValue {
 
     @Test
     public void test() {
-        Value int3 = newInt(3);
-        Value int5 = newInt(5);
-        Assert.assertEquals("false", EqualsValue.equals(minimalEvaluationContext, int3, int5, ObjectFlow.NO_FLOW).toString());
+        Expression int3 = newInt(3);
+        Expression int5 = newInt(5);
+        Assert.assertEquals("false", EqualsExpression.equals(minimalEvaluationContext, int3, int5, ObjectFlow.NO_FLOW).toString());
 
     }
 }

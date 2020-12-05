@@ -2,9 +2,12 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.StringConcat;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.StringConcat;
 import org.e2immu.analyser.testexample.FinalChecks;
 import org.junit.Assert;
 import org.junit.Test;
@@ -144,7 +147,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         }
         if (FINAL_CHECKS_FQN.equals(d.methodInfo().fullyQualifiedName()) && "2".equals(d.statementId())) {
             Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-            EvaluationResult.ValueChangeData valueChangeData = d.findValueChange(S2);
+            EvaluationResult.ExpressionChangeData valueChangeData = d.findValueChange(S2);
             Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, valueChangeData.stateOnAssignment());
         }
     };

@@ -2,6 +2,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.junit.Test;
+
 import java.io.IOException;
 
 public class TestFunctionalInterfaceModified6 extends CommonTestRunner {

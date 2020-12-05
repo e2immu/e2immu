@@ -22,9 +22,9 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.VariableValue;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.LocalVariableCreation;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.Block;
 import org.junit.Assert;
 import org.junit.Test;
@@ -79,7 +79,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
             VariableInfo transferValue = d.getReturnAsVariable();
             Assert.assertEquals(MultiLevel.MUTABLE, transferValue.getProperty(VariableProperty.IMMUTABLE));
             Assert.assertEquals("input4", transferValue.getValue().toString());
-            Assert.assertTrue(transferValue.getValue() instanceof VariableValue);
+            Assert.assertTrue(transferValue.getValue() instanceof VariableExpression);
             Assert.assertEquals(MultiLevel.MUTABLE, d.methodAnalysis().getProperty(VariableProperty.IMMUTABLE));
         }
 
@@ -175,7 +175,7 @@ public class TestE2ImmutableChecks extends CommonTestRunner {
 
             Assert.assertTrue(statement1.getStructure().initialisers.get(0) instanceof LocalVariableCreation);
             Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, statement1.getStructure().expression);
-            Assert.assertEquals("Map<String, SimpleContainer> incremented = new HashMap(map7);\n", statement1.statementString(0, null));
+            Assert.assertEquals("Map<String, SimpleContainer> incremented = new HashMap(map7);\n", statement1.minimalOutput());
         } else {
             Assert.assertEquals(0, d.typeAnalysis().getImplicitlyImmutableDataTypes().size());
         }

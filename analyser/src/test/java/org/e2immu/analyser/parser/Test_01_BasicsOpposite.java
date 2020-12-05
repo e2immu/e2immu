@@ -24,8 +24,8 @@ import org.e2immu.analyser.analyser.FieldAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -74,7 +74,7 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if (COLLECTION.equals(d.variableName()) && "add".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-            Assert.assertTrue("Class is " + d.currentValue().getClass(), d.currentValue() instanceof VariableValue);
+            Assert.assertTrue("Class is " + d.currentValue().getClass(), d.currentValue() instanceof VariableExpression);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
         }

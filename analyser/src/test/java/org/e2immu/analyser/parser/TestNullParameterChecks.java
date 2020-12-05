@@ -8,8 +8,8 @@ import org.e2immu.analyser.config.TypeMapVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.value.InlineValue;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -23,17 +23,6 @@ public class TestNullParameterChecks extends CommonTestRunner {
     public TestNullParameterChecks() {
         super(true);
     }
-    //     public void method2(@NotNull String s) {
-    //        this.s = Objects.requireNonNull(s);
-    //    }
-
-    //  public void method8Implicit(@NotNull(absent = true) String s) {
-    //    if (s != null) { // 0
-    //        this.s = s.strip(); // 0.0.0
-    //   } else {
-    //        this.s = "abc";
-    //    }
-    //}
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if (d.methodInfo().name.equals("method2")) {
@@ -73,10 +62,10 @@ public class TestNullParameterChecks extends CommonTestRunner {
             if (d.iteration() == 0) {
                 Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
             } else {
-                Assert.assertTrue("Have " + d.currentValue().getClass(), d.currentValue() instanceof InlineValue);
+                Assert.assertTrue("Have " + d.currentValue().getClass(), d.currentValue() instanceof InlinedMethod);
                 Assert.assertEquals("inline get on t.trim() + .", d.currentValue().toString());
-                InlineValue inlineValue = (InlineValue) d.currentValue();
-                Assert.assertEquals(Level.FALSE, inlineValue.methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+                InlinedMethod inlineValue = (InlinedMethod) d.currentValue();
+                Assert.assertEquals(Level.FALSE, inlineValue.methodInfo().methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
             }
         }
 

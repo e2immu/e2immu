@@ -25,6 +25,7 @@ import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.junit.Assert;
@@ -131,7 +132,7 @@ public class TestTypeInfoStream {
                 .setParameterizedType(new ParameterizedType(map, List.of(primitives.stringParameterizedType, typeT)))
                 .build();
         MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap).build(IP).getMethodInfo();
-        Expression creationExpression = new NewObject(hashMapConstructor, hashMapParameterizedType, List.of(), null);
+        Expression creationExpression = new NewObject(hashMapConstructor, hashMapParameterizedType, List.of(), EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW);
         ParameterInspectionImpl.Builder p0 = new ParameterInspectionImpl.Builder(typeT, "value", 0);
         MethodInfo put = new MethodInspectionImpl.Builder(testTypeInfo, "put")
                 .setReturnType(typeT)
@@ -237,7 +238,7 @@ public class TestTypeInfoStream {
                 .setInspectedBlock(
                         new Block.BlockBuilder().addStatement(
                                 new ReturnStatement(false,
-                                        new BinaryOperator(
+                                        new BinaryOperator(primitives,
                                                 new VariableExpression(x), primitives.plusOperatorInt, new VariableExpression(y), BinaryOperator.ADDITIVE_PRECEDENCE
                                         ))
                         ).build())
@@ -254,7 +255,7 @@ public class TestTypeInfoStream {
                 .build();
         testTypeInfo.typeInspection.set(testTypeInspection);
 
-        String stream = testTypeInfo.stream();
+        String stream = testTypeInfo.output().toString();
         LOGGER.info("stream is\n\n{}", stream);
 
         Assert.assertTrue(stream.contains("import org.slf4j.Logger"));

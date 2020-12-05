@@ -24,7 +24,7 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
@@ -42,7 +42,7 @@ public class TestTrie extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("add".equals(d.methodInfo().name) && "newTrieNode".equals(d.variableName())) {
             if (Set.of("1.0.1.0.2", "1.0.1.0.1").contains(d.statementId())) {
-                Assert.assertTrue(d.currentValue() instanceof VariableValue);
+                Assert.assertTrue(d.currentValue() instanceof VariableExpression);
                 Assert.assertEquals(Level.TRUE, (int) d.properties().get(VariableProperty.NOT_NULL));
             }
         }

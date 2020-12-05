@@ -17,9 +17,9 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.*;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Logger;
@@ -68,7 +68,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testOneOverwrite() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Value x =  new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
+        Expression x = new NewObject(viX.variable.parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
@@ -89,7 +89,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         VariableInfoImpl viC2 = viC.merge(minimalEvaluationContext, null, true, List.of(viB));
         Assert.assertSame(viC, viC2);
 
-        Value res = viC.getValue();
+        Expression res = viC.getValue();
         Assert.assertEquals("4", res.toString());
         viC.mergeProperties(true, viA, List.of(viB));
         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, viC.getProperty(VariableProperty.NOT_NULL));
@@ -98,7 +98,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testOneCisAIfXThenB() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
+        Expression x = new NewObject(viX.variable.parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
@@ -120,7 +120,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         VariableInfoImpl viC2 = viC.merge(minimalEvaluationContext, null, false, List.of(viB));
         Assert.assertNotSame(viC, viC2);
 
-        Value res = viC2.getValue();
+        Expression res = viC2.getValue();
         Assert.assertEquals("instance type boolean?4:3", res.toString());
 
         viC2.mergeProperties(true, viA, List.of(viB));
@@ -139,10 +139,10 @@ public class TestVariableInfo extends CommonVariableInfo {
         Variable retVar = makeReturnVariable();
         VariableInfoImpl ret = new VariableInfoImpl(retVar);
         ret.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
-        ret.setValue(UnknownValue.RETURN_VALUE);
+        ret.setValue(EmptyExpression.RETURN_VALUE);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
+        Expression x = new NewObject(viX.variable.parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
@@ -156,7 +156,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         VariableInfoImpl ret2 = ret.merge(minimalEvaluationContext, null, false, List.of(viB));
         Assert.assertNotSame(ret, ret2);
 
-        Value value2 = ret2.getValue();
+        Expression value2 = ret2.getValue();
         Assert.assertEquals("instance type boolean?4:<return value>", value2.toString());
         ret2.mergeProperties(false, ret, List.of(viB));
         Assert.assertEquals(MultiLevel.MUTABLE, ret2.getProperty(VariableProperty.NOT_NULL));
@@ -169,7 +169,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
         viA.setValue(three);
-        viA.stateOnAssignment.set(NegatedValue.negate(minimalEvaluationContext, x));
+        viA.stateOnAssignment.set(NegatedExpression.negate(minimalEvaluationContext, x));
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         VariableInfoImpl ret3 = ret2.merge(minimalEvaluationContext, null, false, List.of(viA));
@@ -186,16 +186,16 @@ public class TestVariableInfo extends CommonVariableInfo {
     public void testOneIfXThenReturnIfYThenReturn() {
         Variable retVar = makeReturnVariable();
         VariableInfoImpl ret = new VariableInfoImpl(retVar);
-        ret.setValue(UnknownValue.RETURN_VALUE); // uni
+        ret.setValue(EmptyExpression.RETURN_VALUE); // uni
         ret.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalIntVar("x"));
-        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
+        Expression x = new NewObject(viX.variable.parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(four);
-        Value xEquals3 = EqualsValue.equals(minimalEvaluationContext, x, three, ObjectFlow.NO_FLOW);
+        Expression xEquals3 = EqualsExpression.equals(minimalEvaluationContext, x, three, ObjectFlow.NO_FLOW);
         viB.stateOnAssignment.set(xEquals3);
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
@@ -217,9 +217,9 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
         viA.setValue(three);
-        Value xEquals4 = new AndValue(minimalEvaluationContext.getPrimitives()).append(minimalEvaluationContext,
-                NegatedValue.negate(minimalEvaluationContext, xEquals3),
-                EqualsValue.equals(minimalEvaluationContext, x, four, ObjectFlow.NO_FLOW));
+        Expression xEquals4 = new AndExpression(minimalEvaluationContext.getPrimitives()).append(minimalEvaluationContext,
+                NegatedExpression.negate(minimalEvaluationContext, xEquals3),
+                EqualsExpression.equals(minimalEvaluationContext, x, four, ObjectFlow.NO_FLOW));
         Assert.assertEquals("4 == instance type int", xEquals4.toString());
         viA.stateOnAssignment.set(xEquals4);
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -238,10 +238,10 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
         viC.setValue(two);
-        Value combinedState =
-                new AndValue(minimalEvaluationContext.getPrimitives()).append(minimalEvaluationContext,
-                        NegatedValue.negate(minimalEvaluationContext, xEquals3),
-                        NegatedValue.negate(minimalEvaluationContext, xEquals4));
+        Expression combinedState =
+                new AndExpression(minimalEvaluationContext.getPrimitives()).append(minimalEvaluationContext,
+                        NegatedExpression.negate(minimalEvaluationContext, xEquals3),
+                        NegatedExpression.negate(minimalEvaluationContext, xEquals4));
         viC.stateOnAssignment.set(combinedState);
         viC.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
@@ -275,7 +275,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         // if(some obscure condition) c = b;
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
-        viC.setValue(new Instance(viA.variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION));
+        viC.setValue(new NewObject(viA.variable.parameterizedType()));
         viC.stateOnAssignment.set(EmptyExpression.EMPTY_EXPRESSION);
         VariableInfoImpl viC2 = viC.merge(minimalEvaluationContext, null, false, List.of(viB));
         Assert.assertNotSame(viA, viC2);
@@ -289,7 +289,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testTwoOverwriteCisIfXThenAElseB() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
+        Expression x = new NewObject(viX.variable.parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
@@ -299,7 +299,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(four);
-        viB.stateOnAssignment.set(NegatedValue.negate(minimalEvaluationContext, x));
+        viB.stateOnAssignment.set(NegatedExpression.negate(minimalEvaluationContext, x));
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         // situation:
@@ -319,7 +319,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testTwoOverwriteCisIfXThenAElseA() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Value x = new Instance(viX.variable.parameterizedType(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
+        Expression x = new NewObject(viX.variable.parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
@@ -329,7 +329,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(three);
-        viB.stateOnAssignment.set(NegatedValue.negate(minimalEvaluationContext, x));
+        viB.stateOnAssignment.set(NegatedExpression.negate(minimalEvaluationContext, x));
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         // situation:
@@ -341,7 +341,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         VariableInfoImpl viC2 = viC.merge(minimalEvaluationContext, viC, true, List.of(viA, viB));
         Assert.assertSame(viC2, viC);
 
-        Value res = viC.getValue();
+        Expression res = viC.getValue();
         Assert.assertEquals("3", res.toString());
 
         viC.mergeProperties(true, null, List.of(viA, viB));

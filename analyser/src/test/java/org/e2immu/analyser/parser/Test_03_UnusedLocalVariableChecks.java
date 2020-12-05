@@ -6,8 +6,8 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.GreaterThanZeroValue;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.GreaterThanZero;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.testexample.UnusedLocalVariableChecks;
@@ -161,7 +161,7 @@ public class Test_03_UnusedLocalVariableChecks extends CommonTestRunner {
             Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
             Assert.assertEquals("(18 + (-org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method1(String):0:t.length(),?>=0)) >= 0",
                     d.evaluationResult().value.toString());
-            Assert.assertTrue(d.evaluationResult().value.isInstanceOf(GreaterThanZeroValue.class));
+            Assert.assertTrue(d.evaluationResult().value.isInstanceOf(GreaterThanZero.class));
         }
     };
 

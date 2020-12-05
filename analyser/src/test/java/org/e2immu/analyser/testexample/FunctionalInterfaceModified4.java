@@ -17,7 +17,10 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.NotModified;
+import org.e2immu.annotation.NotNull;
 
 import java.util.HashSet;
 import java.util.Set;

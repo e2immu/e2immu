@@ -24,7 +24,7 @@ public class TestFunctionalInterfaceModified1 extends CommonTestRunner {
             Block block = sam.methodInspection.get().getMethodBody();
             Assert.assertEquals(1, block.structure.statements.size());
             ReturnStatement returnStatement = (ReturnStatement) block.structure.statements.get(0);
-            Assert.assertEquals("myCounter.add(t)", returnStatement.structure.expression.expressionString(0));
+            Assert.assertEquals("myCounter.add(t)", returnStatement.structure.expression.minimalOutput());
         }
 
         if("getAndAdd".equals(fieldInfo.name)) {
@@ -42,7 +42,7 @@ public class TestFunctionalInterfaceModified1 extends CommonTestRunner {
             Block block = sam.methodInspection.get().getMethodBody();
             Assert.assertEquals(1, block.structure.statements.size());
             ReturnStatement returnStatement = (ReturnStatement) block.structure.statements.get(0);
-            Assert.assertEquals("myCounter.increment()", returnStatement.structure.expression.expressionString(0));
+            Assert.assertEquals("myCounter.increment()", returnStatement.structure.expression.minimalOutput());
         }
         if ("explicitGetAndIncrement".equals(fieldInfo.name)) {
             MethodInfo get = fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();

@@ -17,10 +17,11 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
+import org.e2immu.annotation.Independent;
+import org.e2immu.annotation.Modified;
+import org.e2immu.annotation.NotModified;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /*

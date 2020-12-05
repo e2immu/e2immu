@@ -22,8 +22,8 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.Instance;
-import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.annotation.AnnotationMode;
 import org.junit.Assert;
 import org.junit.Test;
@@ -68,8 +68,8 @@ public class Test_01_SizeCopy extends CommonTestRunner {
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("f1".equals(d.fieldInfo().name)) {
             Assert.assertEquals(FIELD1, d.fieldAnalysis().getEffectivelyFinalValue().toString());
-            Assert.assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableValue);
-            Assert.assertTrue(d.fieldAnalysis().getInitialValue() instanceof Instance);
+            Assert.assertTrue(d.fieldAnalysis().getEffectivelyFinalValue() instanceof VariableExpression);
+            Assert.assertTrue(d.fieldAnalysis().getInitialValue() instanceof NewObject);
             Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
 
             if (d.iteration() > 0) {

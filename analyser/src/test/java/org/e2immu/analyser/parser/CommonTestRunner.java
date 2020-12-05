@@ -151,7 +151,7 @@ public abstract class CommonTestRunner {
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run();
         for (SortedType sortedType : types) {
-            LOGGER.info("Stream:\n{}", sortedType.primaryType.stream());
+            LOGGER.info("Stream:\n{}", sortedType.primaryType.output().toString());
         }
         parser.getMessages().forEach(message -> {
             LOGGER.info(message.toString());

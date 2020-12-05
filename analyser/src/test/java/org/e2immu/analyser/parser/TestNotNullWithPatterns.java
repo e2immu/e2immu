@@ -17,12 +17,12 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.InlineValue;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -35,16 +35,16 @@ public class TestNotNullWithPatterns extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("conditionalValue".equals(d.methodInfo().name) && d.iteration() > 2) {
-            Value srv = d.methodAnalysis().getSingleReturnValue();
+            Expression srv = d.methodAnalysis().getSingleReturnValue();
             Assert.assertEquals("inline conditionalValue on condition.test(initial)?alternative:initial", srv.toString());
-            Assert.assertTrue(srv instanceof InlineValue);
+            Assert.assertTrue(srv instanceof InlinedMethod);
 
         }
 
         if ("method4bis".equals(d.methodInfo().name) && d.iteration() > 0) {
             StatementAnalysis start = d.methodAnalysis().getFirstStatement().followReplacements();
             Assert.assertEquals("return a1 == null ? a2 == null ? \"abc\" : a2 : a3 == null ? \"xyz\" : a1;\n",
-                    start.statement.statementString(0, null));
+                    start.statement.minimalOutput());
             Assert.assertNull(start.navigationData.next.get().orElse(null));
         }
     };

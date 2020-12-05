@@ -6,8 +6,8 @@ import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -28,9 +28,9 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
             Assert.assertEquals(expectNotNull, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             if (d.iteration() == 0) {
-                Assert.assertTrue(d.currentValue() instanceof UnknownValue);
+                Assert.assertTrue(d.currentValue() instanceof EmptyExpression);
             } else {
-                Assert.assertTrue(d.currentValue() instanceof VariableValue);
+                Assert.assertTrue(d.currentValue() instanceof VariableExpression);
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.FINAL));
             }
         }
@@ -100,7 +100,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         VariableInfo vi = d.getFieldAsVariable(input);
         if (d.methodInfo().name.equals("FinalNotNullChecks")) {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
-            Value inputValue = vi.getValue();
+            Expression inputValue = vi.getValue();
             int notNull = inputValue.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL);
             Assert.assertEquals(PARAM_NN, inputValue.toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);

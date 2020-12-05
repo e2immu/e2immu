@@ -8,8 +8,8 @@ import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.value.VariableValue;
-import org.e2immu.analyser.model.value.StringValue;
+import org.e2immu.analyser.model.expression.StringConstant;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.parser.CommonTestRunner;
 import org.e2immu.analyser.parser.Message;
 import org.junit.Assert;
@@ -64,10 +64,10 @@ public class TestLoopStatementChecks extends CommonTestRunner {
             if ("2.0.0".equals(d.statementId())) {
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED_IN_LOOP)); // (4)
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED)); // (4)
-                Assert.assertTrue(d.currentValue() instanceof StringValue);
+                Assert.assertTrue(d.currentValue() instanceof StringConstant);
             }
             if ("3".equals(d.statementId())) {
-                Assert.assertTrue(d.currentValue() instanceof VariableValue);
+                Assert.assertTrue(d.currentValue() instanceof VariableExpression);
             }
         }
     };

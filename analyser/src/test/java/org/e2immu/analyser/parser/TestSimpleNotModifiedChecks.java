@@ -4,9 +4,9 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.Instance;
-import org.e2immu.analyser.model.value.UnknownValue;
-import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.annotation.AnnotationMode;
 import org.junit.Assert;
@@ -31,10 +31,10 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
                 } else {
-                    Assert.assertTrue(d.currentValue() instanceof VariableValue);
+                    Assert.assertTrue(d.currentValue() instanceof VariableExpression);
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.FINAL));
-                    VariableValue variableValue = (VariableValue) d.currentValue();
-                    Assert.assertTrue(variableValue.variable instanceof FieldReference);
+                    VariableExpression variableValue = (VariableExpression) d.currentValue();
+                    Assert.assertTrue(variableValue.variable() instanceof FieldReference);
                     Assert.assertEquals("this.set3", d.currentValue().toString());
                 }
             }
@@ -44,10 +44,10 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
                 } else {
-                    Assert.assertTrue(d.currentValue() instanceof VariableValue);
+                    Assert.assertTrue(d.currentValue() instanceof VariableExpression);
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.FINAL));
-                    VariableValue variableValue = (VariableValue) d.currentValue();
-                    Assert.assertTrue(variableValue.variable instanceof FieldReference);
+                    VariableExpression variableValue = (VariableExpression) d.currentValue();
+                    Assert.assertTrue(variableValue.variable() instanceof FieldReference);
                     Assert.assertEquals("this.set4", d.currentValue().toString());
                 }
             }
@@ -60,7 +60,7 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
                 } else {
-                    Assert.assertTrue(d.currentValue() instanceof VariableValue);
+                    Assert.assertTrue(d.currentValue() instanceof VariableExpression);
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.FINAL));
                     if (d.iteration() > 1) {
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
@@ -81,9 +81,9 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
 
         if ("Example5".equals(d.methodInfo().name) && "Example5.this.set5".equals(d.variableName()) && "0".equals(d.statementId())) {
             if (d.iteration() == 0) {
-                Assert.assertTrue(d.currentValue() instanceof Instance);
+                Assert.assertTrue(d.currentValue() instanceof NewObject);
             } else {
-                Assert.assertTrue(d.currentValue() instanceof VariableValue);
+                Assert.assertTrue(d.currentValue() instanceof VariableExpression);
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.FINAL));
             }
         }

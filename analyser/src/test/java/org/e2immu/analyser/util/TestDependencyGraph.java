@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.util;
 
-import org.checkerframework.checker.units.qual.A;
 import org.junit.Assert;
 import org.junit.Test;
 

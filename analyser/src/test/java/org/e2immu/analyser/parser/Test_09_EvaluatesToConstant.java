@@ -4,10 +4,10 @@ import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.MethodValue;
+import org.e2immu.analyser.model.expression.MethodCall;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -40,9 +40,9 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 Assert.assertEquals(PARAM_3_CONTAINS, d.state().toString());
 
                 if (d.iteration() >= 1) {
-                    Value value = d.statementAnalysis().stateData.valueOfExpression.get();
+                    Expression value = d.statementAnalysis().stateData.valueOfExpression.get();
                     Assert.assertEquals(XZY_TO_LOWER_CASE, value.toString());
-                    Assert.assertTrue("Is " + value.getClass(), value instanceof MethodValue);
+                    Assert.assertTrue("Is " + value.getClass(), value instanceof MethodCall);
                 }
             }
             if ("1.0.1".equals(d.statementAnalysis().index)) {

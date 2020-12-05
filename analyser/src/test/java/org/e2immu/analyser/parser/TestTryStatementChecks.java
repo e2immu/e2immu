@@ -4,9 +4,9 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.Constant;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.StringConcat;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.StringConcat;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -25,11 +25,11 @@ public class TestTryStatementChecks extends CommonTestRunner {
         }
         if ("method1".equals(d.methodInfo().name)) {
             if ("0.0.0".equals(d.statementId())) {
-                Value value0 = d.statementAnalysis().variables.get(METHOD1_FQN).current().getValue();
+                Expression value0 = d.statementAnalysis().variables.get(METHOD1_FQN).current().getValue();
                 Assert.assertTrue("Got " + value0.getClass(), value0 instanceof StringConcat);
             }
             if ("0.1.0".equals(d.statementId())) {
-                Value value1 = d.statementAnalysis().variables.get(METHOD1_FQN).current().getValue();
+                Expression value1 = d.statementAnalysis().variables.get(METHOD1_FQN).current().getValue();
                 Assert.assertTrue("Got " + value1.getClass(), value1 instanceof Constant);
             }
         }
@@ -37,8 +37,8 @@ public class TestTryStatementChecks extends CommonTestRunner {
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if (d.iteration() == 0 && "method1".equals(d.methodInfo().name)) {
-            Value srv = d.methodAnalysis().getSingleReturnValue();
-            Assert.assertSame(UnknownValue.RETURN_VALUE, srv);
+            Expression srv = d.methodAnalysis().getSingleReturnValue();
+            Assert.assertSame(EmptyExpression.RETURN_VALUE, srv);
         }
     };
 

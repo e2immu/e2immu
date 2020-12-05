@@ -19,11 +19,11 @@
 package org.e2immu.analyser.bytecode;
 
 import org.e2immu.analyser.annotationxml.AnnotationXmlReader;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.TypeModifier;
 import org.e2immu.analyser.model.TypeNature;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.TypeMap;
 import org.e2immu.analyser.parser.TypeMapImpl;
@@ -71,7 +71,7 @@ public class TestByteCodeInspector {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/parser/Parser");
         TypeInfo parser = typeMap.get("org.e2immu.analyser.parser.Parser");
         Assert.assertEquals(TypeNature.CLASS, parser.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", parser.stream(0));
+        LOGGER.info("Stream is\n{}", parser.output().toString());
     }
 
     @Test
@@ -83,7 +83,7 @@ public class TestByteCodeInspector {
         Assert.assertFalse(subType.typeInspection.get().isStatic());
         Assert.assertTrue(subType.typeInspection.get().modifiers().contains(TypeModifier.PRIVATE));
 
-        LOGGER.info("Stream is\n{}", subType.stream(0));
+        LOGGER.info("Stream is\n{}", subType.output().toString());
     }
 
     @Test
@@ -91,7 +91,7 @@ public class TestByteCodeInspector {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/analyser/EvaluationContext");
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.analyser.EvaluationContext");
 
-        LOGGER.info("Stream is\n{}", typeInfo.stream(0));
+        LOGGER.info("Stream is\n{}", typeInfo.output().toString());
         Assert.assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature());
     }
 
@@ -101,7 +101,7 @@ public class TestByteCodeInspector {
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.util.Lazy");
 
         Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", typeInfo.stream(0));
+        LOGGER.info("Stream is\n{}", typeInfo.output().toString());
     }
 
     @Test
@@ -109,7 +109,7 @@ public class TestByteCodeInspector {
         TypeMap typeMap = parseFromJar("org/e2immu/analyser/util/Either");
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.util.Either");
         Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", typeInfo.stream(0));
+        LOGGER.info("Stream is\n{}", typeInfo.output().toString());
     }
 
     @Test
@@ -118,7 +118,7 @@ public class TestByteCodeInspector {
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.model.PackagePrefix");
 
         Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", typeInfo.stream(0));
+        LOGGER.info("Stream is\n{}", typeInfo.output().toString());
     }
 
     @Test
@@ -127,7 +127,7 @@ public class TestByteCodeInspector {
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.util.SetOnce");
 
         Assert.assertEquals(TypeNature.CLASS, typeInfo.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", typeInfo.stream(0));
+        LOGGER.info("Stream is\n{}", typeInfo.output().toString());
     }
 
     @Test
@@ -136,7 +136,7 @@ public class TestByteCodeInspector {
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.model.SideEffect");
 
         Assert.assertEquals(TypeNature.ENUM, typeInfo.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", typeInfo.stream(0));
+        LOGGER.info("Stream is\n{}", typeInfo.output().toString());
     }
 
     @Test
@@ -145,7 +145,7 @@ public class TestByteCodeInspector {
         TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.output.PrintMode");
 
         Assert.assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature());
-        LOGGER.info("Stream is\n{}", typeInfo.stream(0));
+        LOGGER.info("Stream is\n{}", typeInfo.output().toString());
 
         MethodInfo forDebug = typeInfo.findUniqueMethod("forDebug", 0);
         Assert.assertTrue(forDebug.methodInspection.get().isDefault());

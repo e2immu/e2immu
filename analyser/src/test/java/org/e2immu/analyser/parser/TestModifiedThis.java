@@ -2,8 +2,9 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.ExpressionAsStatement;
@@ -38,9 +39,9 @@ public class TestModifiedThis extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("clear".equals(d.methodInfo().name) && "InnerOfChild".equals(d.methodInfo().typeInfo.simpleName)) {
-            Expression scope = ((MethodCall) ((ExpressionAsStatement) d.statementAnalysis().statement).expression).computedScope;
+            Expression scope = ((MethodCall) ((ExpressionAsStatement) d.statementAnalysis().statement).expression).object;
             VariableExpression variableExpression = (VariableExpression) scope;
-            This t = (This) variableExpression.variable;
+            This t = (This) variableExpression.variable();
             Assert.assertTrue(t.explicitlyWriteType);
             Assert.assertTrue(t.writeSuper);
         }

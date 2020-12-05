@@ -1,10 +1,10 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.StatementAnalyser;
-import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.config.AnalyserConfiguration;
+import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.FieldAnalyserVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.junit.Assert;
 import org.junit.Test;
 

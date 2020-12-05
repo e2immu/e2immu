@@ -17,10 +17,10 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.LocalVariable;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.IntValue;
-import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.expression.IntConstant;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.model.variable.Variable;
@@ -29,6 +29,7 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
+import java.util.Set;
 
 public abstract class CommonVariableInfo {
 
@@ -37,13 +38,13 @@ public abstract class CommonVariableInfo {
 
     protected Variable makeLocalIntVar(String name) {
         return new LocalVariableReference(inspectionProvider,
-                new LocalVariable(List.of(), name, primitives.intParameterizedType, List.of()),
+                new LocalVariable(Set.of(), name, primitives.intParameterizedType, List.of()),
                 List.of());
     }
 
     protected Variable makeLocalBooleanVar(String name) {
         return new LocalVariableReference(inspectionProvider,
-                new LocalVariable(List.of(), name, primitives.booleanParameterizedType, List.of()),
+                new LocalVariable(Set.of(), name, primitives.booleanParameterizedType, List.of()),
                 List.of());
     }
 
@@ -51,9 +52,9 @@ public abstract class CommonVariableInfo {
         return new ReturnVariable(primitives.orOperatorBool);
     }
 
-    protected final IntValue two = new IntValue(primitives, 2, ObjectFlow.NO_FLOW);
-    protected final IntValue three = new IntValue(primitives, 3, ObjectFlow.NO_FLOW);
-    protected final IntValue four = new IntValue(primitives, 4, ObjectFlow.NO_FLOW);
+    protected final IntConstant two = new IntConstant(primitives, 2, ObjectFlow.NO_FLOW);
+    protected final IntConstant three = new IntConstant(primitives, 3, ObjectFlow.NO_FLOW);
+    protected final IntConstant four = new IntConstant(primitives, 4, ObjectFlow.NO_FLOW);
 
     protected final AnalyserContext analyserContext = new AnalyserContext() {
     };
@@ -66,12 +67,12 @@ public abstract class CommonVariableInfo {
         }
 
         @Override
-        public Value currentValue(Variable variable) {
-            return new VariableValue(variable);
+        public Expression currentValue(Variable variable) {
+            return new VariableExpression(variable);
         }
 
         @Override
-        public boolean isNotNull0(Value value) {
+        public boolean isNotNull0(Expression value) {
             return false; // no opinion
         }
 

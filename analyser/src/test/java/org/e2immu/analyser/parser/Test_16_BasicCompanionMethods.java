@@ -22,13 +22,8 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.BinaryOperator;
-import org.e2immu.analyser.model.expression.MethodCall;
-import org.e2immu.analyser.model.expression.TypeExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.ReturnStatement;
-import org.e2immu.analyser.model.value.EqualsValue;
-import org.e2immu.analyser.model.value.MethodValue;
-import org.e2immu.analyser.model.value.SumValue;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -63,7 +58,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                EvaluationResult.ValueChangeData valueChangeData = d.evaluationResult().getValueChangeStream()
+                EvaluationResult.ExpressionChangeData valueChangeData = d.evaluationResult().getExpressionChangeStream()
                         .filter(e -> "list".equals(e.getKey().fullyQualifiedName())).map(Map.Entry::getValue).findFirst().orElseThrow();
                 Assert.assertEquals(LIST_SIZE, valueChangeData.value().toString());
             }
@@ -114,7 +109,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
     public void test1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                EvaluationResult.ValueChangeData valueChangeData = d.evaluationResult().getValueChangeStream()
+                EvaluationResult.ExpressionChangeData valueChangeData = d.evaluationResult().getExpressionChangeStream()
                         .filter(e -> "list".equals(e.getKey().fullyQualifiedName())).map(Map.Entry::getValue).findFirst().orElseThrow();
                 Assert.assertEquals(LIST_SIZE, valueChangeData.value().toString());
             }
@@ -127,13 +122,13 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
             if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
                 Assert.assertTrue(d.haveValueChange("b"));
-                EvaluationResult.ValueChangeData valueChangeData = d.findValueChange("b");
+                EvaluationResult.ExpressionChangeData valueChangeData = d.findValueChange("b");
                 Assert.assertEquals("true", valueChangeData.value().toString());
             }
             if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertTrue(d.haveValueChange(TEST_1_RETURN_VARIABLE));
-                EvaluationResult.ValueChangeData valueChangeData = d.findValueChange(TEST_1_RETURN_VARIABLE);
+                EvaluationResult.ExpressionChangeData valueChangeData = d.findValueChange(TEST_1_RETURN_VARIABLE);
                 Assert.assertEquals("true", valueChangeData.value().toString());
             }
         };
@@ -214,7 +209,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                     intTypeInfo == methodInfo.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
             MethodInfo appendIntCompanion = appendInt.methodInspection.get().getCompanionMethods().values().stream().findFirst().orElseThrow();
             ReturnStatement returnStatement = (ReturnStatement) appendIntCompanion.methodInspection.get().getMethodBody().structure.statements.get(0);
-            Assert.assertEquals("return post == prev + Integer.toString(i).length();\n", returnStatement.statementString(0, null));
+            Assert.assertEquals("return post == prev + Integer.toString(i).length();\n", returnStatement.minimalOutput());
 
             TypeInfo string = typeMap.getPrimitives().stringTypeInfo;
             MethodInfo stringLength = string.findUniqueMethod("length", 0);
@@ -231,10 +226,10 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
             }
             CompanionAnalysis appendCa = appendInt.methodAnalysis.get().getCompanionAnalyses()
                     .get(new CompanionMethodName("append", CompanionMethodName.Action.MODIFICATION, "Len"));
-            Value appendCompanionValue = appendCa.getValue();
+            Expression appendCompanionValue = appendCa.getValue();
             Assert.assertEquals("(java.lang.Integer.toString(java.lang.StringBuilder.append(int):0:i).length() + pre) == java.lang.CharSequence.this.length()",
                     appendCa.getValue().toString());
-            if (appendCompanionValue instanceof EqualsValue eq && eq.lhs instanceof SumValue sum && sum.lhs instanceof MethodValue lengthCall) {
+            if (appendCompanionValue instanceof EqualsExpression eq && eq.lhs instanceof Sum sum && sum.lhs instanceof MethodCall lengthCall) {
                 Assert.assertSame(lengthCall.methodInfo, stringLength);
             } else Assert.fail();
 
@@ -242,7 +237,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
                     string == methodInfo.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
             MethodInfo appendStringCompanion = appendStr.methodInspection.get().getCompanionMethods().values().stream().findFirst().orElseThrow();
             ReturnStatement returnStatementStr = (ReturnStatement) appendStringCompanion.methodInspection.get().getMethodBody().structure.statements.get(0);
-            Assert.assertEquals("return post == prev + (str == null ? 4 : str.length());\n", returnStatementStr.statementString(0, null));
+            Assert.assertEquals("return post == prev + (str == null ? 4 : str.length());\n", returnStatementStr.minimalOutput());
 
             MethodInfo sbToString = stringBuilder.findUniqueMethod("toString", 0);
             CompanionAnalysis sbToStringCa = sbToString.methodAnalysis.get().getCompanionAnalyses()

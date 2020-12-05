@@ -17,7 +17,7 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.E2Container;
 import org.junit.Assert;
 import org.junit.Test;
 

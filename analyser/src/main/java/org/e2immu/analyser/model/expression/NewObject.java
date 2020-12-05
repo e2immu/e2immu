@@ -61,6 +61,11 @@ public class NewObject implements HasParameterExpressions {
                 newObject.anonymousClass, newObject.arrayInitializer, newState, newObject.objectFlow);
     }
 
+    //for testing
+    public NewObject(ParameterizedType parameterizedType) {
+        this(null, parameterizedType, List.of(), null, null, EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW);
+    }
+
     public NewObject(MethodInfo constructor,
                      ParameterizedType parameterizedType,
                      List<Expression> parameterExpressions,

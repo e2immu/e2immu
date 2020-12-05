@@ -26,7 +26,7 @@ import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.config.TypeMapVisitor;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.InlineValue;
+import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
@@ -46,10 +46,10 @@ public class TestSetOnceMap extends CommonTestRunner {
         int iteration = d.iteration();
 
         if ("get".equals(name) && iteration > 0) {
-            Value srv = d.methodAnalysis().getSingleReturnValue();
+            Expression srv = d.methodAnalysis().getSingleReturnValue();
             Assert.assertEquals("inline get on this.map.get(k),@NotNull", srv.toString());
-            InlineValue inlineValue = (InlineValue) srv;
-            Assert.assertEquals(InlineValue.Applicability.TYPE, inlineValue.applicability);
+            InlinedMethod inlineValue = (InlinedMethod) srv;
+            Assert.assertEquals(InlinedMethod.Applicability.TYPE, inlineValue.applicability());
             VariableInfo tv = d.getReturnAsVariable();
 
             Assert.assertNotNull(tv);
@@ -77,13 +77,13 @@ public class TestSetOnceMap extends CommonTestRunner {
 
             // there is no reason to have a @Size annotation on this expression
             if (iteration > 0) {
-                Value srv = d.methodAnalysis().getSingleReturnValue();
+                Expression srv = d.methodAnalysis().getSingleReturnValue();
                 Assert.assertEquals("inline isEmpty on 0 == this.map.size(),?>=0", srv.toString());
                 // @Size(equals = 0)
             }
         }
         if ("stream".equals(name)) {
-            Value stream = d.getReturnAsVariable().getValue();
+            Expression stream = d.getReturnAsVariable().getValue();
             Assert.assertEquals("this.map.entrySet().stream()", stream.toString());
         }
         if ("put".equals(name)) {

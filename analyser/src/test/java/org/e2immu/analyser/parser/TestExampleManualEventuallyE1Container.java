@@ -3,8 +3,11 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.NegatedValue;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.FieldInfo;
+import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterizedType;
+import org.e2immu.analyser.model.expression.NegatedExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
 import org.junit.Test;
@@ -22,10 +25,10 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
 
         if ("addIfGreater".equals(name)) {
             if (iteration > 0) {
-                List<Value> preconditions = d.methodAnalysis().getPreconditionForMarkAndOnly();
+                List<Expression> preconditions = d.methodAnalysis().getPreconditionForMarkAndOnly();
                 Assert.assertEquals(1, preconditions.size());
                 Assert.assertEquals("this.j > 0", preconditions.get(0).toString());
-                Assert.assertEquals("(-this.j) >= 0", NegatedValue.negate(d.evaluationContext(), preconditions.get(0)).toString());
+                Assert.assertEquals("(-this.j) >= 0", NegatedExpression.negate(d.evaluationContext(), preconditions.get(0)).toString());
             }
         }
         if ("setNegativeJ".equals(name)) {
@@ -35,9 +38,9 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
 
                 FieldInfo fieldJ = d.methodInfo().typeInfo.getFieldByName("j", true);
                 VariableInfo tv = d.getFieldAsVariable(fieldJ);
-                Value value = tv.getValue();
+                Expression value = tv.getValue();
                 Assert.assertEquals("j", value.toString());
-                Value state = tv.getStateOnAssignment();
+                Expression state = tv.getStateOnAssignment();
                 Assert.assertEquals("(-this.j) >= 0", state.toString());
             }
         }

@@ -1,6 +1,6 @@
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.*;
+import org.e2immu.annotation.Container;
 
 /**
  * the goal is to show that there is no Eventual Level 2 container, because there are no preconditions on j

@@ -3,9 +3,12 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MethodAnalysis;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
-import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -51,14 +54,14 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
             Assert.assertEquals(Level.FALSE, d.getThisAsVariable().getProperty(VariableProperty.METHOD_CALLED));
         }
         if ("idem3".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
-            Value value = d.statementAnalysis().stateData.valueOfExpression.get();
+            Expression value = d.statementAnalysis().stateData.valueOfExpression.get();
             Assert.assertTrue(value instanceof PropertyWrapper);
-            Value valueInside = ((PropertyWrapper) value).value;
+            Expression valueInside = ((PropertyWrapper) value).value;
             Assert.assertTrue(valueInside instanceof PropertyWrapper);
-            Value valueInside2 = ((PropertyWrapper) valueInside).value;
-            Assert.assertTrue(valueInside2 instanceof VariableValue);
+            Expression valueInside2 = ((PropertyWrapper) valueInside).value;
+            Assert.assertTrue(valueInside2 instanceof VariableExpression);
             // check that isInstanceOf bypasses the wrappers
-            Assert.assertTrue(value.isInstanceOf(VariableValue.class));
+            Assert.assertTrue(value.isInstanceOf(VariableExpression.class));
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(value, VariableProperty.NOT_NULL));
         }
     };

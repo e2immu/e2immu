@@ -18,8 +18,8 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.model.value.IntValue;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Logger;
 import org.junit.Assert;
@@ -107,7 +107,7 @@ public class TestVariableInfoContainer extends CommonVariableInfo {
 
         // then, make an assignment
 
-        IntValue three = new IntValue(primitives, 3, ObjectFlow.NO_FLOW);
+        IntConstant three = new IntConstant(primitives, 3, ObjectFlow.NO_FLOW);
         try {
             vic.setValueOnAssignment(VariableInfoContainer.LEVEL_4_SUMMARY, three, Map.of());
             Assert.fail();

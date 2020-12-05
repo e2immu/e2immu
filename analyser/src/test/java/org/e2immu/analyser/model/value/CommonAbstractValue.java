@@ -23,8 +23,11 @@ import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.ParameterInspectionImpl;
 import org.e2immu.analyser.inspector.TypeInspectionImpl;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.VariableName;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.parser.TypeMapImpl;
@@ -38,28 +41,28 @@ import static org.e2immu.analyser.inspector.TypeInspectionImpl.InspectionState.B
 public abstract class CommonAbstractValue {
     protected static TypeMapImpl.Builder TYPE_MAP_BUILDER;
     protected static Primitives PRIMITIVES;
-    protected static BoolValue TRUE;
-    protected static BoolValue FALSE;
+    protected static BooleanConstant TRUE;
+    protected static BooleanConstant FALSE;
 
     protected static Variable va;
     protected static Variable vb;
     protected static Variable vc;
     protected static Variable vd;
-    protected static VariableValue a;
-    protected static VariableValue b;
-    protected static VariableValue c;
-    protected static VariableValue d;
+    protected static VariableExpression a;
+    protected static VariableExpression b;
+    protected static VariableExpression c;
+    protected static VariableExpression d;
 
     protected static Variable vi;
     protected static Variable vj;
-    protected static VariableValue i;
-    protected static VariableValue j;
+    protected static VariableExpression i;
+    protected static VariableExpression j;
 
     protected static Variable vs;
-    protected static VariableValue s;
+    protected static VariableExpression s;
 
     protected static Variable vp;
-    protected static VariableValue p;
+    protected static VariableExpression p;
 
     @BeforeClass
     public static void beforeClass() {
@@ -67,28 +70,28 @@ public abstract class CommonAbstractValue {
 
         TYPE_MAP_BUILDER = new TypeMapImpl.Builder();
         PRIMITIVES = TYPE_MAP_BUILDER.getPrimitives();
-        TRUE = new BoolValue(PRIMITIVES, true);
-        FALSE = new BoolValue(PRIMITIVES, false);
+        TRUE = new BooleanConstant(PRIMITIVES, true);
+        FALSE = new BooleanConstant(PRIMITIVES, false);
 
         va = createVariable("a");
         vb = createVariable("b");
         vc = createVariable("c");
         vd = createVariable("d");
-        a = new VariableValue(va);
-        b = new VariableValue(vb);
-        c = new VariableValue(vc);
-        d = new VariableValue(vd);
+        a = new VariableExpression(va);
+        b = new VariableExpression(vb);
+        c = new VariableExpression(vc);
+        d = new VariableExpression(vd);
 
         vi = createVariable("i");
         vj = createVariable("j");
-        i = new VariableValue(vi);
-        j = new VariableValue(vj);
+        i = new VariableExpression(vi);
+        j = new VariableExpression(vj);
 
         vs = createVariable("s");
-        s = new VariableValue(vs);
+        s = new VariableExpression(vs);
 
         vp = createParameter("p");
-        p = new VariableValue(vp);
+        p = new VariableExpression(vp);
     }
 
     static Variable createVariable(String name) {
@@ -127,30 +130,35 @@ public abstract class CommonAbstractValue {
             }
 
             @Override
+            public OutputBuilder output() {
+                return new OutputBuilder().add(new VariableName(name, null, VariableName.Nature.LOCAL));
+            }
+
+            @Override
             public String toString() {
                 return name;
             }
         };
     }
 
-    protected static Value newAndAppend(Value... values) {
-        return new AndValue(PRIMITIVES).append(minimalEvaluationContext, values);
+    protected static Expression newAndAppend(Expression... values) {
+        return new AndExpression(PRIMITIVES).append(minimalEvaluationContext, values);
     }
 
-    protected static Value newOrAppend(Value... values) {
-        return new OrValue(PRIMITIVES).append(minimalEvaluationContext, values);
+    protected static Expression newOrAppend(Expression... values) {
+        return new OrExpression(PRIMITIVES).append(minimalEvaluationContext, values);
     }
 
-    protected static Value negate(Value value) {
-        return NegatedValue.negate(minimalEvaluationContext, value);
+    protected static Expression negate(Expression value) {
+        return NegatedExpression.negate(minimalEvaluationContext, value);
     }
 
-    protected static Value newInt(int i) {
-        return new IntValue(PRIMITIVES, i, ObjectFlow.NO_FLOW);
+    protected static Expression newInt(int i) {
+        return new IntConstant(PRIMITIVES, i, ObjectFlow.NO_FLOW);
     }
 
-    protected static Value newString(String s) {
-        return new StringValue(PRIMITIVES, s, ObjectFlow.NO_FLOW);
+    protected static Expression newString(String s) {
+        return new StringConstant(PRIMITIVES, s, ObjectFlow.NO_FLOW);
     }
 
     static ParameterInfo createParameter(String name) {
@@ -192,7 +200,7 @@ public abstract class CommonAbstractValue {
         }
 
         @Override
-        public EvaluationContext child(Value condition) {
+        public EvaluationContext child(Expression condition) {
             return new EvaluationContextImpl(conditionManager.addCondition(this, condition));
         }
 
@@ -202,8 +210,8 @@ public abstract class CommonAbstractValue {
         }
 
         @Override
-        public Value currentValue(Variable variable) {
-            return new VariableValue(variable);
+        public Expression currentValue(Variable variable) {
+            return new VariableExpression(variable);
         }
 
         @Override
@@ -212,12 +220,12 @@ public abstract class CommonAbstractValue {
         }
 
         @Override
-        public int getProperty(Value value, VariableProperty variableProperty) {
+        public int getProperty(Expression value, VariableProperty variableProperty) {
             return 0;
         }
     }
 
-    protected static Value equals(Value v1, Value v2) {
-        return EqualsValue.equals(minimalEvaluationContext, v1, v2, ObjectFlow.NO_FLOW);
+    protected static Expression equals(Expression v1, Expression v2) {
+        return EqualsExpression.equals(minimalEvaluationContext, v1, v2, ObjectFlow.NO_FLOW);
     }
 }

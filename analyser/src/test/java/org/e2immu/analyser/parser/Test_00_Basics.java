@@ -28,7 +28,7 @@ import org.e2immu.analyser.model.FieldAnalysis;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.value.StringValue;
+import org.e2immu.analyser.model.expression.StringConstant;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -63,7 +63,7 @@ public class Test_00_Basics extends CommonTestRunner {
                 Assert.assertFalse(d.hasProperty(VariableProperty.ASSIGNED));
                 Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
-                Assert.assertEquals(new StringValue(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
+                Assert.assertEquals(new StringConstant(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
                 return;
             }
             if ("org.e2immu.analyser.testexample.Basics.this".equals(d.variableName())) {

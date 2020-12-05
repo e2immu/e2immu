@@ -25,9 +25,9 @@ import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.Value;
-import org.e2immu.analyser.model.value.ConditionalValue;
+import org.e2immu.analyser.model.expression.InlineConditionalOperator;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -64,9 +64,9 @@ public class TestEither extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if ("getLeftOrElse".equals(d.methodInfo().name) && d.iteration() > 0) {
             VariableInfo tv = d.getReturnAsVariable();
-            Value retVal = tv.getValue();
-            Assert.assertTrue(retVal instanceof ConditionalValue);
-            ConditionalValue conditionalValue = (ConditionalValue) retVal;
+            Expression retVal = tv.getValue();
+            Assert.assertTrue(retVal instanceof InlineConditionalOperator);
+            InlineConditionalOperator conditionalValue = (InlineConditionalOperator) retVal;
             Assert.assertEquals("null == this.left?orElse,@NotNull:this.left", conditionalValue.toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(retVal, VariableProperty.NOT_NULL));
         }

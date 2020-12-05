@@ -17,7 +17,8 @@
 
 package org.e2immu.analyser.model.value;
 
-import org.e2immu.analyser.model.Value;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
 import org.junit.Test;
@@ -30,16 +31,16 @@ public class TestFilter extends CommonAbstractValue {
 
     @Test
     public void test() {
-        AndValue andValue = (AndValue) newAndAppend(a, b);
+        AndExpression andValue = (AndExpression) newAndAppend(a, b);
         Assert.assertEquals("(a and b)", andValue.toString());
 
         Filter.FilterResult<Variable> filterResult = Filter.filter(minimalEvaluationContext, andValue,
-                Filter.FilterMode.ALL, value -> new Filter.FilterResult<Variable>(Map.of(), value));
+                Filter.FilterMode.ALL, value -> new Filter.FilterResult<>(Map.of(), value));
         Assert.assertEquals(filterResult.rest(), andValue);
 
         Filter.FilterResult<Variable> filterResult2 = Filter.filter(minimalEvaluationContext, andValue, Filter.FilterMode.ALL, value -> {
-            if (value instanceof VariableValue variableValue && variableValue.variable == b.variable) {
-                return new Filter.FilterResult<Variable>(Map.of(b.variable, b), EmptyExpression.EMPTY_EXPRESSION);
+            if (value instanceof VariableExpression variableValue && variableValue.variable() == b.variable()) {
+                return new Filter.FilterResult<>(Map.of(b.variable(), b), EmptyExpression.EMPTY_EXPRESSION);
             }
             return null;
         });
@@ -51,14 +52,14 @@ public class TestFilter extends CommonAbstractValue {
 
     @Test
     public void testWithEquals() {
-        Value sNotNull = negate(equals(NullValue.NULL_VALUE, s));
-        AndValue andValue = (AndValue) newAndAppend(a, sNotNull);
+        Expression sNotNull = negate(equals(NullConstant.NULL_CONSTANT, s));
+        AndExpression andValue = (AndExpression) newAndAppend(a, sNotNull);
         Assert.assertEquals("(a and not (null == s))", andValue.toString());
 
         Filter.FilterResult<Variable> filterResult = Filter.filter(minimalEvaluationContext, andValue, Filter.FilterMode.ALL, value -> {
-            if (value instanceof EqualsValue equalsValue) {
-                if (equalsValue.rhs instanceof VariableValue && ((VariableValue) equalsValue.rhs).variable == s.variable) {
-                    return new Filter.FilterResult<Variable>(Map.of(s.variable, s), EmptyExpression.EMPTY_EXPRESSION);
+            if (value instanceof EqualsExpression equalsValue) {
+                if (equalsValue.rhs instanceof VariableExpression && ((VariableExpression) equalsValue.rhs).variable() == s.variable()) {
+                    return new Filter.FilterResult<>(Map.of(s.variable(), s), EmptyExpression.EMPTY_EXPRESSION);
                 }
             }
             return null;

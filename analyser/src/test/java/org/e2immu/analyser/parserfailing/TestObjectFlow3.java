@@ -22,15 +22,15 @@ package org.e2immu.analyser.parserfailing;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.MethodAnalysis;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.value.VariableValue;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.CommonTestRunner;
-import org.e2immu.analyser.inspector.TypeContext;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -49,7 +49,7 @@ public class TestObjectFlow3 extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("main".equals(d.methodInfo().name) && "0".equals(d.statementId()) && "config".equals(d.variableName())) {
-            Assert.assertTrue(d.currentValue() instanceof VariableValue);
+            Assert.assertTrue(d.currentValue() instanceof VariableExpression);
             ObjectFlow objectFlow = d.currentValue().getObjectFlow();
             Assert.assertSame(Origin.NEW_OBJECT_CREATION, objectFlow.getOrigin());
         }

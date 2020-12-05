@@ -21,7 +21,7 @@ import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.value.UnknownValue;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
 import org.junit.Test;
@@ -110,7 +110,7 @@ public class TestNotModifiedChecks extends CommonTestRunner {
 
             }
             if (iteration > 1) {
-                Value value = d.methodAnalysis().getSingleReturnValue();
+                Expression value = d.methodAnalysis().getSingleReturnValue();
                 Assert.assertEquals("inline getSet on this.set", value.toString());
             }
         }
