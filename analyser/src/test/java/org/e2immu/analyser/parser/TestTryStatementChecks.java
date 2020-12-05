@@ -3,8 +3,8 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.StringConcat;
 import org.junit.Assert;
@@ -30,7 +30,7 @@ public class TestTryStatementChecks extends CommonTestRunner {
             }
             if ("0.1.0".equals(d.statementId())) {
                 Expression value1 = d.statementAnalysis().variables.get(METHOD1_FQN).current().getValue();
-                Assert.assertTrue("Got " + value1.getClass(), value1 instanceof Constant);
+                Assert.assertTrue("Got " + value1.getClass(), value1 instanceof ConstantExpression);
             }
         }
     };

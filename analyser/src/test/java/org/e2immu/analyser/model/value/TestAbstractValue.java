@@ -32,11 +32,11 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void test() {
-        Expression notA = NegatedExpression.negate(minimalEvaluationContext, a);
+        Expression notA = Negation.negate(minimalEvaluationContext, a);
         Assert.assertEquals("not (a)", notA.toString());
-        Expression notA2 = NegatedExpression.negate(minimalEvaluationContext, a);
+        Expression notA2 = Negation.negate(minimalEvaluationContext, a);
         Assert.assertEquals(notA, notA2);
-        Assert.assertEquals(a, NegatedExpression.negate(minimalEvaluationContext, notA));
+        Assert.assertEquals(a, Negation.negate(minimalEvaluationContext, notA));
 
         Assert.assertEquals(a, newAndAppend(a, a));
         Assert.assertEquals(notA, newAndAppend(notA, notA));
@@ -70,7 +70,7 @@ public class TestAbstractValue extends CommonAbstractValue {
         Expression aAndAOrB = newAndAppend(a, newOrAppend(a, b));
         Assert.assertEquals(a, aAndAOrB);
 
-        Expression aAndNotAOrB = newAndAppend(a, newOrAppend(NegatedExpression.negate(minimalEvaluationContext, a), b));
+        Expression aAndNotAOrB = newAndAppend(a, newOrAppend(Negation.negate(minimalEvaluationContext, a), b));
         Assert.assertEquals("(a and b)", aAndNotAOrB.toString());
 
         //D && A && !B && (!A || B) && C (the && C, D is there just for show)
@@ -100,18 +100,18 @@ public class TestAbstractValue extends CommonAbstractValue {
     Map<Variable, Boolean> nullClauses(Expression v, Filter.FilterMode filterMode) {
         return Filter.filter(minimalEvaluationContext, v, filterMode, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE).accepted()
                 .entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> e.getValue() instanceof EqualsExpression EqualsExpression && EqualsExpression.lhs == NullConstant.NULL_CONSTANT));
+                        e -> e.getValue() instanceof Equals Equals && Equals.lhs == NullConstant.NULL_CONSTANT));
     }
 
     @Test
     public void testIsNull() {
-        Expression v = new EqualsExpression(PRIMITIVES, a, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
+        Expression v = new Equals(PRIMITIVES, a, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
         Assert.assertEquals("null == a", v.toString());
         Map<Variable, Boolean> nullClauses = nullClauses(v, Filter.FilterMode.ACCEPT);
         Assert.assertEquals(1, nullClauses.size());
         Assert.assertEquals(true, nullClauses.get(va));
 
-        Expression v2 = new EqualsExpression(PRIMITIVES, b, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
+        Expression v2 = new Equals(PRIMITIVES, b, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
         Assert.assertEquals("null == b", v2.toString());
         Map<Variable, Boolean> nullClauses2 = nullClauses(v2, Filter.FilterMode.ACCEPT);
         Assert.assertEquals(1, nullClauses2.size());
@@ -127,7 +127,7 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testIsNotNull() {
-        Expression v = NegatedExpression.negate(minimalEvaluationContext, new EqualsExpression(PRIMITIVES, NullConstant.NULL_CONSTANT, a, ObjectFlow.NO_FLOW));
+        Expression v = Negation.negate(minimalEvaluationContext, new Equals(PRIMITIVES, NullConstant.NULL_CONSTANT, a, ObjectFlow.NO_FLOW));
         Assert.assertEquals("not (null == a)", v.toString());
         Map<Variable, Boolean> nullClauses = nullClauses(v, Filter.FilterMode.REJECT);
         Assert.assertEquals(1, nullClauses.size());

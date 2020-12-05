@@ -18,7 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.AndExpression;
+import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
@@ -119,7 +119,7 @@ public class MethodLevelData {
                 } else if (v2 == EmptyExpression.EMPTY_EXPRESSION) {
                     result = v1;
                 } else {
-                    result = new AndExpression(sharedState.evaluationContext.getPrimitives())
+                    result = new And(sharedState.evaluationContext.getPrimitives())
                             .append(sharedState.evaluationContext, v1, v2);
                 }
             }

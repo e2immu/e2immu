@@ -46,8 +46,8 @@ public class EvaluateInlineConditional {
         }
 
         // not x ? a: b --> x ? b: a
-        NegatedExpression negatedCondition;
-        if ((negatedCondition = condition.asInstanceOf(NegatedExpression.class)) != null) {
+        Negation negatedCondition;
+        if ((negatedCondition = condition.asInstanceOf(Negation.class)) != null) {
             return conditionalValueConditionResolved(evaluationContext, negatedCondition.expression, ifFalse, ifTrue, objectFlow);
         }
 
@@ -61,9 +61,9 @@ public class EvaluateInlineConditional {
             if (isKnown != null) return builder.setExpression(isKnown).build();
         }
 
-        InlineConditionalOperator secondCv;
+        InlineConditional secondCv;
         // x ? (x? a: b): c == x ? a : c
-        if ((secondCv = ifTrue.asInstanceOf(InlineConditionalOperator.class)) != null && secondCv.condition.equals(condition)) {
+        if ((secondCv = ifTrue.asInstanceOf(InlineConditional.class)) != null && secondCv.condition.equals(condition)) {
             return conditionalValueConditionResolved(evaluationContext, condition, secondCv.ifTrue, ifFalse, objectFlow);
         }
 
@@ -73,13 +73,13 @@ public class EvaluateInlineConditional {
         // standardization... we swap!
         // this will result in  a != null ? a: x ==>  null == a ? x : a as the default form
 
-        return builder.setExpression(new InlineConditionalOperator(condition, ifTrue, ifFalse, objectFlow)).build();
+        return builder.setExpression(new InlineConditional(condition, ifTrue, ifFalse, objectFlow)).build();
         // TODO more advanced! if a "large" part of ifTrue or ifFalse appears in condition, we should create a temp variable
     }
 
     private static Expression checkState(EvaluationContext evaluationContext, Primitives primitives, Expression state, Expression condition) {
         if (state == EmptyExpression.EMPTY_EXPRESSION) return condition;
-        Expression and = new AndExpression(primitives).append(evaluationContext, state, condition);
+        Expression and = new And(primitives).append(evaluationContext, state, condition);
         if (and.equals(condition)) {
             return new BooleanConstant(primitives, true);
         }
@@ -92,7 +92,7 @@ public class EvaluateInlineConditional {
         // x ? a : a == a
         if (ifTrue.equals(ifFalse)) return ifTrue;
         // a ? a : !a == a == !a ? !a : a
-        if (condition.equals(ifTrue) && condition.equals(NegatedExpression.negate(evaluationContext, ifFalse))) {
+        if (condition.equals(ifTrue) && condition.equals(Negation.negate(evaluationContext, ifFalse))) {
             return new BooleanConstant(primitives, true);
         }
         // !a ? a : !a == !a == a ? !a : a --> will not happen, as we've already swapped
@@ -103,15 +103,15 @@ public class EvaluateInlineConditional {
         // a ? false: b --> !a && b
         if (ifTrue instanceof BooleanConstant ifTrueBool) {
             if (ifTrueBool.constant()) {
-                return new OrExpression(primitives).append(evaluationContext, condition, ifFalse);
+                return new Or(primitives).append(evaluationContext, condition, ifFalse);
             }
-            return new AndExpression(primitives).append(evaluationContext, NegatedExpression.negate(evaluationContext, condition), ifFalse);
+            return new And(primitives).append(evaluationContext, Negation.negate(evaluationContext, condition), ifFalse);
         }
         if (ifFalse instanceof BooleanConstant ifFalseBool) {
             if (ifFalseBool.constant()) {
-                return new OrExpression(primitives).append(evaluationContext, NegatedExpression.negate(evaluationContext, condition), ifTrue);
+                return new Or(primitives).append(evaluationContext, Negation.negate(evaluationContext, condition), ifTrue);
             }
-            return new AndExpression(primitives).append(evaluationContext, condition, ifTrue);
+            return new And(primitives).append(evaluationContext, condition, ifTrue);
         }
         return null;
     }

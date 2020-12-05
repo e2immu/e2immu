@@ -18,9 +18,9 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.AndExpression;
+import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NegatedExpression;
+import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Freezable;
@@ -366,9 +366,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         if (merge.stream().anyMatch(vi -> !vi.stateOnAssignmentIsSet() || vi.getStateOnAssignment() == EmptyExpression.EMPTY_EXPRESSION))
             return false;
 
-        Expression notOne = NegatedExpression.negate(evaluationContext, oneSide.getStateOnAssignment());
+        Expression notOne = Negation.negate(evaluationContext, oneSide.getStateOnAssignment());
 
-        Expression andOtherSide = new AndExpression(evaluationContext.getPrimitives()).append(evaluationContext,
+        Expression andOtherSide = new And(evaluationContext.getPrimitives()).append(evaluationContext,
                 merge.stream().map(VariableInfo::getStateOnAssignment).toArray(Expression[]::new));
         return notOne.equals(andOtherSide);
     }

@@ -7,7 +7,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.expression.NegatedExpression;
+import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
 import org.junit.Test;
@@ -28,7 +28,7 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
                 List<Expression> preconditions = d.methodAnalysis().getPreconditionForMarkAndOnly();
                 Assert.assertEquals(1, preconditions.size());
                 Assert.assertEquals("this.j > 0", preconditions.get(0).toString());
-                Assert.assertEquals("(-this.j) >= 0", NegatedExpression.negate(d.evaluationContext(), preconditions.get(0)).toString());
+                Assert.assertEquals("(-this.j) >= 0", Negation.negate(d.evaluationContext(), preconditions.get(0)).toString());
             }
         }
         if ("setNegativeJ".equals(name)) {

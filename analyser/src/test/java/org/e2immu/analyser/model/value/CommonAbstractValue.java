@@ -142,15 +142,15 @@ public abstract class CommonAbstractValue {
     }
 
     protected static Expression newAndAppend(Expression... values) {
-        return new AndExpression(PRIMITIVES).append(minimalEvaluationContext, values);
+        return new And(PRIMITIVES).append(minimalEvaluationContext, values);
     }
 
     protected static Expression newOrAppend(Expression... values) {
-        return new OrExpression(PRIMITIVES).append(minimalEvaluationContext, values);
+        return new Or(PRIMITIVES).append(minimalEvaluationContext, values);
     }
 
     protected static Expression negate(Expression value) {
-        return NegatedExpression.negate(minimalEvaluationContext, value);
+        return Negation.negate(minimalEvaluationContext, value);
     }
 
     protected static Expression newInt(int i) {
@@ -226,6 +226,6 @@ public abstract class CommonAbstractValue {
     }
 
     protected static Expression equals(Expression v1, Expression v2) {
-        return EqualsExpression.equals(minimalEvaluationContext, v1, v2, ObjectFlow.NO_FLOW);
+        return Equals.equals(minimalEvaluationContext, v1, v2, ObjectFlow.NO_FLOW);
     }
 }

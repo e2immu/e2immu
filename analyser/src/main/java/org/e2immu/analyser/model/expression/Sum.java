@@ -47,8 +47,8 @@ public class Sum extends BinaryOperator {
                 new IntConstant(primitives, 2, ObjectFlow.NO_FLOW), l, objectFlow);
         if (l instanceof IntConstant li && li.constant() == 0) return r;
         if (r instanceof IntConstant ri && ri.constant() == 0) return l;
-        if (l instanceof NegatedExpression ln && ln.expression.equals(r) ||
-                r instanceof NegatedExpression rn && rn.expression.equals(l)) {
+        if (l instanceof Negation ln && ln.expression.equals(r) ||
+                r instanceof Negation rn && rn.expression.equals(l)) {
             return new IntConstant(primitives, 0, ObjectFlow.NO_FLOW);
         }
         if (l instanceof Numeric ln && r instanceof Numeric rn)
@@ -85,8 +85,8 @@ public class Sum extends BinaryOperator {
     // -(lhs + rhs) = -lhs + -rhs
     public Expression negate(EvaluationContext evaluationContext) {
         return Sum.sum(evaluationContext,
-                NegatedExpression.negate(evaluationContext, lhs),
-                NegatedExpression.negate(evaluationContext, rhs), getObjectFlow());
+                Negation.negate(evaluationContext, lhs),
+                Negation.negate(evaluationContext, rhs), getObjectFlow());
     }
 
     @Override

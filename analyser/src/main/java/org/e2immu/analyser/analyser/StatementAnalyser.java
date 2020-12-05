@@ -911,7 +911,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             ExecutionOfBlock e0 = list.get(0);
             if (list.size() == 1) {
                 if (e0.escapesAlways()) {
-                    return NegatedExpression.negate(evaluationContext, list.get(0).condition);
+                    return Negation.negate(evaluationContext, list.get(0).condition);
                 }
                 return EmptyExpression.EMPTY_EXPRESSION;
             }
@@ -940,7 +940,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (statementAnalysis.statement instanceof SwitchStatement) {
             Expression[] components = list.stream().filter(ExecutionOfBlock::escapesAlways).map(e -> e.condition).toArray(Expression[]::new);
             if (components.length == 0) return EmptyExpression.EMPTY_EXPRESSION;
-            return new AndExpression(evaluationContext.getPrimitives()).append(evaluationContext, components);
+            return new And(evaluationContext.getPrimitives()).append(evaluationContext, components);
         }
         // TODO SwitchExpressions?
         return EmptyExpression.EMPTY_EXPRESSION;
@@ -982,7 +982,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 conditionForSubStatement = null; // will not be executed anyway
             } else if (statement() instanceof SwitchEntry switchEntry) {
                 Expression constant = switchEntry.switchVariableAsExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT).value;
-                conditionForSubStatement = EqualsExpression.equals(evaluationContext, value, constant, ObjectFlow.NO_FLOW);
+                conditionForSubStatement = Equals.equals(evaluationContext, value, constant, ObjectFlow.NO_FLOW);
             } else throw new UnsupportedOperationException();
 
             FlowData.Execution execution = statementAnalysis.flowData.execution(statementsExecution);
@@ -1001,9 +1001,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (previousConditions.isEmpty()) {
             return new BooleanConstant(primitives, true);
         }
-        Expression[] negated = previousConditions.stream().map(c -> NegatedExpression.negate(evaluationContext, c))
+        Expression[] negated = previousConditions.stream().map(c -> Negation.negate(evaluationContext, c))
                 .toArray(Expression[]::new);
-        return new AndExpression(primitives, ObjectFlow.NO_FLOW).append(evaluationContext, negated);
+        return new And(primitives, ObjectFlow.NO_FLOW).append(evaluationContext, negated);
     }
 
     /**

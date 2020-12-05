@@ -33,7 +33,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class NegatedExpression extends UnaryOperator implements ExpressionWrapper {
+public class Negation extends UnaryOperator implements ExpressionWrapper {
     public final ObjectFlow objectFlow;
 
     public Expression getValue() {
@@ -45,16 +45,16 @@ public class NegatedExpression extends UnaryOperator implements ExpressionWrappe
         return WRAPPER_ORDER_NEGATED;
     }
 
-    private NegatedExpression(MethodInfo operator, Expression value) {
+    private Negation(MethodInfo operator, Expression value) {
         super(operator, value, DEFAULT_PRECEDENCE);
         this.objectFlow = value.getObjectFlow();
-        if (value.isInstanceOf(NegatedExpression.class)) throw new UnsupportedOperationException();
+        if (value.isInstanceOf(Negation.class)) throw new UnsupportedOperationException();
     }
 
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         EvaluationResult reValue = expression.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reValue);
-        return builder.setExpression(NegatedExpression.negate(evaluationContext, reValue.value)).build();
+        return builder.setExpression(Negation.negate(evaluationContext, reValue.value)).build();
     }
 
     @Override
@@ -72,18 +72,18 @@ public class NegatedExpression extends UnaryOperator implements ExpressionWrappe
         }
         if (v.isUnknown()) return v;
 
-        if (v instanceof NegatedExpression negatedExpression) return negatedExpression.expression;
-        if (v instanceof OrExpression or) {
+        if (v instanceof Negation negation) return negation.expression;
+        if (v instanceof Or or) {
             Expression[] negated = or.expressions().stream()
-                    .map(ov -> NegatedExpression.negate(evaluationContext, ov))
+                    .map(ov -> Negation.negate(evaluationContext, ov))
                     .toArray(Expression[]::new);
-            return new AndExpression(evaluationContext.getPrimitives(), v.getObjectFlow())
+            return new And(evaluationContext.getPrimitives(), v.getObjectFlow())
                     .append(evaluationContext, negated);
         }
-        if (v instanceof AndExpression and) {
+        if (v instanceof And and) {
             List<Expression> negated = and.expressions().stream()
-                    .map(av -> NegatedExpression.negate(evaluationContext, av)).collect(Collectors.toList());
-            return new OrExpression(evaluationContext.getPrimitives(), v.getObjectFlow())
+                    .map(av -> Negation.negate(evaluationContext, av)).collect(Collectors.toList());
+            return new Or(evaluationContext.getPrimitives(), v.getObjectFlow())
                     .append(evaluationContext, negated);
         }
         if (v instanceof Sum sum) {
@@ -95,14 +95,14 @@ public class NegatedExpression extends UnaryOperator implements ExpressionWrappe
         MethodInfo operator = v.isNumeric() ?
                 evaluationContext.getPrimitives().unaryMinusOperatorInt :
                 evaluationContext.getPrimitives().logicalNotOperatorBool;
-        return new NegatedExpression(operator, v);
+        return new Negation(operator, v);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        NegatedExpression that = (NegatedExpression) o;
+        Negation that = (Negation) o;
         return expression.equals(that.expression);
     }
 

@@ -26,11 +26,11 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 
-public class EqualsExpression extends BinaryOperator {
+public class Equals extends BinaryOperator {
 
     // public for testing
-    public EqualsExpression(Primitives primitives,
-                            Expression lhs, Expression rhs, ObjectFlow objectFlow) {
+    public Equals(Primitives primitives,
+                  Expression lhs, Expression rhs, ObjectFlow objectFlow) {
         super(primitives, lhs, lhs.isNumeric() ? primitives.equalsOperatorInt : primitives.equalsOperatorObject,
                 rhs, BinaryOperator.EQUALITY_PRECEDENCE, objectFlow);
     }
@@ -40,7 +40,7 @@ public class EqualsExpression extends BinaryOperator {
         EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
         EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(EqualsExpression.equals(evaluationContext, reLhs.value, reRhs.value, objectFlow)).build();
+        return builder.setExpression(Equals.equals(evaluationContext, reLhs.value, reRhs.value, objectFlow)).build();
     }
 
     public static Expression equals(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {
@@ -55,8 +55,8 @@ public class EqualsExpression extends BinaryOperator {
         if (l instanceof ConstantExpression<?> lc && r instanceof ConstantExpression<?> rc) {
             return ConstantExpression.equalsExpression(primitives, lc, rc);
         }
-        return l.compareTo(r) < 0 ? new EqualsExpression(primitives, l, r, objectFlow) :
-                new EqualsExpression(primitives, r, l, objectFlow);
+        return l.compareTo(r) < 0 ? new Equals(primitives, l, r, objectFlow) :
+                new Equals(primitives, r, l, objectFlow);
     }
 
     @Override

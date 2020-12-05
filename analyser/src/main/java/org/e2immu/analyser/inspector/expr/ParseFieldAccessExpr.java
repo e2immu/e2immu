@@ -22,7 +22,7 @@ import com.github.javaparser.Position;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import org.e2immu.analyser.inspector.ExpressionContext;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.ArrayLengthExpression;
+import org.e2immu.analyser.model.expression.ArrayLength;
 import org.e2immu.analyser.model.expression.FieldAccess;
 import org.e2immu.analyser.model.expression.TypeExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -57,7 +57,7 @@ public class ParseFieldAccessExpr {
     public static Expression createFieldAccess(ExpressionContext expressionContext, Expression object, String name, Position positionForErrorReporting) {
         ParameterizedType objectType = object.returnType();
         if (objectType.arrays > 0 && "length".equals(name)) {
-            return new ArrayLengthExpression(expressionContext.typeContext.getPrimitives(), object);
+            return new ArrayLength(expressionContext.typeContext.getPrimitives(), object);
         }
         if (objectType.typeInfo != null) {
             Optional<FieldInfo> oFieldInfo = Resolver.accessibleFieldsStream(expressionContext.typeContext,

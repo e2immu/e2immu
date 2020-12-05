@@ -139,8 +139,8 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
     private static Object returnValueOfNonArrayExpression(ParameterizedType returnType, Expression expression) {
 
         // normal "constant" or 123
-        if (expression instanceof Constant) {
-            return ((Constant<?>) expression).getValue();
+        if (expression instanceof ConstantExpression<?> ce) {
+            return ce.getValue();
         }
 
         // direct reference with import static

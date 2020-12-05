@@ -405,7 +405,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             if (before.toString().equals(precondition.toString())) {
                 after = false;
             } else {
-                Expression negated = NegatedExpression.negate(evaluationContext, precondition);
+                Expression negated = Negation.negate(evaluationContext, precondition);
                 if (before.toString().equals(negated.toString())) {
                     if (after == null) after = true;
                 } else {

@@ -39,22 +39,22 @@ import java.util.function.Predicate;
  * a ? b : c
  *
  */
-public class InlineConditionalOperator implements Expression {
+public class InlineConditional implements Expression {
     public final Expression condition;
     public final Expression ifTrue;
     public final Expression ifFalse;
     public final ObjectFlow objectFlow;
 
-    public InlineConditionalOperator(Expression condition,
-                                     Expression ifTrue,
-                                     Expression ifFalse) {
+    public InlineConditional(Expression condition,
+                             Expression ifTrue,
+                             Expression ifFalse) {
         this(condition, ifTrue, ifFalse, ObjectFlow.NO_FLOW);
     }
 
-    public InlineConditionalOperator(Expression condition,
-                                     Expression ifTrue,
-                                     Expression ifFalse,
-                                     ObjectFlow objectFlow) {
+    public InlineConditional(Expression condition,
+                             Expression ifTrue,
+                             Expression ifFalse,
+                             ObjectFlow objectFlow) {
         this.condition = Objects.requireNonNull(condition);
         this.ifFalse = Objects.requireNonNull(ifFalse);
         this.ifTrue = Objects.requireNonNull(ifTrue);
@@ -65,7 +65,7 @@ public class InlineConditionalOperator implements Expression {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        InlineConditionalOperator that = (InlineConditionalOperator) o;
+        InlineConditional that = (InlineConditional) o;
         return condition.equals(that.condition) &&
                 ifTrue.equals(that.ifTrue) &&
                 ifFalse.equals(that.ifFalse);
@@ -78,7 +78,7 @@ public class InlineConditionalOperator implements Expression {
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new InlineConditionalOperator(
+        return new InlineConditional(
                 translationMap.translateExpression(condition),
                 translationMap.translateExpression(ifTrue),
                 translationMap.translateExpression(ifFalse));
@@ -138,12 +138,12 @@ public class InlineConditionalOperator implements Expression {
         if (variableProperty == VariableProperty.NOT_NULL) {
             Expression c = condition;
             boolean not = false;
-            if (c.isInstanceOf(NegatedExpression.class)) {
-                c = ((NegatedExpression) c).expression;
+            if (c.isInstanceOf(Negation.class)) {
+                c = ((Negation) c).expression;
                 not = true;
             }
-            EqualsExpression equalsValue;
-            if ((equalsValue = c.asInstanceOf(EqualsExpression.class)) != null && equalsValue.lhs.isInstanceOf(NullConstant.class)) {
+            Equals equalsValue;
+            if ((equalsValue = c.asInstanceOf(Equals.class)) != null && equalsValue.lhs.isInstanceOf(NullConstant.class)) {
                 // null == rhs or not (null == rhs), now check that rhs appears left or right
                 Expression rhs = equalsValue.rhs;
                 if (ifTrue.equals(rhs)) {
@@ -216,7 +216,7 @@ public class InlineConditionalOperator implements Expression {
         EvaluationResult ifTrueResult = ifTrue.evaluate(copyForThen, forwardEvaluationInfo);
         builder.compose(ifTrueResult);
 
-        EvaluationContext copyForElse = evaluationContext.child(NegatedExpression.negate(evaluationContext, conditionResult.value));
+        EvaluationContext copyForElse = evaluationContext.child(Negation.negate(evaluationContext, conditionResult.value));
         EvaluationResult ifFalseResult = ifFalse.evaluate(copyForElse, forwardEvaluationInfo);
         builder.compose(ifFalseResult);
 

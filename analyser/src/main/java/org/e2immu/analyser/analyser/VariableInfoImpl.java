@@ -20,7 +20,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NegatedExpression;
+import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
@@ -349,7 +349,7 @@ class VariableInfoImpl implements VariableInfo {
 
         if (s1 != EmptyExpression.EMPTY_EXPRESSION && s2 != EmptyExpression.EMPTY_EXPRESSION) {
             // int c; if(s1) c = a; else c = b;
-            if (NegatedExpression.negate(evaluationContext, s1).equals(s2)) {
+            if (Negation.negate(evaluationContext, s1).equals(s2)) {
                 return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s1, vi1.getValue(), vi2.getValue(), ObjectFlow.NO_FLOW));
             } else throw new UnsupportedOperationException("? impossible situation");
         }

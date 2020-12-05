@@ -38,16 +38,16 @@ import java.util.stream.Collectors;
 import static org.e2immu.analyser.util.Logger.LogTarget.CNF;
 import static org.e2immu.analyser.util.Logger.log;
 
-public record OrExpression(Primitives primitives,
-                           List<Expression> expressions,
-                           ObjectFlow objectFlow) implements Expression {
+public record Or(Primitives primitives,
+                 List<Expression> expressions,
+                 ObjectFlow objectFlow) implements Expression {
 
     // testing only
-    public OrExpression(Primitives primitives) {
+    public Or(Primitives primitives) {
         this(primitives, List.of(), ObjectFlow.NO_FLOW);
     }
 
-    public OrExpression(Primitives primitives, ObjectFlow objectFlow) {
+    public Or(Primitives primitives, ObjectFlow objectFlow) {
         this(primitives, List.of(), objectFlow);
     }
 
@@ -62,7 +62,7 @@ public record OrExpression(Primitives primitives,
         // STEP 1: trivial reductions
 
         if (this.expressions.isEmpty() && values.size() == 1) {
-            if (values.get(0) instanceof OrExpression || values.get(0) instanceof AndExpression) {
+            if (values.get(0) instanceof Or || values.get(0) instanceof And) {
                 log(CNF, "Return immediately in Or: {}", values.get(0));
                 return values.get(0);
             }
@@ -82,7 +82,7 @@ public record OrExpression(Primitives primitives,
         }
         // STEP 4: loop
 
-        AndExpression firstAnd = null;
+        And firstAnd = null;
         boolean changes = true;
         while (changes) {
             changes = false;
@@ -109,7 +109,7 @@ public record OrExpression(Primitives primitives,
 
                 // this works because of sorting
                 // A || !A will always sit next to each other
-                if (value instanceof NegatedExpression ne && ne.expression.equals(prev)) {
+                if (value instanceof Negation ne && ne.expression.equals(prev)) {
                     log(CNF, "Return TRUE in Or, found opposites {}", value);
                     return new BooleanConstant(primitives, true);
                 }
@@ -117,7 +117,7 @@ public record OrExpression(Primitives primitives,
                 // A || A
                 if (value.equals(prev)) {
                     changes = true;
-                } else if (value instanceof AndExpression andValue) {
+                } else if (value instanceof And andValue) {
                     if (andValue.expressions().size() == 1) {
                         newConcat.add(andValue.expressions().get(0));
                         changes = true;
@@ -140,15 +140,15 @@ public record OrExpression(Primitives primitives,
                     .map(v -> append(evaluationContext, ListUtil.immutableConcat(finalValues, List.of(v))))
                     .toArray(Expression[]::new);
             log(CNF, "Found And-clause {} in {}, components for new And are {}", firstAnd, this, Arrays.toString(components));
-            return new AndExpression(primitives, objectFlow).append(evaluationContext, components);
+            return new And(primitives, objectFlow).append(evaluationContext, components);
         }
         if (finalValues.size() == 1) return finalValues.get(0);
-        return new OrExpression(primitives, finalValues, objectFlow);
+        return new Or(primitives, finalValues, objectFlow);
     }
 
     private void recursivelyAdd(ArrayList<Expression> concat, List<Expression> collect) {
         for (Expression value : collect) {
-            if (value instanceof OrExpression or) {
+            if (value instanceof Or or) {
                 concat.addAll(or.expressions);
             } else {
                 concat.add(value);
@@ -160,7 +160,7 @@ public record OrExpression(Primitives primitives,
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        OrExpression orValue = (OrExpression) o;
+        Or orValue = (Or) o;
         return expressions.equals(orValue.expressions);
     }
 
@@ -209,7 +209,7 @@ public record OrExpression(Primitives primitives,
 
     @Override
     public int internalCompareTo(Expression v) {
-        OrExpression orValue = (OrExpression) v;
+        Or orValue = (Or) v;
         return ListUtil.compare(expressions, orValue.expressions);
     }
 
@@ -233,7 +233,7 @@ public record OrExpression(Primitives primitives,
         Expression[] reClauses = reClauseERs.stream().map(er -> er.value).toArray(Expression[]::new);
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(new OrExpression(primitives, objectFlow).append(evaluationContext, reClauses))
+                .setExpression(new Or(primitives, objectFlow).append(evaluationContext, reClauses))
                 .build();
     }
 

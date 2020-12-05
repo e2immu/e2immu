@@ -112,7 +112,7 @@ public class UnaryOperator implements Expression {
         if (v.isUnknown()) return v;
 
         if (operator == primitives.logicalNotOperatorBool || operator == primitives.unaryMinusOperatorInt) {
-            return NegatedExpression.negate(evaluationContext, v);
+            return Negation.negate(evaluationContext, v);
         }
         if (operator == primitives.unaryPlusOperatorInt) {
             return v;

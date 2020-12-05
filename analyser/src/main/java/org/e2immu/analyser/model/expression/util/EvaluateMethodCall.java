@@ -230,7 +230,7 @@ public class EvaluateMethodCall {
             if (Primitives.isBoolean(methodInfo.returnType().typeInfo)) {
                 // State is: (org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and 0 == java.util.Collection.this.size())
                 // Resulting value: (java.util.Set.contains(java.lang.Object) and not (0 == java.util.Collection.this.size()))
-                Expression reduced = new AndExpression(evaluationContext.getPrimitives()).append(evaluationContext, instance.state, resultingValue);
+                Expression reduced = new And(evaluationContext.getPrimitives()).append(evaluationContext, instance.state, resultingValue);
                 if (reduced instanceof BooleanConstant) {
                     return reduced;
                 }

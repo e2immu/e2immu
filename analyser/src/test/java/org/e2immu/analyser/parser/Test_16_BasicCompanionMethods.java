@@ -229,7 +229,7 @@ public class Test_16_BasicCompanionMethods extends CommonTestRunner {
             Expression appendCompanionValue = appendCa.getValue();
             Assert.assertEquals("(java.lang.Integer.toString(java.lang.StringBuilder.append(int):0:i).length() + pre) == java.lang.CharSequence.this.length()",
                     appendCa.getValue().toString());
-            if (appendCompanionValue instanceof EqualsExpression eq && eq.lhs instanceof Sum sum && sum.lhs instanceof MethodCall lengthCall) {
+            if (appendCompanionValue instanceof Equals eq && eq.lhs instanceof Sum sum && sum.lhs instanceof MethodCall lengthCall) {
                 Assert.assertSame(lengthCall.methodInfo, stringLength);
             } else Assert.fail();
 

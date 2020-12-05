@@ -110,7 +110,7 @@ public interface Expression extends Element, Comparable<Expression> {
     }
 
     default boolean isNotNull() {
-        NegatedExpression negatedValue = asInstanceOf(NegatedExpression.class);
+        Negation negatedValue = asInstanceOf(Negation.class);
         return negatedValue != null && negatedValue.expression.isInstanceOf(NullConstant.class);
     }
 

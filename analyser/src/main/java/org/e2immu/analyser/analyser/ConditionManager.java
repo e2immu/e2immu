@@ -72,7 +72,7 @@ public class ConditionManager {
 
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the condition
-        Expression result = new AndExpression(evaluationContext.getPrimitives(), value.getObjectFlow())
+        Expression result = new And(evaluationContext.getPrimitives(), value.getObjectFlow())
                 .append(evaluationContext, condition, value);
         if (result.equals(condition)) {
             // constant true: adding the value has no effect at all
@@ -94,7 +94,7 @@ public class ConditionManager {
         if (condition == EmptyExpression.EMPTY_EXPRESSION) return value;
         if (value == EmptyExpression.EMPTY_EXPRESSION) return condition;
         if (isDelayed(condition) || isDelayed(value)) return EmptyExpression.NO_VALUE;
-        return new AndExpression(evaluationContext.getPrimitives(), value.getObjectFlow())
+        return new And(evaluationContext.getPrimitives(), value.getObjectFlow())
                 .append(evaluationContext, condition, value);
     }
 
@@ -169,8 +169,8 @@ public class ConditionManager {
         if ((variableValue = value.asInstanceOf(VariableExpression.class)) != null && variable.equals(variableValue.variable())) {
             return new Filter.FilterResult<>(Map.of(variable, value), EmptyExpression.EMPTY_EXPRESSION);
         }
-        EqualsExpression equalsValue;
-        if (removeEqualityOnVariable && (equalsValue = value.asInstanceOf(EqualsExpression.class)) != null) {
+        Equals equalsValue;
+        if (removeEqualityOnVariable && (equalsValue = value.asInstanceOf(Equals.class)) != null) {
             VariableExpression lhs;
             if ((lhs = equalsValue.lhs.asInstanceOf(VariableExpression.class)) != null && variable.equals(lhs.variable())) {
                 return new Filter.FilterResult<>(Map.of(lhs.variable(), value), EmptyExpression.EMPTY_EXPRESSION);
@@ -231,7 +231,7 @@ public class ConditionManager {
 
         // and negate. This will become the precondition or "initial state"
         EvaluationResult reRest = filterResult.rest().reEvaluate(evaluationContext, translation);
-        return builder.compose(reRest).setExpression(NegatedExpression.negate(evaluationContext, reRest.value)).build();
+        return builder.compose(reRest).setExpression(Negation.negate(evaluationContext, reRest.value)).build();
     }
 
     private static Filter.FilterResult<Variable> obtainVariableFilter(Variable variable, Expression value) {

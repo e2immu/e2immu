@@ -22,8 +22,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.AndExpression;
-import org.e2immu.analyser.model.expression.NegatedExpression;
+import org.e2immu.analyser.model.expression.And;
+import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -429,7 +429,7 @@ public class TypeAnalyser extends AbstractAnalyser {
 
     private void handlePrecondition(@NotModified MethodAnalyser methodAnalyser, Expression precondition, Map<String, Expression> tempApproved, int iteration) {
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
-        Expression negated = NegatedExpression.negate(evaluationContext, precondition);
+        Expression negated = Negation.negate(evaluationContext, precondition);
         String label = labelOfPreconditionForMarkAndOnly(precondition);
         Expression inMap = tempApproved.get(label);
 
@@ -474,7 +474,7 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     private static boolean isCompatible(EvaluationContext evaluationContext, Expression v1, Expression v2) {
-        Expression and = new AndExpression(evaluationContext.getPrimitives()).append(evaluationContext, v1, v2);
+        Expression and = new And(evaluationContext.getPrimitives()).append(evaluationContext, v1, v2);
         return v1.equals(and) || v2.equals(and);
     }
 

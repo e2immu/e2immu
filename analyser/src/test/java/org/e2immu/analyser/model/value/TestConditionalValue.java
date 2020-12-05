@@ -35,8 +35,8 @@ public class TestConditionalValue extends CommonAbstractValue {
 
     @Test
     public void test1() {
-        Expression cv1 = new InlineConditionalOperator(a, newInt(3), newInt(4), ObjectFlow.NO_FLOW);
-        Expression cv2 = new InlineConditionalOperator(a, newInt(3), newInt(4), ObjectFlow.NO_FLOW);
+        Expression cv1 = new InlineConditional(a, newInt(3), newInt(4), ObjectFlow.NO_FLOW);
+        Expression cv2 = new InlineConditional(a, newInt(3), newInt(4), ObjectFlow.NO_FLOW);
         Assert.assertEquals("a?3:4", cv1.toString());
         Assert.assertEquals("a?3:4", cv2.toString());
         Assert.assertEquals(cv1, cv2);
@@ -73,7 +73,7 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression cv2 = EvaluateInlineConditional.conditionalValueConditionResolved(child, isFactA, a, b, ObjectFlow.NO_FLOW).value;
         Assert.assertSame(a, cv2);
 
-        EvaluationContext child2 = minimalEvaluationContext.child(new AndExpression(PRIMITIVES).append(minimalEvaluationContext, a, b));
+        EvaluationContext child2 = minimalEvaluationContext.child(new And(PRIMITIVES).append(minimalEvaluationContext, a, b));
         Assert.assertEquals("(a and b)", child2.getConditionManager().state.toString());
         Expression cv3 = EvaluateInlineConditional.conditionalValueConditionResolved(child2, isFactA, a, b, ObjectFlow.NO_FLOW).value;
         Assert.assertSame(a, cv3);
@@ -82,8 +82,8 @@ public class TestConditionalValue extends CommonAbstractValue {
         Assert.assertSame(a, cv3b);
 
         EvaluationContext child3 = minimalEvaluationContext.child(
-                new OrExpression(PRIMITIVES).append(minimalEvaluationContext, c,
-                        new AndExpression(PRIMITIVES).append(minimalEvaluationContext, a, b)));
+                new Or(PRIMITIVES).append(minimalEvaluationContext, c,
+                        new And(PRIMITIVES).append(minimalEvaluationContext, a, b)));
         Assert.assertEquals("((a or c) and (b or c))", child3.getConditionManager().state.toString());
         Expression cv4 = EvaluateInlineConditional.conditionalValueConditionResolved(child3, isFactA, a, b, ObjectFlow.NO_FLOW).value;
         Assert.assertSame(b, cv4);
@@ -93,9 +93,9 @@ public class TestConditionalValue extends CommonAbstractValue {
     public void test4() {
         Expression cv1 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext, a, b, c, ObjectFlow.NO_FLOW).value;
         Assert.assertEquals("a?b:c", cv1.toString());
-        Expression and1 = new AndExpression(PRIMITIVES).append(minimalEvaluationContext, a, cv1);
+        Expression and1 = new And(PRIMITIVES).append(minimalEvaluationContext, a, cv1);
         Assert.assertEquals("(a and b)", and1.toString());
-        Expression and2 = new AndExpression(PRIMITIVES).append(minimalEvaluationContext, negate(a), cv1);
+        Expression and2 = new And(PRIMITIVES).append(minimalEvaluationContext, negate(a), cv1);
         Assert.assertEquals("(not (a) and c)", and2.toString());
     }
 }

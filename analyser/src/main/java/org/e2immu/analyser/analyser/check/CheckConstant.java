@@ -1,6 +1,7 @@
 package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.analyser.model.expression.StringConstant;
@@ -48,7 +49,7 @@ public class CheckConstant {
         boolean verifyAbsent = constant.e2ImmuAnnotationParameters().isVerifyAbsent();
         String value = constant.extract("value", "");
 
-        boolean haveConstantValue = singleReturnValue instanceof org.e2immu.analyser.model.Constant;
+        boolean haveConstantValue = singleReturnValue instanceof ConstantExpression;
         if (verifyAbsent) {
             if (haveConstantValue) {
                 messages.add(Message.newMessage(where, Message.ANNOTATION_UNEXPECTEDLY_PRESENT, "Constant"));

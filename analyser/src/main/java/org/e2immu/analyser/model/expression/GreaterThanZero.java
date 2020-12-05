@@ -79,12 +79,12 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
                         -(ln.doubleValue() + 1.0), sum.lhs.getObjectFlow());
                 return new GreaterThanZero(booleanParameterizedType,
                         Sum.sum(evaluationContext, minusSumPlusOne,
-                                NegatedExpression.negate(evaluationContext, sum.rhs),
+                                Negation.negate(evaluationContext, sum.rhs),
                                 expression.getObjectFlow()), true, getObjectFlow());
             }
         }
         return new GreaterThanZero(booleanParameterizedType,
-                NegatedExpression.negate(evaluationContext, expression),
+                Negation.negate(evaluationContext, expression),
                 !allowEquals, getObjectFlow());
     }
 
@@ -102,21 +102,21 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
                 Expression x;
                 boolean lessThan;
                 double b;
-                if (v instanceof NegatedExpression ne) {
+                if (v instanceof Negation ne) {
                     x = ne.expression;
                     lessThan = true;
                     b = ln.doubleValue();
                 } else {
                     x = v;
                     lessThan = false;
-                    b = ((Numeric) NegatedExpression.negate(evaluationContext, sumValue.lhs)).doubleValue();
+                    b = ((Numeric) Negation.negate(evaluationContext, sumValue.lhs)).doubleValue();
                 }
                 return new XB(x, b, lessThan);
             }
         }
         Expression x;
         boolean lessThan;
-        if (expression instanceof NegatedExpression ne) {
+        if (expression instanceof Negation ne) {
             x = ne.expression;
             lessThan = true;
         } else {
@@ -153,7 +153,7 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
             Expression lMinusOne = IntConstant.intOrDouble(primitives, ln.doubleValue() - 1.0, l.getObjectFlow());
             return new GreaterThanZero(booleanParameterizedType,
                     Sum.sum(evaluationContext, lMinusOne,
-                            NegatedExpression.negate(evaluationContext, r),
+                            Negation.negate(evaluationContext, r),
                             objectFlowSum), true, objectFlow);
         }
         if (r instanceof Numeric rn && !allowEquals && r.isDiscreteType()) {
@@ -164,7 +164,7 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
         }
 
         return new GreaterThanZero(booleanParameterizedType,
-                Sum.sum(evaluationContext, l, NegatedExpression.negate(evaluationContext, r), objectFlowSum),
+                Sum.sum(evaluationContext, l, Negation.negate(evaluationContext, r), objectFlowSum),
                 allowEquals, objectFlow);
     }
 
@@ -200,7 +200,7 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
             // x < 3 == 3 + -x > 0 transform to x <= 2 == 2 + -x >= 0
             Expression rMinusOne = IntConstant.intOrDouble(primitives, rn.doubleValue() - 1.0, r.getObjectFlow());
             return new GreaterThanZero(booleanParameterizedType,
-                    Sum.sum(evaluationContext, NegatedExpression.negate(evaluationContext, l), rMinusOne, objectFlowSum), true, objectFlow);
+                    Sum.sum(evaluationContext, Negation.negate(evaluationContext, l), rMinusOne, objectFlowSum), true, objectFlow);
         }
         // l < r <=> l-r < 0 <=> -l+r > 0
         if (l instanceof Numeric ln) {
@@ -211,7 +211,7 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
         // TODO add tautology call
 
         return new GreaterThanZero(primitives.booleanParameterizedType, Sum.sum(evaluationContext,
-                NegatedExpression.negate(evaluationContext, l), r, objectFlowSum), allowEquals, objectFlow);
+                Negation.negate(evaluationContext, l), r, objectFlowSum), allowEquals, objectFlow);
     }
 
     @Override

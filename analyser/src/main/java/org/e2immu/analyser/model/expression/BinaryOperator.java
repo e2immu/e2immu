@@ -190,14 +190,14 @@ public class BinaryOperator implements Expression {
                     r == NullConstant.NULL_CONSTANT && left.isNotNull0(evaluationContext)) {
                 return new BooleanConstant(primitives, false);
             }
-            return EqualsExpression.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext));
+            return Equals.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.equalsOperatorInt) {
             if (l.equals(r)) return new BooleanConstant(primitives, true);
             if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
                 // TODO need more resolution here to distinguish int vs Integer comparison throw new UnsupportedOperationException();
             }
-            return EqualsExpression.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext));
+            return Equals.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.notEqualsOperatorObject) {
             if (l.equals(r)) new BooleanConstant(primitives, false);
@@ -207,16 +207,16 @@ public class BinaryOperator implements Expression {
                     r == NullConstant.NULL_CONSTANT && left.isNotNull0(evaluationContext)) {
                 return new BooleanConstant(primitives, true);
             }
-            return NegatedExpression.negate(evaluationContext,
-                    EqualsExpression.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext)));
+            return Negation.negate(evaluationContext,
+                    Equals.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext)));
         }
         if (operator == primitives.notEqualsOperatorInt) {
             if (l.equals(r)) return new BooleanConstant(primitives, false);
             if (l == NullConstant.NULL_CONSTANT || r == NullConstant.NULL_CONSTANT) {
                 // TODO need more resolution throw new UnsupportedOperationException();
             }
-            return NegatedExpression.negate(evaluationContext,
-                    EqualsExpression.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext)));
+            return Negation.negate(evaluationContext,
+                    Equals.equals(evaluationContext, l, r, booleanObjectFlow(primitives, evaluationContext)));
         }
 
         // from here on, straightforward operations
@@ -224,7 +224,7 @@ public class BinaryOperator implements Expression {
             return Sum.sum(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.minusOperatorInt) {
-            return Sum.sum(evaluationContext, l, NegatedExpression.negate(evaluationContext, r), intObjectFlow(primitives, evaluationContext));
+            return Sum.sum(evaluationContext, l, Negation.negate(evaluationContext, r), intObjectFlow(primitives, evaluationContext));
         }
         if (operator == primitives.multiplyOperatorInt) {
             return Product.product(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
@@ -295,7 +295,7 @@ public class BinaryOperator implements Expression {
             return builder.compose(l).build();
         }
 
-        Expression condition = and ? l.value : NegatedExpression.negate(evaluationContext, l.value);
+        Expression condition = and ? l.value : Negation.negate(evaluationContext, l.value);
         EvaluationContext child = evaluationContext.child(condition);
         EvaluationResult r = rhs.evaluate(child, forward);
         builder.compose(l, r);
@@ -309,9 +309,9 @@ public class BinaryOperator implements Expression {
         ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(),
                 evaluationContext.getPrimitives().booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
         if (and) {
-            builder.setExpression(new AndExpression(primitives, objectFlow).append(evaluationContext, l.value, r.value));
+            builder.setExpression(new And(primitives, objectFlow).append(evaluationContext, l.value, r.value));
         } else {
-            builder.setExpression(new OrExpression(primitives, objectFlow).append(evaluationContext, l.value, r.value));
+            builder.setExpression(new Or(primitives, objectFlow).append(evaluationContext, l.value, r.value));
         }
         return builder.build();
     }

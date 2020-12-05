@@ -558,7 +558,7 @@ public class ExpressionContext {
                 org.e2immu.analyser.model.Expression condition = parseExpression(conditionalExpr.getCondition());
                 org.e2immu.analyser.model.Expression ifTrue = parseExpression(conditionalExpr.getThenExpr());
                 org.e2immu.analyser.model.Expression ifFalse = parseExpression(conditionalExpr.getElseExpr());
-                return new InlineConditionalOperator(condition, ifTrue, ifFalse);
+                return new InlineConditional(condition, ifTrue, ifFalse);
             }
             if (expression.isFieldAccessExpr()) {
                 return ParseFieldAccessExpr.parse(this, expression.asFieldAccessExpr());

@@ -85,7 +85,7 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
         if (newMap.isEmpty() && objectFlow == null) return value;
 
         // second, we always want the negation to be on the outside
-        if (value instanceof NegatedExpression) {
+        if (value instanceof Negation) {
             throw new UnsupportedOperationException(); // this makes no sense!!
         }
         return new PropertyWrapper(value, properties, objectFlow);

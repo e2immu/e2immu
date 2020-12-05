@@ -18,8 +18,8 @@
 
 package org.e2immu.analyser.annotationxml.model;
 
-import org.e2immu.analyser.model.Constant;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.MemberValuePair;
 import org.e2immu.annotation.E2Immutable;
 
@@ -34,7 +34,7 @@ public class Value {
     }
 
     public Value(Expression expression) {
-        if (expression instanceof Constant) {
+        if (expression instanceof ConstantExpression) {
             name = null; // default name = 'value'
             val = expression.minimalOutput(); // "abc", 3.14, true, 'C'
         } else if (expression instanceof MemberValuePair mvp) {

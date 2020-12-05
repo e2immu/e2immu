@@ -18,7 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.AndExpression;
+import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.FlipSwitch;
@@ -42,7 +42,7 @@ public class StateData {
 
             Expression reduced = Stream.concat(fromBlocks, fromPrevious)
                     .reduce(EmptyExpression.EMPTY_EXPRESSION, (v1, v2) -> v1 == EmptyExpression.EMPTY_EXPRESSION ? v2 : v2 == EmptyExpression.EMPTY_EXPRESSION ? v1 :
-                            new AndExpression(evaluationContext.getPrimitives())
+                            new And(evaluationContext.getPrimitives())
                                     .append(evaluationContext, v1, v2));
             precondition.set(reduced);
         }

@@ -39,16 +39,16 @@ import java.util.stream.Collectors;
 import static org.e2immu.analyser.util.Logger.LogTarget.CNF;
 import static org.e2immu.analyser.util.Logger.log;
 
-public record AndExpression(Primitives primitives,
-                            List<Expression> expressions,
-                            ObjectFlow objectFlow) implements Expression {
+public record And(Primitives primitives,
+                  List<Expression> expressions,
+                  ObjectFlow objectFlow) implements Expression {
 
     // testing only
-    public AndExpression(Primitives primitives) {
+    public And(Primitives primitives) {
         this(primitives, List.of(), ObjectFlow.NO_FLOW);
     }
 
-    public AndExpression(Primitives primitives, ObjectFlow objectFlow) {
+    public And(Primitives primitives, ObjectFlow objectFlow) {
         this(primitives, List.of(), objectFlow);
     }
 
@@ -66,7 +66,7 @@ public record AndExpression(Primitives primitives,
 
         // STEP 1: trivial reductions
 
-        if (this.expressions.isEmpty() && values.length == 1 && values[0] instanceof AndExpression) return values[0];
+        if (this.expressions.isEmpty() && values.length == 1 && values[0] instanceof And) return values[0];
 
         // STEP 2: concat everything
 
@@ -149,7 +149,7 @@ public record AndExpression(Primitives primitives,
             log(CNF, "And reduced to 1 component: {}", concat.get(0));
             return concat.get(0);
         }
-        AndExpression res = new AndExpression(primitives, ImmutableList.copyOf(concat), objectFlow);
+        And res = new And(primitives, ImmutableList.copyOf(concat), objectFlow);
         log(CNF, "Constructed {}", res);
         return res;
     }
@@ -161,19 +161,19 @@ public record AndExpression(Primitives primitives,
 
         // this works because of sorting
         // A && !A will always sit next to each other
-        if (value instanceof NegatedExpression negatedValue && negatedValue.expression.equals(prev)) {
+        if (value instanceof Negation negatedValue && negatedValue.expression.equals(prev)) {
             log(CNF, "Return FALSE in And, found opposites for {}", value);
             return Action.FALSE;
         }
 
         // A && A ? B : C --> A && B
-        if (value instanceof InlineConditionalOperator conditionalValue && conditionalValue.condition.equals(prev)) {
+        if (value instanceof InlineConditional conditionalValue && conditionalValue.condition.equals(prev)) {
             newConcat.add(conditionalValue.ifTrue);
             return Action.SKIP;
         }
         // A ? B : C && !A --> !A && C
-        if (prev instanceof InlineConditionalOperator conditionalValue &&
-                conditionalValue.condition.equals(NegatedExpression.negate(evaluationContext, value))) {
+        if (prev instanceof InlineConditional conditionalValue &&
+                conditionalValue.condition.equals(Negation.negate(evaluationContext, value))) {
             newConcat.set(newConcat.size() - 1, conditionalValue.ifFalse); // full replace
             return Action.ADD_CHANGE;
         }
@@ -182,13 +182,13 @@ public record AndExpression(Primitives primitives,
         // if we keep doing this, the OrValue empties out, and we are in the situation:
         // A && !B && (!A || B) ==> each of the components of an OR occur in negative form earlier on
         // this is the more complicated form of A && !A
-        if (value instanceof OrExpression) {
+        if (value instanceof Or) {
             List<Expression> remaining = new ArrayList<>(components(value));
             Iterator<Expression> iterator = remaining.iterator();
             boolean changed = false;
             while (iterator.hasNext()) {
                 Expression value1 = iterator.next();
-                Expression negated1 = NegatedExpression.negate(evaluationContext, value1);
+                Expression negated1 = Negation.negate(evaluationContext, value1);
                 boolean found = false;
                 for (int pos2 = 0; pos2 < newConcat.size(); pos2++) {
                     if (pos2 != pos && negated1.equals(newConcat.get(pos2))) {
@@ -207,7 +207,7 @@ public record AndExpression(Primitives primitives,
                     return Action.FALSE;
                 }
                 // replace
-                Expression orValue = new OrExpression(primitives, objectFlow)
+                Expression orValue = new Or(primitives, objectFlow)
                         .append(evaluationContext, remaining);
                 newConcat.add(orValue);
                 return Action.SKIP;
@@ -216,7 +216,7 @@ public record AndExpression(Primitives primitives,
 
         // the more complicated variant of A && A => A
         // A && (A || xxx) ==> A
-        if (value instanceof OrExpression) {
+        if (value instanceof Or) {
             List<Expression> components = components(value);
             for (Expression value1 : components) {
                 for (Expression value2 : newConcat) {
@@ -227,7 +227,7 @@ public record AndExpression(Primitives primitives,
             }
         }
         // A || B &&  A || !B ==> A
-        if (value instanceof OrExpression && prev instanceof OrExpression) {
+        if (value instanceof Or && prev instanceof Or) {
             List<Expression> components = components(value);
             List<Expression> prevComponents = components(prev);
             List<Expression> equal = new ArrayList<>();
@@ -235,14 +235,14 @@ public record AndExpression(Primitives primitives,
             for (Expression value1 : components) {
                 if (prevComponents.contains(value1)) {
                     equal.add(value1);
-                } else if (!prevComponents.contains(NegatedExpression.negate(evaluationContext, value1))) {
+                } else if (!prevComponents.contains(Negation.negate(evaluationContext, value1))) {
                     // not opposite, e.g. C
                     ok = false;
                     break;
                 }
             }
             if (ok && !equal.isEmpty()) {
-                Expression orValue = new OrExpression(primitives, objectFlow).append(evaluationContext, equal);
+                Expression orValue = new Or(primitives, objectFlow).append(evaluationContext, equal);
                 newConcat.set(newConcat.size() - 1, orValue);
                 return Action.SKIP;
             }
@@ -250,7 +250,7 @@ public record AndExpression(Primitives primitives,
 
         // simplification of the OrValue
 
-        if (value instanceof OrExpression orValue) {
+        if (value instanceof Or orValue) {
             if (orValue.expressions().size() == 1) {
                 newConcat.add(orValue.expressions().get(0));
                 return Action.SKIP;
@@ -260,8 +260,8 @@ public record AndExpression(Primitives primitives,
 
         // combinations with equality
 
-        if (prev instanceof NegatedExpression negatedPrev && negatedPrev.expression instanceof EqualsExpression ev1) {
-            if (value instanceof EqualsExpression ev2) {
+        if (prev instanceof Negation negatedPrev && negatedPrev.expression instanceof Equals ev1) {
+            if (value instanceof Equals ev2) {
                 // not (3 == a) && (4 == a)  (the situation 3 == a && not (3 == a) has been solved as A && not A == False
                 if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
                     newConcat.remove(newConcat.size() - 1); // full replace
@@ -270,8 +270,8 @@ public record AndExpression(Primitives primitives,
             }
         }
 
-        if (prev instanceof EqualsExpression ev1) {
-            if (value instanceof EqualsExpression ev2) {
+        if (prev instanceof Equals ev1) {
+            if (value instanceof Equals ev2) {
                 // 3 == a && 4 == a
                 if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
                     return Action.FALSE;
@@ -279,7 +279,7 @@ public record AndExpression(Primitives primitives,
             }
 
             // EQ and NOT EQ
-            if (value instanceof NegatedExpression ne && ne.expression instanceof EqualsExpression ev2) {
+            if (value instanceof Negation ne && ne.expression instanceof Equals ev2) {
                 // 3 == a && not (4 == a)  (the situation 3 == a && not (3 == a) has been solved as A && not A == False
                 if (ev1.rhs.equals(ev2.rhs) && !ev1.lhs.equals(ev2.lhs)) {
                     return Action.SKIP;
@@ -309,8 +309,8 @@ public record AndExpression(Primitives primitives,
         }
 
         //  GE and NOT EQ
-        if (value instanceof GreaterThanZero ge && prev instanceof NegatedExpression prevNeg &&
-                prevNeg.expression instanceof EqualsExpression equalsValue) {
+        if (value instanceof GreaterThanZero ge && prev instanceof Negation prevNeg &&
+                prevNeg.expression instanceof Equals equalsValue) {
             GreaterThanZero.XB xb = ge.extract(evaluationContext);
             if (equalsValue.lhs instanceof Numeric eqLn && equalsValue.rhs.equals(xb.x())) {
                 double y = eqLn.doubleValue();
@@ -352,7 +352,7 @@ public record AndExpression(Primitives primitives,
                 if (xb1.b() > xb2.b()) return !xb1.lessThan() ? Action.FALSE : Action.ADD;
                 if (xb1.b() < xb2.b()) return !xb1.lessThan() ? Action.ADD : Action.FALSE;
                 if (ge1.allowEquals() && ge2.allowEquals()) {
-                    Expression newValue = EqualsExpression.equals(evaluationContext,
+                    Expression newValue = Equals.equals(evaluationContext,
                             IntConstant.intOrDouble(primitives, xb1.b(), ge1.getObjectFlow()),
                             xb1.x(), ge1.getObjectFlow()); // null-checks are irrelevant here
                     newConcat.set(newConcat.size() - 1, newValue);
@@ -366,16 +366,16 @@ public record AndExpression(Primitives primitives,
     }
 
     private List<Expression> components(Expression value) {
-        if (value instanceof OrExpression orExpression) {
-            return orExpression.expressions();
+        if (value instanceof Or or) {
+            return or.expressions();
         }
         return List.of(value);
     }
 
     private static void recursivelyAdd(ArrayList<Expression> concat, List<Expression> values) {
         for (Expression value : values) {
-            if (value instanceof AndExpression andExpression) {
-                recursivelyAdd(concat, andExpression.expressions);
+            if (value instanceof And and) {
+                recursivelyAdd(concat, and.expressions);
             } else {
                 concat.add(value);
             }
@@ -386,7 +386,7 @@ public record AndExpression(Primitives primitives,
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        AndExpression andValue = (AndExpression) o;
+        And andValue = (And) o;
         return expressions.equals(andValue.expressions);
     }
 
@@ -440,7 +440,7 @@ public record AndExpression(Primitives primitives,
 
     @Override
     public int internalCompareTo(Expression v) {
-        AndExpression andValue = (AndExpression) v;
+        And andValue = (And) v;
         return ListUtil.compare(expressions, andValue.expressions);
     }
 
@@ -461,7 +461,7 @@ public record AndExpression(Primitives primitives,
         Expression[] reClauses = reClauseERs.stream().map(er -> er.value).toArray(Expression[]::new);
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
-                .setExpression(new AndExpression(primitives, objectFlow).append(evaluationContext, reClauses))
+                .setExpression(new And(primitives, objectFlow).append(evaluationContext, reClauses))
                 .build();
     }
 

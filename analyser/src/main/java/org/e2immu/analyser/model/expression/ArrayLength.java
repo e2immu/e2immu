@@ -37,11 +37,11 @@ import java.util.List;
 import java.util.Objects;
 
 @E2Container
-public record ArrayLengthExpression(Primitives primitives,
-                                    Expression scope) implements Expression {
+public record ArrayLength(Primitives primitives,
+                          Expression scope) implements Expression {
 
-    public ArrayLengthExpression(Primitives primitives,
-                                 @NotNull Expression scope) {
+    public ArrayLength(Primitives primitives,
+                       @NotNull Expression scope) {
         this.scope = Objects.requireNonNull(scope);
         this.primitives = primitives;
     }
@@ -50,7 +50,7 @@ public record ArrayLengthExpression(Primitives primitives,
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        ArrayLengthExpression that = (ArrayLengthExpression) o;
+        ArrayLength that = (ArrayLength) o;
         return scope.equals(that.scope);
     }
 
@@ -66,7 +66,7 @@ public record ArrayLengthExpression(Primitives primitives,
 
     @Override
     public Expression translate(TranslationMap translationMap) {
-        return new ArrayLengthExpression(primitives, translationMap.translateExpression(scope));
+        return new ArrayLength(primitives, translationMap.translateExpression(scope));
     }
 
     @Override

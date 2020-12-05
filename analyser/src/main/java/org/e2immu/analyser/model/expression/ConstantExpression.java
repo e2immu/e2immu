@@ -27,7 +27,7 @@ import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
 
-public interface ConstantExpression<T> extends Expression, Constant<T> {
+public interface ConstantExpression<T> extends Expression {
 
     @Override
     default EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
@@ -40,6 +40,8 @@ public interface ConstantExpression<T> extends Expression, Constant<T> {
     default EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         return new EvaluationResult.Builder().setExpression(this).build();
     }
+
+    T getValue();
 
     @Override
     default int precedence() {

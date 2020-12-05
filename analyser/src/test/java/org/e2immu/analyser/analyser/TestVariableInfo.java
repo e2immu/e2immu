@@ -169,7 +169,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
         viA.setValue(three);
-        viA.stateOnAssignment.set(NegatedExpression.negate(minimalEvaluationContext, x));
+        viA.stateOnAssignment.set(Negation.negate(minimalEvaluationContext, x));
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         VariableInfoImpl ret3 = ret2.merge(minimalEvaluationContext, null, false, List.of(viA));
@@ -195,7 +195,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(four);
-        Expression xEquals3 = EqualsExpression.equals(minimalEvaluationContext, x, three, ObjectFlow.NO_FLOW);
+        Expression xEquals3 = Equals.equals(minimalEvaluationContext, x, three, ObjectFlow.NO_FLOW);
         viB.stateOnAssignment.set(xEquals3);
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
@@ -217,9 +217,9 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
         viA.setValue(three);
-        Expression xEquals4 = new AndExpression(minimalEvaluationContext.getPrimitives()).append(minimalEvaluationContext,
-                NegatedExpression.negate(minimalEvaluationContext, xEquals3),
-                EqualsExpression.equals(minimalEvaluationContext, x, four, ObjectFlow.NO_FLOW));
+        Expression xEquals4 = new And(minimalEvaluationContext.getPrimitives()).append(minimalEvaluationContext,
+                Negation.negate(minimalEvaluationContext, xEquals3),
+                Equals.equals(minimalEvaluationContext, x, four, ObjectFlow.NO_FLOW));
         Assert.assertEquals("4 == instance type int", xEquals4.toString());
         viA.stateOnAssignment.set(xEquals4);
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -239,9 +239,9 @@ public class TestVariableInfo extends CommonVariableInfo {
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
         viC.setValue(two);
         Expression combinedState =
-                new AndExpression(minimalEvaluationContext.getPrimitives()).append(minimalEvaluationContext,
-                        NegatedExpression.negate(minimalEvaluationContext, xEquals3),
-                        NegatedExpression.negate(minimalEvaluationContext, xEquals4));
+                new And(minimalEvaluationContext.getPrimitives()).append(minimalEvaluationContext,
+                        Negation.negate(minimalEvaluationContext, xEquals3),
+                        Negation.negate(minimalEvaluationContext, xEquals4));
         viC.stateOnAssignment.set(combinedState);
         viC.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
@@ -299,7 +299,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(four);
-        viB.stateOnAssignment.set(NegatedExpression.negate(minimalEvaluationContext, x));
+        viB.stateOnAssignment.set(Negation.negate(minimalEvaluationContext, x));
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         // situation:
@@ -329,7 +329,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
         viB.setValue(three);
-        viB.stateOnAssignment.set(NegatedExpression.negate(minimalEvaluationContext, x));
+        viB.stateOnAssignment.set(Negation.negate(minimalEvaluationContext, x));
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         // situation:

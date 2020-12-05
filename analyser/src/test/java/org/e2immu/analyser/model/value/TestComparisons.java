@@ -1,7 +1,7 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.AndExpression;
+import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.GreaterThanZero;
 import org.junit.Assert;
 import org.junit.Test;
@@ -152,9 +152,9 @@ public class TestComparisons extends CommonAbstractValue {
         Expression iLe3 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(3), true);
         Assert.assertEquals("(3 + (-(i))) >= 0", iLe3.toString());
         Expression and = newAndAppend(iGe0, iLe3);
-        Assert.assertTrue(and instanceof AndExpression);
+        Assert.assertTrue(and instanceof And);
         Expression and2 = newAndAppend(iLe3, iGe0);
-        Assert.assertTrue(and2 instanceof AndExpression);
+        Assert.assertTrue(and2 instanceof And);
     }
 
     @Test

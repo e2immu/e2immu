@@ -381,7 +381,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                             if (filterResult.rest() == EmptyExpression.EMPTY_EXPRESSION) {
                                 newState.set(companionValueTranslated);
                             } else {
-                                newState.set(new AndExpression(evaluationContext.getPrimitives()).append(evaluationContext, filterResult.rest(),
+                                newState.set(new And(evaluationContext.getPrimitives()).append(evaluationContext, filterResult.rest(),
                                         companionValueTranslated));
                             }
                         } else {
@@ -389,7 +389,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                             if (newState.get() == EmptyExpression.EMPTY_EXPRESSION) {
                                 newState.set(companionValueTranslated);
                             } else {
-                                newState.set(new AndExpression(evaluationContext.getPrimitives()).append(evaluationContext, newState.get(),
+                                newState.set(new And(evaluationContext.getPrimitives()).append(evaluationContext, newState.get(),
                                         companionValueTranslated));
                             }
                         }
