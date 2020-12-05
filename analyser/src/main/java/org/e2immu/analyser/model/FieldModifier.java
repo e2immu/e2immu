@@ -55,7 +55,7 @@ public enum FieldModifier {
     }
 
 
-    public static String[] toJava(Set<FieldModifier> modifiers) {
+    public static String[] sort(Set<FieldModifier> modifiers) {
         FieldModifier[] array = new FieldModifier[GROUPS];
         for (FieldModifier methodModifier : modifiers) {
             if (array[methodModifier.group] != null)

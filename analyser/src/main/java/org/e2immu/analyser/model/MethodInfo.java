@@ -185,10 +185,8 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                             .map(ParameterizedType::output).collect(OutputBuilder.joining(Symbol.COMMA)));
         }
         if (hasBeenInspected()) {
-            Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
-            outputBuilder.add(guideGenerator.start());
             StatementAnalysis firstStatement = methodAnalysis.isSet() ? methodAnalysis.get().getFirstStatement() : null;
-            outputBuilder.add(inspection.getMethodBody().output(guideGenerator, firstStatement));
+            outputBuilder.add(inspection.getMethodBody().output(firstStatement));
         } else {
             outputBuilder.add(Spacer.ONE).add(Symbol.LEFT_BRACE).add(Symbol.RIGHT_BRACE);
         }

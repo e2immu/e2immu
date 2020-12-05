@@ -19,17 +19,12 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.*;
 
 public class FieldInfo implements WithInspectionAndAnalysis {
 
@@ -95,44 +90,44 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     }
 
     public OutputBuilder output() {
-        StringBuilder sb = new StringBuilder();
-        StringUtil.indent(sb, indent);
+        OutputBuilder outputBuilder = new OutputBuilder();
         if (fieldInspection.isSet()) {
-            Set<TypeInfo> annotationsSeen = new HashSet<>();
-            fieldInspection.get().getAnnotations().forEach(ae -> {
-                sb.append(ae.stream());
-                if (fieldAnalysis.isSet()) {
-                    fieldAnalysis.get().peekIntoAnnotations(ae, annotationsSeen, sb);
-                }
-                sb.append("\n");
-                StringUtil.indent(sb, indent);
-            });
-            if (fieldAnalysis.isSet()) {
-                fieldAnalysis.get().getAnnotationStream().forEach(entry -> {
-                    boolean present = entry.getValue();
-                    AnnotationExpression annotation = entry.getKey();
-                    if (present && !annotationsSeen.contains(annotation.typeInfo())) {
-                        sb.append(annotation.stream());
-                        sb.append("\n");
-                        StringUtil.indent(sb, indent);
-                    }
-                });
-            }
-            FieldInspection fieldInspection = this.fieldInspection.get();
-            sb.append(FieldModifier.toJava(fieldInspection.getModifiers()));
+            FieldInspection inspection = this.fieldInspection.get();
+            outputAnnotations(inspection, outputBuilder);
+            outputBuilder.add(Arrays.stream(FieldModifier.sort(inspection.getModifiers())).map(Text::new)
+                    .collect(OutputBuilder.joinElements(Spacer.ONE)));
         }
-        sb.append(type.print())
-                .append(" ")
-                .append(name);
+        outputBuilder.add(type.output()).add(Spacer.HARD).add(new Text(name));
         if (fieldInspection.isSet() && fieldInspection.get().fieldInitialiserIsSet()) {
             Expression expression = fieldInspection.get().getFieldInitialiser().initialiser();
             if (expression != EmptyExpression.EMPTY_EXPRESSION) {
-                sb.append(" = ");
-                sb.append(expression.expressionString(indent));
+                outputBuilder.add(Symbol.assignment("=")).add(expression.output());
             }
         }
-        sb.append(";");
-        return sb.toString();
+        return outputBuilder.add(Symbol.SEMICOLON);
+    }
+
+    private void outputAnnotations(FieldInspection inspection, OutputBuilder outputBuilder) {
+        Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
+        outputBuilder.add(guideGenerator.start());
+        Set<TypeInfo> annotationsSeen = new HashSet<>();
+        inspection.getAnnotations().forEach(ae -> {
+            outputBuilder.add(guideGenerator.mid()).add(ae.output());
+            if (fieldAnalysis.isSet()) {
+                outputBuilder.add(fieldAnalysis.get().peekIntoAnnotations(ae, annotationsSeen));
+            }
+            outputBuilder.add(Spacer.EASY);
+        });
+        if (fieldAnalysis.isSet()) {
+            fieldAnalysis.get().getAnnotationStream().forEach(entry -> {
+                boolean present = entry.getValue();
+                AnnotationExpression annotation = entry.getKey();
+                if (present && !annotationsSeen.contains(annotation.typeInfo())) {
+                    outputBuilder.add(annotation.output()).add(Spacer.EASY);
+                }
+            });
+        }
+        outputBuilder.add(guideGenerator.end());
     }
 
     public boolean isStatic() {

@@ -263,9 +263,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return variables.get(variableName).current();
     }
 
-    public OutputBuilder output(Guide.GuideGenerator guideGenerator) {
-    }
-
     public interface StateChange extends Function<Expression, Expression> {
         // nothing
     }

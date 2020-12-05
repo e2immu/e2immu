@@ -121,24 +121,24 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         List<MethodInfo> constructors;
         List<MethodInfo> methods;
         List<TypeInfo> subTypes;
-        String interfacesCsv = "";
-        String typeParametersCsv = "";
-        String parentClass = "";
+        List<ParameterizedType> interfaces;
+        List<TypeParameter> typeParameters;
+        ParameterizedType parentClass;
+        boolean isInterface;
 
         if (hasBeenInspected()) {
             TypeInspection typeInspection = this.typeInspection.get();
             typeNature = typeInspection.typeNature().toJava();
+            isInterface = typeInspection.isInterface();
             typeModifiers = TypeModifier.sort(typeInspection.modifiers());
             annotations.addAll(typeInspection.getAnnotations());
             fields = typeInspection.fields();
             constructors = typeInspection.constructors();
             methods = typeInspection.methods();
             subTypes = typeInspection.subTypes();
-            parentClass = parentIsNotJavaLangObject() ? typeInspection.parentClass().print() : "";
-            interfacesCsv = typeInspection.interfacesImplemented().stream()
-                    .map(ParameterizedType::print).collect(Collectors.joining(", "));
-            typeParametersCsv = typeInspection.typeParameters().stream()
-                    .map(TypeParameter::print).collect(Collectors.joining(", "));
+            typeParameters = typeInspection.typeParameters();
+            parentClass = parentIsNotJavaLangObject() ? typeInspection.parentClass() : null;
+            interfaces = typeInspection.interfacesImplemented();
         } else {
             typeNature = "class"; // we really have no idea what it is
             typeModifiers = new String[]{"abstract"};
@@ -146,6 +146,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             constructors = List.of();
             methods = List.of();
             subTypes = List.of();
+            typeParameters = List.of();
+            interfaces = List.of();
+            parentClass = null;
+            isInterface = false;
         }
 
         Stream<OutputBuilder> fieldsStream = fields.stream().map(FieldInfo::output);
@@ -192,17 +196,17 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                     .add(Spacer.ONE).add(new Text(typeNature))
                     .add(Spacer.ONE).add(new Text(simpleName));
 
-            if (!typeParametersCsv.isEmpty()) {
+            if (!typeParameters.isEmpty()) {
                 outputBuilder.add(Symbol.LEFT_ANGLE_BRACKET);
-                sb.append(typeParametersCsv);
+                outputBuilder.add(typeParameters.stream().map(TypeParameter::output).collect(OutputBuilder.joining(Symbol.COMMA)));
                 outputBuilder.add(Symbol.RIGHT_ANGLE_BRACKET);
             }
-            if (!parentClass.isEmpty()) {
-                outputBuilder.add(Spacer.HARD).add(new Text("extends")).add(Spacer.HARD).add(parentClass);
+            if (parentClass != null) {
+                outputBuilder.add(Spacer.HARD).add(new Text("extends")).add(Spacer.HARD).add(parentClass.output());
             }
-            if (!interfacesCsv.isEmpty()) {
-                outputBuilder.add(Spacer.HARD).add(new Text("implements")).add(Spacer.HARD);
-                sb.append(interfacesCsv);
+            if (!interfaces.isEmpty()) {
+                outputBuilder.add(Spacer.HARD).add(new Text(isInterface ? "extends" : "implements")).add(Spacer.HARD);
+                outputBuilder.add(interfaces.stream().map(ParameterizedType::output).collect(OutputBuilder.joining(Symbol.COMMA)));
             }
         }
         outputBuilder.add(Symbol.LEFT_BRACE);
@@ -393,8 +397,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     private Expression methodCallNoParameters(MethodInfo interfaceMethod, MethodInspection concreteMethod) {
         Expression newScope = new VariableExpression(interfaceMethod.methodInspection.get().getParameters().get(0));
-        MethodTypeParameterMap methodTypeParameterMap = new MethodTypeParameterMap(concreteMethod, Map.of());
-        return new MethodCall(newScope, methodTypeParameterMap, List.of());
+        return new MethodCall(newScope, concreteMethod.getMethodInfo(), List.of(), ObjectFlow.NO_FLOW);
     }
 
     private Expression methodCallCopyAllParameters(Expression scope, MethodInspection concreteMethod, MethodInspection interfaceMethod) {
@@ -409,8 +412,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             }
             i++;
         }
-        MethodTypeParameterMap methodTypeParameterMap = new MethodTypeParameterMap(concreteMethod, concreteTypes);
-        return new MethodCall(scope, scope, methodTypeParameterMap, parameterExpressions);
+        // FIXME concreteTypes should be used somehow
+        return new MethodCall(scope, concreteMethod.getMethodInfo(), parameterExpressions, ObjectFlow.NO_FLOW);
     }
 
     public boolean isNestedType() {

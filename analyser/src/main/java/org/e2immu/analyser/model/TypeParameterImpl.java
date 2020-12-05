@@ -21,6 +21,8 @@ package org.e2immu.analyser.model;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.inspector.ParameterizedTypeFactory;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.SetOnce;
 
@@ -85,6 +87,11 @@ public class TypeParameterImpl implements TypeParameter {
     @Override
     public List<ParameterizedType> getTypeBounds() {
         return typeBounds.getOrElse(List.of());
+    }
+
+    @Override
+    public OutputBuilder output() {
+        return new OutputBuilder().add(new Text(name));
     }
 
     @Override

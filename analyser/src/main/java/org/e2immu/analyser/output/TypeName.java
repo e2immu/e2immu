@@ -19,15 +19,20 @@ package org.e2immu.analyser.output;
 
 import org.e2immu.analyser.model.TypeInfo;
 
-public record TypeName(TypeInfo typeInfo) implements OutputElement {
+public record TypeName(String simpleName, String fullyQualifiedName,
+                       String distinguishingName) implements OutputElement {
+
+    public TypeName(TypeInfo typeInfo) {
+        this(typeInfo.simpleName, typeInfo.fullyQualifiedName, typeInfo.fullyQualifiedName);
+    }
 
     @Override
     public String minimal() {
-        return typeInfo.simpleName;
+        return simpleName;
     }
 
     @Override
     public String debug() {
-        return typeInfo.fullyQualifiedName;
+        return fullyQualifiedName;
     }
 }

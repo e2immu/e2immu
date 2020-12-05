@@ -144,7 +144,7 @@ public interface EvaluationContext {
                 return getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
             }
             if (variable instanceof PreAspectVariable pre) {
-                return pre.valueForProperties.getProperty(this, variableProperty);
+                return pre.valueForProperties().getProperty(this, variableProperty);
             }
             throw new UnsupportedOperationException("Variable value of type " + variable.getClass());
         }

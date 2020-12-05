@@ -133,7 +133,7 @@ public class Lambda implements Expression {
             outputBuilder.add(guideGenerator.start());
             outputBuilder.add(Symbol.LEFT_BRACE);
             StatementAnalysis firstStatement = methodInfo.methodAnalysis.get().getFirstStatement().followReplacements();
-            outputBuilder.add(firstStatement.output(guideGenerator));
+            Block.statementsString(outputBuilder, guideGenerator, firstStatement);
             outputBuilder.add(Symbol.RIGHT_BRACE);
         }
         return outputBuilder;
