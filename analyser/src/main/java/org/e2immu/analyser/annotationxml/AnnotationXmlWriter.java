@@ -118,7 +118,7 @@ public class AnnotationXmlWriter {
 
     private static void add(Document document, Element root, TypeItem typeItem) {
         if (!typeItem.getAnnotations().isEmpty()) {
-            add(document, root, typeItem.name, typeItem.getAnnotations(), null);
+            add(document, root, typeItem.name, typeItem.getAnnotations(), null, null);
         }
         typeItem.getFieldItems().values().stream().sorted().forEach(fieldItem ->
                 add(document, root, typeItem.name, fieldItem));
@@ -129,7 +129,7 @@ public class AnnotationXmlWriter {
     private static void add(Document document, Element root, String typeName, FieldItem fieldItem) {
         if (!fieldItem.getAnnotations().isEmpty()) {
             String fieldName = typeName + " " + fieldItem.name;
-            add(document, root, fieldName, fieldItem.getAnnotations(), null);
+            add(document, root, fieldName, fieldItem.getAnnotations(), null, null);
         }
     }
 
@@ -137,29 +137,31 @@ public class AnnotationXmlWriter {
         String methodName = typeName + (methodItem.returnType != null ? " " + methodItem.returnType : "") + " " + methodItem.name;
         if (!methodItem.getAnnotations().isEmpty()) {
             // companions don't have annotations
-            add(document, root, methodName, methodItem.getAnnotations(), null);
+            add(document, root, methodName, methodItem.getAnnotations(), null, null);
         }
         if (!methodItem.getParameterItems().isEmpty()) {
             methodItem.getParameterItems().stream().sorted().forEach(parameterItem -> add(document, root, methodName, parameterItem));
         }
         for (MethodItem companionItem : methodItem.getCompanionMethods()) {
-            add(document, root, companionItem.name, List.of(), companionItem.companionValue);
+            add(document, root, companionItem.name, List.of(), companionItem.companionValue, companionItem.paramNamesCsv);
         }
     }
 
     private static void add(Document document, Element root, String methodName, ParameterItem parameterItem) {
         if (!parameterItem.getAnnotations().isEmpty()) {
             String parameterName = methodName + " " + parameterItem.index;
-            add(document, root, parameterName, parameterItem.getAnnotations(), null);
+            add(document, root, parameterName, parameterItem.getAnnotations(), null, null);
         }
     }
 
-    private static void add(Document document, Element root, String itemName, Collection<Annotation> annotations, String companionValue) {
+    private static void add(Document document, Element root, String itemName, Collection<Annotation> annotations,
+                            String companionExpression, String paramNamesCsv) {
         Element item = document.createElement("item");
         item.setAttribute("name", itemName);
-        if (companionValue != null && !companionValue.isBlank()) {
+        if (companionExpression != null && !companionExpression.isBlank()) {
             Element definitionElement = document.createElement("definition");
-            definitionElement.setTextContent(companionValue);
+            definitionElement.setAttribute("paramNames", paramNamesCsv);
+            definitionElement.setTextContent(companionExpression);
             item.appendChild(definitionElement);
         }
         root.appendChild(item);

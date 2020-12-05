@@ -19,10 +19,13 @@
 package org.e2immu.analyser.annotationxml.model;
 
 import com.google.common.collect.ImmutableList;
-import org.e2immu.analyser.analyser.CompanionAnalysis;
-import org.e2immu.analyser.model.CompanionMethodName;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.annotation.E2Immutable;
 
 import java.util.ArrayList;
@@ -37,15 +40,17 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
     private List<ParameterItem> parameterItems = new ArrayList<>();
     private List<MethodItem> companionMethods = new ArrayList<>();
     public final String companionValue;
+    public final String paramNamesCsv;
 
     public MethodItem(String name, String returnType) {
         this.name = name;
         this.returnType = returnType;
         companionValue = "";
+        paramNamesCsv = "";
     }
 
     //@Mark("freeze")
-    public MethodItem(MethodInfo methodInfo, CompanionAnalysis companionAnalysis) {
+    public MethodItem(MethodInfo methodInfo, Expression companionExpression) {
         returnType = methodInfo.returnType().print();
         String parameters;
         if (methodInfo.methodInspection.isSet()) {
@@ -56,20 +61,21 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
                 parameterTypes.add(parameterInfo.parameterizedType.print());
             }
             parameters = String.join(", ", parameterTypes);
-
-            if (companionAnalysis != null) {
-                companionValue = companionAnalysis.getValue().toString();
+            paramNamesCsv = methodInfo.methodInspection.get().getParameters().stream()
+                    .map(ParameterInfo::name).collect(Collectors.joining(","));
+            if (companionExpression != null) {
+                companionValue = companionExpression.minimalOutput();
             } else {
                 companionValue = "";
-                for (Map.Entry<CompanionMethodName, MethodInfo> entry : methodInfo.methodInspection.get().getCompanionMethods().entrySet()) {
-                    CompanionAnalysis ca = methodInfo.methodAnalysis.get().getCompanionAnalyses().get(entry.getKey());
-                    MethodItem companionItem = new MethodItem(entry.getValue(), ca);
+                for (MethodInfo companionMethod : methodInfo.methodInspection.get().getCompanionMethods().values()) {
+                    MethodItem companionItem = new MethodItem(companionMethod, extractExpression(companionMethod));
                     companionMethods.add(companionItem);
                 }
             }
         } else {
             parameters = "";
             companionValue = "";
+            paramNamesCsv = "";
         }
         name = methodInfo.name + "(" + parameters + ")";
         addAnnotations(methodInfo.methodInspection.isSet() ? methodInfo.methodInspection.get().getAnnotations() : List.of(),
@@ -80,16 +86,23 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
         freeze();
     }
 
+    private static Expression extractExpression(MethodInfo companionMethod) {
+        Block block = companionMethod.methodInspection.get().getMethodBody();
+        List<Statement> statements = block.structure.statements;
+        if (statements == null || statements.isEmpty()) return EmptyExpression.EMPTY_EXPRESSION;
+        assert statements.size() == 1;
+        if (statements.get(0) instanceof ReturnStatement ret) {
+            return ret.expression;
+        }
+        throw new UnsupportedOperationException();
+    }
+
     public List<ParameterItem> getParameterItems() {
         return parameterItems;
     }
 
     public List<MethodItem> getCompanionMethods() {
         return companionMethods;
-    }
-
-    public String getCompanionValue() {
-        return companionValue;
     }
 
     void freeze() {

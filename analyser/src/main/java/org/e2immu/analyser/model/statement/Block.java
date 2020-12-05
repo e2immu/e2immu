@@ -148,4 +148,9 @@ public class Block extends StatementWithStructure {
                 .flatMap(st -> translationMap.translateStatement(st).stream())
                 .collect(Collectors.toList()), label);
     }
+
+    @Override
+    public Structure getStructure() {
+        return structure;
+    }
 }
