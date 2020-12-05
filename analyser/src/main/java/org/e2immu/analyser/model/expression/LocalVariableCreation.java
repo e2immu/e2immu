@@ -26,7 +26,7 @@ import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Spacer;
+import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -99,12 +99,12 @@ public class LocalVariableCreation implements Expression {
     public OutputBuilder output() {
         OutputBuilder outputBuilder = new OutputBuilder()
                 .add(localVariable.annotations.stream().map(AnnotationExpression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
-                .add(Spacer.ONE)
+                .add(localVariable.annotations.isEmpty() ? Space.NONE : Space.ONE)
                 .add(Arrays.stream(LocalVariableModifier.toJava(localVariable.modifiers)).map(s -> new OutputBuilder().add(new Text(s)))
-                        .collect(OutputBuilder.joining(Spacer.ONE)))
-                .add(Spacer.ONE)
+                        .collect(OutputBuilder.joining(Space.ONE)))
+                .add(localVariable.modifiers.isEmpty() ? Space.NONE: Space.ONE)
                 .add(localVariable.parameterizedType.output())
-                .add(Spacer.ONE)
+                .add(Space.ONE)
                 .add(new Text(localVariable.name));
         if (expression != EmptyExpression.EMPTY_EXPRESSION) {
             outputBuilder.add(Symbol.assignment("=")).add(expression.output());

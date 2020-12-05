@@ -29,7 +29,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Spacer;
+import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.Pair;
@@ -261,9 +261,12 @@ public class NewObject implements HasParameterExpressions {
     public OutputBuilder output() {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (constructor != null) {
-            outputBuilder.add(new Text("new")).add(Spacer.ONE).add(parameterizedType.output());
+            outputBuilder.add(new Text("new")).add(Space.ONE).add(parameterizedType.output());
+            if(!returnType().parameters.isEmpty()) {
+                outputBuilder.add(Symbol.DIAMOND); // TODO there are situations where diamond is not good enough
+            }
             if (parameterExpressions.isEmpty()) {
-                outputBuilder.add(Symbol.OPEN_CLOSE_BRACKET);
+                outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
             } else {
                 outputBuilder
                         .add(Symbol.LEFT_PARENTHESIS)

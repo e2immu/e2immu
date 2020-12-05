@@ -13,7 +13,7 @@ public class BreakStatement extends BreakOrContinueStatement {
     public OutputBuilder output(StatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("break"));
         if (label != null) {
-            outputBuilder.add(Spacer.HARD).add(new Text(label));
+            outputBuilder.add(Space.ONE).add(new Text(label));
         }
         outputBuilder.add(Symbol.SEMICOLON);
         return outputBuilder;

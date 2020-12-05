@@ -26,7 +26,7 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Spacer;
+import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 
@@ -63,7 +63,7 @@ public record SwitchExpression(Expression selector,
                 .add(selector.output())
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .add(Symbol.LEFT_BRACE)
-                .add(switchEntries.stream().map(SwitchEntry::output).collect(OutputBuilder.joining(Spacer.EASY)))
+                .add(switchEntries.stream().map(SwitchEntry::output).collect(OutputBuilder.joining(Space.EASY)))
                 .add(Symbol.RIGHT_BRACE);
     }
 

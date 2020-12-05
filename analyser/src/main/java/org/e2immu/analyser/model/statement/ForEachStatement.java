@@ -22,10 +22,9 @@ import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Spacer;
+import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
-import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 public class ForEachStatement extends LoopStatement {
@@ -67,7 +66,7 @@ public class ForEachStatement extends LoopStatement {
         return outputBuilder.add(new Text("for"))
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.localVariableCreation.parameterizedType.output())
-                .add(Spacer.HARD)
+                .add(Space.ONE)
                 .add(new Text(structure.localVariableCreation.name))
                 .add(Symbol.COLON)
                 .add(structure.expression.output())

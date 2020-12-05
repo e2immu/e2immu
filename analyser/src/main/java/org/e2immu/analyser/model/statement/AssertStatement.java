@@ -32,7 +32,7 @@ public class AssertStatement extends StatementWithStructure {
     public OutputBuilder output(StatementAnalysis statementAnalysis) {
         return new OutputBuilder()
                 .add(new Text("assert"))
-                .add(Spacer.ONE)
+                .add(Space.ONE)
                 .add(structure.expression.output())
                 .add(message != null ? new OutputBuilder().add(Symbol.COMMA).add(message.output()) : new OutputBuilder())
                 .add(Symbol.SEMICOLON);

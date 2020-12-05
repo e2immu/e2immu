@@ -25,10 +25,9 @@ import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.StatementExecution;
 import org.e2immu.analyser.model.TranslationMap;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Spacer;
+import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
-import org.e2immu.analyser.util.StringUtil;
 
 public class DoStatement extends LoopStatement {
 
@@ -54,7 +53,7 @@ public class DoStatement extends LoopStatement {
     public OutputBuilder output(StatementAnalysis statementAnalysis) {
         return new OutputBuilder().add(new Text("do"))
                 .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)))
-                .add(Spacer.HARD)
+                .add(Space.EASY)
                 .add(new Text("while"))
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.expression.output())

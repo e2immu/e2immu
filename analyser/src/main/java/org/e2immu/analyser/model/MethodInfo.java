@@ -160,16 +160,17 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         outputAnnotations(inspection, outputBuilder);
 
         outputBuilder.add(Arrays.stream(MethodModifier.sort(inspection.getModifiers())).map(Text::new)
-                .collect(OutputBuilder.joinElements(Spacer.ONE)));
+                .collect(OutputBuilder.joinElements(Space.ONE)));
+        if (!inspection.getModifiers().isEmpty()) outputBuilder.add(Space.ONE);
 
         if (!inspection.getTypeParameters().isEmpty()) {
             outputBuilder.add(Symbol.LEFT_ANGLE_BRACKET);
             outputBuilder.add(inspection.getTypeParameters().stream().map(TypeParameter::output).collect(OutputBuilder.joining(Symbol.COMMA)));
-            outputBuilder.add(Symbol.RIGHT_ANGLE_BRACKET).add(Spacer.HARD);
+            outputBuilder.add(Symbol.RIGHT_ANGLE_BRACKET).add(Space.ONE);
         }
 
         if (!isConstructor) {
-            outputBuilder.add(inspection.getReturnType().output()).add(Spacer.HARD);
+            outputBuilder.add(inspection.getReturnType().output()).add(Space.ONE);
         }
         outputBuilder.add(new Text(name));
         if (inspection.getParameters().isEmpty()) {
@@ -180,7 +181,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
         if (!inspection.getExceptionTypes().isEmpty()) {
-            outputBuilder.add(Spacer.HARD).add(new Text("throws")).add(Spacer.HARD)
+            outputBuilder.add(Space.ONE_EASY).add(new Text("throws")).add(Space.ONE)
                     .add(inspection.getExceptionTypes().stream()
                             .map(ParameterizedType::output).collect(OutputBuilder.joining(Symbol.COMMA)));
         }
@@ -188,7 +189,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             StatementAnalysis firstStatement = methodAnalysis.isSet() ? methodAnalysis.get().getFirstStatement() : null;
             outputBuilder.add(inspection.getMethodBody().output(firstStatement));
         } else {
-            outputBuilder.add(Spacer.ONE).add(Symbol.LEFT_BRACE).add(Symbol.RIGHT_BRACE);
+            outputBuilder.add(Space.ONE).add(Symbol.LEFT_BRACE).add(Symbol.RIGHT_BRACE);
         }
         return outputBuilder;
     }
@@ -202,14 +203,14 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             if (methodAnalysis.isSet()) {
                 outputBuilder.add(methodAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen));
             }
-            outputBuilder.add(Spacer.EASY);
+            outputBuilder.add(Space.ONE_EASY);
         }
         if (methodAnalysis.isSet()) {
             methodAnalysis.get().getAnnotationStream().forEach(entry -> {
                 boolean present = entry.getValue();
                 AnnotationExpression annotation = entry.getKey();
                 if (present && !annotationsSeen.contains(annotation.typeInfo())) {
-                    outputBuilder.add(annotationGG.mid()).add(annotation.output()).add(Spacer.EASY);
+                    outputBuilder.add(annotationGG.mid()).add(annotation.output()).add(Space.ONE_EASY);
                 }
             });
         }

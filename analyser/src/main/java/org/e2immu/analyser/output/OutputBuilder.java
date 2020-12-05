@@ -88,7 +88,13 @@ public class OutputBuilder {
 
             @Override
             public BiConsumer<OutputBuilder, OutputElement> accumulator() {
-                return (a, b) -> a.add(guideGenerator.mid()).add(outputElement).add(b);
+                return (a, b) -> {
+                    a.add(guideGenerator.mid());
+                    if (!a.onlyGuides()) {
+                        a.add(outputElement);
+                    }
+                    a.add(b);
+                };
             }
 
             @Override

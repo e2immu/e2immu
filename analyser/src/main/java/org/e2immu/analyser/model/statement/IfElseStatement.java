@@ -25,10 +25,9 @@ import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Spacer;
+import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
-import org.e2immu.analyser.util.StringUtil;
 
 import java.util.List;
 
@@ -83,7 +82,7 @@ public class IfElseStatement extends StatementWithExpression {
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
         if (elseBlock != Block.EMPTY_BLOCK) {
-            outputBuilder.add(Spacer.HARD)
+            outputBuilder.add(Space.HARD)
                     .add(new Text("else"))
                     .add(elseBlock.output(StatementAnalysis.startOfBlock(statementAnalysis, 1)));
         }

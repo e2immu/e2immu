@@ -42,7 +42,7 @@ public class ThrowStatement extends StatementWithExpression {
     @Override
     public OutputBuilder output(StatementAnalysis statementAnalysis) {
         return new OutputBuilder().add(new Text("throws"))
-                .add(Spacer.HARD).add(expression.output()).add(Symbol.SEMICOLON);
+                .add(Space.ONE).add(expression.output()).add(Symbol.SEMICOLON);
     }
 
     @Override

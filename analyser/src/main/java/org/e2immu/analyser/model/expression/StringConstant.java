@@ -82,7 +82,11 @@ public record StringConstant(Primitives primitives,
 
     @Override
     public OutputBuilder output() {
-        return new OutputBuilder().add(new Text("\"" + constant.replace("\"", "\\\"")));
+        return new OutputBuilder().add(new Text("\"" + encode(constant) + "\""));
+    }
+
+    private static final String encode(String s) {
+        return s.replace("\"", "\\\"");
     }
 
     @Override

@@ -266,7 +266,7 @@ public class TestTypeInfoStream {
         Assert.assertTrue(stream.contains("private double d"));
         Assert.assertTrue(stream.contains("final String s"));
         Assert.assertFalse(stream.contains("import java.lang"));
-        Assert.assertTrue(stream.contains("  TestTypeInfoStream() {"));
+        Assert.assertTrue(stream.contains("  TestTypeInfoStream(){"));
         Assert.assertTrue(stream.contains("public static int sum(int x, int y) throws MyException {"));
         Assert.assertTrue(stream.contains("T put(T value)"));
     }

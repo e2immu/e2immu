@@ -56,7 +56,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
             for (Expression label : labels) {
                 outputBuilder.add(guideGenerator.mid())
                         .add(new Text("case"))
-                        .add(Spacer.HARD)
+                        .add(Space.ONE)
                         .add(label.output())
                         .add(Symbol.COLON_LABEL);
             }

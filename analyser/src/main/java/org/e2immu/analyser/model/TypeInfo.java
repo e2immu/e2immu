@@ -115,7 +115,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     public OutputBuilder output(boolean doTypeDeclaration) {
         String typeNature;
         Set<AnnotationExpression> annotations = new HashSet<>();
-        Set<String> imports = isPrimaryType() ? Collections.emptySet() : imports(typeInspection.get());
+        Set<String> imports = isPrimaryType() ? imports(typeInspection.get()) : Set.of();
         String[] typeModifiers;
         List<FieldInfo> fields;
         List<MethodInfo> constructors;
@@ -161,13 +161,13 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         if (isPrimaryType()) {
             String packageName = packageNameOrEnclosingType.getLeftOrElse("");
             if (!packageName.isEmpty()) {
-                outputBuilder.add(new Text("package")).add(Spacer.HARD).add(new Text(packageName)).add(Symbol.SEMICOLON)
-                        .add(Spacer.NEWLINE);
+                outputBuilder.add(new Text("package")).add(Space.ONE).add(new Text(packageName)).add(Symbol.SEMICOLON)
+                        .add(Space.NEWLINE);
             }
             if (!imports.isEmpty()) {
                 imports.stream().sorted().forEach(i ->
-                        outputBuilder.add(new Text("import")).add(Spacer.HARD).add(new Text(i)).add(Symbol.SEMICOLON)
-                                .add(Spacer.NEWLINE));
+                        outputBuilder.add(new Text("import")).add(Space.ONE).add(new Text(i)).add(Symbol.SEMICOLON)
+                                .add(Space.NEWLINE));
             }
         }
         Set<TypeInfo> annotationsSeen = new HashSet<>();
@@ -192,9 +192,9 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
         if (doTypeDeclaration) {
             // the class name
-            outputBuilder.add(Arrays.stream(typeModifiers).map(Text::new).collect(OutputBuilder.joinElements(Spacer.ONE)))
-                    .add(Spacer.ONE).add(new Text(typeNature))
-                    .add(Spacer.ONE).add(new Text(simpleName));
+            outputBuilder.add(Arrays.stream(typeModifiers).map(Text::new).collect(OutputBuilder.joinElements(Space.ONE)))
+                    .add(Space.ONE).add(new Text(typeNature))
+                    .add(Space.ONE).add(new Text(simpleName));
 
             if (!typeParameters.isEmpty()) {
                 outputBuilder.add(Symbol.LEFT_ANGLE_BRACKET);
@@ -202,19 +202,19 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 outputBuilder.add(Symbol.RIGHT_ANGLE_BRACKET);
             }
             if (parentClass != null) {
-                outputBuilder.add(Spacer.HARD).add(new Text("extends")).add(Spacer.HARD).add(parentClass.output());
+                outputBuilder.add(Space.ONE).add(new Text("extends")).add(Space.ONE).add(parentClass.output());
             }
             if (!interfaces.isEmpty()) {
-                outputBuilder.add(Spacer.HARD).add(new Text(isInterface ? "extends" : "implements")).add(Spacer.HARD);
+                outputBuilder.add(Space.ONE).add(new Text(isInterface ? "extends" : "implements")).add(Space.ONE);
                 outputBuilder.add(interfaces.stream().map(ParameterizedType::output).collect(OutputBuilder.joining(Symbol.COMMA)));
             }
         }
-        outputBuilder.add(Symbol.LEFT_BRACE);
+        outputBuilder.add(Symbol.LEFT_BRACE).add(Space.NEWLINE);
         Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
         outputBuilder.add(guideGenerator.start());
 
         Stream.concat(Stream.concat(Stream.concat(fieldsStream, subTypesStream), constructorsStream), methodsStream)
-                .forEach(ob -> outputBuilder.add(guideGenerator.mid()).add(ob).add(Spacer.NEWLINE));
+                .forEach(ob -> outputBuilder.add(guideGenerator.mid()).add(ob).add(Space.NEWLINE));
 
         return outputBuilder.add(guideGenerator.end()).add(Symbol.RIGHT_BRACE);
     }
@@ -222,7 +222,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     private Set<String> imports(TypeInspection typeInspection) {
         Set<TypeInfo> typesReferenced = typeInspection.typesReferenced().stream().filter(Map.Entry::getValue)
                 .map(Map.Entry::getKey)
-                .filter(typeInfo -> Primitives.isNotJavaLang(typeInfo))
+                .filter(Primitives::isNotJavaLang)
                 .collect(Collectors.toSet());
         Map<String, List<TypeInfo>> perPackage = new HashMap<>();
         String myPackage = packageName();

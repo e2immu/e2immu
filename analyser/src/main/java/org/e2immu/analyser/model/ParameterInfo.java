@@ -21,7 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Spacer;
+import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.output.VariableName;
 import org.e2immu.analyser.util.SetOnce;
@@ -130,7 +130,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
             if (parameterAnalysis.isSet()) {
                 outputBuilder.add(parameterAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen));
             }
-            outputBuilder.add(Spacer.ONE);
+            outputBuilder.add(Space.ONE);
         }
         if (parameterAnalysis.isSet()) {
             parameterAnalysis.get().getAnnotationStream().forEach(entry -> {
@@ -138,13 +138,13 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
                 AnnotationExpression annotation = entry.getKey();
                 if (present && !annotationsSeen.contains(annotation.typeInfo())) {
                     outputBuilder.add(annotation.output());
-                    outputBuilder.add(Spacer.ONE);
+                    outputBuilder.add(Space.ONE);
                 }
             });
         }
         if (parameterizedType != ParameterizedType.NO_TYPE_GIVEN_IN_LAMBDA) {
             outputBuilder.add(parameterizedType.output(parameterInspection.isVarArgs()));
-            outputBuilder.add(Spacer.ONE);
+            outputBuilder.add(Space.ONE);
         }
         outputBuilder.add(new Text(name));
         return outputBuilder;

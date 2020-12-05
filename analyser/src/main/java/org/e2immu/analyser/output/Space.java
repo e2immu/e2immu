@@ -19,34 +19,31 @@ package org.e2immu.analyser.output;
 
 public enum Space implements OutputElement {
 
-    // (almost) never split here
-    // e.g. semicolon left
-    NEVER("", ""),
+    NONE(""),       // no space, do not split
 
-    // almost always introduce a space, except when there's a (
+    ONE(" "),       // exactly one space needed, never split here (e.g. between class and class name); two ONEs collapse into one
+
+    ONE_EASY(" "),  // end of annotation; needs minimally one, but can be newline
+
+    HARD(""),       // no space needed, normally one present, do not split here unless no other option
+
+    EASY(""),     // no space needed, split to make things nicer
+
+    NEWLINE("\n"), // enforce a newline
+
+    // almost always introduce a space to make things nicer, except when there's a (
     // && !a; b = !a; but (!a && !b)
 
-    NOT_FOR_LEFT_PARENTHESIS("", ""),
+    NOT_FOR_LEFT_PARENTHESIS(""),
 
     // easy either left or right, but consistently according to preferences
     // e.g. && either at beginning of line in sequence, or always at end
-    EASY_LR("", ""),
-
-    // normally add one space; if break, break consistently left or right
-    ONE_LR("", ""),
-
-    EASY("", ""),
-
-    // must have at least white space
-    MUST_HAVE_ONE(" ", " "),
-    ;
+    EASY_LR("");
 
     private final String minimal;
-    private final String debug;
 
-    Space(String minimal, String debug) {
+    Space(String minimal) {
         this.minimal = minimal;
-        this.debug = debug;
     }
 
     @Override
@@ -56,6 +53,6 @@ public enum Space implements OutputElement {
 
     @Override
     public String debug() {
-        return debug;
+        return minimal;
     }
 }

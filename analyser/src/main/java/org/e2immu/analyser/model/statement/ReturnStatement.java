@@ -42,7 +42,7 @@ public class ReturnStatement extends StatementWithExpression {
     public OutputBuilder output(StatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text(isYield ? "yield" : "return"));
         if (expression != EmptyExpression.EMPTY_EXPRESSION) {
-            outputBuilder.add(Spacer.HARD).add(expression.output());
+            outputBuilder.add(Space.ONE).add(expression.output());
         }
         outputBuilder.add(Symbol.SEMICOLON);
         return outputBuilder;
