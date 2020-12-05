@@ -141,13 +141,13 @@ public class TestByteCodeInspector {
 
     @Test
     public void testDefaultMethod() throws IOException {
-        TypeMap typeMap = parseFromJar("org/e2immu/analyser/output/PrintMode.class");
-        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.output.PrintMode");
+        TypeMap typeMap = parseFromJar("org/e2immu/analyser/output/OutputElement.class");
+        TypeInfo typeInfo = typeMap.get("org.e2immu.analyser.output.OutputElement");
 
         Assert.assertEquals(TypeNature.INTERFACE, typeInfo.typeInspection.get().typeNature());
         LOGGER.info("Stream is\n{}", typeInfo.output().toString());
 
-        MethodInfo forDebug = typeInfo.findUniqueMethod("forDebug", 0);
+        MethodInfo forDebug = typeInfo.findUniqueMethod("debug", 0);
         Assert.assertTrue(forDebug.methodInspection.get().isDefault());
     }
 }

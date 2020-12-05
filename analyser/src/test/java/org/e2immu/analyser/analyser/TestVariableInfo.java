@@ -157,7 +157,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         Assert.assertNotSame(ret, ret2);
 
         Expression value2 = ret2.getValue();
-        Assert.assertEquals("instance type boolean?4:<return value>", value2.toString());
+        Assert.assertEquals("instance type boolean?4:<return value>", value2.debugOutput());
         ret2.mergeProperties(false, ret, List.of(viB));
         Assert.assertEquals(MultiLevel.MUTABLE, ret2.getProperty(VariableProperty.NOT_NULL));
 
@@ -204,7 +204,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl ret2 = ret.merge(minimalEvaluationContext, null, false, List.of(viB));
         Assert.assertNotSame(ret2, ret);
-        Assert.assertEquals("3 == instance type int?4:<return value>", ret2.getValue().toString());
+        Assert.assertEquals("3==instance type int?4:<return value>", ret2.getValue().debugOutput());
 
         ret2.mergeProperties(false, ret, List.of(viB));
         Assert.assertEquals(MultiLevel.MUTABLE, ret2.getProperty(VariableProperty.NOT_NULL));
@@ -220,14 +220,14 @@ public class TestVariableInfo extends CommonVariableInfo {
         Expression xEquals4 = new And(minimalEvaluationContext.getPrimitives()).append(minimalEvaluationContext,
                 Negation.negate(minimalEvaluationContext, xEquals3),
                 Equals.equals(minimalEvaluationContext, x, four, ObjectFlow.NO_FLOW));
-        Assert.assertEquals("4 == instance type int", xEquals4.toString());
+        Assert.assertEquals("4==instance type int", xEquals4.debugOutput());
         viA.stateOnAssignment.set(xEquals4);
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         VariableInfoImpl ret3 = ret2.merge(minimalEvaluationContext, null, false, List.of(viA));
         Assert.assertNotSame(ret3, ret2);
-        Assert.assertEquals("4 == instance type int?3:3 == instance type int?4:<return value>",
-                ret3.getValue().toString());
+        Assert.assertEquals("4==instance type int?3:3==instance type int?4:<return value>",
+                ret3.getValue().debugOutput());
         ret3.mergeProperties(false, ret2, List.of(viA));
         Assert.assertEquals(MultiLevel.MUTABLE, ret3.getProperty(VariableProperty.NOT_NULL));
 
@@ -248,8 +248,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         VariableInfoImpl ret4 = ret3.merge(minimalEvaluationContext, null, false, List.of(viC));
         Assert.assertNotSame(ret3, ret4);
         // IMPROVE actually the value should be 4 == x?3:3 == x?4:2
-        Assert.assertEquals("(not (3 == instance type int) and not (4 == instance type int))?2:" +
-                "4 == instance type int?3:3 == instance type int?4:<return value>", ret4.getValue().toString());
+        Assert.assertEquals("/*S1*//*1*/!(3==instance type int)/*1*/&&!(4==instance type int)/*E1*/?2:4==instance type int?3:3==instance type int?4:<return value>", ret4.getValue().debugOutput());
 
         ret4.mergeProperties(false, ret3, List.of(viC));
         Assert.assertEquals(MultiLevel.MUTABLE, ret4.getProperty(VariableProperty.NOT_NULL));

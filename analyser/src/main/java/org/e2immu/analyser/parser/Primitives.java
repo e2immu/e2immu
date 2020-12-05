@@ -212,7 +212,7 @@ public class Primitives {
     }
 
     public static boolean isNotJavaLang(TypeInfo typeInfo) {
-        return typeInfo == null || typeInfo.fullyQualifiedName.startsWith("java.lang.");
+        return typeInfo == null || !typeInfo.fullyQualifiedName.startsWith("java.lang.");
     }
 
     public static boolean isPostfix(MethodInfo operator) {

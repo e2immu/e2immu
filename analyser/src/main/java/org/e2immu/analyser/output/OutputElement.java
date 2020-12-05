@@ -20,5 +20,5 @@ package org.e2immu.analyser.output;
 public interface OutputElement {
 
     String minimal();
-    String debug();
+    default String debug() { return minimal(); }
 }

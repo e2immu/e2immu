@@ -274,7 +274,7 @@ public class NewObject implements HasParameterExpressions {
                         .add(Symbol.RIGHT_PARENTHESIS);
             }
         } else {
-            outputBuilder.add(parameterizedType.output());
+            outputBuilder.add(new Text("instance type")).add(Space.ONE).add(parameterizedType.output());
         }
         if (anonymousClass != null) {
             outputBuilder.add(anonymousClass.output());

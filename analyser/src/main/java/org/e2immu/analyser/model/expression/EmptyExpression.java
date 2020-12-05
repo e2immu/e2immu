@@ -64,7 +64,7 @@ public record EmptyExpression(String msg) implements Expression {
 
     @Override
     public Precedence precedence() {
-        throw new UnsupportedOperationException();
+        return Precedence.TOP;
     }
 
     @Override
