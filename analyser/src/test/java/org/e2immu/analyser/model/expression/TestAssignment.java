@@ -4,13 +4,20 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.Logger;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.List;
 import java.util.Set;
 
 public class TestAssignment {
+
+    @BeforeClass
+    public static void beforeClass() {
+        Logger.activate();
+    }
 
     private final Primitives primitives = new Primitives();
     private final InspectionProvider inspectionProvider = InspectionProvider.defaultFrom(primitives);
@@ -21,7 +28,7 @@ public class TestAssignment {
         LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0));
         Expression iPlusEquals1 = new Assignment(primitives,
                 new VariableExpression(i.localVariableReference), new IntConstant(primitives, 1));
-        Assert.assertEquals("i = 1", iPlusEquals1.minimalOutput());
+        Assert.assertEquals("i=1", iPlusEquals1.minimalOutput());
     }
 
     @Test
@@ -30,7 +37,7 @@ public class TestAssignment {
         LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0));
         Expression iPlusEquals1 = new Assignment(primitives, new VariableExpression(i.localVariableReference),
                 new IntConstant(primitives, 1), primitives.assignPlusOperatorInt, null);
-        Assert.assertEquals("i += 1", iPlusEquals1.minimalOutput());
+        Assert.assertEquals("i+=1", iPlusEquals1.minimalOutput());
 
         Expression iPlusEquals1AsPlusPlusI = new Assignment(primitives, new VariableExpression(i.localVariableReference),
                 new IntConstant(primitives, 1), primitives.assignPlusOperatorInt, true);

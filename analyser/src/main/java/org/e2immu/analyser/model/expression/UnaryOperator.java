@@ -66,7 +66,7 @@ public class UnaryOperator implements Expression {
 
     @Override
     public int order() {
-        throw new UnsupportedOperationException("Not yet evaluated: "+operator.name);
+        throw new UnsupportedOperationException("Not yet evaluated: " + operator.name);
     }
 
     @Override
@@ -164,6 +164,10 @@ public class UnaryOperator implements Expression {
 
     @Override
     public OutputBuilder output() {
+        if (Primitives.isPostfix(operator)) {
+            return new OutputBuilder().add(outputInParenthesis(precedence, expression))
+                    .add(Symbol.plusPlusSuffix(operator.name));
+        }
         return new OutputBuilder().add(Symbol.plusPlusSuffix(operator.name))
                 .add(outputInParenthesis(precedence, expression));
     }

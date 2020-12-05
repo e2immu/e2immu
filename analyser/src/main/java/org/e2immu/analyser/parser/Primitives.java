@@ -37,6 +37,8 @@ public class Primitives {
     public static final String JAVA_PRIMITIVE = "__java.lang__PRIMITIVE"; // special string, caught by constructor
 
     public static final String ORG_E2IMMU_ANNOTATION = "org.e2immu.annotation";
+    private static final String UNARY_MINUS_OPERATOR_INT = "int.-(int)";
+    private static final String LONG_FQN = "long";
 
     public final TypeInfo intTypeInfo = new TypeInfo(JAVA_PRIMITIVE, "int");
     public final ParameterizedType intParameterizedType = intTypeInfo.asSimpleParameterizedType();
@@ -209,8 +211,13 @@ public class Primitives {
                 !typeInfo.fullyQualifiedName.startsWith("jdk.internal");
     }
 
-    public static boolean isJavaLang(TypeInfo typeInfo) {
-        return typeInfo != null && !typeInfo.fullyQualifiedName.startsWith("java.lang.");
+    public static boolean isNotJavaLang(TypeInfo typeInfo) {
+        return typeInfo == null || typeInfo.fullyQualifiedName.startsWith("java.lang.");
+    }
+
+    public static boolean isPostfix(MethodInfo operator) {
+        return (operator.name.equals("++") || operator.name.equals("--")) && operator.returnType().typeInfo != null &&
+                operator.returnType().typeInfo.fullyQualifiedName.equals(LONG_FQN);
     }
 
     private MethodInfo createOperator(TypeInfo owner, String name, List<ParameterizedType> parameterizedTypes, ParameterizedType returnType) {
@@ -253,16 +260,17 @@ public class Primitives {
     public final MethodInfo assignDivideOperatorInt = createOperator(intTypeInfo, "/=", List.of(intParameterizedType), intParameterizedType);
     public final MethodInfo assignOrOperatorBoolean = createOperator(intTypeInfo, "|=", List.of(intParameterizedType), intParameterizedType);
 
-    public final MethodInfo postfixIncrementOperatorInt = createOperator(intTypeInfo, "++", List.of(), intParameterizedType);
+    // TODO long instead of int to distinguish statically (isPostfix) This is a hack!
+    public final MethodInfo postfixIncrementOperatorInt = createOperator(intTypeInfo, "++", List.of(), longParameterizedType);
     public final MethodInfo prefixIncrementOperatorInt = createOperator(intTypeInfo, "++", List.of(), intParameterizedType);
-    public final MethodInfo postfixDecrementOperatorInt = createOperator(intTypeInfo, "--", List.of(), intParameterizedType);
+    public final MethodInfo postfixDecrementOperatorInt = createOperator(intTypeInfo, "--", List.of(), longParameterizedType);
     public final MethodInfo prefixDecrementOperatorInt = createOperator(intTypeInfo, "--", List.of(), intParameterizedType);
 
     public final MethodInfo unaryPlusOperatorInt = createOperator(intTypeInfo, "+", List.of(intParameterizedType), intParameterizedType);
     public final MethodInfo unaryMinusOperatorInt = createOperator(intTypeInfo, "-", List.of(intParameterizedType), intParameterizedType);
 
     public static boolean isUnaryMinusOperatorInt(MethodInfo operator) {
-        return "int.-(int)".equals(operator.fullyQualifiedName()) && operator.methodInspection.get().getParameters().size() == 1;
+        return UNARY_MINUS_OPERATOR_INT.equals(operator.fullyQualifiedName()) && operator.methodInspection.get().getParameters().size() == 1;
     }
 
     public final MethodInfo bitWiseNotOperatorInt = createOperator(intTypeInfo, "~", List.of(intParameterizedType), intParameterizedType);
@@ -319,6 +327,9 @@ public class Primitives {
                 .setTypeNature(TypeNature.ANNOTATION)
                 .setParentClass(objectParameterizedType)
                 .build());
+
+        assert UNARY_MINUS_OPERATOR_INT.equals(unaryMinusOperatorInt.fullyQualifiedName);
+        assert LONG_FQN.equals(longTypeInfo.fullyQualifiedName): "Have "+longTypeInfo.fullyQualifiedName;
     }
 
     public static boolean isPrimitiveExcludingVoid(ParameterizedType parameterizedType) {
