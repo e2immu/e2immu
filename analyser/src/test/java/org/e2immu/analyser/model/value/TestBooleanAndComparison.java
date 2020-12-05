@@ -33,7 +33,7 @@ public class TestBooleanAndComparison extends CommonAbstractValue {
         GreaterThanZero jGe0 = (GreaterThanZero) GreaterThanZero.greater(minimalEvaluationContext, j, newInt(0), true);
 
         Expression iGe0_and__iLt0_or_jGe0 = newAndAppend(iGe0, newOrAppend(iLt0, jGe0));
-        Assert.assertEquals("(i >= 0 and j >= 0)", iGe0_and__iLt0_or_jGe0.toString());
+        Assert.assertEquals("i>=0&&j>=0", iGe0_and__iLt0_or_jGe0.toString());
 
         Expression addIGe0Again = newAndAppend(iGe0_and__iLt0_or_jGe0, iGe0);
         Assert.assertEquals(iGe0_and__iLt0_or_jGe0, addIGe0Again);

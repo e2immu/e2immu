@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 public class Negation extends UnaryOperator implements ExpressionWrapper {
     public final ObjectFlow objectFlow;
 
-    public Expression getValue() {
+    public Expression getExpression() {
         return expression;
     }
 
@@ -120,11 +120,6 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     public OutputBuilder output() {
         return new OutputBuilder().add(expression.isNumeric() ? Symbol.UNARY_MINUS : Symbol.UNARY_BOOLEAN_NOT)
                 .add(outputInParenthesis(precedence(), expression));
-    }
-
-    @Override
-    public int order() {
-        throw new UnsupportedOperationException();
     }
 
     @Override

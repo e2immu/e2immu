@@ -184,7 +184,7 @@ public record Or(Primitives primitives,
 
     @Override
     public ParameterizedType returnType() {
-        return null;
+        return primitives.booleanParameterizedType;
     }
 
     @Override

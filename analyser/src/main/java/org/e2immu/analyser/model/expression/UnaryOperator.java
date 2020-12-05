@@ -66,7 +66,7 @@ public class UnaryOperator implements Expression {
 
     @Override
     public int order() {
-        throw new UnsupportedOperationException("Not yet evaluated");
+        throw new UnsupportedOperationException("Not yet evaluated: "+operator.name);
     }
 
     @Override

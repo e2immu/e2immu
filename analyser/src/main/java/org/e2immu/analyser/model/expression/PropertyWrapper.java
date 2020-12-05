@@ -45,19 +45,19 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
      Alternatively, we wrap a dedicated object flow
 
      */
-    public final Expression value;
+    public final Expression expression;
     public final Map<VariableProperty, Integer> properties;
     public final ObjectFlow overwriteObjectFlow;
 
-    private PropertyWrapper(Expression value, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
-        this.value = value;
+    private PropertyWrapper(Expression expression, Map<VariableProperty, Integer> properties, ObjectFlow objectFlow) {
+        this.expression = expression;
         this.properties = properties;
         overwriteObjectFlow = objectFlow;
     }
 
     @Override
-    public Expression getValue() {
-        return value;
+    public Expression getExpression() {
+        return expression;
     }
 
     @Override
@@ -67,7 +67,7 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
 
     @Override
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
-        EvaluationResult reValue = value.reEvaluate(evaluationContext, translation);
+        EvaluationResult reValue = expression.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reValue);
         return builder.setExpression(PropertyWrapper.propertyWrapper(evaluationContext, reValue.value, properties, getObjectFlow())).build();
     }
@@ -93,12 +93,12 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
 
     @Override
     public ParameterizedType returnType() {
-        return value.returnType();
+        return expression.returnType();
     }
 
     @Override
     public Precedence precedence() {
-        return value.precedence();
+        return expression.precedence();
     }
 
     @Override
@@ -108,7 +108,7 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
 
     @Override
     public int order() {
-        return value.order();
+        return expression.order();
     }
 
     @Override
@@ -118,7 +118,7 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
 
     @Override
     public OutputBuilder output() {
-        return new OutputBuilder().add(value.output())
+        return new OutputBuilder().add(expression.output())
                 .add(Symbol.LEFT_BLOCK_COMMENT)
                 .add(new Text(properties.entrySet().stream().filter(e -> e.getValue() > e.getKey().falseValue)
                         .map(e -> e.getKey().toString()).sorted().collect(Collectors.joining(","))))
@@ -127,50 +127,50 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
 
     @Override
     public boolean isNumeric() {
-        return value.isNumeric();
+        return expression.isNumeric();
     }
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         int inMap = properties.getOrDefault(variableProperty, Level.DELAY);
         if (inMap != Level.DELAY) return inMap;
-        return evaluationContext.getProperty(value, variableProperty);
+        return evaluationContext.getProperty(expression, variableProperty);
     }
 
     @Override
     public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
-        return evaluationContext.linkedVariables(value);
+        return evaluationContext.linkedVariables(expression);
     }
 
     @Override
     public List<Variable> variables() {
-        return value.variables();
+        return expression.variables();
     }
 
     @Override
     public ObjectFlow getObjectFlow() {
-        return overwriteObjectFlow != null ? overwriteObjectFlow : value.getObjectFlow();
+        return overwriteObjectFlow != null ? overwriteObjectFlow : expression.getObjectFlow();
     }
 
     @Override
     public void visit(Predicate<Expression> predicate) {
         if (predicate.test(this)) {
-            value.visit(predicate);
+            expression.visit(predicate);
         }
     }
 
     @Override
     public <T extends Expression> T asInstanceOf(Class<T> clazz) {
-        return value.asInstanceOf(clazz);
+        return expression.asInstanceOf(clazz);
     }
 
     @Override
     public boolean isInstanceOf(Class<? extends Expression> clazz) {
-        return value.isInstanceOf(clazz);
+        return expression.isInstanceOf(clazz);
     }
 
     @Override
     public NewObject getInstance(EvaluationContext evaluationContext) {
-        return value.getInstance(evaluationContext);
+        return expression.getInstance(evaluationContext);
     }
 }

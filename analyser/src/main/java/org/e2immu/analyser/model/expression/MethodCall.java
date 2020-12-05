@@ -147,14 +147,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     @Override
     public OutputBuilder output() {
         OutputBuilder outputBuilder = new OutputBuilder();
-        if(object != null) {
+        if (object != null) {
             outputBuilder.add(outputInParenthesis(precedence(), object)).add(Symbol.DOT);
         }
         outputBuilder.add(new Text(methodInfo.name));
-        if(parameterExpressions.isEmpty()) {
+        if (parameterExpressions.isEmpty()) {
             outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
         } else {
-            outputBuilder.add(parameterExpressions.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)));
+            outputBuilder
+                    .add(Symbol.LEFT_PARENTHESIS)
+                    .add(parameterExpressions.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                    .add(Symbol.RIGHT_PARENTHESIS);
         }
         return outputBuilder;
     }

@@ -19,6 +19,7 @@ package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
+import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -26,6 +27,7 @@ import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -45,13 +47,13 @@ public class TestConditionalValue extends CommonAbstractValue {
     @Test
     public void test2() {
         Expression cv1 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext, a, TRUE, b, ObjectFlow.NO_FLOW).value;
-        Assert.assertEquals("(a or b)", cv1.toString());
+        Assert.assertEquals("a||b", cv1.toString());
         Expression cv2 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext, a, FALSE, b, ObjectFlow.NO_FLOW).value;
-        Assert.assertEquals("(not (a) and b)", cv2.toString());
+        Assert.assertEquals("!a&&b", cv2.toString());
         Expression cv3 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext, a, b, TRUE, ObjectFlow.NO_FLOW).value;
-        Assert.assertEquals("(not (a) or b)", cv3.toString());
+        Assert.assertEquals("!a||b", cv3.toString());
         Expression cv4 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext, a, b, FALSE, ObjectFlow.NO_FLOW).value;
-        Assert.assertEquals("(a and b)", cv4.toString());
+        Assert.assertEquals("a&&b", cv4.toString());
     }
 
     @Test
@@ -59,10 +61,11 @@ public class TestConditionalValue extends CommonAbstractValue {
         TypeInfo annotatedAPI = new TypeInfo("org.e2immu.annotatedapi", "AnnotatedAPI");
         ParameterizedType annotatedAPIPt = new ParameterizedType(annotatedAPI, 0);
         MethodInfo isFact = new MethodInfo(annotatedAPI, "isFact", ShallowTypeAnalyser.IS_FACT_FQN, ShallowTypeAnalyser.IS_FACT_FQN, false);
+        isFact.methodInspection.set(new MethodInspectionImpl.Builder(annotatedAPI).setReturnType(PRIMITIVES.booleanParameterizedType).build(InspectionProvider.DEFAULT));
         Expression isFactA = new MethodCall(new TypeExpression(annotatedAPIPt, ObjectFlow.NO_FLOW), isFact, List.of(a), ObjectFlow.NO_FLOW);
-        Assert.assertEquals("org.e2immu.annotatedapi.AnnotatedAPI.isFact(a)", isFactA.toString());
+        Assert.assertEquals("AnnotatedAPI.isFact(a)", isFactA.toString());
         Expression isFactB = new MethodCall(new TypeExpression(annotatedAPIPt, ObjectFlow.NO_FLOW), isFact, List.of(b), ObjectFlow.NO_FLOW);
-        Assert.assertEquals("org.e2immu.annotatedapi.AnnotatedAPI.isFact(b)", isFactB.toString());
+        Assert.assertEquals("AnnotatedAPI.isFact(b)", isFactB.toString());
 
         Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, minimalEvaluationContext.getConditionManager().state);
         Expression cv1 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext, isFactA, a, b, ObjectFlow.NO_FLOW).value;
@@ -74,7 +77,7 @@ public class TestConditionalValue extends CommonAbstractValue {
         Assert.assertSame(a, cv2);
 
         EvaluationContext child2 = minimalEvaluationContext.child(new And(PRIMITIVES).append(minimalEvaluationContext, a, b));
-        Assert.assertEquals("(a and b)", child2.getConditionManager().state.toString());
+        Assert.assertEquals("a&&b", child2.getConditionManager().state.toString());
         Expression cv3 = EvaluateInlineConditional.conditionalValueConditionResolved(child2, isFactA, a, b, ObjectFlow.NO_FLOW).value;
         Assert.assertSame(a, cv3);
 
@@ -84,7 +87,7 @@ public class TestConditionalValue extends CommonAbstractValue {
         EvaluationContext child3 = minimalEvaluationContext.child(
                 new Or(PRIMITIVES).append(minimalEvaluationContext, c,
                         new And(PRIMITIVES).append(minimalEvaluationContext, a, b)));
-        Assert.assertEquals("((a or c) and (b or c))", child3.getConditionManager().state.toString());
+        Assert.assertEquals("(a||c)&&(b||c)", child3.getConditionManager().state.toString());
         Expression cv4 = EvaluateInlineConditional.conditionalValueConditionResolved(child3, isFactA, a, b, ObjectFlow.NO_FLOW).value;
         Assert.assertSame(b, cv4);
     }
@@ -94,8 +97,8 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression cv1 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext, a, b, c, ObjectFlow.NO_FLOW).value;
         Assert.assertEquals("a?b:c", cv1.toString());
         Expression and1 = new And(PRIMITIVES).append(minimalEvaluationContext, a, cv1);
-        Assert.assertEquals("(a and b)", and1.toString());
+        Assert.assertEquals("a&&b", and1.toString());
         Expression and2 = new And(PRIMITIVES).append(minimalEvaluationContext, negate(a), cv1);
-        Assert.assertEquals("(not (a) and c)", and2.toString());
+        Assert.assertEquals("!a&&c", and2.toString());
     }
 }

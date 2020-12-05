@@ -56,9 +56,9 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
         if ("idem3".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
             Expression value = d.statementAnalysis().stateData.valueOfExpression.get();
             Assert.assertTrue(value instanceof PropertyWrapper);
-            Expression valueInside = ((PropertyWrapper) value).value;
+            Expression valueInside = ((PropertyWrapper) value).expression;
             Assert.assertTrue(valueInside instanceof PropertyWrapper);
-            Expression valueInside2 = ((PropertyWrapper) valueInside).value;
+            Expression valueInside2 = ((PropertyWrapper) valueInside).expression;
             Assert.assertTrue(valueInside2 instanceof VariableExpression);
             // check that isInstanceOf bypasses the wrappers
             Assert.assertTrue(value.isInstanceOf(VariableExpression.class));

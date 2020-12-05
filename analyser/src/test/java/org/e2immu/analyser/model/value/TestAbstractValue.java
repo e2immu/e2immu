@@ -71,7 +71,7 @@ public class TestAbstractValue extends CommonAbstractValue {
         Assert.assertEquals(a, aAndAOrB);
 
         Expression aAndNotAOrB = newAndAppend(a, newOrAppend(Negation.negate(minimalEvaluationContext, a), b));
-        Assert.assertEquals("(a and b)", aAndNotAOrB.toString());
+        Assert.assertEquals("a&&b", aAndNotAOrB.toString());
 
         //D && A && !B && (!A || B) && C (the && C, D is there just for show)
         Expression v = newAndAppend(d, a, negate(b), newOrAppend(negate(a), b), c);
@@ -82,7 +82,7 @@ public class TestAbstractValue extends CommonAbstractValue {
     public void testExpandAndInOr() {
         // A || (B && C)
         Expression v = newOrAppend(a, newAndAppend(b, c));
-        Assert.assertEquals("((a or b) and (a or c))", v.toString());
+        Assert.assertEquals("(a||b)&&(a||c)", v.toString());
     }
 
     @Test
@@ -105,20 +105,20 @@ public class TestAbstractValue extends CommonAbstractValue {
 
     @Test
     public void testIsNull() {
-        Expression v = new Equals(PRIMITIVES, a, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
-        Assert.assertEquals("null == a", v.toString());
+        Expression v = Equals.equals(minimalEvaluationContext, a, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
+        Assert.assertEquals("null==a", v.toString());
         Map<Variable, Boolean> nullClauses = nullClauses(v, Filter.FilterMode.ACCEPT);
         Assert.assertEquals(1, nullClauses.size());
         Assert.assertEquals(true, nullClauses.get(va));
 
-        Expression v2 = new Equals(PRIMITIVES, b, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
-        Assert.assertEquals("null == b", v2.toString());
+        Expression v2 = Equals.equals(minimalEvaluationContext, b, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
+        Assert.assertEquals("null==b", v2.toString());
         Map<Variable, Boolean> nullClauses2 = nullClauses(v2, Filter.FilterMode.ACCEPT);
         Assert.assertEquals(1, nullClauses2.size());
         Assert.assertEquals(true, nullClauses2.get(vb));
 
         Expression orValue = newOrAppend(v, negate(v2));
-        Assert.assertEquals("(null == a or not (null == b))", orValue.toString());
+        Assert.assertEquals("null==a||!(null==b)", orValue.toString());
         Map<Variable, Boolean> nullClausesAnd = nullClauses(orValue, Filter.FilterMode.REJECT);
         Assert.assertEquals(2, nullClausesAnd.size());
         Assert.assertEquals(true, nullClausesAnd.get(va));
@@ -128,14 +128,14 @@ public class TestAbstractValue extends CommonAbstractValue {
     @Test
     public void testIsNotNull() {
         Expression v = Negation.negate(minimalEvaluationContext, new Equals(PRIMITIVES, NullConstant.NULL_CONSTANT, a, ObjectFlow.NO_FLOW));
-        Assert.assertEquals("not (null == a)", v.toString());
+        Assert.assertEquals("!(null==a)", v.toString());
         Map<Variable, Boolean> nullClauses = nullClauses(v, Filter.FilterMode.REJECT);
         Assert.assertEquals(1, nullClauses.size());
         Assert.assertEquals(false, nullClauses.get(va));
     }
 
-    public static final String EXPECTED = "((a or c) and (a or d) and (b or c) and (b or d))";
-    public static final String EXPECTED2 = "((a or not (c)) and (a or d) and (not (b) or not (c)) and (not (b) or d))";
+    public static final String EXPECTED = "(a||c)&&(a||d)&&(b||c)&&(b||d)";
+    public static final String EXPECTED2 = "(a||!c)&&(a||d)&&(!b||!c)&&(!b||d)";
 
     @Test
     public void testCNF() {
@@ -193,7 +193,7 @@ public class TestAbstractValue extends CommonAbstractValue {
     @Test
     public void testSumProduct() {
         Expression aa = Sum.sum(minimalEvaluationContext, a, a, ObjectFlow.NO_FLOW);
-        Assert.assertEquals("2 * a", aa.toString());
+        Assert.assertEquals("2*a", aa.toString());
         Expression a0 = Sum.sum(minimalEvaluationContext, a, newInt(0), ObjectFlow.NO_FLOW);
         Assert.assertEquals(a, a0);
         Expression aTimes0 = Product.product(minimalEvaluationContext, a, newInt(0), ObjectFlow.NO_FLOW);
@@ -202,10 +202,10 @@ public class TestAbstractValue extends CommonAbstractValue {
         Expression a3a = Sum.sum(minimalEvaluationContext, a,
                 Product.product(minimalEvaluationContext, newInt(3), a, ObjectFlow.NO_FLOW),
                 ObjectFlow.NO_FLOW);
-        Assert.assertEquals("4 * a", a3a.toString());
+        Assert.assertEquals("4*a", a3a.toString());
         Expression b2 = Product.product(minimalEvaluationContext, b, newInt(2), ObjectFlow.NO_FLOW);
         Expression b4 = Product.product(minimalEvaluationContext, newInt(4), b, ObjectFlow.NO_FLOW);
         Expression b4b2 = Sum.sum(minimalEvaluationContext, b4, b2, ObjectFlow.NO_FLOW);
-        Assert.assertEquals("6 * b", b4b2.toString());
+        Assert.assertEquals("6*b", b4b2.toString());
     }
 }

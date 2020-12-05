@@ -81,7 +81,7 @@ public record VariableExpression(Variable variable,
 
     @Override
     public int order() {
-        return ExpressionComparator.ORDER_VARIABLE_VALUE;
+        return ExpressionComparator.ORDER_VARIABLE;
     }
 
     @Override

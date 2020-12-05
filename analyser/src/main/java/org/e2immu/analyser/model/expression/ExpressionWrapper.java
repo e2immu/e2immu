@@ -25,9 +25,8 @@ public interface ExpressionWrapper {
 
     int WRAPPER_ORDER_PROPERTY = 1;
     int WRAPPER_ORDER_NEGATED = 2;
-    int WRAPPER_ORDER_CONSTRAINED_NUMERIC_VALUE = 3;
 
-    Expression getValue();
+    Expression getExpression();
 
     int wrapperOrder();
 

@@ -163,7 +163,7 @@ public interface Expression extends Element, Comparable<Expression> {
     }
 
     default OutputBuilder outputInParenthesis(Precedence precedence, Expression expression) {
-        if (precedence.greaterThan(precedence())) {
+        if (precedence.greaterThan(expression.precedence())) {
             return new OutputBuilder().add(Symbol.LEFT_PARENTHESIS).add(expression.output()).add(Symbol.RIGHT_PARENTHESIS);
         }
         return expression.output();

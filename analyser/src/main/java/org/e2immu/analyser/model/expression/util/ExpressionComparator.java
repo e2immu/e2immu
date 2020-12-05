@@ -46,7 +46,7 @@ public class ExpressionComparator implements Comparator<Expression> {
     public static final int ORDER_INSTANCE = 63;
     public static final int ORDER_INLINE_METHOD = 64;
     public static final int ORDER_METHOD = 65;
-    public static final int ORDER_VARIABLE_VALUE = 66;
+    public static final int ORDER_VARIABLE = 66;
     public static final int ORDER_COMBINED = 67;
     public static final int ORDER_TYPE = 68;
     public static final int ORDER_NO_VALUE = 69;
@@ -73,8 +73,8 @@ public class ExpressionComparator implements Comparator<Expression> {
 
         public static Unwrapped create(Expression v) {
             Expression unwrapped = v;
-            while (unwrapped instanceof ExpressionWrapper ExpressionWrapper) {
-                unwrapped = ExpressionWrapper.getValue();
+            while (unwrapped instanceof ExpressionWrapper e) {
+                unwrapped = e.getExpression();
             }
             return new Unwrapped(unwrapped);
         }
@@ -90,8 +90,8 @@ public class ExpressionComparator implements Comparator<Expression> {
             return compareWithoutWrappers(v1, v2);
         }
 
-        Unwrapped u1 = new Unwrapped(v1);
-        Unwrapped u2 = new Unwrapped(v2);
+        Unwrapped u1 = Unwrapped.create(v1);
+        Unwrapped u2 = Unwrapped.create(v2);
 
         int withoutWrappers = compareWithoutWrappers(u1.value, u2.value);
         if (withoutWrappers != 0) return withoutWrappers;
@@ -106,7 +106,7 @@ public class ExpressionComparator implements Comparator<Expression> {
         if (w != 0) return w;
 
         // same wrappers, go deeper
-        return compare(((ExpressionWrapper) v1).getValue(), ((ExpressionWrapper) v2).getValue());
+        return compare(((ExpressionWrapper) v1).getExpression(), ((ExpressionWrapper) v2).getExpression());
     }
 
     private int compareWithoutWrappers(Expression v1, Expression v2) {
