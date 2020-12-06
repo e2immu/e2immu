@@ -36,7 +36,6 @@ import java.util.stream.Stream;
 public record MultiExpression(Expression... expressions) {
 
     public static MultiExpression create(List<Expression> values) {
-        if (values.isEmpty()) throw new UnsupportedOperationException();
         return new MultiExpression(values.toArray(Expression[]::new));
     }
 

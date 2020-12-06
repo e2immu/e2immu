@@ -28,6 +28,16 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
     public static final ParameterizedTypePrinter DEFAULT = new ParameterizedTypePrinter(false, false);
     public static final ParameterizedTypePrinter DETAILED = new ParameterizedTypePrinter(true, false);
 
+    /**
+     * It is important not too use the inspection provider too eagerly. During bootstrap of the java.lang classes,
+     * there are a lot of interdependencies, and this printer does not have an auto-inspect system.
+     *
+     * @param inspectionProvider Needed to study the type parameters.
+     * @param parameterizedType  to be printed
+     * @param varargs            in a context where [] becomes ... ?
+     * @param withoutArrays      don't print []
+     * @return printed result
+     */
     public String print(InspectionProvider inspectionProvider,
                         ParameterizedType parameterizedType,
                         boolean varargs,
@@ -69,8 +79,8 @@ public record ParameterizedTypePrinter(boolean fullyQualified, boolean numericTy
             if (parameterizedType.parameters.isEmpty()) {
                 sb.append(typeName(parameterizedType.typeInfo, keepItSimple, false));
             } else {
-                TypeInspection typeInspection = inspectionProvider.getTypeInspection(parameterizedType.typeInfo);
-                if (typeInspection.isStatic()) { // shortcut
+                if (parameterizedType.typeInfo.isPrimaryType() ||
+                        inspectionProvider.getTypeInspection(parameterizedType.typeInfo).isStatic()) { // shortcut
                     sb.append(singleType(inspectionProvider, parameterizedType.typeInfo, keepItSimple, false,
                             parameterizedType.parameters, visitedTypeParameters));
                 } else {

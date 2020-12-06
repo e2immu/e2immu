@@ -58,4 +58,8 @@ public class StringUtil {
         if (path.endsWith(".class")) return path.substring(0, path.length() - 6);
         return path;
     }
+
+    public static String quote(String s) {
+        return "\"" + s.replace("\"", "\\\"") + "\"";
+    }
 }

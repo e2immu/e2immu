@@ -26,6 +26,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.NotNull;
 
@@ -82,11 +83,7 @@ public record StringConstant(Primitives primitives,
 
     @Override
     public OutputBuilder output() {
-        return new OutputBuilder().add(new Text("\"" + encode(constant) + "\""));
-    }
-
-    private static final String encode(String s) {
-        return s.replace("\"", "\\\"");
+        return new OutputBuilder().add(new Text(StringUtil.quote(constant)));
     }
 
     @Override

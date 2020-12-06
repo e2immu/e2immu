@@ -45,7 +45,7 @@ public class Test_00_Basics extends CommonTestRunner {
         if ("explicitlyFinal".equals(d.fieldInfo().name)) {
             if (d.iteration() == 0) {
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
-                Assert.assertEquals("abc", fieldAnalysis.getEffectivelyFinalValue().toString());
+                Assert.assertEquals("\"abc\"", fieldAnalysis.getEffectivelyFinalValue().toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(fieldAnalysis.getEffectivelyFinalValue(),
                         VariableProperty.NOT_NULL));
             }
@@ -72,7 +72,7 @@ public class Test_00_Basics extends CommonTestRunner {
             }
             // the return value
             Assert.assertEquals("org.e2immu.analyser.testexample.Basics.getExplicitlyFinal()", d.variableName());
-            Assert.assertEquals("abc", d.currentValue().toString());
+            Assert.assertEquals("\"abc\"", d.currentValue().toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
             Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
             return;
