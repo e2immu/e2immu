@@ -224,7 +224,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         @Override
-        public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider,
+                                                    E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
             int effectivelyFinal = getProperty(VariableProperty.FINAL);
             int ownerImmutable = typeAnalysisOfOwner.getProperty(VariableProperty.IMMUTABLE);
             int modified = getProperty(VariableProperty.MODIFIED);

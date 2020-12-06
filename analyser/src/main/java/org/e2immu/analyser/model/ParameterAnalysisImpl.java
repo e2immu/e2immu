@@ -157,7 +157,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         }
 
         @Override
-        public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
             // no annotations can be added to primitives
             if (Primitives.isPrimitiveExcludingVoid(parameterInfo.parameterizedType)) return;

@@ -55,8 +55,9 @@ public class Message {
     public static final String METHOD_SHOULD_BE_MARKED_STATIC = "Method should be marked static";
     public static final String ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE = "Assigning to field outside the primary type";
 
-    public static final String ANNOTATION_UNEXPECTEDLY_PRESENT = "Annotation should be absent";
+    public static final String PRECONDITION_ABSENT = "Precondition missing";
     public static final String ANNOTATION_ABSENT = "Annotation missing";
+    public static final String ANNOTATION_UNEXPECTEDLY_PRESENT = "Annotation should be absent";
     public static final String WRONG_CONSTANT = "@Constant annotation, wrong value";
     public static final String PRIVATE_FIELD_NOT_READ = "Private field not read outside constructors";
     public static final String NON_PRIVATE_FIELD_NOT_FINAL = "Non-private field is not effectively final (@Final)";

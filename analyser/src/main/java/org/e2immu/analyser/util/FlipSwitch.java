@@ -29,8 +29,8 @@ public class FlipSwitch {
     // volatile guarantees that once the value is set, other threads see the effect immediately
     private volatile boolean t;
 
+    private boolean set$Precondition() { return !t; }
     @Mark("t")
-    @Precondition("null == this.t")
     public void set() { // @NotModified implied
         synchronized (this) {
             if (t) {

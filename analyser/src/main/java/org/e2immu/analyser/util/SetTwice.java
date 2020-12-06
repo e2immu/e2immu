@@ -45,9 +45,9 @@ public class SetTwice<T> {
     // volatile guarantees that once the value is set, other threads see the effect immediately
     private volatile T t;
 
+    private boolean overwrite$Precondition(T t) { return !overwritten && this.t != null; }
     @Mark("overwritten,t")
     @Modified
-    @Precondition("(not (this.overwritten) and not (null == this.t))")
     public void overwrite(@NotNull T t) {
         if (t == null) throw new NullPointerException("Null not allowed");
         synchronized (this) {
@@ -58,9 +58,9 @@ public class SetTwice<T> {
         }
     }
 
+    private boolean freeze$Precondition() { return !overwritten && this.t != null; }
     @Mark("overwritten,t")
     @Modified
-    @Precondition("(not (this.overwritten) and not (null == this.t))")
     public void freeze() {
         if (!isSet() || overwritten) {
             throw new UnsupportedOperationException("Not yet set");
@@ -68,9 +68,9 @@ public class SetTwice<T> {
         overwritten = true;
     }
 
+    private boolean set$Precondition(T t) { return this.t == null; }
     @Mark("t")
     @Modified
-    @Precondition("null == this.t")
     public void set(@NotNull T t) {
         if (t == null) throw new NullPointerException("Null not allowed");
         synchronized (this) {
@@ -81,10 +81,10 @@ public class SetTwice<T> {
         }
     }
 
+    private boolean get$Precondition() { return t != null; }
     @Only(after = "t")
     @NotNull
     @NotModified
-    @Precondition("not (null == this.t)")
     public T get() {
         if (!isSet()) {
             throw new UnsupportedOperationException("Not yet set");

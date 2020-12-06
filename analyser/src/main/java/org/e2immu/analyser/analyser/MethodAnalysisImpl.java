@@ -19,12 +19,14 @@ package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.analyser.util.CreatePreconditionCompanion;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ContractMark;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.FirstThen;
 import org.e2immu.analyser.util.SetOnce;
@@ -54,6 +56,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final Expression precondition;
     public final Expression singleReturnValue;
     public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
+    public final Map<CompanionMethodName, MethodInfo> computedCompanions ;
 
     private MethodAnalysisImpl(MethodInfo methodInfo,
                                StatementAnalysis firstStatement,
@@ -69,7 +72,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                Expression precondition,
                                Map<VariableProperty, Integer> properties,
                                Map<AnnotationExpression, Boolean> annotations,
-                               Map<CompanionMethodName, CompanionAnalysis> companionAnalyses) {
+                               Map<CompanionMethodName, CompanionAnalysis> companionAnalyses,
+                               Map<CompanionMethodName, MethodInfo> computedCompanions) {
         super(properties, annotations);
         this.methodInfo = methodInfo;
         this.firstStatement = firstStatement;
@@ -84,6 +88,12 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.precondition = precondition;
         this.singleReturnValue = singleReturnValue;
         this.companionAnalyses = companionAnalyses;
+        this.computedCompanions = computedCompanions;
+    }
+
+    @Override
+    public Map<CompanionMethodName, MethodInfo> getComputedCompanions() {
+        return computedCompanions;
     }
 
     @Override
@@ -199,6 +209,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public final SetOnce<Expression> precondition = new SetOnce<>();
         public final SetOnceMap<CompanionMethodName, CompanionAnalysis> companionAnalyses = new SetOnceMap<>();
 
+        public final SetOnceMap<CompanionMethodName, MethodInfo> computedCompanions = new SetOnceMap<>();
+
         public final boolean isBeingAnalysed;
 
         @Override
@@ -269,7 +281,13 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     precondition.getOrElse(EmptyExpression.EMPTY_EXPRESSION),
                     properties.toImmutableMap(),
                     annotations.toImmutableMap(),
-                    getCompanionAnalyses());
+                    getCompanionAnalyses(),
+                    getComputedCompanions());
+        }
+
+        @Override
+        public Map<CompanionMethodName, MethodInfo> getComputedCompanions() {
+            return computedCompanions.toImmutableMap();
         }
 
         @Override
@@ -308,16 +326,16 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         }
 
         @Override
-        public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider, E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
             int modified = getProperty(VariableProperty.MODIFIED);
 
             // @Precondition
             if (precondition.isSet()) {
                 Expression value = precondition.get();
                 if (value != EmptyExpression.EMPTY_EXPRESSION) {
-                    AnnotationExpression ae = e2ImmuAnnotationExpressions.precondition
-                            .copyWith(primitives, "value", value.toString());
-                    annotations.put(ae, true);
+                   // generate a companion method
+                    new CreatePreconditionCompanion(InspectionProvider.defaultFrom(primitives), analysisProvider)
+                            .addPreconditionCompanion(methodInfo, this, value);
                 }
             }
 
@@ -413,6 +431,10 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         public void setFirstStatement(StatementAnalysis firstStatement) {
             this.firstStatement.set(firstStatement);
+        }
+
+        public void addCompanion(CompanionMethodName companionMethodName, MethodInfo companion) {
+            computedCompanions.put(companionMethodName, companion);
         }
     }
 

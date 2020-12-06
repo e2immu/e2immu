@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.e2immu.analyser.analyser;
+package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;

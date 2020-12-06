@@ -20,7 +20,6 @@ package org.e2immu.analyser.util;
 
 import org.e2immu.annotation.Final;
 import org.e2immu.annotation.Mark;
-import org.e2immu.annotation.Precondition;
 
 /**
  * Super-class for eventually immutable types.
@@ -50,12 +49,12 @@ public abstract class Freezable {
         return frozen;
     }
 
-    @Precondition("not (this.frozen)")
+    private boolean ensureNotFrozen$Precondition() { return !frozen; }
     protected void ensureNotFrozen() {
         if (frozen) throw new UnsupportedOperationException("Already frozen!");
     }
 
-    @Precondition("this.frozen")
+    private boolean ensureFrozen$Precondition() { return frozen; }
     protected void ensureFrozen() {
         if (!frozen) throw new UnsupportedOperationException("Not yet frozen!");
     }

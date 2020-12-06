@@ -31,8 +31,8 @@ public class SetOnce<T> {
     // volatile guarantees that once the value is set, other threads see the effect immediately
     private volatile T t;
 
+    private boolean set$Precondition(T t ) { return this.t == null; }
     @Mark("t")
-    @Precondition("null == this.t")
     public void set(@NotNull T t) { // @NotModified implied
         if (t == null) throw new NullPointerException("Null not allowed");
         synchronized (this) {
@@ -43,11 +43,11 @@ public class SetOnce<T> {
         }
     }
 
+    private boolean get$Precondition() { return t != null; }
     @Only(after = "t")
     @NotNull
     @NotModified
     @Independent(absent = true) // note: independent of the support data, which is not present!
-    @Precondition("not (null == this.t)")
     public T get() {
         if (t == null) {
             throw new UnsupportedOperationException("Not yet set");
@@ -55,11 +55,11 @@ public class SetOnce<T> {
         return t;
     }
 
+    private boolean get$Precondition(String message) { return t == null; }
     @Only(after = "t")
     @NotNull
     @NotModified
     @Independent(absent = true) // note: independent of the support data, which is not present!
-    @Precondition("not (null == this.t)")
     public T get(String message) {
         if (t == null) {
             throw new UnsupportedOperationException("Not yet set: " + message);

@@ -273,7 +273,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     @Override
-    public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+    public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider,
+                                                E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
         throw new UnsupportedOperationException();
     }
 

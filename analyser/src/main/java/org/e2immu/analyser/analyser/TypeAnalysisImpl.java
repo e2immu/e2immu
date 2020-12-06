@@ -160,7 +160,8 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         }
 
         @Override
-        public void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
+        public void transferPropertiesToAnnotations(AnalysisProvider analysisProvider,
+                                                    E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
             // @ExtensionClass
             if (getProperty(VariableProperty.EXTENSION_CLASS) == Level.TRUE) {

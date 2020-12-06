@@ -112,6 +112,12 @@ public record CompanionMethodName(String methodName, Action action,
         return null;
     }
 
+
+    public String composeMethodName() {
+        return methodName + "$" + action.action + (aspect == null ? "" : "$" + aspect);
+    }
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -75,7 +75,7 @@ public class ParameterAnalyser {
     }
 
     public void write() {
-        parameterAnalysis.transferPropertiesToAnnotations(e2);
+        parameterAnalysis.transferPropertiesToAnnotations(analysisProvider, e2);
     }
 
     private void checkWorseThanParent() {

@@ -17,6 +17,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.GenerateAnnotationsImmutable;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ContractMark;
 import org.e2immu.analyser.model.expression.MemberValuePair;
@@ -81,7 +82,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
         return annotations.getOrDefault(annotationExpression, null);
     }
 
-    public abstract void transferPropertiesToAnnotations(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions);
+    public abstract void transferPropertiesToAnnotations(AnalysisProvider analysisProvider,
+                                                         E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions);
 
     protected void doNotNull(E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions) {
 
@@ -238,9 +240,6 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     properties.put(VariableProperty.LINKED, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.notModified1.typeInfo() == t) {
                     properties.put(VariableProperty.NOT_MODIFIED_1, trueFalse);
-                } else if (e2ImmuAnnotationExpressions.precondition.typeInfo() == t) {
-                    //String value = annotationExpression.extract("value", "");
-                    throw new UnsupportedOperationException("Not yet implemented");
                 } else throw new UnsupportedOperationException("TODO: " + t.fullyQualifiedName);
             }
         }

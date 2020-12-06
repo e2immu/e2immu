@@ -153,8 +153,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         }
 
         Stream<OutputBuilder> fieldsStream = fields.stream().map(FieldInfo::output);
-        Stream<OutputBuilder> constructorsStream = constructors.stream().map(MethodInfo::output);
-        Stream<OutputBuilder> methodsStream = methods.stream().map(MethodInfo::output);
         Stream<OutputBuilder> subTypesStream = subTypes.stream().map(TypeInfo::output);
 
         OutputBuilder outputBuilder = new OutputBuilder();
@@ -213,8 +211,15 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
         outputBuilder.add(guideGenerator.start());
 
-        Stream.concat(Stream.concat(Stream.concat(fieldsStream, subTypesStream), constructorsStream), methodsStream)
+        Stream.concat(fieldsStream, subTypesStream)
                 .forEach(ob -> outputBuilder.add(guideGenerator.mid()).add(ob).add(Space.NEWLINE));
+
+        for(MethodInfo constructor: constructors) {
+            outputBuilder.add(constructor.output(guideGenerator));
+        }
+        for(MethodInfo methodInfo: methods) {
+            outputBuilder.add(methodInfo.output(guideGenerator));
+        }
 
         return outputBuilder.add(guideGenerator.end()).add(Symbol.RIGHT_BRACE);
     }

@@ -231,7 +231,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         // opposites
         check(Dependent.class, e2.dependent);
 
-        CheckPrecondition.checkPrecondition(messages, methodInfo);
+        CheckPrecondition.checkPrecondition(messages, methodInfo, methodAnalysis);
         CheckOnly.checkOnly(messages, methodInfo, methodAnalysis);
         CheckOnly.checkMark(messages, methodInfo, methodAnalysis);
 
@@ -290,7 +290,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     public void write() {
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
         // before we check, we copy the properties into annotations
-        methodAnalysis.transferPropertiesToAnnotations(e2);
+        methodAnalysis.transferPropertiesToAnnotations(analyserContext, e2);
         parameterAnalysers.forEach(ParameterAnalyser::write);
     }
 

@@ -142,7 +142,6 @@ public class ImmutabilityAnnotations {
 
     @E1Immutable
     @NotModified
-    @Precondition("not (this.frozen)")
     @NotNull
     private static FreezableSet generateAfter() {
         FreezableSet freezableSet = new FreezableSet(List.of("a", "b"));

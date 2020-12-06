@@ -43,7 +43,6 @@ public class E2ImmuAnnotationExpressions {
     public final AnnotationExpression notNull2 = create(NotNull2.class);
     public final AnnotationExpression nullable = create(Nullable.class);
     public final AnnotationExpression only = create(Only.class);
-    public final AnnotationExpression precondition = create(Precondition.class);
     public final AnnotationExpression singleton = create(Singleton.class);
     public final AnnotationExpression utilityClass = create(UtilityClass.class);
     public final AnnotationExpression variableField = create(Variable.class);
@@ -54,7 +53,7 @@ public class E2ImmuAnnotationExpressions {
         ImmutableMap.Builder<String, TypeInfo> builder = new ImmutableMap.Builder<>();
         add(builder, beforeMark, constant, container, dependent, e1Container, e2Container, extensionClass, e1Immutable, e2Immutable,
                 effectivelyFinal, fluent, identity, ignoreModifications, independent, linked, mark, modified, mutableModifiesArguments);
-        add(builder, notModified, notModified1, notNull, notNull1, notNull2, nullable, only, precondition, singleton
+        add(builder, notModified, notModified1, notNull, notNull1, notNull2, nullable, only, singleton
                 , utilityClass, variableField);
         annotationTypes = builder.build();
     }

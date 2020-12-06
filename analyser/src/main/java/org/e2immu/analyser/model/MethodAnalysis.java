@@ -115,6 +115,10 @@ public interface MethodAnalysis extends Analysis {
         return null;
     }
 
+    default  Map<CompanionMethodName, MethodInfo> getComputedCompanions() {
+        return null;
+    }
+
     // ************** PRECONDITION
 
     /**

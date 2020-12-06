@@ -93,12 +93,12 @@ public class ObjectFlowFreezableSet {
         return set6;
     }
 
+    private static boolean method7$Precondition(FreezableSet set7) { return !set7.frozen; }
     // result frozen
     @E2Container
     @Identity
     @NotModified
     @NotNull
-    @Precondition("not (set7.isFrozen())")
     static FreezableSet method7(@Modified @NotNull FreezableSet set7) {
         if (set7.isFrozen()) throw new UnsupportedOperationException();
         set7.freeze();

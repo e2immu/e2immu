@@ -2,15 +2,12 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Nullable;
-import org.e2immu.annotation.Precondition;
 
 public class PreconditionChecks {
 
     // the first 4 methods are an exercise in applying a precondition on parameters
 
-    static boolean either$Precondition(String e1, String e2) { return e1 != null || e2 != null; }
-
-    @Precondition("(not (null == e1) or not (null == e2))")
+    public static boolean either$Precondition(String e1, String e2) { return e1 != null || e2 != null; }
     public static String either(String e1, String e2) {
         if (e1 == null && e2 == null) throw new UnsupportedOperationException();
         return e1 + e2;
@@ -30,7 +27,7 @@ public class PreconditionChecks {
     // here we want to propagate the precondition from MethodValue down to the method,
     // very much like we propagate the single not-null
 
-    @Precondition("(not (null == f1) or not (null == f2))")
+    public static boolean useEither3$Precondition(String f1, String f2) { return f1 != null || f2 != null; }
     public static String useEither3(@Nullable String f1, @Nullable String f2) {
         return either(f1, f2);
     }
@@ -55,20 +52,20 @@ public class PreconditionChecks {
         this.i = j1;
     }
 
-    @Precondition("(this.i >= 0 and j2 >= 0)")
+    private boolean setPositive3$Precondition(int j2) { return i >= 0 && j2 >= 0; }
     public void setPositive3(int j2) {
         if (i < 0) throw new UnsupportedOperationException();
         if (j2 < 0) throw new IllegalArgumentException();
         this.i = j2;
     }
 
-    @Precondition("(this.i >= 0 and j3 >= 0)")
+    private boolean setPositive4$Precondition(int j3) { return i >= 0 && j3 >= 0; }
     public void setPositive4(int j3) {
         if (i < 0 || j3 < 0) throw new UnsupportedOperationException();
         this.i = j3;
     }
 
-    @Precondition("(this.i >= 0 and j2 >= 0)")
+    private boolean setPositive5$Precondition(int j2) { return i >= 0 && j2 >= 0; }
     public void setPositive5(int j2) {
         if (i < 0) throw new UnsupportedOperationException();
         // the analyser should note that i>=0 is redundant
@@ -84,13 +81,13 @@ public class PreconditionChecks {
     // some examples of combined preconditions...
     // this one shows that you cannot simply say in the 2nd case: there was one already!
 
-    @Precondition("(((-2) + p1) >= 0 and p2 > 0)")
+    private boolean combinedPrecondition1$Precondition(int p1, int p2) { return p1 >= 2 && p2 > 0; }
     public void combinedPrecondition1(int p1, int p2) {
         if (p1 < 2 || p2 <= 0) throw new UnsupportedOperationException();
         this.i = p1 > p2 ? p1 + 3 : p2;
     }
 
-    @Precondition("(((-2) + p1) >= 0 and p2 > 0)")
+    private boolean combinedPrecondition2$Precondition(int p1, int p2) { return p1 >= 2 && p2 > 0; }
     public void combinedPrecondition2(int p1, int p2) {
         if (p1 <= 0) throw new UnsupportedOperationException(); // IRRELEVANT given the next one
         if (p1 < 2 || p2 <= 0) throw new UnsupportedOperationException();

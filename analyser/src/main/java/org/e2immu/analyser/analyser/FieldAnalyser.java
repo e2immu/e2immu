@@ -169,7 +169,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     public void write() {
         // before we check, we copy the properties into annotations
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        fieldAnalysis.transferPropertiesToAnnotations(e2);
+        fieldAnalysis.transferPropertiesToAnnotations(analyserContext, e2);
     }
 
     private AnalysisStatus evaluateInitialiser(int iteration) {

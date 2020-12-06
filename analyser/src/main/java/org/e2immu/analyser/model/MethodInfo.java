@@ -153,10 +153,13 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return typeInfo.primaryType();
     }
 
-    public OutputBuilder output() {
+    public OutputBuilder output(Guide.GuideGenerator methodGG) {
         OutputBuilder outputBuilder = new OutputBuilder();
         MethodInspection inspection = methodInspection.get();
 
+        outputCompanions(inspection, outputBuilder, methodGG);
+
+        outputBuilder.add(methodGG.mid());
         outputAnnotations(inspection, outputBuilder);
 
         outputBuilder.add(Arrays.stream(MethodModifier.sort(inspection.getModifiers())).map(Text::new)
@@ -192,6 +195,13 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             outputBuilder.add(Space.ONE).add(Symbol.LEFT_BRACE).add(Symbol.RIGHT_BRACE);
         }
         return outputBuilder;
+    }
+
+    private void outputCompanions(MethodInspection methodInspection, OutputBuilder outputBuilder, Guide.GuideGenerator methodGG) {
+        methodInspection.getCompanionMethods().values().forEach(companion -> outputBuilder.add(companion.output(methodGG)));
+        if (methodAnalysis.isSet()) {
+            methodAnalysis.get().getComputedCompanions().values().forEach(companion -> outputBuilder.add(companion.output(methodGG)));
+        }
     }
 
     private void outputAnnotations(MethodInspection methodInspection, OutputBuilder outputBuilder) {
