@@ -19,11 +19,11 @@ package org.e2immu.analyser.testexample;
 
 import java.util.Set;
 
-public class LinkVariables {
+public class Basics_1 {
 
     public final Set<String> f1;
 
-    public LinkVariables(Set<String> p0, Set<String> p1, String p2) {
+    public Basics_1(Set<String> p0, Set<String> p1, String p2) {
         Set<String> s1 = p0;
         this.f1 = s1;
     }

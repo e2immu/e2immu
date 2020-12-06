@@ -23,6 +23,9 @@ import org.e2immu.annotation.E2Container;
 
 
 /*
+
+ Check for unused local variables
+
  ERROR in M:UnusedLocalVariableChecks:0: Unused local variable: a
  ERROR in M:UnusedLocalVariableChecks:0: Useless assignment: a
  ERROR in M:method1: Method should be marked static
@@ -35,9 +38,9 @@ import org.e2immu.annotation.E2Container;
  */
 
 @E2Container
-public class UnusedLocalVariableChecks {
+public class Warnings_1 {
 
-    public UnusedLocalVariableChecks() {
+    public Warnings_1() {
         int a = 0;
         // ERROR: private variable a is not used, useless assignment
     }

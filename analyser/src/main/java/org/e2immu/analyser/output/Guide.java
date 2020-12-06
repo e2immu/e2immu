@@ -59,6 +59,11 @@ public record Guide(int index, Position position) implements OutputElement {
 
     @Override
     public String debug() {
+        return "";
+    }
+
+    @Override
+    public String trace() {
         return "/*" + position.msg + index + "*/";
     }
 }

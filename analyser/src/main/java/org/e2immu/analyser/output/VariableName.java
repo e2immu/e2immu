@@ -19,7 +19,7 @@ package org.e2immu.analyser.output;
 
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
 
-public record VariableName (String simpleName, WithInspectionAndAnalysis owner, Nature nature) implements OutputElement {
+public record VariableName(String simpleName, WithInspectionAndAnalysis owner, Nature nature) implements OutputElement {
 
     public enum Nature {
         STATIC, INSTANCE, LOCAL
@@ -32,6 +32,10 @@ public record VariableName (String simpleName, WithInspectionAndAnalysis owner, 
 
     @Override
     public String debug() {
-        return null;
+        return switch (nature) {
+            case LOCAL -> simpleName;
+            case INSTANCE -> "this." + simpleName;
+            case STATIC -> owner.fullyQualifiedName() + "." + simpleName;
+        };
     }
 }

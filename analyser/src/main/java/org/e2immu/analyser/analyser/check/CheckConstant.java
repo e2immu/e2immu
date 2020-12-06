@@ -48,7 +48,6 @@ public class CheckConstant {
         }
         AnnotationExpression constant = oConstant.get();
         boolean verifyAbsent = constant.e2ImmuAnnotationParameters().isVerifyAbsent();
-        String value = StringUtil.quote(constant.extract("value", ""));
 
         boolean haveConstantValue = singleReturnValue instanceof ConstantExpression;
         if (verifyAbsent) {
@@ -61,9 +60,12 @@ public class CheckConstant {
             messages.add(Message.newMessage(where, Message.ANNOTATION_ABSENT, "Constant"));
             return;
         }
-        if (!value.equals(singleReturnValue.minimalOutput())) {
+        String value = constant.extract("value", "");
+        String computed = singleReturnValue.minimalOutput();
+        String required =  singleReturnValue instanceof StringConstant ? StringUtil.quote(value): value;
+        if (!computed.equals(required)) {
             messages.add(Message.newMessage(where, Message.WRONG_CONSTANT, "required " +
-                    value + ", found " + singleReturnValue));
+                    required + ", found " + computed));
         }
     }
 

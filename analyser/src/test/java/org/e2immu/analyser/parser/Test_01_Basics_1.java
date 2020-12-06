@@ -28,29 +28,27 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class Test_00_LinkVariables extends CommonTestRunner {
+public class Test_01_Basics_1 extends CommonTestRunner {
 
-    private static final String TYPE = "org.e2immu.analyser.testexample.LinkVariables";
-    private static final String P0 = TYPE + ".LinkVariables(Set<String>,Set<String>,String):0:p0";
+    public static final String BASICS_1 = "Basics_1";
+    private static final String TYPE = "org.e2immu.analyser.testexample."+BASICS_1;
     private static final String FIELD1 = TYPE + ".f1";
     private static final String GET_F1_RETURN = TYPE + ".getF1()";
-    public static final String LINK_VARIABLES = "LinkVariables";
 
-    public Test_00_LinkVariables() {
+    public Test_01_Basics_1() {
         super(true);
     }
 
-
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if (LINK_VARIABLES.equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+        if (BASICS_1.equals(d.methodInfo().name) && "0".equals(d.statementId())) {
             if ("s1".equals(d.variableName())) {
-                Assert.assertEquals("[" + P0 + "]", d.variableInfo().getLinkedVariables().toString());
+                Assert.assertEquals("p0", debug(d.variableInfo().getLinkedVariables()));
             }
         }
-        if (LINK_VARIABLES.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+        if (BASICS_1.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
             if (FIELD1.equals(d.variableName())) {
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
-                Assert.assertEquals("[" + P0 + "]", d.variableInfo().getLinkedVariables().toString());
+                Assert.assertEquals("p0", debug(d.variableInfo().getLinkedVariables()));
             }
         }
         if ("getF1".equals(d.methodInfo().name)) {
@@ -61,14 +59,14 @@ public class Test_00_LinkVariables extends CommonTestRunner {
             if (GET_F1_RETURN.equals(d.variableName())) {
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
                 if (d.iteration() > 0) {
-                    Assert.assertEquals("[" + FIELD1 + "]", d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("this.f1", debug(d.variableInfo().getLinkedVariables()));
                 }
             }
         }
     };
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        if (LINK_VARIABLES.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+        if (BASICS_1.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
             Assert.assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
         }
         if ("getF1".equals(d.methodInfo().name) && d.iteration() > 0) {
@@ -80,17 +78,17 @@ public class Test_00_LinkVariables extends CommonTestRunner {
         if ("f1".equals(d.fieldInfo().name)) {
             if (d.iteration() > 0) {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                Assert.assertEquals(FIELD1, d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                Assert.assertEquals("this.f1", d.fieldAnalysis().getEffectivelyFinalValue().output().debug());
                 Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
             }
             if (d.iteration() > 1) {
-                Assert.assertEquals("[" + P0 + "]", d.fieldAnalysis().getVariablesLinkedToMe().toString());
+                Assert.assertEquals("p0", debug(d.fieldAnalysis().getVariablesLinkedToMe()));
             }
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        if (LINK_VARIABLES.equals(d.methodInfo().name)) {
+        if (BASICS_1.equals(d.methodInfo().name)) {
             ParameterAnalysis p0 = d.parameterAnalyses().get(0);
             Assert.assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED));
         }
@@ -102,7 +100,7 @@ public class Test_00_LinkVariables extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         // two errors: two unused parameters
-        testClass(LINK_VARIABLES, 2, 0, new DebugConfiguration.Builder()
+        testClass(BASICS_1, 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

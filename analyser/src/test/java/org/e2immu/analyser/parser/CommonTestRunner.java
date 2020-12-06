@@ -23,6 +23,9 @@ import ch.qos.logback.classic.Level;
 import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
+import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.resolver.SortedType;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -168,4 +171,9 @@ public abstract class CommonTestRunner {
                 "Expected " + as + " for " + label + "; map is\n" + statuses,
                 as, statuses.get(label))));
     }
+
+    protected static String debug(Set<Variable> variables) {
+        return variables.stream().map(Variable::output).collect(OutputBuilder.joining(Symbol.COMMA)).debug();
+    }
+
 }

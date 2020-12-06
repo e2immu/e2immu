@@ -34,9 +34,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Test_16_BasicCompanionMethods extends CommonTestRunner {
+public class Test_03_CompanionMethods extends CommonTestRunner {
 
-    public Test_16_BasicCompanionMethods() {
+    public Test_03_CompanionMethods() {
         super(true);
     }
 

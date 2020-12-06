@@ -5,7 +5,7 @@ import org.e2immu.annotation.*;
 import java.util.Collection;
 
 @MutableModifiesArguments
-public class BasicsOpposite {
+public class Basics_2 {
 
     @Variable
     @Nullable

@@ -21,14 +21,19 @@ package org.e2immu.analyser.testexample;
 import org.e2immu.annotation.E2Container;
 import org.e2immu.annotation.Final;
 
+/*
+
+Check for unread field
+
+ */
 @E2Container
-public class FieldNotRead {
+public class Warnings_0 {
 
     // ERROR 1: private field b is not read outside constructors
     @Final
     private boolean b;
 
-    public FieldNotRead() {
+    public Warnings_0() {
         int a = 0;
         // ERROR 2+3: private variable a is not used, useless assignment
         b = true;

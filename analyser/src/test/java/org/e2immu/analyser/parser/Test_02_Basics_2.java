@@ -33,17 +33,17 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
 
-public class Test_01_BasicsOpposite extends CommonTestRunner {
+public class Test_02_Basics_2 extends CommonTestRunner {
 
-    private static final String STRING_PARAMETER = "org.e2immu.analyser.testexample.BasicsOpposite.setString(String):0:string";
-    private static final String STRING_FIELD = "org.e2immu.analyser.testexample.BasicsOpposite.string";
-    private static final String THIS = "org.e2immu.analyser.testexample.BasicsOpposite.this";
-    private static final String COLLECTION = "org.e2immu.analyser.testexample.BasicsOpposite.add(Collection<String>):0:collection";
-    private static final String METHOD_VALUE_ADD = COLLECTION +
-            ".add(org.e2immu.analyser.testexample.BasicsOpposite.string)";
-    private static final String RETURN_GET_STRING = "org.e2immu.analyser.testexample.BasicsOpposite.getString()";
+    private static final String TYPE = "org.e2immu.analyser.testexample.Basics_2";
+    private static final String STRING_PARAMETER = TYPE + ".setString(String):0:string";
+    private static final String STRING_FIELD = TYPE + ".string";
+    private static final String THIS = TYPE + ".this";
+    private static final String COLLECTION = TYPE + ".add(Collection<String>):0:collection";
+    private static final String METHOD_VALUE_ADD = COLLECTION + ".add(" + TYPE + ".string)";
+    private static final String RETURN_GET_STRING = TYPE + ".getString()";
 
-    public Test_01_BasicsOpposite() {
+    public Test_02_Basics_2() {
         super(true);
     }
 
@@ -98,23 +98,25 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        FieldInfo string = d.methodInfo().typeInfo.getFieldByName("string", true);
-        int modified = d.getFieldAsVariable(string).getProperty(VariableProperty.MODIFIED);
-        if ("getString".equals(d.methodInfo().name)) {
-            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-            Assert.assertEquals(expectNotNull, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
-            Assert.assertEquals(Level.TRUE, d.getFieldAsVariable(string).getProperty(VariableProperty.READ));
-            int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-            Assert.assertEquals(expectModified, modified);
-        }
-        if ("setString".equals(d.methodInfo().name)) {
-            Assert.assertEquals(Level.TRUE, d.getFieldAsVariable(string).getProperty(VariableProperty.ASSIGNED));
-            int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-            Assert.assertEquals(expectModified, modified);
-        }
-        if ("add".equals(d.methodInfo().name)) {
-            ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, parameterAnalysis.getProperty(VariableProperty.NOT_NULL));
+        if (TYPE.equals(d.methodInfo().typeInfo.fullyQualifiedName)) {
+            FieldInfo string = d.methodInfo().typeInfo.getFieldByName("string", true);
+            int modified = d.getFieldAsVariable(string).getProperty(VariableProperty.MODIFIED);
+            if ("getString".equals(d.methodInfo().name)) {
+                int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                Assert.assertEquals(expectNotNull, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, d.getFieldAsVariable(string).getProperty(VariableProperty.READ));
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectModified, modified);
+            }
+            if ("setString".equals(d.methodInfo().name)) {
+                Assert.assertEquals(Level.TRUE, d.getFieldAsVariable(string).getProperty(VariableProperty.ASSIGNED));
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectModified, modified);
+            }
+            if ("add".equals(d.methodInfo().name)) {
+                ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, parameterAnalysis.getProperty(VariableProperty.NOT_NULL));
+            }
         }
     };
 
@@ -150,7 +152,7 @@ public class Test_01_BasicsOpposite extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("BasicsOpposite", 0, 1, new DebugConfiguration.Builder()
+        testClass("Basics_2", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

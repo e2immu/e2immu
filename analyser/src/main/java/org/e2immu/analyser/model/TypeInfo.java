@@ -332,7 +332,8 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public FieldInfo getFieldByName(String name, boolean complain) {
         Optional<FieldInfo> result = typeInspection.get().fields().stream().filter(fieldInfo -> fieldInfo.name.equals(name)).findFirst();
-        return complain ? result.orElseThrow() : result.orElse(null);
+        return complain ? result.orElseThrow(() -> new IllegalArgumentException("No field known with name "+name)) :
+                result.orElse(null);
     }
 
     public TypeInfo primaryType() {

@@ -20,7 +20,10 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.PropertyWrapper;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.model.statement.SynchronizedStatement;
@@ -32,8 +35,6 @@ import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
-import org.e2immu.analyser.output.Guide;
-import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Message;
@@ -539,6 +540,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param fieldReference  the field
      * @return the initial value computed
      */
+    // FIXME EmptyExpression -> something from the preconditions?
     private Expression initialValueOfField(AnalyserContext analyserContext, FieldReference fieldReference) {
         boolean inPartOfConstruction = methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction() ==
                 MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
@@ -555,8 +557,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             EvaluationContext evaluationContext = fieldAnalyser.createEvaluationContext();
             Map<VariableProperty, Integer> properties = evaluationContext.getValueProperties(initialValue);
             return PropertyWrapper.propertyWrapper(evaluationContext,
-                    new VariableExpression(fieldReference, initialValue.getObjectFlow()), properties, initialValue.getObjectFlow());
-
+                    new NewObject(null, fieldReference.parameterizedType(), List.of(), EmptyExpression.EMPTY_EXPRESSION,
+                            fieldAnalyser.fieldAnalysis.getObjectFlow()),
+                    properties, initialValue.getObjectFlow());
         }
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
         int effectivelyFinal = fieldAnalysis.getProperty(FINAL);
@@ -566,17 +569,21 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         boolean variableField = effectivelyFinal == Level.FALSE;
         if (!variableField) {
             Expression efv = fieldAnalysis.getEffectivelyFinalValue();
-            boolean vv = efv instanceof VariableExpression;
-            if (!vv) {
-                if (efv != null) {
-                    return efv;
-                }
+            if (efv == null) {
                 if (analyserContext.getTypeAnalysis(fieldReference.fieldInfo.owner).isBeingAnalysed()) {
                     return EmptyExpression.NO_VALUE; // delay
                 }
+            } else {
+                if (efv.isConstant()) {
+                    return efv;
+                }
+                NewObject newObject;
+                if ((newObject = efv.asInstanceOf(NewObject.class)) != null) {
+                    return newObject;
+                }
             }
         }
-        return new VariableExpression(fieldReference, fieldReference.fullyQualifiedName(), variableField,
+        return new NewObject(null, fieldReference.parameterizedType(), List.of(), EmptyExpression.EMPTY_EXPRESSION,
                 fieldAnalysis.getObjectFlow());
     }
 

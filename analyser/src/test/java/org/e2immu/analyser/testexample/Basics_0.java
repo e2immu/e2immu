@@ -3,7 +3,7 @@ package org.e2immu.analyser.testexample;
 import org.e2immu.annotation.*;
 
 @E2Container
-public class Basics {
+public class Basics_0 {
 
     // we don't want @Final here, because it is explicitly so...
     @Final(absent = true)

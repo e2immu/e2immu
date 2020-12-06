@@ -248,7 +248,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         VariableInfoImpl ret4 = ret3.merge(minimalEvaluationContext, null, false, List.of(viC));
         Assert.assertNotSame(ret3, ret4);
         // IMPROVE actually the value should be 4 == x?3:3 == x?4:2
-        Assert.assertEquals("/*S1*//*1*/!(3==instance type int)/*1*/&&!(4==instance type int)/*E1*/?2:4==instance type int?3:3==instance type int?4:<return value>", ret4.getValue().debugOutput());
+        Assert.assertEquals("!(3==instance type int)&&!(4==instance type int)?2:4==instance type int?3:3==instance type int?4:<return value>", ret4.getValue().debugOutput());
 
         ret4.mergeProperties(false, ret3, List.of(viC));
         Assert.assertEquals(MultiLevel.MUTABLE, ret4.getProperty(VariableProperty.NOT_NULL));

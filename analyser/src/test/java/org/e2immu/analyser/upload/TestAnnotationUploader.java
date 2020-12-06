@@ -24,7 +24,7 @@ import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.parser.Input;
 import org.e2immu.analyser.parser.Parser;
-import org.e2immu.analyser.testexample.Basics;
+import org.e2immu.analyser.testexample.Basics_0;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -62,7 +62,7 @@ public class TestAnnotationUploader {
         parser.run();
         TypeContext typeContext = parser.getTypeContext();
 
-        TypeInfo basics = typeContext.typeMapBuilder.get(Basics.class);
+        TypeInfo basics = typeContext.typeMapBuilder.get(Basics_0.class);
         UpgradableBooleanMap<TypeInfo> typesReferredTo = basics.typesReferenced();
         Assert.assertTrue(typesReferredTo.get(typeContext.getPrimitives().stringTypeInfo));
 
