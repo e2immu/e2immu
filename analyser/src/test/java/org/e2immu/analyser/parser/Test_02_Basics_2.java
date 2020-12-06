@@ -20,16 +20,18 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.FieldAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.NewObject;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,7 +42,7 @@ public class Test_02_Basics_2 extends CommonTestRunner {
     private static final String STRING_FIELD = TYPE + ".string";
     private static final String THIS = TYPE + ".this";
     private static final String COLLECTION = TYPE + ".add(Collection<String>):0:collection";
-    private static final String METHOD_VALUE_ADD = COLLECTION + ".add(" + TYPE + ".string)";
+    private static final String METHOD_VALUE_ADD = "collection.add(string)";
     private static final String RETURN_GET_STRING = TYPE + ".getString()";
 
     public Test_02_Basics_2() {
@@ -57,7 +59,6 @@ public class Test_02_Basics_2 extends CommonTestRunner {
         if (d.iteration() == 1) {
             Map<AnalysisStatus, Set<String>> expect = Map.of(AnalysisStatus.DONE, Set.of(
                     FieldAnalyser.EVALUATE_INITIALISER,
-                    FieldAnalyser.ANALYSE_SIZE,
                     FieldAnalyser.ANALYSE_NOT_MODIFIED_1,
                     FieldAnalyser.ANALYSE_FINAL,
                     FieldAnalyser.ANALYSE_FINAL_VALUE,
@@ -74,7 +75,7 @@ public class Test_02_Basics_2 extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if (COLLECTION.equals(d.variableName()) && "add".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-            Assert.assertTrue("Class is " + d.currentValue().getClass(), d.currentValue() instanceof VariableExpression);
+            Assert.assertTrue("Class is " + d.currentValue().getClass(), d.currentValue() instanceof NewObject);
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
         }
@@ -88,8 +89,8 @@ public class Test_02_Basics_2 extends CommonTestRunner {
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
-            String expertValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : STRING_FIELD;
-            Assert.assertEquals(expertValue, d.currentValue().toString());
+            String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type String";
+            Assert.assertEquals(expectValue, d.currentValue().toString());
         }
         if (RETURN_GET_STRING.equals(d.variableName())) {
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
@@ -100,18 +101,21 @@ public class Test_02_Basics_2 extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if (TYPE.equals(d.methodInfo().typeInfo.fullyQualifiedName)) {
             FieldInfo string = d.methodInfo().typeInfo.getFieldByName("string", true);
-            int modified = d.getFieldAsVariable(string).getProperty(VariableProperty.MODIFIED);
+            int fieldModified = d.getFieldAsVariable(string).getProperty(VariableProperty.MODIFIED);
+
             if ("getString".equals(d.methodInfo().name)) {
                 int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 Assert.assertEquals(expectNotNull, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.TRUE, d.getFieldAsVariable(string).getProperty(VariableProperty.READ));
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                Assert.assertEquals(expectModified, modified);
+                Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+
+                // property of the field as variable info in the method
+                Assert.assertEquals(Level.FALSE, fieldModified);
             }
             if ("setString".equals(d.methodInfo().name)) {
                 Assert.assertEquals(Level.TRUE, d.getFieldAsVariable(string).getProperty(VariableProperty.ASSIGNED));
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                Assert.assertEquals(expectModified, modified);
+                Assert.assertEquals(Level.FALSE, fieldModified); // Assigned, but not modified
             }
             if ("add".equals(d.methodInfo().name)) {
                 ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);
@@ -122,16 +126,16 @@ public class Test_02_Basics_2 extends CommonTestRunner {
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if (d.methodInfo().name.equals("setString") && "0".equals(d.statementId())) {
-            Assert.assertEquals(d.evaluationResult().toString(), 3L, d.evaluationResult().getModificationStream().count());
+            Assert.assertEquals(d.evaluationResult().toString(), 2L, d.evaluationResult().getModificationStream().count());
             Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(STRING_PARAMETER));
             Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(THIS));
-            Assert.assertTrue(d.evaluationResult().toString(), d.haveValueChange(STRING_FIELD));
 
-            // 4th is the link, 5th the set state on assignment
+            EvaluationResult.ExpressionChangeData expressionChange = d.findValueChange(STRING_FIELD);
+            Assert.assertEquals("string", expressionChange.value().debugOutput());
 
             // link to empty set, because String is E2Immutable
-            Assert.assertTrue(d.evaluationResult().toString(), d.haveLinkVariable(STRING_FIELD, Set.of()));
-            Assert.assertEquals(d.evaluationResult().toString(), STRING_PARAMETER, d.evaluationResult().value.toString());
+            Assert.assertTrue(d.haveLinkVariable(STRING_FIELD, Set.of()));
+            Assert.assertEquals("string", d.evaluationResult().value.debugOutput());
         }
         if (d.methodInfo().name.equals("getString") && "0".equals(d.statementId()) && d.iteration() == 0) {
             Assert.assertEquals(d.evaluationResult().toString(), 2L, d.evaluationResult().getModificationStream().count());
@@ -148,6 +152,11 @@ public class Test_02_Basics_2 extends CommonTestRunner {
         // check that the XML annotations have been read properly, and copied into the correct place
         TypeInfo stringType = typeMap.getPrimitives().stringTypeInfo;
         Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+
+        TypeInfo collection = typeMap.get(Collection.class);
+        MethodInfo add = collection.findUniqueMethod("add", 1);
+        ParameterInfo p0 = add.methodInspection.get().getParameters().get(0);
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
     };
 
     @Test

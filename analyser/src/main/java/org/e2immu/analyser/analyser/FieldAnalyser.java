@@ -59,7 +59,6 @@ public class FieldAnalyser extends AbstractAnalyser {
     public static final String ANALYSE_DYNAMIC_TYPE_ANNOTATION_IMMUTABLE = "analyseDynamicTypeAnnotation:IMMUTABLE";
     public static final String ANALYSE_NOT_NULL = "analyseNotNull";
     public static final String ANALYSE_MODIFIED = "analyseModified";
-    public static final String ANALYSE_SIZE = "analyseSize";
     public static final String ANALYSE_NOT_MODIFIED_1 = "analyseNotModified1";
     public static final String ANALYSE_LINKED = "analyseLinked";
     public static final String FIELD_ERRORS = "fieldErrors";

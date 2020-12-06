@@ -292,7 +292,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param analyserContext overview object for the analysis of this primary type
      * @param previous        the previous statement, or null if there is none (start of block)
      */
-    public void initialise(AnalyserContext analyserContext, StatementAnalysis previous) {
+    public void initIteration0(AnalyserContext analyserContext, StatementAnalysis previous) {
         if (previous == null && parent == null) {
             // at the beginning of the method
             if (methodAnalysis.getMethodInfo().hasReturnValue()) {
@@ -315,8 +315,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param analyserContext overview object for the analysis of this primary type
      * @param previous        the previous statement, or null if there is none (start of block)
      */
-    public void updateStatements(AnalyserContext analyserContext, MethodInfo currentMethod,
-                                 StatementAnalysis previous) {
+    public void initIteration1Plus(AnalyserContext analyserContext, MethodInfo currentMethod,
+                                   StatementAnalysis previous) {
+
+        // first statement of a method
         if (previous == null && parent == null) {
             for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().getParameters()) {
                 VariableInfoContainer vic = findForWriting(analyserContext, parameterInfo);
@@ -365,7 +367,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         });
     }
 
-
+    /**
+     * From child blocks into the parent block; determine the value and properties for the current statement
+     *
+     * @param evaluationContext       for expression evaluations
+     * @param lastStatements          the last statement of each of the blocks
+     * @param atLeastOneBlockExecuted true if we can (potentially) discard the current value
+     * @param previous                the previous statement
+     */
     public void copyBackLocalCopies(EvaluationContext evaluationContext,
                                     List<StatementAnalyser> lastStatements,
                                     boolean atLeastOneBlockExecuted,

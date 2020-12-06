@@ -365,9 +365,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     // in a separate task, so that it can be skipped when the statement is unreachable
     private AnalysisStatus initialiseOrUpdateVariables(SharedState sharedState) {
         if (sharedState.evaluationContext.getIteration() == 0) {
-            statementAnalysis.initialise(analyserContext, sharedState.previous);
+            statementAnalysis.initIteration0(analyserContext, sharedState.previous);
         } else {
-            statementAnalysis.updateStatements(analyserContext, myMethodAnalyser.methodInfo, sharedState.previous);
+            statementAnalysis.initIteration1Plus(analyserContext, myMethodAnalyser.methodInfo, sharedState.previous);
         }
         return RUN_AGAIN;
     }
