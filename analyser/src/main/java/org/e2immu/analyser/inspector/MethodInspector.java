@@ -34,6 +34,7 @@ import org.e2immu.analyser.util.SetOnce;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -91,6 +92,7 @@ public class MethodInspector {
         if (methodInspection instanceof MethodInspectionImpl.Builder existing) {
             log(INSPECT, "Inspecting method {}, already byte-code inspected", builder.getDistinguishingName());
             assert !fullInspection;
+
             builderOnceFQNIsKnown.set(existing);
             return existing;
         }
@@ -171,6 +173,8 @@ public class MethodInspector {
 
             addParameters(tempBuilder, md.getParameters(), newContext, dollarResolver);
             MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
+            inspectParameters(md.getParameters(), builder.getParameterBuilders(), expressionContext);
+            builder.makeParametersImmutable();
 
             builder.addCompanionMethods(companionMethods);
             checkCompanionMethods(companionMethods, methodName);
@@ -228,8 +232,19 @@ public class MethodInspector {
             ParameterizedType pt = ParameterizedTypeFactory.from(expressionContext.typeContext, parameter.getType(),
                     parameter.isVarArgs(), dollarResolver);
             ParameterInspectionImpl.Builder pib = new ParameterInspectionImpl.Builder(pt, parameter.getNameAsString(), i++);
-            pib.inspect(parameter, expressionContext, parameter.isVarArgs());
+            pib.setVarArgs(parameter.isVarArgs());
+            // we do not copy annotations yet, that happens after readFQN
             builder.addParameter(pib);
+        }
+    }
+
+    private static void inspectParameters(NodeList<Parameter> parameters,
+                                          List<ParameterInspectionImpl.Builder> parameterBuilders,
+                                          ExpressionContext expressionContext) {
+        int i = 0;
+        for (Parameter parameter : parameters) {
+            ParameterInspectionImpl.Builder builder = parameterBuilders.get(i++);
+            builder.copyAnnotations(parameter, expressionContext);
         }
     }
 }

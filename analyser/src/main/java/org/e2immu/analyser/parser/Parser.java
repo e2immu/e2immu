@@ -114,6 +114,9 @@ public class Parser {
         urls.entrySet().stream().sorted(Comparator.comparing(e -> e.getValue().toString())).forEach(e ->
                 input.globalTypeContext().getTypeInspection(e.getKey()));
 
+        if(!shallowResolver) {
+            typeMapBuilder.makeParametersImmutable();
+        }
         // phase 2: resolve methods and fields
         Resolver resolver = new Resolver(shallowResolver);
         List<SortedType> sortedPrimaryTypes = resolver.sortTypes(input.globalTypeContext(),

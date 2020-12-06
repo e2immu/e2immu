@@ -190,6 +190,7 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         private String distinguishingName;
         private MethodInfo methodInfo;
         private List<ParameterInfo> immutableParameters;
+        private List<ParameterInfo> mutableParameters;
 
         public Builder(TypeInfo owner, String name) {
             this.owner = owner;
@@ -312,6 +313,8 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
             if (fullyQualifiedName == null) readyToComputeFQN(inspectionProvider);
 
+            makeParametersImmutable();
+
             // we have a method object now...
             if (methodInfo.isConstructor) {
                 returnType = ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
@@ -348,8 +351,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
                     .collect(Collectors.joining(",")) + ")";
             this.methodInfo = new MethodInfo(owner, name, fullyQualifiedName, distinguishingName, isConstructor);
             typeParameters.forEach(tp -> ((TypeParameterImpl) tp).setMethodInfo(methodInfo));
-            immutableParameters = parameters.stream()
-                    .map(b -> b.build(methodInfo)).sorted().collect(Collectors.toList());
         }
 
         @Override
@@ -382,8 +383,23 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
 
         @Override
         public List<ParameterInfo> getParameters() {
-            if (immutableParameters == null) throw new UnsupportedOperationException();
+            if (immutableParameters == null) return getMutableParameters();
             return immutableParameters;
+        }
+
+        private List<ParameterInfo> getMutableParameters() {
+            if (mutableParameters == null) {
+                mutableParameters = parameters.stream()
+                        .map(b -> b.build(methodInfo)).sorted().collect(Collectors.toList());
+            }
+            return mutableParameters;
+        }
+
+        public void makeParametersImmutable() {
+            if (immutableParameters == null) {
+                immutableParameters = parameters.stream()
+                        .map(b -> b.build(methodInfo)).sorted().collect(Collectors.toList());
+            }
         }
 
         @Override
@@ -429,6 +445,10 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         @Override
         public boolean isStatic() {
             return modifiers.contains(MethodModifier.STATIC);
+        }
+
+        public List<ParameterInspectionImpl.Builder> getParameterBuilders() {
+            return parameters;
         }
     }
 }

@@ -107,11 +107,10 @@ public class ParameterInspectionImpl extends InspectionImpl implements Parameter
             return parameterInfo;
         }
 
-        public void inspect(Parameter parameter, ExpressionContext expressionContext, boolean varArgs) {
+        public void copyAnnotations(Parameter parameter, ExpressionContext expressionContext) {
             for (AnnotationExpr ae : parameter.getAnnotations()) {
                 addAnnotation(AnnotationInspector.inspect(expressionContext, ae));
             }
-            setVarArgs(varArgs);
         }
     }
 }

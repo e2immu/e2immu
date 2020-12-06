@@ -18,6 +18,7 @@
 package org.e2immu.analyser.resolver;
 
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.inspector.MethodInspectionImpl;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -43,12 +44,15 @@ public class ShallowMethodResolver {
      * @return all super methods
      */
     public static Set<MethodInfo> overrides(InspectionProvider inspectionProvider, MethodInfo methodInfo) {
-        return ImmutableSet.copyOf(recursiveOverridesCall(inspectionProvider, methodInfo.typeInfo, methodInfo, Map.of()));
+        return ImmutableSet.copyOf(recursiveOverridesCall(inspectionProvider,
+                methodInfo.typeInfo,
+                inspectionProvider.getMethodInspection(methodInfo),
+                Map.of()));
     }
 
     private static Set<MethodInfo> recursiveOverridesCall(InspectionProvider inspectionProvider,
                                                           TypeInfo typeToSearch,
-                                                          MethodInfo methodInfo,
+                                                          MethodInspection methodInspection,
                                                           Map<NamedType, ParameterizedType> translationMap) {
         Set<MethodInfo> result = new HashSet<>();
         for (ParameterizedType superType : directSuperTypes(inspectionProvider, typeToSearch)) {
@@ -67,12 +71,12 @@ public class ShallowMethodResolver {
                 }
             }
             assert superType.typeInfo != null;
-            MethodInfo override = findUniqueMethod(inspectionProvider, superType.typeInfo, methodInfo, translationMapOfSuperType);
+            MethodInfo override = findUniqueMethod(inspectionProvider, superType.typeInfo, methodInspection, translationMapOfSuperType);
             if (override != null) {
                 result.add(override);
             }
             if (!Primitives.isJavaLangObject(superType.typeInfo)) {
-                result.addAll(recursiveOverridesCall(inspectionProvider, superType.typeInfo, methodInfo, translationMapOfSuperType));
+                result.addAll(recursiveOverridesCall(inspectionProvider, superType.typeInfo, methodInspection, translationMapOfSuperType));
             }
         }
         return result;
@@ -82,17 +86,17 @@ public class ShallowMethodResolver {
     /**
      * Find a method, given a translation map
      *
-     * @param target         the method to find (typically from a sub type)
-     * @param translationMap from the type parameters of this to the concrete types of the sub-type
+     * @param targetInspection the method to find (typically from a sub type)
+     * @param translationMap   from the type parameters of this to the concrete types of the sub-type
      * @return the method of this, if deemed the same
      */
     private static MethodInfo findUniqueMethod(InspectionProvider inspectionProvider,
                                                TypeInfo typeInfo,
-                                               MethodInfo target,
+                                               MethodInspection targetInspection,
                                                Map<NamedType, ParameterizedType> translationMap) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         for (MethodInfo methodInfo : typeInspection.methodsAndConstructors()) {
-            if (sameMethod(inspectionProvider, methodInfo, target, translationMap)) {
+            if (sameMethod(inspectionProvider, methodInfo, targetInspection, translationMap)) {
                 return methodInfo;
             }
         }
@@ -101,12 +105,11 @@ public class ShallowMethodResolver {
 
     private static boolean sameMethod(InspectionProvider inspectionProvider,
                                       MethodInfo base,
-                                      MethodInfo target,
+                                      MethodInspection targetInspection,
                                       Map<NamedType, ParameterizedType> translationMap) {
-        return base.name.equals(target.name) &&
-                sameParameters(inspectionProvider.getMethodInspection(base).getParameters(),
-                        inspectionProvider.getMethodInspection(target).getParameters(),
-                        translationMap);
+        if (!base.name.equals(targetInspection.getMethodInfo().name)) return false;
+        MethodInspection baseInspection = inspectionProvider.getMethodInspection(base);
+        return sameParameters(baseInspection.getParameters(), targetInspection.getParameters(), translationMap);
     }
 
     private static boolean sameParameters(List<ParameterInfo> parametersOfMyMethod,

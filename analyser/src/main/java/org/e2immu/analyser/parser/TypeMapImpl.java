@@ -354,7 +354,7 @@ public class TypeMapImpl implements TypeMap {
             getTypeInspection(methodInfo.typeInfo);
             // try again
             MethodInspection take2 = methodInspections.get(dn);
-            if(take2 == null) throw new UnsupportedOperationException();
+            if (take2 == null) throw new UnsupportedOperationException();
             return take2;
         }
 
@@ -387,6 +387,11 @@ public class TypeMapImpl implements TypeMap {
 
         public void setInspectWithJavaParser(InspectWithJavaParser inspectWithJavaParser) {
             this.inspectWithJavaParser = inspectWithJavaParser;
+        }
+
+        // we can probably do without this method; then the mutable versions will be used more
+        public void makeParametersImmutable() {
+            methodInspections.values().forEach(MethodInspectionImpl.Builder::makeParametersImmutable);
         }
     }
 }
