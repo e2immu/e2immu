@@ -31,8 +31,6 @@ import org.e2immu.analyser.output.Text;
 
 import java.util.List;
 
-import static org.e2immu.analyser.analyser.StatementAnalysis.startOfBlock;
-
 public class IfElseStatement extends StatementWithExpression {
     public final Block elseBlock;
 
@@ -80,6 +78,7 @@ public class IfElseStatement extends StatementWithExpression {
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.expression.output())
                 .add(Symbol.RIGHT_PARENTHESIS)
+                .addIfNotNull(messageComment(statementAnalysis))
                 .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
         if (elseBlock != Block.EMPTY_BLOCK) {
             outputBuilder.add(Space.HARD)

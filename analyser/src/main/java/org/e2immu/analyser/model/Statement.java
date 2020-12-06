@@ -20,8 +20,9 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.statement.Structure;
-import org.e2immu.analyser.output.Guide;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.annotation.E2Container;
 
 @E2Container
@@ -37,10 +38,22 @@ public interface Statement extends Element {
     OutputBuilder output(StatementAnalysis statementAnalysis);
 
     @Override
-    default OutputBuilder output() { throw new UnsupportedOperationException("Use other output method"); }
+    default OutputBuilder output() {
+        throw new UnsupportedOperationException("Use other output method");
+    }
 
     @Override
     default String minimalOutput() {
         return output(null).toString();
+    }
+
+    default OutputBuilder messageComment(StatementAnalysis statementAnalysis) {
+        if (statementAnalysis != null && !statementAnalysis.messages.isEmpty()) {
+            OutputBuilder outputBuilder = new OutputBuilder();
+            statementAnalysis.messages.stream().forEach(message -> outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
+                    .add(new Text(message.message)).add(Symbol.RIGHT_BLOCK_COMMENT));
+            return outputBuilder;
+        }
+        return null;
     }
 }

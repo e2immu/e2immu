@@ -11,9 +11,9 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void testNegate1() {
         GreaterThanZero gt3 = (GreaterThanZero) GreaterThanZero.greater(minimalEvaluationContext, i, newInt(3), false);
-        Assert.assertEquals("i>=4", gt3.toString()); // i >= 4
+        Assert.assertEquals("i>=4", gt3.toString());
         GreaterThanZero notGt3 = (GreaterThanZero) gt3.negate(minimalEvaluationContext);
-        Assert.assertEquals("3>=i", notGt3.toString()); // i <= 3
+        Assert.assertEquals("i<=3", notGt3.toString());
     }
 
     @Test
@@ -31,7 +31,7 @@ public class TestComparisons extends CommonAbstractValue {
     @Test
     public void testXb2() {
         GreaterThanZero lt3 = (GreaterThanZero) GreaterThanZero.less(minimalEvaluationContext, i, newInt(3), false);
-        Assert.assertEquals("2>=i", lt3.toString());
+        Assert.assertEquals("i<=2", lt3.toString());
         GreaterThanZero.XB xb = lt3.extract(minimalEvaluationContext);
         Assert.assertNotNull(xb);
         Assert.assertTrue(lt3.allowEquals());
@@ -128,7 +128,7 @@ public class TestComparisons extends CommonAbstractValue {
         Expression iLe0 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(0), true);
         Assert.assertEquals("i<=0", iLe0.toString());
         Expression iLe3 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(3), true);
-        Assert.assertEquals("3>=i", iLe3.toString()); // even though ugly, formatting is correct
+        Assert.assertEquals("i<=3", iLe3.toString()); // even though ugly, formatting is correct
         Expression and = newAndAppend(iLe0, iLe3);
         Assert.assertEquals(iLe0, and);
     }
@@ -150,7 +150,7 @@ public class TestComparisons extends CommonAbstractValue {
         Expression iGe0 = GreaterThanZero.greater(minimalEvaluationContext, i, newInt(0), true);
         Assert.assertEquals("i>=0", iGe0.toString());
         Expression iLe3 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(3), true);
-        Assert.assertEquals("3>=i", iLe3.toString());
+        Assert.assertEquals("i<=3", iLe3.toString());
         Expression and = newAndAppend(iGe0, iLe3);
         Assert.assertTrue(and instanceof And);
         Expression and2 = newAndAppend(iLe3, iGe0);

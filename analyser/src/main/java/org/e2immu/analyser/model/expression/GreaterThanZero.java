@@ -224,14 +224,19 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
         Symbol gt = Symbol.binaryOperator(allowEquals ? ">=" : ">");
         Symbol lt = Symbol.binaryOperator(allowEquals ? "<=" : "<");
         if (expression instanceof Sum sum) {
-            if (sum.lhs instanceof Numeric ln && ln.doubleValue() < 0) {
-                // -1 -a >= 0 will be written as a <= -1
-                if (sum.rhs instanceof Negation neg) {
+            if (sum.lhs instanceof Numeric ln) {
+                if (ln.doubleValue() < 0) {
+                    // -1 -a >= 0 will be written as a <= -1
+                    if (sum.rhs instanceof Negation neg) {
+                        return new OutputBuilder().add(outputInParenthesis(precedence(), neg.expression)).add(lt).add(sum.lhs.output());
+                    }
+                    // -1 + a >= 0 will be written as a >= 1
+                    Text negNumber = new Text(Text.formatNumber(-ln.doubleValue(), ln.getClass()));
+                    return new OutputBuilder().add(outputInParenthesis(precedence(), sum.rhs)).add(gt).add(negNumber);
+                } else if (sum.rhs instanceof Negation neg) {
+                    // 1 + -a >= 0 will be written as a <= 1
                     return new OutputBuilder().add(outputInParenthesis(precedence(), neg.expression)).add(lt).add(sum.lhs.output());
                 }
-                // -1 + a >= 0 will be written as a >= 1
-                Text negNumber = new Text(Text.formatNumber(-ln.doubleValue(), ln.getClass()));
-                return new OutputBuilder().add(outputInParenthesis(precedence(), sum.rhs)).add(gt).add(negNumber);
             }
             // according to sorting, the rhs cannot be numeric
 

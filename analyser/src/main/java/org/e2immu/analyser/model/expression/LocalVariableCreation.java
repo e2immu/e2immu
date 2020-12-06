@@ -102,7 +102,7 @@ public class LocalVariableCreation implements Expression {
                 .add(localVariable.annotations.isEmpty() ? Space.NONE : Space.ONE)
                 .add(Arrays.stream(LocalVariableModifier.toJava(localVariable.modifiers)).map(s -> new OutputBuilder().add(new Text(s)))
                         .collect(OutputBuilder.joining(Space.ONE)))
-                .add(localVariable.modifiers.isEmpty() ? Space.NONE: Space.ONE)
+                .add(localVariable.modifiers.isEmpty() ? Space.NONE : Space.ONE)
                 .add(localVariable.parameterizedType.output())
                 .add(Space.ONE)
                 .add(new Text(localVariable.name));
@@ -150,7 +150,8 @@ public class LocalVariableCreation implements Expression {
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (expression == EmptyExpression.EMPTY_EXPRESSION) {
             return new EvaluationResult.Builder(evaluationContext)
-                    .assignment(localVariableReference, null, false, evaluationContext.getIteration())
+                    .assignment(localVariableReference, EmptyExpression.NO_VALUE,
+                            false, evaluationContext.getIteration())
                     .setExpression(EmptyExpression.EMPTY_EXPRESSION).build();
         }
         Assignment assignment = new Assignment(evaluationContext.getPrimitives(),

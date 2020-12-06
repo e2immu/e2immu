@@ -28,6 +28,13 @@ import java.util.stream.Collectors;
 public class OutputBuilder {
     List<OutputElement> list = new LinkedList<>();
 
+    public OutputBuilder addIfNotNull(OutputBuilder outputBuilder) {
+        if (outputBuilder != null) {
+            list.addAll(outputBuilder.list);
+        }
+        return this;
+    }
+
     public OutputBuilder add(OutputElement... outputElements) {
         Collections.addAll(list, outputElements);
         return this;

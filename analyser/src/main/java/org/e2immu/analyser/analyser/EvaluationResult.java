@@ -126,6 +126,9 @@ public class EvaluationResult {
      * The stateOnAssignment can also still be NO_VALUE while the value is known, and vice versa.
      */
     public record ExpressionChangeData(Expression value, Expression stateOnAssignment, boolean markAssignment) {
+        public ExpressionChangeData {
+            Objects.requireNonNull(value);
+        }
     }
 
     // lazy creation of lists

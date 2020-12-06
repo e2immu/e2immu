@@ -24,7 +24,10 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.MethodCall;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.output.*;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Space;
+import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.Text;
 
 import java.util.List;
 
@@ -44,7 +47,7 @@ public class ReturnStatement extends StatementWithExpression {
         if (expression != EmptyExpression.EMPTY_EXPRESSION) {
             outputBuilder.add(Space.ONE).add(expression.output());
         }
-        outputBuilder.add(Symbol.SEMICOLON);
+        outputBuilder.add(Symbol.SEMICOLON).addIfNotNull(messageComment(statementAnalysis));
         return outputBuilder;
     }
 

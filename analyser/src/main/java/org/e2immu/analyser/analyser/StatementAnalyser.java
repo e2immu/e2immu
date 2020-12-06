@@ -628,7 +628,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             } else if (assignedInLoop) {
                 propertiesToSet.put(VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
             }
-            vic.setValueOnAssignment(l1, new VariableExpression(lvr), propertiesToSet);
+            vic.setValueOnAssignment(l1, new NewObject(null, lvr.parameterizedType(), List.of(),
+                    EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW), propertiesToSet);
         }
 
         // part 2: initialisers
