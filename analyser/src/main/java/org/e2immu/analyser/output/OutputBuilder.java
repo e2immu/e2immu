@@ -45,7 +45,11 @@ public class OutputBuilder {
         return this;
     }
 
-    public static Collector<OutputBuilder, OutputBuilder, OutputBuilder> joining(OutputElement outputElement) {
+    public static Collector<OutputBuilder, OutputBuilder, OutputBuilder> joining() {
+        return joining(Space.NONE);
+    }
+
+    public static Collector<OutputBuilder, OutputBuilder, OutputBuilder> joining(OutputElement separator) {
         Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
         return new Collector<>() {
             @Override
@@ -56,9 +60,9 @@ public class OutputBuilder {
             @Override
             public BiConsumer<OutputBuilder, OutputBuilder> accumulator() {
                 return (a, b) -> {
-                    a.add(guideGenerator.mid());
-                    if (!a.onlyGuides()) {
-                        a.add(outputElement);
+                    if (a.notStart()) {
+                        if (separator != Space.NONE) a.add(separator);
+                        a.add(guideGenerator.mid());
                     }
                     a.add(b);
                 };
@@ -66,7 +70,10 @@ public class OutputBuilder {
 
             @Override
             public BinaryOperator<OutputBuilder> combiner() {
-                return (a, b) -> a.add(guideGenerator.mid()).add(outputElement).add(b);
+                return (a, b) -> {
+                    if (separator != Space.NONE) a.add(separator);
+                    return a.add(guideGenerator.mid()).add(b);
+                };
             }
 
             @Override
@@ -81,11 +88,11 @@ public class OutputBuilder {
         };
     }
 
-    private boolean onlyGuides() {
-        return list.stream().allMatch(outputElement -> outputElement instanceof Guide);
+    private boolean notStart() {
+        return !list.stream().allMatch(outputElement -> outputElement instanceof Guide);
     }
 
-    public static Collector<OutputElement, OutputBuilder, OutputBuilder> joinElements(OutputElement outputElement) {
+    public static Collector<OutputElement, OutputBuilder, OutputBuilder> joinElements(OutputElement separator) {
         Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
         return new Collector<>() {
             @Override
@@ -96,9 +103,9 @@ public class OutputBuilder {
             @Override
             public BiConsumer<OutputBuilder, OutputElement> accumulator() {
                 return (a, b) -> {
-                    a.add(guideGenerator.mid());
-                    if (!a.onlyGuides()) {
-                        a.add(outputElement);
+                    if (a.notStart()) {
+                        a.add(separator);
+                        a.add(guideGenerator.mid());
                     }
                     a.add(b);
                 };
@@ -106,7 +113,7 @@ public class OutputBuilder {
 
             @Override
             public BinaryOperator<OutputBuilder> combiner() {
-                return OutputBuilder::add;
+                return (a, b) -> a.add(separator).add(guideGenerator.mid()).add(b);
             }
 
             @Override

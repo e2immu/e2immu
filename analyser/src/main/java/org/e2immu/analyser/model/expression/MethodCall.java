@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
+import org.e2immu.analyser.output.Guide;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
@@ -146,11 +147,31 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     @Override
     public OutputBuilder output() {
+        return output(null);
+    }
+
+    // will come directly here only from this method (chaining of method calls produces a guide)
+    public OutputBuilder output(Guide.GuideGenerator guideGenerator) {
         OutputBuilder outputBuilder = new OutputBuilder();
+        boolean last = false;
+        Guide.GuideGenerator gg = null;
         if (object != null) {
-            // FIXME we need to add guides for the chaining of method calls
-            // but how?
-            outputBuilder.add(outputInParenthesis(precedence(), object)).add(Symbol.DOT);
+            if (object instanceof MethodCall methodCall) {
+                // chaining!
+                if (guideGenerator == null) {
+                    gg = new Guide.GuideGenerator();
+                    last = true;
+                } else {
+                    gg = guideGenerator;
+                }
+                outputBuilder.add(methodCall.output(gg)); // recursive call
+                outputBuilder.add(gg.mid());
+            } else {
+                // next level is NOT a gg; if gg != null we're at the start of the chain
+                outputBuilder.add(outputInParenthesis(precedence(), object));
+                if (guideGenerator != null) outputBuilder.add(guideGenerator.start());
+            }
+            outputBuilder.add(Symbol.DOT);
         }
         outputBuilder.add(new Text(methodInfo.name));
         if (parameterExpressions.isEmpty()) {
@@ -160,6 +181,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     .add(Symbol.LEFT_PARENTHESIS)
                     .add(parameterExpressions.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.RIGHT_PARENTHESIS);
+        }
+        if (last) {
+            outputBuilder.add(gg.end());
         }
         return outputBuilder;
     }

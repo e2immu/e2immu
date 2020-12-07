@@ -93,4 +93,20 @@ public class TestFormatterSplitLine {
         Assert.assertEquals("public\n  static\n  abstract\n  method;\n",
                 new Formatter(options).write(outputBuilder));
     }
+
+    @Test
+    public void testGuide1() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(20)
+                .setSpacesInTab(2).setTabsForLineSplit(1).build();
+        Assert.assertEquals("""
+                        public int method(
+                          int p1,
+                          int p2
+                        ) {
+                          return p1+p2;
+                        }
+                        
+                        """,
+                new Formatter(options).write(createExample1()));
+    }
 }

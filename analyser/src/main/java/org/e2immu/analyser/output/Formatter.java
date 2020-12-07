@@ -43,6 +43,8 @@ public record Formatter(FormattingOptions options) {
     private record Tab(int tabs, int guideId) {
     }
 
+    // guides typically organised as  ( S int i, M int j, M int k E )
+
     public void write(OutputBuilder outputBuilder, Writer writer) throws IOException {
         List<OutputElement> list = new ArrayList<>(outputBuilder.list);
         int pos = 0;
@@ -50,25 +52,45 @@ public record Formatter(FormattingOptions options) {
         Stack<Tab> tabs = new Stack<>();
         while (pos < end) {
             int spaces = (tabs.isEmpty() ? 0 : tabs.peek().tabs) * options().spacesInTab();
-            int guide = (tabs.isEmpty() ? NO_GUIDE : tabs.peek().guideId);
-            boolean lineSplit = guide == LINE_SPLIT;
+            int currentGuide = (tabs.isEmpty() ? NO_GUIDE : tabs.peek().guideId);
+            int prevTabs = tabs.isEmpty() ? 0 : tabs.peek().tabs;
+            boolean lineSplit = currentGuide == LINE_SPLIT;
 
             indent(spaces, writer);
             int lineLength = options.lengthOfLine() - spaces;
 
-            // if lookahead <= line length, either everything fits (write until lookahead reached)
-            // or there is a guide starting at lookahead
-            // if lookahead > line length, write until best break. If there is no line split, start one
-            int lookAhead = lookAhead(list.subList(pos, end), lineLength);
-
-            if (lookAhead <= lineLength) {
-                pos = writeUntilNewLineOrEnd(list, writer, pos, end, spaces, lookAhead);
-                if (lineSplit) tabs.pop();
+            OutputElement outputElement = list.get(pos);
+            boolean write;
+            if (outputElement instanceof Guide guide) {
+                if (guide.position() == Guide.Position.START) {
+                    tabs.add(new Tab(prevTabs + 1, guide.index()));
+                    write = false; // start new line
+                } else if (guide.position() == Guide.Position.MID) {
+                    assert currentGuide == guide.index();
+                    write = false; // start new line
+                } else {
+                    assert currentGuide == guide.index();
+                    tabs.pop();
+                    write = true;
+                }
             } else {
-                pos = writeUntilBestBreak(list, writer, pos, end, spaces, lineLength);
-                if (!lineSplit) {
-                    int prevTabs = tabs.isEmpty() ? 0 : tabs.peek().tabs;
-                    tabs.add(new Tab(prevTabs + options.tabsForLineSplit(), LINE_SPLIT));
+                write = true;
+            }
+            if (write) {
+                // if lookahead <= line length, either everything fits (write until lookahead reached)
+                // or there is a guide starting at lookahead
+                // if lookahead > line length, write until best break. If there is no line split, start one
+                int lookAhead = lookAhead(list.subList(pos, end), lineLength);
+
+                if (lookAhead <= lineLength) {
+                    pos = writeUntilNewLineOrEnd(list, writer, pos, end, spaces, lookAhead);
+                    if (lineSplit) tabs.pop();
+                } else {
+                    pos = writeUntilBestBreak(list, writer, pos, end, spaces, lineLength);
+                    if (!lineSplit) {
+
+                        tabs.add(new Tab(prevTabs + options.tabsForLineSplit(), LINE_SPLIT));
+                    }
                 }
             }
             writer.write("\n");
@@ -82,7 +104,7 @@ public record Formatter(FormattingOptions options) {
         int cPos = cStart;
         boolean lastOneWasSpace = true; // used to avoid writing double spaces
         boolean wroteOnce = false; // don't write a space at the beginning of the line
-        boolean allowBreak = false;
+        boolean allowBreak = false; // write until the first allowed space
         while (pos < end && ((outputElement = list.get(pos)) != Space.NEWLINE)) {
             String string = outputElement.write(options);
             cPos += string.length();
@@ -151,7 +173,7 @@ public record Formatter(FormattingOptions options) {
             if (outputElement instanceof Guide guide) {
                 if (guide.position() == Guide.Position.START) {
                     startOfGuides.push(sum);
-                } else if (guide.position() == Guide.Position.END) {
+                } else if (guide.position() == Guide.Position.END && !startOfGuides.isEmpty()) {
                     startOfGuides.pop();
                 }
             }
