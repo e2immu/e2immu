@@ -225,7 +225,7 @@ public record Formatter(FormattingOptions options) {
                 lastOneWasSpace |= leftLength > 0;
                 string = symbol.symbol();
                 int rightLength = symbol.right().length(options);
-                spaceAfterWriting |= rightLength > 0;
+                spaceAfterWriting = rightLength > 0;
                 splitAfterWriting = symbol.right().split;
             } else {
                 string = outputElement.write(options);
@@ -245,6 +245,7 @@ public record Formatter(FormattingOptions options) {
                 if (writeSpace) {
                     if (writer.apply(new ForwardInfo(pos - 1, chars, " ", split))) return pos;
                     chars++;
+                    split = Split.NEVER; // never split after a space
                 }
                 if (writer.apply(new ForwardInfo(pos, chars, string, split))) return pos;
                 lastOneWasSpace = false;

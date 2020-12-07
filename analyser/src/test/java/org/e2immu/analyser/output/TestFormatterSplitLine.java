@@ -115,6 +115,7 @@ public class TestFormatterSplitLine {
                 new Formatter(options).write(createExample1()));
     }
 
+    // public method(int p1, int p2);
     @Test
     public void testForward1() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(8)
@@ -145,6 +146,7 @@ public class TestFormatterSplitLine {
         Assert.assertEquals(6, info.get(1).chars()); // 6 chars have been written before this space
     }
 
+    // !a && b == c
     @Test
     public void testForward2() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(8)
@@ -164,5 +166,32 @@ public class TestFormatterSplitLine {
             return false;
         }, 0, 100);
         Assert.assertEquals("!", info.get(0).string());
+    }
+
+    // a = { { "b", "c" }, "d" };
+    @Test
+    public void testForward3() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(8)
+                .setSpacesInTab(2).setTabsForLineSplit(1).build();
+        OutputBuilder outputBuilder = new OutputBuilder()
+                .add(new Text("a")) // 0
+                .add(Symbol.binaryOperator("=")) //1
+                .add(Symbol.LEFT_BRACE) // 2
+                .add(Symbol.LEFT_BRACE)//3
+                .add(new Text("\"b\"")) // 4
+                .add(Symbol.COMMA)
+                .add(new Text("\"c\"")) // 6
+                .add(Symbol.RIGHT_BRACE)
+                .add(Symbol.COMMA)
+                .add(new Text("\"d\"")) // 9
+                .add(Symbol.RIGHT_BRACE)
+                .add(Symbol.SEMICOLON); // 11
+        List<Formatter.ForwardInfo> info = new ArrayList<>();
+        new Formatter(options).forward(outputBuilder.list, fi -> {
+            info.add(fi);
+            System.out.println(fi);
+            return false;
+        }, 0, 100);
+        Assert.assertEquals("a", info.get(0).string());
     }
 }
