@@ -27,10 +27,7 @@ import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.model.statement.SynchronizedStatement;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -454,8 +451,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
             // a field's local copy is always created not modified... can only go "up"
             vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, MODIFIED, 0);
-            vic.setLinkedVariablesFromAnalyser(Set.of());
-        } // but local variables get their linked variables from an assignment, potentially at LEVEL 1
+            vic.setLinkedVariablesFromAnalyser(Set.of()); // TODO
+        } else if (variable instanceof LocalVariableReference lvr) {
+            // but local variables get their linked variables from an assignment, potentially at LEVEL 1
+            // if (Primitives.isPrimitiveExcludingVoid(lvr.parameterizedType())) {
+            //    vic.setLinkedVariablesFromAnalyser(Set.of());
+            //}
+        }
 
         return vic;
     }

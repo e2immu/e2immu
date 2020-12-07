@@ -120,11 +120,11 @@ class VariableInfoImpl implements VariableInfo {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();
-        sb.append("name=").append(name).append("props=").append(properties);
+        sb.append("[name=").append(name).append(", props=").append(properties);
         if (value.isSet()) {
             sb.append(", value=").append(value.get());
         }
-        return sb.toString();
+        return sb.append("]").toString();
     }
 
     public boolean setProperty(VariableProperty variableProperty, int value) {
@@ -167,8 +167,11 @@ class VariableInfoImpl implements VariableInfo {
     public void mergeLinkedVariables(boolean existingValuesWillBeOverwritten, VariableInfoImpl existing, List<VariableInfo> merge) {
         Set<Variable> merged = new HashSet<>();
         if (!existingValuesWillBeOverwritten) {
-            if (!existing.linkedVariablesIsSet()) return;
-            merged.addAll(existing.getLinkedVariables());
+            if (existing.linkedVariablesIsSet()) {
+                merged.addAll(existing.getLinkedVariables());
+            } //else
+            // typical situation: int a; if(x) { a = 5; }. Existing has not been assigned
+            // we'll issue a warning at the value
         }
         for (VariableInfo vi : merge) {
             if (!vi.linkedVariablesIsSet()) return;

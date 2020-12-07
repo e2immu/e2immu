@@ -56,8 +56,6 @@ public class Test_04_Warnings extends CommonTestRunner {
     @Test
     public void test1() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.Warnings_1";
-        final String T_LENGTH_GE_19 = "((-19) + org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method1(String):0:t.length(),?>=0) >= 0";
-        final String T_LENGTH_LT_19 = "(18 + (-org.e2immu.analyser.testexample.UnusedLocalVariableChecks.method1(String):0:t.length(),?>=0)) >= 0";
         final String THIS = TYPE + ".this";
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {

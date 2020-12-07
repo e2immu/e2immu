@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -34,8 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.DELAYED;
-import static org.e2immu.analyser.util.Logger.LogTarget.NOT_MODIFIED;
+import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 /**
@@ -137,7 +137,15 @@ public class MethodLevelData {
         // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
         sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
             if (!variableInfo.linkedVariablesIsSet()) {
-                analysisStatus.set(DELAYS);
+                if(!(variableInfo.variable() instanceof LocalVariableReference) ||
+                        variableInfo.getProperty(VariableProperty.READ) >= Level.TRUE ||
+                        variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) {
+                    log(DELAYED, "Delaying content modification in MethodLevelData for {} in {}", variableInfo.variable().fullyQualifiedName(),
+                            sharedState.evaluationContext.getCurrentStatement());
+                    analysisStatus.set(DELAYS);
+                } else {
+                    log(LINKED_VARIABLES, "Local variable {} not read, not assigned, so cannot yet be linked");
+                }
             } else {
                 Set<Variable> linkedVariables = SetUtil.immutableUnion(Set.of(variableInfo.variable()), variableInfo.getLinkedVariables());
                 int summary = sharedState.evaluationContext.summarizeModification(linkedVariables);

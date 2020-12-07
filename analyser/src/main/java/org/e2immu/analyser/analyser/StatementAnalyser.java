@@ -156,6 +156,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     }
 
+    @Override
+    public String toString() {
+        return "Statement " + index() + " of " + myMethodAnalyser.methodInfo.fullyQualifiedName;
+    }
+
     record PreviousAndFirst(StatementAnalyser previous, StatementAnalyser first) {
     }
 
@@ -625,8 +630,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (sharedState.forwardAnalysisInfo.inCatch()) {
                 propertiesToSet.put(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                 propertiesToSet.put(VariableProperty.READ, Level.READ_ASSIGN_ONCE);
+                vic.setLinkedVariables(l1, Set.of());
             } else if (assignedInLoop) {
                 propertiesToSet.put(VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+                // FIXME we must set the links after step 3, before going into the block in step 4
+                vic.setLinkedVariables(l1, Set.of());
             }
             vic.setValueOnAssignment(l1, new NewObject(null, lvr.parameterizedType(), List.of(),
                     EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW), propertiesToSet);
