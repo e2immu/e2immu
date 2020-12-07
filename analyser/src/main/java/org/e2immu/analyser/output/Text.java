@@ -47,4 +47,14 @@ public record Text(String text, String debug) implements OutputElement {
     public String debug() {
         return debug;
     }
+
+    @Override
+    public int length(FormattingOptions options) {
+        return options.debug() ? debug.length() : text.length();
+    }
+
+    @Override
+    public String write(FormattingOptions options) {
+        return options.debug() ? debug: text;
+    }
 }

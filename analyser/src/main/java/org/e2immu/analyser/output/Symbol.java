@@ -22,9 +22,9 @@ import static org.e2immu.analyser.output.Space.*;
 public record Symbol(String symbol, Space left, Space right) implements OutputElement {
 
     public static final Symbol INSTANCE_OF = new Symbol("instanceof", ONE, ONE);
-    public static final Symbol UNARY_BOOLEAN_NOT = new Symbol("!", NOT_FOR_LEFT_PARENTHESIS, NONE);
-    public static final Symbol UNARY_MINUS = new Symbol("-", NOT_FOR_LEFT_PARENTHESIS, NONE);
-    public static final Symbol AT = new Symbol("@", NOT_FOR_LEFT_PARENTHESIS, NONE);
+    public static final Symbol UNARY_BOOLEAN_NOT = new Symbol("!", NONE, NONE);
+    public static final Symbol UNARY_MINUS = new Symbol("-", NONE, NONE);
+    public static final Symbol AT = new Symbol("@", NONE, NONE);
 
     public static final Symbol PIPE = new Symbol("|", EASY_LR, EASY_LR);
 
@@ -86,5 +86,15 @@ public record Symbol(String symbol, Space left, Space right) implements OutputEl
     @Override
     public String debug() {
         return left.debug() + symbol + right.debug();
+    }
+
+    @Override
+    public int length(FormattingOptions options) {
+        return left.length(options) + symbol.length() + right().length(options);
+    }
+
+    @Override
+    public String write(FormattingOptions options) {
+        return left.write(options) + symbol + right.write(options);
     }
 }

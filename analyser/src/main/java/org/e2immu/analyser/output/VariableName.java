@@ -38,4 +38,14 @@ public record VariableName(String simpleName, WithInspectionAndAnalysis owner, N
             case STATIC -> owner.fullyQualifiedName() + "." + simpleName;
         };
     }
+
+    @Override
+    public int length(FormattingOptions options) {
+        return options.debug() ? debug().length() : simpleName.length();
+    }
+
+    @Override
+    public String write(FormattingOptions options) {
+        return simpleName;
+    }
 }

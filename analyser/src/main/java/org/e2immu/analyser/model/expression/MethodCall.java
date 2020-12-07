@@ -148,6 +148,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public OutputBuilder output() {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (object != null) {
+            // FIXME we need to add guides for the chaining of method calls
+            // but how?
             outputBuilder.add(outputInParenthesis(precedence(), object)).add(Symbol.DOT);
         }
         outputBuilder.add(new Text(methodInfo.name));

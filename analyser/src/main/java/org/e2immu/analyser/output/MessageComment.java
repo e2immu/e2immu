@@ -27,4 +27,14 @@ public record MessageComment(String msg) implements OutputElement {
     public String debug() {
         return "/*" + msg + "*/";
     }
+
+    @Override
+    public int length(FormattingOptions options) {
+        return options.debug() ? debug().length() : 0;
+    }
+
+    @Override
+    public String write(FormattingOptions options) {
+        return options.debug() ? debug(): "";
+    }
 }

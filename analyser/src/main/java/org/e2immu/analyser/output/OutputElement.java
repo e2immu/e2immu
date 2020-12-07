@@ -28,4 +28,10 @@ public interface OutputElement {
     default String trace() {
         return debug();
     }
+
+    // formatter system
+
+    default int length(FormattingOptions options) { return write(options).length(); }
+
+    String write(FormattingOptions options);
 }

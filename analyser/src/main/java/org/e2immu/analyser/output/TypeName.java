@@ -35,4 +35,14 @@ public record TypeName(String simpleName, String fullyQualifiedName,
     public String debug() {
         return fullyQualifiedName;
     }
+
+    @Override
+    public int length(FormattingOptions options) {
+        return simpleName.length(); // TODO
+    }
+
+    @Override
+    public String write(FormattingOptions options) {
+        return simpleName;
+    }
 }

@@ -66,4 +66,14 @@ public record Guide(int index, Position position) implements OutputElement {
     public String trace() {
         return "/*" + position.msg + index + "*/";
     }
+
+    @Override
+    public int length(FormattingOptions options) {
+        return 0;
+    }
+
+    @Override
+    public String write(FormattingOptions options) {
+        return "";
+    }
 }

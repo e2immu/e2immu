@@ -31,11 +31,6 @@ public enum Space implements OutputElement {
 
     NEWLINE("\n"), // enforce a newline
 
-    // almost always introduce a space to make things nicer, except when there's a (
-    // && !a; b = !a; but (!a && !b)
-
-    NOT_FOR_LEFT_PARENTHESIS(""),
-
     // easy either left or right, but consistently according to preferences
     // e.g. && either at beginning of line in sequence, or always at end
     EASY_LR("");
@@ -54,5 +49,17 @@ public enum Space implements OutputElement {
     @Override
     public String debug() {
         return minimal;
+    }
+
+    @Override
+    public int length(FormattingOptions options) {
+        if (this == ONE || this == ONE_EASY) return 1;
+        return 0;
+    }
+
+    @Override
+    public String write(FormattingOptions options) {
+        if (this == ONE || this == ONE_EASY) return " ";
+        return "";
     }
 }
