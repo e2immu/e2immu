@@ -138,13 +138,12 @@ public class MethodLevelData {
         sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
             if (!variableInfo.linkedVariablesIsSet()) {
                 if(!(variableInfo.variable() instanceof LocalVariableReference) ||
-                        variableInfo.getProperty(VariableProperty.READ) >= Level.TRUE ||
                         variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) {
                     log(DELAYED, "Delaying content modification in MethodLevelData for {} in {}", variableInfo.variable().fullyQualifiedName(),
                             sharedState.evaluationContext.getCurrentStatement());
                     analysisStatus.set(DELAYS);
                 } else {
-                    log(LINKED_VARIABLES, "Local variable {} not read, not assigned, so cannot yet be linked");
+                    log(LINKED_VARIABLES, "Local variable {} not yet assigned, so cannot yet be linked");
                 }
             } else {
                 Set<Variable> linkedVariables = SetUtil.immutableUnion(Set.of(variableInfo.variable()), variableInfo.getLinkedVariables());

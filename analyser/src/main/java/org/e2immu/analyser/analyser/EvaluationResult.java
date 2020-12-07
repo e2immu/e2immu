@@ -267,7 +267,7 @@ public class EvaluationResult {
             }
         }
 
-        public Builder markRead(Variable variable, int iteration) {
+        public void markRead(Variable variable, int iteration) {
             if (iteration == 0 && statementAnalyser != null) {
                 addToModifications(statementAnalyser.new MarkRead(variable));
 
@@ -277,7 +277,6 @@ public class EvaluationResult {
                     addToModifications(statementAnalyser.new MarkRead(fieldReference.scope));
                 }
             }
-            return this;
         }
 
         public ObjectFlow createLiteralObjectFlow(ParameterizedType parameterizedType) {

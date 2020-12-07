@@ -34,6 +34,7 @@ import java.util.*;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.model.expression.EmptyExpression.EMPTY_EXPRESSION;
 import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 
 class VariableInfoImpl implements VariableInfo {
@@ -171,7 +172,7 @@ class VariableInfoImpl implements VariableInfo {
                 merged.addAll(existing.getLinkedVariables());
             } //else
             // typical situation: int a; if(x) { a = 5; }. Existing has not been assigned
-            // we'll issue a warning at the value
+            // this will end up an error when the variable is read before being assigned
         }
         for (VariableInfo vi : merge) {
             if (!vi.linkedVariablesIsSet()) return;
@@ -264,7 +265,10 @@ class VariableInfoImpl implements VariableInfo {
                                   boolean existingValuesWillBeOverwritten,
                                   List<VariableInfo> merge) {
         Expression currentValue = getValue();
-        if (!existingValuesWillBeOverwritten && currentValue == NO_VALUE) return NO_VALUE;
+        if (!existingValuesWillBeOverwritten) {
+            if (currentValue == NO_VALUE) return NO_VALUE;
+            if (currentValue == EMPTY_EXPRESSION) return EMPTY_EXPRESSION;
+        }
         boolean haveANoValue = merge.stream().anyMatch(v -> !v.stateOnAssignmentIsSet());
         if (haveANoValue) return NO_VALUE;
 
