@@ -120,14 +120,14 @@ public class FieldInfo implements WithInspectionAndAnalysis {
             if (fieldAnalysis.isSet()) {
                 outputBuilder.add(fieldAnalysis.get().peekIntoAnnotations(ae, annotationsSeen));
             }
-            outputBuilder.add(Space.ONE_EASY);
+            outputBuilder.add(Space.ONE_REQUIRED_EASY_SPLIT);
         });
         if (fieldAnalysis.isSet()) {
             fieldAnalysis.get().getAnnotationStream().forEach(entry -> {
                 boolean present = entry.getValue();
                 AnnotationExpression annotation = entry.getKey();
                 if (present && !annotationsSeen.contains(annotation.typeInfo())) {
-                    outputBuilder.add(guideGenerator.mid()).add(annotation.output()).add(Space.ONE_EASY);
+                    outputBuilder.add(guideGenerator.mid()).add(annotation.output()).add(Space.ONE_REQUIRED_EASY_SPLIT);
                 }
             });
         }

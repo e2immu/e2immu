@@ -184,7 +184,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
         if (!inspection.getExceptionTypes().isEmpty()) {
-            outputBuilder.add(Space.ONE_EASY).add(new Text("throws")).add(Space.ONE)
+            outputBuilder.add(Space.ONE_REQUIRED_EASY_SPLIT).add(new Text("throws")).add(Space.ONE)
                     .add(inspection.getExceptionTypes().stream()
                             .map(ParameterizedType::output).collect(OutputBuilder.joining(Symbol.COMMA)));
         }
@@ -213,14 +213,14 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             if (methodAnalysis.isSet()) {
                 outputBuilder.add(methodAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen));
             }
-            outputBuilder.add(Space.ONE_EASY);
+            outputBuilder.add(Space.ONE_REQUIRED_EASY_SPLIT);
         }
         if (methodAnalysis.isSet()) {
             methodAnalysis.get().getAnnotationStream().forEach(entry -> {
                 boolean present = entry.getValue();
                 AnnotationExpression annotation = entry.getKey();
                 if (present && !annotationsSeen.contains(annotation.typeInfo())) {
-                    outputBuilder.add(annotationGG.mid()).add(annotation.output()).add(Space.ONE_EASY);
+                    outputBuilder.add(annotationGG.mid()).add(annotation.output()).add(Space.ONE_REQUIRED_EASY_SPLIT);
                 }
             });
         }

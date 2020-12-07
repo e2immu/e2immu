@@ -81,8 +81,7 @@ public class IfElseStatement extends StatementWithExpression {
                 .addIfNotNull(messageComment(statementAnalysis))
                 .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
         if (elseBlock != Block.EMPTY_BLOCK) {
-            outputBuilder.add(Space.HARD)
-                    .add(new Text("else"))
+            outputBuilder.add(new Text("else"))
                     .add(elseBlock.output(StatementAnalysis.startOfBlock(statementAnalysis, 1)));
         }
         return outputBuilder;

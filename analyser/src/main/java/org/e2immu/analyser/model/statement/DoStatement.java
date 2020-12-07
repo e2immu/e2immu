@@ -53,7 +53,6 @@ public class DoStatement extends LoopStatement {
     public OutputBuilder output(StatementAnalysis statementAnalysis) {
         return new OutputBuilder().add(new Text("do"))
                 .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)))
-                .add(Space.EASY)
                 .add(new Text("while"))
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(structure.expression.output())

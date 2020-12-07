@@ -26,56 +26,56 @@ public record Symbol(String symbol, Space left, Space right) implements OutputEl
     public static final Symbol UNARY_MINUS = new Symbol("-", NONE, NONE);
     public static final Symbol AT = new Symbol("@", NONE, NONE);
 
-    public static final Symbol PIPE = new Symbol("|", EASY_LR, EASY_LR);
+    public static final Symbol PIPE = binaryOperator("|");
 
-    public static final Symbol COMMA = new Symbol(",", NONE, EASY);
-    public static final Symbol SEMICOLON = new Symbol(";", NONE, EASY);
+    public static final Symbol COMMA = new Symbol(",", NONE, ONE_IS_NICE_EASY_SPLIT);
+    public static final Symbol SEMICOLON = new Symbol(";", NONE, ONE_IS_NICE_EASY_SPLIT);
 
     // a ? b : c;
-    public static final Symbol QUESTION_MARK = new Symbol("?", EASY_LR, EASY_LR);
-    public static final Symbol COLON = new Symbol(":", EASY_LR, EASY_LR);
-    public static final Symbol COLON_LABEL = new Symbol(":", NONE, EASY);
-    public static final Symbol DOUBLE_COLON = new Symbol(":", NONE, NONE);
+    public static final Symbol QUESTION_MARK = binaryOperator("?");
+    public static final Symbol COLON = binaryOperator(":");
+    public static final Symbol COLON_LABEL = new Symbol(":", NONE, ONE_IS_NICE_EASY_SPLIT);
+    public static final Symbol DOUBLE_COLON = new Symbol("::", NONE, NONE);
 
-    public static final Symbol DOT = new Symbol(".", EASY, NONE);
+    public static final Symbol DOT = new Symbol(".", NO_SPACE_SPLIT_ALLOWED, NONE);
 
-    public static final Symbol LEFT_PARENTHESIS = new Symbol("(", NONE, EASY);
-    public static final Symbol RIGHT_PARENTHESIS = new Symbol(")", NONE, EASY);
-    public static final Symbol OPEN_CLOSE_PARENTHESIS = new Symbol("()", NONE, EASY);
+    public static final Symbol LEFT_PARENTHESIS = new Symbol("(", NONE, NO_SPACE_SPLIT_ALLOWED);
+    public static final Symbol RIGHT_PARENTHESIS = new Symbol(")", NONE, NO_SPACE_SPLIT_ALLOWED);
+    public static final Symbol OPEN_CLOSE_PARENTHESIS = new Symbol("()", NONE, NO_SPACE_SPLIT_ALLOWED);
 
-    public static final Symbol LEFT_BRACE = new Symbol("{", NONE, EASY);
-    public static final Symbol RIGHT_BRACE = new Symbol("}", EASY, EASY);
+    public static final Symbol LEFT_BRACE = new Symbol("{", ONE_IS_NICE_EASY_SPLIT, ONE_IS_NICE_EASY_SPLIT);
+    public static final Symbol RIGHT_BRACE = new Symbol("}", ONE_IS_NICE_EASY_SPLIT, ONE_IS_NICE_EASY_SPLIT);
 
-    public static final Symbol LEFT_BRACKET = new Symbol("[", NONE, EASY);
-    public static final Symbol RIGHT_BRACKET = new Symbol("]", NONE, EASY);
-    public static final Symbol OPEN_CLOSE_BRACKET = new Symbol("[]", NONE, EASY);
+    public static final Symbol LEFT_BRACKET = new Symbol("[", NONE, NO_SPACE_SPLIT_ALLOWED);
+    public static final Symbol RIGHT_BRACKET = new Symbol("]", NONE, ONE_IS_NICE_EASY_SPLIT);
+    public static final Symbol OPEN_CLOSE_BRACKET = new Symbol("[]", NONE, ONE_IS_NICE_EASY_SPLIT);
 
-    public static final Symbol LEFT_ANGLE_BRACKET = new Symbol("<", NONE, EASY);
-    public static final Symbol RIGHT_ANGLE_BRACKET = new Symbol(">", EASY, EASY);
-    public static final Symbol DIAMOND = new Symbol("<>", NONE, EASY);
+    public static final Symbol LEFT_ANGLE_BRACKET = new Symbol("<", NONE, NONE);
+    public static final Symbol RIGHT_ANGLE_BRACKET = new Symbol(">", NONE, NONE);
+    public static final Symbol DIAMOND = new Symbol("<>", NONE, NONE);
 
 
-    public static final Symbol LOGICAL_AND = new Symbol("&&", EASY_LR, EASY_LR);
-    public static final Symbol LOGICAL_OR = new Symbol("||", EASY_LR, EASY_LR);
-    public static final Symbol LAMBDA = new Symbol("->", EASY_LR, EASY_LR);
+    public static final Symbol LOGICAL_AND = binaryOperator("&&");
+    public static final Symbol LOGICAL_OR = binaryOperator("||");
+    public static final Symbol LAMBDA = binaryOperator("->");
 
-    public static final Symbol LEFT_BLOCK_COMMENT = new Symbol("/*", NONE, NONE);
-    public static final Symbol RIGHT_BLOCK_COMMENT = new Symbol("*/", NONE, NONE);
+    public static final Symbol LEFT_BLOCK_COMMENT = new Symbol("/*", ONE_IS_NICE_EASY_SPLIT, NONE);
+    public static final Symbol RIGHT_BLOCK_COMMENT = new Symbol("*/", NONE, ONE_IS_NICE_EASY_SPLIT);
 
     public static Symbol plusPlusPrefix(String s) {
-        return new Symbol(s, EASY, NONE);
+        return new Symbol(s, ONE_IS_NICE_EASY_SPLIT, NONE);
     }
 
     public static Symbol plusPlusSuffix(String s) {
-        return new Symbol(s, NONE, EASY);
+        return new Symbol(s, NONE, ONE_IS_NICE_EASY_SPLIT);
     }
 
     public static Symbol assignment(String s) {
-        return new Symbol(s, EASY_LR, EASY_LR);
+        return new Symbol(s, ONE_IS_NICE_EASY_L, ONE_IS_NICE_EASY_R);
     }
 
     public static Symbol binaryOperator(String s) {
-        return new Symbol(s, EASY_LR, EASY_LR);
+        return new Symbol(s, ONE_IS_NICE_EASY_L, ONE_IS_NICE_EASY_R);
     }
 
     @Override

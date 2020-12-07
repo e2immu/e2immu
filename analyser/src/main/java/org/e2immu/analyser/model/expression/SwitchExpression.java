@@ -63,7 +63,7 @@ public record SwitchExpression(Expression selector,
                 .add(selector.output())
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .add(Symbol.LEFT_BRACE)
-                .add(switchEntries.stream().map(SwitchEntry::output).collect(OutputBuilder.joining(Space.EASY)))
+                .add(switchEntries.stream().map(SwitchEntry::output).collect(OutputBuilder.joining(Space.ONE_IS_NICE_EASY_SPLIT)))
                 .add(Symbol.RIGHT_BRACE);
     }
 

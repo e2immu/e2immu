@@ -20,6 +20,9 @@ package org.e2immu.analyser.output;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class TestFormatterSplitLine {
 
     // public int method  (17 chars)
@@ -42,15 +45,12 @@ public class TestFormatterSplitLine {
                 .add(new Text("int")).add(Space.ONE)
                 .add(new Text("method"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(gg.start())
-                .add(gg.mid()).add(new Text("int")).add(Space.ONE).add(new Text("p1")).add(Symbol.COMMA)
+                .add(gg.start()).add(new Text("int")).add(Space.ONE).add(new Text("p1")).add(Symbol.COMMA)
                 .add(gg.mid()).add(new Text("int")).add(Space.ONE).add(new Text("p2"))
                 .add(gg.end())
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .add(Symbol.LEFT_BRACE)
-                .add(gg.start())
-                .add(gg.mid())
-                .add(new Text("return")).add(Space.ONE)
+                .add(gg.start()).add(new Text("return")).add(Space.ONE)
                 .add(new Text("p1")).add(Symbol.binaryOperator("+")).add(new Text("p2")).add(Symbol.SEMICOLON)
                 .add(gg.end())
                 .add(Symbol.RIGHT_BRACE);
@@ -65,8 +65,13 @@ public class TestFormatterSplitLine {
         // up to the ( now
         Assert.assertEquals(18, formatter.lookAhead(createExample1().list, 20));
 
+        List<OutputElement> list = createExample1().list;
         // up to the { now, we've included the whole (...) guide
         Assert.assertEquals(33, formatter.lookAhead(createExample1().list, 35));
+
+        // int p1,
+        List<OutputElement> subList = list.subList(7, list.size());
+        Assert.assertEquals(7, formatter.lookAhead(subList, 120));
     }
 
     @Test
@@ -105,8 +110,59 @@ public class TestFormatterSplitLine {
                         ) {
                           return p1+p2;
                         }
-                        
+                                                
                         """,
                 new Formatter(options).write(createExample1()));
+    }
+
+    @Test
+    public void testForward1() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(8)
+                .setSpacesInTab(2).setTabsForLineSplit(1).build();
+        OutputBuilder outputBuilder = new OutputBuilder()
+                .add(new Text("public")) // 0
+                .add(Space.ONE) //1
+                .add(Space.ONE) //2
+                .add(new Text("method")) // 3
+                .add(Symbol.LEFT_PARENTHESIS) // 4
+                .add(new Text("int")) //5
+                .add(Space.ONE) //6
+                .add(new Text("p1")) // 7
+                .add(Symbol.COMMA) // 8
+                .add(new Text("int"))
+                .add(Space.ONE)
+                .add(new Text("p2")) // 11
+                .add(Symbol.RIGHT_PARENTHESIS) // 12
+                .add(Symbol.SEMICOLON); // 13
+        List<Formatter.ForwardInfo> info = new ArrayList<>();
+        new Formatter(options).forward(outputBuilder.list, fi -> {
+            info.add(fi);
+            System.out.println(fi);
+            return false;
+        }, 0, 100);
+        Assert.assertEquals("public", info.get(0).string());
+        Assert.assertEquals(2, info.get(1).pos()); // pos 1 has been skipped
+        Assert.assertEquals(6, info.get(1).chars()); // 6 chars have been written before this space
+    }
+
+    @Test
+    public void testForward2() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(8)
+                .setSpacesInTab(2).setTabsForLineSplit(1).build();
+        OutputBuilder outputBuilder = new OutputBuilder()
+                .add(Symbol.UNARY_BOOLEAN_NOT) // 0
+                .add(new Text("a")) //1
+                .add(Symbol.binaryOperator("&&")) //2
+                .add(new Text("b")) // 3
+                .add(Symbol.binaryOperator("==")) // 4
+                .add(new Text("c")) //5
+                .add(Symbol.SEMICOLON); // 6
+        List<Formatter.ForwardInfo> info = new ArrayList<>();
+        new Formatter(options).forward(outputBuilder.list, fi -> {
+            info.add(fi);
+            System.out.println(fi);
+            return false;
+        }, 0, 100);
+        Assert.assertEquals("!", info.get(0).string());
     }
 }

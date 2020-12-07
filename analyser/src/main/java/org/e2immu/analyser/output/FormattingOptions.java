@@ -21,9 +21,11 @@ public record FormattingOptions(int lengthOfLine,
                                 int spacesInTab,
                                 int tabsForLineSplit,
                                 boolean binaryOperatorsAtEndOfLine,
-                                boolean debug) {
+                                boolean debug,
+                                boolean compact) {
 
-    public static final FormattingOptions DEFAULT = new FormattingOptions(120, 4, 2, true, false);
+    public static final FormattingOptions DEFAULT = new FormattingOptions(120,
+            4, 2, true, false, false);
 
     public static class Builder {
 
@@ -32,6 +34,7 @@ public record FormattingOptions(int lengthOfLine,
         int tabsForLineSplit;
         boolean binaryOperatorsAtEndOfLine;
         boolean debug;
+        boolean compact;
 
         public Builder() {
             this(DEFAULT);
@@ -70,8 +73,13 @@ public record FormattingOptions(int lengthOfLine,
             return this;
         }
 
+        public Builder setCompact(boolean compact) {
+            this.compact = compact;
+            return this;
+        }
+
         public FormattingOptions build() {
-            return new FormattingOptions(lengthOfLine, spacesInTab, tabsForLineSplit, binaryOperatorsAtEndOfLine, debug);
+            return new FormattingOptions(lengthOfLine, spacesInTab, tabsForLineSplit, binaryOperatorsAtEndOfLine, debug, compact);
         }
     }
 }

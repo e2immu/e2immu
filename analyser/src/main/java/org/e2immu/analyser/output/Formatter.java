@@ -23,6 +23,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+import java.util.function.Function;
 
 public record Formatter(FormattingOptions options) {
 
@@ -59,49 +60,44 @@ public record Formatter(FormattingOptions options) {
             indent(spaces, writer);
             int lineLength = options.lengthOfLine() - spaces;
 
-            OutputElement outputElement = list.get(pos);
-            boolean write;
-            if (outputElement instanceof Guide guide) {
-                if (guide.position() == Guide.Position.START) {
-                    tabs.add(new Tab(prevTabs + 1, guide.index()));
-                    write = false; // start new line
-                } else if (guide.position() == Guide.Position.MID) {
-                    assert currentGuide == guide.index();
-                    write = false; // start new line
-                } else {
-                    assert currentGuide == guide.index();
-                    tabs.pop();
-                    write = true;
-                }
+            // if lookahead <= line length, either everything fits (write until lookahead reached)
+            // or there is a guide starting at lookahead
+            // if lookahead > line length, write until best break. If there is no line split, start one
+            int lookAhead = lookAhead(list.subList(pos, end), lineLength);
+
+            if (lookAhead <= lineLength) {
+                pos = writeUntilNewLineOrEnd(list, writer, pos, end, lookAhead);
+                if (lineSplit) tabs.pop();
             } else {
-                write = true;
-            }
-            if (write) {
-                // if lookahead <= line length, either everything fits (write until lookahead reached)
-                // or there is a guide starting at lookahead
-                // if lookahead > line length, write until best break. If there is no line split, start one
-                int lookAhead = lookAhead(list.subList(pos, end), lineLength);
-
-                if (lookAhead <= lineLength) {
-                    pos = writeUntilNewLineOrEnd(list, writer, pos, end, spaces, lookAhead);
-                    if (lineSplit) tabs.pop();
-                } else {
-                    pos = writeUntilBestBreak(list, writer, pos, end, spaces, lineLength);
-                    if (!lineSplit) {
-
-                        tabs.add(new Tab(prevTabs + options.tabsForLineSplit(), LINE_SPLIT));
-                    }
+                pos = writeUntilBestBreak(list, writer, pos, end, lineLength);
+                if (!lineSplit) {
+                    tabs.add(new Tab(prevTabs + options.tabsForLineSplit(), LINE_SPLIT));
                 }
             }
-            writer.write("\n");
+            boolean newLine = true;
+            if (pos < end) {
+                OutputElement outputElement = list.get(pos);
+                if (outputElement instanceof Guide guide) {
+                    if (guide.position() == Guide.Position.START) {
+                        tabs.add(new Tab(prevTabs + 1, guide.index()));
+                    } else if (guide.position() == Guide.Position.MID) {
+                        assert currentGuide == guide.index();
+                    } else {
+                        assert currentGuide == guide.index();
+                        tabs.pop();
+                        newLine = false;
+                    }
+                    pos++;
+                }
+            }
+            if (newLine) writer.write("\n");
         }
     }
 
-    private int writeUntilBestBreak(List<OutputElement> list, Writer writer, int start, int end,
-                                    int cStart, int cEnd) throws IOException {
+    private int writeUntilBestBreak(List<OutputElement> list, Writer writer, int start, int end, int cEnd) throws IOException {
         OutputElement outputElement;
         int pos = start;
-        int cPos = cStart;
+        int cPos = 0;
         boolean lastOneWasSpace = true; // used to avoid writing double spaces
         boolean wroteOnce = false; // don't write a space at the beginning of the line
         boolean allowBreak = false; // write until the first allowed space
@@ -131,13 +127,16 @@ public record Formatter(FormattingOptions options) {
 
 
     private int writeUntilNewLineOrEnd(List<OutputElement> list, Writer writer,
-                                       int start, int end,
-                                       int cStart, int cEnd) throws IOException {
+                                       int start, int end, int cEnd) throws IOException {
         OutputElement outputElement;
         int pos = start;
-        int cPos = cStart;
+        int cPos = 0;
         boolean lastOneWasSpace = true; // used to avoid writing double spaces
         while (pos < end && ((outputElement = list.get(pos)) != Space.NEWLINE) && cPos <= cEnd) {
+            if (cPos == cEnd && outputElement instanceof Guide) {
+                return pos;
+            }
+
             boolean write = true;
             String string = outputElement.write(options);
             cPos += string.length();
@@ -164,17 +163,31 @@ public record Formatter(FormattingOptions options) {
     /*
     returns the number of characters that minimally need to be output until we reach a newline or,
     once beyond the line length (max len minus tabs), the beginning of a Guide
+
      */
+
+    private record PosAndGuide(int pos, int guide) {
+    }
+
     int lookAhead(List<OutputElement> list, int lineLength) {
         int sum = 0;
-        Stack<Integer> startOfGuides = new Stack<>();
+        Stack<PosAndGuide> startOfGuides = new Stack<>();
         for (OutputElement outputElement : list) {
             if (outputElement == Space.NEWLINE) return sum;
             if (outputElement instanceof Guide guide) {
-                if (guide.position() == Guide.Position.START) {
-                    startOfGuides.push(sum);
-                } else if (guide.position() == Guide.Position.END && !startOfGuides.isEmpty()) {
-                    startOfGuides.pop();
+                switch (guide.position()) {
+                    case START -> startOfGuides.push(new PosAndGuide(sum, guide.index()));
+                    case MID -> {
+                        if (startOfGuides.isEmpty() || startOfGuides.get(0).guide != guide.index()) {
+                            return sum;
+                        }
+                    }
+                    case END -> {
+                        if (!startOfGuides.isEmpty()) {
+                            assert startOfGuides.peek().guide == guide.index();
+                            startOfGuides.pop();
+                        }
+                    }
                 }
             }
             sum += outputElement.length(options);
@@ -183,9 +196,70 @@ public record Formatter(FormattingOptions options) {
                 if (startOfGuides.isEmpty()) {
                     return sum;
                 }
-                return startOfGuides.get(0);
+                return startOfGuides.get(0).pos;
             }
         }
         return sum;
     }
+
+    record ForwardInfo(int pos, int chars, String string, Split before) {
+    }
+
+    public int forward(List<OutputElement> list, Function<ForwardInfo, Boolean> writer, int start, int maxChars) {
+        OutputElement outputElement;
+        int pos = start;
+        int chars = 0;
+        int end = list.size();
+        boolean lastOneWasSpace = true; // used to avoid writing double spaces
+        Split split = Split.NEVER;
+        boolean wroteOnce = false; // don't write a space at the beginning of the line
+        boolean allowBreak = false; // write until the first allowed space
+        while (pos < end && ((outputElement = list.get(pos)) != Space.NEWLINE)) {
+            String string;
+
+            Split splitAfterWriting = Split.NEVER;
+            boolean spaceAfterWriting = false;
+            if (outputElement instanceof Symbol symbol) {
+                split = symbol.left().split;
+                int leftLength = symbol.left().length(options);
+                lastOneWasSpace |= leftLength > 0;
+                string = symbol.symbol();
+                int rightLength = symbol.right().length(options);
+                spaceAfterWriting |= rightLength > 0;
+                splitAfterWriting = symbol.right().split;
+            } else {
+                string = outputElement.write(options);
+            }
+            // check for double spaces
+            if (outputElement instanceof Space space) {
+                lastOneWasSpace |= !string.isEmpty();
+                split = split.easiest(space.split);
+                allowBreak |= outputElement != Space.NONE;
+            } else if (string.length() > 0) {
+                boolean writeSpace = lastOneWasSpace && wroteOnce;
+                int stringLen = string.length();
+                int goingToWrite = stringLen + (writeSpace ? 1 : 0);
+                if (chars + goingToWrite > maxChars && allowBreak && wroteOnce) {// don't write anymore...
+                    return pos;
+                }
+                if (writeSpace) {
+                    if (writer.apply(new ForwardInfo(pos - 1, chars, " ", split))) return pos;
+                    chars++;
+                }
+                if (writer.apply(new ForwardInfo(pos, chars, string, split))) return pos;
+                lastOneWasSpace = false;
+                split = splitAfterWriting;
+                wroteOnce = true;
+                chars += stringLen;
+            } else {
+                // empty string indicates that there is a Guide on this position
+                // split means nothing here
+                if (writer.apply(new ForwardInfo(pos, chars, "", Split.NEVER))) return pos;
+            }
+            lastOneWasSpace |= spaceAfterWriting;
+            ++pos;
+        }
+        return pos;
+    }
+
 }

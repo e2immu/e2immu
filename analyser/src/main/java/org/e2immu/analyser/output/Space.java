@@ -17,28 +17,36 @@
 
 package org.e2immu.analyser.output;
 
+import static org.e2immu.analyser.output.Split.*;
+
 public enum Space implements OutputElement {
 
-    NONE(""),       // no space, do not split
+    NONE("", "", NEVER),       // no space, do not split
 
-    ONE(" "),       // exactly one space needed, never split here (e.g. between class and class name); two ONEs collapse into one
+    ONE(" ", " ", NEVER),       // exactly one space needed, never split here (e.g. between class and class name); two ONEs collapse into one
 
-    ONE_EASY(" "),  // end of annotation; needs minimally one, but can be newline
+    ONE_REQUIRED_EASY_SPLIT(" ", " ", EASY),  // end of annotation; needs minimally one, but can be newline
 
-    HARD(""),       // no space needed, normally one present, do not split here unless no other option
+    NO_SPACE_SPLIT_ALLOWED("", "", EASY),     // no space needed, split to make things nicer
 
-    EASY(""),     // no space needed, split to make things nicer
+    ONE_IS_NICE_EASY_SPLIT("", " ", EASY),  // no space needed but one in nice, split to make things nicer
 
-    NEWLINE("\n"), // enforce a newline
+    NEWLINE("\n", "\n", ALWAYS), // enforce a newline
 
     // easy either left or right, but consistently according to preferences
     // e.g. && either at beginning of line in sequence, or always at end
-    EASY_LR("");
+    // in nice formatting, one space is used
+    ONE_IS_NICE_EASY_L("", " ", EASY_L),
+    ONE_IS_NICE_EASY_R("", " ", EASY_R);
 
     private final String minimal;
+    private final String nice;
+    public final Split split;
 
-    Space(String minimal) {
+    Space(String minimal, String nice, Split split) {
         this.minimal = minimal;
+        this.nice = nice;
+        this.split = split;
     }
 
     @Override
@@ -52,14 +60,7 @@ public enum Space implements OutputElement {
     }
 
     @Override
-    public int length(FormattingOptions options) {
-        if (this == ONE || this == ONE_EASY) return 1;
-        return 0;
-    }
-
-    @Override
     public String write(FormattingOptions options) {
-        if (this == ONE || this == ONE_EASY) return " ";
-        return "";
+        return options.compact() ? minimal : nice;
     }
 }
