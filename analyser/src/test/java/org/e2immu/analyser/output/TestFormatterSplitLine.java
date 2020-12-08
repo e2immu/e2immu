@@ -254,7 +254,7 @@ public class TestFormatterSplitLine {
                 .add(Symbol.RIGHT_BRACE);
     }
 
-    // FIXME goes into linesplit mode rather than normal guide
+    // check that the lookahead does not go into line split mode with a { ... } guide
     @Test
     public void testGuide3() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(20)
@@ -274,14 +274,16 @@ public class TestFormatterSplitLine {
                 new Formatter(options).write(createExample3()));
     }
 
-    // is this what we want?
+    // identical at 30... if the whole statement doesn't fit in 30, then it gets split on {
     @Test
-    public void testGuideShortLine() {
+    public void testGuide3ShortLine() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(30)
                 .setSpacesInTab(2).setTabsForLineSplit(2).build();
         Assert.assertEquals("""
                         try {
-                          if(a) { assert b; } else {
+                          if(a) { 
+                            assert b; 
+                          } else {
                             assert c;
                             exit(1);
                           }

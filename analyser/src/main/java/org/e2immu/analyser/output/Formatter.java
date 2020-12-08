@@ -157,8 +157,10 @@ public record Formatter(FormattingOptions options) {
      */
 
     int lookAhead(List<OutputElement> list, int lineLength) {
+        AtomicReference<OutputElement> previousElement = new AtomicReference<>();
         AtomicInteger chars = new AtomicInteger();
         AtomicReference<ForwardInfo> lastForwardInfo = new AtomicReference<>();
+        AtomicInteger firstLeftBrace = new AtomicInteger(-1);
         Stack<PosAndGuide> startOfGuides = new Stack<>();
         boolean interrupted = forward(list, forwardInfo -> {
             chars.set(forwardInfo.chars);
@@ -167,7 +169,12 @@ public record Formatter(FormattingOptions options) {
             if (outputElement == Space.NEWLINE) return true; // stop
             if (outputElement instanceof Guide guide) {
                 switch (guide.position()) {
-                    case START -> startOfGuides.push(new PosAndGuide(forwardInfo.chars, guide.index()));
+                    case START -> {
+                        if (previousElement.get() == Symbol.LEFT_BRACE && firstLeftBrace.get() == -1) {
+                            firstLeftBrace.set(chars.get());
+                        }
+                        startOfGuides.push(new PosAndGuide(forwardInfo.chars, guide.index()));
+                    }
                     case MID -> {
                         if (startOfGuides.isEmpty() || startOfGuides.peek().guide != guide.index()) {
                             return true; // stop
@@ -182,12 +189,18 @@ public record Formatter(FormattingOptions options) {
                 }
             }
             if (forwardInfo.chars > lineLength) {
-                // exceeding the allowed length of the line... go to first open guide if present
-                if (!startOfGuides.isEmpty()) {
-                    chars.set(startOfGuides.get(0).pos);
+                // exceeding the allowed length of the line... we don't allow if we encountered {
+                if (firstLeftBrace.get() >= 0) {
+                    chars.set(firstLeftBrace.get());
+                } else {
+                    //  go to first open guide if present
+                    if (!startOfGuides.isEmpty()) {
+                        chars.set(startOfGuides.get(0).pos);
+                    }
                 }
                 return true; // stop
             }
+            previousElement.set(outputElement);
             return false; // continue
         }, 0, Math.max(100, lineLength * 3) / 2);
         if (interrupted) {
