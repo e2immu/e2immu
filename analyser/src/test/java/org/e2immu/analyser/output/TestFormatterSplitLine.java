@@ -130,7 +130,7 @@ public class TestFormatterSplitLine {
             return false;
         }, 0, 120);
         Assert.assertEquals(",", info.get(7).string());
-        Assert.assertNull( info.get(8).string());
+        Assert.assertNull(info.get(8).string());
         Assert.assertEquals(" int", info.get(9).string());
 
         Assert.assertEquals(53, new Formatter(options).lookAhead(createExample1().list, 120));
@@ -232,6 +232,78 @@ public class TestFormatterSplitLine {
 
         Assert.assertEquals("public int method(int p1,int p2,double somewhatLonger,double d){log(p1,p2);return p1+p2;}\n",
                 new Formatter(options).write(createExample2()));
+    }
+
+    private OutputBuilder createExample3() {
+        Guide.GuideGenerator gg = new Guide.GuideGenerator();
+        Guide.GuideGenerator gg1 = new Guide.GuideGenerator();
+        Guide.GuideGenerator gg2 = new Guide.GuideGenerator();
+
+        return new OutputBuilder()
+                .add(new Text("try")).add(Symbol.LEFT_BRACE)
+                .add(gg.start())
+                .add(new Text("if")).add(Symbol.LEFT_PARENTHESIS).add(new Text("a")).add(Symbol.RIGHT_PARENTHESIS)
+                .add(Symbol.LEFT_BRACE)
+                .add(gg1.start()).add(new Text("assert")).add(Space.ONE).add(new Text("b")).add(Symbol.SEMICOLON).add(gg1.end())
+                .add(Symbol.RIGHT_BRACE)
+                .add(new Text("else")).add(Symbol.LEFT_BRACE)
+                .add(gg2.start()).add(new Text("assert")).add(Space.ONE).add(new Text("c")).add(Symbol.SEMICOLON)
+                .add(gg2.mid()).add(new Text("exit")).add(Symbol.LEFT_PARENTHESIS).add(new Text("1")).add(Symbol.RIGHT_PARENTHESIS)
+                .add(Symbol.SEMICOLON).add(gg2.end()).add(Symbol.RIGHT_BRACE)
+                .add(gg.end())
+                .add(Symbol.RIGHT_BRACE);
+    }
+
+    // FIXME goes into linesplit mode rather than normal guide
+    @Test
+    public void testGuide3() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(20)
+                .setSpacesInTab(2).setTabsForLineSplit(2).build();
+        Assert.assertEquals("""
+                        try {
+                          if(a) {
+                            assert b;
+                          } else {
+                            assert c;
+                            exit(1);
+                          }
+                        }  
+                        """,
+                //      01234567890123456789
+                //        if(a) { assert b; } -> the end of the guide is within 20...
+                new Formatter(options).write(createExample3()));
+    }
+
+    // is this what we want?
+    @Test
+    public void testGuideShortLine() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(30)
+                .setSpacesInTab(2).setTabsForLineSplit(2).build();
+        Assert.assertEquals("""
+                        try {
+                          if(a) { assert b; } else {
+                            assert c;
+                            exit(1);
+                          }
+                        }
+                        """,
+                new Formatter(options).write(createExample3()));
+    }
+
+
+    @Test
+    public void testGuide3Midline() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(80)
+                .setSpacesInTab(2).setTabsForLineSplit(2).build();
+        Assert.assertEquals("try { if(a) { assert b; } else { assert c; exit(1); } }\n",
+                new Formatter(options).write(createExample3()));
+    }
+
+    @Test
+    public void testGuide3Compact() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120).setCompact(true).build();
+        Assert.assertEquals("try{if(a){assert b;}else{assert c;exit(1);}}\n",
+                new Formatter(options).write(createExample3()));
     }
 
     // public method(int p1, int p2);
