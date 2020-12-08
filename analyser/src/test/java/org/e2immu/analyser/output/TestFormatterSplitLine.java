@@ -99,7 +99,7 @@ public class TestFormatterSplitLine {
                 .add(new Text("static")).add(Space.ONE)
                 .add(new Text("abstract")).add(Space.ONE)
                 .add(new Text("method")).add(Symbol.SEMICOLON);
-        Assert.assertEquals("public\n  static\n  abstract\n  method\n  ;\n",
+        Assert.assertEquals("public\n  static\n  abstract\n  method;\n",
                 new Formatter(options).write(outputBuilder));
     }
 
@@ -193,6 +193,19 @@ public class TestFormatterSplitLine {
     }
 
     @Test
+    public void testGuide2MidLine() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(80).setCompact(false).build();
+        // around 90 characters long
+        Assert.assertEquals("""
+                        public int method(int p1, int p2, double somewhatLonger, double d) {
+                            log(p1, p2);
+                            return p1 + p2;
+                        }
+                        """,
+                new Formatter(options).write(createExample2()));
+    }
+
+    @Test
     public void testGuide2LongLine() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120).setCompact(false).build();
         // around 90 characters long
@@ -212,6 +225,8 @@ public class TestFormatterSplitLine {
             return false;
         }, 0, 120);
         Assert.assertEquals(41, info.size());
+        Assert.assertEquals(" somewhatLonger", info.get(14).string());
+        Assert.assertNull(info.get(16).string()); // ensure that the MID is there
 
         Assert.assertEquals(89, new Formatter(options).lookAhead(createExample2().list, 120));
 

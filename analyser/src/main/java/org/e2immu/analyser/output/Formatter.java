@@ -23,7 +23,6 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -85,8 +84,11 @@ public record Formatter(FormattingOptions options) {
                         boolean endWithNewline = list.get(pos - 1) instanceof Symbol symbol &&
                                 symbol.right().split == Split.BEGIN_END;
                         tabs.add(new Tab(prevTabs + 1, guide.index(), endWithNewline));
-                    } else if (guide.position() == Guide.Position.END) {
-                        tabs.pop();
+                    } else {
+                        while (!tabs.isEmpty() && tabs.peek().guideIndex == LINE_SPLIT) tabs.pop();
+                        if (guide.position() == Guide.Position.END) {
+                            tabs.pop();
+                        }
                     }
                     pos++;
                 } else if (outputElement == Space.NEWLINE) {
@@ -233,6 +235,7 @@ public record Formatter(FormattingOptions options) {
                 int rightLength = symbol.right().length(options);
                 spaceAfterWriting = rightLength > 0;
                 splitAfterWriting = symbol.right().split;
+                if (split == Split.NEVER) allowBreak = false;
             } else {
                 string = outputElement.write(options);
             }
@@ -242,7 +245,7 @@ public record Formatter(FormattingOptions options) {
                 split = split.easiest(space.split);
                 allowBreak |= outputElement != Space.NONE;
             } else if (outputElement instanceof Guide) {
-                if (chars == maxChars) return false;
+                if (chars >= maxChars) return false;
                 // empty string indicates that there is a Guide on this position
                 // split means nothing here
                 if (writer.apply(new ForwardInfo(pos, chars, null, Split.NEVER))) return true;
@@ -250,14 +253,17 @@ public record Formatter(FormattingOptions options) {
                 boolean writeSpace = lastOneWasSpace && wroteOnce;
                 int stringLen = string.length();
                 int goingToWrite = stringLen + (writeSpace ? 1 : 0);
+
                 if (chars + goingToWrite > maxChars && allowBreak && wroteOnce) {// don't write anymore...
                     return false;
                 }
+
                 String stringToWrite = writeSpace ? (" " + string) : string;
                 if (writer.apply(new ForwardInfo(pos, chars, stringToWrite, split))) return true;
                 lastOneWasSpace = false;
                 split = splitAfterWriting;
                 wroteOnce = true;
+                allowBreak = split != Split.NEVER;
                 chars += stringLen + (writeSpace ? 1 : 0);
             }
             lastOneWasSpace |= spaceAfterWriting;
