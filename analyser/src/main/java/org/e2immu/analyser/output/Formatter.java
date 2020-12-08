@@ -23,6 +23,8 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 public record Formatter(FormattingOptions options) {
@@ -69,7 +71,7 @@ public record Formatter(FormattingOptions options) {
                 pos = writeUntilNewLineOrEnd(list, writer, pos, end, lookAhead);
                 if (lineSplit) tabs.pop();
             } else {
-                pos = writeUntilBestBreak(list, writer, pos, end, lineLength);
+                pos = writeUntilBestBreak(list, writer, pos, lineLength);
                 if (!lineSplit) {
                     tabs.add(new Tab(prevTabs + options.tabsForLineSplit(), LINE_SPLIT));
                 }
@@ -94,37 +96,31 @@ public record Formatter(FormattingOptions options) {
         }
     }
 
-    private int writeUntilBestBreak(List<OutputElement> list, Writer writer, int start, int end, int cEnd) throws IOException {
-        OutputElement outputElement;
-        int pos = start;
-        int cPos = 0;
-        boolean lastOneWasSpace = true; // used to avoid writing double spaces
-        boolean wroteOnce = false; // don't write a space at the beginning of the line
-        boolean allowBreak = false; // write until the first allowed space
-        while (pos < end && ((outputElement = list.get(pos)) != Space.NEWLINE)) {
-            String string = outputElement.write(options);
-            cPos += string.length();
-            if (cPos > cEnd && allowBreak && wroteOnce) {// don't write anymore...
-                return pos;
-            }
-
-            // check for double spaces
-            if (outputElement instanceof Space) {
-                lastOneWasSpace |= !string.isEmpty();
-                allowBreak |= outputElement != Space.NONE;
-            } else if (string.length() > 0) {
-                if (lastOneWasSpace && wroteOnce) {
-                    writer.write(" ");
+    /**
+     * @param list     the source
+     * @param writer   the output writer
+     * @param start    the position in the source to start
+     * @param maxChars maximal number of chars to write
+     * @return the updated position
+     * @throws IOException when something goes wrong writing to <code>writer</code>
+     */
+    private int writeUntilBestBreak(List<OutputElement> list, Writer writer, int start, int maxChars) throws IOException {
+        AtomicReference<ForwardInfo> lastForwardInfoWritten = new AtomicReference<>();
+        try {
+            forward(list, forwardInfo -> {
+                lastForwardInfoWritten.set(forwardInfo);
+                try {
+                    writer.write(forwardInfo.string);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
-                lastOneWasSpace = false;
-                writer.write(string);
-                wroteOnce = true;
-            }
-            ++pos;
+                return false; // continue
+            }, start, maxChars);
+        } catch (RuntimeException e) {
+            throw new IOException(e);
         }
-        return pos;
+        return lastForwardInfoWritten.get().pos + 1;
     }
-
 
     private int writeUntilNewLineOrEnd(List<OutputElement> list, Writer writer,
                                        int start, int end, int cEnd) throws IOException {
@@ -160,26 +156,29 @@ public record Formatter(FormattingOptions options) {
         for (int i = 0; i < spaces; i++) writer.write(" ");
     }
 
-    /*
-    returns the number of characters that minimally need to be output until we reach a newline or,
-    once beyond the line length (max len minus tabs), the beginning of a Guide
-
-     */
-
     private record PosAndGuide(int pos, int guide) {
     }
 
+    /**
+     * Returns the number of characters that minimally need to be output until we reach a newline (excluding that newline), or,
+     * once beyond the line length (max len minus tabs), the beginning of a Guide
+     */
+
     int lookAhead(List<OutputElement> list, int lineLength) {
-        int sum = 0;
+        AtomicInteger chars = new AtomicInteger();
+        AtomicReference<ForwardInfo> lastForwardInfo = new AtomicReference<>();
         Stack<PosAndGuide> startOfGuides = new Stack<>();
-        for (OutputElement outputElement : list) {
-            if (outputElement == Space.NEWLINE) return sum;
+        boolean interrupted = forward(list, forwardInfo -> {
+            chars.set(forwardInfo.chars);
+            lastForwardInfo.set(forwardInfo);
+            OutputElement outputElement = list.get(forwardInfo.pos);
+            if (outputElement == Space.NEWLINE) return true; // stop
             if (outputElement instanceof Guide guide) {
                 switch (guide.position()) {
-                    case START -> startOfGuides.push(new PosAndGuide(sum, guide.index()));
+                    case START -> startOfGuides.push(new PosAndGuide(forwardInfo.chars, guide.index()));
                     case MID -> {
                         if (startOfGuides.isEmpty() || startOfGuides.get(0).guide != guide.index()) {
-                            return sum;
+                            return true; // stop
                         }
                     }
                     case END -> {
@@ -190,22 +189,35 @@ public record Formatter(FormattingOptions options) {
                     }
                 }
             }
-            sum += outputElement.length(options);
-            if (sum > lineLength) {
+            if (forwardInfo.chars > lineLength) {
                 // exceeding the allowed length of the line... go to first open guide if present
-                if (startOfGuides.isEmpty()) {
-                    return sum;
+                if (!startOfGuides.isEmpty()) {
+                    chars.set(startOfGuides.get(0).pos);
                 }
-                return startOfGuides.get(0).pos;
+                return true; // stop
             }
+            return false; // continue
+        }, 0, Math.max(100, lineLength * 3) / 2);
+        if (interrupted) {
+            return chars.get();
         }
-        return sum;
+        // reached the end
+        return chars.get() + lastForwardInfo.get().string.length();
     }
 
     record ForwardInfo(int pos, int chars, String string, Split before) {
     }
 
-    public int forward(List<OutputElement> list, Function<ForwardInfo, Boolean> writer, int start, int maxChars) {
+    /**
+     * Algorithm to iterate over the output elements.
+     *
+     * @param list     the source
+     * @param writer   all forward info sent to this writer; it returns true when this algorithm needs to stop
+     * @param start    position in the list where to start
+     * @param maxChars some sort of line length
+     * @return true when interrupted by a "true" from the writer or reaching the line length; false when normally ended
+     */
+    public boolean forward(List<OutputElement> list, Function<ForwardInfo, Boolean> writer, int start, int maxChars) {
         OutputElement outputElement;
         int pos = start;
         int chars = 0;
@@ -240,14 +252,14 @@ public record Formatter(FormattingOptions options) {
                 int stringLen = string.length();
                 int goingToWrite = stringLen + (writeSpace ? 1 : 0);
                 if (chars + goingToWrite > maxChars && allowBreak && wroteOnce) {// don't write anymore...
-                    return pos;
+                    return true;
                 }
                 if (writeSpace) {
-                    if (writer.apply(new ForwardInfo(pos - 1, chars, " ", split))) return pos;
+                    if (writer.apply(new ForwardInfo(pos - 1, chars, " ", split))) return true;
                     chars++;
                     split = Split.NEVER; // never split after a space
                 }
-                if (writer.apply(new ForwardInfo(pos, chars, string, split))) return pos;
+                if (writer.apply(new ForwardInfo(pos, chars, string, split))) return true;
                 lastOneWasSpace = false;
                 split = splitAfterWriting;
                 wroteOnce = true;
@@ -255,12 +267,12 @@ public record Formatter(FormattingOptions options) {
             } else {
                 // empty string indicates that there is a Guide on this position
                 // split means nothing here
-                if (writer.apply(new ForwardInfo(pos, chars, "", Split.NEVER))) return pos;
+                if (writer.apply(new ForwardInfo(pos, chars, "", Split.NEVER))) return true;
             }
             lastOneWasSpace |= spaceAfterWriting;
             ++pos;
         }
-        return pos;
+        return false;
     }
 
 }

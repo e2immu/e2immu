@@ -36,7 +36,7 @@ public class TestFormatterSplitLine {
     }
 
     // public int method(int p1, int p2) { return p1+p2; }
-    //        10|     18|            32|
+    //        10|     18|            33|
     private OutputBuilder createExample1() {
         Guide.GuideGenerator gg = new Guide.GuideGenerator();
         Guide.GuideGenerator gg2 = new Guide.GuideGenerator();
@@ -67,9 +67,9 @@ public class TestFormatterSplitLine {
 
         List<OutputElement> list = createExample1().list;
         // up to the { now, we've included the whole (...) guide
-        Assert.assertEquals(33, formatter.lookAhead(createExample1().list, 35));
+        Assert.assertEquals(35, formatter.lookAhead(createExample1().list, 35));
 
-        // int p1,
+        // int p1, (7 = 6+the start guide)
         List<OutputElement> subList = list.subList(7, list.size());
         Assert.assertEquals(7, formatter.lookAhead(subList, 120));
     }
@@ -83,6 +83,9 @@ public class TestFormatterSplitLine {
 
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(20)
                 .setSpacesInTab(2).setTabsForLineSplit(2).build();
+
+        Assert.assertEquals(34, new Formatter(options).lookAhead(outputBuilder.list, 20));
+
         Assert.assertEquals("package\n    " + PACKAGE + "\n", new Formatter(options).write(outputBuilder));
     }
 
@@ -95,7 +98,7 @@ public class TestFormatterSplitLine {
                 .add(new Text("static")).add(Space.ONE)
                 .add(new Text("abstract")).add(Space.ONE)
                 .add(new Text("method")).add(Symbol.SEMICOLON);
-        Assert.assertEquals("public\n  static\n  abstract\n  method;\n",
+        Assert.assertEquals("public\n  static\n  abstract\n  method\n  ;\n",
                 new Formatter(options).write(outputBuilder));
     }
 
@@ -193,5 +196,31 @@ public class TestFormatterSplitLine {
             return false;
         }, 0, 100);
         Assert.assertEquals("a", info.get(0).string());
+    }
+
+    @Test
+    public void testForward4() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(15)
+                .setSpacesInTab(2).setTabsForLineSplit(1).build();
+        List<Formatter.ForwardInfo> info = new ArrayList<>();
+        new Formatter(options).forward(createExample0().list, fi -> {
+            info.add(fi);
+            System.out.println(fi);
+            return false;
+        }, 0, 25);
+        Assert.assertEquals(5, info.size());
+    }
+
+    @Test
+    public void testForward5() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(15)
+                .setSpacesInTab(2).setTabsForLineSplit(1).build();
+        List<Formatter.ForwardInfo> info = new ArrayList<>();
+        new Formatter(options).forward(createExample0().list, fi -> {
+            info.add(fi);
+            System.out.println(fi);
+            return false;
+        }, 0, 15);
+        Assert.assertEquals(3, info.size());
     }
 }
