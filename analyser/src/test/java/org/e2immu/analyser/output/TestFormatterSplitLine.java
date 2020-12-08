@@ -117,7 +117,6 @@ public class TestFormatterSplitLine {
                 new Formatter(options).write(createExample1()));
     }
 
-    // FIXME we want a space after , {, ; in normal situations (non-compact, no newlines)
     @Test
     public void testGuide1LongLine() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120)
@@ -130,10 +129,9 @@ public class TestFormatterSplitLine {
             System.out.println(fi);
             return false;
         }, 0, 120);
-        Assert.assertEquals(",", info.get(10).string());
-        Assert.assertNull( info.get(11).string());
-        Assert.assertEquals(" ", info.get(12).string());
-        Assert.assertEquals("int", info.get(13).string());
+        Assert.assertEquals(",", info.get(7).string());
+        Assert.assertNull( info.get(8).string());
+        Assert.assertEquals(" int", info.get(9).string());
 
         Assert.assertEquals(53, new Formatter(options).lookAhead(createExample1().list, 120));
 
@@ -206,6 +204,17 @@ public class TestFormatterSplitLine {
     public void testGuide2Compact() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120).setCompact(true).build();
         // around 90 characters long
+
+        List<Formatter.ForwardInfo> info = new ArrayList<>();
+        new Formatter(options).forward(createExample2().list, fi -> {
+            info.add(fi);
+            System.out.println(fi);
+            return false;
+        }, 0, 120);
+        Assert.assertEquals(41, info.size());
+
+        Assert.assertEquals(89, new Formatter(options).lookAhead(createExample2().list, 120));
+
         Assert.assertEquals("public int method(int p1,int p2,double somewhatLonger,double d){log(p1,p2);return p1+p2;}\n",
                 new Formatter(options).write(createExample2()));
     }
@@ -237,7 +246,7 @@ public class TestFormatterSplitLine {
             return false;
         }, 0, 100);
         Assert.assertEquals("public", info.get(0).string());
-        Assert.assertEquals(2, info.get(1).pos()); // pos 1 has been skipped
+        Assert.assertEquals(3, info.get(1).pos()); // pos 1, 2 have been skipped
         Assert.assertEquals(6, info.get(1).chars()); // 6 chars have been written before this space
     }
 
@@ -300,7 +309,7 @@ public class TestFormatterSplitLine {
             System.out.println(fi);
             return false;
         }, 0, 25);
-        Assert.assertEquals(5, info.size());
+        Assert.assertEquals(3, info.size());
     }
 
     @Test
@@ -313,7 +322,7 @@ public class TestFormatterSplitLine {
             System.out.println(fi);
             return false;
         }, 0, 15);
-        Assert.assertEquals(3, info.size());
+        Assert.assertEquals(2, info.size());
     }
 
     // public method(int p1, int p2); with guides
@@ -336,6 +345,6 @@ public class TestFormatterSplitLine {
             return false;
         }, 0, 14);
         Assert.assertFalse(interrupted);
-        Assert.assertEquals(4, info.size()); // excluding the start guide
+        Assert.assertEquals(3, info.size()); // excluding the start guide
     }
 }

@@ -23,6 +23,7 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -166,7 +167,7 @@ public record Formatter(FormattingOptions options) {
                 switch (guide.position()) {
                     case START -> startOfGuides.push(new PosAndGuide(forwardInfo.chars, guide.index()));
                     case MID -> {
-                        if (startOfGuides.isEmpty() || startOfGuides.get(0).guide != guide.index()) {
+                        if (startOfGuides.isEmpty() || startOfGuides.peek().guide != guide.index()) {
                             return true; // stop
                         }
                     }
@@ -252,18 +253,12 @@ public record Formatter(FormattingOptions options) {
                 if (chars + goingToWrite > maxChars && allowBreak && wroteOnce) {// don't write anymore...
                     return false;
                 }
-                // FIXME should we join the space to the string? that eliminates the pos problems
-                // and splitting should never be done after the space anyway
-                if (writeSpace) {
-                    if (writer.apply(new ForwardInfo(pos - 1, chars, " ", split))) return true;
-                    chars++;
-                    split = Split.NEVER; // never split after a space
-                }
-                if (writer.apply(new ForwardInfo(pos, chars, string, split))) return true;
+                String stringToWrite = writeSpace ? (" " + string) : string;
+                if (writer.apply(new ForwardInfo(pos, chars, stringToWrite, split))) return true;
                 lastOneWasSpace = false;
                 split = splitAfterWriting;
                 wroteOnce = true;
-                chars += stringLen;
+                chars += stringLen + (writeSpace ? 1 : 0);
             }
             lastOneWasSpace |= spaceAfterWriting;
             ++pos;
