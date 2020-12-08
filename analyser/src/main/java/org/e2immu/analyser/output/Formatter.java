@@ -111,20 +111,21 @@ public record Formatter(FormattingOptions options) {
         try {
             boolean interrupted = forward(list, forwardInfo -> {
                 OutputElement outputElement = list.get(forwardInfo.pos);
+                if (outputElement == Space.NEWLINE) return true;
 
-                if (outputElement instanceof Guide guide) {
+                // there can be spaces at the same position, after the guide; that should not count
+                if (outputElement instanceof Guide guide && forwardInfo.isGuide()) {
                     if (forwardInfo.pos == maxChars) return true;
                     if (guide.position() == Guide.Position.END && tabs.peek().guideIndex == guide.index()) {
                         tabs.pop();
                     }
-                }
-                if (outputElement == Space.NEWLINE) return true;
-
-                lastForwardInfoWritten.set(forwardInfo);
-                try {
-                    writer.write(forwardInfo.string);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                } else {
+                    lastForwardInfoWritten.set(forwardInfo);
+                    try {
+                        writer.write(forwardInfo.string);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 return false; // continue
             }, start, maxChars);
@@ -189,6 +190,9 @@ public record Formatter(FormattingOptions options) {
     }
 
     record ForwardInfo(int pos, int chars, String string, Split before) {
+        public boolean isGuide() {
+            return string == null;
+        }
     }
 
     /**
@@ -231,6 +235,11 @@ public record Formatter(FormattingOptions options) {
                 lastOneWasSpace |= !string.isEmpty();
                 split = split.easiest(space.split);
                 allowBreak |= outputElement != Space.NONE;
+            } else if (outputElement instanceof Guide) {
+                if (chars == maxChars) return false;
+                // empty string indicates that there is a Guide on this position
+                // split means nothing here
+                if (writer.apply(new ForwardInfo(pos, chars, null, Split.NEVER))) return true;
             } else if (string.length() > 0) {
                 boolean writeSpace = lastOneWasSpace && wroteOnce;
                 int stringLen = string.length();
@@ -248,11 +257,6 @@ public record Formatter(FormattingOptions options) {
                 split = splitAfterWriting;
                 wroteOnce = true;
                 chars += stringLen;
-            } else {
-                if (chars == maxChars) return false;
-                // empty string indicates that there is a Guide on this position
-                // split means nothing here
-                if (writer.apply(new ForwardInfo(pos, chars, "", Split.NEVER))) return true;
             }
             lastOneWasSpace |= spaceAfterWriting;
             ++pos;
