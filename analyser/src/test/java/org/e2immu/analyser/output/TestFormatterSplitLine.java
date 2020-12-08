@@ -105,13 +105,12 @@ public class TestFormatterSplitLine {
     @Test
     public void testGuide1() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(20)
-                .setSpacesInTab(2).setTabsForLineSplit(1).build();
+                .setSpacesInTab(2).setTabsForLineSplit(2).build();
         Assert.assertEquals("""
                         public int method(
                           int p1,
-                          int p2
-                        ) {
-                          return p1+p2;
+                          int p2) {
+                          return p1 + p2;
                         }
                                                 
                         """,
@@ -222,5 +221,28 @@ public class TestFormatterSplitLine {
             return false;
         }, 0, 15);
         Assert.assertEquals(3, info.size());
+    }
+
+    // public method(int p1, int p2); with guides
+    @Test
+    public void testForward6() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(8)
+                .setSpacesInTab(2).setTabsForLineSplit(1).build();
+        Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
+        OutputBuilder outputBuilder = new OutputBuilder()
+                .add(new Text("public")) // 0
+                .add(Space.ONE) //1
+                .add(new Text("method")) // 2
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(guideGenerator.start())
+                .add(new Text("int")); // 5
+        List<Formatter.ForwardInfo> info = new ArrayList<>();
+        boolean interrupted = new Formatter(options).forward(outputBuilder.list, fi -> {
+            info.add(fi);
+            System.out.println(fi);
+            return false;
+        }, 0, 14);
+        Assert.assertFalse(interrupted);
+        Assert.assertEquals(4, info.size()); // excluding the start guide
     }
 }

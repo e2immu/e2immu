@@ -43,7 +43,7 @@ public record Formatter(FormattingOptions options) {
 
     // -1 is used for no tabs at all
     // guide == -2 is for line split without guides
-    private record Tab(int tabs, int guideId) {
+    private record Tab(int tabs, int guideIndex) {
     }
 
     // guides typically organised as  ( S int i, M int j, M int k E )
@@ -55,8 +55,7 @@ public record Formatter(FormattingOptions options) {
         Stack<Tab> tabs = new Stack<>();
         while (pos < end) {
             int spaces = (tabs.isEmpty() ? 0 : tabs.peek().tabs) * options().spacesInTab();
-            int currentGuide = (tabs.isEmpty() ? NO_GUIDE : tabs.peek().guideId);
-            int prevTabs = tabs.isEmpty() ? 0 : tabs.peek().tabs;
+            int currentGuide = (tabs.isEmpty() ? NO_GUIDE : tabs.peek().guideIndex);
             boolean lineSplit = currentGuide == LINE_SPLIT;
 
             indent(spaces, writer);
@@ -68,11 +67,12 @@ public record Formatter(FormattingOptions options) {
             int lookAhead = lookAhead(list.subList(pos, end), lineLength);
 
             if (lookAhead <= lineLength) {
-                pos = writeUntilNewLineOrEnd(list, writer, pos, end, lookAhead);
+                pos = writeLine(list, writer, pos, lookAhead, tabs);
                 if (lineSplit) tabs.pop();
             } else {
-                pos = writeUntilBestBreak(list, writer, pos, lineLength);
+                pos = writeLine(list, writer, pos, lineLength, tabs);
                 if (!lineSplit) {
+                    int prevTabs = tabs.isEmpty() ? 0 : tabs.peek().tabs;
                     tabs.add(new Tab(prevTabs + options.tabsForLineSplit(), LINE_SPLIT));
                 }
             }
@@ -81,6 +81,7 @@ public record Formatter(FormattingOptions options) {
                 OutputElement outputElement = list.get(pos);
                 if (outputElement instanceof Guide guide) {
                     if (guide.position() == Guide.Position.START) {
+                        int prevTabs = tabs.isEmpty() ? 0 : tabs.peek().tabs;
                         tabs.add(new Tab(prevTabs + 1, guide.index()));
                     } else if (guide.position() == Guide.Position.MID) {
                         assert currentGuide == guide.index();
@@ -101,13 +102,24 @@ public record Formatter(FormattingOptions options) {
      * @param writer   the output writer
      * @param start    the position in the source to start
      * @param maxChars maximal number of chars to write
+     * @param tabs     so that we can close tabs as we see closing guides pass by
      * @return the updated position
      * @throws IOException when something goes wrong writing to <code>writer</code>
      */
-    private int writeUntilBestBreak(List<OutputElement> list, Writer writer, int start, int maxChars) throws IOException {
+    private int writeLine(List<OutputElement> list, Writer writer, int start, int maxChars, Stack<Tab> tabs) throws IOException {
         AtomicReference<ForwardInfo> lastForwardInfoWritten = new AtomicReference<>();
         try {
-            forward(list, forwardInfo -> {
+            boolean interrupted = forward(list, forwardInfo -> {
+                OutputElement outputElement = list.get(forwardInfo.pos);
+
+                if (outputElement instanceof Guide guide) {
+                    if (forwardInfo.pos == maxChars) return true;
+                    if (guide.position() == Guide.Position.END && tabs.peek().guideIndex == guide.index()) {
+                        tabs.pop();
+                    }
+                }
+                if (outputElement == Space.NEWLINE) return true;
+
                 lastForwardInfoWritten.set(forwardInfo);
                 try {
                     writer.write(forwardInfo.string);
@@ -116,40 +128,11 @@ public record Formatter(FormattingOptions options) {
                 }
                 return false; // continue
             }, start, maxChars);
+            if (interrupted) return lastForwardInfoWritten.get().pos;
+            return lastForwardInfoWritten.get().pos + 1;
         } catch (RuntimeException e) {
             throw new IOException(e);
         }
-        return lastForwardInfoWritten.get().pos + 1;
-    }
-
-    private int writeUntilNewLineOrEnd(List<OutputElement> list, Writer writer,
-                                       int start, int end, int cEnd) throws IOException {
-        OutputElement outputElement;
-        int pos = start;
-        int cPos = 0;
-        boolean lastOneWasSpace = true; // used to avoid writing double spaces
-        while (pos < end && ((outputElement = list.get(pos)) != Space.NEWLINE) && cPos <= cEnd) {
-            if (cPos == cEnd && outputElement instanceof Guide) {
-                return pos;
-            }
-
-            boolean write = true;
-            String string = outputElement.write(options);
-            cPos += string.length();
-
-            // check for double spaces
-            if (outputElement instanceof Space) {
-                if (lastOneWasSpace) write = false;
-                lastOneWasSpace = !string.isEmpty();
-            } else if (string.length() > 0) {
-                lastOneWasSpace = false;
-            }
-            if (write) {
-                writer.write(string);
-            }
-            ++pos;
-        }
-        return pos;
     }
 
     private void indent(int spaces, Writer writer) throws IOException {
@@ -215,7 +198,8 @@ public record Formatter(FormattingOptions options) {
      * @param writer   all forward info sent to this writer; it returns true when this algorithm needs to stop
      * @param start    position in the list where to start
      * @param maxChars some sort of line length
-     * @return true when interrupted by a "true" from the writer or reaching the line length; false when normally ended
+     * @return true when interrupted by a "true" from the writer; false in all other cases (end of list, exceeding maxChars,
+     * reaching maxChars using a guide)
      */
     public boolean forward(List<OutputElement> list, Function<ForwardInfo, Boolean> writer, int start, int maxChars) {
         OutputElement outputElement;
@@ -252,7 +236,7 @@ public record Formatter(FormattingOptions options) {
                 int stringLen = string.length();
                 int goingToWrite = stringLen + (writeSpace ? 1 : 0);
                 if (chars + goingToWrite > maxChars && allowBreak && wroteOnce) {// don't write anymore...
-                    return true;
+                    return false;
                 }
                 if (writeSpace) {
                     if (writer.apply(new ForwardInfo(pos - 1, chars, " ", split))) return true;
@@ -265,6 +249,7 @@ public record Formatter(FormattingOptions options) {
                 wroteOnce = true;
                 chars += stringLen;
             } else {
+                if (chars == maxChars) return false;
                 // empty string indicates that there is a Guide on this position
                 // split means nothing here
                 if (writer.apply(new ForwardInfo(pos, chars, "", Split.NEVER))) return true;
