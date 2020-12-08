@@ -91,6 +91,8 @@ public record Formatter(FormattingOptions options) {
                         tabs.pop();
                     }
                     pos++;
+                } else if (outputElement == Space.NEWLINE) {
+                    pos++;
                 }
             }
             writer.write("\n");
@@ -119,9 +121,9 @@ public record Formatter(FormattingOptions options) {
                         // stop when reaching the guide (typically, MID) computed by lookAhead
                         if (forwardInfo.chars == maxChars) return true;
                         // stop when reaching the end of the guide of the current tab
-                        if( guide.position() == Guide.Position.END && !tabs.isEmpty() && tabs.peek().guideIndex == guide.index()) {
-                             if(tabs.peek().endWithNewline) return true;
-                             tabs.pop();
+                        if (guide.position() == Guide.Position.END && !tabs.isEmpty() && tabs.peek().guideIndex == guide.index()) {
+                            if (tabs.peek().endWithNewline) return true;
+                            tabs.pop();
                         }
                     }
                     // there can be spaces at the same position, after the guide (forwardInfo.pos can be off)
@@ -135,6 +137,13 @@ public record Formatter(FormattingOptions options) {
                 }
             }, start, maxChars);
             if (interrupted) return lastForwardInfoSeen.get().pos;
+            // reached the end
+            if (lastForwardInfoSeen.get() == null) {
+                System.out.println("Start is "+start);
+                for (OutputElement oe : list) {
+                    System.out.println(oe);
+                }
+            }
             return lastForwardInfoSeen.get().pos + 1;
         } catch (RuntimeException e) {
             throw new IOException(e);
@@ -191,6 +200,11 @@ public record Formatter(FormattingOptions options) {
             return chars.get();
         }
         // reached the end
+        if (lastForwardInfo.get() == null) {
+            for (OutputElement oe : list) {
+                System.out.println(oe);
+            }
+        }
         return chars.get() + lastForwardInfo.get().string.length();
     }
 

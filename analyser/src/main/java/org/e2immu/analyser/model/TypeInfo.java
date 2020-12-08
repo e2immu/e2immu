@@ -152,9 +152,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             isInterface = false;
         }
 
-        Stream<OutputBuilder> fieldsStream = fields.stream().map(FieldInfo::output);
-        Stream<OutputBuilder> subTypesStream = subTypes.stream().map(TypeInfo::output);
-
         OutputBuilder outputBuilder = new OutputBuilder();
         if (isPrimaryType()) {
             String packageName = packageNameOrEnclosingType.getLeftOrElse("");
@@ -207,21 +204,17 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
                 outputBuilder.add(interfaces.stream().map(ParameterizedType::output).collect(OutputBuilder.joining(Symbol.COMMA)));
             }
         }
-        outputBuilder.add(Symbol.LEFT_BRACE).add(Space.NEWLINE);
+        outputBuilder.add(Symbol.LEFT_BRACE);
         Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
         outputBuilder.add(guideGenerator.start());
 
-        Stream.concat(fieldsStream, subTypesStream)
-                .forEach(ob -> outputBuilder.add(guideGenerator.mid()).add(ob).add(Space.NEWLINE));
+        OutputBuilder main = Stream.concat(Stream.concat(Stream.concat(
+                fields.stream().map(FieldInfo::output),
+                subTypes.stream().map(TypeInfo::output)),
+                constructors.stream().map(c -> c.output(guideGenerator))),
+                methods.stream().map(m -> m.output(guideGenerator))).collect(OutputBuilder.joining());
 
-        for(MethodInfo constructor: constructors) {
-            outputBuilder.add(constructor.output(guideGenerator));
-        }
-        for(MethodInfo methodInfo: methods) {
-            outputBuilder.add(methodInfo.output(guideGenerator));
-        }
-
-        return outputBuilder.add(guideGenerator.end()).add(Symbol.RIGHT_BRACE);
+        return outputBuilder.add(main).add(Symbol.RIGHT_BRACE);
     }
 
     private Set<String> imports(TypeInspection typeInspection) {
@@ -332,7 +325,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public FieldInfo getFieldByName(String name, boolean complain) {
         Optional<FieldInfo> result = typeInspection.get().fields().stream().filter(fieldInfo -> fieldInfo.name.equals(name)).findFirst();
-        return complain ? result.orElseThrow(() -> new IllegalArgumentException("No field known with name "+name)) :
+        return complain ? result.orElseThrow(() -> new IllegalArgumentException("No field known with name " + name)) :
                 result.orElse(null);
     }
 

@@ -35,6 +35,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 public class Test_00_Basics_0 extends CommonTestRunner {
+    private static final String TYPE = "org.e2immu.analyser.testexample.Basics_0";
 
     public Test_00_Basics_0() {
         super(false);
@@ -59,19 +60,19 @@ public class Test_00_Basics_0 extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVisitor = d -> {
         if (d.methodInfo().name.equals("getExplicitlyFinal")
                 && "0".equals(d.statementId())) {
-            if ("org.e2immu.analyser.testexample.Basics.explicitlyFinal".equals(d.variableName())) {
+            if ((TYPE + ".explicitlyFinal").equals(d.variableName())) {
                 Assert.assertFalse(d.hasProperty(VariableProperty.ASSIGNED));
                 Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
                 Assert.assertEquals(new StringConstant(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
                 return;
             }
-            if ("org.e2immu.analyser.testexample.Basics.this".equals(d.variableName())) {
+            if ((TYPE + ".this").equals(d.variableName())) {
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ)); //
                 return;
             }
             // the return value
-            Assert.assertEquals("org.e2immu.analyser.testexample.Basics.getExplicitlyFinal()", d.variableName());
+            Assert.assertEquals((TYPE + ".getExplicitlyFinal()"), d.variableName());
             Assert.assertEquals("\"abc\"", d.currentValue().toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
             Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
@@ -89,7 +90,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("Basics", 0, 0, new DebugConfiguration.Builder()
+        testClass("Basics_0", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVisitor)
                 .addTypeContextVisitor(typeMapVisitor)
