@@ -84,10 +84,7 @@ public record Formatter(FormattingOptions options) {
                         boolean endWithNewline = list.get(pos - 1) instanceof Symbol symbol &&
                                 symbol.right().split == Split.BEGIN_END;
                         tabs.add(new Tab(prevTabs + 1, guide.index(), endWithNewline));
-                    } else if (guide.position() == Guide.Position.MID) {
-                        assert currentGuide == guide.index();
-                    } else {
-                        assert currentGuide == guide.index();
+                    } else if (guide.position() == Guide.Position.END) {
                         tabs.pop();
                     }
                     pos++;
@@ -138,12 +135,6 @@ public record Formatter(FormattingOptions options) {
             }, start, maxChars);
             if (interrupted) return lastForwardInfoSeen.get().pos;
             // reached the end
-            if (lastForwardInfoSeen.get() == null) {
-                System.out.println("Start is "+start);
-                for (OutputElement oe : list) {
-                    System.out.println(oe);
-                }
-            }
             return lastForwardInfoSeen.get().pos + 1;
         } catch (RuntimeException e) {
             throw new IOException(e);
@@ -200,11 +191,6 @@ public record Formatter(FormattingOptions options) {
             return chars.get();
         }
         // reached the end
-        if (lastForwardInfo.get() == null) {
-            for (OutputElement oe : list) {
-                System.out.println(oe);
-            }
-        }
         return chars.get() + lastForwardInfo.get().string.length();
     }
 
@@ -266,6 +252,8 @@ public record Formatter(FormattingOptions options) {
                 if (chars + goingToWrite > maxChars && allowBreak && wroteOnce) {// don't write anymore...
                     return false;
                 }
+                // FIXME should we join the space to the string? that eliminates the pos problems
+                // and splitting should never be done after the space anyway
                 if (writeSpace) {
                     if (writer.apply(new ForwardInfo(pos - 1, chars, " ", split))) return true;
                     chars++;

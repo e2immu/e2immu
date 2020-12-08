@@ -40,6 +40,7 @@ public class TestFormatterSplitLine {
     private OutputBuilder createExample1() {
         Guide.GuideGenerator gg = new Guide.GuideGenerator();
         Guide.GuideGenerator gg2 = new Guide.GuideGenerator();
+
         return new OutputBuilder()
                 .add(new Text("public")).add(Space.ONE)
                 .add(new Text("int")).add(Space.ONE)
@@ -50,9 +51,9 @@ public class TestFormatterSplitLine {
                 .add(gg.end())
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .add(Symbol.LEFT_BRACE)
-                .add(gg.start()).add(new Text("return")).add(Space.ONE)
+                .add(gg2.start()).add(new Text("return")).add(Space.ONE)
                 .add(new Text("p1")).add(Symbol.binaryOperator("+")).add(new Text("p2")).add(Symbol.SEMICOLON)
-                .add(gg.end())
+                .add(gg2.end())
                 .add(Symbol.RIGHT_BRACE);
     }
 
@@ -114,6 +115,99 @@ public class TestFormatterSplitLine {
                         }  
                         """,
                 new Formatter(options).write(createExample1()));
+    }
+
+    // FIXME we want a space after , {, ; in normal situations (non-compact, no newlines)
+    @Test
+    public void testGuide1LongLine() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120)
+                .setSpacesInTab(2).setTabsForLineSplit(2).build();
+
+        // the space is recognized by the forward method
+        List<Formatter.ForwardInfo> info = new ArrayList<>();
+        new Formatter(options).forward(createExample1().list, fi -> {
+            info.add(fi);
+            System.out.println(fi);
+            return false;
+        }, 0, 120);
+        Assert.assertEquals(",", info.get(10).string());
+        Assert.assertNull( info.get(11).string());
+        Assert.assertEquals(" ", info.get(12).string());
+        Assert.assertEquals("int", info.get(13).string());
+
+        Assert.assertEquals(53, new Formatter(options).lookAhead(createExample1().list, 120));
+
+        Assert.assertEquals("public int method(int p1, int p2) { return p1 + p2; }\n",
+                new Formatter(options).write(createExample1()));
+    }
+
+    @Test
+    public void testGuide1Compact() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120)
+                .setSpacesInTab(2).setTabsForLineSplit(2).setCompact(true).build();
+        Assert.assertEquals("public int method(int p1,int p2){return p1+p2;}\n",
+                new Formatter(options).write(createExample1()));
+    }
+
+    private OutputBuilder createExample2() {
+        Guide.GuideGenerator gg = new Guide.GuideGenerator();
+        Guide.GuideGenerator gg1 = new Guide.GuideGenerator();
+        Guide.GuideGenerator gg2 = new Guide.GuideGenerator();
+
+        return new OutputBuilder()
+                .add(new Text("public")).add(Space.ONE)
+                .add(new Text("int")).add(Space.ONE)
+                .add(new Text("method"))
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(gg.start()).add(new Text("int")).add(Space.ONE).add(new Text("p1")).add(Symbol.COMMA)
+                .add(gg.mid()).add(new Text("int")).add(Space.ONE).add(new Text("p2")).add(Symbol.COMMA)
+                .add(gg.mid()).add(new Text("double")).add(Space.ONE).add(new Text("somewhatLonger")).add(Symbol.COMMA)
+                .add(gg.mid()).add(new Text("double")).add(Space.ONE).add(new Text("d"))
+                .add(gg.end())
+                .add(Symbol.RIGHT_PARENTHESIS)
+                .add(Symbol.LEFT_BRACE)
+                .add(gg1.start()).add(new Text("log")).add(Symbol.LEFT_PARENTHESIS)
+                .add(gg2.start()).add(new Text("p1")).add(Symbol.COMMA)
+                .add(gg2.mid()).add(new Text("p2")).add(gg2.end()).add(Symbol.RIGHT_PARENTHESIS).add(Symbol.SEMICOLON)
+                .add(gg1.mid()).add(new Text("return")).add(Space.ONE)
+                .add(new Text("p1")).add(Symbol.binaryOperator("+")).add(new Text("p2")).add(Symbol.SEMICOLON)
+                .add(gg1.end())
+                .add(Symbol.RIGHT_BRACE);
+    }
+
+    @Test
+    public void testGuide2() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(20)
+                .setSpacesInTab(2).setTabsForLineSplit(2).build();
+        Assert.assertEquals("""
+                        public int method(
+                          int p1,
+                          int p2,
+                          double
+                              somewhatLonger,
+                          double d) {
+                          log(p1, p2);
+                          return p1 + p2;
+                        }  
+                        """,
+                //      01234567890123456789
+                new Formatter(options).write(createExample2()));
+    }
+
+    @Test
+    public void testGuide2LongLine() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120).setCompact(false).build();
+        // around 90 characters long
+        Assert.assertEquals("public int method(int p1, int p2, double somewhatLonger, double d) { log(p1, p2); return p1 + p2; }\n",
+                new Formatter(options).write(createExample2()));
+    }
+
+    @Test
+    public void testGuide2Compact() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120).setCompact(true).build();
+        // around 90 characters long
+        Assert.assertEquals("public int method(int p1,int p2,double somewhatLonger,double d){log(p1,p2);return p1+p2;}\n",
+                new Formatter(options).write(createExample2()));
     }
 
     // public method(int p1, int p2);
