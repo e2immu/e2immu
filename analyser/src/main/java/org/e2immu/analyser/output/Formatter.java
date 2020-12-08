@@ -43,7 +43,7 @@ public record Formatter(FormattingOptions options) {
 
     // -1 is used for no tabs at all
     // guide == -2 is for line split without guides
-    private record Tab(int tabs, int guideIndex) {
+    private record Tab(int tabs, int guideIndex, boolean endWithNewline) {
     }
 
     // guides typically organised as  ( S int i, M int j, M int k E )
@@ -73,27 +73,27 @@ public record Formatter(FormattingOptions options) {
                 pos = writeLine(list, writer, pos, lineLength, tabs);
                 if (!lineSplit) {
                     int prevTabs = tabs.isEmpty() ? 0 : tabs.peek().tabs;
-                    tabs.add(new Tab(prevTabs + options.tabsForLineSplit(), LINE_SPLIT));
+                    tabs.add(new Tab(prevTabs + options.tabsForLineSplit(), LINE_SPLIT, false));
                 }
             }
-            boolean newLine = true;
             if (pos < end) {
                 OutputElement outputElement = list.get(pos);
                 if (outputElement instanceof Guide guide) {
                     if (guide.position() == Guide.Position.START) {
                         int prevTabs = tabs.isEmpty() ? 0 : tabs.peek().tabs;
-                        tabs.add(new Tab(prevTabs + 1, guide.index()));
+                        boolean endWithNewline = list.get(pos - 1) instanceof Symbol symbol &&
+                                symbol.right().split == Split.BEGIN_END;
+                        tabs.add(new Tab(prevTabs + 1, guide.index(), endWithNewline));
                     } else if (guide.position() == Guide.Position.MID) {
                         assert currentGuide == guide.index();
                     } else {
                         assert currentGuide == guide.index();
                         tabs.pop();
-                        newLine = false;
                     }
                     pos++;
                 }
             }
-            if (newLine) writer.write("\n");
+            writer.write("\n");
         }
     }
 
@@ -107,30 +107,35 @@ public record Formatter(FormattingOptions options) {
      * @throws IOException when something goes wrong writing to <code>writer</code>
      */
     private int writeLine(List<OutputElement> list, Writer writer, int start, int maxChars, Stack<Tab> tabs) throws IOException {
-        AtomicReference<ForwardInfo> lastForwardInfoWritten = new AtomicReference<>();
+        AtomicReference<ForwardInfo> lastForwardInfoSeen = new AtomicReference<>();
         try {
             boolean interrupted = forward(list, forwardInfo -> {
+                lastForwardInfoSeen.set(forwardInfo);
                 OutputElement outputElement = list.get(forwardInfo.pos);
                 if (outputElement == Space.NEWLINE) return true;
 
-                // there can be spaces at the same position, after the guide; that should not count
-                if (outputElement instanceof Guide guide && forwardInfo.isGuide()) {
-                    if (forwardInfo.pos == maxChars) return true;
-                    if (guide.position() == Guide.Position.END && tabs.peek().guideIndex == guide.index()) {
-                        tabs.pop();
+                if (outputElement instanceof Guide guide) {
+                    if (forwardInfo.isGuide()) {
+                        // stop when reaching the guide (typically, MID) computed by lookAhead
+                        if (forwardInfo.chars == maxChars) return true;
+                        // stop when reaching the end of the guide of the current tab
+                        if( guide.position() == Guide.Position.END && !tabs.isEmpty() && tabs.peek().guideIndex == guide.index()) {
+                             if(tabs.peek().endWithNewline) return true;
+                             tabs.pop();
+                        }
                     }
-                } else {
-                    lastForwardInfoWritten.set(forwardInfo);
-                    try {
-                        writer.write(forwardInfo.string);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+                    // there can be spaces at the same position, after the guide (forwardInfo.pos can be off)
+                    return false;
                 }
-                return false; // continue
+                try {
+                    writer.write(forwardInfo.string);
+                    return false; // continue
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }, start, maxChars);
-            if (interrupted) return lastForwardInfoWritten.get().pos;
-            return lastForwardInfoWritten.get().pos + 1;
+            if (interrupted) return lastForwardInfoSeen.get().pos;
+            return lastForwardInfoSeen.get().pos + 1;
         } catch (RuntimeException e) {
             throw new IOException(e);
         }

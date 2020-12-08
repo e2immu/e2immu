@@ -22,7 +22,8 @@ public enum Split {
     EASY_L(1),
     EASY_R(2),
     EASY(3),
-    ALWAYS(4);
+    BEGIN_END(4), // if you split at {, then also at }
+    ALWAYS(5);
 
     private final int rank;
 

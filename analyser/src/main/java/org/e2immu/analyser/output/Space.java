@@ -31,6 +31,8 @@ public enum Space implements OutputElement {
 
     ONE_IS_NICE_EASY_SPLIT("", " ", EASY),  // no space needed but one in nice, split to make things nicer
 
+    ONE_IS_NICE_SPLIT_BEGIN_END("", " ", BEGIN_END),  // no space needed but one in nice, split to make things nicer
+
     NEWLINE("\n", "\n", ALWAYS), // enforce a newline
 
     // easy either left or right, but consistently according to preferences

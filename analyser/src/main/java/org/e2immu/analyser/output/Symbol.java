@@ -43,8 +43,8 @@ public record Symbol(String symbol, Space left, Space right) implements OutputEl
     public static final Symbol RIGHT_PARENTHESIS = new Symbol(")", NONE, NO_SPACE_SPLIT_ALLOWED);
     public static final Symbol OPEN_CLOSE_PARENTHESIS = new Symbol("()", NONE, NO_SPACE_SPLIT_ALLOWED);
 
-    public static final Symbol LEFT_BRACE = new Symbol("{", ONE_IS_NICE_EASY_SPLIT, ONE_IS_NICE_EASY_SPLIT);
-    public static final Symbol RIGHT_BRACE = new Symbol("}", ONE_IS_NICE_EASY_SPLIT, NO_SPACE_SPLIT_ALLOWED);
+    public static final Symbol LEFT_BRACE = new Symbol("{", ONE_IS_NICE_EASY_SPLIT, ONE_IS_NICE_SPLIT_BEGIN_END);
+    public static final Symbol RIGHT_BRACE = new Symbol("}", ONE_IS_NICE_SPLIT_BEGIN_END, NO_SPACE_SPLIT_ALLOWED);
 
     public static final Symbol LEFT_BRACKET = new Symbol("[", NONE, NO_SPACE_SPLIT_ALLOWED);
     public static final Symbol RIGHT_BRACKET = new Symbol("]", NONE, ONE_IS_NICE_EASY_SPLIT);
