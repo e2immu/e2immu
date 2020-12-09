@@ -164,11 +164,12 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         return typeInfo.primaryType();
     }
 
+    // IMPORTANT: do not write the first MID to methodGG, because that one is written by the joiner
     public OutputBuilder output(Guide.GuideGenerator methodGG) {
         OutputBuilder mainAndCompanions = new OutputBuilder();
         MethodInspection inspection = methodInspection.get();
 
-        outputCompanions(inspection, mainAndCompanions, methodGG);
+        boolean nonEmpty = outputCompanions(inspection, mainAndCompanions, methodGG);
 
         OutputBuilder afterAnnotations = new OutputBuilder();
 
@@ -210,14 +211,18 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         OutputBuilder mainMethod = Stream.concat(annotationStream, Stream.of(afterAnnotations))
                 .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT, Guide.generatorForAnnotationList()));
 
-        return mainAndCompanions.add(methodGG.mid()).add(mainMethod);
+        if (nonEmpty) mainAndCompanions.add(methodGG.mid());
+        return mainAndCompanions.add(mainMethod);
     }
 
-    private void outputCompanions(MethodInspection methodInspection, OutputBuilder outputBuilder, Guide.GuideGenerator methodGG) {
+    private boolean outputCompanions(MethodInspection methodInspection, OutputBuilder outputBuilder, Guide.GuideGenerator methodGG) {
         methodInspection.getCompanionMethods().values().forEach(companion -> outputBuilder.add(companion.output(methodGG)));
+        boolean nonEmpty = !methodInspection.getCompanionMethods().isEmpty();
         if (methodAnalysis.isSet()) {
             methodAnalysis.get().getComputedCompanions().values().forEach(companion -> outputBuilder.add(companion.output(methodGG)));
+            nonEmpty |= !methodAnalysis.get().getComputedCompanions().isEmpty();
         }
+        return nonEmpty;
     }
 
     private void outputAnnotations(MethodInspection methodInspection, OutputBuilder outputBuilder) {

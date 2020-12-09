@@ -49,7 +49,6 @@ public record TypeName(String simpleName, String fullyQualifiedName,
 
     @Override
     public String generateJavaForDebugging() {
-        return ".add(new TypeName(" + StringUtil.quote(simpleName) + "," + StringUtil.quote(fullyQualifiedName) + ","
-                + StringUtil.quote(distinguishingName) + "))";
+        return ".add(new TypeName(" + StringUtil.quote(simpleName) + ",\"\",\"\"))";
     }
 }

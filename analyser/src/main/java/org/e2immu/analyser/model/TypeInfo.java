@@ -177,10 +177,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             }
         }
 
-        // ANNOTATIONS
-
-        Stream<OutputBuilder> annotationStream = buildAnnotationOutput();
-
         OutputBuilder afterAnnotations = new OutputBuilder();
         if (doTypeDeclaration) {
             // the class name
@@ -214,6 +210,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         afterAnnotations.add(main);
 
         // annotations and the rest of the type are at the same level
+        Stream<OutputBuilder> annotationStream = buildAnnotationOutput();
         return packageAndImports.add(Stream.concat(annotationStream, Stream.of(afterAnnotations))
                 .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT,
                         Guide.generatorForAnnotationList())));

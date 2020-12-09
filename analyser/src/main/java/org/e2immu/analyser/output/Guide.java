@@ -66,7 +66,7 @@ public record Guide(int index, Position position, int tabs, boolean symmetricalS
             return new Guide(index, Position.END, tabs, symmetricalSplit);
         }
 
-        public boolean ensureGuide() {
+        public boolean keepGuidesWithoutMid() {
             return symmetricalSplit;
         }
     }
@@ -99,7 +99,7 @@ public record Guide(int index, Position position, int tabs, boolean symmetricalS
 
     @Override
     public String generateJavaForDebugging() {
-        return ".add(gg." + (switch (position) {
+        return ".add(gg" + index + "." + (switch (position) {
             case START -> "start";
             case MID -> "mid";
             case END -> "end";

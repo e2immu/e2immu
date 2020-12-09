@@ -74,18 +74,22 @@ public class OutputBuilder {
             @Override
             public BiConsumer<OutputBuilder, OutputBuilder> accumulator() {
                 return (a, b) -> {
-                    if (a.notStart()) {
-                        if (separator != Space.NONE) a.add(separator);
-                        a.add(guideGenerator.mid());
-                        countMid.incrementAndGet();
+                    if (!b.isEmpty()) {
+                        if (a.notStart()) { // means: not empty, not only guides
+                            if (separator != Space.NONE) a.add(separator);
+                            a.add(guideGenerator.mid());
+                            countMid.incrementAndGet();
+                        }
+                        a.add(b);
                     }
-                    a.add(b);
                 };
             }
 
             @Override
             public BinaryOperator<OutputBuilder> combiner() {
                 return (a, b) -> {
+                    if (a.isEmpty()) return b;
+                    if (b.isEmpty()) return a;
                     if (separator != Space.NONE) a.add(separator);
                     countMid.incrementAndGet();
                     return a.add(guideGenerator.mid()).add(b);
@@ -97,7 +101,7 @@ public class OutputBuilder {
                 return t -> {
                     OutputBuilder result = new OutputBuilder();
                     if (start != Space.NONE) result.add(start);
-                    if (countMid.get() > 0 || guideGenerator.ensureGuide()) {
+                    if (countMid.get() > 0 || guideGenerator.keepGuidesWithoutMid()) {
                         result.add(guideGenerator.start());
                         result.add(t);
                         result.add(guideGenerator.end());
@@ -114,6 +118,10 @@ public class OutputBuilder {
                 return Set.of(Characteristics.CONCURRENT);
             }
         };
+    }
+
+    private boolean isEmpty() {
+        return list.isEmpty();
     }
 
     private boolean notStart() {
