@@ -19,7 +19,7 @@ package org.e2immu.analyser.output;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public record Guide(int index, Position position) implements OutputElement {
+public record Guide(int index, Position position, int tabs, boolean symmetricalSplit) implements OutputElement {
     private static final AtomicInteger generator = new AtomicInteger();
 
     public enum Position {
@@ -31,23 +31,38 @@ public record Guide(int index, Position position) implements OutputElement {
         }
     }
 
+    public static GuideGenerator generatorForBlock() {
+        return new GuideGenerator(1, true);
+    }
+
+    public static GuideGenerator generatorForAnnotationList() {
+        return new GuideGenerator(0, false);
+    }
+
     public static class GuideGenerator {
         public final int index;
-
+        private final int tabs;
+        private final boolean symmetricalSplit;
         public GuideGenerator() {
+            this(1, false);
+        }
+
+        private GuideGenerator(int tabs, boolean symmetricalSplit) {
             index = generator.incrementAndGet();
+            this.tabs = tabs;
+            this.symmetricalSplit = symmetricalSplit;
         }
 
         public Guide start() {
-            return new Guide(index, Position.START);
+            return new Guide(index, Position.START, tabs, symmetricalSplit);
         }
 
         public Guide mid() {
-            return new Guide(index, Position.MID);
+            return new Guide(index, Position.MID, tabs, symmetricalSplit);
         }
 
         public Guide end() {
-            return new Guide(index, Position.END);
+            return new Guide(index, Position.END, tabs, symmetricalSplit);
         }
     }
 

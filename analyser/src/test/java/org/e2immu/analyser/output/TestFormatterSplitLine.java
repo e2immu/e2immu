@@ -20,15 +20,16 @@ package org.e2immu.analyser.output;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 
 public class TestFormatterSplitLine {
 
     // public int method  (17 chars)
     private OutputBuilder createExample0() {
-        Guide.GuideGenerator gg = new Guide.GuideGenerator();
-        Guide.GuideGenerator gg2 = new Guide.GuideGenerator();
         return new OutputBuilder()
                 .add(new Text("public")).add(Space.ONE)
                 .add(new Text("int")).add(Space.ONE)
@@ -39,7 +40,7 @@ public class TestFormatterSplitLine {
     //        10|     18|            33|
     private OutputBuilder createExample1() {
         Guide.GuideGenerator gg = new Guide.GuideGenerator();
-        Guide.GuideGenerator gg2 = new Guide.GuideGenerator();
+        Guide.GuideGenerator gg2 = Guide.generatorForBlock();
 
         return new OutputBuilder()
                 .add(new Text("public")).add(Space.ONE)
@@ -149,7 +150,7 @@ public class TestFormatterSplitLine {
 
     private OutputBuilder createExample2() {
         Guide.GuideGenerator gg = new Guide.GuideGenerator();
-        Guide.GuideGenerator gg1 = new Guide.GuideGenerator();
+        Guide.GuideGenerator gg1 = Guide.generatorForBlock();
         Guide.GuideGenerator gg2 = new Guide.GuideGenerator();
 
         return new OutputBuilder()
@@ -235,9 +236,9 @@ public class TestFormatterSplitLine {
     }
 
     private OutputBuilder createExample3() {
-        Guide.GuideGenerator gg = new Guide.GuideGenerator();
-        Guide.GuideGenerator gg1 = new Guide.GuideGenerator();
-        Guide.GuideGenerator gg2 = new Guide.GuideGenerator();
+        Guide.GuideGenerator gg = Guide.generatorForBlock();
+        Guide.GuideGenerator gg1 = Guide.generatorForBlock();
+        Guide.GuideGenerator gg2 = Guide.generatorForBlock();
 
         return new OutputBuilder()
                 .add(new Text("try")).add(Symbol.LEFT_BRACE)
@@ -307,6 +308,74 @@ public class TestFormatterSplitLine {
         Assert.assertEquals("try{if(a){assert b;}else{assert c;exit(1);}}\n",
                 new Formatter(options).write(createExample3()));
     }
+
+    private OutputBuilder createExample4() {
+        Guide.GuideGenerator ggA = Guide.generatorForAnnotationList();
+        Guide.GuideGenerator gg = new Guide.GuideGenerator();
+        Guide.GuideGenerator gg2 = Guide.generatorForBlock();
+
+        return new OutputBuilder()
+                .add(ggA.start()).add(Symbol.AT).add(new Text("NotModified")).add(Space.ONE_REQUIRED_EASY_SPLIT)
+                .add(ggA.mid()).add(Symbol.AT).add(new Text("Independent")).add(Space.ONE_REQUIRED_EASY_SPLIT)
+                .add(ggA.mid()).add(Symbol.AT).add(new Text("NotNull")).add(Space.ONE_REQUIRED_EASY_SPLIT)
+                .add(ggA.mid()).add(new Text("public")).add(Space.ONE).add(new Text("int")).add(Space.ONE)
+                .add(new Text("method"))
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(gg.start()).add(new Text("int")).add(Space.ONE).add(new Text("p1")).add(Symbol.COMMA)
+                .add(gg.mid()).add(new Text("int")).add(Space.ONE).add(new Text("p2"))
+                .add(gg.end())
+                .add(Symbol.RIGHT_PARENTHESIS)
+                .add(Symbol.LEFT_BRACE)
+                .add(gg2.start()).add(new Text("return")).add(Space.ONE)
+                .add(new Text("p1")).add(Symbol.binaryOperator("+")).add(new Text("p2")).add(Symbol.SEMICOLON)
+                .add(gg2.end())
+                .add(Symbol.RIGHT_BRACE)
+                .add(ggA.end());
+    }
+
+    @Test
+    public void testGuide4() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(20)
+                .setSpacesInTab(2).setTabsForLineSplit(2).build();
+        Assert.assertEquals("""
+                        @NotModified
+                        @Independent
+                        @NotNull 
+                        public int method(
+                          int p1,
+                          int p2) {
+                          return p1 + p2;
+                        }
+                        """,
+                //      01234567890123456789
+                //        if(a) { assert b; } -> the end of the guide is within 20...
+                new Formatter(options).write(createExample4()));
+    }
+
+    @Test
+    public void testGuide4Compact() throws IOException {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120).setCompact(true).build();
+        Formatter formatter = new Formatter(options);
+        List<OutputElement> list = createExample4().list;
+        Assert.assertEquals(41, list.size());
+
+        List<Formatter.ForwardInfo> info = new ArrayList<>();
+        new Formatter(options).forward(list, fi -> {
+            info.add(fi);
+            System.out.println(fi);
+            return false;
+        }, 0, 120);
+        Assert.assertNull(info.get(30).string()); // end of } guide
+        Assert.assertEquals("}", info.get(31).string());
+        Assert.assertNull(info.get(32).string()); // end of annotation guide
+
+        Assert.assertEquals(82, formatter.lookAhead(list, 120));
+        Assert.assertEquals(40, formatter.writeLine(list, new StringWriter(), 0, 82, new Stack<>()));
+
+        Assert.assertEquals("@NotModified @Independent @NotNull public int method(int p1,int p2){return p1+p2;}\n",
+                new Formatter(options).write(createExample4()));
+    }
+
 
     // public method(int p1, int p2);
     @Test

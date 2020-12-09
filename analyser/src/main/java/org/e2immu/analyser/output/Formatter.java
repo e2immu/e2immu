@@ -41,8 +41,9 @@ public record Formatter(FormattingOptions options) {
     private static final int NO_GUIDE = -1;
     private static final int LINE_SPLIT = -2;
 
-    // -1 is used for no tabs at all
-    // guide == -2 is for line split without guides
+    // guideIndex -1 is used for no tabs at all
+    // guideIndex == -2 is for line split without guides
+    // endWithNewline forces a newline at the end of the guide
     private record Tab(int tabs, int guideIndex, boolean endWithNewline) {
     }
 
@@ -65,28 +66,38 @@ public record Formatter(FormattingOptions options) {
             // or there is a guide starting at lookahead
             // if lookahead > line length, write until best break. If there is no line split, start one
             int lookAhead = lookAhead(list.subList(pos, end), lineLength);
-
-            if (lookAhead <= lineLength) {
-                pos = writeLine(list, writer, pos, lookAhead, tabs);
-                if (lineSplit) tabs.pop();
-            } else {
-                pos = writeLine(list, writer, pos, lineLength, tabs);
-                if (!lineSplit) {
-                    int prevTabs = tabs.isEmpty() ? 0 : tabs.peek().tabs;
-                    tabs.add(new Tab(prevTabs + options.tabsForLineSplit(), LINE_SPLIT, false));
+            boolean writeNewLine = lookAhead > 0;
+            if (lookAhead > 0) {
+                if (lookAhead <= lineLength) {
+                    pos = writeLine(list, writer, pos, lookAhead, tabs);
+                    if (lineSplit) {
+                        tabs.pop();
+                    }
+                } else {
+                    pos = writeLine(list, writer, pos, lineLength, tabs);
+                    if (!lineSplit) {
+                        int prevTabs = tabs.isEmpty() ? 0 : tabs.peek().tabs;
+                        tabs.add(new Tab(prevTabs + options.tabsForLineSplit(), LINE_SPLIT, false));
+                    }
                 }
+            } else {
+                // skip potential spaces to the next guide (see annotations in testGuide4)
+                while (pos < end && !(list.get(pos) instanceof Guide)) pos++;
             }
             if (pos < end) {
                 OutputElement outputElement = list.get(pos);
                 if (outputElement instanceof Guide guide) {
                     if (guide.position() == Guide.Position.START) {
                         int prevTabs = tabs.isEmpty() ? 0 : tabs.peek().tabs;
-                        boolean endWithNewline = list.get(pos - 1) instanceof Symbol symbol &&
-                                symbol.right().split == Split.BEGIN_END;
-                        tabs.add(new Tab(prevTabs + 1, guide.index(), endWithNewline));
+                        boolean endWithNewline = guide.symmetricalSplit();
+                        tabs.add(new Tab(prevTabs + guide.tabs(), guide.index(), endWithNewline));
                     } else {
-                        while (!tabs.isEmpty() && tabs.peek().guideIndex == LINE_SPLIT) tabs.pop();
-                        if (guide.position() == Guide.Position.END) {
+                        while (!tabs.isEmpty() && tabs.peek().guideIndex == LINE_SPLIT) {
+                            tabs.pop();
+                        }
+                        // tabs can already be empty if the writeLine ended and left an ending
+                        // guide as the very last one
+                        if (guide.position() == Guide.Position.END && !tabs.isEmpty()) {
                             tabs.pop();
                         }
                     }
@@ -95,7 +106,7 @@ public record Formatter(FormattingOptions options) {
                     pos++;
                 }
             }
-            writer.write("\n");
+            if (writeNewLine) writer.write("\n");
         }
     }
 
@@ -108,7 +119,7 @@ public record Formatter(FormattingOptions options) {
      * @return the updated position
      * @throws IOException when something goes wrong writing to <code>writer</code>
      */
-    private int writeLine(List<OutputElement> list, Writer writer, int start, int maxChars, Stack<Tab> tabs) throws IOException {
+    int writeLine(List<OutputElement> list, Writer writer, int start, int maxChars, Stack<Tab> tabs) throws IOException {
         AtomicReference<ForwardInfo> lastForwardInfoSeen = new AtomicReference<>();
         try {
             boolean interrupted = forward(list, forwardInfo -> {
@@ -144,11 +155,11 @@ public record Formatter(FormattingOptions options) {
         }
     }
 
-    private void indent(int spaces, Writer writer) throws IOException {
+    void indent(int spaces, Writer writer) throws IOException {
         for (int i = 0; i < spaces; i++) writer.write(" ");
     }
 
-    private record PosAndGuide(int pos, int guide) {
+    record PosAndGuide(int pos, int guide) {
     }
 
     /**
@@ -170,7 +181,7 @@ public record Formatter(FormattingOptions options) {
             if (outputElement instanceof Guide guide) {
                 switch (guide.position()) {
                     case START -> {
-                        if (previousElement.get() == Symbol.LEFT_BRACE && firstLeftBrace.get() == -1) {
+                        if (firstLeftBrace.get() == -1 && guide.symmetricalSplit()) {
                             firstLeftBrace.set(chars.get());
                         }
                         startOfGuides.push(new PosAndGuide(forwardInfo.chars, guide.index()));
@@ -203,7 +214,7 @@ public record Formatter(FormattingOptions options) {
             previousElement.set(outputElement);
             return false; // continue
         }, 0, Math.max(100, lineLength * 3) / 2);
-        if (interrupted) {
+        if (interrupted || lastForwardInfo.get() == null || lastForwardInfo.get().string == null) {
             return chars.get();
         }
         // reached the end
@@ -226,7 +237,7 @@ public record Formatter(FormattingOptions options) {
      * @return true when interrupted by a "true" from the writer; false in all other cases (end of list, exceeding maxChars,
      * reaching maxChars using a guide)
      */
-    public boolean forward(List<OutputElement> list, Function<ForwardInfo, Boolean> writer, int start, int maxChars) {
+    boolean forward(List<OutputElement> list, Function<ForwardInfo, Boolean> writer, int start, int maxChars) {
         OutputElement outputElement;
         int pos = start;
         int chars = 0;
