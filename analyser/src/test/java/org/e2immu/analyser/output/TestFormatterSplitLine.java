@@ -21,10 +21,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Stack;
 
 public class TestFormatterSplitLine {
 
@@ -61,19 +59,19 @@ public class TestFormatterSplitLine {
     @Test
     public void testLookAhead() {
         Formatter formatter = new Formatter(FormattingOptions.DEFAULT); // options
-        Assert.assertEquals(17, formatter.lookAhead(createExample0().list, 20));
-        Assert.assertEquals(17, formatter.lookAhead(createExample0().list, 15));
+       // Assert.assertEquals(17, formatter.lookAhead(createExample0().list, 0, 20, false).charsPlusString());
+      //  Assert.assertEquals(17, formatter.lookAhead(createExample0().list, 0, 15, false).charsPlusString());
 
         // up to the ( now
-        Assert.assertEquals(18, formatter.lookAhead(createExample1().list, 20));
+     //   Assert.assertEquals(18, formatter.lookAhead(createExample1().list, 0, 20, false).charsPlusString());
 
         List<OutputElement> list = createExample1().list;
         // up to the { now, we've included the whole (...) guide
-        Assert.assertEquals(35, formatter.lookAhead(createExample1().list, 35));
+      //  Assert.assertEquals(35, formatter.lookAhead(createExample1().list, 0, 35, false).charsPlusString());
 
         // int p1, (7 = 6+the start guide)
         List<OutputElement> subList = list.subList(7, list.size());
-        Assert.assertEquals(7, formatter.lookAhead(subList, 120));
+      //  Assert.assertEquals(7, formatter.lookAhead(subList, 0, 120, false).charsPlusString());
     }
 
     @Test
@@ -85,8 +83,21 @@ public class TestFormatterSplitLine {
 
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(20)
                 .setSpacesInTab(2).setTabsForLineSplit(2).build();
+        Formatter formatter = new Formatter(options);
 
-        Assert.assertEquals(34, new Formatter(options).lookAhead(outputBuilder.list, 20));
+        List<Formatter.ForwardInfo> info = new ArrayList<>();
+        new Formatter(options).forward(outputBuilder.list, fi -> {
+            info.add(fi);
+            System.out.println(fi);
+            return false;
+        }, 0, options.lengthOfLine() + 20);
+        Assert.assertEquals(2, info.size());
+        Assert.assertEquals(" "+PACKAGE, info.get(1).string());
+
+     //   Formatter.ForwardInfo fw0 = formatter.lookAhead(outputBuilder.list, 0,20, false);
+    //    Assert.assertEquals(0, fw0.pos());
+      //  Formatter.ForwardInfo fw1 = formatter.lookAhead(outputBuilder.list, 1,20, false);
+     //   Assert.assertEquals(2, fw1.pos());
 
         Assert.assertEquals("package\n    " + PACKAGE + "\n", new Formatter(options).write(outputBuilder));
     }
@@ -100,6 +111,15 @@ public class TestFormatterSplitLine {
                 .add(new Text("static")).add(Space.ONE)
                 .add(new Text("abstract")).add(Space.ONE)
                 .add(new Text("method")).add(Symbol.SEMICOLON);
+
+        List<Formatter.ForwardInfo> info = new ArrayList<>();
+        new Formatter(options).forward(outputBuilder.list, fi -> {
+            info.add(fi);
+            System.out.println(fi);
+            return false;
+        }, 0, 120);
+        Assert.assertEquals(5, info.size());
+
         Assert.assertEquals("public\n  static\n  abstract\n  method;\n",
                 new Formatter(options).write(outputBuilder));
     }
@@ -134,7 +154,7 @@ public class TestFormatterSplitLine {
         Assert.assertNull(info.get(8).string());
         Assert.assertEquals(" int", info.get(9).string());
 
-        Assert.assertEquals(53, new Formatter(options).lookAhead(createExample1().list, 120));
+        //Assert.assertEquals(53, new Formatter(options).lookAhead(createExample1().list, 120));
 
         Assert.assertEquals("public int method(int p1, int p2) { return p1 + p2; }\n",
                 new Formatter(options).write(createExample1()));
@@ -229,7 +249,7 @@ public class TestFormatterSplitLine {
         Assert.assertEquals(" somewhatLonger", info.get(14).string());
         Assert.assertNull(info.get(16).string()); // ensure that the MID is there
 
-        Assert.assertEquals(89, new Formatter(options).lookAhead(createExample2().list, 120));
+        //Assert.assertEquals(89, new Formatter(options).lookAhead(createExample2().list, 120));
 
         Assert.assertEquals("public int method(int p1,int p2,double somewhatLonger,double d){log(p1,p2);return p1+p2;}\n",
                 new Formatter(options).write(createExample2()));
@@ -465,7 +485,7 @@ public class TestFormatterSplitLine {
         // the two guides one after the other should not result in a blank line
         Assert.assertTrue(list.get(55) instanceof Guide);
         Assert.assertTrue(list.get(56) instanceof Guide);
-        Assert.assertEquals(Symbol.RIGHT_BRACE,list.get(57));
+        Assert.assertEquals(Symbol.RIGHT_BRACE, list.get(57));
         Assert.assertTrue(list.get(58) instanceof Guide);
 
         Assert.assertEquals("""
@@ -486,7 +506,7 @@ public class TestFormatterSplitLine {
         Formatter formatter = new Formatter(options);
         List<OutputElement> list = createExample5(false).list;
 
-        Assert.assertEquals(160, formatter.lookAhead(list, 400));
+        //Assert.assertEquals(160, formatter.lookAhead(list, 400));
 
         Assert.assertEquals("""
                 @E2Container public class Basics_0 { @Constant("abc") @E2Container(absent = true) @Final(absent = true) @NotNull private final String explicitlyFinal = "abc"; }

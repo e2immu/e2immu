@@ -23,7 +23,6 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -44,116 +43,99 @@ public record Formatter(FormattingOptions options) {
     // guideIndex -1 is used for no tabs at all
     // guideIndex == -2 is for line split without guides
     // endWithNewline forces a newline at the end of the guide
-    private record Tab(int tabs, int guideIndex, boolean endWithNewline) {
+    static class Tab {
+        final int indent;
+        final int guideIndex;
+        final boolean endWithNewline;
+        int newLines;
+
+        Tab(int indent, int guideIndex, boolean endWithNewline) {
+            this.indent = indent;
+            this.guideIndex = guideIndex;
+            this.endWithNewline = endWithNewline;
+        }
     }
 
     // guides typically organised as  ( S int i, M int j, M int k E )
 
     public void write(OutputBuilder outputBuilder, Writer writer) throws IOException {
         List<OutputElement> list = new ArrayList<>(outputBuilder.list);
+        Stack<Tab> tabs = new Stack<>();
         int pos = 0;
         int end = list.size();
-        Stack<Tab> tabs = new Stack<>();
-        boolean writeNewLine = true;
+
         while (pos < end) {
-            int spaces = (tabs.isEmpty() ? 0 : tabs.peek().tabs) * options().spacesInTab();
-            int currentGuide = (tabs.isEmpty() ? NO_GUIDE : tabs.peek().guideIndex);
-            boolean lineSplit = currentGuide == LINE_SPLIT;
+            int indent = tabs.isEmpty() ? 0 : tabs.peek().indent;
+
 
             // we should only indent if we wrote a new line
-            if (writeNewLine) indent(spaces, writer);
-            int lineLength = options.lengthOfLine() - spaces;
+            indent(indent, writer);
+            int lineLength = options.lengthOfLine() - indent;
 
-            // if lookahead <= line length, either everything fits (write until lookahead reached)
-            // or there is a guide starting at lookahead
-            // if lookahead > line length, write until best break. If there is no line split, start one
-            int lookAhead = lookAhead(list.subList(pos, end), lineLength);
-            writeNewLine = lookAhead > 0;
-            if (lookAhead > 0) {
-                int newPos;
-                if (lookAhead <= lineLength) {
-                    newPos = writeLine(list, writer, pos, lookAhead, tabs);
-                    if (lineSplit) {
+            CurrentExceeds lookAhead = lookAhead(list, pos, lineLength);
+            boolean lineSplit = LINE_SPLIT == (tabs.isEmpty() ? NO_GUIDE : tabs.peek().guideIndex);
+            if (lookAhead.exceeds != null) {
+                if (!lineSplit) {
+                    int previousIndent = tabs.isEmpty() ? 0 : tabs.peek().indent;
+                    tabs.add(new Tab(previousIndent + options.tabsForLineSplit() * options.spacesInTab(),
+                            LINE_SPLIT, false));
+                }
+                if (lookAhead.current != null) {
+                    writeLine(list, writer, pos, lookAhead.current.pos);
+                    pos = lookAhead.exceeds.pos;
+                } else {
+                    writeLine(list, writer, pos, lookAhead.exceeds.pos);
+                    pos = lookAhead.exceeds.pos + 1;
+                }
+            } else {
+                writeLine(list, writer, pos, lookAhead.current.pos);
+                if (lineSplit) {
+                    tabs.pop();
+                }
+                pos = lookAhead.current.pos + 1; // move one step beyond
+            }
+            writer.write("\n");
+            // tab management
+            if (lookAhead.current != null && lookAhead.current.guide != null) {
+                Guide guide = lookAhead.current.guide;
+                if (guide.position() == Guide.Position.START) {
+                    int previousIndent = tabs.isEmpty() ? 0 : tabs.peek().indent;
+                    boolean endWithNewline = guide.symmetricalSplit();
+                    tabs.add(new Tab(previousIndent + guide.tabs() * options.spacesInTab(),
+                            guide.index(), endWithNewline));
+                } else {
+                    while (!tabs.isEmpty() && tabs.peek().guideIndex == LINE_SPLIT) {
                         tabs.pop();
                     }
-                } else {
-                    newPos = writeLine(list, writer, pos, lineLength, tabs);
-                    if (!lineSplit) {
-                        int prevTabs = tabs.isEmpty() ? 0 : tabs.peek().tabs;
-                        tabs.add(new Tab(prevTabs + options.tabsForLineSplit(), LINE_SPLIT, false));
+                    // tabs can already be empty if the writeLine ended and left an ending
+                    // guide as the very last one
+                    if (guide.position() == Guide.Position.END && !tabs.isEmpty() && tabs.peek().guideIndex == guide.index()) {
+                        tabs.pop();
                     }
                 }
-                pos = newPos;
-            } else {
-                // skip potential spaces to the next guide (see annotations in testGuide4)
-                while (pos < end && !(list.get(pos) instanceof Guide)) pos++;
             }
-            if (pos < end) {
-                OutputElement outputElement = list.get(pos);
-                if (outputElement instanceof Guide guide) {
-                    if (guide.position() == Guide.Position.START) {
-                        int prevTabs = tabs.isEmpty() ? 0 : tabs.peek().tabs;
-                        boolean endWithNewline = guide.symmetricalSplit();
-                        tabs.add(new Tab(prevTabs + guide.tabs(), guide.index(), endWithNewline));
-                    } else {
-                        while (!tabs.isEmpty() && tabs.peek().guideIndex == LINE_SPLIT) {
-                            tabs.pop();
-                        }
-                        // tabs can already be empty if the writeLine ended and left an ending
-                        // guide as the very last one
-                        if (guide.position() == Guide.Position.END && !tabs.isEmpty() && tabs.peek().guideIndex == guide.index()) {
-                            tabs.pop();
-                        }
-                    }
-                    pos++;
-                } else if (outputElement == Space.NEWLINE) {
-                    pos++;
-                }
-            }
-            if (writeNewLine) writer.write("\n");
         }
     }
 
     /**
-     * @param list     the source
-     * @param writer   the output writer
-     * @param start    the position in the source to start
-     * @param maxChars maximal number of chars to write
-     * @param tabs     so that we can close tabs as we see closing guides pass by
-     * @return the updated position
+     * @param list   the source
+     * @param writer the output writer
+     * @param start  the position in the source to start
+     * @param end    the position in the source to end
      * @throws IOException when something goes wrong writing to <code>writer</code>
      */
-    int writeLine(List<OutputElement> list, Writer writer, int start, int maxChars, Stack<Tab> tabs) throws IOException {
-        AtomicReference<ForwardInfo> lastForwardInfoSeen = new AtomicReference<>();
+    void writeLine(List<OutputElement> list, Writer writer, int start, int end) throws IOException {
         try {
-            boolean interrupted = forward(list, forwardInfo -> {
-                lastForwardInfoSeen.set(forwardInfo);
-                OutputElement outputElement = list.get(forwardInfo.pos);
-                if (outputElement == Space.NEWLINE) return true;
-
-                if (outputElement instanceof Guide guide) {
-                    if (forwardInfo.isGuide()) {
-                        // stop when reaching the guide (typically, MID) computed by lookAhead
-                        if (forwardInfo.chars == maxChars) return true;
-                        // stop when reaching the end of the guide of the current tab
-                        if (guide.position() == Guide.Position.END && !tabs.isEmpty() && tabs.peek().guideIndex == guide.index()) {
-                            if (tabs.peek().endWithNewline) return true;
-                            tabs.pop();
-                        }
-                    }
-                    // there can be spaces at the same position, after the guide (forwardInfo.pos can be off)
-                    return false;
-                }
+            forward(list, forwardInfo -> {
                 try {
-                    writer.write(forwardInfo.string);
-                    return false; // continue
+                    if (forwardInfo.guide == null) {
+                        writer.write(forwardInfo.string);
+                    }
+                    return forwardInfo.pos == end;
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-            }, start, maxChars);
-            if (interrupted) return lastForwardInfoSeen.get().pos;
-            // reached the end
-            return lastForwardInfoSeen.get().pos + 1;
+            }, start, Math.max(100, options.lengthOfLine() * 3) / 2);
         } catch (RuntimeException e) {
             throw new IOException(e);
         }
@@ -163,71 +145,83 @@ public record Formatter(FormattingOptions options) {
         for (int i = 0; i < spaces; i++) writer.write(" ");
     }
 
-    record PosAndGuide(int pos, int guide) {
+    record CurrentExceeds(ForwardInfo current, ForwardInfo exceeds) {
     }
 
     /**
-     * Returns the number of characters that minimally need to be output until we reach a newline (excluding that newline), or,
-     * once beyond the line length (max len minus tabs), the beginning of a Guide
+     * Tries to fit all the remaining output elements on a single line.
+     * If that works, then the last element is returned.
+     * If a newline is encountered, then the newline is returned.
+     * If not everything fits on a line, and the guides allow it, we return a guide position,
+     * which can be START, MID or END
      */
 
-    int lookAhead(List<OutputElement> list, int lineLength) {
-        AtomicReference<OutputElement> previousElement = new AtomicReference<>();
-        AtomicInteger chars = new AtomicInteger();
-        AtomicReference<ForwardInfo> lastForwardInfo = new AtomicReference<>();
-        AtomicInteger firstLeftBrace = new AtomicInteger(-1);
-        Stack<PosAndGuide> startOfGuides = new Stack<>();
-        boolean interrupted = forward(list, forwardInfo -> {
-            chars.set(forwardInfo.chars);
-            lastForwardInfo.set(forwardInfo);
+    CurrentExceeds lookAhead(List<OutputElement> list, int start, int lineLength) {
+        AtomicReference<ForwardInfo> currentForwardInfo = new AtomicReference<>();
+        AtomicReference<ForwardInfo> firstLeftBrace = new AtomicReference<>();
+        AtomicReference<ForwardInfo> exceeds = new AtomicReference<>();
+        Stack<ForwardInfo> startOfGuides = new Stack<>();
+        forward(list, forwardInfo -> {
+            if (forwardInfo.charsPlusString() > lineLength) {
+                // exceeding the allowed length of the line... not everything fits on one line
+                if (firstLeftBrace.get() != null) {
+                    // give priority to symmetrical splits
+                    currentForwardInfo.set(firstLeftBrace.get());
+                    return true;
+                }
+                if (!startOfGuides.isEmpty()) {
+                    // then to the first of the guides
+                    currentForwardInfo.set(startOfGuides.get(0));
+                    return true;
+                }
+                if (!forwardInfo.symbol) {
+                    // mark that we're going over the limit
+                    exceeds.set(forwardInfo);
+                    return true;
+                }
+            }
+            currentForwardInfo.set(forwardInfo);
+
             OutputElement outputElement = list.get(forwardInfo.pos);
             if (outputElement == Space.NEWLINE) return true; // stop
             if (outputElement instanceof Guide guide) {
                 switch (guide.position()) {
                     case START -> {
-                        if (firstLeftBrace.get() == -1 && guide.symmetricalSplit()) {
-                            firstLeftBrace.set(chars.get());
+                        // make a note of the first symmetrical split we encounter
+                        // here we'll stop when not everything fits on a line
+                        if (firstLeftBrace.get() == null && guide.symmetricalSplit()) {
+                            firstLeftBrace.set(forwardInfo);
                         }
-                        startOfGuides.push(new PosAndGuide(forwardInfo.chars, guide.index()));
+                        startOfGuides.push(forwardInfo);
                     }
                     case MID -> {
-                        if (startOfGuides.isEmpty() || startOfGuides.peek().guide != guide.index()) {
+                        // we started the lookahead in the middle of a guide; encountering another mid
+                        // that's where we need to stop
+                        if (startOfGuides.isEmpty() || startOfGuides.peek().guide.index() != guide.index()) {
                             return true; // stop
                         }
                     }
                     case END -> {
                         if (!startOfGuides.isEmpty()) {
-                            assert startOfGuides.peek().guide == guide.index();
+                            assert startOfGuides.peek().guide.index() == guide.index();
                             startOfGuides.pop();
                         }
                     }
                 }
             }
-            if (forwardInfo.chars > lineLength) {
-                // exceeding the allowed length of the line... we don't allow if we encountered {
-                if (firstLeftBrace.get() >= 0) {
-                    chars.set(firstLeftBrace.get());
-                } else {
-                    //  go to first open guide if present
-                    if (!startOfGuides.isEmpty()) {
-                        chars.set(startOfGuides.get(0).pos);
-                    }
-                }
-                return true; // stop
-            }
-            previousElement.set(outputElement);
+
             return false; // continue
-        }, 0, Math.max(100, lineLength * 3) / 2);
-        if (interrupted || lastForwardInfo.get() == null || lastForwardInfo.get().string == null) {
-            return chars.get();
-        }
-        // reached the end
-        return chars.get() + lastForwardInfo.get().string.length();
+        }, start, Math.max(100, lineLength * 3) / 2);
+        return new CurrentExceeds(currentForwardInfo.get(), exceeds.get());
     }
 
-    record ForwardInfo(int pos, int chars, String string, Split before) {
+    record ForwardInfo(int pos, int chars, String string, Split before, Guide guide, boolean symbol) {
         public boolean isGuide() {
             return string == null;
+        }
+
+        public int charsPlusString() {
+            return chars + (string == null ? 0 : string.length());
         }
     }
 
@@ -273,11 +267,11 @@ public record Formatter(FormattingOptions options) {
                 lastOneWasSpace = combine(lastOneWasSpace, space.elementarySpace(options));
                 split = split.easiest(space.split);
                 allowBreak |= outputElement != Space.NONE;
-            } else if (outputElement instanceof Guide) {
+            } else if (outputElement instanceof Guide guide) {
                 if (chars >= maxChars) return false;
                 // empty string indicates that there is a Guide on this position
                 // split means nothing here
-                if (writer.apply(new ForwardInfo(pos, chars, null, Split.NEVER))) return true;
+                if (writer.apply(new ForwardInfo(pos, chars, null, Split.NEVER, guide, false))) return true;
             } else if (string.length() > 0) {
                 boolean writeSpace = lastOneWasSpace != ElementarySpace.NONE && wroteOnce;
                 int stringLen = string.length();
@@ -288,7 +282,8 @@ public record Formatter(FormattingOptions options) {
                 }
 
                 String stringToWrite = writeSpace ? (" " + string) : string;
-                if (writer.apply(new ForwardInfo(pos, chars, stringToWrite, split))) return true;
+                if (writer.apply(new ForwardInfo(pos, chars, stringToWrite, split, null,
+                        outputElement instanceof Symbol))) return true;
                 lastOneWasSpace = spaceAfterWriting;
                 split = splitAfterWriting;
                 wroteOnce = true;
