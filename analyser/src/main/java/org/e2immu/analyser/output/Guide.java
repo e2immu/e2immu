@@ -36,7 +36,7 @@ public record Guide(int index, Position position, int tabs, boolean symmetricalS
     }
 
     public static GuideGenerator generatorForAnnotationList() {
-        return new GuideGenerator(0, false);
+        return new GuideGenerator(0, true);
     }
 
     public static class GuideGenerator {
@@ -64,6 +64,10 @@ public record Guide(int index, Position position, int tabs, boolean symmetricalS
 
         public Guide end() {
             return new Guide(index, Position.END, tabs, symmetricalSplit);
+        }
+
+        public boolean ensureGuide() {
+            return symmetricalSplit;
         }
     }
 

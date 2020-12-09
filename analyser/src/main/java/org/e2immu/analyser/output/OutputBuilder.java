@@ -54,7 +54,8 @@ public class OutputBuilder {
         return joining(separator, Space.NONE, Space.NONE, new Guide.GuideGenerator());
     }
 
-    public static Collector<OutputBuilder, OutputBuilder, OutputBuilder> joining(OutputElement separator, Guide.GuideGenerator guideGenerator) {
+    public static Collector<OutputBuilder, OutputBuilder, OutputBuilder> joining(OutputElement separator,
+                                                                                 Guide.GuideGenerator guideGenerator) {
         return joining(separator, Space.NONE, Space.NONE, guideGenerator);
     }
 
@@ -96,7 +97,7 @@ public class OutputBuilder {
                 return t -> {
                     OutputBuilder result = new OutputBuilder();
                     if (start != Space.NONE) result.add(start);
-                    if (countMid.get() > 0) {
+                    if (countMid.get() > 0 || guideGenerator.ensureGuide()) {
                         result.add(guideGenerator.start());
                         result.add(t);
                         result.add(guideGenerator.end());

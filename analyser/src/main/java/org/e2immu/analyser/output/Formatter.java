@@ -54,32 +54,36 @@ public record Formatter(FormattingOptions options) {
         int pos = 0;
         int end = list.size();
         Stack<Tab> tabs = new Stack<>();
+        boolean writeNewLine = true;
         while (pos < end) {
             int spaces = (tabs.isEmpty() ? 0 : tabs.peek().tabs) * options().spacesInTab();
             int currentGuide = (tabs.isEmpty() ? NO_GUIDE : tabs.peek().guideIndex);
             boolean lineSplit = currentGuide == LINE_SPLIT;
 
-            indent(spaces, writer);
+            // we should only indent if we wrote a new line
+            if (writeNewLine) indent(spaces, writer);
             int lineLength = options.lengthOfLine() - spaces;
 
             // if lookahead <= line length, either everything fits (write until lookahead reached)
             // or there is a guide starting at lookahead
             // if lookahead > line length, write until best break. If there is no line split, start one
             int lookAhead = lookAhead(list.subList(pos, end), lineLength);
-            boolean writeNewLine = lookAhead > 0;
+            writeNewLine = lookAhead > 0;
             if (lookAhead > 0) {
+                int newPos;
                 if (lookAhead <= lineLength) {
-                    pos = writeLine(list, writer, pos, lookAhead, tabs);
+                    newPos = writeLine(list, writer, pos, lookAhead, tabs);
                     if (lineSplit) {
                         tabs.pop();
                     }
                 } else {
-                    pos = writeLine(list, writer, pos, lineLength, tabs);
+                    newPos = writeLine(list, writer, pos, lineLength, tabs);
                     if (!lineSplit) {
                         int prevTabs = tabs.isEmpty() ? 0 : tabs.peek().tabs;
                         tabs.add(new Tab(prevTabs + options.tabsForLineSplit(), LINE_SPLIT, false));
                     }
                 }
+                pos = newPos;
             } else {
                 // skip potential spaces to the next guide (see annotations in testGuide4)
                 while (pos < end && !(list.get(pos) instanceof Guide)) pos++;
