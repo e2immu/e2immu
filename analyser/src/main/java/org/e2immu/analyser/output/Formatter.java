@@ -101,7 +101,7 @@ public record Formatter(FormattingOptions options) {
                         }
                         // tabs can already be empty if the writeLine ended and left an ending
                         // guide as the very last one
-                        if (guide.position() == Guide.Position.END && !tabs.isEmpty()) {
+                        if (guide.position() == Guide.Position.END && !tabs.isEmpty() && tabs.peek().guideIndex == guide.index()) {
                             tabs.pop();
                         }
                     }
