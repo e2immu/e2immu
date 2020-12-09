@@ -246,7 +246,8 @@ public record Formatter(FormattingOptions options) {
         int pos = start;
         int chars = 0;
         int end = list.size();
-        boolean lastOneWasSpace = true; // used to avoid writing double spaces
+
+        ElementarySpace lastOneWasSpace = ElementarySpace.NICE; // used to avoid writing double spaces
         Split split = Split.NEVER;
         boolean wroteOnce = false; // don't write a space at the beginning of the line
         boolean allowBreak = false; // write until the first allowed space
@@ -254,22 +255,22 @@ public record Formatter(FormattingOptions options) {
             String string;
 
             Split splitAfterWriting = Split.NEVER;
-            boolean spaceAfterWriting = false;
+            ElementarySpace spaceAfterWriting = ElementarySpace.NONE;
             if (outputElement instanceof Symbol symbol) {
                 split = symbol.left().split;
-                int leftLength = symbol.left().length(options);
-                lastOneWasSpace = leftLength > 0; // FIXME |=; we need a compromise: MUST HAVE cannot be undone, while normal can be undone
+                lastOneWasSpace = combine(lastOneWasSpace, symbol.left().elementarySpace(options));
                 string = symbol.symbol();
-                int rightLength = symbol.right().length(options);
-                spaceAfterWriting = rightLength > 0;
+                spaceAfterWriting = symbol.right().elementarySpace(options);
                 splitAfterWriting = symbol.right().split;
                 if (split == Split.NEVER) allowBreak = false;
+            } else if (outputElement instanceof Guide) {
+                string = "";
             } else {
                 string = outputElement.write(options);
             }
             // check for double spaces
             if (outputElement instanceof Space space) {
-                lastOneWasSpace |= !string.isEmpty();
+                lastOneWasSpace = combine(lastOneWasSpace, space.elementarySpace(options));
                 split = split.easiest(space.split);
                 allowBreak |= outputElement != Space.NONE;
             } else if (outputElement instanceof Guide) {
@@ -278,7 +279,7 @@ public record Formatter(FormattingOptions options) {
                 // split means nothing here
                 if (writer.apply(new ForwardInfo(pos, chars, null, Split.NEVER))) return true;
             } else if (string.length() > 0) {
-                boolean writeSpace = lastOneWasSpace && wroteOnce;
+                boolean writeSpace = lastOneWasSpace != ElementarySpace.NONE && wroteOnce;
                 int stringLen = string.length();
                 int goingToWrite = stringLen + (writeSpace ? 1 : 0);
 
@@ -288,16 +289,23 @@ public record Formatter(FormattingOptions options) {
 
                 String stringToWrite = writeSpace ? (" " + string) : string;
                 if (writer.apply(new ForwardInfo(pos, chars, stringToWrite, split))) return true;
-                lastOneWasSpace = false;
+                lastOneWasSpace = spaceAfterWriting;
                 split = splitAfterWriting;
                 wroteOnce = true;
                 allowBreak = split != Split.NEVER;
                 chars += stringLen + (writeSpace ? 1 : 0);
             }
-            lastOneWasSpace |= spaceAfterWriting;
             ++pos;
         }
         return false;
     }
 
+    // main point: once we have an enforced ONE, wo do not let go
+    // otherwise we step to the spacing of the next one
+    private static ElementarySpace combine(ElementarySpace s1, ElementarySpace s2) {
+        if (s1 == ElementarySpace.ONE) {
+            return s1;
+        }
+        return s2;
+    }
 }

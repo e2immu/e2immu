@@ -20,32 +20,35 @@ package org.e2immu.analyser.output;
 import static org.e2immu.analyser.output.Split.*;
 
 public enum Space implements OutputElement {
+    // no space, do not split
+    NONE(ElementarySpace.NONE, ElementarySpace.NONE, NEVER),
 
-    NONE("", "", NEVER),       // no space, do not split
+    // exactly one space needed, never split here (e.g. between class and class name); two ONEs collapse into one
+    ONE(ElementarySpace.ONE, ElementarySpace.ONE, NEVER),
 
-    ONE(" ", " ", NEVER),       // exactly one space needed, never split here (e.g. between class and class name); two ONEs collapse into one
+    // end of annotation; needs minimally one, but can be newline
+    ONE_REQUIRED_EASY_SPLIT(ElementarySpace.ONE, ElementarySpace.ONE, EASY),
 
-    ONE_REQUIRED_EASY_SPLIT(" ", " ", EASY),  // end of annotation; needs minimally one, but can be newline
+    // no space needed, split to make things nicer
+    NO_SPACE_SPLIT_ALLOWED(ElementarySpace.NONE, ElementarySpace.NONE, EASY),
 
-    NO_SPACE_SPLIT_ALLOWED("", "", EASY),     // no space needed, split to make things nicer
+    ONE_IS_NICE_EASY_SPLIT(ElementarySpace.NONE, ElementarySpace.NICE, EASY),  // no space needed but one in nice, split to make things nicer
 
-    ONE_IS_NICE_EASY_SPLIT("", " ", EASY),  // no space needed but one in nice, split to make things nicer
+    ONE_IS_NICE_SPLIT_BEGIN_END(ElementarySpace.NONE, ElementarySpace.NICE, BEGIN_END),  // no space needed but one in nice, split to make things nicer
 
-    ONE_IS_NICE_SPLIT_BEGIN_END("", " ", BEGIN_END),  // no space needed but one in nice, split to make things nicer
-
-    NEWLINE("\n", "\n", ALWAYS), // enforce a newline
+    NEWLINE(ElementarySpace.NEWLINE, ElementarySpace.NEWLINE, ALWAYS), // enforce a newline
 
     // easy either left or right, but consistently according to preferences
     // e.g. && either at beginning of line in sequence, or always at end
     // in nice formatting, one space is used
-    ONE_IS_NICE_EASY_L("", " ", EASY_L),
-    ONE_IS_NICE_EASY_R("", " ", EASY_R);
+    ONE_IS_NICE_EASY_L(ElementarySpace.NONE, ElementarySpace.NICE, EASY_L),
+    ONE_IS_NICE_EASY_R(ElementarySpace.NONE, ElementarySpace.NICE, EASY_R);
 
-    private final String minimal;
-    private final String nice;
+    private final ElementarySpace minimal;
+    private final ElementarySpace nice;
     public final Split split;
 
-    Space(String minimal, String nice, Split split) {
+    Space(ElementarySpace minimal, ElementarySpace nice, Split split) {
         this.minimal = minimal;
         this.nice = nice;
         this.split = split;
@@ -53,17 +56,21 @@ public enum Space implements OutputElement {
 
     @Override
     public String minimal() {
-        return minimal;
+        return minimal.write();
     }
 
     @Override
     public String debug() {
-        return minimal;
+        return minimal.write();
+    }
+
+    public ElementarySpace elementarySpace(FormattingOptions options) {
+        return options.compact() ? minimal : nice;
     }
 
     @Override
     public String write(FormattingOptions options) {
-        return options.compact() ? minimal : nice;
+        return options.compact() ? minimal.write() : nice.write();
     }
 
     @Override
