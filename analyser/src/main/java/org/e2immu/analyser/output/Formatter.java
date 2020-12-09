@@ -258,7 +258,7 @@ public record Formatter(FormattingOptions options) {
             if (outputElement instanceof Symbol symbol) {
                 split = symbol.left().split;
                 int leftLength = symbol.left().length(options);
-                lastOneWasSpace |= leftLength > 0;
+                lastOneWasSpace = leftLength > 0; // FIXME |=; we need a compromise: MUST HAVE cannot be undone, while normal can be undone
                 string = symbol.symbol();
                 int rightLength = symbol.right().length(options);
                 spaceAfterWriting = rightLength > 0;

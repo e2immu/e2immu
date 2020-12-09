@@ -26,7 +26,7 @@ public record Symbol(String symbol, Space left, Space right, String constant) im
     public static final Symbol INSTANCE_OF = new Symbol("instanceof", ONE, ONE, "INSTANCE_OF");
     public static final Symbol UNARY_BOOLEAN_NOT = new Symbol("!", NONE, NONE, "UNARY_BOOLEAN_NOT");
     public static final Symbol UNARY_MINUS = new Symbol("-", NONE, NONE, "UNARY_MINUS");
-    public static final Symbol AT = new Symbol("@", NONE, NONE, "AT");
+    public static final Symbol AT = new Symbol("@", ONE_IS_NICE_EASY_SPLIT, NONE, "AT");
 
     public static final Symbol PIPE = binaryOperator("|");
 
