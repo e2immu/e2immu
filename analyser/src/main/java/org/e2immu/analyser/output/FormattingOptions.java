@@ -75,6 +75,10 @@ public record FormattingOptions(int lengthOfLine,
 
         public Builder setCompact(boolean compact) {
             this.compact = compact;
+            if (compact) {
+                this.tabsForLineSplit = 0;
+                this.spacesInTab = 0;
+            }
             return this;
         }
 

@@ -20,6 +20,7 @@ package org.e2immu.analyser.output;
 import com.google.common.math.DoubleMath;
 import org.e2immu.analyser.model.expression.FloatConstant;
 import org.e2immu.analyser.model.expression.Numeric;
+import org.e2immu.analyser.util.StringUtil;
 
 public record Text(String text, String debug) implements OutputElement {
 
@@ -55,6 +56,11 @@ public record Text(String text, String debug) implements OutputElement {
 
     @Override
     public String write(FormattingOptions options) {
-        return options.debug() ? debug: text;
+        return options.debug() ? debug : text;
+    }
+
+    @Override
+    public String generateJavaForDebugging() {
+        return ".add(new Text(" + StringUtil.quote(text) + "))";
     }
 }

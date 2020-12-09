@@ -71,6 +71,16 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     }
 
     @Override
+    public Analysis getAnalysis() {
+        return typeAnalysis.get();
+    }
+
+    @Override
+    public boolean hasBeenAnalysed() {
+        return typeAnalysis.isSet();
+    }
+
+    @Override
     public String name() {
         return simpleName;
     }
@@ -104,6 +114,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return fullyQualifiedName;
     }
 
+    @Override
     public boolean hasBeenInspected() {
         return typeInspection.isSet();
     }
@@ -114,7 +125,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
 
     public OutputBuilder output(boolean doTypeDeclaration) {
         String typeNature;
-        Set<AnnotationExpression> annotations = new HashSet<>();
         Set<String> imports = isPrimaryType() ? imports(typeInspection.get()) : Set.of();
         String[] typeModifiers;
         List<FieldInfo> fields;
@@ -131,7 +141,6 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             typeNature = typeInspection.typeNature().toJava();
             isInterface = typeInspection.isInterface();
             typeModifiers = TypeModifier.sort(typeInspection.modifiers());
-            annotations.addAll(typeInspection.getAnnotations());
             fields = typeInspection.fields();
             constructors = typeInspection.constructors();
             methods = typeInspection.methods();
@@ -152,69 +161,62 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
             isInterface = false;
         }
 
-        OutputBuilder outputBuilder = new OutputBuilder();
+        // PACKAGE AND IMPORTS
+
+        OutputBuilder packageAndImports = new OutputBuilder();
         if (isPrimaryType()) {
             String packageName = packageNameOrEnclosingType.getLeftOrElse("");
             if (!packageName.isEmpty()) {
-                outputBuilder.add(new Text("package")).add(Space.ONE).add(new Text(packageName)).add(Symbol.SEMICOLON)
+                packageAndImports.add(new Text("package")).add(Space.ONE).add(new Text(packageName)).add(Symbol.SEMICOLON)
                         .add(Space.NEWLINE);
             }
             if (!imports.isEmpty()) {
                 imports.stream().sorted().forEach(i ->
-                        outputBuilder.add(new Text("import")).add(Space.ONE).add(new Text(i)).add(Symbol.SEMICOLON)
+                        packageAndImports.add(new Text("import")).add(Space.ONE).add(new Text(i)).add(Symbol.SEMICOLON)
                                 .add(Space.NEWLINE));
             }
         }
-        Set<TypeInfo> annotationsSeen = new HashSet<>();
-        Guide.GuideGenerator annotationGg = new Guide.GuideGenerator();
-        outputBuilder.add(annotationGg.start());
-        for (AnnotationExpression annotation : annotations) {
-            outputBuilder.add(annotationGg.mid()).add(annotation.output());
-            if (typeAnalysis.isSet()) {
-                outputBuilder.add(typeAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen));
-            }
-        }
-        if (typeAnalysis.isSet()) {
-            typeAnalysis.get().getAnnotationStream().forEach(entry -> {
-                boolean present = entry.getValue();
-                AnnotationExpression annotation = entry.getKey();
-                if (present && !annotationsSeen.contains(annotation.typeInfo())) {
-                    outputBuilder.add(annotationGg.mid()).add(annotation.output());
-                }
-            });
-        }
-        outputBuilder.add(annotationGg.end());
 
+        // ANNOTATIONS
+
+        Stream<OutputBuilder> annotationStream = buildAnnotationOutput();
+
+        OutputBuilder afterAnnotations = new OutputBuilder();
         if (doTypeDeclaration) {
             // the class name
-            outputBuilder.add(Arrays.stream(typeModifiers).map(Text::new).collect(OutputBuilder.joinElements(Space.ONE)))
+            afterAnnotations
+                    .add(Arrays.stream(typeModifiers).map(mod -> new OutputBuilder().add(new Text(mod)))
+                            .collect(OutputBuilder.joining(Space.ONE)))
                     .add(Space.ONE).add(new Text(typeNature))
                     .add(Space.ONE).add(new Text(simpleName));
 
             if (!typeParameters.isEmpty()) {
-                outputBuilder.add(Symbol.LEFT_ANGLE_BRACKET);
-                outputBuilder.add(typeParameters.stream().map(TypeParameter::output).collect(OutputBuilder.joining(Symbol.COMMA)));
-                outputBuilder.add(Symbol.RIGHT_ANGLE_BRACKET);
+                afterAnnotations.add(Symbol.LEFT_ANGLE_BRACKET);
+                afterAnnotations.add(typeParameters.stream().map(TypeParameter::output).collect(OutputBuilder.joining(Symbol.COMMA)));
+                afterAnnotations.add(Symbol.RIGHT_ANGLE_BRACKET);
             }
             if (parentClass != null) {
-                outputBuilder.add(Space.ONE).add(new Text("extends")).add(Space.ONE).add(parentClass.output());
+                afterAnnotations.add(Space.ONE).add(new Text("extends")).add(Space.ONE).add(parentClass.output());
             }
             if (!interfaces.isEmpty()) {
-                outputBuilder.add(Space.ONE).add(new Text(isInterface ? "extends" : "implements")).add(Space.ONE);
-                outputBuilder.add(interfaces.stream().map(ParameterizedType::output).collect(OutputBuilder.joining(Symbol.COMMA)));
+                afterAnnotations.add(Space.ONE).add(new Text(isInterface ? "extends" : "implements")).add(Space.ONE);
+                afterAnnotations.add(interfaces.stream().map(ParameterizedType::output).collect(OutputBuilder.joining(Symbol.COMMA)));
             }
         }
-        outputBuilder.add(Symbol.LEFT_BRACE);
-        Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
-        outputBuilder.add(guideGenerator.start());
 
+        Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
         OutputBuilder main = Stream.concat(Stream.concat(Stream.concat(
                 fields.stream().map(FieldInfo::output),
                 subTypes.stream().map(TypeInfo::output)),
                 constructors.stream().map(c -> c.output(guideGenerator))),
-                methods.stream().map(m -> m.output(guideGenerator))).collect(OutputBuilder.joining());
+                methods.stream().map(m -> m.output(guideGenerator))).collect(OutputBuilder.joining(Space.NONE,
+                Symbol.LEFT_BRACE, Symbol.RIGHT_BRACE, guideGenerator));
+        afterAnnotations.add(main);
 
-        return outputBuilder.add(main).add(Symbol.RIGHT_BRACE);
+        // annotations and the rest of the type are at the same level
+        return packageAndImports.add(Stream.concat(annotationStream, Stream.of(afterAnnotations))
+                .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT,
+                        Guide.generatorForAnnotationList())));
     }
 
     private Set<String> imports(TypeInspection typeInspection) {

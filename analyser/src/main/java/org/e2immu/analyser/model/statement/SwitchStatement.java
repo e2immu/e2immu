@@ -44,7 +44,7 @@ public class SwitchStatement extends StatementWithExpression {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("switch"))
                 .add(Symbol.LEFT_PARENTHESIS).add(expression.output()).add(Symbol.RIGHT_PARENTHESIS)
                 .add(Symbol.LEFT_BRACE);
-        Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
+        Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
         outputBuilder.add(guideGenerator.start());
         int i = 0;
         for (SwitchEntry switchEntry : switchEntries) {

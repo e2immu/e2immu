@@ -65,4 +65,9 @@ public enum Space implements OutputElement {
     public String write(FormattingOptions options) {
         return options.compact() ? minimal : nice;
     }
+
+    @Override
+    public String generateJavaForDebugging() {
+        return ".add(Space." + this.name() + ")";
+    }
 }

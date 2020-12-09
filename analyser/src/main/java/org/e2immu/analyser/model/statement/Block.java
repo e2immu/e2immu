@@ -83,7 +83,8 @@ public class Block extends StatementWithStructure {
         if (statementAnalysis == null) {
             if (!structure.statements.isEmpty()) {
                 outputBuilder.add(structure.statements.stream()
-                        .map(s -> s.output(null)).collect(OutputBuilder.joining()));
+                        .map(s -> s.output(null))
+                        .collect(OutputBuilder.joining(Space.NONE, Guide.generatorForBlock())));
             }
         } else {
             Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();

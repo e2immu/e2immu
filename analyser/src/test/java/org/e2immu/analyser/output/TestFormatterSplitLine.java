@@ -376,6 +376,114 @@ public class TestFormatterSplitLine {
                 new Formatter(options).write(createExample4()));
     }
 
+    private OutputBuilder createExample5() {
+        Guide.GuideGenerator ggA = Guide.generatorForAnnotationList();
+        Guide.GuideGenerator gg = new Guide.GuideGenerator();
+        Guide.GuideGenerator gg2 = Guide.generatorForBlock();
+        Guide.GuideGenerator ggA2 = Guide.generatorForAnnotationList();
+
+        return new OutputBuilder()
+                .add(ggA.start())
+                .add(Symbol.AT)
+                .add(new TypeName("E2Container", "", ""))
+                .add(Space.ONE_REQUIRED_EASY_SPLIT)
+                .add(gg.mid())
+                .add(new Text("public"))
+                .add(Space.ONE)
+                .add(new Text("class"))
+                .add(Space.ONE)
+                .add(new Text("Basics_0"))
+                .add(Symbol.LEFT_BRACE)
+                .add(gg2.start())
+                .add(ggA2.start())
+                .add(Symbol.AT)
+                .add(new TypeName("Constant", "", ""))
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(new Text("\"abc\""))
+                .add(Symbol.RIGHT_PARENTHESIS)
+                .add(Space.ONE_REQUIRED_EASY_SPLIT)
+                .add(ggA2.mid())
+                .add(Symbol.AT)
+                .add(new TypeName("E2Container", "", ""))
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(new Text("absent"))
+                .add(Symbol.binaryOperator("="))
+                .add(new Text("true"))
+                .add(Symbol.RIGHT_PARENTHESIS)
+                .add(Space.ONE_REQUIRED_EASY_SPLIT)
+                .add(ggA2.mid())
+                .add(Symbol.AT)
+                .add(new TypeName("Final", "", ""))
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(new Text("absent"))
+                .add(Symbol.binaryOperator("="))
+                .add(new Text("true"))
+                .add(Symbol.RIGHT_PARENTHESIS)
+                .add(Space.ONE_REQUIRED_EASY_SPLIT)
+                .add(ggA2.mid())
+                .add(Symbol.AT)
+                .add(new TypeName("NotNull", "", ""))
+                .add(Space.ONE_REQUIRED_EASY_SPLIT)
+                .add(ggA2.mid())
+                .add(gg.start())
+                .add(new Text("private"))
+                .add(Space.ONE)
+                .add(gg.mid())
+                .add(new Text("final"))
+                .add(gg.end())
+                .add(Space.ONE)
+                .add(new Text("String"))
+                .add(Space.ONE)
+                .add(new Text("explicitlyFinal"))
+                .add(Symbol.binaryOperator("="))
+                .add(new Text("\"abc\""))
+                .add(Symbol.SEMICOLON)
+                .add(ggA2.end())
+                .add(gg2.end())
+                .add(Symbol.RIGHT_BRACE)
+                .add(ggA.end());
+    }
+
+    @Test
+    public void testGuide5() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120).setCompact(false).build();
+        Assert.assertEquals("""
+                        @E2Container 
+                        public class Basics_0 { 
+                            @Constant("abc") 
+                            @E2Container(absent = true) 
+                            @Final(absent = true) 
+                            @NotNull 
+                            private final String explicitlyFinal = "abc"; 
+                        }
+                        """,
+                new Formatter(options).write(createExample5()));
+    }
+
+    @Test
+    public void testGuide5LongLine() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(400).setCompact(false).build();
+        Assert.assertEquals("""
+                        @E2Container public class Basics_0 { @Constant("abc") @E2Container(absent = true) @Final(absent = true) @NotNull private final String explicitlyFinal = "abc"; }
+                        """,
+                new Formatter(options).write(createExample5()));
+    }
+
+    @Test
+    public void testGuide5CompactShortLine() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(80).setCompact(true).build();
+        Assert.assertEquals("""
+                        @E2Container 
+                        public class Basics_0{
+                        @Constant("abc")
+                        @E2Container(absent=true)
+                        @Final(absent=true)
+                        @NotNull
+                        private final String explicitlyFinal="abc";
+                        }
+                        """,
+                new Formatter(options).write(createExample5()));
+    }
 
     // public method(int p1, int p2);
     @Test

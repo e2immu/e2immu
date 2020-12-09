@@ -97,4 +97,9 @@ public record Symbol(String symbol, Space left, Space right) implements OutputEl
     public String write(FormattingOptions options) {
         return left.write(options) + symbol + right.write(options);
     }
+
+    @Override
+    public String generateJavaForDebugging() {
+        return ".add(Symbol " + symbol + ")";
+    }
 }

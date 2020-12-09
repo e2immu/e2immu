@@ -24,10 +24,7 @@ import org.e2immu.analyser.analyser.AnalysisStatus;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.output.Formatter;
-import org.e2immu.analyser.output.FormattingOptions;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.output.*;
 import org.e2immu.analyser.resolver.SortedType;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -156,7 +153,10 @@ public abstract class CommonTestRunner {
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run();
         for (SortedType sortedType : types) {
-            LOGGER.info("Stream:\n{}", new Formatter(FormattingOptions.DEFAULT).write(sortedType.primaryType.output()));
+            OutputBuilder outputBuilder = sortedType.primaryType.output();
+            Formatter formatter = new Formatter(FormattingOptions.DEFAULT);
+            LOGGER.info("Stream:\n{}\n", formatter.write(outputBuilder));
+            LOGGER.info("\n----\nOutput builder:\n{}", outputBuilder.generateJavaForDebugging());
         }
         parser.getMessages().forEach(message -> {
             LOGGER.info(message.toString());

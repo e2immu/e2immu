@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
@@ -25,10 +24,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.statement.SwitchEntry;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.output.OutputBuilder;
-import org.e2immu.analyser.output.Space;
-import org.e2immu.analyser.output.Symbol;
-import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.*;
 
 import java.util.List;
 import java.util.Objects;
@@ -39,7 +35,7 @@ public record SwitchExpression(Expression selector,
                                ObjectFlow objectFlow) implements Expression {
 
     public SwitchExpression {
-        if(hasBeenEvaluated()) {
+        if (hasBeenEvaluated()) {
             if (switchEntries.size() <= 2) {
                 throw new IllegalArgumentException("Expect at least 3 entries to have a bit of a reasonable switch value");
             }
@@ -52,6 +48,7 @@ public record SwitchExpression(Expression selector,
             });
         }
     }
+
     public SwitchExpression(Expression selector, List<SwitchEntry> switchEntries, ParameterizedType returnType) {
         this(selector, switchEntries, returnType, ObjectFlow.NYE);
     }
@@ -62,9 +59,9 @@ public record SwitchExpression(Expression selector,
                 .add(Symbol.LEFT_PARENTHESIS)
                 .add(selector.output())
                 .add(Symbol.RIGHT_PARENTHESIS)
-                .add(Symbol.LEFT_BRACE)
-                .add(switchEntries.stream().map(SwitchEntry::output).collect(OutputBuilder.joining(Space.ONE_IS_NICE_EASY_SPLIT)))
-                .add(Symbol.RIGHT_BRACE);
+                .add(switchEntries.stream().map(SwitchEntry::output)
+                        .collect(OutputBuilder.joining(Space.ONE_IS_NICE_EASY_SPLIT, Symbol.LEFT_BRACE,
+                                Symbol.RIGHT_BRACE, Guide.generatorForBlock())));
     }
 
     @Override

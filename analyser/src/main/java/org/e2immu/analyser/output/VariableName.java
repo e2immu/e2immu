@@ -18,6 +18,7 @@
 package org.e2immu.analyser.output;
 
 import org.e2immu.analyser.model.WithInspectionAndAnalysis;
+import org.e2immu.analyser.util.StringUtil;
 
 public record VariableName(String simpleName, WithInspectionAndAnalysis owner, Nature nature) implements OutputElement {
 
@@ -47,5 +48,10 @@ public record VariableName(String simpleName, WithInspectionAndAnalysis owner, N
     @Override
     public String write(FormattingOptions options) {
         return simpleName;
+    }
+
+    @Override
+    public String generateJavaForDebugging() {
+        return ".add(new VariableName(" + StringUtil.quote(simpleName) + ", owner, Nature." + nature + "))";
     }
 }

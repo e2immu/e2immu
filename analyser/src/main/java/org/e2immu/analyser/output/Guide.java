@@ -43,6 +43,7 @@ public record Guide(int index, Position position, int tabs, boolean symmetricalS
         public final int index;
         private final int tabs;
         private final boolean symmetricalSplit;
+
         public GuideGenerator() {
             this(1, false);
         }
@@ -90,5 +91,14 @@ public record Guide(int index, Position position, int tabs, boolean symmetricalS
     @Override
     public String write(FormattingOptions options) {
         return "";
+    }
+
+    @Override
+    public String generateJavaForDebugging() {
+        return ".add(gg." + (switch (position) {
+            case START -> "start";
+            case MID -> "mid";
+            case END -> "end";
+        }) + "())";
     }
 }

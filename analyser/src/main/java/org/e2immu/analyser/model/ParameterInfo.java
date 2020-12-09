@@ -117,10 +117,21 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
     }
 
     @Override
+    public Analysis getAnalysis() {
+        return parameterAnalysis.get();
+    }
+
+    @Override
+    public boolean hasBeenAnalysed() {
+        return parameterAnalysis.isSet();
+    }
+
+    @Override
     public Inspection getInspection() {
         return parameterInspection.get();
     }
 
+    // for now not using the shared method; directly adding the annotations
     public OutputBuilder outputDeclaration() {
         OutputBuilder outputBuilder = new OutputBuilder();
         ParameterInspection parameterInspection = this.parameterInspection.get();

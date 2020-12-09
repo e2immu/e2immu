@@ -17,6 +17,8 @@
 
 package org.e2immu.analyser.output;
 
+import org.e2immu.analyser.util.StringUtil;
+
 public record MessageComment(String msg) implements OutputElement {
     @Override
     public String minimal() {
@@ -35,6 +37,11 @@ public record MessageComment(String msg) implements OutputElement {
 
     @Override
     public String write(FormattingOptions options) {
-        return options.debug() ? debug(): "";
+        return options.debug() ? debug() : "";
+    }
+
+    @Override
+    public String generateJavaForDebugging() {
+        return ".add(new MessageComment(" + StringUtil.quote(msg) + "))";
     }
 }

@@ -34,4 +34,6 @@ public interface OutputElement {
     default int length(FormattingOptions options) { return write(options).length(); }
 
     String write(FormattingOptions options);
+
+    String generateJavaForDebugging();
 }

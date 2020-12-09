@@ -18,6 +18,7 @@
 package org.e2immu.analyser.output;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -46,15 +47,27 @@ public class OutputBuilder {
     }
 
     public static Collector<OutputBuilder, OutputBuilder, OutputBuilder> joining() {
-        return joining(Space.NONE);
+        return joining(Space.NONE, Space.NONE, Space.NONE, new Guide.GuideGenerator());
     }
 
     public static Collector<OutputBuilder, OutputBuilder, OutputBuilder> joining(OutputElement separator) {
-        Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
+        return joining(separator, Space.NONE, Space.NONE, new Guide.GuideGenerator());
+    }
+
+    public static Collector<OutputBuilder, OutputBuilder, OutputBuilder> joining(OutputElement separator, Guide.GuideGenerator guideGenerator) {
+        return joining(separator, Space.NONE, Space.NONE, guideGenerator);
+    }
+
+    public static Collector<OutputBuilder, OutputBuilder, OutputBuilder> joining(OutputElement separator,
+                                                                                 OutputElement start,
+                                                                                 OutputElement end,
+                                                                                 Guide.GuideGenerator guideGenerator) {
         return new Collector<>() {
+            private final AtomicInteger countMid = new AtomicInteger();
+
             @Override
             public Supplier<OutputBuilder> supplier() {
-                return () -> new OutputBuilder().add(guideGenerator.start());
+                return OutputBuilder::new;
             }
 
             @Override
@@ -63,6 +76,7 @@ public class OutputBuilder {
                     if (a.notStart()) {
                         if (separator != Space.NONE) a.add(separator);
                         a.add(guideGenerator.mid());
+                        countMid.incrementAndGet();
                     }
                     a.add(b);
                 };
@@ -72,13 +86,26 @@ public class OutputBuilder {
             public BinaryOperator<OutputBuilder> combiner() {
                 return (a, b) -> {
                     if (separator != Space.NONE) a.add(separator);
+                    countMid.incrementAndGet();
                     return a.add(guideGenerator.mid()).add(b);
                 };
             }
 
             @Override
             public Function<OutputBuilder, OutputBuilder> finisher() {
-                return t -> t.add(guideGenerator.end());
+                return t -> {
+                    OutputBuilder result = new OutputBuilder();
+                    if (start != Space.NONE) result.add(start);
+                    if (countMid.get() > 0) {
+                        result.add(guideGenerator.start());
+                        result.add(t);
+                        result.add(guideGenerator.end());
+                    } else {
+                        result.add(t); // without the guides
+                    }
+                    if (end != Space.NONE) result.add(end);
+                    return result;
+                };
             }
 
             @Override
@@ -92,42 +119,6 @@ public class OutputBuilder {
         return !list.stream().allMatch(outputElement -> outputElement instanceof Guide);
     }
 
-    public static Collector<OutputElement, OutputBuilder, OutputBuilder> joinElements(OutputElement separator) {
-        Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
-        return new Collector<>() {
-            @Override
-            public Supplier<OutputBuilder> supplier() {
-                return () -> new OutputBuilder().add(guideGenerator.start());
-            }
-
-            @Override
-            public BiConsumer<OutputBuilder, OutputElement> accumulator() {
-                return (a, b) -> {
-                    if (a.notStart()) {
-                        a.add(separator);
-                        a.add(guideGenerator.mid());
-                    }
-                    a.add(b);
-                };
-            }
-
-            @Override
-            public BinaryOperator<OutputBuilder> combiner() {
-                return (a, b) -> a.add(separator).add(guideGenerator.mid()).add(b);
-            }
-
-            @Override
-            public Function<OutputBuilder, OutputBuilder> finisher() {
-                return t -> t.add(guideGenerator.end());
-            }
-
-            @Override
-            public Set<Characteristics> characteristics() {
-                return Set.of(Characteristics.CONCURRENT);
-            }
-        };
-    }
-
     @Override
     public String toString() {
         return list.stream().map(OutputElement::minimal).collect(Collectors.joining());
@@ -135,5 +126,14 @@ public class OutputBuilder {
 
     public String debug() {
         return list.stream().map(OutputElement::debug).collect(Collectors.joining());
+    }
+
+    // used for sorting annotations
+    public OutputElement get(int i) {
+        return list.get(i);
+    }
+
+    public String generateJavaForDebugging() {
+        return list.stream().map(OutputElement::generateJavaForDebugging).collect(Collectors.joining("\n"));
     }
 }

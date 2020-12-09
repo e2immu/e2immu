@@ -20,14 +20,19 @@ package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AbstractAnalysisBuilder;
 import org.e2immu.analyser.analyser.AnnotationParameters;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.output.TypeName;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Stream;
 
 public interface WithInspectionAndAnalysis {
 
     Inspection getInspection();
+
+    boolean hasBeenInspected();
 
     String name();
 
@@ -75,4 +80,35 @@ public interface WithInspectionAndAnalysis {
     String fullyQualifiedName();
 
     void setAnalysis(Analysis analysis);
+
+    Analysis getAnalysis();
+
+    boolean hasBeenAnalysed();
+
+    default Stream<OutputBuilder> buildAnnotationOutput() {
+        Set<TypeInfo> annotationsSeen = new HashSet<>();
+        List<OutputBuilder> perAnnotation = new ArrayList<>();
+        boolean hasBeenAnalysed = hasBeenAnalysed();
+        List<AnnotationExpression> annotations = hasBeenInspected() ? getInspection().getAnnotations() : List.of();
+        for (AnnotationExpression annotation : annotations) {
+            OutputBuilder outputBuilder = new OutputBuilder().add(annotation.output());
+            if (hasBeenAnalysed) {
+                outputBuilder.add(getAnalysis().peekIntoAnnotations(annotation, annotationsSeen));
+            }
+            perAnnotation.add(outputBuilder);
+        }
+        if (hasBeenAnalysed) {
+            getAnalysis().getAnnotationStream().forEach(entry -> {
+                boolean present = entry.getValue();
+                AnnotationExpression annotation = entry.getKey();
+                if (present && !annotationsSeen.contains(annotation.typeInfo())) {
+                    perAnnotation.add(new OutputBuilder().add(annotation.output()));
+                }
+            });
+        }
+        if (perAnnotation.size() > 1) {
+            perAnnotation.sort(Comparator.comparing(a -> ((TypeName) a.get(1)).simpleName()));
+        }
+        return perAnnotation.stream();
+    }
 }

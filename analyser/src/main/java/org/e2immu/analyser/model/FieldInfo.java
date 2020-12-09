@@ -24,7 +24,11 @@ import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 
 public class FieldInfo implements WithInspectionAndAnalysis {
 
@@ -70,8 +74,23 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     }
 
     @Override
+    public Analysis getAnalysis() {
+        return fieldAnalysis.get();
+    }
+
+    @Override
+    public boolean hasBeenAnalysed() {
+        return fieldAnalysis.isSet();
+    }
+
+    @Override
     public Inspection getInspection() {
         return fieldInspection.get();
+    }
+
+    @Override
+    public boolean hasBeenInspected() {
+        return fieldInspection.isSet();
     }
 
     @Override
@@ -90,12 +109,14 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     }
 
     public OutputBuilder output() {
+        Stream<OutputBuilder> annotationStream = buildAnnotationOutput();
+
         OutputBuilder outputBuilder = new OutputBuilder();
         if (fieldInspection.isSet()) {
             FieldInspection inspection = this.fieldInspection.get();
-            outputAnnotations(inspection, outputBuilder);
-            outputBuilder.add(Arrays.stream(FieldModifier.sort(inspection.getModifiers())).map(Text::new)
-                    .collect(OutputBuilder.joinElements(Space.ONE)));
+            outputBuilder.add(Arrays.stream(FieldModifier.sort(inspection.getModifiers()))
+                    .map(mod -> new OutputBuilder().add(new Text(mod)))
+                    .collect(OutputBuilder.joining(Space.ONE)));
             if (!inspection.getModifiers().isEmpty()) outputBuilder.add(Space.ONE);
         }
         outputBuilder
@@ -108,30 +129,10 @@ public class FieldInfo implements WithInspectionAndAnalysis {
                 outputBuilder.add(Symbol.assignment("=")).add(expression.output());
             }
         }
-        return outputBuilder.add(Symbol.SEMICOLON);
-    }
+        outputBuilder.add(Symbol.SEMICOLON);
 
-    private void outputAnnotations(FieldInspection inspection, OutputBuilder outputBuilder) {
-        Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
-        outputBuilder.add(guideGenerator.start());
-        Set<TypeInfo> annotationsSeen = new HashSet<>();
-        inspection.getAnnotations().forEach(ae -> {
-            outputBuilder.add(guideGenerator.mid()).add(ae.output());
-            if (fieldAnalysis.isSet()) {
-                outputBuilder.add(fieldAnalysis.get().peekIntoAnnotations(ae, annotationsSeen));
-            }
-            outputBuilder.add(Space.ONE_REQUIRED_EASY_SPLIT);
-        });
-        if (fieldAnalysis.isSet()) {
-            fieldAnalysis.get().getAnnotationStream().forEach(entry -> {
-                boolean present = entry.getValue();
-                AnnotationExpression annotation = entry.getKey();
-                if (present && !annotationsSeen.contains(annotation.typeInfo())) {
-                    outputBuilder.add(guideGenerator.mid()).add(annotation.output()).add(Space.ONE_REQUIRED_EASY_SPLIT);
-                }
-            });
-        }
-        outputBuilder.add(guideGenerator.end());
+        return Stream.concat(annotationStream, Stream.of(outputBuilder)).collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT,
+                Guide.generatorForAnnotationList()));
     }
 
     public boolean isStatic() {

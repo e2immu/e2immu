@@ -37,6 +37,7 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 @Container
 @E2Immutable(after = "TypeAnalyser.analyse()") // and not MethodAnalyser.analyse(), given the back reference
@@ -130,6 +131,16 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     @Override
+    public Analysis getAnalysis() {
+        return methodAnalysis.get();
+    }
+
+    @Override
+    public boolean hasBeenAnalysed() {
+        return methodAnalysis.isSet();
+    }
+
+    @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         if (!hasBeenInspected()) return UpgradableBooleanMap.of();
         UpgradableBooleanMap<TypeInfo> constructorTypes = isConstructor ? UpgradableBooleanMap.of() :
@@ -154,47 +165,52 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public OutputBuilder output(Guide.GuideGenerator methodGG) {
-        OutputBuilder outputBuilder = new OutputBuilder();
+        OutputBuilder mainAndCompanions = new OutputBuilder();
         MethodInspection inspection = methodInspection.get();
 
-        outputCompanions(inspection, outputBuilder, methodGG);
+        outputCompanions(inspection, mainAndCompanions, methodGG);
 
-        outputBuilder.add(methodGG.mid());
-        outputAnnotations(inspection, outputBuilder);
+        OutputBuilder afterAnnotations = new OutputBuilder();
 
-        outputBuilder.add(Arrays.stream(MethodModifier.sort(inspection.getModifiers())).map(Text::new)
-                .collect(OutputBuilder.joinElements(Space.ONE)));
-        if (!inspection.getModifiers().isEmpty()) outputBuilder.add(Space.ONE);
+        afterAnnotations.add(Arrays.stream(MethodModifier.sort(inspection.getModifiers()))
+                .map(mod -> new OutputBuilder().add(new Text(mod)))
+                .collect(OutputBuilder.joining(Space.ONE)));
+        if (!inspection.getModifiers().isEmpty()) afterAnnotations.add(Space.ONE);
 
         if (!inspection.getTypeParameters().isEmpty()) {
-            outputBuilder.add(Symbol.LEFT_ANGLE_BRACKET);
-            outputBuilder.add(inspection.getTypeParameters().stream().map(TypeParameter::output).collect(OutputBuilder.joining(Symbol.COMMA)));
-            outputBuilder.add(Symbol.RIGHT_ANGLE_BRACKET).add(Space.ONE);
+            afterAnnotations.add(Symbol.LEFT_ANGLE_BRACKET);
+            afterAnnotations.add(inspection.getTypeParameters().stream().map(TypeParameter::output).collect(OutputBuilder.joining(Symbol.COMMA)));
+            afterAnnotations.add(Symbol.RIGHT_ANGLE_BRACKET).add(Space.ONE);
         }
 
         if (!isConstructor) {
-            outputBuilder.add(inspection.getReturnType().output()).add(Space.ONE);
+            afterAnnotations.add(inspection.getReturnType().output()).add(Space.ONE);
         }
-        outputBuilder.add(new Text(name));
+        afterAnnotations.add(new Text(name));
         if (inspection.getParameters().isEmpty()) {
-            outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
+            afterAnnotations.add(Symbol.OPEN_CLOSE_PARENTHESIS);
         } else {
-            outputBuilder.add(Symbol.LEFT_PARENTHESIS)
+            afterAnnotations.add(Symbol.LEFT_PARENTHESIS)
                     .add(inspection.getParameters().stream().map(ParameterInfo::outputDeclaration).collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
         if (!inspection.getExceptionTypes().isEmpty()) {
-            outputBuilder.add(Space.ONE_REQUIRED_EASY_SPLIT).add(new Text("throws")).add(Space.ONE)
+            afterAnnotations.add(Space.ONE_REQUIRED_EASY_SPLIT).add(new Text("throws")).add(Space.ONE)
                     .add(inspection.getExceptionTypes().stream()
                             .map(ParameterizedType::output).collect(OutputBuilder.joining(Symbol.COMMA)));
         }
         if (hasBeenInspected()) {
             StatementAnalysis firstStatement = methodAnalysis.isSet() ? methodAnalysis.get().getFirstStatement() : null;
-            outputBuilder.add(inspection.getMethodBody().output(firstStatement));
+            afterAnnotations.add(inspection.getMethodBody().output(firstStatement));
         } else {
-            outputBuilder.add(Space.ONE).add(Symbol.LEFT_BRACE).add(Symbol.RIGHT_BRACE);
+            afterAnnotations.add(Space.ONE).add(Symbol.LEFT_BRACE).add(Symbol.RIGHT_BRACE);
         }
-        return outputBuilder;
+
+        Stream<OutputBuilder> annotationStream = buildAnnotationOutput();
+        OutputBuilder mainMethod = Stream.concat(annotationStream, Stream.of(afterAnnotations))
+                .collect(OutputBuilder.joining(Space.ONE_REQUIRED_EASY_SPLIT, Guide.generatorForAnnotationList()));
+
+        return mainAndCompanions.add(methodGG.mid()).add(mainMethod);
     }
 
     private void outputCompanions(MethodInspection methodInspection, OutputBuilder outputBuilder, Guide.GuideGenerator methodGG) {

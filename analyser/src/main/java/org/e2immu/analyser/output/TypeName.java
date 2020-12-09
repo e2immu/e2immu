@@ -18,6 +18,7 @@
 package org.e2immu.analyser.output;
 
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.util.StringUtil;
 
 public record TypeName(String simpleName, String fullyQualifiedName,
                        String distinguishingName) implements OutputElement {
@@ -44,5 +45,11 @@ public record TypeName(String simpleName, String fullyQualifiedName,
     @Override
     public String write(FormattingOptions options) {
         return simpleName;
+    }
+
+    @Override
+    public String generateJavaForDebugging() {
+        return ".add(new TypeName(" + StringUtil.quote(simpleName) + "," + StringUtil.quote(fullyQualifiedName) + ","
+                + StringUtil.quote(distinguishingName) + "))";
     }
 }
