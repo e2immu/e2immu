@@ -187,7 +187,7 @@ public class TestFormatter2 {
                         Set<String> s1 = p0;
                         this.f1 = s1;
                     }
-                    @Independent @NotModified @Nullable public Set<String> getF1(){ return f1; }
+                    @Independent @NotModified @Nullable public Set<String> getF1() { return f1; }
                 }
                 """, formatter.write(example));
     }
@@ -374,9 +374,86 @@ public class TestFormatter2 {
                                 Set<String> s1 = p0;
                                 this.f1 = s1;
                             }
-                            @Independent @NotModified @Nullable public Set<String> getF1(){ return f1; }
+                            @Independent @NotModified @Nullable public Set<String> getF1() { return f1; }
                         }
                         """,
                 new Formatter(options).write(createExample1()));
+    }
+
+    private OutputBuilder createExample2() {
+        Guide.GuideGenerator gg59 = Guide.generatorForBlock();
+        Guide.GuideGenerator gg62 = Guide.generatorForBlock();
+
+        return new OutputBuilder()
+                .add(new Text("static"))
+                .add(Space.ONE)
+                .add(new Text("int"))
+                .add(Space.ONE)
+                .add(new Text("test"))
+                .add(Symbol.OPEN_CLOSE_PARENTHESIS)
+                .add(Symbol.LEFT_BRACE)
+                .add(gg59.start())
+                .add(Space.NONE)
+                .add(Space.NONE)
+                .add(new Text("List<String>"))
+                .add(Space.ONE)
+                .add(new Text("list"))
+                .add(Symbol.binaryOperator("="))
+                .add(new Text("new"))
+                .add(Space.ONE)
+                .add(new Text("ArrayList"))
+                .add(Symbol.OPEN_CLOSE_PARENTHESIS)
+                .add(Symbol.SEMICOLON)
+                .add(gg59.mid())
+                .add(new Text("if"))
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(new VariableName("list", null, VariableName.Nature.LOCAL))
+                .add(Symbol.DOT)
+                .add(new Text("size"))
+                .add(Symbol.OPEN_CLOSE_PARENTHESIS)
+                .add(Symbol.binaryOperator(">"))
+                .add(new Text("0"))
+                .add(Symbol.RIGHT_PARENTHESIS)
+                .add(Symbol.LEFT_BLOCK_COMMENT)
+                .add(new Text("Condition in 'if' or 'switch' statement evaluates to constant"))
+                .add(Symbol.RIGHT_BLOCK_COMMENT)
+                .add(Symbol.LEFT_BLOCK_COMMENT)
+                .add(new Text("Unreachable statement"))
+                .add(Symbol.RIGHT_BLOCK_COMMENT)
+                .add(Symbol.LEFT_BRACE)
+                .add(gg62.start())
+                .add(new Text("return"))
+                .add(Space.ONE)
+                .add(new Text("3"))
+                .add(Symbol.SEMICOLON)
+                .add(gg62.end())
+                .add(Symbol.RIGHT_BRACE)
+                .add(gg59.mid())
+                .add(new Text("return"))
+                .add(Space.ONE)
+                .add(new VariableName("list", null, VariableName.Nature.LOCAL))
+                .add(Symbol.DOT)
+                .add(new Text("size"))
+                .add(Symbol.OPEN_CLOSE_PARENTHESIS)
+                .add(Symbol.binaryOperator("+"))
+                .add(new Text("4"))
+                .add(Symbol.SEMICOLON)
+                .add(gg59.end())
+                .add(Symbol.RIGHT_BRACE);
+    }
+
+    @Test
+    public void testExample2() {
+        FormattingOptions options = FormattingOptions.DEFAULT;
+        Assert.assertEquals("""
+                        static int test() {
+                            List<String> list = new ArrayList();
+                            if(list.size() > 0) /*Condition in 'if' or 'switch' statement evaluates to constant*/ /*Unreachable statement*/ {
+                                return 3;
+                            }
+                            return list.size() + 4;
+                        }
+                        """,
+                new Formatter(options).write(createExample2()));
     }
 }

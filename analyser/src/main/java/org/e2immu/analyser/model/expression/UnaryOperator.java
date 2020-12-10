@@ -168,7 +168,7 @@ public class UnaryOperator implements Expression {
             return new OutputBuilder().add(outputInParenthesis(precedence, expression))
                     .add(Symbol.plusPlusSuffix(operator.name));
         }
-        return new OutputBuilder().add(Symbol.plusPlusSuffix(operator.name))
+        return new OutputBuilder().add(Symbol.plusPlusPrefix(operator.name))
                 .add(outputInParenthesis(precedence, expression));
     }
 
