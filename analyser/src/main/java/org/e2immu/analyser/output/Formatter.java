@@ -46,7 +46,7 @@ public record Formatter(FormattingOptions options) {
     static class Tab {
         final int indent;
         final int guideIndex;
-        int numberOfLines;
+        int countLines;
 
         Tab(int indent, int guideIndex) {
             this.indent = indent;
@@ -67,24 +67,13 @@ public record Formatter(FormattingOptions options) {
 
             // we should only indent if we wrote a new line
             if (writeNewLine) indent(indent, writer);
-            writeNewLine = true;
             int lineLength = options.lengthOfLine() - indent;
-
             CurrentExceeds lookAhead = lookAhead(list, pos, lineLength);
+
             boolean lineSplit = LINE_SPLIT == (tabs.isEmpty() ? NO_GUIDE : tabs.peek().guideIndex);
             if (lookAhead.exceeds != null) {
-                if (!lineSplit) {
-                    int previousIndent = tabs.isEmpty() ? 0 : tabs.peek().indent;
-                    tabs.add(new Tab(previousIndent + options.tabsForLineSplit() * options.spacesInTab(),
-                            LINE_SPLIT));
-                }
-                if (lookAhead.current != null) {
-                    writeLine(list, writer, pos, lookAhead.current.pos);
-                    pos = lookAhead.exceeds.pos;
-                } else {
-                    writeLine(list, writer, pos, lookAhead.exceeds.pos);
-                    pos = lookAhead.exceeds.pos + 1;
-                }
+                pos = handleExceeds(lookAhead, lineSplit, tabs, list, writer, pos);
+                writeNewLine = true;
             } else if (lookAhead.current == null) {
                 // direct newline hit
                 writeNewLine = false;
@@ -99,33 +88,59 @@ public record Formatter(FormattingOptions options) {
                 // tab management: note that exceeds is never a guide.
                 Guide guide = lookAhead.current.guide;
                 if (guide != null) {
-                    if (guide.position() == Guide.Position.START) {
-                        int previousIndent = tabs.isEmpty() ? 0 : tabs.peek().indent;
-                        tabs.add(new Tab(previousIndent + guide.tabs() * options.spacesInTab(),
-                                guide.index()));
-                        // do we need a newline? in the case of ending on a start after {, (, we do
-                        // in the case of the start of an annotation sequence, we don't
-                        if (!guide.startWithNewLine()) writeNewLine = false;
-                    } else {
-                        // MID or END
-
-                        while (!tabs.isEmpty() && tabs.peek().guideIndex == LINE_SPLIT) {
-                            tabs.pop();
-                        }
-                        assert tabs.isEmpty() || tabs.peek().guideIndex == guide.index();
-
-                        // tabs can already be empty if the writeLine ended and left an ending
-                        // guide as the very last one
-                        if (guide.position() == Guide.Position.END) {
-                            if (!guide.endWithNewLine()) writeNewLine = false;
-                            if (!tabs.isEmpty()) tabs.pop();
-                        }
-                    }
+                    writeNewLine = handleGuide(guide, tabs);
+                } else {
+                    writeNewLine = true;
                 }
             }
             if (writeNewLine) writer.write("\n");
         }
         if (!writeNewLine) writer.write("\n"); // end on a newline
+    }
+
+    private int handleExceeds(CurrentExceeds lookAhead, boolean lineSplit, Stack<Tab> tabs,
+                              List<OutputElement> list, Writer writer, int pos) throws IOException {
+        if (!lineSplit) {
+            int previousIndent = tabs.isEmpty() ? 0 : tabs.peek().indent;
+            tabs.add(new Tab(previousIndent + options.tabsForLineSplit() * options.spacesInTab(),
+                    LINE_SPLIT));
+        }
+        if (lookAhead.current != null) {
+            writeLine(list, writer, pos, lookAhead.current.pos);
+            return lookAhead.exceeds.pos;
+        } else {
+            writeLine(list, writer, pos, lookAhead.exceeds.pos);
+            return lookAhead.exceeds.pos + 1;
+        }
+    }
+
+    private boolean handleGuide(Guide guide, Stack<Tab> tabs) {
+        if (guide.position() == Guide.Position.START) {
+            int previousIndent = tabs.isEmpty() ? 0 : tabs.peek().indent;
+            tabs.add(new Tab(previousIndent + guide.tabs() * options.spacesInTab(),
+                    guide.index()));
+            // do we need a newline? in the case of ending on a start after {, (, we do
+            // in the case of the start of an annotation sequence, we don't
+            return guide.startWithNewLine();
+        }
+
+        // MID or END
+        while (!tabs.isEmpty() && tabs.peek().guideIndex == LINE_SPLIT) {
+            tabs.pop();
+        }
+        assert tabs.isEmpty() || tabs.peek().guideIndex == guide.index();
+
+        if (guide.position() == Guide.Position.END) {
+            // tabs can already be empty if the writeLine ended and left an ending
+            // guide as the very last one
+            if (!tabs.isEmpty()) tabs.pop();
+            return guide.endWithNewLine();
+        }
+        // MID
+        if (!tabs.isEmpty()) {
+            tabs.peek().countLines = 0; // reset
+        }
+        return true;
     }
 
     /**
