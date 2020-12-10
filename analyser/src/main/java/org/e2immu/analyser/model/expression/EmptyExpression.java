@@ -61,7 +61,7 @@ public record EmptyExpression(String msg) implements Expression {
 
     @Override
     public OutputBuilder output() {
-        return new OutputBuilder().add(new Text("", msg));
+        return new OutputBuilder().add(new Text(msg, msg));
     }
 
     @Override
