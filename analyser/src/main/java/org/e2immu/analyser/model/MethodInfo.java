@@ -191,9 +191,10 @@ public class MethodInfo implements WithInspectionAndAnalysis {
         if (inspection.getParameters().isEmpty()) {
             afterAnnotations.add(Symbol.OPEN_CLOSE_PARENTHESIS);
         } else {
-            afterAnnotations.add(Symbol.LEFT_PARENTHESIS)
-                    .add(inspection.getParameters().stream().map(ParameterInfo::outputDeclaration).collect(OutputBuilder.joining(Symbol.COMMA)))
-                    .add(Symbol.RIGHT_PARENTHESIS);
+            afterAnnotations.add(inspection.getParameters().stream()
+                    .map(ParameterInfo::outputDeclaration)
+                    .collect(OutputBuilder.joining(Symbol.COMMA, Symbol.LEFT_PARENTHESIS, Symbol.RIGHT_PARENTHESIS,
+                            Guide.generatorForParameterDeclaration())));
         }
         if (!inspection.getExceptionTypes().isEmpty()) {
             afterAnnotations.add(Space.ONE_REQUIRED_EASY_SPLIT).add(new Text("throws")).add(Space.ONE)
@@ -223,29 +224,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
             nonEmpty |= !methodAnalysis.get().getComputedCompanions().isEmpty();
         }
         return nonEmpty;
-    }
-
-    private void outputAnnotations(MethodInspection methodInspection, OutputBuilder outputBuilder) {
-        Guide.GuideGenerator annotationGG = new Guide.GuideGenerator();
-        outputBuilder.add(annotationGG.start());
-        Set<TypeInfo> annotationsSeen = new HashSet<>();
-        for (AnnotationExpression annotation : methodInspection.getAnnotations()) {
-            outputBuilder.add(annotationGG.mid()).add(annotation.output());
-            if (methodAnalysis.isSet()) {
-                outputBuilder.add(methodAnalysis.get().peekIntoAnnotations(annotation, annotationsSeen));
-            }
-            outputBuilder.add(Space.ONE_REQUIRED_EASY_SPLIT);
-        }
-        if (methodAnalysis.isSet()) {
-            methodAnalysis.get().getAnnotationStream().forEach(entry -> {
-                boolean present = entry.getValue();
-                AnnotationExpression annotation = entry.getKey();
-                if (present && !annotationsSeen.contains(annotation.typeInfo())) {
-                    outputBuilder.add(annotationGG.mid()).add(annotation.output()).add(Space.ONE_REQUIRED_EASY_SPLIT);
-                }
-            });
-        }
-        outputBuilder.add(annotationGG.end());
     }
 
     public String fullyQualifiedName() {

@@ -37,7 +37,7 @@ public class TestFormatterSplitLine {
     // public int method(int p1, int p2) { return p1+p2; }
     //        10|     18|            33|
     private OutputBuilder createExample1() {
-        Guide.GuideGenerator gg = new Guide.GuideGenerator();
+        Guide.GuideGenerator gg = Guide.generatorForParameterDeclaration();
         Guide.GuideGenerator gg2 = Guide.generatorForBlock();
 
         return new OutputBuilder()
@@ -331,7 +331,7 @@ public class TestFormatterSplitLine {
 
     private OutputBuilder createExample4() {
         Guide.GuideGenerator ggA = Guide.generatorForAnnotationList();
-        Guide.GuideGenerator gg = new Guide.GuideGenerator();
+        Guide.GuideGenerator gg = Guide.generatorForParameterDeclaration();
         Guide.GuideGenerator gg2 = Guide.generatorForBlock();
 
         return new OutputBuilder()
