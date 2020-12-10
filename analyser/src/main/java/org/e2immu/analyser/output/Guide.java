@@ -19,7 +19,10 @@ package org.e2immu.analyser.output;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public record Guide(int index, Position position, int tabs, boolean startWithNewLine,
+public record Guide(int index, Position position,
+                    int tabs,
+                    boolean prioritySplit,
+                    boolean startWithNewLine,
                     boolean endWithNewLine) implements OutputElement {
     private static final AtomicInteger generator = new AtomicInteger();
 
@@ -33,48 +36,50 @@ public record Guide(int index, Position position, int tabs, boolean startWithNew
     }
 
     public static GuideGenerator generatorForBlock() {
-        return new GuideGenerator(1, true, true);
+        return new GuideGenerator(1, true, true, true);
     }
 
     public static GuideGenerator generatorForParameterDeclaration() {
-        return new GuideGenerator(1, true, false);
+        return new GuideGenerator(1, false, true, false);
     }
 
     public static GuideGenerator generatorForAnnotationList() {
-        return new GuideGenerator(0, false, true);
+        return new GuideGenerator(0, false, false, false);
     }
 
     public static class GuideGenerator {
         public final int index;
         private final int tabs;
+        private final boolean prioritySplit;
         private final boolean startWithNewLine;
         private final boolean endWithNewLine;
 
         public GuideGenerator() {
-            this(1, false, false);
+            this(1, false, false, false);
         }
 
-        private GuideGenerator(int tabs, boolean startWithNewLine, boolean endWithNewLine) {
+        private GuideGenerator(int tabs, boolean prioritySplit, boolean startWithNewLine, boolean endWithNewLine) {
             index = generator.incrementAndGet();
             this.tabs = tabs;
             this.startWithNewLine = startWithNewLine;
             this.endWithNewLine = endWithNewLine;
+            this.prioritySplit = prioritySplit;
         }
 
         public Guide start() {
-            return new Guide(index, Position.START, tabs, startWithNewLine, endWithNewLine);
+            return new Guide(index, Position.START, tabs, prioritySplit, startWithNewLine, endWithNewLine);
         }
 
         public Guide mid() {
-            return new Guide(index, Position.MID, tabs, startWithNewLine, endWithNewLine);
+            return new Guide(index, Position.MID, tabs, prioritySplit, startWithNewLine, endWithNewLine);
         }
 
         public Guide end() {
-            return new Guide(index, Position.END, tabs, startWithNewLine, endWithNewLine);
+            return new Guide(index, Position.END, tabs, prioritySplit, startWithNewLine, endWithNewLine);
         }
 
         public boolean keepGuidesWithoutMid() {
-            return startWithNewLine || endWithNewLine;
+            return prioritySplit || startWithNewLine || endWithNewLine;
         }
     }
 

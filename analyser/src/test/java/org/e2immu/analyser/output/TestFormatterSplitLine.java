@@ -169,7 +169,7 @@ public class TestFormatterSplitLine {
     }
 
     private OutputBuilder createExample2() {
-        Guide.GuideGenerator gg = new Guide.GuideGenerator();
+        Guide.GuideGenerator gg = Guide.generatorForParameterDeclaration();
         Guide.GuideGenerator gg1 = Guide.generatorForBlock();
         Guide.GuideGenerator gg2 = new Guide.GuideGenerator();
 

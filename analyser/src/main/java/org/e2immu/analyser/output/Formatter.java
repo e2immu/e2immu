@@ -64,7 +64,7 @@ public record Formatter(FormattingOptions options) {
         boolean writeNewLine = true; // only indent when a newline was written
         while (pos < end) {
             int indent = tabs.isEmpty() ? 0 : tabs.peek().indent;
-            
+
             // we should only indent if we wrote a new line
             if (writeNewLine) indent(indent, writer);
             writeNewLine = true;
@@ -85,6 +85,10 @@ public record Formatter(FormattingOptions options) {
                     writeLine(list, writer, pos, lookAhead.exceeds.pos);
                     pos = lookAhead.exceeds.pos + 1;
                 }
+            } else if (lookAhead.current == null) {
+                // direct newline hit
+                writeNewLine = false;
+                pos++;
             } else {
                 writeLine(list, writer, pos, lookAhead.current.pos);
                 if (lineSplit) {
@@ -108,19 +112,20 @@ public record Formatter(FormattingOptions options) {
                         while (!tabs.isEmpty() && tabs.peek().guideIndex == LINE_SPLIT) {
                             tabs.pop();
                         }
-                        assert !tabs.isEmpty() && tabs.peek().guideIndex == guide.index();
+                        assert tabs.isEmpty() || tabs.peek().guideIndex == guide.index();
 
                         // tabs can already be empty if the writeLine ended and left an ending
                         // guide as the very last one
                         if (guide.position() == Guide.Position.END) {
                             if (!guide.endWithNewLine()) writeNewLine = false;
-                            tabs.pop();
+                            if (!tabs.isEmpty()) tabs.pop();
                         }
                     }
                 }
             }
             if (writeNewLine) writer.write("\n");
         }
+        if(!writeNewLine) writer.write("\n"); // end on a newline
     }
 
     /**
@@ -198,7 +203,7 @@ public record Formatter(FormattingOptions options) {
                     case START -> {
                         // make a note of the first symmetrical split we encounter
                         // here we'll stop when not everything fits on a line
-                        if (firstStartWithNewLine.get() == null && guide.startWithNewLine()) {
+                        if (firstStartWithNewLine.get() == null && guide.prioritySplit()) {
                             firstStartWithNewLine.set(forwardInfo);
                         }
                         startOfGuides.push(forwardInfo);
@@ -223,6 +228,7 @@ public record Formatter(FormattingOptions options) {
             OutputElement outputElement = list.get(forwardInfo.pos);
             return outputElement == Space.NEWLINE; // stop on newline, otherwise continue
         }, start, Math.max(100, lineLength * 3) / 2);
+        // both can be null, when the forward method immediately hits a newline
         return new CurrentExceeds(currentForwardInfo.get(), exceeds.get());
     }
 
