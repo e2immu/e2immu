@@ -39,6 +39,12 @@ import java.util.Objects;
 @E2Container
 public record MemberValuePair(String name, Expression value) implements Expression {
 
+    public static final String VALUE = "value";
+
+    public MemberValuePair(@NotNull Expression value) {
+        this(VALUE, value);
+    }
+
     public MemberValuePair(@NotNull String name, @NotNull Expression value) {
         this.value = Objects.requireNonNull(value);
         this.name = Objects.requireNonNull(name);
@@ -70,7 +76,7 @@ public record MemberValuePair(String name, Expression value) implements Expressi
 
     @Override
     public OutputBuilder output() {
-        if ("value".equals(name)) return new OutputBuilder().add(value.output());
+        if (VALUE.equals(name)) return new OutputBuilder().add(value.output());
         return new OutputBuilder().add(new Text(name)).add(Symbol.assignment("=")).add(value.output());
     }
 

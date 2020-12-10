@@ -143,20 +143,27 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         if (!hasBeenInspected()) return UpgradableBooleanMap.of();
+        MethodInspection inspection = methodInspection.get();
         UpgradableBooleanMap<TypeInfo> constructorTypes = isConstructor ? UpgradableBooleanMap.of() :
-                methodInspection.get().getReturnType().typesReferenced(true);
+                inspection.getReturnType().typesReferenced(true);
         UpgradableBooleanMap<TypeInfo> parameterTypes =
-                methodInspection.get().getParameters().stream()
+                inspection.getParameters().stream()
                         .flatMap(p -> p.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector());
         UpgradableBooleanMap<TypeInfo> annotationTypes =
-                methodInspection.get().getAnnotations().stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
+                inspection.getAnnotations().stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
+        UpgradableBooleanMap<TypeInfo> analysedAnnotationTypes =
+                hasBeenAnalysed()? methodAnalysis.get().getAnnotationStream()
+                        .filter(Map.Entry::getValue)
+                        .flatMap(e -> e.getKey().typesReferenced().stream())
+                        .collect(UpgradableBooleanMap.collector()): UpgradableBooleanMap.of();
         UpgradableBooleanMap<TypeInfo> exceptionTypes =
-                methodInspection.get().getExceptionTypes().stream().flatMap(et -> et.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector());
+                inspection.getExceptionTypes().stream().flatMap(et -> et.typesReferenced(true).stream()).collect(UpgradableBooleanMap.collector());
         UpgradableBooleanMap<TypeInfo> bodyTypes = hasBeenInspected() ?
-                methodInspection.get().getMethodBody().typesReferenced() : UpgradableBooleanMap.of();
-        UpgradableBooleanMap<TypeInfo> companionMethodTypes = methodInspection.get().getCompanionMethods().values().stream()
+                inspection.getMethodBody().typesReferenced() : UpgradableBooleanMap.of();
+        UpgradableBooleanMap<TypeInfo> companionMethodTypes = inspection.getCompanionMethods().values().stream()
                 .flatMap(cm -> cm.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
-        return UpgradableBooleanMap.of(constructorTypes, parameterTypes, annotationTypes, exceptionTypes, companionMethodTypes, bodyTypes);
+        return UpgradableBooleanMap.of(constructorTypes, parameterTypes, analysedAnnotationTypes,
+                annotationTypes, exceptionTypes, companionMethodTypes, bodyTypes);
     }
 
     @Override

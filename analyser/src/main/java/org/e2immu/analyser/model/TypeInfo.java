@@ -219,7 +219,7 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
     private Set<String> imports(TypeInspection typeInspection) {
         Set<TypeInfo> typesReferenced = typeInspection.typesReferenced().stream().filter(Map.Entry::getValue)
                 .map(Map.Entry::getKey)
-                .filter(Primitives::isNotJavaLang)
+                .filter(Primitives::allowInImport)
                 .collect(Collectors.toSet());
         Map<String, List<TypeInfo>> perPackage = new HashMap<>();
         String myPackage = packageName();

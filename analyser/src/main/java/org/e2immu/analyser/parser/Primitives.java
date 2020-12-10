@@ -215,6 +215,10 @@ public class Primitives {
         return typeInfo == null || !typeInfo.fullyQualifiedName.startsWith("java.lang.");
     }
 
+    public static boolean allowInImport(TypeInfo ti) {
+        return Primitives.isNotJavaLang(ti) && !Primitives.isPrimitiveExcludingVoid(ti) && !Primitives.isVoid(ti);
+    }
+
     public static boolean isPostfix(MethodInfo operator) {
         return (operator.name.equals("++") || operator.name.equals("--")) && operator.returnType().typeInfo != null &&
                 operator.returnType().typeInfo.fullyQualifiedName.equals(LONG_FQN);
@@ -329,7 +333,7 @@ public class Primitives {
                 .build());
 
         assert UNARY_MINUS_OPERATOR_INT.equals(unaryMinusOperatorInt.fullyQualifiedName);
-        assert LONG_FQN.equals(longTypeInfo.fullyQualifiedName): "Have "+longTypeInfo.fullyQualifiedName;
+        assert LONG_FQN.equals(longTypeInfo.fullyQualifiedName) : "Have " + longTypeInfo.fullyQualifiedName;
     }
 
     public static boolean isPrimitiveExcludingVoid(ParameterizedType parameterizedType) {

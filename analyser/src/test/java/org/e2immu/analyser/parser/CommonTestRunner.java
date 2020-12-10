@@ -156,11 +156,9 @@ public abstract class CommonTestRunner {
             OutputBuilder outputBuilder = sortedType.primaryType.output();
             Formatter formatter = new Formatter(FormattingOptions.DEFAULT);
             LOGGER.info("Stream:\n{}\n", formatter.write(outputBuilder));
-            LOGGER.info("\n----\nOutput builder:\n{}", outputBuilder.generateJavaForDebugging());
+            //LOGGER.info("\n----\nOutput builder:\n{}", outputBuilder.generateJavaForDebugging());
         }
-        parser.getMessages().forEach(message -> {
-            LOGGER.info(message.toString());
-        });
+        parser.getMessages().forEach(message -> LOGGER.info(message.toString()));
         Assert.assertEquals("ERRORS: ", errorsToExpect, (int) parser.getMessages()
                 .filter(m -> m.severity == Message.Severity.ERROR).count());
         Assert.assertEquals("WARNINGS: ", warningsToExpect, (int) parser.getMessages()

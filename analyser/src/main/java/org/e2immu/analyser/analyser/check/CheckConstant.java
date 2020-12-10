@@ -15,13 +15,7 @@ import org.e2immu.annotation.Constant;
 import java.util.List;
 import java.util.Optional;
 
-public class CheckConstant {
-
-    private final Primitives primitives;
-
-    public CheckConstant(Primitives primitives) {
-        this.primitives = primitives;
-    }
+public record CheckConstant(Primitives primitives) {
 
     public void checkConstantForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysis fieldAnalysis) {
         Expression singleReturnValue = fieldAnalysis.getEffectivelyFinalValue() != null ?
@@ -62,7 +56,7 @@ public class CheckConstant {
         }
         String value = constant.extract("value", "");
         String computed = singleReturnValue.minimalOutput();
-        String required =  singleReturnValue instanceof StringConstant ? StringUtil.quote(value): value;
+        String required = singleReturnValue instanceof StringConstant ? StringUtil.quote(value) : value;
         if (!computed.equals(required)) {
             messages.add(Message.newMessage(where, Message.WRONG_CONSTANT, "required " +
                     required + ", found " + computed));
@@ -72,7 +66,7 @@ public class CheckConstant {
 
     public AnnotationExpression createConstantAnnotation(E2ImmuAnnotationExpressions typeContext, Expression value) {
         String constant = value.minimalOutput();
-        Expression valueExpression = new MemberValuePair("stringValue", new StringConstant(primitives, constant));
+        Expression valueExpression = new MemberValuePair(new StringConstant(primitives, constant));
         List<Expression> expressions = List.of(valueExpression);
         return new AnnotationExpressionImpl(typeContext.constant.typeInfo(), expressions);
     }

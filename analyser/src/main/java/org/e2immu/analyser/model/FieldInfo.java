@@ -24,10 +24,7 @@ import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
 
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class FieldInfo implements WithInspectionAndAnalysis {
@@ -97,6 +94,13 @@ public class FieldInfo implements WithInspectionAndAnalysis {
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(
                 type.typesReferenced(true),
+                fieldInspection.isSet() ? fieldInspection.get().getAnnotations().stream()
+                        .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
+                        : UpgradableBooleanMap.of(),
+                hasBeenAnalysed() ? fieldAnalysis.get().getAnnotationStream()
+                        .filter(Map.Entry::getValue)
+                        .flatMap(e -> e.getKey().typesReferenced().stream())
+                        .collect(UpgradableBooleanMap.collector()) : UpgradableBooleanMap.of(),
                 fieldInspection.isSet() && fieldInspection.get().fieldInitialiserIsSet() ?
                         fieldInspection.get().getFieldInitialiser().initialiser().typesReferenced()
                         : UpgradableBooleanMap.of()
