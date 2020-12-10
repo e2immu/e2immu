@@ -159,7 +159,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             if (object instanceof MethodCall methodCall) {
                 // chaining!
                 if (guideGenerator == null) {
-                    gg = new Guide.GuideGenerator();
+                    gg = Guide.defaultGuideGenerator();
                     last = true;
                 } else {
                     gg = guideGenerator;

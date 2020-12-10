@@ -139,7 +139,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
             OutputBuilder outputBuilder = new OutputBuilder();
             appendLabels(outputBuilder, java12Style, guideGenerator);
 
-            Guide.GuideGenerator ggStatements = new Guide.GuideGenerator();
+            Guide.GuideGenerator ggStatements = Guide.defaultGuideGenerator();
             outputBuilder.add(ggStatements.start());
             Block.statementsString(outputBuilder, ggStatements, statementAnalysis);
             outputBuilder.add(ggStatements.end());

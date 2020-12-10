@@ -87,7 +87,7 @@ public class Block extends StatementWithStructure {
                         .collect(OutputBuilder.joining(Space.NONE, Guide.generatorForBlock())));
             }
         } else {
-            Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
+            Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
             outputBuilder.add(guideGenerator.start());
             statementsString(outputBuilder, guideGenerator, statementAnalysis);
             outputBuilder.add(guideGenerator.end());

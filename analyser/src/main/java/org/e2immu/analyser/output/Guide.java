@@ -28,15 +28,19 @@ public record Guide(int index, Position position,
 
     public enum Position {
         START("S"), MID(""), END("E");
-        private final String msg;
 
+        private final String msg;
         Position(String msg) {
             this.msg = msg;
         }
-    }
 
+    }
     public static GuideGenerator generatorForBlock() {
         return new GuideGenerator(1, true, true, true);
+    }
+
+    public static GuideGenerator defaultGuideGenerator() {
+        return new GuideGenerator(1, false, false, false);
     }
 
     public static GuideGenerator generatorForParameterDeclaration() {
@@ -54,7 +58,7 @@ public record Guide(int index, Position position,
         private final boolean startWithNewLine;
         private final boolean endWithNewLine;
 
-        public GuideGenerator() {
+        private GuideGenerator() {
             this(1, false, false, false);
         }
 
@@ -115,6 +119,6 @@ public record Guide(int index, Position position,
             case START -> "start";
             case MID -> "mid";
             case END -> "end";
-        }) + "())";
+        }) + "()) // priority=" + prioritySplit + ", startNL=" + startWithNewLine + ", endNL=" + endWithNewLine;
     }
 }

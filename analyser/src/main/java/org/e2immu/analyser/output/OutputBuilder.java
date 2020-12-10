@@ -47,11 +47,11 @@ public class OutputBuilder {
     }
 
     public static Collector<OutputBuilder, OutputBuilder, OutputBuilder> joining() {
-        return joining(Space.NONE, Space.NONE, Space.NONE, new Guide.GuideGenerator());
+        return joining(Space.NONE, Space.NONE, Space.NONE, Guide.defaultGuideGenerator());
     }
 
     public static Collector<OutputBuilder, OutputBuilder, OutputBuilder> joining(OutputElement separator) {
-        return joining(separator, Space.NONE, Space.NONE, new Guide.GuideGenerator());
+        return joining(separator, Space.NONE, Space.NONE, Guide.defaultGuideGenerator());
     }
 
     public static Collector<OutputBuilder, OutputBuilder, OutputBuilder> joining(OutputElement separator,

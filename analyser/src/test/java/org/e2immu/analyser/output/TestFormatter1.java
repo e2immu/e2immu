@@ -20,7 +20,6 @@ package org.e2immu.analyser.output;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,24 +56,6 @@ public class TestFormatter1 {
     }
 
     @Test
-    public void testLookAhead() {
-        Formatter formatter = new Formatter(FormattingOptions.DEFAULT); // options
-        // Assert.assertEquals(17, formatter.lookAhead(createExample0().list, 0, 20, false).charsPlusString());
-        //  Assert.assertEquals(17, formatter.lookAhead(createExample0().list, 0, 15, false).charsPlusString());
-
-        // up to the ( now
-        //   Assert.assertEquals(18, formatter.lookAhead(createExample1().list, 0, 20, false).charsPlusString());
-
-        List<OutputElement> list = createExample1().list;
-        // up to the { now, we've included the whole (...) guide
-        //  Assert.assertEquals(35, formatter.lookAhead(createExample1().list, 0, 35, false).charsPlusString());
-
-        // int p1, (7 = 6+the start guide)
-        List<OutputElement> subList = list.subList(7, list.size());
-        //  Assert.assertEquals(7, formatter.lookAhead(subList, 0, 120, false).charsPlusString());
-    }
-
-    @Test
     public void testLineSplit1() {
         String PACKAGE = "org.e2immu.analyser.output";
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("package")).add(Space.ONE).add(new Text(PACKAGE));
@@ -86,7 +67,7 @@ public class TestFormatter1 {
         Formatter formatter = new Formatter(options);
 
         List<Formatter.ForwardInfo> info = new ArrayList<>();
-        new Formatter(options).forward(outputBuilder.list, fi -> {
+        formatter.forward(outputBuilder.list, fi -> {
             info.add(fi);
             System.out.println(fi);
             return false;
@@ -94,12 +75,7 @@ public class TestFormatter1 {
         Assert.assertEquals(2, info.size());
         Assert.assertEquals(" " + PACKAGE, info.get(1).string());
 
-        //   Formatter.ForwardInfo fw0 = formatter.lookAhead(outputBuilder.list, 0,20, false);
-        //    Assert.assertEquals(0, fw0.pos());
-        //  Formatter.ForwardInfo fw1 = formatter.lookAhead(outputBuilder.list, 1,20, false);
-        //   Assert.assertEquals(2, fw1.pos());
-
-        Assert.assertEquals("package\n    " + PACKAGE + "\n", new Formatter(options).write(outputBuilder));
+        Assert.assertEquals("package\n    " + PACKAGE + "\n", formatter.write(outputBuilder));
     }
 
     @Test
@@ -171,7 +147,7 @@ public class TestFormatter1 {
     private OutputBuilder createExample2() {
         Guide.GuideGenerator gg = Guide.generatorForParameterDeclaration();
         Guide.GuideGenerator gg1 = Guide.generatorForBlock();
-        Guide.GuideGenerator gg2 = new Guide.GuideGenerator();
+        Guide.GuideGenerator gg2 = Guide.defaultGuideGenerator();
 
         return new OutputBuilder()
                 .add(new Text("public")).add(Space.ONE)
@@ -373,14 +349,14 @@ public class TestFormatter1 {
     }
 
     @Test
-    public void testGuide4Compact() throws IOException {
+    public void testGuide4Compact() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120).setCompact(true).build();
         Formatter formatter = new Formatter(options);
         List<OutputElement> list = createExample4().list;
         Assert.assertEquals(41, list.size());
 
         List<Formatter.ForwardInfo> info = new ArrayList<>();
-        new Formatter(options).forward(list, fi -> {
+        formatter.forward(list, fi -> {
             info.add(fi);
             System.out.println(fi);
             return false;
@@ -389,16 +365,13 @@ public class TestFormatter1 {
         Assert.assertEquals("}", info.get(31).string());
         Assert.assertNull(info.get(32).string()); // end of annotation guide
 
-        //Assert.assertEquals(82, formatter.lookAhead(list, 120));
-        //Assert.assertEquals(40, formatter.writeLine(list, new StringWriter(), 0, 82, new Stack<>()));
-
         Assert.assertEquals("@NotModified @Independent @NotNull public int method(int p1,int p2){return p1+p2;}\n",
-                new Formatter(options).write(createExample4()));
+                formatter.write(createExample4()));
     }
 
     private OutputBuilder createExample5(boolean extended) {
         Guide.GuideGenerator ggA = Guide.generatorForAnnotationList();
-        Guide.GuideGenerator gg = new Guide.GuideGenerator();
+        Guide.GuideGenerator gg = Guide.defaultGuideGenerator();
         Guide.GuideGenerator gg2 = Guide.generatorForBlock();
         Guide.GuideGenerator ggA2 = Guide.generatorForAnnotationList();
 
@@ -504,9 +477,6 @@ public class TestFormatter1 {
     public void testGuide5LongLine() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(400).setCompact(false).build();
         Formatter formatter = new Formatter(options);
-        List<OutputElement> list = createExample5(false).list;
-
-        //Assert.assertEquals(160, formatter.lookAhead(list, 400));
 
         Assert.assertEquals("""
                 @E2Container public class Basics_0 { @Constant("abc") @E2Container(absent = true) @Final(absent = true) @NotNull private final String explicitlyFinal = "abc"; }
@@ -532,9 +502,6 @@ public class TestFormatter1 {
     public void testGuide6() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(120).setCompact(false).build();
         Formatter formatter = new Formatter(options);
-        List<OutputElement> list = createExample5(true).list;
-
-        //Assert.assertEquals(36, formatter.lookAhead(list, 120));
 
         Assert.assertEquals("""
                 @E2Container 
@@ -582,7 +549,7 @@ public class TestFormatter1 {
         Assert.assertEquals(30, list.size());
 
         List<Formatter.ForwardInfo> info = new ArrayList<>();
-        new Formatter(options).forward(list, fi -> {
+        formatter.forward(list, fi -> {
             info.add(fi);
             System.out.println(fi);
             return false;
@@ -590,7 +557,7 @@ public class TestFormatter1 {
         Assert.assertEquals("@", info.get(5).string());
 
         Assert.assertEquals("public int method(@E2Immutable int p1, int p2) { return p1 + p2; }\n",
-                new Formatter(options).write(createExample7()));
+                formatter.write(createExample7()));
     }
 
     // public method(int p1, int p2);
@@ -704,7 +671,7 @@ public class TestFormatter1 {
     public void testForward6() {
         FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(8)
                 .setSpacesInTab(2).setTabsForLineSplit(1).build();
-        Guide.GuideGenerator guideGenerator = new Guide.GuideGenerator();
+        Guide.GuideGenerator guideGenerator = Guide.defaultGuideGenerator();
         OutputBuilder outputBuilder = new OutputBuilder()
                 .add(new Text("public")) // 0
                 .add(Space.ONE) //1

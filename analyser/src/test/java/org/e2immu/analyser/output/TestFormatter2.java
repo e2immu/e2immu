@@ -33,7 +33,7 @@ public class TestFormatter2 {
         Guide.GuideGenerator blockConstructor = Guide.generatorForBlock();
         Guide.GuideGenerator blockMethod = Guide.generatorForBlock();
 
-        Guide.GuideGenerator modifiersField = new Guide.GuideGenerator();
+        Guide.GuideGenerator modifiersField = Guide.defaultGuideGenerator();
 
         return new OutputBuilder()
                 .add(type.start())
@@ -176,8 +176,6 @@ public class TestFormatter2 {
         FormattingOptions options = FormattingOptions.DEFAULT;
         Formatter formatter = new Formatter(options);
         OutputBuilder example = createExample0();
-        int len = example.list.size();
-        //Assert.assertEquals(23, formatter.lookAhead(example.list.subList(1, len), options.lengthOfLine()));
 
         Assert.assertEquals("""
                 public class Basics_1 {
@@ -203,7 +201,7 @@ public class TestFormatter2 {
         Guide.GuideGenerator blockConstructor = Guide.generatorForBlock();
         Guide.GuideGenerator blockMethod = Guide.generatorForBlock();
 
-        Guide.GuideGenerator modifiersField = new Guide.GuideGenerator();
+        Guide.GuideGenerator modifiersField = Guide.defaultGuideGenerator();
 
         return new OutputBuilder()
                 .add(new Text("package"))
