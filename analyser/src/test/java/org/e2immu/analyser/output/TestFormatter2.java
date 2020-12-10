@@ -456,4 +456,141 @@ public class TestFormatter2 {
                         """,
                 new Formatter(options).write(createExample2()));
     }
+
+    // slightly larger version of 2
+    private OutputBuilder createExample3() {
+        Guide.GuideGenerator gg57 = Guide.generatorForBlock();
+        Guide.GuideGenerator gg59 = Guide.generatorForBlock();
+        Guide.GuideGenerator gg62 = Guide.generatorForBlock();
+        Guide.GuideGenerator gg64 = Guide.generatorForAnnotationList();
+        Guide.GuideGenerator gg65 = Guide.generatorForAnnotationList();
+
+        return new OutputBuilder().add(new Text("package"))
+                .add(Space.ONE)
+                .add(new Text("org.e2immu.analyser.testexample"))
+                .add(Symbol.SEMICOLON)
+                .add(Space.NEWLINE)
+                .add(new Text("import"))
+                .add(Space.ONE)
+                .add(new Text("java.util.ArrayList"))
+                .add(Symbol.SEMICOLON)
+                .add(Space.NEWLINE)
+                .add(new Text("import"))
+                .add(Space.ONE)
+                .add(new Text("java.util.List"))
+                .add(Symbol.SEMICOLON)
+                .add(Space.NEWLINE)
+                .add(new Text("import"))
+                .add(Space.ONE)
+                .add(new Text("org.e2immu.annotation.Constant"))
+                .add(Symbol.SEMICOLON)
+                .add(Space.NEWLINE)
+                .add(gg65.start())
+                .add(Symbol.AT)
+                .add(new TypeName("E2Container", "", ""))
+                .add(Space.ONE_REQUIRED_EASY_SPLIT)
+                .add(gg65.mid())
+                .add(new Text("public"))
+                .add(Space.ONE)
+                .add(new Text("class"))
+                .add(Space.ONE)
+                .add(new Text("BasicCompanionMethods_0"))
+                .add(Symbol.LEFT_BRACE)
+                .add(gg57.start())
+                .add(gg64.start())
+                .add(Symbol.AT)
+                .add(new TypeName("Constant", "", ""))
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(new Text("\"4\""))
+                .add(Symbol.RIGHT_PARENTHESIS)
+                .add(Space.ONE_REQUIRED_EASY_SPLIT)
+                .add(gg64.mid())
+                .add(Symbol.AT)
+                .add(new TypeName("NotModified", "", ""))
+                .add(Space.ONE_REQUIRED_EASY_SPLIT)
+                .add(gg64.mid())
+                .add(new Text("static"))
+                .add(Space.ONE)
+                .add(new Text("int"))
+                .add(Space.ONE)
+                .add(new Text("test"))
+                .add(Symbol.OPEN_CLOSE_PARENTHESIS)
+                .add(Symbol.LEFT_BRACE)
+                .add(gg59.start())
+                .add(Space.NONE)
+                .add(Space.NONE)
+                .add(new Text("List<String>"))
+                .add(Space.ONE)
+                .add(new Text("list"))
+                .add(Symbol.binaryOperator("="))
+                .add(new Text("new"))
+                .add(Space.ONE)
+                .add(new Text("ArrayList"))
+                .add(Symbol.OPEN_CLOSE_PARENTHESIS)
+                .add(Symbol.SEMICOLON)
+                .add(gg59.mid())
+                .add(new Text("if"))
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(new VariableName("list", null, VariableName.Nature.LOCAL))
+                .add(Symbol.DOT)
+                .add(new Text("size"))
+                .add(Symbol.OPEN_CLOSE_PARENTHESIS)
+                .add(Symbol.binaryOperator(">"))
+                .add(new Text("0"))
+                .add(Symbol.RIGHT_PARENTHESIS)
+                .add(Symbol.LEFT_BLOCK_COMMENT)
+                .add(new Text("Condition in 'if' or 'switch' statement evaluates to constant"))
+                .add(Symbol.RIGHT_BLOCK_COMMENT)
+                .add(Symbol.LEFT_BLOCK_COMMENT)
+                .add(new Text("Unreachable statement"))
+                .add(Symbol.RIGHT_BLOCK_COMMENT)
+                .add(Symbol.LEFT_BRACE)
+                .add(gg62.start())
+                .add(new Text("return"))
+                .add(Space.ONE)
+                .add(new Text("3"))
+                .add(Symbol.SEMICOLON)
+                .add(gg62.end())
+                .add(Symbol.RIGHT_BRACE)
+                .add(gg59.mid())
+                .add(new Text("return"))
+                .add(Space.ONE)
+                .add(new VariableName("list", null, VariableName.Nature.LOCAL))
+                .add(Symbol.DOT)
+                .add(new Text("size"))
+                .add(Symbol.OPEN_CLOSE_PARENTHESIS)
+                .add(Symbol.binaryOperator("+"))
+                .add(new Text("4"))
+                .add(Symbol.SEMICOLON)
+                .add(gg59.end())
+                .add(Symbol.RIGHT_BRACE)
+                .add(gg64.end())
+                .add(gg57.end())
+                .add(Symbol.RIGHT_BRACE)
+                .add(gg65.end());
+    }
+
+
+    @Test
+    public void testExample3() {
+        Assert.assertEquals("""
+                        package org.e2immu.analyser.testexample;
+                        import java.util.ArrayList;
+                        import java.util.List;
+                        import org.e2immu.annotation.Constant;
+                        @E2Container
+                        public class BasicCompanionMethods_0 {
+                            @Constant("4")
+                            @NotModified
+                            static int test() {
+                                List<String> list = new ArrayList();
+                                if(list.size() > 0) /*Condition in 'if' or 'switch' statement evaluates to constant*/ /*Unreachable statement*/ {
+                                    return 3;
+                                }
+                                return list.size() + 4;
+                            }
+                        }
+                        """,
+                new Formatter(FormattingOptions.DEFAULT).write(createExample3()));
+    }
 }

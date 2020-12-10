@@ -125,7 +125,7 @@ public record Formatter(FormattingOptions options) {
             }
             if (writeNewLine) writer.write("\n");
         }
-        if(!writeNewLine) writer.write("\n"); // end on a newline
+        if (!writeNewLine) writer.write("\n"); // end on a newline
     }
 
     /**
@@ -161,6 +161,15 @@ public record Formatter(FormattingOptions options) {
     record CurrentExceeds(ForwardInfo current, ForwardInfo exceeds) {
     }
 
+    static class GuideOnStack {
+        final ForwardInfo forwardInfo;
+        int countMid;
+
+        GuideOnStack(ForwardInfo forwardInfo) {
+            this.forwardInfo = forwardInfo;
+        }
+    }
+
     /**
      * Tries to fit all the remaining output elements on a single line.
      * If that works, then the last element is returned.
@@ -173,7 +182,7 @@ public record Formatter(FormattingOptions options) {
         AtomicReference<ForwardInfo> currentForwardInfo = new AtomicReference<>();
         AtomicReference<ForwardInfo> prioritySplit = new AtomicReference<>();
         AtomicReference<ForwardInfo> exceeds = new AtomicReference<>();
-        Stack<ForwardInfo> startOfGuides = new Stack<>();
+        Stack<GuideOnStack> startOfGuides = new Stack<>();
         forward(list, forwardInfo -> {
             if (forwardInfo.charsPlusString() > lineLength) {
 
@@ -185,7 +194,7 @@ public record Formatter(FormattingOptions options) {
                 }
                 if (!startOfGuides.isEmpty()) {
                     // then to the first of the guides
-                    currentForwardInfo.set(startOfGuides.get(0));
+                    currentForwardInfo.set(startOfGuides.get(0).forwardInfo);
                     return true;
                 }
                 if (!forwardInfo.symbol && !forwardInfo.isGuide()) {
@@ -202,10 +211,10 @@ public record Formatter(FormattingOptions options) {
                 switch (guide.position()) {
                     case START -> {
                         // priority split: when the first one we encounter is a priority one
-                        if (prioritySplit.get() == null && guide.prioritySplit() && startOfGuides.isEmpty()) {
+                        if (prioritySplit.get() == null && guide.prioritySplit() && acceptPriority(startOfGuides)) {
                             prioritySplit.set(forwardInfo);
                         }
-                        startOfGuides.push(forwardInfo);
+                        startOfGuides.push(new GuideOnStack(forwardInfo));
                     }
                     case MID -> {
                         // we started the lookahead in the middle of a guide; encountering another mid
@@ -213,13 +222,14 @@ public record Formatter(FormattingOptions options) {
                         if (startOfGuides.isEmpty()) {
                             return true; // stop
                         }
-                        assert startOfGuides.peek().guide.index() == guide.index();
+                        assert startOfGuides.peek().forwardInfo.guide.index() == guide.index();
+                        startOfGuides.peek().countMid++;
                     }
                     case END -> {
                         if (startOfGuides.isEmpty()) {
                             return true; // stop
                         }
-                        assert startOfGuides.peek().guide.index() == guide.index();
+                        assert startOfGuides.peek().forwardInfo.guide.index() == guide.index();
                         startOfGuides.pop();
                     }
                 }
@@ -229,6 +239,15 @@ public record Formatter(FormattingOptions options) {
         }, start, Math.max(100, lineLength * 3) / 2);
         // both can be null, when the forward method immediately hits a newline
         return new CurrentExceeds(currentForwardInfo.get(), exceeds.get());
+    }
+
+    /**
+     * We accept priority splits when the only other splits have started at the beginning,
+     * and no MIDs have been encountered for them
+     */
+    private boolean acceptPriority(Stack<GuideOnStack> startOfGuides) {
+        return startOfGuides.stream().allMatch(guideOnStack -> guideOnStack.forwardInfo.chars == 0 &&
+                guideOnStack.countMid == 0);
     }
 
     record ForwardInfo(int pos, int chars, String string, Split before, Guide guide, boolean symbol) {
