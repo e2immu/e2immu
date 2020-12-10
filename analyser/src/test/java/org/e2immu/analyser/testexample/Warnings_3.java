@@ -1,4 +1,3 @@
-
 /*
  * e2immu-analyser: code analyser for effective and eventual immutability
  * Copyright 2020, Bart Naudts, https://www.e2immu.org
@@ -17,21 +16,22 @@
  *
  */
 
-package org.e2immu.analyser.parser;
+package org.e2immu.analyser.testexample;
 
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.junit.Test;
+public class Warnings_3 {
 
-import java.io.IOException;
+    public static int doSomething(int k) {
+        k = k + 1;
+        return k;
+    }
+    private final String a;
 
-public class Test_12_ModifyParameterChecks extends CommonTestRunner {
-
-    public Test_12_ModifyParameterChecks() {
-        super(false);
+    public Warnings_3(String a, String b) {
+        b = b + "abc";
+        this.a = a + b;
     }
 
-    @Test
-    public void testModifyParameterChecks() throws IOException {
-        testClass("ModifyParameterChecks", 2, 0, new DebugConfiguration.Builder().build());
+    public String getA() {
+        return a;
     }
 }

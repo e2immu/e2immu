@@ -1,6 +1,6 @@
 package org.e2immu.analyser.testexample;
 
-public class EvaluationErrors {
+public class Warnings_2 {
 
     public static int testDivisionByZero() {
         int i=0;
