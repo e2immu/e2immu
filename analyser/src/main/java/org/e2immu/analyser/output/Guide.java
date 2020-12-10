@@ -23,32 +23,39 @@ public record Guide(int index, Position position,
                     int tabs,
                     boolean prioritySplit,
                     boolean startWithNewLine,
-                    boolean endWithNewLine) implements OutputElement {
+                    boolean endWithNewLine,
+                    boolean allowNewLineBefore) implements OutputElement {
     private static final AtomicInteger generator = new AtomicInteger();
 
     public enum Position {
         START("S"), MID(""), END("E");
 
         private final String msg;
+
         Position(String msg) {
             this.msg = msg;
         }
 
     }
+
     public static GuideGenerator generatorForBlock() {
-        return new GuideGenerator(1, true, true, true);
+        return new GuideGenerator(1, true, true, true, true);
     }
 
     public static GuideGenerator defaultGuideGenerator() {
-        return new GuideGenerator(1, false, false, false);
+        return new GuideGenerator(1, false, false, false, false);
     }
 
     public static GuideGenerator generatorForParameterDeclaration() {
-        return new GuideGenerator(1, false, true, false);
+        return new GuideGenerator(1, false, true, false, false);
     }
 
     public static GuideGenerator generatorForAnnotationList() {
-        return new GuideGenerator(0, false, false, false);
+        return new GuideGenerator(0, false, false, false, false);
+    }
+
+    public static GuideGenerator generatorForImports() {
+        return new GuideGenerator(0, false, false, false, true);
     }
 
     public static class GuideGenerator {
@@ -57,29 +64,31 @@ public record Guide(int index, Position position,
         private final boolean prioritySplit;
         private final boolean startWithNewLine;
         private final boolean endWithNewLine;
+        private final boolean allowNewLineBefore;
 
         private GuideGenerator() {
-            this(1, false, false, false);
+            this(1, false, false, false, false);
         }
 
-        private GuideGenerator(int tabs, boolean prioritySplit, boolean startWithNewLine, boolean endWithNewLine) {
+        private GuideGenerator(int tabs, boolean prioritySplit, boolean startWithNewLine, boolean endWithNewLine, boolean allowNewLineBefore) {
             index = generator.incrementAndGet();
             this.tabs = tabs;
             this.startWithNewLine = startWithNewLine;
             this.endWithNewLine = endWithNewLine;
             this.prioritySplit = prioritySplit;
+            this.allowNewLineBefore = allowNewLineBefore;
         }
 
         public Guide start() {
-            return new Guide(index, Position.START, tabs, prioritySplit, startWithNewLine, endWithNewLine);
+            return new Guide(index, Position.START, tabs, prioritySplit, startWithNewLine, endWithNewLine, allowNewLineBefore);
         }
 
         public Guide mid() {
-            return new Guide(index, Position.MID, tabs, prioritySplit, startWithNewLine, endWithNewLine);
+            return new Guide(index, Position.MID, tabs, prioritySplit, startWithNewLine, endWithNewLine, allowNewLineBefore);
         }
 
         public Guide end() {
-            return new Guide(index, Position.END, tabs, prioritySplit, startWithNewLine, endWithNewLine);
+            return new Guide(index, Position.END, tabs, prioritySplit, startWithNewLine, endWithNewLine, allowNewLineBefore);
         }
 
         public boolean keepGuidesWithoutMid() {

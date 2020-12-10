@@ -180,11 +180,13 @@ public class TestFormatter2 {
         Assert.assertEquals("""
                 public class Basics_1 {
                     @Linked(to = { "p0" }) @NotModified @Nullable public final Set<String> f1;
+                    
                     @Dependent
                     public Basics_1(@NotModified @Nullable Set<String> p0, @NotModified @Nullable Set<String> p1, @Nullable String p2) {
                         Set<String> s1 = p0;
                         this.f1 = s1;
                     }
+                    
                     @Independent @NotModified @Nullable public Set<String> getF1() { return f1; }
                 }
                 """, formatter.write(example));
@@ -367,11 +369,13 @@ public class TestFormatter2 {
                         @E1Container
                         public class Basics_1 {
                             @Linked(to = { "p0" }) @NotModified @Nullable public final Set<String> f1;
+                            
                             @Dependent
                             public Basics_1(@NotModified @Nullable Set<String> p0, @NotModified @Nullable Set<String> p1, @Nullable String p2) {
                                 Set<String> s1 = p0;
                                 this.f1 = s1;
                             }
+                            
                             @Independent @NotModified @Nullable public Set<String> getF1() { return f1; }
                         }
                         """,
@@ -446,9 +450,11 @@ public class TestFormatter2 {
         Assert.assertEquals("""
                         static int test() {
                             List<String> list = new ArrayList();
+                            
                             if(list.size() > 0) /*Condition in 'if' or 'switch' statement evaluates to constant*/ /*Unreachable statement*/ {
                                 return 3;
                             }
+                            
                             return list.size() + 4;
                         }
                         """,
@@ -582,9 +588,11 @@ public class TestFormatter2 {
                             @NotModified
                             static int test() {
                                 List<String> list = new ArrayList();
+                                
                                 if(list.size() > 0) /*Condition in 'if' or 'switch' statement evaluates to constant*/ /*Unreachable statement*/ {
                                     return 3;
                                 }
+                                
                                 return list.size() + 4;
                             }
                         }

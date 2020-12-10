@@ -46,11 +46,19 @@ public record Formatter(FormattingOptions options) {
     static class Tab {
         final int indent;
         final int guideIndex;
+        final boolean allowNewLineBefore;
         int countLines;
+        boolean seenFirstMid;
+        Writer writer = new StringWriter();
 
-        Tab(int indent, int guideIndex) {
+        Tab(int indent, int guideIndex, boolean allowNewLineBefore) {
             this.indent = indent;
             this.guideIndex = guideIndex;
+            this.allowNewLineBefore = allowNewLineBefore;
+        }
+
+        void increment() {
+            if (seenFirstMid) countLines++;
         }
     }
 
@@ -63,39 +71,73 @@ public record Formatter(FormattingOptions options) {
         int end = list.size();
         boolean writeNewLine = true; // only indent when a newline was written
         while (pos < end) {
+
             int indent = tabs.isEmpty() ? 0 : tabs.peek().indent;
 
             // we should only indent if we wrote a new line
-            if (writeNewLine) indent(indent, writer);
+            if (writeNewLine) indent(indent, writer(writer, tabs));
             int lineLength = options.lengthOfLine() - indent;
             CurrentExceeds lookAhead = lookAhead(list, pos, lineLength);
 
+            NewLineDouble newLineDouble = NOT_END;
             boolean lineSplit = LINE_SPLIT == (tabs.isEmpty() ? NO_GUIDE : tabs.peek().guideIndex);
             if (lookAhead.exceeds != null) {
-                pos = handleExceeds(lookAhead, lineSplit, tabs, list, writer, pos);
+                pos = handleExceeds(lookAhead, lineSplit, tabs, list, writer(writer, tabs), pos);
                 writeNewLine = true;
             } else if (lookAhead.current == null) {
                 // direct newline hit
                 writeNewLine = false;
                 pos++;
             } else {
-                writeLine(list, writer, pos, lookAhead.current.pos);
+                writeLine(list, writer(writer, tabs), pos, lookAhead.current.pos);
                 if (lineSplit) {
-                    tabs.pop();
+                    pop(tabs, writer);
                 }
                 pos = lookAhead.current.pos + 1; // move one step beyond
 
                 // tab management: note that exceeds is never a guide.
                 Guide guide = lookAhead.current.guide;
                 if (guide != null) {
-                    writeNewLine = handleGuide(guide, tabs);
+                    newLineDouble = handleGuide(guide, tabs);
+                    writeNewLine = newLineDouble.writeNewLine;
                 } else {
                     writeNewLine = true;
                 }
             }
-            if (writeNewLine) writer.write("\n");
+            if (writeNewLine) {
+                tabs.forEach(Tab::increment);
+                writer(writer, tabs).write("\n");
+            }
+            if (newLineDouble.pop) {
+                pop(tabs, writer);
+            } else if (newLineDouble.swapWriter) {
+                if (newLineDouble.writeNewLineBefore) {
+                    writer(writer, tabs).write("\n");
+                }
+                swap(tabs, writer);
+            }
         }
+        while (!tabs.isEmpty()) pop(tabs, writer);
         if (!writeNewLine) writer.write("\n"); // end on a newline
+    }
+
+    private static void pop(Stack<Tab> tabs, Writer writer) throws IOException {
+        if(!tabs.isEmpty()) {
+            Tab tab = tabs.pop();
+            writer(writer, tabs).write(tab.writer.toString());
+        }
+    }
+
+    private static void swap(Stack<Tab> tabs, Writer writer) throws IOException {
+        assert !tabs.isEmpty();
+        Tab tab = tabs.peek();
+        Writer destination = tabs.size() == 1 ? writer : tabs.get(tabs.size() - 2).writer;
+        destination.write(tab.writer.toString());
+        tab.writer = new StringWriter();
+    }
+
+    private static Writer writer(Writer writer, Stack<Tab> tabs) {
+        return tabs.isEmpty() ? writer : tabs.peek().writer;
     }
 
     private int handleExceeds(CurrentExceeds lookAhead, boolean lineSplit, Stack<Tab> tabs,
@@ -103,7 +145,7 @@ public record Formatter(FormattingOptions options) {
         if (!lineSplit) {
             int previousIndent = tabs.isEmpty() ? 0 : tabs.peek().indent;
             tabs.add(new Tab(previousIndent + options.tabsForLineSplit() * options.spacesInTab(),
-                    LINE_SPLIT));
+                    LINE_SPLIT, false));
         }
         if (lookAhead.current != null) {
             writeLine(list, writer, pos, lookAhead.current.pos);
@@ -114,14 +156,19 @@ public record Formatter(FormattingOptions options) {
         }
     }
 
-    private boolean handleGuide(Guide guide, Stack<Tab> tabs) {
+    private static final NewLineDouble NOT_END = new NewLineDouble(false, false, false, false);
+
+    record NewLineDouble(boolean writeNewLine, boolean writeNewLineBefore, boolean swapWriter, boolean pop) {
+    }
+
+    private NewLineDouble handleGuide(Guide guide, Stack<Tab> tabs) {
         if (guide.position() == Guide.Position.START) {
             int previousIndent = tabs.isEmpty() ? 0 : tabs.peek().indent;
             tabs.add(new Tab(previousIndent + guide.tabs() * options.spacesInTab(),
-                    guide.index()));
+                    guide.index(), guide.allowNewLineBefore()));
             // do we need a newline? in the case of ending on a start after {, (, we do
             // in the case of the start of an annotation sequence, we don't
-            return guide.startWithNewLine();
+            return new NewLineDouble(guide.startWithNewLine(), false, false, false);
         }
 
         // MID or END
@@ -130,17 +177,19 @@ public record Formatter(FormattingOptions options) {
         }
         assert tabs.isEmpty() || tabs.peek().guideIndex == guide.index();
 
+        boolean writeNewLineBefore = !tabs.isEmpty() && tabs.peek().countLines > 1 && tabs.peek().allowNewLineBefore;
+
         if (guide.position() == Guide.Position.END) {
             // tabs can already be empty if the writeLine ended and left an ending
             // guide as the very last one
-            if (!tabs.isEmpty()) tabs.pop();
-            return guide.endWithNewLine();
+            return new NewLineDouble(guide.endWithNewLine(), writeNewLineBefore, false, true);
         }
         // MID
         if (!tabs.isEmpty()) {
+            tabs.peek().seenFirstMid = true;
             tabs.peek().countLines = 0; // reset
         }
-        return true;
+        return new NewLineDouble(true, writeNewLineBefore, true, false);
     }
 
     /**
