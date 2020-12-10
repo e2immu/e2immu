@@ -27,7 +27,7 @@ public class TestTypeParameters extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("TypeParameters", 0, 0, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeMapVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 

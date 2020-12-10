@@ -36,7 +36,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
         if ("print2".equals(d.methodInfo().name)) {
             Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
             Assert.assertTrue(d.evaluationResult().value.isInstanceOf(ConstantExpression.class));
-            Assert.assertEquals("b", d.evaluationResult().value.toString());
+            Assert.assertEquals("\"b\"", d.evaluationResult().value.toString());
             Assert.assertEquals(4L, d.evaluationResult().getObjectFlowStream().count());
             ObjectFlow objectFlow = d.evaluationResult().getObjectFlowStream().findFirst().orElseThrow();
             // ee modified?
@@ -87,12 +87,12 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             if (d.iteration() == 0) {
                 Assert.assertSame(EmptyExpression.NO_VALUE, vi.getValue());
             } else if (d.iteration() == 1) {
-                Assert.assertEquals(EFFECTIVELY_FINAL, vi.getValue().toString());
+                Assert.assertEquals("effectivelyFinal", vi.getValue().toString());
                 Assert.assertSame(DONE, d.result().analysisStatus);
             } else Assert.fail();
         }
         if ("EvaluateConstants".equals(d.methodInfo().name)) {
-            boolean expected = d.statementId().compareTo("1") < 0 || d.iteration() != 0;
+            boolean expected = true;// d.statementId().compareTo("1") < 0 || d.iteration() != 0;
             Assert.assertEquals(d.toString(), expected, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
         }
     };
@@ -107,7 +107,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
         }
         if ("print".equals(d.methodInfo().name)) {
             Expression srv = d.methodAnalysis().getSingleReturnValue();
-            Assert.assertEquals("b", srv.toString());
+            Assert.assertEquals("\"b\"", srv.toString());
         }
         if ("print2".equals(d.methodInfo().name) && d.iteration() > 2) {
             MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
@@ -120,9 +120,8 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             if (d.iteration() == 0) {
                 Assert.assertNull(srv);
             } else {
-                // TODO not sure this is so valuable (should we have an inline here??)
-                Assert.assertEquals("inline getEffectivelyFinal on org.e2immu.analyser.testexample.EvaluateConstants.effectivelyFinal",
-                        srv.toString());
+                Assert.assertEquals("/* inline getEffectivelyFinal */this.effectivelyFinal",
+                        srv.debugOutput());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
             }
         }
@@ -140,7 +139,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             if (d.iteration() == 0) {
                 Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
             } else {
-                Assert.assertEquals(EFFECTIVELY_FINAL, d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                Assert.assertEquals("effectivelyFinal", d.fieldAnalysis().getEffectivelyFinalValue().toString());
             }
         }
         if ("e".equals(d.fieldInfo().name)) {

@@ -20,9 +20,10 @@ package org.e2immu.analyser.model.expression.util;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
@@ -112,6 +113,11 @@ public class EvaluateInlineConditional {
                 return new Or(primitives).append(evaluationContext, Negation.negate(evaluationContext, condition), ifTrue);
             }
             return new And(primitives).append(evaluationContext, condition, ifTrue);
+        }
+
+        // x ? a : a --> a, but only if x is not modifying
+        if (ifTrue.equals(ifFalse)) {// && evaluationContext.getProperty(condition, VariableProperty.MODIFIED) == Level.FALSE) {
+            return ifTrue;
         }
         return null;
     }

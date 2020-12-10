@@ -72,7 +72,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
 
         if (FINAL_CHECKS.equals(d.methodInfo().name) && d.methodInfo().methodInspection.get().getParameters().size() == 2) {
             if (S1.equals(d.variableName())) {
-                Assert.assertEquals(S1_P0 + " + abc", d.currentValue().toString());
+                Assert.assertEquals("s1+\"abc\"", d.currentValue().toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL)); // nothing that points to not null
                 Assert.assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
@@ -92,7 +92,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, vi4.getProperty(VariableProperty.IMMUTABLE));
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    Assert.assertEquals("abc", d.currentValue().toString());
+                    Assert.assertEquals("\"abc\"", d.currentValue().toString());
                     VariableInfo vi1 = d.variableInfoContainer().best(VariableInfoContainer.LEVEL_1_INITIALISER);
                     Assert.assertEquals(Level.DELAY, vi1.getProperty(VariableProperty.IMMUTABLE));
                     VariableInfo vi3 = d.variableInfoContainer().best(VariableInfoContainer.LEVEL_3_EVALUATION);
@@ -128,7 +128,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         if ("setS4".equals(methodInfo.name)) {
             // @NotModified decided straight away, @Identity as well
             Assert.assertEquals(Level.FALSE, d.parameterAnalyses().get(0).getProperty(VariableProperty.MODIFIED));
-            int expectNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
+            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             Assert.assertEquals(expectNotNull, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
         }
     };

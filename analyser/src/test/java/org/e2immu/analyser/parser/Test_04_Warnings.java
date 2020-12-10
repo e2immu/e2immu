@@ -15,6 +15,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.stream.Stream;
 
 public class Test_04_Warnings extends CommonTestRunner {
     public Test_04_Warnings() {
@@ -221,11 +222,12 @@ public class Test_04_Warnings extends CommonTestRunner {
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                         .addEvaluationResultVisitor(evaluationResultVisitor)
-                        .addTypeContextVisitor(typeMapVisitor)
+                        .addTypeMapVisitor(typeMapVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 
+    // division by zero
     @Test
     public void test2() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
@@ -255,10 +257,35 @@ public class Test_04_Warnings extends CommonTestRunner {
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 
+    // parameter should not be assigned to
     @Test
     public void test3() throws IOException {
         testClass("Warnings_3", 2, 0, new DebugConfiguration.Builder()
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+    }
+
+    // modifying an immutable set
+    @Test
+    public void test4() throws IOException {
+        testClass("Warnings_4", 1, 0, new DebugConfiguration.Builder()
+                        .build(),
+                new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+    }
+
+
+    // method must be static
+    @Test
+    public void test5() throws IOException {
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo stream = typeMap.get(Stream.class);
+            Assert.assertNotNull(stream);
+            MethodInfo of = stream.typeInspection.get().methods().stream().filter(m -> m.name.equals("of")).findAny().orElseThrow();
+            Assert.assertEquals(MultiLevel.NULLABLE, of.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+        };
+
+        testClass("Warnings_5", 0, 1, new DebugConfiguration.Builder()
+                .addTypeMapVisitor(typeMapVisitor)
+                .build());
     }
 }

@@ -159,7 +159,7 @@ public class TestNotModifiedChecks extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("NotModifiedChecks", 0, 0, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeMapVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

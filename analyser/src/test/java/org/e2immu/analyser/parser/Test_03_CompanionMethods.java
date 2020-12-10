@@ -93,7 +93,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                         .addEvaluationResultVisitor(evaluationResultVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                        .addTypeContextVisitor(typeMapVisitor)
+                        .addTypeMapVisitor(typeMapVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().build(),
                 new AnnotatedAPIConfiguration.Builder()
@@ -258,7 +258,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         };
 
         testClass("BasicCompanionMethods_3", 2, 0, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeMapVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
@@ -350,7 +350,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
 
         testClass("BasicCompanionMethods_7", 0, 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addTypeContextVisitor(typeMapVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 

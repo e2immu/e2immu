@@ -76,7 +76,7 @@ public class TestSetTwiceSupply extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testUtilClass(List.of("SetTwice", "SetTwiceSupply"), 0, 0, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeMapVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());

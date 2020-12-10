@@ -50,7 +50,7 @@ public class EvaluateConstants {
 
     @NotNull
     @NotModified
-    @Constant
+    @Constant("b")
     // ERROR: ee() evaluates to constant
     public static String print2() {
         return ee() ? "a" : "b";

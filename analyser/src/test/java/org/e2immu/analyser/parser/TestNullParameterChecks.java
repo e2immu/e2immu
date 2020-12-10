@@ -91,7 +91,7 @@ public class TestNullParameterChecks extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("NullParameterChecks", 0, 1, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeMapVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());

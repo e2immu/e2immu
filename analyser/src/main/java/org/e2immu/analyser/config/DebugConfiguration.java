@@ -80,7 +80,7 @@ public class DebugConfiguration {
         }
 
         @Fluent
-        public Builder addTypeContextVisitor(TypeMapVisitor typeMapVisitor) {
+        public Builder addTypeMapVisitor(TypeMapVisitor typeMapVisitor) {
             this.typeMapVisitors.add(typeMapVisitor);
             return this;
         }

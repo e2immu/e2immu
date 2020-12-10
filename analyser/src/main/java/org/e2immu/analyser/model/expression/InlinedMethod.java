@@ -79,7 +79,7 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression,
 
     @Override
     public OutputBuilder output() {
-        return new OutputBuilder().add(new Text("", "/* inline " + methodInfo.name + "*/"))
+        return new OutputBuilder().add(new Text("", "/* inline " + methodInfo.name + " */"))
                 .add(expression.output());
     }
 

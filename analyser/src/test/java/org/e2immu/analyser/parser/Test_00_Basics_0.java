@@ -93,7 +93,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
         testClass("Basics_0", 0, 0, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVisitor)
-                .addTypeContextVisitor(typeMapVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 

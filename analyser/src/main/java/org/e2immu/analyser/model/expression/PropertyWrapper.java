@@ -30,10 +30,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -126,6 +123,11 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
     }
 
     @Override
+    public String toString() {
+        return minimalOutput();
+    }
+
+    @Override
     public boolean isNumeric() {
         return expression.isNumeric();
     }
@@ -172,5 +174,25 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
     @Override
     public NewObject getInstance(EvaluationContext evaluationContext) {
         return expression.getInstance(evaluationContext);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Expression)) return false;
+        Expression unboxed = this;
+        Expression oUnboxed = (Expression) o;
+        while (unboxed instanceof PropertyWrapper propertyWrapper) {
+            unboxed = propertyWrapper.expression;
+        }
+        while (oUnboxed instanceof PropertyWrapper propertyWrapper) {
+            oUnboxed = propertyWrapper.expression;
+        }
+        return unboxed.equals(oUnboxed);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(expression);
     }
 }

@@ -65,7 +65,8 @@ public record CheckConstant(Primitives primitives) {
 
 
     public AnnotationExpression createConstantAnnotation(E2ImmuAnnotationExpressions typeContext, Expression value) {
-        String constant = value.minimalOutput();
+        // we want to avoid double ""
+        String constant = value instanceof StringConstant stringConstant ? stringConstant.constant() : value.minimalOutput();
         Expression valueExpression = new MemberValuePair(new StringConstant(primitives, constant));
         List<Expression> expressions = List.of(valueExpression);
         return new AnnotationExpressionImpl(typeContext.constant.typeInfo(), expressions);

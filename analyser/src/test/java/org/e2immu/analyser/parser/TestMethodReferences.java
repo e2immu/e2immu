@@ -29,7 +29,7 @@ public class TestMethodReferences extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("MethodReferences", 0, 1, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeMapVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 

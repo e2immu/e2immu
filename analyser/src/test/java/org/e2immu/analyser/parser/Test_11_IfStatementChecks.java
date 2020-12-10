@@ -10,8 +10,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestIfStatementChecks extends CommonTestRunner {
-    public TestIfStatementChecks() {
+public class Test_11_IfStatementChecks extends CommonTestRunner {
+    public Test_11_IfStatementChecks() {
         super(false);
     }
     /*
@@ -39,7 +39,7 @@ public class TestIfStatementChecks extends CommonTestRunner {
                 Assert.assertEquals(1, d.getProperty(VariableProperty.ASSIGNED));
                 Assert.assertFalse(d.hasProperty(VariableProperty.READ)); // nothing that points to not null
             } else if ("2".equals(d.statementId())) {
-                Assert.assertEquals(1, d.getProperty(VariableProperty.READ));
+                Assert.assertEquals(2, d.getProperty(VariableProperty.READ));
             } else Assert.fail("Statement " + d.statementId());
         }
     };
@@ -47,7 +47,7 @@ public class TestIfStatementChecks extends CommonTestRunner {
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("method1".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
-                Assert.assertEquals("not (null == a)",
+                Assert.assertEquals("null!=a",
                         d.statementAnalysis().stateData.conditionManager.get().state.toString());
             }
         }

@@ -2,7 +2,7 @@ package org.e2immu.analyser.testexample;
 
 import java.util.stream.Stream;
 
-public class MethodMustBeStatic {
+public class Warnings_5 {
 
     private static class ParentClass {
         String s;

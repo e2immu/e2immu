@@ -404,7 +404,7 @@ public class ExpressionContext {
         try {
             if (expression.isStringLiteralExpr()) {
                 StringLiteralExpr stringLiteralExpr = (StringLiteralExpr) expression;
-                return new StringConstant(typeContext.getPrimitives(), stringLiteralExpr.asString());
+                return new StringConstant(typeContext.getPrimitives(), stringLiteralExpr.getValue());
             }
             if (expression.isIntegerLiteralExpr()) {
                 IntegerLiteralExpr integerLiteralExpr = (IntegerLiteralExpr) expression;

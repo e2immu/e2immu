@@ -75,7 +75,7 @@ public class TestImmutabilityAnnotations extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("ImmutabilityAnnotations", 0, 1, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeMapVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

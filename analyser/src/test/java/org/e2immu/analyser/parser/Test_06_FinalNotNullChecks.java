@@ -120,7 +120,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("FinalNotNullChecks", 0, 0, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeMapVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

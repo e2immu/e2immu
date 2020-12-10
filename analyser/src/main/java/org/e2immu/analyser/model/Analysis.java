@@ -76,7 +76,7 @@ public interface Analysis {
                 if (!parameters.absent()) annotationsSeen.add(annotation.typeInfo());
             }
         }
-        return new OutputBuilder();
+        return outputBuilder;
     }
 
     default Analysis build() {

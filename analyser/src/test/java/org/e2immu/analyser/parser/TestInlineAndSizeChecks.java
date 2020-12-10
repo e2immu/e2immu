@@ -45,7 +45,7 @@ public class TestInlineAndSizeChecks extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("InlineAndSizeChecks", 2, 0, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeMapVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());

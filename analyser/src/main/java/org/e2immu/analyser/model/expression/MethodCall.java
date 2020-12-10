@@ -352,15 +352,19 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             MethodAnalysis methodAnalysis,
             Expression objectValue,
             List<Expression> parameterValues) {
-        NewObject instance;
-        if (objectValue instanceof VariableExpression variableValue) {
-            instance = builder.currentInstance(variableValue.variable(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
+        NewObject newObject;
+        VariableExpression variableExpression;
+        if ((variableExpression = objectValue.asInstanceOf(VariableExpression.class)) != null) {
+            newObject = builder.currentInstance(variableExpression.variable(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
+        } else if(objectValue instanceof TypeExpression) {
+            assert methodInfo.methodInspection.get().isStatic();
+            return null; // static method
         } else {
-            instance = objectValue.getInstance(evaluationContext);
+            newObject = objectValue.getInstance(evaluationContext);
         }
-        Objects.requireNonNull(instance, "Modifying method on constant or primitive? Impossible");
+        Objects.requireNonNull(newObject, "Modifying method on constant or primitive? Impossible: "+objectValue.getClass());
 
-        AtomicReference<Expression> newState = new AtomicReference<>(instance.state);
+        AtomicReference<Expression> newState = new AtomicReference<>(newObject.state);
         methodInfo.methodInspection.get().getCompanionMethods().keySet().stream()
                 .filter(e -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(e.action()))
                 .sorted()
@@ -424,9 +428,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                         }
                     }
                 });
-        NewObject modifiedInstance = methodInfo.isConstructor ? new NewObject(instance, newState.get()) :
+        NewObject modifiedInstance = methodInfo.isConstructor ? new NewObject(newObject, newState.get()) :
                 // we clear the constructor and its arguments after calling a modifying method on the object
-                new NewObject(null, instance.parameterizedType, List.of(), newState.get(), instance.getObjectFlow());
+                new NewObject(null, newObject.parameterizedType, List.of(), newState.get(), newObject.getObjectFlow());
 
         // update the object of the modifying call
         if (objectValue instanceof VariableExpression variableValue) {

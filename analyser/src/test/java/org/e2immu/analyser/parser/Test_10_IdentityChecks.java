@@ -1,16 +1,15 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.MethodAnalysis;
-import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 
@@ -98,9 +97,28 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
             //Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, methodAnalysis.getProperty(VariableProperty.NOT_NULL));
         }
         if ("idem4".equals(d.methodInfo().name)) {
-            Assert.assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
             Assert.assertEquals(Level.FALSE, methodAnalysis.getProperty(VariableProperty.MODIFIED));
+            Assert.assertEquals(Level.TRUE, methodAnalysis.getProperty(VariableProperty.IDENTITY));
         }
+    };
+
+    EvaluationResultVisitor evaluationResultVisitor = d -> {
+        if("idem4".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+            Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+            // double property wrapper
+            Assert.assertEquals("s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/", d.evaluationResult().value.toString());
+        }
+    };
+
+    TypeMapVisitor typeMapVisitor = typeMap -> {
+        TypeInfo logger = typeMap.get(Logger.class);
+        MethodInfo debug = logger.typeInspection.get().methodStream(TypeInspection.Methods.THIS_TYPE_ONLY)
+                .filter(m -> "org.slf4j.Logger.debug(String,Object...)".equals(m.fullyQualifiedName))
+                .findFirst().orElseThrow();
+        Assert.assertEquals(Level.FALSE, debug.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+
+        MethodInfo debug1 = logger.findUniqueMethod("debug", 1);
+        Assert.assertEquals(Level.FALSE, debug1.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
     };
 
     @Test
@@ -109,6 +127,8 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                        .addTypeMapVisitor(typeMapVisitor)
+                        .addEvaluationResultVisitor(evaluationResultVisitor)
                         .build(),
                 new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }

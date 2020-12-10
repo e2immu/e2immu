@@ -21,7 +21,7 @@ public class Test_15_InlineMethods extends CommonTestRunner {
     @Test
     public void test() throws IOException {
         testClass("InlineMethods", 0, 0, new DebugConfiguration.Builder()
-                .addTypeContextVisitor(typeMapVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 
