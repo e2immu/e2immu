@@ -50,6 +50,7 @@ public record Formatter(FormattingOptions options) {
         int countLines;
         boolean seenFirstMid;
         Writer writer = new StringWriter();
+        boolean previousWriteNewLineBefore;
 
         Tab(int indent, int guideIndex, boolean allowNewLineBefore) {
             this.indent = indent;
@@ -91,14 +92,14 @@ public record Formatter(FormattingOptions options) {
             } else {
                 writeLine(list, writer(writer, tabs), pos, lookAhead.current.pos);
                 if (lineSplit) {
-                    pop(tabs, writer);
+                    pop(tabs, "", writer);
                 }
                 pos = lookAhead.current.pos + 1; // move one step beyond
 
                 // tab management: note that exceeds is never a guide.
                 Guide guide = lookAhead.current.guide;
                 if (guide != null) {
-                    newLineDouble = handleGuide(guide, tabs);
+                    newLineDouble = handleGuide(guide, tabs, writer);
                     writeNewLine = newLineDouble.writeNewLine;
                 } else {
                     writeNewLine = true;
@@ -109,29 +110,30 @@ public record Formatter(FormattingOptions options) {
                 writer(writer, tabs).write("\n");
             }
             if (newLineDouble.pop) {
-                pop(tabs, writer);
+                pop(tabs, !tabs.isEmpty() && tabs.peek().previousWriteNewLineBefore ? "\n" : "", writer);
             } else if (newLineDouble.swapWriter) {
-                if (newLineDouble.writeNewLineBefore) {
-                    writer(writer, tabs).write("\n");
-                }
-                swap(tabs, writer);
+                Tab tab = tabs.peek();
+                swap(tabs, newLineDouble.writeNewLineBefore || tab.previousWriteNewLineBefore ? "\n" : "", writer);
+                tab.previousWriteNewLineBefore = newLineDouble.writeNewLineBefore;
             }
         }
-        while (!tabs.isEmpty()) pop(tabs, writer);
+        while (!tabs.isEmpty()) pop(tabs, "", writer);
         if (!writeNewLine) writer.write("\n"); // end on a newline
     }
 
-    private static void pop(Stack<Tab> tabs, Writer writer) throws IOException {
-        if(!tabs.isEmpty()) {
+    private static void pop(Stack<Tab> tabs, String writeBefore, Writer writer) throws IOException {
+        if (!tabs.isEmpty()) {
             Tab tab = tabs.pop();
-            writer(writer, tabs).write(tab.writer.toString());
+            Writer dest = writer(writer, tabs);
+            dest.write(writeBefore);
+            dest.write(tab.writer.toString());
         }
     }
 
-    private static void swap(Stack<Tab> tabs, Writer writer) throws IOException {
-        assert !tabs.isEmpty();
-        Tab tab = tabs.peek();
+    private static void swap(Stack<Tab> tabs, String writeBefore, Writer writer) throws IOException {
         Writer destination = tabs.size() == 1 ? writer : tabs.get(tabs.size() - 2).writer;
+        destination.write(writeBefore);
+        Tab tab = tabs.peek();
         destination.write(tab.writer.toString());
         tab.writer = new StringWriter();
     }
@@ -161,7 +163,7 @@ public record Formatter(FormattingOptions options) {
     record NewLineDouble(boolean writeNewLine, boolean writeNewLineBefore, boolean swapWriter, boolean pop) {
     }
 
-    private NewLineDouble handleGuide(Guide guide, Stack<Tab> tabs) {
+    private NewLineDouble handleGuide(Guide guide, Stack<Tab> tabs, Writer writer) throws IOException {
         if (guide.position() == Guide.Position.START) {
             int previousIndent = tabs.isEmpty() ? 0 : tabs.peek().indent;
             tabs.add(new Tab(previousIndent + guide.tabs() * options.spacesInTab(),
@@ -173,7 +175,7 @@ public record Formatter(FormattingOptions options) {
 
         // MID or END
         while (!tabs.isEmpty() && tabs.peek().guideIndex == LINE_SPLIT) {
-            tabs.pop();
+            pop(tabs, "", writer);
         }
         assert tabs.isEmpty() || tabs.peek().guideIndex == guide.index();
 
@@ -182,6 +184,7 @@ public record Formatter(FormattingOptions options) {
         if (guide.position() == Guide.Position.END) {
             // tabs can already be empty if the writeLine ended and left an ending
             // guide as the very last one
+
             return new NewLineDouble(guide.endWithNewLine(), writeNewLineBefore, false, true);
         }
         // MID
