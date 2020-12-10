@@ -32,17 +32,19 @@ public enum Space implements OutputElement {
     // no space needed, split to make things nicer
     NO_SPACE_SPLIT_ALLOWED(ElementarySpace.NONE, ElementarySpace.NONE, EASY),
 
-    ONE_IS_NICE_EASY_SPLIT(ElementarySpace.NONE, ElementarySpace.NICE, EASY),  // no space needed but one in nice, split to make things nicer
+    RELAXED_NO_SPACE_SPLIT_ALLOWED(ElementarySpace.RELAXED_NONE, ElementarySpace.RELAXED_NONE, EASY),
 
-    ONE_IS_NICE_SPLIT_BEGIN_END(ElementarySpace.NONE, ElementarySpace.NICE, BEGIN_END),  // no space needed but one in nice, split to make things nicer
+    ONE_IS_NICE_EASY_SPLIT(ElementarySpace.RELAXED_NONE, ElementarySpace.NICE, EASY),  // no space needed but one in nice, split to make things nicer
+
+    ONE_IS_NICE_SPLIT_BEGIN_END(ElementarySpace.RELAXED_NONE, ElementarySpace.NICE, BEGIN_END),  // no space needed but one in nice, split to make things nicer
 
     NEWLINE(ElementarySpace.NEWLINE, ElementarySpace.NEWLINE, ALWAYS), // enforce a newline
 
     // easy either left or right, but consistently according to preferences
     // e.g. && either at beginning of line in sequence, or always at end
     // in nice formatting, one space is used
-    ONE_IS_NICE_EASY_L(ElementarySpace.NONE, ElementarySpace.NICE, EASY_L),
-    ONE_IS_NICE_EASY_R(ElementarySpace.NONE, ElementarySpace.NICE, EASY_R);
+    ONE_IS_NICE_EASY_L(ElementarySpace.RELAXED_NONE, ElementarySpace.NICE, EASY_L),
+    ONE_IS_NICE_EASY_R(ElementarySpace.RELAXED_NONE, ElementarySpace.NICE, EASY_R);
 
     private final ElementarySpace minimal;
     private final ElementarySpace nice;

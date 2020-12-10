@@ -42,7 +42,7 @@ public record Symbol(String symbol, Space left, Space right, String constant) im
     public static final Symbol DOT = new Symbol(".", NO_SPACE_SPLIT_ALLOWED, NONE, "DOT");
 
     public static final Symbol LEFT_PARENTHESIS = new Symbol("(", NONE, NO_SPACE_SPLIT_ALLOWED, "LEFT_PARENTHESIS");
-    public static final Symbol RIGHT_PARENTHESIS = new Symbol(")", NONE, NO_SPACE_SPLIT_ALLOWED, "RIGHT_PARENTHESIS");
+    public static final Symbol RIGHT_PARENTHESIS = new Symbol(")", NONE, RELAXED_NO_SPACE_SPLIT_ALLOWED, "RIGHT_PARENTHESIS");
     public static final Symbol OPEN_CLOSE_PARENTHESIS = new Symbol("()", NONE, NO_SPACE_SPLIT_ALLOWED, "OPEN_CLOSE_PARENTHESIS");
 
     public static final Symbol LEFT_BRACE = new Symbol("{", ONE_IS_NICE_EASY_SPLIT, ONE_IS_NICE_SPLIT_BEGIN_END, "LEFT_BRACE");

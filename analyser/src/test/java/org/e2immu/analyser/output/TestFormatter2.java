@@ -183,14 +183,11 @@ public class TestFormatter2 {
                 public class Basics_1 {
                     @Linked(to = { "p0" }) @NotModified @Nullable public final Set<String> f1;
                     @Dependent
-                    public Basics_1(
-                        @NotModified @Nullable Set<String> p0,
-                        @NotModified @Nullable Set<String> p1,
-                        @Nullable String p2) { 
-                        Set<String> s1 = p0; 
-                        this.f1 = s1; 
+                    public Basics_1(@NotModified @Nullable Set<String> p0, @NotModified @Nullable Set<String> p1, @Nullable String p2) {
+                        Set<String> s1 = p0;
+                        this.f1 = s1;
                     }
-                    @Independent @NotModified @Nullable public Set<String> getF1() { return f1; } 
+                    @Independent @NotModified @Nullable public Set<String> getF1(){ return f1; }
                 }
                 """, formatter.write(example));
     }
@@ -373,14 +370,11 @@ public class TestFormatter2 {
                         public class Basics_1 {
                             @Linked(to = { "p0" }) @NotModified @Nullable public final Set<String> f1;
                             @Dependent
-                            public Basics_1(
-                                @NotModified @Nullable Set<String> p0,
-                                @NotModified @Nullable Set<String> p1,
-                                @Nullable String p2) { 
-                                Set<String> s1 = p0; 
-                                this.f1 = s1; 
+                            public Basics_1(@NotModified @Nullable Set<String> p0, @NotModified @Nullable Set<String> p1, @Nullable String p2) {
+                                Set<String> s1 = p0;
+                                this.f1 = s1;
                             }
-                            @Independent @NotModified @Nullable public Set<String> getF1() { return f1; } 
+                            @Independent @NotModified @Nullable public Set<String> getF1(){ return f1; }
                         }
                         """,
                 new Formatter(options).write(createExample1()));

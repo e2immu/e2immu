@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TestFormatterSplitLine {
+public class TestFormatter1 {
 
     // public int method  (17 chars)
     private OutputBuilder createExample0() {
@@ -59,19 +59,19 @@ public class TestFormatterSplitLine {
     @Test
     public void testLookAhead() {
         Formatter formatter = new Formatter(FormattingOptions.DEFAULT); // options
-       // Assert.assertEquals(17, formatter.lookAhead(createExample0().list, 0, 20, false).charsPlusString());
-      //  Assert.assertEquals(17, formatter.lookAhead(createExample0().list, 0, 15, false).charsPlusString());
+        // Assert.assertEquals(17, formatter.lookAhead(createExample0().list, 0, 20, false).charsPlusString());
+        //  Assert.assertEquals(17, formatter.lookAhead(createExample0().list, 0, 15, false).charsPlusString());
 
         // up to the ( now
-     //   Assert.assertEquals(18, formatter.lookAhead(createExample1().list, 0, 20, false).charsPlusString());
+        //   Assert.assertEquals(18, formatter.lookAhead(createExample1().list, 0, 20, false).charsPlusString());
 
         List<OutputElement> list = createExample1().list;
         // up to the { now, we've included the whole (...) guide
-      //  Assert.assertEquals(35, formatter.lookAhead(createExample1().list, 0, 35, false).charsPlusString());
+        //  Assert.assertEquals(35, formatter.lookAhead(createExample1().list, 0, 35, false).charsPlusString());
 
         // int p1, (7 = 6+the start guide)
         List<OutputElement> subList = list.subList(7, list.size());
-      //  Assert.assertEquals(7, formatter.lookAhead(subList, 0, 120, false).charsPlusString());
+        //  Assert.assertEquals(7, formatter.lookAhead(subList, 0, 120, false).charsPlusString());
     }
 
     @Test
@@ -92,12 +92,12 @@ public class TestFormatterSplitLine {
             return false;
         }, 0, options.lengthOfLine() + 20);
         Assert.assertEquals(2, info.size());
-        Assert.assertEquals(" "+PACKAGE, info.get(1).string());
+        Assert.assertEquals(" " + PACKAGE, info.get(1).string());
 
-     //   Formatter.ForwardInfo fw0 = formatter.lookAhead(outputBuilder.list, 0,20, false);
-    //    Assert.assertEquals(0, fw0.pos());
-      //  Formatter.ForwardInfo fw1 = formatter.lookAhead(outputBuilder.list, 1,20, false);
-     //   Assert.assertEquals(2, fw1.pos());
+        //   Formatter.ForwardInfo fw0 = formatter.lookAhead(outputBuilder.list, 0,20, false);
+        //    Assert.assertEquals(0, fw0.pos());
+        //  Formatter.ForwardInfo fw1 = formatter.lookAhead(outputBuilder.list, 1,20, false);
+        //   Assert.assertEquals(2, fw1.pos());
 
         Assert.assertEquals("package\n    " + PACKAGE + "\n", new Formatter(options).write(outputBuilder));
     }
@@ -547,6 +547,50 @@ public class TestFormatterSplitLine {
                     private String nonFinal = "xyz"; 
                 }
                 """, formatter.write(createExample5(true)));
+    }
+
+
+    // variant on example 1
+    private OutputBuilder createExample7() {
+        Guide.GuideGenerator gg = Guide.generatorForParameterDeclaration();
+        Guide.GuideGenerator gg2 = Guide.generatorForBlock();
+
+        return new OutputBuilder()
+                .add(new Text("public")).add(Space.ONE)
+                .add(new Text("int")).add(Space.ONE)
+                .add(new Text("method"))
+                .add(Symbol.LEFT_PARENTHESIS)
+                .add(gg.start())
+                .add(Symbol.AT).add(new Text("E2Immutable")).add(Space.ONE)
+                .add(new Text("int")).add(Space.ONE).add(new Text("p1")).add(Symbol.COMMA)
+                .add(gg.mid()).add(new Text("int")).add(Space.ONE).add(new Text("p2"))
+                .add(gg.end())
+                .add(Symbol.RIGHT_PARENTHESIS)
+                .add(Symbol.LEFT_BRACE)
+                .add(gg2.start()).add(new Text("return")).add(Space.ONE)
+                .add(new Text("p1")).add(Symbol.binaryOperator("+")).add(new Text("p2")).add(Symbol.SEMICOLON)
+                .add(gg2.end())
+                .add(Symbol.RIGHT_BRACE);
+    }
+
+    @Test
+    public void testGuide7Long() {
+        FormattingOptions options = new FormattingOptions.Builder().setLengthOfLine(80)
+                .setSpacesInTab(2).setTabsForLineSplit(2).build();
+        Formatter formatter = new Formatter(options);
+        List<OutputElement> list = createExample7().list;
+        Assert.assertEquals(30, list.size());
+
+        List<Formatter.ForwardInfo> info = new ArrayList<>();
+        new Formatter(options).forward(list, fi -> {
+            info.add(fi);
+            System.out.println(fi);
+            return false;
+        }, 0, 120);
+        Assert.assertEquals("@", info.get(5).string());
+
+        Assert.assertEquals("public int method(@E2Immutable int p1, int p2) { return p1 + p2; }\n",
+                new Formatter(options).write(createExample7()));
     }
 
     // public method(int p1, int p2);

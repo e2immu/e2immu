@@ -171,16 +171,16 @@ public record Formatter(FormattingOptions options) {
 
     CurrentExceeds lookAhead(List<OutputElement> list, int start, int lineLength) {
         AtomicReference<ForwardInfo> currentForwardInfo = new AtomicReference<>();
-        AtomicReference<ForwardInfo> firstStartWithNewLine = new AtomicReference<>();
+        AtomicReference<ForwardInfo> prioritySplit = new AtomicReference<>();
         AtomicReference<ForwardInfo> exceeds = new AtomicReference<>();
         Stack<ForwardInfo> startOfGuides = new Stack<>();
         forward(list, forwardInfo -> {
             if (forwardInfo.charsPlusString() > lineLength) {
 
                 // exceeding the allowed length of the line... not everything fits on one line
-                if (firstStartWithNewLine.get() != null) {
+                if (prioritySplit.get() != null) {
                     // give priority to symmetrical splits
-                    currentForwardInfo.set(firstStartWithNewLine.get());
+                    currentForwardInfo.set(prioritySplit.get());
                     return true;
                 }
                 if (!startOfGuides.isEmpty()) {
@@ -201,10 +201,9 @@ public record Formatter(FormattingOptions options) {
                 Guide guide = forwardInfo.guide;
                 switch (guide.position()) {
                     case START -> {
-                        // make a note of the first symmetrical split we encounter
-                        // here we'll stop when not everything fits on a line
-                        if (firstStartWithNewLine.get() == null && guide.prioritySplit()) {
-                            firstStartWithNewLine.set(forwardInfo);
+                        // priority split: when the first one we encounter is a priority one
+                        if (prioritySplit.get() == null && guide.prioritySplit() && startOfGuides.isEmpty()) {
+                            prioritySplit.set(forwardInfo);
                         }
                         startOfGuides.push(forwardInfo);
                     }
@@ -266,7 +265,7 @@ public record Formatter(FormattingOptions options) {
             String string;
 
             Split splitAfterWriting = Split.NEVER;
-            ElementarySpace spaceAfterWriting = ElementarySpace.NONE;
+            ElementarySpace spaceAfterWriting = ElementarySpace.RELAXED_NONE;
             if (outputElement instanceof Symbol symbol) {
                 split = symbol.left().split;
                 lastOneWasSpace = combine(lastOneWasSpace, symbol.left().elementarySpace(options));
@@ -290,7 +289,8 @@ public record Formatter(FormattingOptions options) {
                 // split means nothing here
                 if (writer.apply(new ForwardInfo(pos, chars, null, Split.NEVER, guide, false))) return true;
             } else if (string.length() > 0) {
-                boolean writeSpace = lastOneWasSpace != ElementarySpace.NONE && wroteOnce;
+                boolean writeSpace = lastOneWasSpace != ElementarySpace.NONE &&
+                        lastOneWasSpace != ElementarySpace.RELAXED_NONE && wroteOnce;
                 int stringLen = string.length();
                 int goingToWrite = stringLen + (writeSpace ? 1 : 0);
 
@@ -315,7 +315,7 @@ public record Formatter(FormattingOptions options) {
     // main point: once we have an enforced ONE, wo do not let go
     // otherwise we step to the spacing of the next one
     private static ElementarySpace combine(ElementarySpace s1, ElementarySpace s2) {
-        if (s1 == ElementarySpace.ONE) {
+        if (s1 == ElementarySpace.ONE || s1 == ElementarySpace.NONE) {
             return s1;
         }
         return s2;
