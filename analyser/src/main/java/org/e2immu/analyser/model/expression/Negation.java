@@ -120,6 +120,12 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     @Override
     public OutputBuilder output() {
+        // we intercept a few standard cases... too ugly otherwise
+        if (expression instanceof Equals equals) {
+            return new OutputBuilder().add(outputInParenthesis(equals.precedence(), equals.lhs))
+                    .add(Symbol.NOT_EQUALS)
+                    .add(outputInParenthesis(equals.precedence(), equals.rhs));
+        }
         return new OutputBuilder().add(expression.isNumeric() ? Symbol.UNARY_MINUS : Symbol.UNARY_BOOLEAN_NOT)
                 .add(outputInParenthesis(precedence(), expression));
     }

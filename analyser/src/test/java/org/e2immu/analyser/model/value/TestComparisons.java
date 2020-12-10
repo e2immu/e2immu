@@ -53,7 +53,7 @@ public class TestComparisons extends CommonAbstractValue {
         Expression iEq4 = equals(i, newInt(4));
         Assert.assertEquals("4==i", iEq4.toString());
         Expression iNeq3 = negate(equals(newInt(3), i));
-        Assert.assertEquals("!(3==i)", iNeq3.toString());
+        Assert.assertEquals("3!=i", iNeq3.toString());
         Expression and = newAndAppend(iNeq3, iEq4);
         Assert.assertEquals(iEq4, and);
     }

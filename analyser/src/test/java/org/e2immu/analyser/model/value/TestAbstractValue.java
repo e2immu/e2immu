@@ -118,7 +118,7 @@ public class TestAbstractValue extends CommonAbstractValue {
         Assert.assertEquals(true, nullClauses2.get(vb));
 
         Expression orValue = newOrAppend(v, negate(v2));
-        Assert.assertEquals("null==a||!(null==b)", orValue.toString());
+        Assert.assertEquals("null==a||null!=b", orValue.toString());
         Map<Variable, Boolean> nullClausesAnd = nullClauses(orValue, Filter.FilterMode.REJECT);
         Assert.assertEquals(2, nullClausesAnd.size());
         Assert.assertEquals(true, nullClausesAnd.get(va));
@@ -128,7 +128,7 @@ public class TestAbstractValue extends CommonAbstractValue {
     @Test
     public void testIsNotNull() {
         Expression v = Negation.negate(minimalEvaluationContext, new Equals(PRIMITIVES, NullConstant.NULL_CONSTANT, a, ObjectFlow.NO_FLOW));
-        Assert.assertEquals("!(null==a)", v.toString());
+        Assert.assertEquals("null!=a", v.toString());
         Map<Variable, Boolean> nullClauses = nullClauses(v, Filter.FilterMode.REJECT);
         Assert.assertEquals(1, nullClauses.size());
         Assert.assertEquals(false, nullClauses.get(va));

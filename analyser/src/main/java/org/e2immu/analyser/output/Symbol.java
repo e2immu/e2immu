@@ -59,6 +59,7 @@ public record Symbol(String symbol, Space left, Space right, String constant) im
     public static final Symbol LOGICAL_AND = binaryOperator("&&");
     public static final Symbol LOGICAL_OR = binaryOperator("||");
     public static final Symbol LAMBDA = binaryOperator("->");
+    public static final Symbol NOT_EQUALS = binaryOperator("!=");
 
     public static final Symbol LEFT_BLOCK_COMMENT = new Symbol("/*", ONE_IS_NICE_EASY_SPLIT, NONE, "LEFT_BLOCK_COMMENT");
     public static final Symbol RIGHT_BLOCK_COMMENT = new Symbol("*/", NONE, ONE_IS_NICE_EASY_SPLIT, "RIGHT_BLOCK_COMMENT");

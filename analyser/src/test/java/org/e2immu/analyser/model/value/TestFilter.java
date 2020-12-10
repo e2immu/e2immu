@@ -54,7 +54,7 @@ public class TestFilter extends CommonAbstractValue {
     public void testWithEquals() {
         Expression sNotNull = negate(equals(NullConstant.NULL_CONSTANT, s));
         And andValue = (And) newAndAppend(a, sNotNull);
-        Assert.assertEquals("a&&!(null==s)", andValue.toString());
+        Assert.assertEquals("a&&null!=s", andValue.toString());
 
         Filter.FilterResult<Variable> filterResult = Filter.filter(minimalEvaluationContext, andValue, Filter.FilterMode.ALL, value -> {
             if (value instanceof Equals equalsValue) {

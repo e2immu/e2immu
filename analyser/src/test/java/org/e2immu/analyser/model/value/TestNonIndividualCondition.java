@@ -38,7 +38,7 @@ public class TestNonIndividualCondition extends CommonAbstractValue {
         Assert.assertEquals("null==s", rest(andValue2, Filter.FilterMode.ACCEPT).toString());
 
         Expression notAndValue = negate(andValue);
-        Assert.assertEquals("!(null==s)||!(null==p)", notAndValue.toString());
-        Assert.assertEquals("!(null==s)", rest(notAndValue, Filter.FilterMode.REJECT).toString());
+        Assert.assertEquals("null!=s||null!=p", notAndValue.toString());
+        Assert.assertEquals("null!=s", rest(notAndValue, Filter.FilterMode.REJECT).toString());
     }
 }
