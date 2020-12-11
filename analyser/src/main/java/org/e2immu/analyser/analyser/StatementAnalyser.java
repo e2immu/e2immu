@@ -711,12 +711,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
         try {
             Expression expression;
+            boolean returnConditionally;
             if (statementAnalysis.statement instanceof ReturnStatement) {
-                VariableExpression returnVariable = new VariableExpression(new ReturnVariable(myMethodAnalyser.methodInfo));
-                expression = new Assignment(statementAnalysis.primitives, returnVariable, structure.expression);
+                expression = step3_prepare_Return(structure);
+                returnConditionally = expression == structure.expression;
             } else {
                 expression = structure.expression;
+                returnConditionally = false;
             }
+
+
             EvaluationResult result = expression.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo);
             AnalysisStatus status = apply(sharedState, result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_3);
             if (status == DELAYS) {
@@ -734,6 +738,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             Expression value = result.value;
             boolean delays = value == NO_VALUE;
 
+            if (returnConditionally) {
+                step3_ReturnConditionally(sharedState, value);
+            }
             if (statementAnalysis.statement instanceof ForEachStatement) {
                 step3_ForEach(sharedState, value);
             }
@@ -751,6 +758,43 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             LOGGER.warn("Failed to evaluate main expression (step 3) in statement {}", statementAnalysis.index);
             throw rte;
         }
+    }
+
+    private void step3_ReturnConditionally(SharedState sharedState, Expression value) {
+        ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
+        Expression currentRV = statementAnalysis.find(analyserContext, returnVariable).getValue();
+        InlineConditional inlineConditional;
+        if((inlineConditional = currentRV.asInstanceOf(InlineConditional.class)) != null) {
+            // NOTE if currentRV is an inline condition, the re-evaluation should take place without taking the current state
+            // into account! the current state will contain a part exactly to the opposite of the condition
+            // (if(a!=null) return b; --> now a == null!
+            Expression newInline;
+            if(inlineConditional.ifTrue.isInitialReturnExpression()) {
+                newInline = new InlineConditional(inlineConditional.condition, value, inlineConditional.ifFalse, inlineConditional.objectFlow);
+            } else if(inlineConditional.ifFalse.isInitialReturnExpression()){
+                newInline = new InlineConditional(inlineConditional.condition, inlineConditional.ifTrue, value, inlineConditional.objectFlow);
+            } else throw new UnsupportedOperationException();
+            VariableInfoContainer vic = statementAnalysis.findForWriting(returnVariable);
+            vic.assignment(VariableInfoContainer.LEVEL_3_EVALUATION);
+            Map<VariableProperty, Integer> properties = sharedState.evaluationContext.getValueProperties(newInline);
+            vic.setValueOnAssignment(VariableInfoContainer.LEVEL_3_EVALUATION, newInline, properties);
+            vic.setLinkedVariables(VariableInfoContainer.LEVEL_3_EVALUATION, newInline.linkedVariables(sharedState.evaluationContext));
+        } else throw new UnsupportedOperationException("? "+currentRV.getClass());
+    }
+
+    /**
+     * if we have already seen a return statement before, it must be in a conditional form (otherwise unreachable code).
+     * In that case, we simply evaluate, and re-evaluate the conditional form (in step3_Return)
+     * Otherwise, we do an assignment to the return variable.
+     */
+    private Expression step3_prepare_Return(Structure structure) {
+        ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
+        Expression currentRV = statementAnalysis.find(analyserContext, returnVariable).getValue();
+        if (currentRV.isInitialReturnExpression() || currentRV instanceof EmptyExpression) {
+            VariableExpression returnVariableExpression = new VariableExpression(returnVariable);
+            return new Assignment(statementAnalysis.primitives, returnVariableExpression, structure.expression);
+        }
+        return structure.expression; // simply evaluate
     }
 
     // a special case, which allows us to set not null

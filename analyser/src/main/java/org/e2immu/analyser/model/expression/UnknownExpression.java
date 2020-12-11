@@ -29,12 +29,27 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 
+import java.util.Objects;
+
 /**
  * Contains "some value".
  */
 public record UnknownExpression(ParameterizedType parameterizedType, String msg) implements Expression {
 
     public static final String RETURN_VALUE = "<return value>";
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        UnknownExpression that = (UnknownExpression) o;
+        return msg.equals(that.msg);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(msg);
+    }
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {

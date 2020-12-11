@@ -93,6 +93,7 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
                 .build());
     }
 
+    // if(c!=null) return c; return "abc";
     @Test
     public void test2() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -102,20 +103,33 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
             }
         };
 
+        final String RETURN = "org.e2immu.analyser.testexample.IfStatementChecks_2.method3(String)";
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if (RETURN.equals(d.variableName())) {
+                if ("0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("c", d.currentValue().toString());
+                }
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals("null==c?<return value>:c", d.currentValue().toString());
+                }
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals("null==c?\"abc\":c", d.currentValue().toString());
+                }
+            }
+        };
+
         testClass("IfStatementChecks_2", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
     @Test
     public void test3() throws IOException {
-
-        // inlining happens when the replacements are active
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if (d.iteration() > 0 && "method4".equals(d.methodInfo().name)) {
                 Expression value = d.methodAnalysis().getSingleReturnValue();
-                // with more transformations, we can make this into an inline value TODO
-                Assert.assertEquals("<return value>", value.toString());
+                Assert.assertEquals("null==c?\"abc\":\"cef\"", value.toString());
             }
         };
 
@@ -135,7 +149,6 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
                 } else Assert.fail("Statement " + d.statementId());
             }
         };
-
 
         testClass("IfStatementChecks_3", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

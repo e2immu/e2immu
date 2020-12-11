@@ -181,4 +181,8 @@ public interface Expression extends Element, Comparable<Expression> {
     default boolean hasBeenEvaluated() {
         return getObjectFlow() != ObjectFlow.NYE;
     }
+
+    default boolean isInitialReturnExpression() {
+        return this instanceof UnknownExpression unknownExpression && unknownExpression.msg().equals(UnknownExpression.RETURN_VALUE);
+    }
 }
