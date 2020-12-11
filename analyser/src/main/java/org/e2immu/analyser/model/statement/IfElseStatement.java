@@ -32,6 +32,7 @@ import org.e2immu.analyser.output.Text;
 import java.util.List;
 
 public class IfElseStatement extends StatementWithExpression {
+    // for convenience, it's also in structure.subStatements.get(0).block
     public final Block elseBlock;
 
     public IfElseStatement(Expression expression,

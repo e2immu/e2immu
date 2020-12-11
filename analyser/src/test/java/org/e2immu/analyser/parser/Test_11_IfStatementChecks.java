@@ -1,10 +1,8 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.InlinedMethod;
@@ -18,6 +16,7 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
         super(false);
     }
 
+    // if(x) return a; return b;
     @Test
     public void test0() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -38,7 +37,7 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
 
         final String RETURN = "org.e2immu.analyser.testexample.IfStatementChecks_0.method1(String)";
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("method1".equals(d.methodInfo().name) && RETURN.equals(d.variableName())) {
+            if (RETURN.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("null==a?\"b\":<return value>", d.currentValue().toString());
                 }
@@ -56,25 +55,46 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
                 .build());
     }
 
+    // if(x) return a;else return b;
     @Test
     public void test1() throws IOException {
-
-        // inlining happens when the replacements are active
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method2".equals(d.methodInfo().name)) {
                 Expression value = d.methodAnalysis().getSingleReturnValue();
                 Assert.assertTrue("Got: " + value.getClass(), value instanceof InlinedMethod);
             }
         };
+
+        final String RETURN = "org.e2immu.analyser.testexample.IfStatementChecks_1.method2(String)";
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if (RETURN.equals(d.variableName())) {
+                if ("0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("\"b\"", d.currentValue().toString());
+                }
+                if ("0.1.0".equals(d.statementId())) {
+                    Assert.assertEquals("b", d.currentValue().toString());
+                }
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals("null==b?\"b\":b", d.currentValue().toString());
+                }
+            }
+        };
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method2".equals(d.methodInfo().name) && "0.1.0".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                Assert.assertEquals("b", d.evaluationResult().value.toString());
+            }
+        };
+
         testClass("IfStatementChecks_1", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
     @Test
     public void test2() throws IOException {
-
-        // inlining happens when the replacements are active
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("method3".equals(d.methodInfo().name)) {
                 Expression value = d.methodAnalysis().getSingleReturnValue();

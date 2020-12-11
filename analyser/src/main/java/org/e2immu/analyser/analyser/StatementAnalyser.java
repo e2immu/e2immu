@@ -134,7 +134,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             for (Structure subStatements : structure.subStatements) {
                 if (subStatements.haveStatements()) {
                     StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser,
-                            statementAnalyser.statementAnalysis, structure.getStatements(),
+                            statementAnalyser.statementAnalysis, subStatements.getStatements(),
                             iPlusSt + "." + blockIndex, true, newInSyncBlock);
                     blocks.add(Optional.of(subStatementAnalyser));
                     analysisBlocks.add(Optional.of(subStatementAnalyser.statementAnalysis));
