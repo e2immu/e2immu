@@ -713,7 +713,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             Expression expression;
             boolean returnConditionally;
             if (statementAnalysis.statement instanceof ReturnStatement) {
-                expression = step3_prepare_Return(structure);
+                expression = step3_prepare_Return(structure, sharedState.evaluationContext);
                 returnConditionally = expression == structure.expression;
             } else {
                 expression = structure.expression;
@@ -760,26 +760,37 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
+    /**
+     * Simple situation: if(a!=null) return b;  return c;
+     * After the first statement, the expression is a!=null?b:return value; the state is a==null.
+     * We simply substitute.
+     * <p>
+     * More complex situation: if(a!= null) return b; if(x!=null) return d; -->
+     * For the return d statement, we should simply return d.
+     */
     private void step3_ReturnConditionally(SharedState sharedState, Expression value) {
         ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
         Expression currentRV = statementAnalysis.find(analyserContext, returnVariable).getValue();
         InlineConditional inlineConditional;
-        if((inlineConditional = currentRV.asInstanceOf(InlineConditional.class)) != null) {
-            // NOTE if currentRV is an inline condition, the re-evaluation should take place without taking the current state
-            // into account! the current state will contain a part exactly to the opposite of the condition
-            // (if(a!=null) return b; --> now a == null!
-            Expression newInline;
-            if(inlineConditional.ifTrue.isInitialReturnExpression()) {
+
+        Expression newInline;
+        if ((inlineConditional = currentRV.asInstanceOf(InlineConditional.class)) != null) {
+            if (inlineConditional.ifTrue.isInitialReturnExpression()) {
                 newInline = new InlineConditional(inlineConditional.condition, value, inlineConditional.ifFalse, inlineConditional.objectFlow);
-            } else if(inlineConditional.ifFalse.isInitialReturnExpression()){
+            } else if (inlineConditional.ifFalse.isInitialReturnExpression()) {
                 newInline = new InlineConditional(inlineConditional.condition, inlineConditional.ifTrue, value, inlineConditional.objectFlow);
             } else throw new UnsupportedOperationException();
-            VariableInfoContainer vic = statementAnalysis.findForWriting(returnVariable);
-            vic.assignment(VariableInfoContainer.LEVEL_3_EVALUATION);
-            Map<VariableProperty, Integer> properties = sharedState.evaluationContext.getValueProperties(newInline);
-            vic.setValueOnAssignment(VariableInfoContainer.LEVEL_3_EVALUATION, newInline, properties);
-            vic.setLinkedVariables(VariableInfoContainer.LEVEL_3_EVALUATION, newInline.linkedVariables(sharedState.evaluationContext));
-        } else throw new UnsupportedOperationException("? "+currentRV.getClass());
+
+        } else if (currentRV.isInstanceOf(Or.class) || currentRV.isInstanceOf(And.class)) {
+            Map<Expression, Expression> translation = Map.of(new VariableExpression(returnVariable), value);
+            newInline = currentRV.reEvaluate(sharedState.evaluationContext, translation).value;
+        } else throw new UnsupportedOperationException("? " + currentRV.getClass());
+
+        VariableInfoContainer vic = statementAnalysis.findForWriting(returnVariable);
+        vic.assignment(VariableInfoContainer.LEVEL_3_EVALUATION);
+        Map<VariableProperty, Integer> properties = sharedState.evaluationContext.getValueProperties(newInline);
+        vic.setValueOnAssignment(VariableInfoContainer.LEVEL_3_EVALUATION, newInline, properties);
+        vic.setLinkedVariables(VariableInfoContainer.LEVEL_3_EVALUATION, newInline.linkedVariables(sharedState.evaluationContext));
     }
 
     /**
@@ -787,14 +798,37 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      * In that case, we simply evaluate, and re-evaluate the conditional form (in step3_Return)
      * Otherwise, we do an assignment to the return variable.
      */
-    private Expression step3_prepare_Return(Structure structure) {
+    private Expression step3_prepare_Return(Structure structure, EvaluationContext evaluationContext) {
         ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
         Expression currentRV = statementAnalysis.find(analyserContext, returnVariable).getValue();
-        if (currentRV.isInitialReturnExpression() || currentRV instanceof EmptyExpression) {
+        if (conditionIsNotExactOpposite(currentRV, evaluationContext) || currentRV instanceof EmptyExpression) {
             VariableExpression returnVariableExpression = new VariableExpression(returnVariable);
             return new Assignment(statementAnalysis.primitives, returnVariableExpression, structure.expression);
         }
         return structure.expression; // simply evaluate
+    }
+
+    private boolean conditionIsNotExactOpposite(Expression expression, EvaluationContext evaluationContext) {
+        InlineConditional inlineConditional;
+        And and;
+        Or or;
+        if ((inlineConditional = expression.asInstanceOf(InlineConditional.class)) != null) {
+            // the inline conditional swaps if it has a negation in the condition
+            boolean negate = inlineConditional.ifFalse.isInitialReturnExpression();
+            Expression notCondition = negate ? Negation.negate(evaluationContext, inlineConditional.condition) : inlineConditional.condition;
+            return !evaluationContext.getConditionManager().state.equals(notCondition);
+        } else if ((and = expression.asInstanceOf(And.class)) != null) {
+            throw new UnsupportedOperationException();
+        } else if ((or = expression.asInstanceOf(Or.class)) != null) {
+            Expression negatedOrWithoutReturnExpression = Negation.negate(evaluationContext,
+                    new Or(or.primitives()).append(evaluationContext,
+                            or.expressions().stream().filter(e -> !e.isInitialReturnExpression()).toArray(Expression[]::new)));
+            Expression combined = evaluationContext.getConditionManager().combineWithState(evaluationContext, negatedOrWithoutReturnExpression);
+            boolean exactOpposite = combined instanceof BooleanConstant bc && bc.constant() ||
+                    combined.equals(evaluationContext.getConditionManager().state);
+            return !exactOpposite;
+        }
+        return true;
     }
 
     // a special case, which allows us to set not null

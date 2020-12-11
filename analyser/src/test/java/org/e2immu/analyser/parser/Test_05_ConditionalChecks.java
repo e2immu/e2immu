@@ -5,7 +5,6 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -22,7 +21,7 @@ public class Test_05_ConditionalChecks extends CommonTestRunner {
 
     @Test
     public void test0() throws IOException {
-        final String RETURN1 = "org.e2immu.analyser.testexample.ConditionalChecks.method1(boolean,boolean)";
+        final String RETURN1 = "org.e2immu.analyser.testexample.ConditionalChecks_0.method1(boolean,boolean)";
         final String A1 = RETURN1 + ":0:a";
         final String B1 = RETURN1 + ":1:b";
 
@@ -102,29 +101,28 @@ public class Test_05_ConditionalChecks extends CommonTestRunner {
                 // return 1;
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals("1", d.currentValue().toString());
-                    Assert.assertEquals("(" + A1 + " and " + B1 + ")", d.variableInfo().getStateOnAssignment().toString());
+                    Assert.assertEquals("a&&b", d.variableInfo().getStateOnAssignment().toString());
                 }
                 // after if(a&&b) return 1
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals("(" + A1 + " and " + B1 + ")?1:<return value>", d.currentValue().toString());
+                    Assert.assertEquals("a&&b?1:<return value>", d.currentValue().toString());
                     Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.variableInfo().getStateOnAssignment());
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     Assert.assertEquals("2", d.currentValue().toString());
-                    Assert.assertEquals("(not (" + A1 + ") and not (" + B1 + "))", d.variableInfo().getStateOnAssignment().toString());
+                    Assert.assertEquals("!a&&!b", d.variableInfo().getStateOnAssignment().toString());
                 }
                 // after if (!a && !b) return 2;
                 if ("1".equals(d.statementId())) {
                     Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.variableInfo().getStateOnAssignment());
                     // we do NOT expect a regression to the ReturnVariable
-                    Assert.assertEquals("(not (" + A1 + ") and not (" + B1 + "))?2:(" + A1 + " and " + B1 + ")?1:<return value>",
+                    Assert.assertEquals("!a&&!b?2:a&&b?1:<return value>",
                             d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.variableInfo().getStateOnAssignment());
                     // we do NOT expect a regression to the ReturnVariable
-                    Assert.assertEquals("(" + A1 + " and not (" + B1 + "))?3:" +
-                                    "(not (" + A1 + ") and not (" + B1 + "))?2:(" + A1 + " and " + B1 + ")?1:<return value>",
+                    Assert.assertEquals("a&&!b?3:!a&&!b?2:a&&b?1:<return value>",
                             d.currentValue().toString());
                 }
                 if ("3".equals(d.statementId())) {
@@ -240,36 +238,32 @@ public class Test_05_ConditionalChecks extends CommonTestRunner {
         final String TYPE = "org.e2immu.analyser.testexample.ConditionalChecks_4";
         final String RETURN5 = TYPE + ".method5(Object)";
         final String O5 = RETURN5 + ":0:o";
-        final String THIS_GET_CLASS = TYPE + ".this.getClass()";
-        final String THIS = TYPE + ".this";
-        final String O5_GET_CLASS = TYPE + ".method5(Object):0:o.getClass()";
         final String I = TYPE + ".i";
         final String CC_I = TYPE + ".i#" + O5;
-        final String RETURN_5_VALUE = I + " == " + CC_I;
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
-                if("0".equals(d.statementId())) {
+                if ("0".equals(d.statementId())) {
                     if (O5.equals(d.variableName())) {
-                            Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
+                        Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
                     }
-                    if(RETURN5.equals(d.variableName())) {
-                        Assert.assertTrue(d.currentValue() instanceof UnknownExpression);
+                    if (RETURN5.equals(d.variableName())) {
+                        Assert.assertEquals("<return value>||o==this", d.currentValue().toString());
                     }
                 }
 
                 if (CONDITIONAL_CHECKS.equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
-                        Assert.assertEquals(O5, d.currentValue().toString());
+                        Assert.assertEquals("o", d.currentValue().toString());
                     }
                 }
                 if ("3".equals(d.statementId())) {
                     if (CC_I.equals(d.variableName())) {
-                        String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : CC_I; // that's the variable value
+                        String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                     }
                     if (RETURN5.equals(d.variableName())) {
-                        String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : RETURN_5_VALUE;
+                        String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i==o.i";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                         Assert.assertEquals(VariableInfoContainer.LEVEL_3_EVALUATION, d.variableInfoContainer().getCurrentLevel());
                     }
@@ -287,7 +281,7 @@ public class Test_05_ConditionalChecks extends CommonTestRunner {
                 } else if ("1.0.0".equals(d.statementId())) {
                     Assert.assertEquals("o!=this&&(null==o||o.getClass()!=this.getClass())", d.state().toString());
                 } else {
-                    Assert.assertEquals("(not (null == " + O5 + ") and " + O5_GET_CLASS + " == " + THIS_GET_CLASS + " and not (" + O5 + " == " + THIS + "))", d.state().toString());
+                    Assert.assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.state().toString());
                 }
                 if ("3".equals(d.statementId())) {
                     AnalysisStatus expectStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
@@ -325,12 +319,12 @@ public class Test_05_ConditionalChecks extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
                     Assert.assertTrue(d.haveValueChange(CONDITIONAL_CHECKS));
-                    Assert.assertEquals(O5, d.findValueChange(CONDITIONAL_CHECKS).value().toString());
-                    Assert.assertEquals(O5, d.evaluationResult().value.toString());
+                    Assert.assertEquals("o", d.findValueChange(CONDITIONAL_CHECKS).value().toString());
+                    Assert.assertEquals("o", d.evaluationResult().value.toString());
                 }
                 if ("3".equals(d.statementId())) {
                     // there will be two iterations, in the second one, i will not have value "NO_VALUE" anymore
-                    String expectValueString = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : I + " == " + I + "#" + O5;
+                    String expectValueString = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i==o.i";
                     Assert.assertEquals(expectValueString, d.evaluationResult().value.toString());
                     if (d.iteration() == 0) {
                         // markRead is only done in the first iteration
