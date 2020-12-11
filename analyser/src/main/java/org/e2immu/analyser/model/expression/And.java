@@ -82,7 +82,7 @@ public record And(Primitives primitives,
 
         if (concat.stream().anyMatch(Expression::isUnknown)) {
             log(CNF, "Return Unknown value in And, found Unknown value");
-            return PrimitiveExpression.PRIMITIVE_EXPRESSION;
+            return EmptyExpression.NO_VALUE;
         }
 
         // STEP 4: loop
@@ -474,6 +474,6 @@ public record And(Primitives primitives,
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return PrimitiveExpression.primitiveGetProperty(variableProperty);
+        return UnknownExpression.primitiveGetProperty(variableProperty);
     }
 }

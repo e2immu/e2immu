@@ -98,7 +98,7 @@ public class BinaryOperator implements Expression {
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         if (hasBeenEvaluated()) {
-            return PrimitiveExpression.primitiveGetProperty(variableProperty);
+            return UnknownExpression.primitiveGetProperty(variableProperty);
         }
         throw new UnsupportedOperationException("Not yet evaluated");
     }
@@ -172,7 +172,7 @@ public class BinaryOperator implements Expression {
         Expression r = right.value;
 
         if (l == EmptyExpression.NO_VALUE || r == EmptyExpression.NO_VALUE) return EmptyExpression.NO_VALUE;
-        if (l.isUnknown() || r.isUnknown()) return PrimitiveExpression.PRIMITIVE_EXPRESSION;
+        if (l.isUnknown() || r.isUnknown()) return EmptyExpression.NO_VALUE;
 
         if (operator == primitives.equalsOperatorObject) {
             if (l.equals(r)) return new BooleanConstant(primitives, true);

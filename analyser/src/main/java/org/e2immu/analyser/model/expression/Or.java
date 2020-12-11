@@ -78,7 +78,7 @@ public record Or(Primitives primitives,
 
         if (concat.stream().anyMatch(v -> v instanceof EmptyExpression)) {
             log(CNF, "Return Instance in Or, found unknown value");
-            return PrimitiveExpression.PRIMITIVE_EXPRESSION;
+            return EmptyExpression.NO_VALUE;
         }
         // STEP 4: loop
 
@@ -246,6 +246,6 @@ public record Or(Primitives primitives,
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return PrimitiveExpression.primitiveGetProperty(variableProperty);
+        return UnknownExpression.primitiveGetProperty(variableProperty);
     }
 }

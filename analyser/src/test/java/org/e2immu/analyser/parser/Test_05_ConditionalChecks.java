@@ -5,6 +5,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -198,7 +199,7 @@ public class Test_05_ConditionalChecks extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.condition());
-                        Assert.assertEquals("(not (null == " + A3 + ") " + "and not (null == " + B3 + "))", d.state().toString());
+                        Assert.assertEquals("null!=a&&null!=b", d.state().toString());
                         Assert.assertTrue(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
                     }
                 }
@@ -236,22 +237,27 @@ public class Test_05_ConditionalChecks extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
-        final String RETURN5 = "org.e2immu.analyser.testexample.ConditionalChecks.method5(Object)";
+        final String TYPE = "org.e2immu.analyser.testexample.ConditionalChecks_4";
+        final String RETURN5 = TYPE + ".method5(Object)";
         final String O5 = RETURN5 + ":0:o";
-        final String THIS_GET_CLASS = "org.e2immu.analyser.testexample.ConditionalChecks.this.getClass()";
-        final String THIS = "org.e2immu.analyser.testexample.ConditionalChecks.this";
-        final String O5_GET_CLASS = "org.e2immu.analyser.testexample.ConditionalChecks.method5(Object):0:o.getClass()";
-        final String I = "org.e2immu.analyser.testexample.ConditionalChecks.i";
-        final String CC_I = "org.e2immu.analyser.testexample.ConditionalChecks.i#" + O5;
+        final String THIS_GET_CLASS = TYPE + ".this.getClass()";
+        final String THIS = TYPE + ".this";
+        final String O5_GET_CLASS = TYPE + ".method5(Object):0:o.getClass()";
+        final String I = TYPE + ".i";
+        final String CC_I = TYPE + ".i#" + O5;
         final String RETURN_5_VALUE = I + " == " + CC_I;
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
-                if (O5.equals(d.variableName())) {
-                    if ("0".equals(d.statementId())) {
-                        Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
+                if("0".equals(d.statementId())) {
+                    if (O5.equals(d.variableName())) {
+                            Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
+                    }
+                    if(RETURN5.equals(d.variableName())) {
+                        Assert.assertTrue(d.currentValue() instanceof UnknownExpression);
                     }
                 }
+
                 if (CONDITIONAL_CHECKS.equals(d.variableName())) {
                     if ("2".equals(d.statementId())) {
                         Assert.assertEquals(O5, d.currentValue().toString());
@@ -279,7 +285,7 @@ public class Test_05_ConditionalChecks extends CommonTestRunner {
                 } else if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals("o==this", d.state().toString());
                 } else if ("1.0.0".equals(d.statementId())) {
-                    Assert.assertEquals("(not (" + O5 + " == " + THIS + ") and (null == " + O5 + " or not (" + O5_GET_CLASS + " == " + THIS_GET_CLASS + ")))", d.state().toString());
+                    Assert.assertEquals("o!=this&&(null==o||o.getClass()!=this.getClass())", d.state().toString());
                 } else {
                     Assert.assertEquals("(not (null == " + O5 + ") and " + O5_GET_CLASS + " == " + THIS_GET_CLASS + " and not (" + O5 + " == " + THIS + "))", d.state().toString());
                 }

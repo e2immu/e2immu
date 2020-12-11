@@ -111,18 +111,18 @@ public class UnaryOperator implements Expression {
         if (operator == primitives.bitWiseNotOperatorInt) {
             if (v instanceof IntConstant ic)
                 return new IntConstant(primitives, ~ic.constant(), v.getObjectFlow());
-            return PrimitiveExpression.PRIMITIVE_EXPRESSION;
+            return EmptyExpression.NO_VALUE;
         }
         if (operator == primitives.postfixDecrementOperatorInt
                 || operator == primitives.prefixDecrementOperatorInt) {
             if (v instanceof IntConstant ic)
                 return new IntConstant(primitives, ic.constant() - 1, v.getObjectFlow());
-            return PrimitiveExpression.PRIMITIVE_EXPRESSION;
+            return EmptyExpression.NO_VALUE;
         }
         if (operator == primitives.postfixIncrementOperatorInt || operator == primitives.prefixIncrementOperatorInt) {
             if (v instanceof IntConstant ic)
                 return new IntConstant(primitives, ic.constant() + 1, v.getObjectFlow());
-            return PrimitiveExpression.PRIMITIVE_EXPRESSION;
+            return EmptyExpression.NO_VALUE;
         }
         throw new UnsupportedOperationException();
     }

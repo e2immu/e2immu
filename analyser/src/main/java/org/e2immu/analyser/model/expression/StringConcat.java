@@ -52,7 +52,7 @@ public class StringConcat extends BinaryOperator {
             return new StringConstant(primitives, lcv.toString() + rsv.constant(), objectFlow);
         }
         // any unknown lingering
-        if (l.isUnknown() || r.isUnknown()) return PrimitiveExpression.PRIMITIVE_EXPRESSION;
+        if (l.isUnknown() || r.isUnknown()) return EmptyExpression.NO_VALUE;
 
         return new StringConcat(primitives, l, r, objectFlow);
     }

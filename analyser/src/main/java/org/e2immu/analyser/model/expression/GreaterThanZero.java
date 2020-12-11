@@ -134,8 +134,7 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
     public static Expression greater(EvaluationContext evaluationContext, Expression l, Expression r, boolean allowEquals, ObjectFlow objectFlow) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l.equals(r) && !allowEquals) return new BooleanConstant(primitives, false);
-        if (l.isUnknown() || r.isUnknown()) return PrimitiveExpression.PRIMITIVE_EXPRESSION;
-
+        if (l.isUnknown() || r.isUnknown()) return EmptyExpression.NO_VALUE;
 
         if (l instanceof Numeric ln && r instanceof Numeric rn) {
             if (allowEquals)
@@ -176,8 +175,7 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
     public static Expression less(EvaluationContext evaluationContext, Expression l, Expression r, boolean allowEquals, ObjectFlow objectFlow) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l.equals(r) && !allowEquals) return new BooleanConstant(primitives, false);
-        if (l.isUnknown() || r.isUnknown()) return PrimitiveExpression.PRIMITIVE_EXPRESSION;
-
+        if (l.isUnknown() || r.isUnknown()) return EmptyExpression.NO_VALUE;
 
         if (l instanceof Numeric ln && r instanceof Numeric rn) {
             if (allowEquals)
@@ -216,7 +214,7 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
-        return PrimitiveExpression.primitiveGetProperty(variableProperty);
+        return UnknownExpression.primitiveGetProperty(variableProperty);
     }
 
     @Override

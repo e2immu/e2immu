@@ -7,6 +7,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.StringConcat;
+import org.e2immu.analyser.model.expression.UnknownExpression;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -38,7 +39,7 @@ public class TestTryStatementChecks extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if (d.iteration() == 0 && "method1".equals(d.methodInfo().name)) {
             Expression srv = d.methodAnalysis().getSingleReturnValue();
-            Assert.assertSame(EmptyExpression.RETURN_VALUE, srv);
+            Assert.assertTrue(srv instanceof UnknownExpression);
         }
     };
 

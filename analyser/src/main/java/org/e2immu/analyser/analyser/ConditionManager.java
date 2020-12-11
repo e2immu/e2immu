@@ -129,7 +129,7 @@ public class ConditionManager {
         Map<Variable, Expression> individualNullClauses = Filter.filter(evaluationContext, value, filterMode, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE).accepted();
         return individualNullClauses.entrySet()
                 .stream()
-                .filter(e -> requireEqualsNull == (e.getValue() == NullConstant.NULL_CONSTANT))
+                .filter(e -> requireEqualsNull == (e.getValue().equalsNull()))
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 

@@ -139,7 +139,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         Variable retVar = makeReturnVariable();
         VariableInfoImpl ret = new VariableInfoImpl(retVar);
         ret.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
-        ret.setValue(EmptyExpression.RETURN_VALUE);
+        ret.setValue(new UnknownExpression(primitives.booleanParameterizedType, UnknownExpression.RETURN_VALUE));
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
         Expression x = new NewObject(viX.variable.parameterizedType());
@@ -186,7 +186,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     public void testOneIfXThenReturnIfYThenReturn() {
         Variable retVar = makeReturnVariable();
         VariableInfoImpl ret = new VariableInfoImpl(retVar);
-        ret.setValue(EmptyExpression.RETURN_VALUE); // uni
+        ret.setValue(new UnknownExpression(primitives.booleanParameterizedType, UnknownExpression.RETURN_VALUE));
         ret.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalIntVar("x"));

@@ -127,7 +127,7 @@ public record InstanceOf(Primitives primitives,
         Primitives primitives = evaluationContext.getPrimitives();
 
         if (value.isUnknown()) {
-            return builder.setExpression(PrimitiveExpression.PRIMITIVE_EXPRESSION).build();
+            return builder.setExpression(EmptyExpression.NO_VALUE).build();
         }
         if (value instanceof NullConstant) {
             return builder.setExpression(new BooleanConstant(evaluationContext.getPrimitives(), false)).build();
@@ -145,7 +145,7 @@ public record InstanceOf(Primitives primitives,
             return builder.compose(er).setExpression(er.value).build();
         }
         if (value instanceof MethodCall) {
-            return builder.setExpression(PrimitiveExpression.PRIMITIVE_EXPRESSION).build(); // no clue, too deep
+            return builder.setExpression(new UnknownExpression(returnType(), "<instanceof value>")).build(); // no clue, too deep
         }
         if (value instanceof ClassExpression ce) {
             EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),

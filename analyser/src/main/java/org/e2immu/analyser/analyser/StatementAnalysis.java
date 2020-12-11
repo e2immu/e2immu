@@ -20,10 +20,7 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.expression.PropertyWrapper;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.model.statement.SynchronizedStatement;
@@ -430,8 +427,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", variable.fullyQualifiedName());
 
         // linked variables travel from the parameters via the statements to the fields
-        if (variable instanceof ReturnVariable) {
-            vic.setInitialValueFromAnalyser(EmptyExpression.RETURN_VALUE, Map.of());
+        if (variable instanceof ReturnVariable returnVariable) {
+            vic.setInitialValueFromAnalyser(new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE), Map.of());
             // assignment will be at LEVEL 3
             vic.setLinkedVariablesFromAnalyser(Set.of());
         } else if (variable instanceof This) {

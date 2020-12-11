@@ -118,8 +118,17 @@ public interface Expression extends Element, Comparable<Expression> {
         return isInstanceOf(NullConstant.class);
     }
 
+    default boolean equalsNull() {
+        if (this instanceof Negation) return false;
+        Equals equals;
+        if ((equals = asInstanceOf(Equals.class)) != null) {
+            return equals.lhs.isNull();
+        }
+        return false;
+    }
+
     default boolean isComputeProperties() {
-        return this != EmptyExpression.RETURN_VALUE;
+        return !(this instanceof UnknownExpression);
     }
 
     default boolean isBoolValueTrue() {

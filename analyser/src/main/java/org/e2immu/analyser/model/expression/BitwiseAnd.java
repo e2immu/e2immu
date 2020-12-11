@@ -50,7 +50,7 @@ public class BitwiseAnd extends BinaryOperator {
             return new IntConstant(primitives, li.constant() & ri.constant(), objectFlow);
 
         // any unknown lingering
-        if (l.isUnknown() || r.isUnknown()) return PrimitiveExpression.PRIMITIVE_EXPRESSION;
+        if (l.isUnknown() || r.isUnknown()) return EmptyExpression.NO_VALUE;
 
         return new BitwiseAnd(primitives, l, r, objectFlow);
     }

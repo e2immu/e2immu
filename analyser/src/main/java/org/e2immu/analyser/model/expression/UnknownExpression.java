@@ -29,9 +29,12 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 
-public record PrimitiveExpression(String msg) implements Expression {
+/**
+ * Contains "some value".
+ */
+public record UnknownExpression(ParameterizedType parameterizedType, String msg) implements Expression {
 
-    public static final PrimitiveExpression PRIMITIVE_EXPRESSION = new PrimitiveExpression("<unknown primitive>");
+    public static final String RETURN_VALUE = "<return value>";
 
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
@@ -56,7 +59,7 @@ public record PrimitiveExpression(String msg) implements Expression {
 
     @Override
     public ParameterizedType returnType() {
-        return null;
+        return parameterizedType;
     }
 
     @Override
@@ -66,7 +69,7 @@ public record PrimitiveExpression(String msg) implements Expression {
 
     @Override
     public OutputBuilder output() {
-        return new OutputBuilder().add(new Text("", msg));
+        return new OutputBuilder().add(new Text(msg, msg + ":" + parameterizedType.output()));
     }
 
     @Override
