@@ -352,17 +352,21 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             MethodAnalysis methodAnalysis,
             Expression objectValue,
             List<Expression> parameterValues) {
+        if (objectValue.isUnknown()) return null; // don't even try
+
         NewObject newObject;
         VariableExpression variableExpression;
         if ((variableExpression = objectValue.asInstanceOf(VariableExpression.class)) != null) {
             newObject = builder.currentInstance(variableExpression.variable(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
-        } else if(objectValue instanceof TypeExpression) {
+        } else if (objectValue instanceof TypeExpression) {
             assert methodInfo.methodInspection.get().isStatic();
             return null; // static method
         } else {
             newObject = objectValue.getInstance(evaluationContext);
         }
-        Objects.requireNonNull(newObject, "Modifying method on constant or primitive? Impossible: "+objectValue.getClass());
+        Objects.requireNonNull(newObject, "Modifying method on constant or primitive? Impossible: " + objectValue.getClass());
+
+        if (newObject.state == EmptyExpression.NO_VALUE) return null; // DELAY
 
         AtomicReference<Expression> newState = new AtomicReference<>(newObject.state);
         methodInfo.methodInspection.get().getCompanionMethods().keySet().stream()

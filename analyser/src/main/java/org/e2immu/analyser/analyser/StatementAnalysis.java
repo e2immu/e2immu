@@ -196,8 +196,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             boolean newInSyncBlock = inSyncBlock || statement instanceof SynchronizedStatement;
             Structure structure = statement.getStructure();
             if (structure.haveStatements()) {
-                StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent, statements,
-                        iPlusSt + "." + blockIndex, true, newInSyncBlock);
+                StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
+                        structure.statements, iPlusSt + "." + blockIndex, true, newInSyncBlock);
                 analysisBlocks.add(Optional.of(subStatementAnalysis));
             } else {
                 analysisBlocks.add(Optional.empty());
@@ -205,8 +205,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             blockIndex++;
             for (Structure subStatements : structure.subStatements) {
                 if (subStatements.haveStatements()) {
-                    StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent, statements,
-                            iPlusSt + "." + blockIndex, true, newInSyncBlock);
+                    StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
+                            subStatements.statements, iPlusSt + "." + blockIndex, true, newInSyncBlock);
                     analysisBlocks.add(Optional.of(subStatementAnalysis));
                 } else {
                     analysisBlocks.add(Optional.empty());
