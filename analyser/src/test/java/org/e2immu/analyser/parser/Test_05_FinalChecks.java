@@ -6,7 +6,6 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.StringConcat;
 import org.e2immu.analyser.testexample.FinalChecks;
 import org.junit.Assert;
@@ -48,7 +47,6 @@ public class Test_05_FinalChecks extends CommonTestRunner {
     private static final String FINAL_CHECKS_FQN = "org.e2immu.analyser.testexample.FinalChecks.FinalChecks(String,String)";
 
     private static final String S1 = FinalChecks.class.getCanonicalName() + ".s1";
-    private static final String S1_P0 = FinalChecks.class.getCanonicalName() + ".FinalChecks(String,String):0:s1";
     private static final String S2 = FinalChecks.class.getCanonicalName() + ".s2";
     private static final String P4 = FinalChecks.class.getCanonicalName() + ".setS4(String):0:s4";
     private static final String S4 = FinalChecks.class.getCanonicalName() + ".s4";
@@ -78,11 +76,11 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                 Assert.assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
             }
             if ("2".equals(d.statementId()) && S2.equals(d.variableName())) {
-                Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.variableInfo().getStateOnAssignment());
+                Assert.assertEquals("true", d.variableInfo().getStateOnAssignment().toString());
             }
             if ("3".equals(d.statementId()) && S2.equals(d.variableName())) {
                 // stateOnAssignment has to be copied from statement 1
-                Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.variableInfo().getStateOnAssignment());
+                Assert.assertEquals("true", d.variableInfo().getStateOnAssignment().toString());
             }
             if (S5.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
@@ -148,7 +146,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         if (FINAL_CHECKS_FQN.equals(d.methodInfo().fullyQualifiedName()) && "2".equals(d.statementId())) {
             Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
             EvaluationResult.ExpressionChangeData valueChangeData = d.findValueChange(S2);
-            Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, valueChangeData.stateOnAssignment());
+            Assert.assertEquals("true", valueChangeData.stateOnAssignment().toString());
         }
     };
 

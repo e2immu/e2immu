@@ -46,7 +46,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     public void test0() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("0".equals(d.statementId())) {
-                Assert.assertEquals("<empty>", d.state().toString());
+                Assert.assertEquals("true", d.state().toString());
             }
         };
 

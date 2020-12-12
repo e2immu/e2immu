@@ -172,7 +172,7 @@ public class BinaryOperator implements Expression {
         Expression r = right.value;
 
         if (l == EmptyExpression.NO_VALUE || r == EmptyExpression.NO_VALUE) return EmptyExpression.NO_VALUE;
-        if (l.isUnknown() || r.isUnknown()) return EmptyExpression.NO_VALUE;
+        if (l.isUnknown() || r.isUnknown()) return l.combineUnknown(r);
 
         if (operator == primitives.equalsOperatorObject) {
             if (l.equals(r)) return new BooleanConstant(primitives, true);

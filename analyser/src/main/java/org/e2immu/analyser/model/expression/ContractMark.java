@@ -34,11 +34,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 public record ContractMark(String mark) implements Expression {
 
     @Override
-    public boolean isUnknown() {
-        return true;
-    }
-
-    @Override
     public ParameterizedType returnType() {
         throw new UnsupportedOperationException();
     }

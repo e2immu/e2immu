@@ -32,16 +32,13 @@ import org.e2immu.analyser.output.Text;
 import org.e2immu.annotation.E2Container;
 
 @E2Container
-public record EmptyExpression(String msg) implements Expression {
-    public static final Expression EMPTY_EXPRESSION = new EmptyExpression("<empty>");
+public record EmptyExpression(String msg, int order) implements Expression {
+    public static final EmptyExpression EMPTY_EXPRESSION = new EmptyExpression("<empty>", 0);
+    public static final EmptyExpression NO_VALUE = new EmptyExpression("<no value>", 1);
 
-    public static final EmptyExpression DEFAULT_EXPRESSION = new EmptyExpression("<default>"); // negation of the disjunction of all earlier conditions
-    public static final EmptyExpression FINALLY_EXPRESSION = new EmptyExpression("<finally>"); // always true condition
-
-    public static final EmptyExpression NO_VALUE = new EmptyExpression("<no value>");
-
-    public static final EmptyExpression RETURN_VALUE = new EmptyExpression("<return value>");
-    public static final EmptyExpression NO_RETURN_VALUE = new EmptyExpression("<no return value>");
+    public static final EmptyExpression DEFAULT_EXPRESSION = new EmptyExpression("<default>",-1); // negation of the disjunction of all earlier conditions
+    public static final EmptyExpression FINALLY_EXPRESSION = new EmptyExpression("<finally>",-1); // always true condition
+    public static final EmptyExpression NO_RETURN_VALUE = new EmptyExpression("<no return value>",-1); // assigned to void methods
 
     @Override
     public boolean equals(Object obj) {

@@ -10,42 +10,56 @@ import org.e2immu.analyser.parser.Primitives;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/*
+Default value for condition is FALSE
+Default value for state is TRUE
+ */
 public class ConditionManager {
 
-    public static final ConditionManager INITIAL = new ConditionManager(EmptyExpression.EMPTY_EXPRESSION, EmptyExpression.EMPTY_EXPRESSION);
     public static final ConditionManager DELAYED = new ConditionManager(EmptyExpression.NO_VALUE, EmptyExpression.NO_VALUE);
 
     public final Expression condition;
     public final Expression state;
 
-    public ConditionManager() {
-        this(EmptyExpression.EMPTY_EXPRESSION, EmptyExpression.EMPTY_EXPRESSION);
+    public ConditionManager(Primitives primitives) {
+        this(new BooleanConstant(primitives, false), new BooleanConstant(primitives, true));
     }
 
     public ConditionManager(Expression condition, Expression state) {
-        this.condition = checkBoolean(Objects.requireNonNull(condition));
-        this.state = checkBoolean(Objects.requireNonNull(state));
+        this.condition = checkBooleanOrUnknown(Objects.requireNonNull(condition));
+        this.state = checkBooleanOrUnknown(Objects.requireNonNull(state));
     }
 
-    private static Expression checkBoolean(Expression v) {
-        if (v != EmptyExpression.EMPTY_EXPRESSION && v != EmptyExpression.NO_VALUE
-                && (v.returnType() == null || Primitives.isNotBooleanOrBoxedBoolean(v.returnType()))) {
-            throw new UnsupportedOperationException("Need a boolean value in the condition manager; got " + v);
+    /*
+    EMPTY -> some value, no clue which one, we'll never know
+    NO_VALUE -> delay
+     */
+    private static Expression checkBooleanOrUnknown(Expression v) {
+        if (!v.isUnknown() && Primitives.isNotBooleanOrBoxedBoolean(v.returnType())) {
+            throw new UnsupportedOperationException("Need an unknown or boolean value in the condition manager; got " + v);
         }
         return v;
     }
 
-    // adding a condition always adds to the state as well (testing only)
+    /*
+     adding a value to the condition always adds that value to the state as well
+     */
     public ConditionManager addCondition(EvaluationContext evaluationContext, Expression value) {
-        if (value == null || value == EmptyExpression.EMPTY_EXPRESSION) return this;
-        if (value.isBoolValueTrue()) return this;
-        if (value.isBoolValueFalse()) return new ConditionManager(value, value);
+        Objects.requireNonNull(value);
+        if (value.isBoolValueTrue()) return this; // adding TRUE has no effect (it renders the condition useless)
+        if (value.isBoolValueFalse()) return new ConditionManager(condition, value); // adding false -> unreachable code
         return new ConditionManager(combineWithCondition(evaluationContext, value), combineWithState(evaluationContext, value));
     }
 
+    /*
+     adds to state only, leaves the condition the way it is
+     */
     public ConditionManager addToState(EvaluationContext evaluationContext, Expression value) {
-        if (value.isBoolValueTrue()) return this;
-        if (value.isBoolValueFalse()) return new ConditionManager(value, value);
+        if (value.isBoolValueTrue()) return this; // adding TRUE to the state has no effect
+        if (value.isBoolValueFalse()) {
+            // adding false to the state -> unreachable code
+            return new ConditionManager(condition, value);
+        }
         return new ConditionManager(condition, combineWithState(evaluationContext, value));
     }
 
@@ -64,9 +78,7 @@ public class ConditionManager {
     }
 
     private static Expression evaluateWith(EvaluationContext evaluationContext, Expression condition, Expression value) {
-        if (condition == EmptyExpression.EMPTY_EXPRESSION) return value; // allow to go delayed
-        // one delayed, all delayed
-        if (isDelayed(condition) || value == EmptyExpression.NO_VALUE) return EmptyExpression.NO_VALUE;
+        if (condition.isUnknown() || value.isUnknown()) return condition.combineUnknown(value); // allow to go delayed
 
         // we take the condition as a given, and see if the value agrees
 
@@ -82,6 +94,8 @@ public class ConditionManager {
     }
 
     public Expression combineWithCondition(EvaluationContext evaluationContext, Expression value) {
+        // FALSE is the default state for condition, but including it in an AND doesn't work
+        if (condition.isBoolValueFalse()) return value;
         return combineWith(evaluationContext, condition, value);
     }
 
@@ -89,13 +103,10 @@ public class ConditionManager {
         return combineWith(evaluationContext, state, value);
     }
 
-    public static Expression combineWith(EvaluationContext evaluationContext, Expression condition, Expression value) {
-        Objects.requireNonNull(value);
-        if (condition == EmptyExpression.EMPTY_EXPRESSION) return value;
-        if (value == EmptyExpression.EMPTY_EXPRESSION) return condition;
-        if (isDelayed(condition) || isDelayed(value)) return EmptyExpression.NO_VALUE;
-        return new And(evaluationContext.getPrimitives(), value.getObjectFlow())
-                .append(evaluationContext, condition, value);
+    public static Expression combineWith(EvaluationContext evaluationContext, Expression e1, Expression e2) {
+        Objects.requireNonNull(e2);
+        if (e1.isUnknown() || e2.isUnknown()) return e1.combineUnknown(e2); // allow to go delayed
+        return new And(evaluationContext.getPrimitives(), e2.getObjectFlow()).append(evaluationContext, e1, e2);
     }
 
     /**
@@ -123,7 +134,7 @@ public class ConditionManager {
      * @return individual variables that appear in a top-level disjunction as variable == null
      */
     private static Set<Variable> findIndividualNull(Expression value, EvaluationContext evaluationContext, Filter.FilterMode filterMode, boolean requireEqualsNull) {
-        if (value == EmptyExpression.EMPTY_EXPRESSION || isDelayed(value)) {
+        if (value.isUnknown()) {
             return Set.of();
         }
         Map<Variable, Expression> individualNullClauses = Filter.filter(evaluationContext, value, filterMode, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE).accepted();
@@ -134,7 +145,7 @@ public class ConditionManager {
     }
 
     public boolean haveNonEmptyState() {
-        return state != EmptyExpression.EMPTY_EXPRESSION;
+        return !state.isBoolValueTrue();
     }
 
     // we need a system to be able to delay conditionals, when they are based on the value of fields
@@ -148,20 +159,6 @@ public class ConditionManager {
 
     static boolean isDelayed(Expression value) {
         return value == EmptyExpression.NO_VALUE;
-    }
-
-    public boolean inErrorState(Primitives primitives) {
-        return new BooleanConstant(primitives, false).equals(state);
-    }
-
-    // used in assignments (it gets a new value, so whatever was known, must go)
-    public ConditionManager variableReassigned(EvaluationContext evaluationContext, Variable variable) {
-        return new ConditionManager(condition, removeClausesInvolving(evaluationContext, state, variable, true));
-    }
-
-    // after a modifying method call, we lose whatever we know about this variable; except assignment!
-    public ConditionManager modifyingMethodAccess(EvaluationContext evaluationContext, Variable variable) {
-        return new ConditionManager(condition, removeClausesInvolving(evaluationContext, state, variable, false));
     }
 
     private static Filter.FilterResult<Variable> removeVariableFilter(Variable variable, Expression value, boolean removeEqualityOnVariable) {
@@ -205,8 +202,8 @@ public class ConditionManager {
     public EvaluationResult escapeCondition(EvaluationContext evaluationContext) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
-        if (condition == EmptyExpression.EMPTY_EXPRESSION || delayedCondition()) {
-            return builder.setExpression(EmptyExpression.EMPTY_EXPRESSION).build();
+        if (condition.isUnknown()) {
+            return builder.setExpression(condition).build();
         }
 
         // TRUE: parameters only FALSE: preconditionSide; OR of 2 filters

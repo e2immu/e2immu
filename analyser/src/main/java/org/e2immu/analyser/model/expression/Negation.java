@@ -61,7 +61,7 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
 
     @Override
     public ObjectFlow getObjectFlow() {
-        return null;
+        return expression.getObjectFlow();
     }
 
     public static Expression negate(EvaluationContext evaluationContext, @NotNull Expression v) {

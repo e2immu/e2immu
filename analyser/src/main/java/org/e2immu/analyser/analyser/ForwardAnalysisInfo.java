@@ -17,6 +17,11 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.parser.Primitives;
+
 public record ForwardAnalysisInfo(FlowData.Execution execution, ConditionManager conditionManager, boolean inCatch) {
-    public static final ForwardAnalysisInfo START_OF_METHOD = new ForwardAnalysisInfo(FlowData.Execution.ALWAYS, ConditionManager.INITIAL, false);
+
+    public static ForwardAnalysisInfo startOfMethod(Primitives primitives) {
+        return new ForwardAnalysisInfo(FlowData.Execution.ALWAYS, new ConditionManager(primitives), false);
+    }
 }

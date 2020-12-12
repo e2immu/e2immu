@@ -67,7 +67,7 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression isFactB = new MethodCall(new TypeExpression(annotatedAPIPt, ObjectFlow.NO_FLOW), isFact, List.of(b), ObjectFlow.NO_FLOW);
         Assert.assertEquals("AnnotatedAPI.isFact(b)", isFactB.toString());
 
-        Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, minimalEvaluationContext.getConditionManager().state);
+        Assert.assertTrue(minimalEvaluationContext.getConditionManager().state.isBoolValueTrue());
         Expression cv1 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext, isFactA, a, b, ObjectFlow.NO_FLOW).value;
         Assert.assertSame(b, cv1);
 

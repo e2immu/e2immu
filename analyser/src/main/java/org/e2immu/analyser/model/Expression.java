@@ -82,6 +82,7 @@ public interface Expression extends Element, Comparable<Expression> {
         return false;
     }
 
+    // only empty expressions are unknown!
     default boolean isUnknown() {
         return false;
     }
@@ -184,5 +185,15 @@ public interface Expression extends Element, Comparable<Expression> {
 
     default boolean isInitialReturnExpression() {
         return this instanceof UnknownExpression unknownExpression && unknownExpression.msg().equals(UnknownExpression.RETURN_VALUE);
+    }
+
+    default EmptyExpression combineUnknown(Expression other) {
+        if (this instanceof EmptyExpression e1 && other instanceof EmptyExpression e2) {
+            if (e1.order() < 0 || e2.order() < 0) throw new UnsupportedOperationException();
+            return e1.order() > e2.order() ? e1 : e2;
+        }
+        if (this instanceof EmptyExpression expression) return expression;
+        if (other instanceof EmptyExpression expression) return expression;
+        throw new UnsupportedOperationException();
     }
 }

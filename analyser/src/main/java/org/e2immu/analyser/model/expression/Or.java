@@ -74,13 +74,7 @@ public record Or(Primitives primitives,
         concat.addAll(this.expressions);
         recursivelyAdd(concat, values);
 
-        // STEP 3: one-off observations
-
-        if (concat.stream().anyMatch(v -> v instanceof EmptyExpression)) {
-            log(CNF, "Return Instance in Or, found unknown value");
-            return EmptyExpression.NO_VALUE;
-        }
-        // STEP 4: loop
+        // STEP 3: loop
 
         And firstAnd = null;
         boolean changes = true;
@@ -143,6 +137,20 @@ public record Or(Primitives primitives,
             return new And(primitives, objectFlow).append(evaluationContext, components);
         }
         if (finalValues.size() == 1) return finalValues.get(0);
+
+        // FINAL STEP: check for unknowns (if there was a TRUE somewhere, we never get here)
+
+        Expression unknown = null;
+        for(Expression value: finalValues) {
+            if(value.isUnknown()) {
+                if(unknown == null) unknown = value; else unknown = unknown.combineUnknown(value);
+            }
+        }
+        if(unknown != null) {
+            log(CNF, "Return unknown value in Or, order "+unknown.order());
+            return unknown;
+        }
+
         return new Or(primitives, finalValues, objectFlow);
     }
 

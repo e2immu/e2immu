@@ -127,7 +127,7 @@ public record InstanceOf(Primitives primitives,
         Primitives primitives = evaluationContext.getPrimitives();
 
         if (value.isUnknown()) {
-            return builder.setExpression(EmptyExpression.NO_VALUE).build();
+            return builder.setExpression(value).build();
         }
         if (value instanceof NullConstant) {
             return builder.setExpression(new BooleanConstant(evaluationContext.getPrimitives(), false)).build();

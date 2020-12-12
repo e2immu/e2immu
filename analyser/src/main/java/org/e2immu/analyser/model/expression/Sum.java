@@ -55,7 +55,7 @@ public class Sum extends BinaryOperator {
             return IntConstant.intOrDouble(primitives, ln.doubleValue() + rn.doubleValue(), objectFlow);
 
         // any unknown lingering
-        if (l.isUnknown() || r.isUnknown()) return EmptyExpression.NO_VALUE;
+        if (l.isUnknown() || r.isUnknown()) return l.combineUnknown(r);
 
         // a + x*a
         if (l instanceof Product lp && lp.lhs instanceof Numeric lpLn && r.equals(lp.rhs))

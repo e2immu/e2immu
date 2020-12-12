@@ -47,7 +47,7 @@ public class Equals extends BinaryOperator {
     public static Expression equals(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {
         Primitives primitives = evaluationContext.getPrimitives();
         if (l.equals(r)) return new BooleanConstant(primitives, true, objectFlow);
-        if (l.isUnknown() || r.isUnknown()) return EmptyExpression.NO_VALUE;
+        if (l.isUnknown() || r.isUnknown()) return l.combineUnknown(r);
 
         if (l instanceof NullConstant && evaluationContext.isNotNull0(r) ||
                 r instanceof NullConstant && evaluationContext.isNotNull0(l))

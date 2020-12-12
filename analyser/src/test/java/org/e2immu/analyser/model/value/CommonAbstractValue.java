@@ -72,7 +72,7 @@ public abstract class CommonAbstractValue {
         PRIMITIVES = TYPE_MAP_BUILDER.getPrimitives();
         TRUE = new BooleanConstant(PRIMITIVES, true);
         FALSE = new BooleanConstant(PRIMITIVES, false);
-
+        minimalEvaluationContext = new EvaluationContextImpl();
         va = createVariable("a");
         vb = createVariable("b");
         vc = createVariable("c");
@@ -187,7 +187,7 @@ public abstract class CommonAbstractValue {
     protected final static AnalyserContext analyserContext = new AnalyserContext() {
     };
 
-    protected final static EvaluationContext minimalEvaluationContext = new EvaluationContextImpl();
+    protected static EvaluationContext minimalEvaluationContext;
 
     static class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
@@ -196,7 +196,7 @@ public abstract class CommonAbstractValue {
         }
 
         EvaluationContextImpl() {
-            super(0, ConditionManager.INITIAL);
+            super(0, new ConditionManager(PRIMITIVES));
         }
 
         @Override

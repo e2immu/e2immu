@@ -428,7 +428,7 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     private void handlePrecondition(@NotModified MethodAnalyser methodAnalyser, Expression precondition, Map<String, Expression> tempApproved, int iteration) {
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
+        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, new ConditionManager(analyserContext.getPrimitives()));
         Expression negated = Negation.negate(evaluationContext, precondition);
         String label = labelOfPreconditionForMarkAndOnly(precondition);
         Expression inMap = tempApproved.get(label);
@@ -453,7 +453,7 @@ public class TypeAnalyser extends AbstractAnalyser {
     public static boolean assignmentIncompatibleWithPrecondition(EvaluationContext evaluationContext,
                                                                  Expression precondition,
                                                                  MethodAnalyser methodAnalyser) {
-        Set<Variable> variables = new HashSet<>( precondition.variables());
+        Set<Variable> variables = new HashSet<>(precondition.variables());
         for (Variable variable : variables) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
             // fieldSummaries are set after the first iteration

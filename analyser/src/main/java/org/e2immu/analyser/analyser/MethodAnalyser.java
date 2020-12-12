@@ -128,7 +128,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             }
             AnalysisStatus.AnalysisResultSupplier<SharedState> statementAnalyser = (sharedState) -> {
                 StatementAnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(sharedState.iteration,
-                        ForwardAnalysisInfo.START_OF_METHOD);
+                        ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives()));
                 // apply all modifications
                 result.getModifications().forEach(Runnable::run);
                 this.messages.addAll(result.messages);
@@ -272,7 +272,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
             List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration().debugConfiguration.afterMethodAnalyserVisitors;
             if (!visitors.isEmpty()) {
-                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.INITIAL);
+                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, new ConditionManager(analyserContext.getPrimitives()));
                 for (MethodAnalyserVisitor methodAnalyserVisitor : visitors) {
                     methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration,
                             evaluationContext, methodInfo, methodAnalysis,
@@ -392,7 +392,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         boolean mark = false;
         Boolean after = null;
-        EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration, ConditionManager.INITIAL);
+        EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration, new ConditionManager(analyserContext.getPrimitives()));
         for (Expression precondition : preconditions) {
             String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(precondition);
             if (!approvedPreconditions.isSet(markLabel)) {
@@ -492,7 +492,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         // at this point, the null and size checks on parameters have been removed.
         // we still need to remove other parameter components; what remains can be used for marking/only
 
-        EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration, ConditionManager.INITIAL);
+        EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration, new ConditionManager(analyserContext.getPrimitives()));
         Filter.FilterResult<FieldReference> filterResult = Filter.filter(evaluationContext, precondition, Filter.FilterMode.ACCEPT, Filter.INDIVIDUAL_FIELD_CLAUSE);
         if (filterResult.accepted().isEmpty()) {
             log(MARK, "No @Mark/@Only annotation in {}: found no individual field preconditions", methodInfo.distinguishingName());
@@ -523,6 +523,8 @@ public class MethodAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
         ObjectFlow objectFlow = value.getObjectFlow();
+        if (objectFlow == null)
+            throw new UnsupportedOperationException("Null object flow for value of " + value.getClass());
         if (objectFlow != ObjectFlow.NO_FLOW && !methodAnalysis.objectFlow.isSet()) {
             log(OBJECT_FLOW, "Set final object flow object for method {}: {}", methodInfo.distinguishingName(), objectFlow);
             objectFlow.finalize(methodAnalysis.objectFlow.getFirst());

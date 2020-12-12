@@ -59,31 +59,34 @@ public record And(Primitives primitives,
     // we try to maintain a CNF
     public Expression append(EvaluationContext evaluationContext, Expression... values) {
 
-        // STEP 0: check that all values return boolean!
+        // STEP 0: combining an unknown with anything else results in unknown
+
+        Expression unknown = null;
+        for(Expression value: values) {
+            if(value.isUnknown()) {
+                if(unknown == null) unknown = value; else unknown = unknown.combineUnknown(value);
+            }
+        }
+        if(unknown != null) {
+            log(CNF, "Return unknown value in And, order "+unknown.order());
+            return unknown;
+        }
+
+        // STEP 1: check that all values return boolean!
+
         if (Arrays.stream(values).anyMatch(v -> v.returnType() == null || Primitives.isNotBooleanOrBoxedBoolean(v.returnType()))) {
             throw new UnsupportedOperationException("Internal error, values are " + Arrays.toString(values));
         }
 
-        // STEP 1: trivial reductions
+        // STEP 2: trivial reductions
 
         if (this.expressions.isEmpty() && values.length == 1 && values[0] instanceof And) return values[0];
 
-        // STEP 2: concat everything
+        // STEP 3: concat everything
 
         ArrayList<Expression> concat = new ArrayList<>(values.length + this.expressions.size());
         concat.addAll(this.expressions);
         recursivelyAdd(concat, Arrays.stream(values).collect(Collectors.toList()));
-
-        // some protection against EMPTY, coming in from state and preconditions
-        concat.removeIf(v -> v == EmptyExpression.EMPTY_EXPRESSION);
-        if (concat.isEmpty()) return EmptyExpression.EMPTY_EXPRESSION;
-
-        // STEP 3: one-off observations
-
-        if (concat.stream().anyMatch(Expression::isUnknown)) {
-            log(CNF, "Return Unknown value in And, found Unknown value");
-            return EmptyExpression.NO_VALUE;
-        }
 
         // STEP 4: loop
 
