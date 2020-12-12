@@ -19,11 +19,10 @@
 package org.e2immu.analyser.inspector.expr;
 
 import com.github.javaparser.ast.expr.ArrayCreationExpr;
-import org.e2immu.analyser.analyser.AnalysisProvider;
 import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
-import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -40,9 +39,10 @@ public class ParseArrayCreationExpr {
                                 .map(expressionContext::parseExpression).collect(Collectors.toList()))).orElse(null);
         List<Expression> indexExpressions = arrayCreationExpr.getLevels()
                 .stream().map(level -> level.getDimension().map(expressionContext::parseExpression)
-                        .orElse(EmptyExpression.EMPTY_EXPRESSION)).collect(Collectors.toList());
+                        .orElseThrow()).collect(Collectors.toList());
         return new NewObject(createArrayCreationConstructor(expressionContext.typeContext, parameterizedType),
-                parameterizedType, indexExpressions, arrayInitializer, EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW);
+                parameterizedType, indexExpressions, arrayInitializer,
+                new BooleanConstant(expressionContext.typeContext.getPrimitives(), true), ObjectFlow.NO_FLOW);
     }
 
     // new Type[3]; this method creates the constructor that makes this array, without attaching said constructor to the type

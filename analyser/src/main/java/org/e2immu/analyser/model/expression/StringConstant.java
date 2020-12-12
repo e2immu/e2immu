@@ -91,7 +91,7 @@ public record StringConstant(Primitives primitives,
         // TODO static flow
         // TODO apply code from method call to produce a decent state
         return new NewObject(oneParameterConstructor(), primitives.stringParameterizedType,
-                List.of(this), EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW);
+                List.of(this), new BooleanConstant(evaluationContext.getPrimitives(), true), ObjectFlow.NO_FLOW);
     }
 
     private MethodInfo oneParameterConstructor() {

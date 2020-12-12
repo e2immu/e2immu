@@ -26,8 +26,6 @@ import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
-import java.util.List;
-
 public class StringConcat extends BinaryOperator {
 
     private StringConcat(Primitives primitives, Expression lhs, Expression rhs, ObjectFlow objectFlow) {
@@ -83,6 +81,6 @@ public class StringConcat extends BinaryOperator {
 
     @Override
     public NewObject getInstance(EvaluationContext evaluationContext) {
-        return new NewObject(null, returnType(), List.of(), EmptyExpression.EMPTY_EXPRESSION, getObjectFlow());
+        return new NewObject(evaluationContext.getPrimitives(), returnType(), getObjectFlow());
     }
 }

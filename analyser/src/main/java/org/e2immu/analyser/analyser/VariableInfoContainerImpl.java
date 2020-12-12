@@ -19,7 +19,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -31,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 
 public class VariableInfoContainerImpl extends Freezable implements VariableInfoContainer {
     private final static Logger LOGGER = LoggerFactory.getLogger(VariableInfoContainerImpl.class);
@@ -128,7 +129,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        if (value != EmptyExpression.NO_VALUE) {
+        if (value != NO_VALUE) {
             variableInfo.setValue(value);
         }
         propertiesToSet.forEach(variableInfo::setProperty);
@@ -139,10 +140,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        if (value != EmptyExpression.NO_VALUE) {
+        if (value != NO_VALUE) {
             variableInfo.setValue(value);
         }
-        if (state != EmptyExpression.NO_VALUE) {
+        if (state != NO_VALUE) {
             variableInfo.stateOnAssignment.set(state);
         }
         propertiesToSet.forEach(variableInfo::setProperty);
@@ -154,7 +155,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
         Objects.requireNonNull(state);
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        if (state != EmptyExpression.NO_VALUE && (!variableInfo.stateOnAssignment.isSet() || !state.equals(variableInfo.stateOnAssignment.get()))) {
+        if (state != NO_VALUE && (!variableInfo.stateOnAssignment.isSet() || !state.equals(variableInfo.stateOnAssignment.get()))) {
             variableInfo.stateOnAssignment.set(state);
         }
     }
@@ -187,7 +188,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
 
         Objects.requireNonNull(value);
-        if (value == EmptyExpression.NO_VALUE) {
+        if (value == NO_VALUE) {
             throw new IllegalArgumentException("Value should not be NO_VALUE");
         }
         int writeLevel = findLevelForWriting(level);
@@ -202,7 +203,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
 
         Objects.requireNonNull(state);
-        if (state == EmptyExpression.NO_VALUE) {
+        if (state == NO_VALUE) {
             throw new IllegalArgumentException("State should not be NO_VALUE");
         }
         int writeLevel = findLevelForWriting(level);
@@ -341,7 +342,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
          The second statement should be read as: if(!x) retVal2 = b, or retVal2 = !x?b:<return value>
          Merging the two gives the correct result, but <return value> keeps lingering, which has a nefarious effect on properties.
          */
-        if (mergedValue != EmptyExpression.NO_VALUE && !existingValuesWillBeOverwritten &&
+        if (mergedValue != NO_VALUE && !existingValuesWillBeOverwritten &&
                 notExistingStateEqualsAndMergeStates(evaluationContext, existing, merge)) {
             VariableProperty.VALUE_PROPERTIES.forEach(vp -> merged.setProperty(vp, mergedValue.getProperty(evaluationContext, vp)));
         } else {
@@ -362,8 +363,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     private static boolean notExistingStateEqualsAndMergeStates(EvaluationContext evaluationContext, VariableInfo oneSide, List<VariableInfo> merge) {
-        if (!oneSide.stateOnAssignmentIsSet() || oneSide.getStateOnAssignment() == EmptyExpression.EMPTY_EXPRESSION) return false;
-        if (merge.stream().anyMatch(vi -> !vi.stateOnAssignmentIsSet() || vi.getStateOnAssignment() == EmptyExpression.EMPTY_EXPRESSION))
+        if (!oneSide.stateOnAssignmentIsSet() || oneSide.getStateOnAssignment().isBoolValueTrue()) return false;
+        if (merge.stream().anyMatch(vi -> !vi.stateOnAssignmentIsSet() || vi.getStateOnAssignment().isBoolValueTrue()))
             return false;
 
         Expression notOne = Negation.negate(evaluationContext, oneSide.getStateOnAssignment());

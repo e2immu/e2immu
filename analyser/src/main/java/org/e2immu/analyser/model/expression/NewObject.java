@@ -32,6 +32,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 import org.e2immu.annotation.NotNull;
@@ -62,8 +63,14 @@ public class NewObject implements HasParameterExpressions {
     }
 
     //for testing
-    public NewObject(ParameterizedType parameterizedType) {
-        this(null, parameterizedType, List.of(), null, null, EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW);
+    public NewObject(Primitives primitives, ParameterizedType parameterizedType) {
+        this(null, parameterizedType, List.of(), null, null,
+                new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
+    }
+
+    public NewObject(Primitives primitives, ParameterizedType parameterizedType, ObjectFlow objectFlow) {
+        this(null, parameterizedType, List.of(), null, null,
+                new BooleanConstant(primitives, true), objectFlow);
     }
 
     public NewObject(MethodInfo constructor,
@@ -85,8 +92,8 @@ public class NewObject implements HasParameterExpressions {
 
     // constructor can be null, when we create an anonymous class that doesn't derive from a class with constructor
     // in that case, there is a default, parameterless constructor
-    public NewObject(@NotNull ParameterizedType parameterizedType, @NotNull TypeInfo anonymousClass) {
-        this(null, parameterizedType, List.of(), anonymousClass, null, EmptyExpression.EMPTY_EXPRESSION,
+    public NewObject(Primitives primitives, @NotNull ParameterizedType parameterizedType, @NotNull TypeInfo anonymousClass) {
+        this(null, parameterizedType, List.of(), anonymousClass, null, new BooleanConstant(primitives, true),
                 ObjectFlow.NO_FLOW);
     }
 
@@ -282,7 +289,7 @@ public class NewObject implements HasParameterExpressions {
         if (arrayInitializer != null) {
             outputBuilder.add(arrayInitializer.output());
         }
-        if (state != EmptyExpression.EMPTY_EXPRESSION) {
+        if (!state.isBoolValueTrue()) {
             outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT).add(state.output()).add(Symbol.RIGHT_BLOCK_COMMENT);
         }
         return outputBuilder;

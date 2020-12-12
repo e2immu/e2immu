@@ -19,6 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.And;
+import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.FlipSwitch;
@@ -36,14 +37,14 @@ public class StateData {
 
     public AnalysisStatus copyPrecondition(StatementAnalyser statementAnalyser, StatementAnalysis previous, EvaluationContext evaluationContext) {
         if (!precondition.isSet()) {
-            Stream<Expression> fromPrevious = Stream.of(previous == null ? EmptyExpression.EMPTY_EXPRESSION : previous.stateData.precondition.get());
+            BooleanConstant TRUE = new BooleanConstant(evaluationContext.getPrimitives(), true);
+            Stream<Expression> fromPrevious = Stream.of(previous == null ? TRUE : previous.stateData.precondition.get());
             Stream<Expression> fromBlocks = statementAnalyser.lastStatementsOfNonEmptySubBlocks().stream()
                     .map(sa -> sa.statementAnalysis.stateData.precondition.get());
 
             Expression reduced = Stream.concat(fromBlocks, fromPrevious)
-                    .reduce(EmptyExpression.EMPTY_EXPRESSION, (v1, v2) -> v1 == EmptyExpression.EMPTY_EXPRESSION ? v2 : v2 == EmptyExpression.EMPTY_EXPRESSION ? v1 :
-                            new And(evaluationContext.getPrimitives())
-                                    .append(evaluationContext, v1, v2));
+                    .reduce(TRUE, (v1, v2) -> v1.isBoolValueTrue() ? v2 : v2.isBoolValueTrue() ? v1 :
+                            new And(evaluationContext.getPrimitives()).append(evaluationContext, v1, v2));
             precondition.set(reduced);
         }
         return AnalysisStatus.DONE;

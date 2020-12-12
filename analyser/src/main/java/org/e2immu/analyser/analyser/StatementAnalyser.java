@@ -546,7 +546,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (isEscapeAlwaysExecutedInCurrentBlock() && !statementAnalysis.stateData.precondition.isSet()) {
             EvaluationResult er = statementAnalysis.stateData.getConditionManager().escapeCondition(sharedState.evaluationContext);
             Expression precondition = er.value;
-            if (precondition != EmptyExpression.EMPTY_EXPRESSION) {
+            if (!precondition.isBoolValueTrue()) {
                 boolean atLeastFieldOrParameterInvolved = precondition.variables().stream()
                         .anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
                 if (atLeastFieldOrParameterInvolved) {
@@ -636,8 +636,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 // FIXME we must set the links after step 3, before going into the block in step 4
                 vic.setLinkedVariables(l1, Set.of());
             }
-            vic.setValueOnAssignment(l1, new NewObject(null, lvr.parameterizedType(), List.of(),
-                    EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW), propertiesToSet);
+            vic.setValueOnAssignment(l1, new NewObject(statementAnalysis.primitives, lvr.parameterizedType(), ObjectFlow.NO_FLOW),
+                    propertiesToSet);
         }
 
         // part 2: initialisers
@@ -860,8 +860,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 || combinedWithCondition.isConstant();
 
         if (noEffect && !statementAnalysis.stateData.statementContributesToPrecondition.isSet()) {
-            Expression constant = combinedWithCondition.equals(previousConditional) ? new BooleanConstant(analyserContext.getPrimitives(), true)
+            Expression constant = combinedWithCondition.equals(previousConditional) ?
+                    new BooleanConstant(analyserContext.getPrimitives(), !combinedWithCondition.isBoolValueFalse())
                     : combinedWithState.isConstant() ? combinedWithState : combinedWithCondition;
+
             String message;
             List<Optional<StatementAnalysis>> blocks = statementAnalysis.navigationData.blocks.get();
             if (statementAnalysis.statement instanceof IfElseStatement) {
@@ -976,7 +978,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             // compute the escape situation of the sub-blocks
             Expression addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
-            if (addToStateAfterStatement != EmptyExpression.EMPTY_EXPRESSION) {
+            if (!addToStateAfterStatement.isBoolValueTrue()) {
                 localConditionManager = localConditionManager.addToState(evaluationContext, addToStateAfterStatement);
                 log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", addToStateAfterStatement);
             }
@@ -994,13 +996,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private Expression addToStateAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {
+        BooleanConstant TRUE = new BooleanConstant(evaluationContext.getPrimitives(),  true);
         if (statementAnalysis.statement instanceof IfElseStatement) {
             ExecutionOfBlock e0 = list.get(0);
             if (list.size() == 1) {
                 if (e0.escapesAlways()) {
                     return Negation.negate(evaluationContext, list.get(0).condition);
                 }
-                return EmptyExpression.EMPTY_EXPRESSION;
+                return TRUE;
             }
             if (list.size() == 2) {
                 ExecutionOfBlock e1 = list.get(1);
@@ -1017,7 +1020,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     // else escapes
                     return list.get(0).condition;
                 }
-                return EmptyExpression.EMPTY_EXPRESSION;
+                return TRUE;
             }
             throw new UnsupportedOperationException("Impossible, if {} else {} has 2 blocks maximum.");
         }
@@ -1026,11 +1029,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         // make an And of NOTs for all those conditions where the switch entry escapes
         if (statementAnalysis.statement instanceof SwitchStatement) {
             Expression[] components = list.stream().filter(ExecutionOfBlock::escapesAlways).map(e -> e.condition).toArray(Expression[]::new);
-            if (components.length == 0) return EmptyExpression.EMPTY_EXPRESSION;
+            if (components.length == 0) return TRUE;
             return new And(evaluationContext.getPrimitives()).append(evaluationContext, components);
         }
         // TODO SwitchExpressions?
-        return EmptyExpression.EMPTY_EXPRESSION;
+        return TRUE;
     }
 
 

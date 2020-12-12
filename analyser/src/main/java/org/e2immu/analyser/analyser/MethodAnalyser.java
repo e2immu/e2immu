@@ -484,7 +484,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
         Expression precondition = methodAnalysis.precondition.get();
-        if (precondition == EmptyExpression.EMPTY_EXPRESSION) {
+        if (precondition.isBoolValueTrue()) {
             log(MARK, "No @Mark @Only annotation in {}, as no precondition", methodInfo.distinguishingName());
             methodAnalysis.preconditionForMarkAndOnly.set(List.of());
             return DONE;

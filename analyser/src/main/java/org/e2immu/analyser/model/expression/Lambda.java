@@ -174,7 +174,7 @@ public class Lambda implements Expression {
             }
         }
         if (result == null) {
-            result = new NewObject(null, parameterizedType, List.of(), EmptyExpression.EMPTY_EXPRESSION, objectFlow);
+            result = new NewObject(evaluationContext.getPrimitives(), parameterizedType, objectFlow);
         }
 
         builder.setExpression(result);

@@ -37,7 +37,6 @@ import java.util.function.Predicate;
 
 /**
  * a ? b : c
- *
  */
 public class InlineConditional implements Expression {
     public final Expression condition;
@@ -184,7 +183,7 @@ public class InlineConditional implements Expression {
     @Override
     public NewObject getInstance(EvaluationContext evaluationContext) {
         if (Primitives.isPrimitiveExcludingVoid(returnType())) return null;
-        return new NewObject(null, returnType(), List.of(), EmptyExpression.EMPTY_EXPRESSION, getObjectFlow());
+        return new NewObject(evaluationContext.getPrimitives(), returnType(), getObjectFlow());
     }
 
     @Override

@@ -19,7 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
@@ -110,13 +110,14 @@ public class MethodLevelData {
             Expression result;
 
             if (sharedState.previous == null) {
-                result = sharedState.stateData.precondition.isSet() ? sharedState.stateData.precondition.get() : EmptyExpression.EMPTY_EXPRESSION;
+                result = sharedState.stateData.precondition.isSet() ? sharedState.stateData.precondition.get() :
+                        new BooleanConstant(sharedState.evaluationContext.getPrimitives(), true);
             } else {
                 Expression v1 = sharedState.previous.combinedPrecondition.get();
                 Expression v2 = sharedState.stateData.precondition.get();
-                if (v1 == EmptyExpression.EMPTY_EXPRESSION) {
+                if (v1.isBoolValueTrue()) {
                     result = v2;
-                } else if (v2 == EmptyExpression.EMPTY_EXPRESSION) {
+                } else if (v2.isBoolValueTrue()) {
                     result = v1;
                 } else {
                     result = new And(sharedState.evaluationContext.getPrimitives())
@@ -137,7 +138,7 @@ public class MethodLevelData {
         // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
         sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
             if (!variableInfo.linkedVariablesIsSet()) {
-                if(!(variableInfo.variable() instanceof LocalVariableReference) ||
+                if (!(variableInfo.variable() instanceof LocalVariableReference) ||
                         variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) {
                     log(DELAYED, "Delaying content modification in MethodLevelData for {} in {}", variableInfo.variable().fullyQualifiedName(),
                             sharedState.evaluationContext.getCurrentStatement());
@@ -197,7 +198,7 @@ public class MethodLevelData {
                 }
             }
         });
-        if(analysisStatus.get() == DONE) {
+        if (analysisStatus.get() == DONE) {
             linksHaveBeenEstablished.set();
         }
         return analysisStatus.get() == DELAYS ? (progress.get() ? PROGRESS : DELAYS) : DONE;

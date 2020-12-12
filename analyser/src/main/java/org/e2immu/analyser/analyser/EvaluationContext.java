@@ -30,7 +30,6 @@ import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -198,8 +197,7 @@ public interface EvaluationContext {
     default NewObject currentInstance(Variable variable) {
         if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
         // always a new one with empty state -- we cannot be bothered here.
-        return new NewObject(null, variable.parameterizedType(), List.of(),
-                EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW);
+        return new NewObject(getPrimitives(), variable.parameterizedType(), ObjectFlow.NO_FLOW);
     }
 
     default boolean disableEvaluationOfMethodCallsUsingCompanionMethods() {

@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.NamedType;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
@@ -46,7 +47,7 @@ public class ParseObjectCreationExpr {
                     objectCreationExpr.getAnonymousClassBody().get());
             anonymousType.typeInspection.set(typeInspector.build());
             expressionContext.addNewlyCreatedType(anonymousType);
-            return new NewObject(parameterizedType, anonymousType);
+            return new NewObject(expressionContext.typeContext.getPrimitives(), parameterizedType, anonymousType);
         }
 
         Map<NamedType, ParameterizedType> typeMap = parameterizedType.initialTypeParameterMap(expressionContext.typeContext);
@@ -58,6 +59,6 @@ public class ParseObjectCreationExpr {
                         parameterizedType, objectCreationExpr.getBegin().orElseThrow());
         if (method == null) return new UnevaluatedMethodCall(parameterizedType.detailedString() + "::new");
         return new NewObject(method.methodInspection.getMethodInfo(), parameterizedType, newParameterExpressions,
-                EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW);
+                new BooleanConstant(expressionContext.typeContext.getPrimitives(), true), ObjectFlow.NO_FLOW);
     }
 }

@@ -19,7 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -27,6 +27,7 @@ import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnce;
 
@@ -34,7 +35,6 @@ import java.util.*;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.model.expression.EmptyExpression.EMPTY_EXPRESSION;
 import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 
 class VariableInfoImpl implements VariableInfo {
@@ -266,8 +266,7 @@ class VariableInfoImpl implements VariableInfo {
                                   List<VariableInfo> merge) {
         Expression currentValue = getValue();
         if (!existingValuesWillBeOverwritten) {
-            if (currentValue == NO_VALUE) return NO_VALUE;
-            if (currentValue == EMPTY_EXPRESSION) return EMPTY_EXPRESSION;
+            if (currentValue.isUnknown()) return currentValue;
         }
         boolean haveANoValue = merge.stream().anyMatch(v -> !v.stateOnAssignmentIsSet());
         if (haveANoValue) return NO_VALUE;
@@ -292,32 +291,21 @@ class VariableInfoImpl implements VariableInfo {
                     : two(evaluationContext, currentValue, merge.get(0), merge.get(1));
             if (result != null) return result;
         }
-
-        boolean noneEmpty = merge.stream().noneMatch(vi -> vi.getStateOnAssignment() == EmptyExpression.EMPTY_EXPRESSION);
+/*
+        boolean noneEmpty = merge.stream().noneMatch(vi -> vi.getStateOnAssignment().isBoolValueTrue());
         if (noneEmpty) {
             Variable variable = allInvolveConstantsEqualToAVariable(merge);
             if (variable != null) {
                 return inlineSwitch(existingValuesWillBeOverwritten, currentValue, variable, merge);
             }
         }
-
+*/
         // no clue
-        return noConclusion();
+        return noConclusion(evaluationContext.getPrimitives());
     }
 
-    private Expression noConclusion() {
-        return new NewObject(null, variable.parameterizedType(), List.of(), EmptyExpression.EMPTY_EXPRESSION, getObjectFlow());
-    }
-
-    private Expression inlineSwitch(boolean existingValuesWillBeOverwritten, Expression currentValue, Variable variable, List<VariableInfo> merge) {
-        // TODO
-        // fail
-        return noConclusion();
-    }
-
-    private Variable allInvolveConstantsEqualToAVariable(List<VariableInfo> merge) {
-        // TODO
-        return null; // fail
+    private Expression noConclusion(Primitives primitives) {
+        return new NewObject(primitives, variable.parameterizedType(), getObjectFlow());
     }
 
 
@@ -326,11 +314,12 @@ class VariableInfoImpl implements VariableInfo {
         Expression x = vi.getStateOnAssignment();
 
         // int c = a; if(x) c = b;  --> c = x?b:a
-        if (x != EmptyExpression.EMPTY_EXPRESSION) {
-            return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, x, b, a, ObjectFlow.NO_FLOW));
+        if (!x.isBoolValueTrue()) {
+            return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, x, b, a, ObjectFlow.NO_FLOW),
+                    evaluationContext.getPrimitives());
         }
 
-        return noConclusion();
+        return noConclusion(evaluationContext.getPrimitives());
     }
 
     private Expression two(EvaluationContext evaluationContext, Expression x, VariableInfo vi1, VariableInfo vi2) {
@@ -339,34 +328,38 @@ class VariableInfoImpl implements VariableInfo {
 
         // silly situation, twice the same condition
         // int c = ex; if(s1) c = a; if(s1) c =b;
-        if (s1.equals(s2) && s1 != EmptyExpression.EMPTY_EXPRESSION) {
-            return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s1, vi2.getValue(), x, ObjectFlow.NO_FLOW));
+        if (s1.equals(s2) && !s1.isBoolValueTrue()) {
+            return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s1, vi2.getValue(), x, ObjectFlow.NO_FLOW),
+                    evaluationContext.getPrimitives());
         }
         // int c = x; if(s1) c = a; if(s2) c = b; --> s1?a:(s2?b:x)
-        if (s1 != EmptyExpression.EMPTY_EXPRESSION && s2 != EmptyExpression.EMPTY_EXPRESSION) {
-            Expression s2bx = safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s2, vi2.getValue(), x, ObjectFlow.NO_FLOW));
-            return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s1, vi1.getValue(), s2bx, ObjectFlow.NO_FLOW));
+        if (!s1.isBoolValueTrue() && !s2.isBoolValueTrue()) {
+            Expression s2bx = safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s2, vi2.getValue(), x, ObjectFlow.NO_FLOW),
+                    evaluationContext.getPrimitives());
+            return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s1, vi1.getValue(), s2bx, ObjectFlow.NO_FLOW),
+                    evaluationContext.getPrimitives());
         }
-        return noConclusion();
+        return noConclusion(evaluationContext.getPrimitives());
     }
 
     private Expression twoOverwritten(EvaluationContext evaluationContext, VariableInfo vi1, VariableInfo vi2) {
         Expression s1 = vi1.getStateOnAssignment();
         Expression s2 = vi2.getStateOnAssignment();
 
-        if (s1 != EmptyExpression.EMPTY_EXPRESSION && s2 != EmptyExpression.EMPTY_EXPRESSION) {
+        if (!s1.isBoolValueTrue() && !s2.isBoolValueTrue()) {
             // int c; if(s1) c = a; else c = b;
             if (Negation.negate(evaluationContext, s1).equals(s2)) {
-                return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s1, vi1.getValue(), vi2.getValue(), ObjectFlow.NO_FLOW));
+                return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s1, vi1.getValue(), vi2.getValue(), ObjectFlow.NO_FLOW),
+                        evaluationContext.getPrimitives());
             } else throw new UnsupportedOperationException("? impossible situation");
         }
-        return noConclusion();
+        return noConclusion(evaluationContext.getPrimitives());
     }
 
-    private Expression safe(EvaluationResult result) {
+    private Expression safe(EvaluationResult result, Primitives primitives) {
         if (result.getModificationStream().anyMatch(m -> m instanceof StatementAnalyser.RaiseErrorMessage)) {
             // something gone wrong, retreat
-            return noConclusion();
+            return noConclusion(primitives);
         }
         return result.value;
     }

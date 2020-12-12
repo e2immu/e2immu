@@ -6,7 +6,6 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.GreaterThanZero;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -62,7 +61,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     //TODO     Assert.assertEquals(d.toString(), AnalysisStatus.DONE, analysisStatus);
-                    Assert.assertEquals(EmptyExpression.EMPTY_EXPRESSION.toString(), d.state().toString());
+                    Assert.assertEquals("true", d.state().toString());
                 }
                 if ("1".equals(d.statementId()) || "1.0.0".equals(d.statementId())) {
                     //TODO  Assert.assertEquals(d.toString(), AnalysisStatus.DONE, analysisStatus);

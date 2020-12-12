@@ -21,8 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.util.CreatePreconditionCompanion;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.ContractMark;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -56,7 +57,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     public final Expression precondition;
     public final Expression singleReturnValue;
     public final Map<CompanionMethodName, CompanionAnalysis> companionAnalyses;
-    public final Map<CompanionMethodName, MethodInfo> computedCompanions ;
+    public final Map<CompanionMethodName, MethodInfo> computedCompanions;
 
     private MethodAnalysisImpl(MethodInfo methodInfo,
                                StatementAnalysis firstStatement,
@@ -85,7 +86,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         this.markAndOnly = markAndOnly;
         this.complainedAboutMissingStaticModifier = complainedAboutMissingStaticModifier;
         this.complainedAboutApprovedPreconditions = complainedAboutApprovedPreconditions;
-        this.precondition = precondition;
+        this.precondition = Objects.requireNonNull(precondition);
         this.singleReturnValue = singleReturnValue;
         this.companionAnalyses = companionAnalyses;
         this.computedCompanions = computedCompanions;
@@ -239,7 +240,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
 
         @Override
         public Expression getPrecondition() {
-            return precondition.getOrElse(null);
+            return precondition.getOrElse(new BooleanConstant(primitives, true));
         }
 
         public Builder(boolean isBeingAnalysed,
@@ -278,7 +279,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     markAndOnly.getOrElse(null),
                     complainedAboutMissingStaticModifier.getOrElse(false),
                     complainedAboutApprovedPreconditions.getOrElse(false),
-                    precondition.getOrElse(EmptyExpression.EMPTY_EXPRESSION),
+                    getPrecondition(),
                     properties.toImmutableMap(),
                     annotations.toImmutableMap(),
                     getCompanionAnalyses(),
@@ -332,8 +333,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             // @Precondition
             if (precondition.isSet()) {
                 Expression value = precondition.get();
-                if (value != EmptyExpression.EMPTY_EXPRESSION) {
-                   // generate a companion method
+                if (!value.isBoolValueTrue()) {
+                    // generate a companion method
                     new CreatePreconditionCompanion(InspectionProvider.defaultFrom(primitives), analysisProvider)
                             .addPreconditionCompanion(methodInfo, this, value);
                 }
@@ -441,7 +442,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     private static Set<MethodAnalysis> overrides(AnalysisProvider analysisProvider, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         try {
             return methodInfo.methodResolution.get().overrides().stream()
-                    .map(mi -> mi == methodInfo ? methodAnalysis: analysisProvider.getMethodAnalysis(methodInfo))
+                    .map(mi -> mi == methodInfo ? methodAnalysis : analysisProvider.getMethodAnalysis(methodInfo))
                     .collect(Collectors.toSet());
         } catch (RuntimeException rte) {
             LOGGER.error("Cannot compute method analysis of {}", methodInfo.distinguishingName());

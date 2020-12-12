@@ -15,7 +15,7 @@ public class CheckPrecondition {
         for (Map.Entry<CompanionMethodName, CompanionAnalysis> entry : methodAnalysis.getCompanionAnalyses().entrySet()) {
             CompanionMethodName cmn = entry.getKey();
             if (cmn.action() == CompanionMethodName.Action.PRECONDITION) {
-                if (precondition == EmptyExpression.EMPTY_EXPRESSION || precondition == null) {
+                if (precondition == null || precondition.isBoolValueTrue()) {
                     messages.add(Message.newMessage(new Location(methodInfo), Message.PRECONDITION_ABSENT));
                     return;
                 }

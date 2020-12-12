@@ -292,7 +292,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (methodAnalysis.getMethodInfo().hasReturnValue()) {
                 Variable retVar = new ReturnVariable(methodAnalysis.getMethodInfo());
                 VariableInfoContainer vic = createVariable(analyserContext, retVar);
-                vic.setStateOnAssignment(VariableInfoContainer.LEVEL_1_INITIALISER, EmptyExpression.EMPTY_EXPRESSION);
+                vic.setStateOnAssignment(VariableInfoContainer.LEVEL_1_INITIALISER, new BooleanConstant(primitives, true));
                 READ_FROM_RETURN_VALUE_PROPERTIES.forEach(vp -> vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, vp, vp.falseValue));
             }
             return;
@@ -432,13 +432,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // assignment will be at LEVEL 3
             vic.setLinkedVariablesFromAnalyser(Set.of());
         } else if (variable instanceof This) {
-            vic.setInitialValueFromAnalyser(new NewObject(null, variable.parameterizedType(), List.of(), EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW),
+            vic.setInitialValueFromAnalyser(new NewObject(primitives, variable.parameterizedType(), ObjectFlow.NO_FLOW),
                     propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo));
             vic.setLinkedVariablesFromAnalyser(Set.of());
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
             // TODO copy state from known preconditions
-            NewObject instance = new NewObject(null, parameterInfo.parameterizedType, List.of(), EmptyExpression.EMPTY_EXPRESSION, objectFlow);
+            NewObject instance = new NewObject(primitives, parameterInfo.parameterizedType, objectFlow);
             vic.setInitialValueFromAnalyser(instance, propertyMap(analyserContext, parameterInfo));
             vic.setLinkedVariablesFromAnalyser(Set.of());
         } else if (variable instanceof FieldReference fieldReference) {
@@ -565,8 +565,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             EvaluationContext evaluationContext = fieldAnalyser.createEvaluationContext();
             Map<VariableProperty, Integer> properties = evaluationContext.getValueProperties(initialValue);
             return PropertyWrapper.propertyWrapper(evaluationContext,
-                    new NewObject(null, fieldReference.parameterizedType(), List.of(), EmptyExpression.EMPTY_EXPRESSION,
-                            fieldAnalyser.fieldAnalysis.getObjectFlow()),
+                    new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalyser.fieldAnalysis.getObjectFlow()),
                     properties, initialValue.getObjectFlow());
         }
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
@@ -591,8 +590,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
             }
         }
-        return new NewObject(null, fieldReference.parameterizedType(), List.of(), EmptyExpression.EMPTY_EXPRESSION,
-                fieldAnalysis.getObjectFlow());
+        return new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
     }
 
     private ObjectFlow createObjectFlowForNewVariable(AnalyserContext analyserContext, Variable variable) {
@@ -650,7 +648,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // TODO for now we're ignoring messages etc. encountered in the re-evaluation
             return state.reEvaluate(evaluationContext, Map.of(value, new VariableExpression(assignmentTarget, ObjectFlow.NO_FLOW))).value;
         }
-        return EmptyExpression.EMPTY_EXPRESSION;
+        return new BooleanConstant(primitives, true);
     }
 
     public int getProperty(AnalyserContext analyserContext, Variable variable, VariableProperty variableProperty) {

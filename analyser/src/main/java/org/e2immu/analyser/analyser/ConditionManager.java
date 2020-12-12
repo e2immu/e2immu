@@ -70,6 +70,7 @@ public class ConditionManager {
      * @return the computed, real restriction
      */
     public Expression evaluateWithCondition(EvaluationContext evaluationContext, Expression value) {
+        if (condition.isBoolValueFalse()) return value;
         return evaluateWith(evaluationContext, condition, value);
     }
 
@@ -198,7 +199,7 @@ public class ConditionManager {
         return filterResult.rest();
     }
 
-    // return that part of the conditional that is NOT covered by @NotNull (individual not null clauses) or @Size (individual size clauses)
+    // return that part of the conditional that is NOT covered by @NotNull (individual not null clauses)
     public EvaluationResult escapeCondition(EvaluationContext evaluationContext) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
 
@@ -211,7 +212,7 @@ public class ConditionManager {
                 Filter.FilterMode.REJECT, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE_ON_PARAMETER);
         // those parts that have nothing to do with individual clauses
         if (filterResult.rest() == EmptyExpression.EMPTY_EXPRESSION) {
-            return builder.setExpression(EmptyExpression.EMPTY_EXPRESSION).build();
+            return builder.setExpression(new BooleanConstant(evaluationContext.getPrimitives(), false)).build();
         }
         // replace all VariableValues in the rest by VVPlaceHolders
         Map<Expression, Expression> translation = new HashMap<>();
