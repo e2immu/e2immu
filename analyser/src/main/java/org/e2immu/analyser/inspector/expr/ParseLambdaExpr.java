@@ -28,7 +28,6 @@ import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.inspector.VariableContext;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +40,9 @@ import static org.e2immu.analyser.util.Logger.log;
 
 public class ParseLambdaExpr {
 
-    public static Expression parse(ExpressionContext expressionContext, LambdaExpr lambdaExpr, MethodTypeParameterMap singleAbstractMethod) {
+    public static Expression parse(ExpressionContext expressionContext,
+                                   LambdaExpr lambdaExpr,
+                                   MethodTypeParameterMap singleAbstractMethod) {
         if (singleAbstractMethod == null || !singleAbstractMethod.isSingleAbstractMethod()) {
             return partiallyParse(lambdaExpr);
         }
@@ -51,8 +52,9 @@ public class ParseLambdaExpr {
         int cnt = 0;
         boolean allDefined = true;
         List<ParameterizedType> types = new ArrayList<>();
+        InspectionProvider inspectionProvider = expressionContext.typeContext;
 
-        MethodInspectionImpl.Builder ownerBuilder =
+        MethodInspectionImpl.Builder applyMethodInspectionBuilder =
                 createAnonymousTypeAndApplyMethod(singleAbstractMethod.methodInspection.getMethodInfo().name,
                         expressionContext.enclosingType, expressionContext.topLevel.newIndex(expressionContext.enclosingType));
 
@@ -74,7 +76,7 @@ public class ParseLambdaExpr {
             ParameterInspectionImpl.Builder parameterBuilder =
                     new ParameterInspectionImpl.Builder(parameterType, parameter.getName().asString(), cnt++);
             // parameter analysis will be set later
-            ownerBuilder.addParameter(parameterBuilder);
+            applyMethodInspectionBuilder.addParameter(parameterBuilder);
         }
         if (!allDefined) {
             log(LAMBDA, "End parsing lambda, delaying, not all parameters are defined yet");
@@ -82,8 +84,8 @@ public class ParseLambdaExpr {
         }
 
         // we've added name and parameters, so we're ready to build the FQN and make the parameters immutable
-        ownerBuilder.readyToComputeFQN(expressionContext.typeContext);
-        ownerBuilder.getParameters().forEach(newVariableContext::add);
+        applyMethodInspectionBuilder.readyToComputeFQN(inspectionProvider);
+        applyMethodInspectionBuilder.getParameters().forEach(newVariableContext::add);
 
         ExpressionContext newExpressionContext = expressionContext.newVariableContext(newVariableContext, "lambda");
 
@@ -101,16 +103,19 @@ public class ParseLambdaExpr {
             block = new Block.BlockBuilder().addStatement(new ReturnStatement(false, expr)).build();
         } else {
             block = newExpressionContext.parseBlockOrStatement(lambdaExpr.getBody());
-            inferredReturnType = block.mostSpecificReturnType(expressionContext.typeContext);
+            inferredReturnType = block.mostSpecificReturnType(inspectionProvider);
         }
-        ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(expressionContext.typeContext,
+        ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(inspectionProvider,
                 types, inferredReturnType);
-        TypeInfo anonymousType = continueCreationOfAnonymousType(expressionContext.typeContext,
-                expressionContext.enclosingType, functionalType, ownerBuilder, block, inferredReturnType);
+        TypeInspection anonymousTypeInspection = continueCreationOfAnonymousType(inspectionProvider,
+                functionalType, applyMethodInspectionBuilder, block, inferredReturnType);
+        TypeInfo anonymousType = anonymousTypeInspection.typeInfo();
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}", functionalType, anonymousType.fullyQualifiedName);
 
         expressionContext.addNewlyCreatedType(anonymousType);
-        return new Lambda(functionalType, anonymousType.asParameterizedType(expressionContext.typeContext));
+        expressionContext.typeContext.addAnonymousTypeAndMethod(anonymousTypeInspection, applyMethodInspectionBuilder);
+
+        return new Lambda(inspectionProvider, functionalType, anonymousType.asParameterizedType(inspectionProvider));
     }
 
     // experimental: we look at the parameters, and return an expression which is superficial, with only
@@ -124,18 +129,19 @@ public class ParseLambdaExpr {
         return new MethodInspectionImpl.Builder(typeInfo, name);
     }
 
-    private static TypeInfo continueCreationOfAnonymousType(InspectionProvider inspectionProvider,
-                                                            TypeInfo enclosingType,
-                                                            ParameterizedType functionalInterfaceType,
-                                                            MethodInspectionImpl.Builder builder,
-                                                            Block block,
-                                                            ParameterizedType returnType) {
+    private static TypeInspection continueCreationOfAnonymousType(InspectionProvider inspectionProvider,
+                                                                  ParameterizedType functionalInterfaceType,
+                                                                  MethodInspectionImpl.Builder builder,
+                                                                  Block block,
+                                                                  ParameterizedType returnType) {
         MethodTypeParameterMap sam = functionalInterfaceType.findSingleAbstractMethodOfInterface(inspectionProvider);
+        MethodInspection methodInspectionOfSAMsMethod = inspectionProvider.getMethodInspection(sam.methodInspection.getMethodInfo());
         ParameterizedType bestReturnType = returnType.mostSpecific(inspectionProvider,
-                sam.methodInspection.getMethodInfo().returnType());
+                methodInspectionOfSAMsMethod.getReturnType());
         builder.setReturnType(Objects.requireNonNull(bestReturnType));
         builder.setInspectedBlock(block);
-        MethodInfo methodInfo = builder.build(inspectionProvider).getMethodInfo();
+
+        MethodInfo methodInfo = builder.getMethodInfo(); // don't build yet!
 
         TypeInfo typeInfo = methodInfo.typeInfo;
         TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND);
@@ -144,7 +150,6 @@ public class ParseLambdaExpr {
         typeInspectionBuilder.addInterfaceImplemented(functionalInterfaceType);
         typeInspectionBuilder.addMethod(methodInfo);
 
-        typeInfo.typeInspection.set(typeInspectionBuilder.build());
-        return typeInfo;
+        return typeInspectionBuilder;
     }
 }

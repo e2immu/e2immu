@@ -30,8 +30,8 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.output.Guide;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
+import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
-import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
@@ -47,20 +47,25 @@ public class Lambda implements Expression {
      * @param abstractFunctionalType e.g. java.util.Supplier
      * @param implementation         anonymous type, with single abstract method with implementation block
      */
-    public Lambda(@NotNull ParameterizedType abstractFunctionalType,
-                  @NotNull ParameterizedType implementation) {
-        methodInfo = implementation.typeInfo.typeInspection.get().methods().get(0);
-        this.block = methodInfo.methodInspection.get().getMethodBody();
-        this.parameters = methodInfo.methodInspection.get().getParameters();
-        if (!abstractFunctionalType.isFunctionalInterface()) throw new UnsupportedOperationException();
+    public Lambda(InspectionProvider inspectionProvider,
+                  ParameterizedType abstractFunctionalType,
+                  ParameterizedType implementation) {
+        methodInfo = inspectionProvider.getTypeInspection(implementation.typeInfo).methods().get(0);
+        MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
+        this.block = methodInspection.getMethodBody();
+        this.parameters = methodInspection.getParameters();
+
+        assert abstractFunctionalType.isFunctionalInterface(inspectionProvider);
         this.abstractFunctionalType = Objects.requireNonNull(abstractFunctionalType);
-        if (!implementsFunctionalInterface(implementation)) throw new UnsupportedOperationException();
+        assert implementsFunctionalInterface(inspectionProvider, implementation);
         this.implementation = Objects.requireNonNull(implementation);
     }
 
-    private static boolean implementsFunctionalInterface(ParameterizedType parameterizedType) {
+    private static boolean implementsFunctionalInterface(InspectionProvider inspectionProvider,
+                                                         ParameterizedType parameterizedType) {
         if (parameterizedType.typeInfo == null) return false;
-        return parameterizedType.typeInfo.typeInspection.get().interfacesImplemented().stream().anyMatch(ParameterizedType::isFunctionalInterface);
+        return inspectionProvider.getTypeInspection(parameterizedType.typeInfo)
+                .interfacesImplemented().stream().anyMatch(pt -> pt.isFunctionalInterface(inspectionProvider));
     }
 
     @Override
