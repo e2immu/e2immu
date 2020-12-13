@@ -43,6 +43,11 @@ public record And(Primitives primitives,
                   List<Expression> expressions,
                   ObjectFlow objectFlow) implements Expression {
 
+    public And {
+        Objects.requireNonNull(primitives);
+        Objects.requireNonNull(expressions);
+        Objects.requireNonNull(objectFlow);
+    }
     // testing only
     public And(Primitives primitives) {
         this(primitives, List.of(), ObjectFlow.NO_FLOW);
@@ -449,7 +454,7 @@ public record And(Primitives primitives,
 
     @Override
     public ObjectFlow getObjectFlow() {
-        return null;
+        return objectFlow;
     }
 
     @Override

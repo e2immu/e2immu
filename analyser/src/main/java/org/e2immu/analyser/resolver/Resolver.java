@@ -122,12 +122,24 @@ public class Resolver {
                     typesInCycle.stream().map(t -> t.fullyQualifiedName).collect(Collectors.joining(", "))));
         });
         for (TypeInfo typeInfo : sorted) {
-            Set<TypeInfo> circularDependencies = participatesInCycles.get(typeInfo);
-            TypeResolution typeResolution = new TypeResolution(circularDependencies == null ? Set.of() : circularDependencies,
-                    superTypesExcludingJavaLangObject(inspectionProvider, typeInfo));
-            typeInfo.typeResolution.set(typeResolution);
+            computeTypeResolution(inspectionProvider, typeInfo, participatesInCycles);
         }
         return sorted;
+    }
+
+    private void computeTypeResolution(InspectionProvider inspectionProvider,
+                                       TypeInfo typeInfo,
+                                       Map<TypeInfo, Set<TypeInfo>> participatesInCycles) {
+        Set<TypeInfo> circularDependencies = participatesInCycles.get(typeInfo);
+        TypeResolution typeResolution = new TypeResolution(circularDependencies == null ? Set.of() : circularDependencies,
+                superTypesExcludingJavaLangObject(inspectionProvider, typeInfo));
+        typeInfo.typeResolution.set(typeResolution);
+        for(TypeInfo subType: inspectionProvider.getTypeInspection(typeInfo).subTypes()) {
+            // TODO circular dependencies not computed for sub-types at the moment
+            TypeResolution subTypeResolution = new TypeResolution(circularDependencies == null ? Set.of() : circularDependencies,
+                    superTypesExcludingJavaLangObject(inspectionProvider, subType));
+            subType.typeResolution.set(subTypeResolution);
+        }
     }
 
     private SortedType addToTypeGraph(DependencyGraph<TypeInfo> typeGraph,
@@ -577,7 +589,7 @@ public class Resolver {
         if (Primitives.isJavaLangObject(typeInfo)) return Set.of();
         List<TypeInfo> list = new ArrayList<>();
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
-        if (typeInspection.parentClass() != null && typeInspection.parentClass().typeInfo != null) {
+        if (typeInspection.parentClass() != null && !Primitives.isJavaLangObject(typeInspection.parentClass())) {
             TypeInfo parent = Objects.requireNonNull(typeInspection.parentClass().typeInfo);
             list.add(parent);
             list.addAll(superTypesExcludingJavaLangObject(inspectionProvider, parent));

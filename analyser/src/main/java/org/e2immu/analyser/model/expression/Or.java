@@ -42,6 +42,12 @@ public record Or(Primitives primitives,
                  List<Expression> expressions,
                  ObjectFlow objectFlow) implements Expression {
 
+    public Or {
+        Objects.requireNonNull(primitives);
+        Objects.requireNonNull(expressions);
+        Objects.requireNonNull(objectFlow);
+    }
+
     // testing only
     public Or(Primitives primitives) {
         this(primitives, List.of(), ObjectFlow.NO_FLOW);
@@ -228,7 +234,7 @@ public record Or(Primitives primitives,
 
     @Override
     public ObjectFlow getObjectFlow() {
-        return null;
+        return objectFlow;
     }
 
     // no implementation of any of the filters

@@ -20,8 +20,13 @@ package org.e2immu.annotatedapi;
 import org.e2immu.annotation.*;
 
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
+import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class JavaUtil extends AnnotatedAPI {
@@ -292,5 +297,107 @@ public class JavaUtil extends AnnotatedAPI {
         boolean HashSet$Modification$Size(int post, Collection<? extends  E> c) { return post == c.size(); }
         public HashSet$(Collection<? extends  E> c) {
         }
+    }
+
+
+    @UtilityClass
+    @Container
+    static class Objects$ {
+        @NotNull
+        @NotModified
+        @Identity
+        public static <T> T requireNonNull(@NotNull T t) {
+            return null;
+        }
+
+        @NotNull
+        @NotModified
+        @Identity
+        public static <T> T requireNonNull(@NotNull T t, String message) {
+            return null;
+        }
+
+        @NotNull
+        @NotModified
+        public static <T> T requireNonNullElse(T obj, T defaultObj) {
+            return  null;
+        }
+
+        @NotModified
+        public static int hashCode(Object object) {
+            return  0;
+        }
+
+        @NotModified
+        public static int hash(Object... values) {
+            return 0;
+        }
+
+        @NotModified
+        public static boolean equals(Object left, Object right) {
+            return false;
+        }
+    }
+
+    // again this goes against the API, but we want to raise problems when comparing with null
+    static class Comparator$<T> {
+
+        int compare$Value(T o1, T o2, int retVal) { return o1.equals(o2) || o2.equals(o1) ? 0: retVal; }
+        int compare(@NotModified T o1, @NotModified T o2) { return 0; }
+
+        static <U> java.util.Comparator<U> comparingInt(@NotNull ToIntFunction<? super U> keyExtractor) { return null; }
+    }
+
+    @E1Container
+    static class Optional$<T> {
+        @Independent
+        @NotNull
+        static <T> java.util.Optional<T> empty() { return java.util.Optional.empty();
+        }
+
+        @NotNull
+        static <T> java.util.Optional<T> of(@NotNull T t) { return java.util.Optional.empty();
+        }
+
+        @NotNull
+        static <T> java.util.Optional<T> ofNullable(T t) { return java.util.Optional.empty();
+        }
+
+        @NotNull
+        T get() { return null;
+        }
+
+        T orElse(T other) { return null;
+        }
+
+        @NotNull
+        T orElseThrow() { return null;
+        }
+
+        @NotNull
+        <X extends Throwable> T orElseThrow(@NotNull Supplier<? extends X> exceptionSupplier) {
+            return null;
+        }
+
+        boolean isEmpty() { return false;
+        }
+
+        boolean isPresent() { return false;
+        }
+    }
+
+    @UtilityClass
+    static class Arrays$ {
+        @NotNull
+        static IntStream stream(@NotNull int[] array) {
+            return null;
+        }
+    }
+
+    @UtilityClass
+    static class Collections$ {
+
+        static <T> boolean addAll(@NotNull @Modified Collection<? super T> c,
+                                  @NotModified T... elements) { return false; }
     }
 }

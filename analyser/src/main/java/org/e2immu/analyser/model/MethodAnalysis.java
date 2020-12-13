@@ -125,7 +125,7 @@ public interface MethodAnalysis extends Analysis {
      * @return null when not yet computed, EMPTY when no precondition
      */
     default Expression getPrecondition() {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     default MethodLevelData methodLevelData() {

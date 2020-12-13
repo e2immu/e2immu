@@ -18,6 +18,8 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.config.Configuration;
+import org.e2immu.analyser.config.InputConfiguration;
 import org.e2immu.analyser.inspector.TypeContext;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -26,6 +28,7 @@ import org.e2immu.analyser.resolver.ShallowMethodResolver;
 import org.e2immu.analyser.resolver.SortedType;
 import org.e2immu.analyser.util.Trie;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -50,10 +53,22 @@ public class Test_13_MethodOverloadAndSuperTypes {
         org.e2immu.analyser.util.Logger.activate(org.e2immu.analyser.util.Logger.LogTarget.INSPECT);
     }
 
+    Parser parser;
+    TypeContext typeContext;
+
+    @Before
+    public void before() throws IOException {
+        parser = new Parser(new Configuration.Builder()
+                .setInputConfiguration(new InputConfiguration.Builder()
+                        .addSources("src/main/java")
+                        .addRestrictSourceToPackages("some.unknown.package")
+                        .build()).build());
+        parser.run();
+        typeContext = parser.getTypeContext();
+    }
+
     @Test
-    public void testSetCollection() throws IOException {
-        Parser parser = new Parser();
-        TypeContext typeContext = parser.getTypeContext();
+    public void testSetCollection() {
         TypeInfo set = typeContext.typeMapBuilder.get("java.util.Set");
         Assert.assertNotNull(set);
         MethodInfo containsAll = set.findUniqueMethod("containsAll", 1);
@@ -65,9 +80,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
     }
 
     @Test
-    public void testThrowable() throws IOException {
-        Parser parser = new Parser();
-        TypeContext typeContext = parser.getTypeContext();
+    public void testThrowable() {
         TypeInfo throwable = typeContext.typeMapBuilder.get("java.lang.Throwable");
         Assert.assertNotNull(throwable);
         Set<TypeInfo> superTypes = throwable.typeResolution.get().superTypesExcludingJavaLangObject();
@@ -75,10 +88,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
     }
 
     @Test
-    public void testSetCollectionEquals() throws IOException {
-        Parser parser = new Parser();
-        TypeContext typeContext = parser.getTypeContext();
-
+    public void testSetCollectionEquals() {
         TypeInfo set = typeContext.typeMapBuilder.get("java.util.Set");
         Assert.assertNotNull(set);
         MethodInfo equalsInSet = set.findUniqueMethod("equals", 1);
@@ -95,9 +105,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
 
     @Test
     public void test() throws IOException {
-        Parser parser = new Parser();
-
-        TypeInfo methodOverloadOrig = parser.getTypeContext().typeMapBuilder.getOrCreate(
+        TypeInfo methodOverloadOrig = typeContext.typeMapBuilder.getOrCreate(
                 "org.e2immu.analyser.testexample", "MethodOverload", TRIGGER_JAVA_PARSER);
         URL url = new File(SRC_TEST_JAVA_ORG_E2IMMU_ANALYSER + "testexample/MethodOverload.java").toURI().toURL();
         List<SortedType> types = parser.inspectAndResolve(Map.of(methodOverloadOrig, url), new Trie<>(), true, false);
@@ -143,8 +151,8 @@ public class Test_13_MethodOverloadAndSuperTypes {
         MethodInfo toString = c2.findUniqueMethod("toString", 0);
         Set<MethodInfo> overloadsOfToString = toString.methodResolution.get().overrides();
         LOGGER.info("Overloads of toString: {}", overloadsOfToString);
-        Assert.assertEquals("[java.lang.Object.toString(), org.e2immu.analyser.testexample.MethodOverload.C1.toString()]",
-                overloadsOfToString.toString());
+        Assert.assertEquals("java.lang.Object.toString(),org.e2immu.analyser.testexample.MethodOverload.C1.toString()",
+                overloadsOfToString.stream().map(MethodInfo::toString).sorted().collect(Collectors.joining(",")));
     }
 
 }
