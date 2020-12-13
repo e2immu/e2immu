@@ -219,10 +219,11 @@ public class InlineConditional implements Expression {
         EvaluationResult ifFalseResult = ifFalse.evaluate(copyForElse, forwardEvaluationInfo);
         builder.compose(ifFalseResult);
 
-        if (conditionResult.value == EmptyExpression.NO_VALUE ||
-                ifTrueResult.value == EmptyExpression.NO_VALUE ||
-                ifFalseResult.value == EmptyExpression.NO_VALUE) {
-            return builder.build();
+        if (conditionResult.value.isUnknown() ||
+                ifTrueResult.value.isUnknown() ||
+                ifFalseResult.value.isUnknown()) {
+            return builder.setExpression(conditionResult.value
+                    .combineUnknown(ifFalseResult.value.combineUnknown(ifTrueResult.value))).build();
         }
         // TODO ObjectFlow
         EvaluationResult cv = EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext,

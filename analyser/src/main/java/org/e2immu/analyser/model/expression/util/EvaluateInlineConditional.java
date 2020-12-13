@@ -20,9 +20,7 @@ package org.e2immu.analyser.model.expression.util;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ShallowTypeAnalyser;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -79,7 +77,7 @@ public class EvaluateInlineConditional {
     }
 
     private static Expression checkState(EvaluationContext evaluationContext, Primitives primitives, Expression state, Expression condition) {
-        if (state == EmptyExpression.EMPTY_EXPRESSION) return condition;
+        if (state.isBoolValueTrue()) return condition;
         Expression and = new And(primitives).append(evaluationContext, state, condition);
         if (and.equals(condition)) {
             return new BooleanConstant(primitives, true);
@@ -115,7 +113,7 @@ public class EvaluateInlineConditional {
             return new And(primitives).append(evaluationContext, condition, ifTrue);
         }
 
-        // x ? a : a --> a, but only if x is not modifying
+        // x ? a : a --> a, but only if x is not modifying FIXME
         if (ifTrue.equals(ifFalse)) {// && evaluationContext.getProperty(condition, VariableProperty.MODIFIED) == Level.FALSE) {
             return ifTrue;
         }
@@ -134,8 +132,9 @@ public class EvaluateInlineConditional {
     }
 
     private static boolean inState(EvaluationContext evaluationContext, Expression expression) {
-        Filter.FilterResult<Expression> res = Filter.filter(evaluationContext, evaluationContext.getConditionManager().state,
-                Filter.FilterMode.ACCEPT, new Filter.ExactValue(expression));
+        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
+        Filter.FilterResult<Expression> res = filter.filter(evaluationContext.getConditionManager().state,
+                new Filter.ExactValue(filter.getDefaultRest(), expression));
         return !res.accepted().isEmpty();
     }
 

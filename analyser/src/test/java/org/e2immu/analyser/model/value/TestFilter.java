@@ -25,6 +25,8 @@ import org.junit.Test;
 
 import java.util.Map;
 
+import static org.e2immu.analyser.model.expression.Filter.FilterMode.ALL;
+
 public class TestFilter extends CommonAbstractValue {
 
     // remove a variable from an AndValue
@@ -33,14 +35,13 @@ public class TestFilter extends CommonAbstractValue {
     public void test() {
         And andValue = (And) newAndAppend(a, b);
         Assert.assertEquals("a&&b", andValue.toString());
-
-        Filter.FilterResult<Variable> filterResult = Filter.filter(minimalEvaluationContext, andValue,
-                Filter.FilterMode.ALL, value -> new Filter.FilterResult<>(Map.of(), value));
+        Filter filter = new Filter(minimalEvaluationContext, ALL);
+        Filter.FilterResult<Variable> filterResult = filter.filter(andValue, value -> new Filter.FilterResult<>(Map.of(), value));
         Assert.assertEquals(filterResult.rest(), andValue);
 
-        Filter.FilterResult<Variable> filterResult2 = Filter.filter(minimalEvaluationContext, andValue, Filter.FilterMode.ALL, value -> {
+        Filter.FilterResult<Variable> filterResult2 = filter.filter(andValue, value -> {
             if (value instanceof VariableExpression variableValue && variableValue.variable() == b.variable()) {
-                return new Filter.FilterResult<>(Map.of(b.variable(), b), EmptyExpression.EMPTY_EXPRESSION);
+                return new Filter.FilterResult<>(Map.of(b.variable(), b), filter.getDefaultRest());
             }
             return null;
         });
@@ -55,11 +56,11 @@ public class TestFilter extends CommonAbstractValue {
         Expression sNotNull = negate(equals(NullConstant.NULL_CONSTANT, s));
         And andValue = (And) newAndAppend(a, sNotNull);
         Assert.assertEquals("a&&null!=s", andValue.toString());
-
-        Filter.FilterResult<Variable> filterResult = Filter.filter(minimalEvaluationContext, andValue, Filter.FilterMode.ALL, value -> {
+        Filter filter = new Filter(minimalEvaluationContext, ALL);
+        Filter.FilterResult<Variable> filterResult = filter.filter(andValue, value -> {
             if (value instanceof Equals equalsValue) {
                 if (equalsValue.rhs instanceof VariableExpression && ((VariableExpression) equalsValue.rhs).variable() == s.variable()) {
-                    return new Filter.FilterResult<>(Map.of(s.variable(), s), EmptyExpression.EMPTY_EXPRESSION);
+                    return new Filter.FilterResult<>(Map.of(s.variable(), s), filter.getDefaultRest());
                 }
             }
             return null;

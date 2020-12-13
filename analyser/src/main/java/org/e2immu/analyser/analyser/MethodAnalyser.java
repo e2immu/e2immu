@@ -493,7 +493,8 @@ public class MethodAnalyser extends AbstractAnalyser {
         // we still need to remove other parameter components; what remains can be used for marking/only
 
         EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration, new ConditionManager(analyserContext.getPrimitives()));
-        Filter.FilterResult<FieldReference> filterResult = Filter.filter(evaluationContext, precondition, Filter.FilterMode.ACCEPT, Filter.INDIVIDUAL_FIELD_CLAUSE);
+        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
+        Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition, filter.individualFieldClause());
         if (filterResult.accepted().isEmpty()) {
             log(MARK, "No @Mark/@Only annotation in {}: found no individual field preconditions", methodInfo.distinguishingName());
             methodAnalysis.preconditionForMarkAndOnly.set(List.of());

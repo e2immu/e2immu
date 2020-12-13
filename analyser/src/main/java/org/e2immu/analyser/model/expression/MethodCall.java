@@ -408,8 +408,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     boolean remove = companionMethodName.action() == CompanionMethodName.Action.REMOVE;
                     if (remove) {
                         if (newState.get() != EmptyExpression.EMPTY_EXPRESSION) {
-                            Filter.FilterResult<Expression> res = Filter.filter(evaluationContext, newState.get(),
-                                    Filter.FilterMode.ACCEPT, new Filter.ExactValue(companionValueTranslated));
+                            Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
+                            Filter.FilterResult<Expression> res = filter.filter(newState.get(),
+                                    new Filter.ExactValue(filter.getDefaultRest(), companionValueTranslated));
                             newState.set(res.rest());
                         }
                     } else {

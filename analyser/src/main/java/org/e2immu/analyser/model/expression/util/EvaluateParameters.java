@@ -39,10 +39,10 @@ public class EvaluateParameters {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(EvaluateParameters.class);
 
     public static Pair<EvaluationResult.Builder, List<Expression>> transform(List<Expression> parameterExpressions,
-                                                                        EvaluationContext evaluationContext,
-                                                                        MethodInfo methodInfo,
-                                                                        int notModified1Scope,
-                                                                        Expression scopeObject) {
+                                                                             EvaluationContext evaluationContext,
+                                                                             MethodInfo methodInfo,
+                                                                             int notModified1Scope,
+                                                                             Expression scopeObject) {
         int n = methodInfo == null ? 10 : methodInfo.methodInspection.get().getParameters().size();
         List<Expression> parameterValues = new ArrayList<>(n);
         List<EvaluationResult> parameterResults = new ArrayList<>(n);
@@ -70,7 +70,7 @@ public class EvaluateParameters {
                 // NOT_NULL, NOT_MODIFIED, SIZE
                 Map<VariableProperty, Integer> map;
                 try {
-                  map = evaluationContext.getParameterAnalysis(parameterInfo)
+                    map = evaluationContext.getParameterAnalysis(parameterInfo)
                             .getProperties(VariableProperty.FORWARD_PROPERTIES_ON_PARAMETERS);
 
                 } catch (RuntimeException e) {
@@ -152,7 +152,7 @@ public class EvaluateParameters {
             if (precondition != null && precondition != EmptyExpression.EMPTY_EXPRESSION) {
                 // there is a precondition, and we have a list of values... let's see what we can learn
                 // the precondition is using parameter info's as variables so we'll have to substitute
-                Map<Expression, Expression> translationMap = translationMap(evaluationContext, methodInfo, parameterValues);
+                Map<Expression, Expression> translationMap = translationMap(methodInfo, parameterValues);
                 EvaluationResult eRreEvaluated = precondition.reEvaluate(evaluationContext, translationMap);
                 Expression reEvaluated = eRreEvaluated.value;
                 builder.compose(eRreEvaluated);
@@ -160,9 +160,10 @@ public class EvaluateParameters {
                 // from the result we either may infer another condition, or values to be set...
 
                 // NOT_NULL
-                Map<ParameterInfo, Expression> individualNullClauses = Filter.filter(evaluationContext, reEvaluated,
-                        Filter.FilterMode.ACCEPT,
-                        Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE_ON_PARAMETER).accepted();
+                Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
+                Filter.FilterResult<ParameterInfo> filterResult = filter.filter(reEvaluated,
+                        filter.individualNullOrNotNullClauseOnParameter());
+                Map<ParameterInfo, Expression> individualNullClauses = filterResult.accepted();
                 for (Map.Entry<ParameterInfo, Expression> nullClauseEntry : individualNullClauses.entrySet()) {
                     if (nullClauseEntry.getValue() != NullConstant.NULL_CONSTANT) {
                         builder.setProperty(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -171,9 +172,8 @@ public class EvaluateParameters {
 
                 // all the rest: preconditions
                 // TODO: also weed out conditions that are not on parameters, and not on `this`
-                Expression rest = Filter.filter(evaluationContext, reEvaluated,
-                        Filter.FilterMode.ACCEPT, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE_ON_PARAMETER).rest();
-                if (rest != null) {
+                Expression rest = filterResult.rest();
+                if (rest.isBoolValueTrue()) {
                     builder.addPrecondition(rest);
                 }
             }
@@ -181,7 +181,7 @@ public class EvaluateParameters {
         return new Pair<>(builder, parameterValues);
     }
 
-    public static Map<Expression, Expression> translationMap(EvaluationContext evaluationContext, MethodInfo methodInfo, List<Expression> parameters) {
+    public static Map<Expression, Expression> translationMap(MethodInfo methodInfo, List<Expression> parameters) {
         ImmutableMap.Builder<Expression, Expression> builder = new ImmutableMap.Builder<>();
         int i = 0;
         for (Expression parameterValue : parameters) {

@@ -60,9 +60,10 @@ public class EvaluateMethodCall {
             Expression clause = new MethodCall(object, methodInfo,
                     List.of(new BooleanConstant(evaluationContext.getPrimitives(), true)), objectFlowOfResult);
             if (boolValue.constant()) {
+                Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
                 // isKnown(true) -> return BoolValue.TRUE or BoolValue.FALSE, depending on state
-                Filter.FilterResult<Expression> res = Filter.filter(evaluationContext, evaluationContext.getConditionManager().state,
-                        Filter.FilterMode.ACCEPT, new Filter.ExactValue(clause));
+                Filter.FilterResult<Expression> res = filter.filter(evaluationContext.getConditionManager().state,
+                        new Filter.ExactValue(filter.getDefaultRest(), clause));
                 boolean isKnown = !res.accepted().isEmpty();
                 Expression result = new BooleanConstant(evaluationContext.getPrimitives(), isKnown);
                 return builder.setExpression(result).build();
@@ -130,7 +131,7 @@ public class EvaluateMethodCall {
         if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
                 (inlineValue = objectValue.asInstanceOf(InlinedMethod.class)) != null &&
                 inlineValue.canBeApplied(evaluationContext)) {
-            Map<Expression, Expression> translationMap = EvaluateParameters.translationMap(evaluationContext, methodInfo, parameters);
+            Map<Expression, Expression> translationMap = EvaluateParameters.translationMap(methodInfo, parameters);
             EvaluationResult reInline = inlineValue.reEvaluate(evaluationContext, translationMap);
             return builder.compose(reInline).setExpression(reInline.value).build();
         }
@@ -163,8 +164,7 @@ public class EvaluateMethodCall {
                         }
                     }
                 }
-                Map<Expression, Expression> translationMap = EvaluateParameters.translationMap(evaluationContext,
-                        methodInfo, parameters);
+                Map<Expression, Expression> translationMap = EvaluateParameters.translationMap(methodInfo, parameters);
                 EvaluationResult reSrv = srv.reEvaluate(evaluationContext, translationMap);
                 return builder.compose(reSrv).setExpression(reSrv.value).build();
             }
@@ -301,11 +301,12 @@ public class EvaluateMethodCall {
                                                          MethodInfo methodInfo,
                                                          Expression state,
                                                          List<Expression> parameterValues) {
+        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
         List<Filter.FilterMethod<MethodCall>> filters = List.of(
-                new Filter.MethodCallBooleanResult(methodInfo, parameterValues,
+                new Filter.MethodCallBooleanResult(filter.getDefaultRest(), methodInfo, parameterValues,
                         new BooleanConstant(evaluationContext.getPrimitives(), true)),
-                new Filter.ValueEqualsMethodCallNoParameters(methodInfo));
-        return Filter.filter(evaluationContext, state, Filter.FilterMode.ACCEPT, filters);
+                new Filter.ValueEqualsMethodCallNoParameters(filter.getDefaultRest(), methodInfo));
+        return filter.filter(state, filters);
     }
 
     private static Expression computeStaticEvaluation(Primitives primitives, MethodInfo methodInfo, List<Expression> parameters) {

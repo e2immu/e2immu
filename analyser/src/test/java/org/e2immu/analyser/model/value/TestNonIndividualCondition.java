@@ -1,7 +1,6 @@
 package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.NullConstant;
 import org.junit.Assert;
@@ -10,8 +9,8 @@ import org.junit.Test;
 public class TestNonIndividualCondition extends CommonAbstractValue {
 
     private Expression rest(Expression value, Filter.FilterMode filterMode) {
-        return Filter.filter(minimalEvaluationContext, value,
-                filterMode, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE_ON_PARAMETER).rest();
+        Filter filter = new Filter(minimalEvaluationContext, filterMode);
+        return filter.filter(value, filter.individualNullOrNotNullClauseOnParameter()).rest();
     }
 
     @Test
@@ -22,8 +21,8 @@ public class TestNonIndividualCondition extends CommonAbstractValue {
 
         Expression pEqualsNull = equals(NullConstant.NULL_CONSTANT, p);
         Assert.assertEquals("null==p", pEqualsNull.minimalOutput());
-        Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, rest(pEqualsNull, Filter.FilterMode.ACCEPT));
-        Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, rest(negate(pEqualsNull), Filter.FilterMode.ACCEPT));
+        Assert.assertTrue(rest(pEqualsNull, Filter.FilterMode.ACCEPT).isBoolValueTrue());
+        Assert.assertTrue(rest(negate(pEqualsNull), Filter.FilterMode.ACCEPT).isBoolValueTrue());
 
         Expression orValue = newOrAppend(sEqualsNull, pEqualsNull);
         Assert.assertEquals("null==s", rest(orValue, Filter.FilterMode.REJECT).toString());

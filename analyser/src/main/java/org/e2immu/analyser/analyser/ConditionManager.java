@@ -138,7 +138,8 @@ public class ConditionManager {
         if (value.isUnknown()) {
             return Set.of();
         }
-        Map<Variable, Expression> individualNullClauses = Filter.filter(evaluationContext, value, filterMode, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE).accepted();
+        Filter filter = new Filter(evaluationContext, filterMode);
+        Map<Variable, Expression> individualNullClauses = filter.filter(value, filter.individualNullOrNotNullClause()).accepted();
         return individualNullClauses.entrySet()
                 .stream()
                 .filter(e -> requireEqualsNull == (e.getValue().equalsNull()))
@@ -162,24 +163,27 @@ public class ConditionManager {
         return value == EmptyExpression.NO_VALUE;
     }
 
-    private static Filter.FilterResult<Variable> removeVariableFilter(Variable variable, Expression value, boolean removeEqualityOnVariable) {
+    private static Filter.FilterResult<Variable> removeVariableFilter(Expression defaultRest,
+                                                                      Variable variable,
+                                                                      Expression value,
+                                                                      boolean removeEqualityOnVariable) {
         VariableExpression variableValue;
         if ((variableValue = value.asInstanceOf(VariableExpression.class)) != null && variable.equals(variableValue.variable())) {
-            return new Filter.FilterResult<>(Map.of(variable, value), EmptyExpression.EMPTY_EXPRESSION);
+            return new Filter.FilterResult<>(Map.of(variable, value), defaultRest);
         }
         Equals equalsValue;
         if (removeEqualityOnVariable && (equalsValue = value.asInstanceOf(Equals.class)) != null) {
             VariableExpression lhs;
             if ((lhs = equalsValue.lhs.asInstanceOf(VariableExpression.class)) != null && variable.equals(lhs.variable())) {
-                return new Filter.FilterResult<>(Map.of(lhs.variable(), value), EmptyExpression.EMPTY_EXPRESSION);
+                return new Filter.FilterResult<>(Map.of(lhs.variable(), value), defaultRest);
             }
             VariableExpression rhs;
             if ((rhs = equalsValue.rhs.asInstanceOf(VariableExpression.class)) != null && variable.equals(rhs.variable())) {
-                return new Filter.FilterResult<>(Map.of(rhs.variable(), value), EmptyExpression.EMPTY_EXPRESSION);
+                return new Filter.FilterResult<>(Map.of(rhs.variable(), value), defaultRest);
             }
         }
         if (value.isInstanceOf(MethodCall.class) && value.variables().contains(variable)) {
-            return new Filter.FilterResult<>(Map.of(variable, value), EmptyExpression.EMPTY_EXPRESSION);
+            return new Filter.FilterResult<>(Map.of(variable, value), defaultRest);
         }
         return null;
     }
@@ -194,8 +198,9 @@ public class ConditionManager {
      */
     public static Expression removeClausesInvolving(EvaluationContext evaluationContext,
                                                     Expression conditional, Variable variable, boolean removeEqualityOnVariable) {
-        Filter.FilterResult<Variable> filterResult = Filter.filter(evaluationContext, conditional, Filter.FilterMode.ALL,
-                value -> removeVariableFilter(variable, value, removeEqualityOnVariable));
+        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ALL);
+        Filter.FilterResult<Variable> filterResult = filter.filter(conditional,
+                value -> removeVariableFilter(filter.getDefaultRest(), variable, value, removeEqualityOnVariable));
         return filterResult.rest();
     }
 
@@ -208,11 +213,11 @@ public class ConditionManager {
         }
 
         // TRUE: parameters only FALSE: preconditionSide; OR of 2 filters
-        Filter.FilterResult<ParameterInfo> filterResult = Filter.filter(evaluationContext, condition,
-                Filter.FilterMode.REJECT, Filter.INDIVIDUAL_NULL_OR_NOT_NULL_CLAUSE_ON_PARAMETER);
+        Filter filter = new Filter(evaluationContext, Filter.FilterMode.REJECT);
+        Filter.FilterResult<ParameterInfo> filterResult = filter.filter(condition, filter.individualNullOrNotNullClauseOnParameter());
         // those parts that have nothing to do with individual clauses
-        if (filterResult.rest() == EmptyExpression.EMPTY_EXPRESSION) {
-            return builder.setExpression(new BooleanConstant(evaluationContext.getPrimitives(), false)).build();
+        if (filterResult.rest().isBoolValueFalse()) {
+            return builder.setExpression(filterResult.rest()).build();
         }
         // replace all VariableValues in the rest by VVPlaceHolders
         Map<Expression, Expression> translation = new HashMap<>();
@@ -232,18 +237,18 @@ public class ConditionManager {
         return builder.compose(reRest).setExpression(Negation.negate(evaluationContext, reRest.value)).build();
     }
 
-    private static Filter.FilterResult<Variable> obtainVariableFilter(Variable variable, Expression value) {
+    private static Filter.FilterResult<Variable> obtainVariableFilter(Expression defaultRest, Variable variable, Expression value) {
         List<Variable> variables = value.variables();
         if (variables.size() == 1 && variable.equals(variables.stream().findAny().orElseThrow())) {
-            return new Filter.FilterResult<>(Map.of(variable, value), EmptyExpression.EMPTY_EXPRESSION);
+            return new Filter.FilterResult<>(Map.of(variable, value), defaultRest);
         }
         return null;
     }
 
     // note: very similar to remove, except that here we're interested in the actual value
     public Expression individualStateInfo(EvaluationContext evaluationContext, Variable variable) {
-        Filter.FilterResult<Variable> filterResult = Filter.filter(evaluationContext, state, Filter.FilterMode.ACCEPT,
-                value -> obtainVariableFilter(variable, value));
-        return filterResult.accepted().getOrDefault(variable, EmptyExpression.EMPTY_EXPRESSION);
+        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
+        Filter.FilterResult<Variable> filterResult = filter.filter(state, value -> obtainVariableFilter(filter.getDefaultRest(), variable, value));
+        return filterResult.accepted().getOrDefault(variable, filter.getDefaultRest());
     }
 }
