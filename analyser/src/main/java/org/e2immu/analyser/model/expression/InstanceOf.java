@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.Variable;
@@ -46,6 +47,13 @@ public record InstanceOf(Primitives primitives,
                          Variable variable,
                          ObjectFlow objectFlow) implements Expression {
 
+    public InstanceOf {
+        Objects.requireNonNull(objectFlow);
+        Objects.requireNonNull(parameterizedType);
+        assert expression != null || variable != null;
+        Objects.requireNonNull(primitives);
+    }
+
     public InstanceOf(Primitives primitives, ParameterizedType parameterizedType, Expression expression) {
         this(primitives, parameterizedType, expression, null, ObjectFlow.NO_FLOW);
     }
@@ -62,6 +70,11 @@ public record InstanceOf(Primitives primitives,
     @Override
     public int hashCode() {
         return Objects.hash(parameterizedType, expression, variable);
+    }
+
+    @Override
+    public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
+        return UnknownExpression.primitiveGetProperty(variableProperty);
     }
 
     @Override
@@ -113,7 +126,7 @@ public record InstanceOf(Primitives primitives,
 
     @Override
     public ObjectFlow getObjectFlow() {
-        return null;
+        return objectFlow;
     }
 
     @Override
@@ -136,7 +149,8 @@ public record InstanceOf(Primitives primitives,
         if (value instanceof VariableExpression ve) {
             Location location = evaluationContext.getLocation(this);
             ObjectFlow objectFlow = builder.createInternalObjectFlow(location, primitives.booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
-            return builder.setExpression(new InstanceOf(primitives, parameterizedType, null, ve.variable(), objectFlow)).build();
+            InstanceOf instanceOf = new InstanceOf(primitives, parameterizedType, null, ve.variable(), objectFlow);
+            return builder.setExpression(instanceOf).build();
         }
         if (value instanceof NewObject newObject) {
             EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),

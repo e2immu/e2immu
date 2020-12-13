@@ -50,8 +50,7 @@ import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.StatementAnalysis.FieldReferenceState.*;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
-import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
-import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
+import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 @Container
@@ -315,11 +314,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // first statement of a method
         if (previous == null && parent == null) {
             for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().getParameters()) {
-                VariableInfoContainer vic = findForWriting(analyserContext, parameterInfo);
-                ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
-                for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
-                    int value = parameterAnalysis.getProperty(variableProperty);
-                    vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, variableProperty, value);
+                VariableInfo prevIteration = findOrNull(parameterInfo);
+                if(prevIteration != null) {
+                    VariableInfoContainer vic = findForWriting(analyserContext, parameterInfo);
+                    ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
+                    for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
+                        int value = parameterAnalysis.getProperty(variableProperty);
+                        vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, variableProperty, value);
+                    }
+                } else {
+                    log(ANALYSER, "Skipping parameter {}, not read, assigned", parameterInfo.fullyQualifiedName());
                 }
             }
         }
@@ -569,7 +573,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     properties, initialValue.getObjectFlow());
         }
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-        int effectivelyFinal = fieldAnalysis.getProperty(FINAL);
+        int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effectivelyFinal == Level.DELAY) {
             return EmptyExpression.NO_VALUE;
         }

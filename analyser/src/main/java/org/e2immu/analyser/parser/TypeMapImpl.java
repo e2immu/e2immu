@@ -354,7 +354,9 @@ public class TypeMapImpl implements TypeMap {
             getTypeInspection(methodInfo.typeInfo);
             // try again
             MethodInspection take2 = methodInspections.get(dn);
-            if (take2 == null) throw new UnsupportedOperationException();
+            if (take2 == null) {
+                throw new UnsupportedOperationException("No inspection for " + dn);
+            }
             return take2;
         }
 

@@ -602,7 +602,7 @@ public class ExpressionContext {
                 InstanceOfExpr instanceOfExpr = expression.asInstanceOfExpr();
                 Expression e = parseExpression(instanceOfExpr.getExpression());
                 ParameterizedType type = ParameterizedTypeFactory.from(typeContext, instanceOfExpr.getType());
-                return new InstanceOf(typeContext.getPrimitives(), type, e, null, null);
+                return new InstanceOf(typeContext.getPrimitives(), type, e, null, e.getObjectFlow());
             }
             throw new UnsupportedOperationException("Unknown expression type " + expression +
                     " class " + expression.getClass() + " at " + expression.getBegin());

@@ -28,6 +28,7 @@ import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.parser.InspectionProvider;
+import org.e2immu.analyser.parser.TypeMapImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -107,13 +108,12 @@ public class ParseLambdaExpr {
         }
         ParameterizedType functionalType = singleAbstractMethod.inferFunctionalType(inspectionProvider,
                 types, inferredReturnType);
-        TypeInspection anonymousTypeInspection = continueCreationOfAnonymousType(inspectionProvider,
+        TypeInspection anonymousTypeInspection = continueCreationOfAnonymousType(expressionContext.typeContext.typeMapBuilder,
                 functionalType, applyMethodInspectionBuilder, block, inferredReturnType);
         TypeInfo anonymousType = anonymousTypeInspection.typeInfo();
         log(LAMBDA, "End parsing lambda as block, inferred functional type {}, new type {}", functionalType, anonymousType.fullyQualifiedName);
 
         expressionContext.addNewlyCreatedType(anonymousType);
-        expressionContext.typeContext.addAnonymousTypeAndMethod(anonymousTypeInspection, applyMethodInspectionBuilder);
 
         return new Lambda(inspectionProvider, functionalType, anonymousType.asParameterizedType(inspectionProvider));
     }
@@ -129,23 +129,24 @@ public class ParseLambdaExpr {
         return new MethodInspectionImpl.Builder(typeInfo, name);
     }
 
-    private static TypeInspection continueCreationOfAnonymousType(InspectionProvider inspectionProvider,
+    private static TypeInspection continueCreationOfAnonymousType(TypeMapImpl.Builder typeMapBuilder,
                                                                   ParameterizedType functionalInterfaceType,
                                                                   MethodInspectionImpl.Builder builder,
                                                                   Block block,
                                                                   ParameterizedType returnType) {
-        MethodTypeParameterMap sam = functionalInterfaceType.findSingleAbstractMethodOfInterface(inspectionProvider);
-        MethodInspection methodInspectionOfSAMsMethod = inspectionProvider.getMethodInspection(sam.methodInspection.getMethodInfo());
-        ParameterizedType bestReturnType = returnType.mostSpecific(inspectionProvider,
+        MethodTypeParameterMap sam = functionalInterfaceType.findSingleAbstractMethodOfInterface(typeMapBuilder);
+        MethodInspection methodInspectionOfSAMsMethod = typeMapBuilder.getMethodInspection(sam.methodInspection.getMethodInfo());
+        ParameterizedType bestReturnType = returnType.mostSpecific(typeMapBuilder,
                 methodInspectionOfSAMsMethod.getReturnType());
         builder.setReturnType(Objects.requireNonNull(bestReturnType));
         builder.setInspectedBlock(block);
 
         MethodInfo methodInfo = builder.getMethodInfo(); // don't build yet!
+        typeMapBuilder.registerMethodInspection(builder);
 
         TypeInfo typeInfo = methodInfo.typeInfo;
-        TypeInspectionImpl.Builder typeInspectionBuilder = new TypeInspectionImpl.Builder(typeInfo, BY_HAND);
-        typeInspectionBuilder.setParentClass(inspectionProvider.getPrimitives().objectParameterizedType);
+        TypeInspectionImpl.Builder typeInspectionBuilder = typeMapBuilder.ensureTypeInspection(typeInfo, BY_HAND);
+        typeInspectionBuilder.setParentClass(typeMapBuilder.getPrimitives().objectParameterizedType);
         typeInspectionBuilder.setTypeNature(TypeNature.CLASS);
         typeInspectionBuilder.addInterfaceImplemented(functionalInterfaceType);
         typeInspectionBuilder.addMethod(methodInfo);

@@ -217,9 +217,6 @@ public class TypeContext implements InspectionProvider {
         return typeMapBuilder.getPrimitives();
     }
 
-    // TODO: this would be a good candidate to make into a non-static inner class, so that it can be made
-    // Comparable!
-
     public record MethodCandidate(MethodTypeParameterMap method, Set<Integer> parameterIndicesOfFunctionalInterfaces) {
     }
 
@@ -319,12 +316,6 @@ public class TypeContext implements InspectionProvider {
             recursivelyResolveOverloadedMethods(interfaceImplemented, methodName, parametersPresented,
                     decrementWhenNotStatic, joinMaps(typeMap, interfaceImplemented), result, visited, staticOnly);
         }
-        /*
-        if (!staticOnly && !isJLO) {
-            recursivelyResolveOverloadedMethods(getPrimitives().objectParameterizedType, methodName,
-                    parametersPresented, decrementWhenNotStatic, typeMap, result, visited, false);
-        }
-         */
         if (typeInfo.packageNameOrEnclosingType.isRight()) {
             // if I'm in a static subtype, I can only access the static methods of the enclosing type
             ParameterizedType enclosingType = typeInfo.packageNameOrEnclosingType.getRight().asParameterizedType(this);
