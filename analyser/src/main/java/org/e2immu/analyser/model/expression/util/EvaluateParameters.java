@@ -149,7 +149,7 @@ public class EvaluateParameters {
         if (methodInfo != null) {
             MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
             Expression precondition = methodAnalysis.getPrecondition();
-            if (precondition != null && precondition != EmptyExpression.EMPTY_EXPRESSION) {
+            if (precondition != null && precondition.isBoolValueTrue()) {
                 // there is a precondition, and we have a list of values... let's see what we can learn
                 // the precondition is using parameter info's as variables so we'll have to substitute
                 Map<Expression, Expression> translationMap = translationMap(methodInfo, parameterValues);

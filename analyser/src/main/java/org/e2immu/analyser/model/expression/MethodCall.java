@@ -357,7 +357,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         NewObject newObject;
         VariableExpression variableExpression;
         if ((variableExpression = objectValue.asInstanceOf(VariableExpression.class)) != null) {
-            newObject = builder.currentInstance(variableExpression.variable(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
+            newObject = builder.currentInstance(variableExpression.variable(), ObjectFlow.NO_FLOW,
+                    // TODO should we not look up the state?
+                    new BooleanConstant(evaluationContext.getPrimitives(), true));
         } else if (objectValue instanceof TypeExpression) {
             assert methodInfo.methodInspection.get().isStatic();
             return null; // static method
@@ -385,7 +387,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                     Filter.FilterResult<MethodCall> filterResult;
 
                     if (companionMethodName.action() == CompanionMethodName.Action.CLEAR) {
-                        newState.set(EmptyExpression.EMPTY_EXPRESSION);
+                        newState.set(new BooleanConstant(evaluationContext.getPrimitives(), true));
                         filterResult = null; // there is no "pre"
                     } else {
                         // in the case of java.util.List.add(), the aspect is Size, there are 3+ "parameters":
@@ -407,30 +409,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
                     boolean remove = companionMethodName.action() == CompanionMethodName.Action.REMOVE;
                     if (remove) {
-                        if (newState.get() != EmptyExpression.EMPTY_EXPRESSION) {
-                            Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
-                            Filter.FilterResult<Expression> res = filter.filter(newState.get(),
-                                    new Filter.ExactValue(filter.getDefaultRest(), companionValueTranslated));
-                            newState.set(res.rest());
-                        }
+                        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
+                        Filter.FilterResult<Expression> res = filter.filter(newState.get(),
+                                new Filter.ExactValue(filter.getDefaultRest(), companionValueTranslated));
+                        newState.set(res.rest());
                     } else {
-                        if (filterResult != null) {
-                            // there is an old "pre" value that needs to be removed
-                            if (filterResult.rest() == EmptyExpression.EMPTY_EXPRESSION) {
-                                newState.set(companionValueTranslated);
-                            } else {
-                                newState.set(new And(evaluationContext.getPrimitives()).append(evaluationContext, filterResult.rest(),
-                                        companionValueTranslated));
-                            }
-                        } else {
-                            // no pre-value to be removed
-                            if (newState.get() == EmptyExpression.EMPTY_EXPRESSION) {
-                                newState.set(companionValueTranslated);
-                            } else {
-                                newState.set(new And(evaluationContext.getPrimitives()).append(evaluationContext, newState.get(),
-                                        companionValueTranslated));
-                            }
-                        }
+                        Expression startFrom = filterResult != null ? filterResult.rest() : newState.get();
+                        newState.set(new And(evaluationContext.getPrimitives()).append(evaluationContext, startFrom,
+                                companionValueTranslated));
                     }
                 });
         NewObject modifiedInstance = methodInfo.isConstructor ? new NewObject(newObject, newState.get()) :
@@ -456,13 +442,14 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             translationMap.put(preAspectVariableValue, filterResult.accepted().values().stream()
                     .findFirst()
                     // it is possible that no pre- information can be found... that's OK as long as it isn't used
+                    // the empty expression will travel all the way
                     .orElse(EmptyExpression.EMPTY_EXPRESSION));
         }
         // parameters
         ListUtil.joinLists(companionAnalysis.getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
 
         Expression companionValue = companionAnalysis.getValue();
-        EvaluationContext child = evaluationContext.child(instanceState);
+        EvaluationContext child = evaluationContext.child(instanceState, true);
         EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(child, translationMap);
         // no need to compose: this is a separate operation. builder.compose(companionValueTranslationResult);
         return companionValueTranslationResult.value;

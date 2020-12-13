@@ -186,7 +186,7 @@ public class EvaluateMethodCall {
             return theInstance;
         }
         if (objectValue instanceof VariableExpression variableValue) {
-            return builder.currentInstance(variableValue.variable(), ObjectFlow.NO_FLOW, EmptyExpression.EMPTY_EXPRESSION);
+            return builder.currentInstance(variableValue.variable(), ObjectFlow.NO_FLOW, new BooleanConstant(evaluationContext.getPrimitives(), true));
         }
         return null;
     }
@@ -226,6 +226,7 @@ public class EvaluateMethodCall {
         // we might encounter isFact or isKnown, so we add the instance's state to the context
         EvaluationContext child = evaluationContext.child(instance.state, true);
         Expression resultingValue = companionValue.reEvaluate(child, translationMap).value;
+        // FIXME
         if (instance.state != EmptyExpression.EMPTY_EXPRESSION && resultingValue != EmptyExpression.EMPTY_EXPRESSION) {
             if (Primitives.isBoolean(methodInfo.returnType().typeInfo)) {
                 // State is: (org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and 0 == java.util.Collection.this.size())

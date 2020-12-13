@@ -337,7 +337,7 @@ public class NewObject implements HasParameterExpressions {
         ObjectFlow objectFlow = res.k.createInternalObjectFlow(location, parameterizedType, Origin.NEW_OBJECT_CREATION);
 
         NewObject initialInstance = new NewObject(constructor, parameterizedType, res.v,
-                EmptyExpression.EMPTY_EXPRESSION, objectFlow);
+                new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);
         NewObject instance;
         if (constructor != null) {
             // check state changes of companion methods
