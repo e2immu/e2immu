@@ -280,7 +280,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             TypeInfo stream = typeMap.get(Stream.class);
             Assert.assertNotNull(stream);
             MethodInfo of = stream.typeInspection.get().methods().stream().filter(m -> m.name.equals("of")).findAny().orElseThrow();
-            Assert.assertEquals(MultiLevel.NULLABLE, of.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, of.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
         };
 
         testClass("Warnings_5", 0, 1, new DebugConfiguration.Builder()

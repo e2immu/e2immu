@@ -29,7 +29,9 @@ public abstract class AbstractInspectionBuilder<B> implements Inspection {
     protected final AddOnceSet<AnnotationExpression> annotations = new AddOnceSet<>();
 
     public B addAnnotation(AnnotationExpression annotationExpression) {
-        annotations.add(annotationExpression);
+        if (!annotations.contains(annotationExpression)) {
+            annotations.add(annotationExpression);
+        }
         return (B) this; // unchecked cast saves us 4 copies
     }
 
