@@ -119,7 +119,7 @@ public record ArrayLength(Primitives primitives,
                     ObjectFlow.NO_FLOW);
             builder.setExpression(size);
         } else {
-            builder.setExpression(new UnknownExpression(returnType(), "<array length>"));
+            builder.setExpression(new UnknownExpression(returnType(), "array length"));
         }
         return builder.build();
     }

@@ -576,13 +576,13 @@ public class TypeAnalyser extends AbstractAnalyser {
         if (parentOrEnclosing == DONE || parentOrEnclosing == DELAYS) return parentOrEnclosing;
 
         boolean variablesLinkedNotSet = myFieldAnalysers.stream()
-                .anyMatch(fieldAnalyser -> fieldAnalyser.fieldAnalysis.getVariablesLinkedToMe() == null);
+                .anyMatch(fieldAnalyser -> fieldAnalyser.fieldAnalysis.getLinkedVariables() == null);
         if (variablesLinkedNotSet) {
             log(DELAYED, "Delay independence of type {}, not all variables linked to fields set", typeInfo.fullyQualifiedName);
             return DELAYS;
         }
         List<FieldAnalyser> fieldsLinkedToParameters =
-                myFieldAnalysers.stream().filter(fieldAnalyser -> fieldAnalyser.fieldAnalysis.getVariablesLinkedToMe()
+                myFieldAnalysers.stream().filter(fieldAnalyser -> fieldAnalyser.fieldAnalysis.getLinkedVariables()
                         .stream().filter(v -> v instanceof ParameterInfo)
                         .map(v -> (ParameterInfo) v).anyMatch(pi -> pi.owner.isConstructor)).collect(Collectors.toList());
 

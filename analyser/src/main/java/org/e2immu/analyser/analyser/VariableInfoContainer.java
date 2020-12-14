@@ -109,6 +109,8 @@ public interface VariableInfoContainer {
 
     void setProperty(int level, VariableProperty variableProperty, int value);
 
+    void setProperty(int level, VariableProperty variableProperty, int value, boolean failWhenTryingToWriteALowerValue);
+
     default void ensureProperty(int level, VariableProperty variableProperty, int value) {
         int current = best(level).getProperty(variableProperty);
         if (value > current) {
@@ -124,10 +126,13 @@ public interface VariableInfoContainer {
      * aggregation method that copies value, properties, state, object flow, and linked variables
      * using the 'setXX' methods.
      *
-     * @param level                the level to write to
-     * @param previousVariableInfo the source to copy from
+     * @param level                            the level to write to
+     * @param previousVariableInfo             the source to copy from
+     * @param failWhenTryingToWriteALowerValue if false, we ignore lower values. This happens when e.g. a field is overall nullable while
+     *                                         in a particular method it has non-null assigned values; also, when a field not belonging
+     *                                         to the type being analysed, is being modified. See test Basics_3
      */
-    void copy(int level, VariableInfo previousVariableInfo);
+    void copy(int level, VariableInfo previousVariableInfo, boolean failWhenTryingToWriteALowerValue);
 
     void setObjectFlow(int level, ObjectFlow objectFlow);
 

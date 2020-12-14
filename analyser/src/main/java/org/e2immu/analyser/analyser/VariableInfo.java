@@ -79,4 +79,8 @@ public interface VariableInfo {
     }
 
     boolean isVariableField();
+
+    default boolean objectFlowIsSet() {
+        return getObjectFlow() != null;
+    }
 }

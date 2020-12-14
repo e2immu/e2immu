@@ -159,7 +159,7 @@ public record InstanceOf(Primitives primitives,
             return builder.compose(er).setExpression(er.value).build();
         }
         if (value instanceof MethodCall) {
-            return builder.setExpression(new UnknownExpression(returnType(), "<instanceof value>")).build(); // no clue, too deep
+            return builder.setExpression(new UnknownExpression(returnType(), "instanceof value")).build(); // no clue, too deep
         }
         if (value instanceof ClassExpression ce) {
             EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),

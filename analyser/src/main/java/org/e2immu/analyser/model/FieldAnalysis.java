@@ -40,7 +40,7 @@ public interface FieldAnalysis extends Analysis {
     // here, the key of the map are fields; the local variables and parameters are stored in method analysis
     // the values are either other fields (in which case these other fields are not linked to parameters)
     // or parameters
-    Set<Variable> getVariablesLinkedToMe();
+    Set<Variable> getLinkedVariables();
 
     Boolean getFieldError();
 

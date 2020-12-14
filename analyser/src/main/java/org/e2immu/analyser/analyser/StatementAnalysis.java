@@ -331,15 +331,18 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         int bestLevel = previous == null ? VariableInfoContainer.LEVEL_1_INITIALISER :  // parent
                 VariableInfoContainer.LEVEL_4_SUMMARY; // previous statement
 
-        variableStream().forEach(variableInfo -> {
-            VariableInfoContainer vic = findForWriting(variableInfo.name()); // will be present!
+        // at best level (we can already have Level 4 vi in this statement, still we need to copy into 1
+        // Basics_3; on the other hand, READ needs to be at best level
+        variables.stream().map(Map.Entry::getValue).forEach(vic -> {
+            VariableInfo viLevel1 = vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
+            VariableInfo variableInfo = vic.current();
 
             // for all variables present higher up
             if (copyFrom != null && copyFrom.variables.isSet(variableInfo.name())) {
                 // it is important that we copy from the same level when copying from the parent! (and not use getLatestVariableInfo)
                 VariableInfo previousVariableInfo = copyFrom.variables.get(variableInfo.name()).best(bestLevel);
                 if (previousVariableInfo != null) {
-                    vic.copy(VariableInfoContainer.LEVEL_1_INITIALISER, previousVariableInfo);
+                    vic.copy(VariableInfoContainer.LEVEL_1_INITIALISER, previousVariableInfo, false);
                 }
             }
             // specifically for fields
@@ -347,17 +350,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 int read = variableInfo.getProperty(READ);
                 if (read >= Level.TRUE && noEarlierAccess(variableInfo.variable(), copyFrom)) {
                     // this is the first statement in the method where this field occurs
+                    ExpressionAndLinkedVariables initialValue = initialValueOfField(analyserContext, fieldReference);
                     Map<VariableProperty, Integer> map = propertyMap(analyserContext, fieldReference.fieldInfo);
-                    if (!variableInfo.valueIsSet()) {
-                        Expression initialValue = initialValueOfField(analyserContext, fieldReference);
-                        vic.setInitialValueFromAnalyser(initialValue, map);
+                    if (!viLevel1.valueIsSet()) {
+                        vic.setInitialValueFromAnalyser(initialValue.expression, map);
                     } else {
-                        map.forEach((k, v) -> vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, k, v));
+                        map.forEach((k, v) -> vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, k, v, false));
                     }
-                    if (!variableInfo.linkedVariablesIsSet()) {
-                        FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-                        if (fieldAnalysis.getVariablesLinkedToMe() != null) {
-                            vic.setLinkedVariables(VariableInfoContainer.LEVEL_1_INITIALISER, fieldAnalysis.getVariablesLinkedToMe());
+                    if (!viLevel1.linkedVariablesIsSet()) {
+                        if (initialValue.linkedVariables != null) {
+                            vic.setLinkedVariables(VariableInfoContainer.LEVEL_1_INITIALISER, initialValue.linkedVariables);
                         }
                     }
                 }
@@ -465,13 +467,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setInitialValueFromAnalyser(instance, propertyMap(analyserContext, parameterInfo));
             vic.setLinkedVariablesFromAnalyser(Set.of());
         } else if (variable instanceof FieldReference fieldReference) {
-            Expression initialValue = initialValueOfField(analyserContext, fieldReference);
-            if (initialValue != EmptyExpression.NO_VALUE) {
-                vic.setInitialValueFromAnalyser(initialValue, propertyMap(analyserContext, fieldReference.fieldInfo));
+            ExpressionAndLinkedVariables initialValue = initialValueOfField(analyserContext, fieldReference);
+            if (initialValue.expression != EmptyExpression.NO_VALUE) {
+                vic.setInitialValueFromAnalyser(initialValue.expression, propertyMap(analyserContext, fieldReference.fieldInfo));
             }
             // a field's local copy is always created not modified... can only go "up"
             vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, MODIFIED, 0);
-            vic.setLinkedVariablesFromAnalyser(Set.of()); // TODO
+            if (initialValue.linkedVariables != null) {
+                vic.setLinkedVariables(VariableInfoContainer.LEVEL_1_INITIALISER, initialValue.linkedVariables);
+            }
         } else if (variable instanceof LocalVariableReference lvr) {
             // but local variables get their linked variables from an assignment, potentially at LEVEL 1
             // if (Primitives.isPrimitiveExcludingVoid(lvr.parameterizedType())) {
@@ -567,53 +571,53 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      *     </li>
      * </ol>
      *
-     * @param analyserContext the context
-     * @param fieldReference  the field
-     * @return the initial value computed
      */
-    // FIXME EmptyExpression -> something from the preconditions?
-    private Expression initialValueOfField(AnalyserContext analyserContext, FieldReference fieldReference) {
+    // FIXME the NewObject's need something from the preconditions?
+
+    record ExpressionAndLinkedVariables(Expression expression, Set<Variable> linkedVariables) {
+    }
+
+    private ExpressionAndLinkedVariables initialValueOfField(AnalyserContext analyserContext, FieldReference fieldReference) {
         boolean inPartOfConstruction = methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction() ==
                 MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         if (inPartOfConstruction && fieldReference.scope instanceof This thisVariable
                 && thisVariable.typeInfo.equals(methodAnalysis.getMethodInfo().typeInfo)) { // field that must be initialised
             Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();
-            if (initialValue.isConstant()) {
-                return initialValue;
-            }
             FieldAnalyser fieldAnalyser = analyserContext.getFieldAnalysers().get(fieldReference.fieldInfo);
-            if (fieldAnalyser == null) {
-                return initialValue;
+            if (initialValue.isConstant()) {
+                return new ExpressionAndLinkedVariables(initialValue, Set.of());
             }
             EvaluationContext evaluationContext = fieldAnalyser.createEvaluationContext();
             Map<VariableProperty, Integer> properties = evaluationContext.getValueProperties(initialValue);
-            return PropertyWrapper.propertyWrapper(evaluationContext,
+            return new ExpressionAndLinkedVariables(PropertyWrapper.propertyWrapper(evaluationContext,
                     new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalyser.fieldAnalysis.getObjectFlow()),
-                    properties, initialValue.getObjectFlow());
+                    properties, initialValue.getObjectFlow()), Set.of()); // TODO Set.of() prob not correct
         }
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
         if (effectivelyFinal == Level.DELAY) {
-            return EmptyExpression.NO_VALUE;
+            return new ExpressionAndLinkedVariables(EmptyExpression.NO_VALUE, null);
         }
         boolean variableField = effectivelyFinal == Level.FALSE;
         if (!variableField) {
             Expression efv = fieldAnalysis.getEffectivelyFinalValue();
             if (efv == null) {
                 if (analyserContext.getTypeAnalysis(fieldReference.fieldInfo.owner).isBeingAnalysed()) {
-                    return EmptyExpression.NO_VALUE; // delay
+                    return new ExpressionAndLinkedVariables(EmptyExpression.NO_VALUE, null);
                 }
             } else {
                 if (efv.isConstant()) {
-                    return efv;
+                    return new ExpressionAndLinkedVariables(efv, Set.of());
                 }
                 NewObject newObject;
                 if ((newObject = efv.asInstanceOf(NewObject.class)) != null) {
-                    return newObject;
+                    return new ExpressionAndLinkedVariables(newObject, fieldAnalysis.getLinkedVariables());
                 }
             }
         }
-        return new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
+        return new ExpressionAndLinkedVariables(
+                new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow()),
+                fieldAnalysis.getLinkedVariables());
     }
 
     private ObjectFlow createObjectFlowForNewVariable(AnalyserContext analyserContext, Variable variable) {
@@ -848,6 +852,18 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public Stream<VariableInfo> variableStream() {
         return variables.stream().map(Map.Entry::getValue)
+                .map(VariableInfoContainer::current)
+                .filter(vi -> !vi.hasProperty(VariableProperty.REMOVED));
+    }
+
+    public Stream<VariableInfo> variableStream(int level) {
+        return variables.stream().map(Map.Entry::getValue)
+                .map(vic -> vic.best(level))
+                .filter(vi -> !vi.hasProperty(VariableProperty.REMOVED));
+    }
+
+    public Stream<VariableInfo> safeVariableStream() {
+        return variables.toImmutableMap().values().stream()
                 .map(VariableInfoContainer::current)
                 .filter(vi -> !vi.hasProperty(VariableProperty.REMOVED));
     }

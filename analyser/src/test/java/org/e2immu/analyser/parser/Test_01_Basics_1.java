@@ -54,12 +54,18 @@ public class Test_01_Basics_1 extends CommonTestRunner {
         if ("getF1".equals(d.methodInfo().name)) {
             if (FIELD1.equals(d.variableName())) {
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
-                Assert.assertEquals("[]", d.variableInfo().getLinkedVariables().toString());
+                if(d.iteration() == 0) {
+                    Assert.assertNull(d.variableInfo().getLinkedVariables());
+                } else {
+                    Assert.assertEquals("p0", debug(d.variableInfo().getLinkedVariables()));
+                }
             }
             if (GET_F1_RETURN.equals(d.variableName())) {
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
-                if (d.iteration() > 0) {
-                    Assert.assertEquals("this.f1", debug(d.variableInfo().getLinkedVariables()));
+                if(d.iteration() == 0) {
+                    Assert.assertNull(d.variableInfo().getLinkedVariables());
+                } else {
+                    Assert.assertEquals("p0,this.f1", debug(d.variableInfo().getLinkedVariables()));
                 }
             }
         }
@@ -80,9 +86,7 @@ public class Test_01_Basics_1 extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 Assert.assertEquals("this.f1", d.fieldAnalysis().getEffectivelyFinalValue().output().debug());
                 Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
-            }
-            if (d.iteration() > 1) {
-                Assert.assertEquals("p0", debug(d.fieldAnalysis().getVariablesLinkedToMe()));
+                Assert.assertEquals("p0", debug(d.fieldAnalysis().getLinkedVariables()));
             }
         }
     };
@@ -92,7 +96,7 @@ public class Test_01_Basics_1 extends CommonTestRunner {
             ParameterAnalysis p0 = d.parameterAnalyses().get(0);
             Assert.assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED));
         }
-        if ("getF1".equals(d.methodInfo().name) && d.iteration() > 0) {
+        if ("getF1".equals(d.methodInfo().name) && d.iteration() > 1) {
             Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
         }
     };

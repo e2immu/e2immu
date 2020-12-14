@@ -241,23 +241,24 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     @Override
     public void setProperty(int level, VariableProperty variableProperty, int value) {
+        setProperty(level, variableProperty, value, true);
+    }
+
+    @Override
+    public void setProperty(int level, VariableProperty variableProperty, int value, boolean failWhenTryingToWriteALowerValue) {
         ensureNotFrozen();
         Objects.requireNonNull(variableProperty);
 
         int valueAtReadLevel = best(level).getProperty(variableProperty);
-        if (valueAtReadLevel != value) {
+        if (valueAtReadLevel <= value) {
             int writeLevel = findLevelForWriting(level);
             VariableInfoImpl variableInfo = getAndCast(writeLevel);
-            try {
-                if (variableInfo.setProperty(variableProperty, value)) {
-                    liftCurrentLevel(writeLevel);
-                }
-            } catch (RuntimeException rte) {
-                LOGGER.warn("Caught exception while setting variable property " + variableProperty +
-                        " of " + variableInfo.name + " to " + value + " at level " + writeLevel + "; current level " + currentLevel +
-                        "; previous value " + variableInfo.getProperty(variableProperty));
-                throw rte;
+            if (variableInfo.setProperty(variableProperty, value)) {
+                liftCurrentLevel(writeLevel);
             }
+        } else if (failWhenTryingToWriteALowerValue) {
+            throw new UnsupportedOperationException("Trying to write a lower value " + value +
+                    ", already have " + valueAtReadLevel + ", property " + variableProperty);
         }
     }
 
@@ -305,8 +306,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void copy(int level, VariableInfo previousVariableInfo) {
-        previousVariableInfo.propertyStream().forEach(e -> setProperty(level, e.getKey(), e.getValue()));
+    public void copy(int level, VariableInfo previousVariableInfo, boolean failWhenTryingToWriteALowerValue) {
+        previousVariableInfo.propertyStream().forEach(e -> setProperty(level, e.getKey(), e.getValue(), failWhenTryingToWriteALowerValue));
 
         if (previousVariableInfo.valueIsSet()) {
             internalSetValue(level, previousVariableInfo.getValue());

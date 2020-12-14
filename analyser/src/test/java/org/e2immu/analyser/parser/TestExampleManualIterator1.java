@@ -88,7 +88,7 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
             Assert.assertEquals(expect, modified);
 
             if (iteration > 0) {
-                Assert.assertEquals("", d.fieldAnalysis().getVariablesLinkedToMe().toString());
+                Assert.assertEquals("", d.fieldAnalysis().getLinkedVariables().toString());
             }
         }
         if ("list".equals(fieldInfo.name) && "ExampleManualIterator1".equals(fieldInfo.owner.simpleName)) {

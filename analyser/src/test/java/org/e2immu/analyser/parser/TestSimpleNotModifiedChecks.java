@@ -162,11 +162,11 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             if (iteration == 1) {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 Assert.assertNotNull(d.fieldAnalysis().getEffectivelyFinalValue());
-                Assert.assertNull(d.fieldAnalysis().getVariablesLinkedToMe());
+                Assert.assertNull(d.fieldAnalysis().getLinkedVariables());
             }
             if (iteration >= 2) {
-                Assert.assertEquals(1, d.fieldAnalysis().getVariablesLinkedToMe().size());
-                Assert.assertEquals("in4", d.fieldAnalysis().getVariablesLinkedToMe().stream().findFirst().orElseThrow().simpleName());
+                Assert.assertEquals(1, d.fieldAnalysis().getLinkedVariables().size());
+                Assert.assertEquals("in4", d.fieldAnalysis().getLinkedVariables().stream().findFirst().orElseThrow().simpleName());
                 Assert.assertEquals(Level.TRUE, modified);
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
             }
@@ -177,10 +177,10 @@ public class TestSimpleNotModifiedChecks extends CommonTestRunner {
             }
             if (iteration == 1) {
                 Assert.assertNotNull(d.fieldAnalysis().getEffectivelyFinalValue());
-                Assert.assertNull(d.fieldAnalysis().getVariablesLinkedToMe());
+                Assert.assertNull(d.fieldAnalysis().getLinkedVariables());
             }
             if (iteration >= 2) {
-                Assert.assertEquals("in6", d.fieldAnalysis().getVariablesLinkedToMe().stream().findFirst().orElseThrow().simpleName());
+                Assert.assertEquals("in6", d.fieldAnalysis().getLinkedVariables().stream().findFirst().orElseThrow().simpleName());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.TRUE, modified);
             }

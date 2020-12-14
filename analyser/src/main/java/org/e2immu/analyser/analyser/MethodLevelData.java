@@ -136,7 +136,7 @@ public class MethodLevelData {
         final AtomicBoolean progress = new AtomicBoolean();
 
         // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
-        sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
+        sharedState.statementAnalysis.safeVariableStream().forEach(variableInfo -> {
             if (!variableInfo.linkedVariablesIsSet()) {
                 if (!(variableInfo.variable() instanceof LocalVariableReference) ||
                         variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) {

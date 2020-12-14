@@ -70,7 +70,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     }
 
     @Override
-    public Set<Variable> getVariablesLinkedToMe() {
+    public Set<Variable> getLinkedVariables() {
         return variablesLinkedToMe;
     }
 
@@ -164,7 +164,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         // here, the key of the map are fields; the local variables and parameters are stored in method analysis
         // the values are either other fields (in which case these other fields are not linked to parameters)
         // or parameters
-        public final SetOnce<Set<Variable>> variablesLinkedToMe = new SetOnce<>();
+        public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
 
         public final SetOnce<Boolean> fieldError = new SetOnce<>();
 
@@ -185,8 +185,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         @Override
-        public Set<Variable> getVariablesLinkedToMe() {
-            return variablesLinkedToMe.getOrElse(null);
+        public Set<Variable> getLinkedVariables() {
+            return linkedVariables.getOrElse(null);
         }
 
         @Override
@@ -216,7 +216,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     getObjectFlow(),
                     internalObjectFlows.getOrElse(Set.of()),
                     fieldError.getOrElse(false),
-                    variablesLinkedToMe.getOrElse(Set.of()),
+                    linkedVariables.getOrElse(Set.of()),
                     getEffectivelyFinalValue(),
                     getInitialValue(),
                     properties.toImmutableMap(),

@@ -558,25 +558,19 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     private AnalysisStatus analyseLinked() {
-        assert !fieldAnalysis.variablesLinkedToMe.isSet();
+        assert !fieldAnalysis.linkedVariables.isSet();
         if (fieldSummariesNotYetSet) return DELAYS;
 
+        // we ONLY look at the linked variables of fields that have been assigned to
         boolean allDefined = allMethodsAndConstructors.stream()
-                .allMatch(m ->
-                        m.methodLevelData().linksHaveBeenEstablished.isSet() && (
-                                !m.haveFieldAsVariable(fieldInfo) ||
-                                        m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.ASSIGNED) < Level.TRUE ||
-                                        m.getFieldAsVariable(fieldInfo).linkedVariablesIsSet()));
+                .allMatch(m -> !m.haveFieldAsVariable(fieldInfo) ||
+                        m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.ASSIGNED) < Level.TRUE ||
+                        m.getFieldAsVariable(fieldInfo).linkedVariablesIsSet());
         if (!allDefined) {
             if (Logger.isLogEnabled(DELAYED)) {
-                log(DELAYED, "Evaluating {}, linksHaveBeenEstablished not yet set for methods: [{}]",
+                log(DELAYED, "LinkedVariables not yet set for {} in methods: [{}]",
                         fieldInfo.fullyQualifiedName(),
                         allMethodsAndConstructors.stream()
-                                .filter(m -> !m.methodLevelData().linksHaveBeenEstablished.isSet())
-                                .map(m -> m.methodInfo.name).collect(Collectors.joining(", ")));
-                log(DELAYED, "LinkedVariables not yet set for methods: [{}]",
-                        allMethodsAndConstructors.stream()
-                                .filter(m -> m.methodLevelData().linksHaveBeenEstablished.isSet())
                                 .filter(m -> m.haveFieldAsVariable(fieldInfo) &&
                                         m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.ASSIGNED) >= Level.TRUE &&
                                         !m.getFieldAsVariable(fieldInfo).linkedVariablesIsSet())
@@ -585,18 +579,18 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
 
-        Set<Variable> links = new HashSet<>();
-        allMethodsAndConstructors.stream()
+        Set<Variable> linkedVariables = allMethodsAndConstructors.stream()
                 .filter(m -> m.haveFieldAsVariable(fieldInfo))
                 .filter(m -> m.getFieldAsVariable(fieldInfo).linkedVariablesIsSet())
-                .forEach(m -> links.addAll(m.getFieldAsVariable(fieldInfo).getLinkedVariables()));
-        fieldAnalysis.variablesLinkedToMe.set(ImmutableSet.copyOf(links));
-        log(LINKED_VARIABLES, "FA: Set links of {} to [{}]", fieldInfo.fullyQualifiedName(), Variable.fullyQualifiedName(links));
+                .flatMap(m -> m.getFieldAsVariable(fieldInfo).getLinkedVariables().stream())
+                .collect(Collectors.toSet());
+        fieldAnalysis.linkedVariables.set(ImmutableSet.copyOf(linkedVariables));
+        log(LINKED_VARIABLES, "FA: Set links of {} to [{}]", fieldInfo.fullyQualifiedName(), Variable.fullyQualifiedName(linkedVariables));
 
         // explicitly adding the annotation here; it will not be inspected.
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        AnnotationExpression linkAnnotation = new CheckLinks(analyserContext.getPrimitives()).createLinkAnnotation(e2, links);
-        fieldAnalysis.annotations.put(linkAnnotation, !links.isEmpty());
+        AnnotationExpression linkAnnotation = new CheckLinks(analyserContext.getPrimitives()).createLinkAnnotation(e2, linkedVariables);
+        fieldAnalysis.annotations.put(linkAnnotation, !linkedVariables.isEmpty());
         return DONE;
     }
 

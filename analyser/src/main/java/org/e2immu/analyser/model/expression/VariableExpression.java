@@ -33,6 +33,7 @@ import org.e2immu.annotation.E2Container;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @E2Container
 public record VariableExpression(Variable variable,
@@ -149,6 +150,11 @@ public record VariableExpression(Variable variable,
         }
 
         return builder.build();
+    }
+
+    @Override
+    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
+        throw new UnsupportedOperationException(); // should be caught be evaluation context
     }
 
     @Override

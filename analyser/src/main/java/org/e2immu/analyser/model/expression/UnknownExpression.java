@@ -36,7 +36,7 @@ import java.util.Objects;
  */
 public record UnknownExpression(ParameterizedType parameterizedType, String msg) implements Expression {
 
-    public static final String RETURN_VALUE = "<return value>";
+    public static final String RETURN_VALUE = "return value";
 
     @Override
     public boolean equals(Object o) {
@@ -84,7 +84,7 @@ public record UnknownExpression(ParameterizedType parameterizedType, String msg)
 
     @Override
     public OutputBuilder output() {
-        return new OutputBuilder().add(new Text(msg, msg + ":" + parameterizedType.output()));
+        return new OutputBuilder().add(new Text("<" + msg + ">", "<" + msg + ":" + parameterizedType.output() + ">"));
     }
 
     @Override

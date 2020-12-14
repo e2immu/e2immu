@@ -139,7 +139,7 @@ public class TestNotModifiedChecks extends CommonTestRunner {
                 Assert.assertEquals("this.set", d.fieldAnalysis().getEffectivelyFinalValue().toString());
             }
             if (iteration > 0) {
-                Assert.assertEquals("[0:set1]", d.fieldAnalysis().getVariablesLinkedToMe().toString());
+                Assert.assertEquals("[0:set1]", d.fieldAnalysis().getLinkedVariables().toString());
             }
         }
     };
