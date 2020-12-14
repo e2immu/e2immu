@@ -315,7 +315,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (previous == null && parent == null) {
             for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().getParameters()) {
                 VariableInfo prevIteration = findOrNull(parameterInfo);
-                if(prevIteration != null) {
+                if (prevIteration != null) {
                     VariableInfoContainer vic = findForWriting(analyserContext, parameterInfo);
                     ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                     for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
@@ -382,22 +382,41 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         // we need to make a synthesis of the variable state of fields, local copies, etc.
         // some blocks are guaranteed to be executed, others are only executed conditionally.
-
-        variables.stream().forEach(e -> {
+        Stream<Map.Entry<String, VariableInfoContainer>> variableStream = makeVariableStream(lastStatements);
+        Set<String> merged = new HashSet<>();
+        variableStream.forEach(e -> {
             String fqn = e.getKey();
             VariableInfoContainer vic = e.getValue();
 
             boolean someChange = lastStatements.stream()
                     .anyMatch(sa -> sa.statementAnalysis.variables.isSet(fqn) && // possibly not set if field, parameter
                             sa.statementAnalysis.variables.get(fqn).getCurrentLevel() > VariableInfoContainer.LEVEL_0_PREVIOUS);
-            if (someChange) {
+            if (someChange && merged.add(fqn)) {
                 List<VariableInfo> toMerge = lastStatements.stream()
                         .filter(sa -> sa.statementAnalysis.variables.isSet(fqn))
                         .map(sa -> sa.statementAnalysis.variables.get(fqn).current())
                         .collect(Collectors.toList());
-                vic.merge(VariableInfoContainer.LEVEL_4_SUMMARY, evaluationContext, atLeastOneBlockExecuted, toMerge);
+                VariableInfoContainer destination;
+                if (!variables.isSet(fqn)) {
+                    Variable variable = e.getValue().current().variable();
+                    destination = createVariable(evaluationContext.getAnalyserContext(), variable);
+                } else {
+                    destination = vic;
+                }
+                destination.merge(VariableInfoContainer.LEVEL_4_SUMMARY, evaluationContext, atLeastOneBlockExecuted, toMerge);
             }
         });
+    }
+
+    // return a stream of all variables that need merging up
+    // note: .distinct() may not work
+    private Stream<Map.Entry<String, VariableInfoContainer>> makeVariableStream(List<StatementAnalyser> lastStatements) {
+        return Stream.concat(variables.stream(), lastStatements.stream().flatMap(st ->
+                st.statementAnalysis.variables.stream().filter(e -> {
+                    VariableInfo vi = e.getValue().current();
+                    return !vi.variable().isLocal();
+                })
+        ));
     }
 
 

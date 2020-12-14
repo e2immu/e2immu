@@ -973,7 +973,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (blocksExecuted > 0) {
             boolean atLeastOneBlockExecuted = atLeastOneBlockExecuted(executions);
 
-            List<StatementAnalyser> lastStatements = executions.stream().map(ExecutionOfBlock::startOfBlock).collect(Collectors.toList());
+            List<StatementAnalyser> lastStatements = executions.stream().map(ExecutionOfBlock::startOfBlock)
+                    .map(StatementAnalyser::lastStatement)
+                    .collect(Collectors.toList());
             statementAnalysis.copyBackLocalCopies(evaluationContext, lastStatements, atLeastOneBlockExecuted, sharedState.previous);
 
             // compute the escape situation of the sub-blocks

@@ -276,7 +276,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         builder.compose(objectResult, res.k.build());
 
         if (parameterValues.stream().anyMatch(pv -> pv == EmptyExpression.NO_VALUE)) {
-            Logger.log(DELAYED, "Delayed method call because one of the parameter values is delayed: {}, {}", methodInfo.name, parameterValues);
+            Logger.log(DELAYED, "Delayed method call because one of the parameter values of {} is delayed: {}",
+                    methodInfo.name, parameterValues);
             builder.setExpression(EmptyExpression.NO_VALUE);
             return builder.build();
         }

@@ -53,6 +53,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         currentLevel = LEVEL_1_INITIALISER;
     }
 
+    public static VariableInfoContainer createAtLevels1And4(Variable variable) {
+        VariableInfoContainerImpl newVic = new VariableInfoContainerImpl(variable);
+        newVic.currentLevel = LEVEL_4_SUMMARY;
+        newVic.data[newVic.currentLevel] = new VariableInfoImpl(variable);
+        return newVic;
+    }
+
     @Override
     public VariableInfo best(int maxLevel) {
         VariableInfo vi = null;

@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -35,12 +36,6 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
     public Test_14_PreconditionChecks() {
         super(false);
     }
-
-    private static final String TYPE = "org.e2immu.analyser.testexample.PreconditionChecks";
-    private static final String E1 = TYPE + ".either(String,String):0:e1";
-    private static final String E2 = TYPE + ".either(String,String):1:e2";
-    private static final String II = TYPE + ".setInteger(int):0:ii";
-    private static final String INTEGER = TYPE + ".integer";
 
     // either
     @Test
@@ -134,6 +129,9 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
     // integer
     @Test
     public void test3() throws IOException {
+        final String TYPE = "org.e2immu.analyser.testexample.PreconditionChecks_3";
+        final String INTEGER = TYPE + ".integer";
+
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("integer".equals(d.fieldInfo().name)) {
                 int expectFinal = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
@@ -167,21 +165,46 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                 }
             }
         };
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("setInteger".equals(d.methodInfo().name)) {
+                if ("0.0.1".equals(d.statementId())) {
+                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "ii";
+                    Assert.assertEquals(expect, d.evaluationResult().value.toString());
+                }
+                if ("0.0.2".equals(d.statementId())) {
+                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                    Assert.assertEquals("ii", d.evaluationResult().value.toString());
+                }
+            }
+        };
+
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("setInteger".equals(d.methodInfo().name)) {
                 FieldInfo integer = d.methodInfo().typeInfo.getFieldByName("integer", true);
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals("ii>=0", d.state().toString());
                 }
+                if ("0.0.1".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "ii>=0";
+                    Assert.assertEquals(expect, d.state().toString());
+                }
                 if ("0.0.2".equals(d.statementId())) {
                     Assert.assertTrue(d.statementAnalysis().variables.isSet(INTEGER));
-                    VariableInfo tv = d.getFieldAsVariable(integer);
-                    Assert.assertEquals(Level.TRUE, tv.getProperty(VariableProperty.ASSIGNED));
+                    VariableInfo variableInfo = d.getFieldAsVariable(integer);
+                    Assert.assertEquals(Level.TRUE, variableInfo.getProperty(VariableProperty.ASSIGNED));
+                }
+                if ("0".equals(d.statementId())) {
+                    // the synchronized block
+                    Assert.assertTrue(d.statementAnalysis().variables.isSet(INTEGER));
+                    VariableInfo variableInfo = d.getFieldAsVariable(integer);
+                    Assert.assertEquals(Level.TRUE, variableInfo.getProperty(VariableProperty.ASSIGNED));
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertTrue(d.statementAnalysis().variables.isSet(INTEGER));
-                    VariableInfo tv = d.getFieldAsVariable(integer);
-                    Assert.assertEquals(Level.TRUE, tv.getProperty(VariableProperty.ASSIGNED));
+                    VariableInfo variableInfo = d.getFieldAsVariable(integer);
+                    Assert.assertEquals(Level.TRUE, variableInfo.getProperty(VariableProperty.ASSIGNED));
 
                     if (d.iteration() > 0) {
                         Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT)); // TODO
@@ -195,6 +218,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

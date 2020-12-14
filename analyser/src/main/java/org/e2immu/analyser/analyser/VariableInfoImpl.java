@@ -213,13 +213,13 @@ class VariableInfoImpl implements VariableInfo {
                                   List<VariableInfo> merge) {
         Expression mergedValue = mergeValue(evaluationContext, existingValuesWillBeOverwritten, merge);
         Expression currentValue = getValue();
-        if (mergedValue == NO_VALUE || currentValue.equals(mergedValue))
+        if (mergedValue != NO_VALUE && currentValue.equals(mergedValue))
             return newObject == null ? this : newObject; // no need to create
         if (newObject == null) {
-            if (!value.isSet()) {
-                setValue(mergedValue);
-                return this;
-            }
+            //if (!value.isSet()) {
+            //    setValue(mergedValue);
+            //    return this;
+            //}
             VariableInfoImpl newVi = new VariableInfoImpl(variable);
             //if (!existingValuesWillBeOverwritten) newVi.properties.putAll(properties);
             newVi.setValue(mergedValue);
