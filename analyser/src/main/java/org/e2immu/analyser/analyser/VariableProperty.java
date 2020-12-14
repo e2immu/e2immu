@@ -109,7 +109,7 @@ public enum VariableProperty {
     public final static Set<VariableProperty> FORWARD_PROPERTIES_ON_PARAMETERS = Set.of(NOT_NULL, MODIFIED, NOT_MODIFIED_1); // TODO add SIZE
     public final static Set<VariableProperty> FROM_FIELD_TO_PARAMETER = Set.of(NOT_NULL, MODIFIED);
     public final static Set<VariableProperty> PROPERTIES_IN_METHOD_RESULT_WRAPPER = Set.of(NOT_NULL, IMMUTABLE);
-    public final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(IMMUTABLE, CONTAINER, NOT_NULL);
+    public final static Set<VariableProperty> READ_FROM_RETURN_VALUE_PROPERTIES = Set.of(IDENTITY, IMMUTABLE, CONTAINER, NOT_NULL);
     public final static Set<VariableProperty> METHOD_PROPERTIES_IN_INLINE_SAM = Set.of(MODIFIED, INDEPENDENT);
     public static final Set<VariableProperty> CHECK_WORSE_THAN_PARENT = Set.of(NOT_NULL, MODIFIED);
     public static final Set<VariableProperty> FROM_ANALYSER_TO_PROPERTIES = Set.of(IDENTITY, FINAL, NOT_NULL, IMMUTABLE, CONTAINER, NOT_MODIFIED_1);

@@ -143,7 +143,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             }
         }
         if ("e".equals(d.fieldInfo().name)) {
-            if (d.iteration() <= 1) {
+            if (d.iteration() == 0) {
                 Assert.assertNull(d.fieldAnalysis().getLinkedVariables());
             } else {
                 Assert.assertTrue(d.fieldAnalysis().getLinkedVariables().isEmpty());

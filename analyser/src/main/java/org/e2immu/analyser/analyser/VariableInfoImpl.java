@@ -19,7 +19,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -213,7 +212,7 @@ class VariableInfoImpl implements VariableInfo {
                                   List<VariableInfo> merge) {
         Expression mergedValue = mergeValue(evaluationContext, existingValuesWillBeOverwritten, merge);
         Expression currentValue = getValue();
-        if (mergedValue != NO_VALUE && currentValue.equals(mergedValue))
+        if (mergedValue == NO_VALUE || currentValue.equals(mergedValue))
             return newObject == null ? this : newObject; // no need to create
         if (newObject == null) {
             //if (!value.isSet()) {
@@ -236,6 +235,7 @@ class VariableInfoImpl implements VariableInfo {
         if (value instanceof VariableExpression variableValue && variableValue.variable() == variable) {
             throw new UnsupportedOperationException("Cannot redirect to myself");
         }
+        if (value == NO_VALUE) throw new UnsupportedOperationException("Cannot set NO_VALUE");
         this.value.set(value);
     }
 
@@ -255,7 +255,7 @@ class VariableInfoImpl implements VariableInfo {
                     commonValue = mergeOp.operator.applyAsInt(commonValue, value);
                 }
             }
-            if (commonValue != mergeOp.initial) {
+            if (commonValue != mergeOp.initial && commonValue > Level.DELAY) {
                 setProperty(mergeOp.variableProperty, commonValue);
             }
         }

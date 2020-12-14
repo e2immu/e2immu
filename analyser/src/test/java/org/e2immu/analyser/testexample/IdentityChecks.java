@@ -25,6 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class IdentityChecks {
+    /*
+    The @NotNull on the idemX methods relies on LOGGER.debug(@NotNull String s) { .. }
+     */
     @NotNull
     static final Logger LOGGER = LoggerFactory.getLogger(IdentityChecks.class);
 

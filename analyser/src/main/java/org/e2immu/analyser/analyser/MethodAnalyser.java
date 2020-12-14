@@ -138,8 +138,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             builder.add(STATEMENT_ANALYSER, statementAnalyser)
                     .add("obtainMostCompletePrecondition", this::obtainMostCompletePrecondition)
                     .add("makeInternalObjectFlowsPermanent", this::makeInternalObjectFlowsPermanent)
-                    .add("transferPropertyOfReturnStatements", (sharedState) -> methodInfo.noReturnValue() ? DONE : transferPropertiesOfReturnStatements())
-                    .add("computeModified", (sharedState) -> methodInfo.isConstructor ? DONE : computeModified(sharedState))
+                    .add("computeModified", (sharedState) -> methodInfo.isConstructor ? DONE : computeModified())
                     .add("computeReturnValue", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue())
                     .add("detectMissingStaticModifier", (iteration) -> methodInfo.isConstructor ? DONE : detectMissingStaticModifier())
                     .add("computeOnlyMarkPrepWork", (sharedState) -> methodInfo.isConstructor ? DONE : computeOnlyMarkPrepWork(sharedState))
@@ -571,9 +570,12 @@ public class MethodAnalyser extends AbstractAnalyser {
         methodAnalysis.setProperty(VariableProperty.FLUENT, Level.fromBool(isFluent));
         log(FLUENT, "Mark method {} as @Fluent? {}", methodInfo.fullyQualifiedName(), isFluent);
 
-        boolean isIdentity = variableInfo.getProperty(VariableProperty.IDENTITY) == Level.TRUE;
-        methodAnalysis.setProperty(VariableProperty.IDENTITY, Level.fromBool(isIdentity));
-        log(IDENTITY, "Mark method {} as @Identity? {}", methodInfo.fullyQualifiedName(), isIdentity);
+        for (VariableProperty variableProperty : VariableProperty.READ_FROM_RETURN_VALUE_PROPERTIES) {
+            int v = variableInfo.getProperty(variableProperty);
+            if (v == Level.DELAY) v = variableProperty.falseValue;
+            methodAnalysis.setProperty(variableProperty, v);
+            log(NOT_NULL, "Set {} of {} to value {}", variableProperty, methodInfo.fullyQualifiedName, v);
+        }
 
         return DONE;
     }
@@ -608,35 +610,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return applicability.get();
     }
 
-    private AnalysisStatus transferPropertiesOfReturnStatements() {
-        AnalysisStatus analysisStatus = DONE;
-        for (VariableProperty variableProperty : VariableProperty.READ_FROM_RETURN_VALUE_PROPERTIES) {
-            AnalysisStatus status = transferPropertyOfReturnStatements(variableProperty);
-            analysisStatus = analysisStatus.combine(status);
-        }
-        return analysisStatus;
-    }
-
-    // IMMUTABLE, NOT_NULL, CONTAINER
-    // IMMUTABLE, NOT_NULL can still improve with respect to the static return type computed in methodAnalysis.getProperty()
-    private AnalysisStatus transferPropertyOfReturnStatements(VariableProperty variableProperty) {
-        int currentValue = methodAnalysis.getProperty(variableProperty);
-        if (currentValue != Level.DELAY && variableProperty != VariableProperty.IMMUTABLE && variableProperty != VariableProperty.NOT_NULL)
-            return DONE; // NOT FOR ME
-
-        VariableInfo vi = getReturnAsVariable();
-        int value = vi.getProperty(variableProperty);
-        if (value == Level.DELAY) {
-            log(DELAYED, "Return statement value not yet set in transferPropertyOfReturnStatements, property " + variableProperty);
-            return DELAYS;
-        }
-        if (value <= currentValue) return DONE; // not improving.
-        log(NOT_NULL, "Set value of {} to {} for method {}", variableProperty, value, methodInfo.distinguishingName());
-        methodAnalysis.setProperty(variableProperty, value);
-        return DONE;
-    }
-
-    private AnalysisStatus computeModified(SharedState sharedState) {
+    private AnalysisStatus computeModified( ) {
         if (methodAnalysis.getProperty(VariableProperty.MODIFIED) != Level.DELAY) return DONE;
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
 
