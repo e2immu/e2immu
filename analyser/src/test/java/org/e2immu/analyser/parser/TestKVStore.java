@@ -44,7 +44,7 @@ public class TestKVStore {
         Parser parser = new Parser(configuration);
         List<SortedType> types = parser.run();
         for (SortedType sortedType : types) {
-            LOGGER.info("Stream:\n{}", sortedType.primaryType.output().toString());
+            LOGGER.info("Stream:\n{}", sortedType.primaryType().output().toString());
         }
         parser.getMessages().forEach(message -> LOGGER.info(message.toString()));
     }

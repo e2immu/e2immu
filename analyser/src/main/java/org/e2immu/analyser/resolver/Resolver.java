@@ -134,7 +134,7 @@ public class Resolver {
         TypeResolution typeResolution = new TypeResolution(circularDependencies == null ? Set.of() : circularDependencies,
                 superTypesExcludingJavaLangObject(inspectionProvider, typeInfo));
         typeInfo.typeResolution.set(typeResolution);
-        for(TypeInfo subType: inspectionProvider.getTypeInspection(typeInfo).subTypes()) {
+        for (TypeInfo subType : inspectionProvider.getTypeInspection(typeInfo).subTypes()) {
             // TODO circular dependencies not computed for sub-types at the moment
             TypeResolution subTypeResolution = new TypeResolution(circularDependencies == null ? Set.of() : circularDependencies,
                     superTypesExcludingJavaLangObject(inspectionProvider, subType));
@@ -214,15 +214,17 @@ public class Resolver {
                             fieldInfo,
                             fieldInfo.isStatic() ? null : new This(typeContext, fieldInfo.owner))));
 
-            doFields(typeInspection, expressionContext, methodFieldSubTypeGraph);
-            doMethodsAndConstructors(typeInspection, expressionContext, methodFieldSubTypeGraph);
+            List<TypeInfo> typeAndAllSubTypes = typeAndAllSubTypes(typeContextOfType, typeInfo);
+            Set<TypeInfo> restrictToType = new HashSet<>(typeAndAllSubTypes);
+
+            doFields(typeInspection, expressionContext, methodFieldSubTypeGraph, restrictToType);
+            doMethodsAndConstructors(typeInspection, expressionContext, methodFieldSubTypeGraph, restrictToType);
 
             // dependencies of the type
 
             Set<TypeInfo> typeDependencies = typeInspection.typesReferenced().stream()
                     .map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
-            List<TypeInfo> typeAndAllSubTypes = typeAndAllSubTypes(typeContextOfType, typeInfo);
-            typeDependencies.retainAll(typeAndAllSubTypes);
+            typeDependencies.retainAll(restrictToType);
             methodFieldSubTypeGraph.addNode(typeInfo, ImmutableList.copyOf(typeDependencies));
             return typeAndAllSubTypes;
         } catch (RuntimeException re) {
@@ -233,12 +235,13 @@ public class Resolver {
 
     private void doFields(TypeInspection typeInspection,
                           ExpressionContext expressionContext,
-                          DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+                          DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph,
+                          Set<TypeInfo> restrictToType) {
         typeInspection.fields().forEach(fieldInfo -> {
             FieldInspectionImpl.Builder fieldInspection = (FieldInspectionImpl.Builder)
                     expressionContext.typeContext.getFieldInspection(fieldInfo);
             if (!fieldInspection.fieldInitialiserIsSet() && fieldInspection.getInitialiserExpression() != null) {
-                doFieldInitialiser(fieldInfo, fieldInspection, expressionContext, methodFieldSubTypeGraph);
+                doFieldInitialiser(fieldInfo, fieldInspection, expressionContext, methodFieldSubTypeGraph, restrictToType);
             } else {
                 methodFieldSubTypeGraph.addNode(fieldInfo, List.of());
             }
@@ -251,7 +254,8 @@ public class Resolver {
     private void doFieldInitialiser(FieldInfo fieldInfo,
                                     FieldInspectionImpl.Builder fieldInspectionBuilder,
                                     ExpressionContext expressionContext,
-                                    DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+                                    DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph,
+                                    Set<TypeInfo> restrictToType) {
         // we can cast here: no point in resolving if inspection has been set.
 
         Expression expression = fieldInspectionBuilder.getInitialiserExpression();
@@ -300,7 +304,7 @@ public class Resolver {
             }
             fieldInitialiser = new FieldInspection.FieldInitialiser(parsedExpression, sam, artificial);
             Element toVisit = sam != null ? sam.methodInspection.get().getMethodBody() : parsedExpression;
-            MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited();
+            MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited(restrictToType);
             methodsAndFieldsVisited.visit(toVisit);
             dependencies = ImmutableList.copyOf(methodsAndFieldsVisited.methodsAndFields);
         } else {
@@ -313,7 +317,8 @@ public class Resolver {
 
     private void doMethodsAndConstructors(TypeInspection typeInspection,
                                           ExpressionContext expressionContext,
-                                          DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+                                          DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph,
+                                          Set<TypeInfo> restrictToType) {
         // METHOD AND CONSTRUCTOR, without the SAMs in FIELDS
         typeInspection.methodsAndConstructors(TypeInspection.Methods.THIS_TYPE_ONLY_EXCLUDE_FIELD_SAM).forEach(methodInfo -> {
 
@@ -328,7 +333,7 @@ public class Resolver {
                     MethodInspection companionMethodInspection = expressionContext.typeContext.getMethodInspection(companionMethod);
                     try {
                         doMethodOrConstructor(companionMethod, (MethodInspectionImpl.Builder)
-                                companionMethodInspection, expressionContext, methodFieldSubTypeGraph);
+                                companionMethodInspection, expressionContext, methodFieldSubTypeGraph, restrictToType);
                     } catch (RuntimeException rte) {
                         LOGGER.warn("Caught runtime exception while resolving companion method {} in {}", companionMethod.name,
                                 methodInfo.typeInfo.fullyQualifiedName);
@@ -340,7 +345,7 @@ public class Resolver {
             }
             try {
                 doMethodOrConstructor(methodInfo, (MethodInspectionImpl.Builder) methodInspection,
-                        expressionContext, methodFieldSubTypeGraph);
+                        expressionContext, methodFieldSubTypeGraph, restrictToType);
             } catch (RuntimeException rte) {
                 LOGGER.warn("Caught runtime exception while resolving method {} in {}", methodInfo.name,
                         methodInfo.typeInfo.fullyQualifiedName);
@@ -352,7 +357,8 @@ public class Resolver {
     private void doMethodOrConstructor(MethodInfo methodInfo,
                                        MethodInspectionImpl.Builder methodInspection,
                                        ExpressionContext expressionContext,
-                                       DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph) {
+                                       DependencyGraph<WithInspectionAndAnalysis> methodFieldSubTypeGraph,
+                                       Set<TypeInfo> restrictToType) {
         log(RESOLVE, "Resolving {}", methodInfo.fullyQualifiedName);
 
         // TYPE PARAMETERS OF METHOD
@@ -379,7 +385,7 @@ public class Resolver {
                 methodInspection.setInspectedBlock(Block.EMPTY_BLOCK);
             }
         }
-        MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited();
+        MethodsAndFieldsVisited methodsAndFieldsVisited = new MethodsAndFieldsVisited(restrictToType);
         methodsAndFieldsVisited.visit(methodInspection.getMethodBody());
 
         // finally, we build the method inspection and set it in the methodInfo object
@@ -391,24 +397,32 @@ public class Resolver {
 
     private static class MethodsAndFieldsVisited {
         final Set<WithInspectionAndAnalysis> methodsAndFields = new HashSet<>();
+        final Set<TypeInfo> restrictToType;
+
+        public MethodsAndFieldsVisited(Set<TypeInfo> restrictToType) {
+            this.restrictToType = restrictToType;
+        }
 
         void visit(Element element) {
             element.visit(e -> {
                 if (e instanceof FieldAccess fieldAccess) {
-                    methodsAndFields.add(((FieldReference) fieldAccess.variable()).fieldInfo);
-                } else if (e instanceof VariableExpression variableExpression) {
-                    if (variableExpression.variable() instanceof FieldReference fieldReference) {
+                    if (fieldAccess.variable() instanceof FieldReference fieldReference &&
+                            restrictToType.contains(fieldReference.fieldInfo.owner)) {
                         methodsAndFields.add(fieldReference.fieldInfo);
                     }
-                } else if (e instanceof MethodCall methodCall) {
-                    methodsAndFields.add(methodCall.methodInfo);
-                } else if (e instanceof MethodReference methodReference) {
-                    methodsAndFields.add(methodReference.methodInfo);
-                } else if (e instanceof NewObject newObject) {
-                    MethodInfo constructor = newObject.constructor; // can be null!
-                    if (constructor != null) {
-                        methodsAndFields.add(constructor);
+                } else if (e instanceof VariableExpression variableExpression) {
+                    if (variableExpression.variable() instanceof FieldReference fieldReference &&
+                            restrictToType.contains(fieldReference.fieldInfo.owner)) {
+                        methodsAndFields.add(fieldReference.fieldInfo);
                     }
+                } else if (e instanceof MethodCall methodCall && restrictToType.contains(methodCall.methodInfo.typeInfo)) {
+                    methodsAndFields.add(methodCall.methodInfo);
+                } else if (e instanceof MethodReference methodReference &&
+                        restrictToType.contains(methodReference.methodInfo.typeInfo)) {
+                    methodsAndFields.add(methodReference.methodInfo);
+                } else if (e instanceof NewObject newObject && newObject.constructor != null &&
+                        restrictToType.contains(newObject.constructor.typeInfo)) {
+                    methodsAndFields.add(newObject.constructor);
                 }
             });
         }

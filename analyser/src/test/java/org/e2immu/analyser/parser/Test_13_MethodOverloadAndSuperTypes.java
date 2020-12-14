@@ -112,7 +112,7 @@ public class Test_13_MethodOverloadAndSuperTypes {
         LOGGER.info("Have {} types", types.size());
 
         // method: hashCode
-        TypeInfo methodOverload = types.get(0).primaryType;
+        TypeInfo methodOverload = types.get(0).primaryType();
         Assert.assertSame(methodOverload, methodOverloadOrig);
 
         MethodInfo hashCode = methodOverload.typeInspection.get().methods()

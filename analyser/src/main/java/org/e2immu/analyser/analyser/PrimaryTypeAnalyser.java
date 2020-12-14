@@ -69,14 +69,14 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         Objects.requireNonNull(primitives);
         patternMatcher = configuration.analyserConfiguration.newPatternMatcher();
         this.primitives = primitives;
-        this.primaryType = Objects.requireNonNull(sortedType.primaryType);
+        this.primaryType = Objects.requireNonNull(sortedType.primaryType());
         assert this.primaryType.isPrimaryType();
         this.shallowMethodAnalyser = new ShallowMethodAnalyser(primitives, this, e2ImmuAnnotationExpressions);
 
         // do the types first, so we can pass on a TypeAnalysis objects
         ImmutableMap.Builder<TypeInfo, TypeAnalyser> typeAnalysersBuilder = new ImmutableMap.Builder<>();
         SetOnce<TypeAnalyser> primaryTypeAnalyser = new SetOnce<>();
-        sortedType.methodsFieldsSubTypes.forEach(mfs -> {
+        sortedType.methodsFieldsSubTypes().forEach(mfs -> {
             if (mfs instanceof TypeInfo typeInfo) {
                 TypeAnalyser typeAnalyser = new TypeAnalyser(typeInfo, primaryType, this);
                 typeAnalysersBuilder.put(typeInfo, typeAnalyser);
@@ -90,7 +90,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         // filter out those that have NOT been defined!
         ImmutableMap.Builder<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new ImmutableMap.Builder<>();
         ImmutableMap.Builder<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new ImmutableMap.Builder<>();
-        sortedType.methodsFieldsSubTypes.forEach(mfs -> {
+        sortedType.methodsFieldsSubTypes().forEach(mfs -> {
             if (mfs instanceof MethodInfo methodInfo) {
                 if (methodInfo.shallowAnalysis()) {
                     MethodAnalysisImpl.Builder builder = shallowMethodAnalyser.copyAnnotationsIntoMethodAnalysisProperties(methodInfo);
@@ -111,7 +111,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
 
         // finally fields, and wire everything together
         ImmutableMap.Builder<FieldInfo, FieldAnalyser> fieldAnalysersBuilder = new ImmutableMap.Builder<>();
-        analysers = sortedType.methodsFieldsSubTypes.stream().flatMap(mfs -> {
+        analysers = sortedType.methodsFieldsSubTypes().stream().flatMap(mfs -> {
             Analyser analyser;
             if (mfs instanceof FieldInfo fieldInfo) {
                 MethodAnalyser samAnalyser = null;

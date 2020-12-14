@@ -170,7 +170,7 @@ public class Parser {
 
     private void writeAndUpload(List<SortedType> sortedPrimaryTypes) {
         Set<TypeInfo> typesToWrite = sortedPrimaryTypes.stream()
-                .map(sortedType -> sortedType.primaryType).collect(Collectors.toSet());
+                .map(SortedType::primaryType).collect(Collectors.toSet());
         if (configuration.uploadConfiguration.upload) {
             AnnotationUploader annotationUploader = new AnnotationUploader(configuration.uploadConfiguration,
                     input.globalTypeContext().typeMapBuilder.getE2ImmuAnnotationExpressions());
@@ -192,7 +192,7 @@ public class Parser {
             typeMapVisitor.visit(typeMap);
         }
         log(org.e2immu.analyser.util.Logger.LogTarget.ANALYSER, "Analysing primary types:\n{}",
-                sortedPrimaryTypes.stream().map(t -> t.primaryType.fullyQualifiedName).collect(Collectors.joining("\n")));
+                sortedPrimaryTypes.stream().map(t -> t.primaryType().fullyQualifiedName).collect(Collectors.joining("\n")));
         for (SortedType sortedType : sortedPrimaryTypes) {
             analyseSortedType(sortedType);
         }
@@ -204,20 +204,20 @@ public class Parser {
         try {
             primaryTypeAnalyser.analyse();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while analysing type {}", sortedType.primaryType.fullyQualifiedName);
+            LOGGER.warn("Caught runtime exception while analysing type {}", sortedType.primaryType().fullyQualifiedName);
             throw rte;
         }
         try {
             primaryTypeAnalyser.write();
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught runtime exception while making analysis immutable for type {}",
-                    sortedType.primaryType.fullyQualifiedName);
+                    sortedType.primaryType().fullyQualifiedName);
             throw rte;
         }
         try {
             primaryTypeAnalyser.check();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while checking type {}", sortedType.primaryType.fullyQualifiedName);
+            LOGGER.warn("Caught runtime exception while checking type {}", sortedType.primaryType().fullyQualifiedName);
             throw rte;
         }
         messages.addAll(primaryTypeAnalyser.getMessageStream());
@@ -229,7 +229,7 @@ public class Parser {
         // are processed in the correct order
 
         List<TypeInfo> types = new LinkedList<>();
-        sortedTypes.forEach(st -> types.add(st.primaryType));
+        sortedTypes.forEach(st -> types.add(st.primaryType()));
         Set<TypeInfo> alreadyIncluded = new HashSet<>(types);
 
         typeMap.visit(new String[0], (s, list) -> {

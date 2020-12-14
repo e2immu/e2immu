@@ -41,7 +41,7 @@ public class EvaluatesToConstant {
 
     @NotNull
     private static String someMethod(String a) {
-        return a.toLowerCase();
+        return a == null ? "x" : a;
     }
 
     @Constant("c")

@@ -29,11 +29,8 @@ import java.util.Objects;
  * This type is also used for sub-resolvers. In that case, the TypeInfo object is not a primary type, but either
  * a locally declared type, an anonymous type, a lambda, ...
  */
-public class SortedType {
-    public final TypeInfo primaryType;
-
-    public final List<WithInspectionAndAnalysis> methodsFieldsSubTypes;
-
+public record SortedType(TypeInfo primaryType,
+                         List<WithInspectionAndAnalysis> methodsFieldsSubTypes) {
     public SortedType(TypeInfo primaryType, List<WithInspectionAndAnalysis> methodsFieldsSubTypes) {
         this.primaryType = Objects.requireNonNull(primaryType);
         this.methodsFieldsSubTypes = Objects.requireNonNull(methodsFieldsSubTypes);
