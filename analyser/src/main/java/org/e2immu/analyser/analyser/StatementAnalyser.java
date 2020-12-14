@@ -974,6 +974,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             boolean atLeastOneBlockExecuted = atLeastOneBlockExecuted(executions);
 
             List<StatementAnalyser> lastStatements = executions.stream().map(ExecutionOfBlock::startOfBlock)
+                    .filter(statementAnalyser -> !statementAnalyser.statementAnalysis.flowData.isUnreachable())
                     .map(StatementAnalyser::lastStatement)
                     .collect(Collectors.toList());
             statementAnalysis.copyBackLocalCopies(evaluationContext, lastStatements, atLeastOneBlockExecuted, sharedState.previous);
