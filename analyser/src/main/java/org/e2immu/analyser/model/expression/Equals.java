@@ -41,7 +41,7 @@ public class Equals extends BinaryOperator {
         EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
         EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(Equals.equals(evaluationContext, reLhs.value, reRhs.value, objectFlow)).build();
+        return builder.setExpression(Equals.equals(evaluationContext, reLhs.value(), reRhs.value(), objectFlow)).build();
     }
 
     public static Expression equals(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {

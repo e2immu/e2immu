@@ -149,18 +149,18 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
                 if (!singleReturnValue.isUnknown() && methodInfo.cannotBeOverridden()) {
                     result = singleReturnValue;
                 } else {
-                    if (scopeResult.value.isInstanceOf(NullConstant.class)) {
+                    if (scopeResult.value().isInstanceOf(NullConstant.class)) {
                         builder.raiseError(Message.NULL_POINTER_EXCEPTION);
                     }
-                    result = new MethodCall(scopeResult.value, methodInfo, List.of(), objectFlow);
+                    result = new MethodCall(scopeResult.value(), methodInfo, List.of(), objectFlow);
                 }
             } else if (methodInfo.hasStatements()) {
                 result = EmptyExpression.NO_VALUE; // delay, waiting
             } else {
-                if (scopeResult.value instanceof NullConstant) {
+                if (scopeResult.value() instanceof NullConstant) {
                     builder.raiseError(Message.NULL_POINTER_EXCEPTION);
                 }
-                result = new MethodCall(scopeResult.value, methodInfo, List.of(), objectFlow);
+                result = new MethodCall(scopeResult.value(), methodInfo, List.of(), objectFlow);
             }
             builder.setExpression(result);
         }

@@ -57,7 +57,7 @@ public class ArrayInitializer implements Expression {
     @Override
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         List<EvaluationResult> reClauseERs = multiExpression.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
-        List<Expression> reValues = reClauseERs.stream().map(er -> er.value).collect(Collectors.toList());
+        List<Expression> reValues = reClauseERs.stream().map(EvaluationResult::value).collect(Collectors.toList());
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
                 .setExpression(new ArrayInitializer(evaluationContext.getPrimitives(), objectFlow, reValues))

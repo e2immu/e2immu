@@ -31,12 +31,12 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("print".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
             Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-            Assert.assertEquals("false", d.evaluationResult().value.toString());
+            Assert.assertEquals("false", d.evaluationResult().value().toString());
         }
         if ("print2".equals(d.methodInfo().name)) {
             Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-            Assert.assertTrue(d.evaluationResult().value.isInstanceOf(ConstantExpression.class));
-            Assert.assertEquals("\"b\"", d.evaluationResult().value.toString());
+            Assert.assertTrue(d.evaluationResult().value().isInstanceOf(ConstantExpression.class));
+            Assert.assertEquals("\"b\"", d.evaluationResult().value().toString());
             Assert.assertEquals(4L, d.evaluationResult().getObjectFlowStream().count());
             ObjectFlow objectFlow = d.evaluationResult().getObjectFlowStream().findFirst().orElseThrow();
             // ee modified?

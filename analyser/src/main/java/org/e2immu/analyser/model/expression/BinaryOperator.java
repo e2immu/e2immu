@@ -168,8 +168,8 @@ public class BinaryOperator implements Expression {
                                       EvaluationResult left,
                                       EvaluationResult right,
                                       EvaluationContext evaluationContext) {
-        Expression l = left.value;
-        Expression r = right.value;
+        Expression l = left.value();
+        Expression r = right.value();
 
         if (l == EmptyExpression.NO_VALUE || r == EmptyExpression.NO_VALUE) return EmptyExpression.NO_VALUE;
         if (l.isUnknown() || r.isUnknown()) return l.combineUnknown(r);
@@ -224,12 +224,12 @@ public class BinaryOperator implements Expression {
         if (operator == primitives.divideOperatorInt) {
             EvaluationResult er = Divide.divide(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
             builder.compose(er);
-            return er.value;
+            return er.value();
         }
         if (operator == primitives.remainderOperatorInt) {
             EvaluationResult er = Remainder.remainder(evaluationContext, l, r, intObjectFlow(primitives, evaluationContext));
             builder.compose(er);
-            return er.value;
+            return er.value();
         }
         if (operator == primitives.lessEqualsOperatorInt) {
             return GreaterThanZero.less(evaluationContext, l, r, true, booleanObjectFlow(primitives, evaluationContext));
@@ -282,28 +282,28 @@ public class BinaryOperator implements Expression {
 
         EvaluationResult l = lhs.evaluate(evaluationContext, forward);
         Expression constant = new BooleanConstant(primitives, !and);
-        if (l.value.equals(constant)) {
+        if (l.value().equals(constant)) {
             builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return builder.compose(l).build();
         }
 
-        Expression condition = and ? l.value : Negation.negate(evaluationContext, l.value);
+        Expression condition = and ? l.value() : Negation.negate(evaluationContext, l.value());
         EvaluationContext child = evaluationContext.child(condition);
         EvaluationResult r = rhs.evaluate(child, forward);
         builder.compose(l, r);
-        if (r.value.isInstanceOf(BooleanConstant.class)) {
+        if (r.value().isInstanceOf(BooleanConstant.class)) {
             builder.raiseError(Message.PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT);
             return builder.build();
         }
-        if (l.value == EmptyExpression.NO_VALUE || r.value == EmptyExpression.NO_VALUE) {
+        if (l.value() == EmptyExpression.NO_VALUE || r.value() == EmptyExpression.NO_VALUE) {
             return builder.setExpression(EmptyExpression.NO_VALUE).build();
         }
         ObjectFlow objectFlow = new ObjectFlow(evaluationContext.getLocation(),
                 evaluationContext.getPrimitives().booleanParameterizedType, Origin.RESULT_OF_OPERATOR);
         if (and) {
-            builder.setExpression(new And(primitives, objectFlow).append(evaluationContext, l.value, r.value));
+            builder.setExpression(new And(primitives, objectFlow).append(evaluationContext, l.value(), r.value()));
         } else {
-            builder.setExpression(new Or(primitives, objectFlow).append(evaluationContext, l.value, r.value));
+            builder.setExpression(new Or(primitives, objectFlow).append(evaluationContext, l.value(), r.value()));
         }
         return builder.build();
     }

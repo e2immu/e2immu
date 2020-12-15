@@ -98,7 +98,7 @@ public class UnaryOperator implements Expression {
     }
 
     private Expression computeValue(EvaluationContext evaluationContext, Primitives primitives, EvaluationResult evaluationResult) {
-        Expression v = evaluationResult.value;
+        Expression v = evaluationResult.value();
 
         if (v.isUnknown()) return v;
 

@@ -114,7 +114,7 @@ public record ArrayLength(Primitives primitives,
         EvaluationResult result = scope.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(result);
 
-        if (result.value instanceof ArrayInitializer arrayInitializer) {
+        if (result.value() instanceof ArrayInitializer arrayInitializer) {
             Expression size = new IntConstant(evaluationContext.getPrimitives(), arrayInitializer.multiExpression.expressions().length,
                     ObjectFlow.NO_FLOW);
             builder.setExpression(size);

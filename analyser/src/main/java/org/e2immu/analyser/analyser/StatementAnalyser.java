@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -47,8 +48,7 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.analyser.FlowData.Execution.*;
 import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
-import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
-import static org.e2immu.analyser.util.Logger.LogTarget.VARIABLE_PROPERTIES;
+import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
 
 @Container(builds = StatementAnalysis.class)
@@ -473,7 +473,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             vic.assignment(level);
             createdAssignmentLevel.add(variable);
             Expression value = valueChangeData.value();
-            if (value != NO_VALUE) {
+            if (!value.isUnknown()) {
                 log(ANALYSER, "Write value {} to variable {}", value, variable.fullyQualifiedName());
                 Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(value);
                 vic.setValueOnAssignment(level, value, propertiesToSet);
@@ -484,18 +484,26 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // simply copy the READ value; nothing has changed here
             vic.setProperty(level, VariableProperty.READ, read);
             Expression stateOnAssignment = valueChangeData.stateOnAssignment();
-            if (stateOnAssignment != NO_VALUE) {
+            if (!stateOnAssignment.isUnknown()) {
                 vic.setStateOnAssignment(level, stateOnAssignment);
             }
         });
 
-        AnalysisStatus status = evaluationResult.value == NO_VALUE ? DELAYS : DONE;
+        AtomicReference<AnalysisStatus> status = new AtomicReference<>(evaluationResult.value().isUnknown() ? DELAYS : DONE);
+        if (status.get() == DELAYS) {
+            log(DELAYED, "Apply of step {} in {}, {} is delayed because of unknown value",
+                    step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+        }
 
-        if (evaluationResult.linkedVariablesDelay()) {
-            status = DELAYS;
-        } else {
-            evaluationResult.getLinkedVariablesStream().forEach(e -> {
-                Variable variable = e.getKey();
+
+        evaluationResult.getLinkedVariablesStream().forEach(e -> {
+            Variable variable = e.getKey();
+            if (e.getValue() == EvaluationResult.LINKED_VARIABLE_DELAY) {
+                log(DELAYED, "Apply of step {} in {}, {} is delayed because of linked variables of {}",
+                        step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
+                        variable.fullyQualifiedName());
+                status.set(DELAYS);
+            } else {
                 VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, variable);
                 log(ANALYSER, "Set linked variables of {} to {}", variable, e.getValue());
                 if (!createdAssignmentLevel.contains(variable)) {
@@ -506,14 +514,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     createdAssignmentLevel.add(variable);
                 }
                 vic.setLinkedVariables(level, e.getValue());
-            });
-        }
+            }
+        });
+
 
         // then all modifications get applied
         evaluationResult.getModificationStream().forEach(mod -> mod.accept(new ModificationData(sharedState.builder, level)));
 
 
-        if (status == DONE && !statementAnalysis.methodLevelData.internalObjectFlows.isFrozen()) {
+        if (status.get() == DONE && !statementAnalysis.methodLevelData.internalObjectFlows.isFrozen()) {
             boolean delays = false;
             for (ObjectFlow objectFlow : evaluationResult.getObjectFlowStream().collect(Collectors.toSet())) {
                 if (objectFlow.isDelayed()) {
@@ -523,7 +532,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 }
             }
             if (delays) {
-                status = DELAYS;
+                log(DELAYED, "Apply of step {} in {}, {} is delayed because of internal object flows",
+                        step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+                status.set(DELAYS);
             } else {
                 statementAnalysis.methodLevelData.internalObjectFlows.freeze();
             }
@@ -531,11 +542,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         // debugging...
         for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration().debugConfiguration.evaluationResultVisitors) {
-            evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.iteration, step,
+            evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.iteration(), step,
                     myMethodAnalyser.methodInfo, statementAnalysis.index, evaluationResult));
         }
 
-        return status;
+        return status.get();
         // IMPROVE check that AddOnceSet is the right data structure
     }
 
@@ -545,7 +556,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private AnalysisStatus checkPrecondition(SharedState sharedState) {
         if (isEscapeAlwaysExecutedInCurrentBlock() && !statementAnalysis.stateData.precondition.isSet()) {
             EvaluationResult er = statementAnalysis.stateData.getConditionManager().escapeCondition(sharedState.evaluationContext);
-            Expression precondition = er.value;
+            Expression precondition = er.value();
             if (!precondition.isBoolValueTrue()) {
                 boolean atLeastFieldOrParameterInvolved = precondition.variables().stream()
                         .anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
@@ -660,7 +671,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 AnalysisStatus status = apply(sharedState, result, saToCreate, VariableInfoContainer.LEVEL_1_INITIALISER, STEP_1);
                 if (status == DELAYS) haveDelays = true;
 
-                Expression value = result.value;
+                Expression value = result.value();
                 if (value == NO_VALUE) haveDelays = true;
 
                 // IMPROVE move to a place where *every* assignment is verified (assignment-basics)
@@ -731,12 +742,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     variableInfo.assignment(VariableInfoContainer.LEVEL_3_EVALUATION);
                     // all the rest in the new variableInfo object stays on DELAY
                 }
+                log(DELAYED, "Step 3 in statement {}, {} is delayed, apply", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
                 return DELAYS;
             }
 
             // the evaluation system should be pretty good at always returning NO_VALUE when a NO_VALUE has been encountered
-            Expression value = result.value;
-            boolean delays = value == NO_VALUE;
+            Expression value = result.value();
+            boolean delays = value.isUnknown();
 
             if (returnConditionally) {
                 step3_ReturnConditionally(sharedState, value);
@@ -749,10 +761,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     statementAnalysis.statement instanceof AssertStatement) {
                 value = step3_IfElse_Switch_Assert(sharedState.evaluationContext, value);
             }
-            if (value != NO_VALUE) {
+            if (!value.isUnknown()) {
                 statementAnalysis.stateData.valueOfExpression.set(value);
             }
-
+            if (delays) {
+                log(DELAYED, "Step 3 in statement {}, {} is delayed, value", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+            }
             return delays ? DELAYS : DONE;
         } catch (RuntimeException rte) {
             LOGGER.warn("Failed to evaluate main expression (step 3) in statement {}", statementAnalysis.index);
@@ -783,7 +797,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         } else if (currentRV.isInstanceOf(Or.class) || currentRV.isInstanceOf(And.class)) {
             Map<Expression, Expression> translation = Map.of(new VariableExpression(returnVariable), value);
-            newInline = currentRV.reEvaluate(sharedState.evaluationContext, translation).value;
+            newInline = currentRV.reEvaluate(sharedState.evaluationContext, translation).value();
         } else throw new UnsupportedOperationException("? " + currentRV.getClass());
 
         VariableInfoContainer vic = statementAnalysis.findForWriting(returnVariable);
@@ -999,7 +1013,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private Expression addToStateAfterStatement(EvaluationContext evaluationContext, List<ExecutionOfBlock> list) {
-        BooleanConstant TRUE = new BooleanConstant(evaluationContext.getPrimitives(),  true);
+        BooleanConstant TRUE = new BooleanConstant(evaluationContext.getPrimitives(), true);
         if (statementAnalysis.statement instanceof IfElseStatement) {
             ExecutionOfBlock e0 = list.get(0);
             if (list.size() == 1) {
@@ -1063,7 +1077,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             boolean isDefault = false;
             FlowData.Execution statementsExecution = subStatements.statementExecution.apply(value, evaluationContext);
-            if (statementsExecution == DEFAULT) {
+            if (statementsExecution == FlowData.Execution.DEFAULT) {
                 isDefault = true;
                 conditionForSubStatement = defaultCondition(evaluationContext, executions);
                 if (conditionForSubStatement.isBoolValueFalse()) statementsExecution = NEVER;
@@ -1074,7 +1088,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             } else if (statementsExecution == NEVER) {
                 conditionForSubStatement = null; // will not be executed anyway
             } else if (statement() instanceof SwitchEntry switchEntry) {
-                Expression constant = switchEntry.switchVariableAsExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT).value;
+                Expression constant = switchEntry.switchVariableAsExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT).value();
                 conditionForSubStatement = Equals.equals(evaluationContext, value, constant, ObjectFlow.NO_FLOW);
             } else throw new UnsupportedOperationException();
 

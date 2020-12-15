@@ -146,7 +146,7 @@ public class ArrayAccess implements Expression {
         EvaluationResult indexValue = index.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(array, indexValue);
 
-        if (array.value instanceof ArrayInitializer arrayValue && indexValue.value instanceof Numeric in) {
+        if (array.value() instanceof ArrayInitializer arrayValue && indexValue.value() instanceof Numeric in) {
             // known array, known index (a[] = {1,2,3}, a[2] == 3)
             int intIndex = in.getNumber().intValue();
             if (intIndex < 0 || intIndex >= arrayValue.multiExpression.expressions().length) {
@@ -156,16 +156,16 @@ public class ArrayAccess implements Expression {
         } else {
             // we have to make an effort to see if we can evaluate the components; maybe there's another variable to be had
             Variable arrayVariable = variableTarget == null ? null : variableTarget.arrayVariable;
-            if (array.value instanceof VariableExpression evaluatedArrayValue) {
+            if (array.value() instanceof VariableExpression evaluatedArrayValue) {
                 arrayVariable = evaluatedArrayValue.variable();
             }
-            String index = indexValue.value.toString();
-            String name = (arrayVariable != null ? arrayVariable.fullyQualifiedName() : array.value.toString()) + "[" + index + "]";
+            String index = indexValue.value().toString();
+            String name = (arrayVariable != null ? arrayVariable.fullyQualifiedName() : array.value().toString()) + "[" + index + "]";
             DependentVariable dependentVariable = new DependentVariable(name, returnType(),
                     variableTarget != null ? variableTarget.dependencies : List.of(), arrayVariable);
 
             if (dependentVariable.arrayVariable != null) {
-                builder.variableOccursInNotNullContext(dependentVariable.arrayVariable, array.value, MultiLevel.EFFECTIVELY_NOT_NULL);
+                builder.variableOccursInNotNullContext(dependentVariable.arrayVariable, array.value(), MultiLevel.EFFECTIVELY_NOT_NULL);
             }
             if (forwardEvaluationInfo.isNotAssignmentTarget()) {
                 builder.markRead(variableTarget, evaluationContext.getIteration());

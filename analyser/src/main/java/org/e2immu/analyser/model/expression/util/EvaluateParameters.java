@@ -86,7 +86,6 @@ public class EvaluateParameters {
                 }
                 if (notModified1Scope != Level.TRUE && methodInfo.isSingleAbstractMethod()) {
                     // we compute on the parameter expression, not the value (chicken and egg)
-                    TypeAnalysis typeAnalysis = evaluationContext.getTypeAnalysis(methodInfo.typeInfo);
                     Boolean cannotBeModified = parameterExpression.returnType()
                             .isImplicitlyOrAtLeastEventuallyE2Immutable(evaluationContext.getAnalyserContext());
                     if (cannotBeModified == null) {
@@ -111,7 +110,7 @@ public class EvaluateParameters {
                 ForwardEvaluationInfo forward = new ForwardEvaluationInfo(map, true);
                 parameterResult = parameterExpression.evaluate(evaluationContext, forward);
                 parameterResults.add(parameterResult);
-                parameterValue = parameterResult.value;
+                parameterValue = parameterResult.value();
 
                 ObjectFlow source = parameterValue.getObjectFlow();
                 int modified = map.getOrDefault(VariableProperty.MODIFIED, Level.DELAY);
@@ -126,7 +125,7 @@ public class EvaluateParameters {
                 }
             } else {
                 parameterResult = parameterExpression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-                parameterValue = parameterResult.value;
+                parameterValue = parameterResult.value();
                 parameterResults.add(parameterResult);
             }
 
@@ -154,7 +153,7 @@ public class EvaluateParameters {
                 // the precondition is using parameter info's as variables so we'll have to substitute
                 Map<Expression, Expression> translationMap = translationMap(methodInfo, parameterValues);
                 EvaluationResult eRreEvaluated = precondition.reEvaluate(evaluationContext, translationMap);
-                Expression reEvaluated = eRreEvaluated.value;
+                Expression reEvaluated = eRreEvaluated.value();
                 builder.compose(eRreEvaluated);
 
                 // from the result we either may infer another condition, or values to be set...

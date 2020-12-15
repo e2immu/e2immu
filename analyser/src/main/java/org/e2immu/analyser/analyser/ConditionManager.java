@@ -234,7 +234,7 @@ public class ConditionManager {
 
         // and negate. This will become the precondition or "initial state"
         EvaluationResult reRest = filterResult.rest().reEvaluate(evaluationContext, translation);
-        return builder.compose(reRest).setExpression(Negation.negate(evaluationContext, reRest.value)).build();
+        return builder.compose(reRest).setExpression(Negation.negate(evaluationContext, reRest.value())).build();
     }
 
     private static Filter.FilterResult<Variable> obtainVariableFilter(Expression defaultRest, Variable variable, Expression value) {

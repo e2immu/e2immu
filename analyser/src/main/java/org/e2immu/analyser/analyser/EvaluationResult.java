@@ -17,6 +17,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -39,25 +40,16 @@ import static org.e2immu.analyser.util.Logger.LogTarget.DEBUG_MODIFY_CONTENT;
 import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
 import static org.e2immu.analyser.util.Logger.log;
 
-public class EvaluationResult {
+public record EvaluationResult(int iteration, Expression value,
+                               List<StatementAnalyser.StatementAnalysisModification> modifications,
+                               List<StatementAnalysis.StateChange> stateChanges,
+                               List<ObjectFlow> objectFlows,
+                               Map<Variable, Set<Variable>> linkedVariables,
+                               Map<Variable, ExpressionChangeData> valueChanges) {
+
+    public final static Set<Variable> LINKED_VARIABLE_DELAY = Set.of(Variable.fake());
+
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluationResult.class);
-
-    // mostly to set properties and raise errors
-    private final List<StatementAnalyser.StatementAnalysisModification> modifications;
-
-    // remove variables from the state
-    private final List<StatementAnalysis.StateChange> stateChanges;
-
-    // all object flows created
-    private final List<ObjectFlow> objectFlows;
-    public final Expression value;
-    public final int iteration;
-
-    // a map of value changes, which can be overwritten; only the last one holds
-    public final Map<Variable, ExpressionChangeData> valueChanges;
-
-    // a map of variable linking, which is also cumulative
-    public final Map<Variable, Set<Variable>> linkedVariables;
 
     public Stream<StatementAnalyser.StatementAnalysisModification> getModificationStream() {
         return modifications.stream();
@@ -79,28 +71,8 @@ public class EvaluationResult {
         return linkedVariables.entrySet().stream();
     }
 
-    public boolean linkedVariablesDelay() {
-        return linkedVariables == null;
-    }
-
     public Expression getExpression() {
         return value;
-    }
-
-    private EvaluationResult(int iteration,
-                             Expression value,
-                             List<StatementAnalyser.StatementAnalysisModification> modifications,
-                             List<StatementAnalysis.StateChange> stateChanges,
-                             List<ObjectFlow> objectFlows,
-                             Map<Variable, Set<Variable>> linkedVariables,
-                             Map<Variable, ExpressionChangeData> valueChanges) {
-        this.modifications = modifications;
-        this.stateChanges = stateChanges;
-        this.objectFlows = objectFlows;
-        this.value = value;
-        this.iteration = iteration;
-        this.valueChanges = valueChanges;
-        this.linkedVariables = linkedVariables;
     }
 
     @Override
@@ -141,7 +113,6 @@ public class EvaluationResult {
         private Expression value;
         private final Map<Variable, ExpressionChangeData> valueChanges = new HashMap<>();
         private final Map<Variable, Set<Variable>> linkedVariables = new HashMap<>();
-        private boolean linkedVariablesDelay;
 
         private void addToModifications(StatementAnalyser.StatementAnalysisModification modification) {
             if (modifications == null) modifications = new ArrayList<>();
@@ -172,12 +143,11 @@ public class EvaluationResult {
             return this;
         }
 
-        public Builder composeIgnoreExpression(EvaluationResult... previousResults) {
+        public void composeIgnoreExpression(EvaluationResult... previousResults) {
             assert previousResults != null;
             for (EvaluationResult evaluationResult : previousResults) {
                 append(true, evaluationResult);
             }
-            return this;
         }
 
         public Builder compose(Iterable<EvaluationResult> previousResults) {
@@ -237,7 +207,7 @@ public class EvaluationResult {
                     modifications == null ? List.of() : modifications,
                     stateChanges == null ? List.of() : stateChanges,
                     objectFlows == null ? List.of() : objectFlows,
-                    linkedVariablesDelay ? null : linkedVariables,
+                    ImmutableMap.copyOf(linkedVariables),
                     valueChanges);
         }
 
@@ -317,14 +287,10 @@ public class EvaluationResult {
             }
         }
 
-        public Builder addMessage(Message message) {
-            addToModifications(statementAnalyser.new RaiseErrorMessage(message));
-            return this;
-        }
-
         public Expression currentExpression(Variable variable) {
             ExpressionChangeData currentExpression = valueChanges.get(variable);
-            if (currentExpression == null || currentExpression.value == NO_VALUE) return evaluationContext.currentValue(variable);
+            if (currentExpression == null || currentExpression.value == NO_VALUE)
+                return evaluationContext.currentValue(variable);
             return currentExpression.value;
         }
 
@@ -400,10 +366,13 @@ public class EvaluationResult {
         }
 
         public void linkVariables(Variable at, Set<Variable> linked) {
-            if (linked == null) {
-                linkedVariablesDelay = true;
-            } else {
-                linkedVariables.merge(at, linked, SetUtil::immutableUnion);
+            Set<Variable> current = linkedVariables.get(at);
+            if(current != LINKED_VARIABLE_DELAY) {
+                if(linked == null) {
+                    linkedVariables.put(at, LINKED_VARIABLE_DELAY);
+                } else {
+                    linkedVariables.merge(at, linked, SetUtil::immutableUnion);
+                }
             }
         }
 

@@ -466,7 +466,7 @@ public record And(Primitives primitives,
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         List<EvaluationResult> reClauseERs = expressions.stream()
                 .map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
-        Expression[] reClauses = reClauseERs.stream().map(er -> er.value).toArray(Expression[]::new);
+        Expression[] reClauses = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
                 .setExpression(new And(primitives, objectFlow).append(evaluationContext, reClauses))

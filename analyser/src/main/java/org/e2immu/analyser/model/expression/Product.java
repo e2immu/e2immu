@@ -36,7 +36,7 @@ public class Product extends BinaryOperator {
         EvaluationResult reLhs = lhs.reEvaluate(evaluationContext, translation);
         EvaluationResult reRhs = rhs.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reLhs, reRhs);
-        return builder.setExpression(Product.product(evaluationContext, reLhs.value, reRhs.value, getObjectFlow())).build();
+        return builder.setExpression(Product.product(evaluationContext, reLhs.value(), reRhs.value(), getObjectFlow())).build();
     }
 
     // we try to maintain a sum of products

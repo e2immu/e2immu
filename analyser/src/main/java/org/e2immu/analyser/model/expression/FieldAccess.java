@@ -121,7 +121,7 @@ public record FieldAccess(Expression expression,
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         EvaluationResult scopeResult = expression.evaluate(evaluationContext, forwardEvaluationInfo.copyModificationEnsureNotNull());
         Variable newVar;
-        if (scopeResult.value instanceof VariableExpression variableValue && variable instanceof FieldReference fieldReference) {
+        if (scopeResult.value() instanceof VariableExpression variableValue && variable instanceof FieldReference fieldReference) {
             newVar = new FieldReference(evaluationContext.getAnalyserContext(),
                     fieldReference.fieldInfo, variableValue.variable());
         } else {
@@ -130,10 +130,10 @@ public record FieldAccess(Expression expression,
         EvaluationResult evaluationResult = VariableExpression.evaluate(evaluationContext, forwardEvaluationInfo, newVar);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(scopeResult, evaluationResult);
 
-        if (scopeResult.value instanceof NullConstant) {
+        if (scopeResult.value() instanceof NullConstant) {
             builder.raiseError(Message.NULL_POINTER_EXCEPTION);
-        } else if (scopeResult.value != EmptyExpression.NO_VALUE && !evaluationContext.isNotNull0(scopeResult.value)) {
-            builder.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Scope " + scopeResult.value);
+        } else if (scopeResult.value() != EmptyExpression.NO_VALUE && !evaluationContext.isNotNull0(scopeResult.value())) {
+            builder.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Scope " + scopeResult.value());
         }
 
         return builder.build();

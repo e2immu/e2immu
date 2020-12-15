@@ -51,7 +51,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("either".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                Assert.assertEquals("null==e1&&null==e2", d.evaluationResult().value.toString());
+                Assert.assertEquals("null==e1&&null==e2", d.evaluationResult().value().toString());
             }
         };
 
@@ -171,11 +171,11 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                 if ("0.0.1".equals(d.statementId())) {
                     Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "null!=integer";
-                    Assert.assertEquals(expect, d.evaluationResult().value.toString());
+                    Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("0.0.2".equals(d.statementId())) {
                     Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                    Assert.assertEquals("ii", d.evaluationResult().value.toString());
+                    Assert.assertEquals("ii", d.evaluationResult().value().toString());
                 }
             }
         };

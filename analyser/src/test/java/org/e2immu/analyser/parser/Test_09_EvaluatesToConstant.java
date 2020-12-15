@@ -79,21 +79,21 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
         if ("method2".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
-                Assert.assertEquals("null==param?\"x\":param", d.evaluationResult().value.toString());
+                Assert.assertEquals("null==param?\"x\":param", d.evaluationResult().value().toString());
             }
             if ("1".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                Assert.assertEquals("false", d.evaluationResult().value.toString());
+                Assert.assertEquals("false", d.evaluationResult().value().toString());
             }
         }
         if ("method3".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                Assert.assertEquals("param.contains(\"a\")", d.evaluationResult().value.toString());
+                Assert.assertEquals("param.contains(\"a\")", d.evaluationResult().value().toString());
             }
             if ("1.0.0".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
-                Assert.assertEquals("\"xzy\"", d.evaluationResult().value.toString());
+                Assert.assertEquals("\"xzy\"", d.evaluationResult().value().toString());
             }
         }
     };

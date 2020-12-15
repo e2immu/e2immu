@@ -199,7 +199,7 @@ public class Assignment implements Expression {
         builder.compose(valueResult);
         builder.composeIgnoreExpression(targetResult);
 
-        Variable newVariableTarget = targetResult.value instanceof VariableExpression variableValue ? variableValue.variable() : variableTarget;
+        Variable newVariableTarget = targetResult.value() instanceof VariableExpression variableValue ? variableValue.variable() : variableTarget;
 
         log(VARIABLE_PROPERTIES, "Assignment: {} = {}", newVariableTarget.fullyQualifiedName(), value);
 
@@ -213,15 +213,15 @@ public class Assignment implements Expression {
 
             if (prefixPrimitiveOperator == null || prefixPrimitiveOperator) {
                 // ++i, i += 1
-                resultOfExpression = operationResult.value;
+                resultOfExpression = operationResult.value();
             } else {
                 // i++
-                resultOfExpression = valueResult.value;
+                resultOfExpression = valueResult.value();
             }
-            assignedToTarget = operationResult.value;
+            assignedToTarget = operationResult.value();
         } else {
-            resultOfExpression = valueResult.value;
-            assignedToTarget = valueResult.value;
+            resultOfExpression = valueResult.value();
+            assignedToTarget = valueResult.value();
         }
         assert assignedToTarget != null;
         assert assignedToTarget != EmptyExpression.EMPTY_EXPRESSION;

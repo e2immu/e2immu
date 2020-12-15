@@ -64,7 +64,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             }
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                Assert.assertEquals("false", d.evaluationResult().value.toString());
+                Assert.assertEquals("false", d.evaluationResult().value().toString());
             }
         };
 
@@ -249,11 +249,11 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                Assert.assertEquals("false", d.evaluationResult().value.toString());
+                Assert.assertEquals("false", d.evaluationResult().value().toString());
             }
             if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                Assert.assertEquals("true", d.evaluationResult().value.toString());
+                Assert.assertEquals("true", d.evaluationResult().value().toString());
             }
         };
 
@@ -378,7 +378,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                Assert.assertEquals("true", d.evaluationResult().value.toString());
+                Assert.assertEquals("true", d.evaluationResult().value().toString());
             }
         };
 
@@ -409,11 +409,11 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
-                Assert.assertEquals("true", d.evaluationResult().value.toString());
+                Assert.assertEquals("true", d.evaluationResult().value().toString());
             }
             if ("test".equals(d.methodInfo().name) && "7".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                Assert.assertEquals("true", d.evaluationResult().value.toString());
+                Assert.assertEquals("true", d.evaluationResult().value().toString());
             }
         };
 
@@ -435,7 +435,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "8".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                Assert.assertEquals("set.size()", d.evaluationResult().value.toString());
+                Assert.assertEquals("set.size()", d.evaluationResult().value().toString());
             }
         };
         testClass("BasicCompanionMethods_10", 0, 3, new DebugConfiguration.Builder()

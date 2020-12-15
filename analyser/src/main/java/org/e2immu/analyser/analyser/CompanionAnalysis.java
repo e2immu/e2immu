@@ -58,6 +58,6 @@ public interface CompanionAnalysis {
     default Expression reEvaluate(EvaluationContext evaluationContext, List<Expression> parameterValues) {
         ImmutableMap.Builder<Expression, Expression> translationMap = new ImmutableMap.Builder<>();
         ListUtil.joinLists(getParameterValues(), parameterValues).forEach(pair -> translationMap.put(pair.k, pair.v));
-        return getValue().reEvaluate(evaluationContext, translationMap.build()).value;
+        return getValue().reEvaluate(evaluationContext, translationMap.build()).value();
     }
 }

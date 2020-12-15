@@ -64,4 +64,43 @@ public interface Variable {
     }
 
     OutputBuilder output();
+
+    static Variable fake() {
+        return new Variable() {
+            @Override
+            public ParameterizedType concreteReturnType() {
+                return null;
+            }
+
+            @Override
+            public ParameterizedType parameterizedType() {
+                return null;
+            }
+
+            @Override
+            public String simpleName() {
+                return null;
+            }
+
+            @Override
+            public String fullyQualifiedName() {
+                return null;
+            }
+
+            @Override
+            public boolean isStatic() {
+                return false;
+            }
+
+            @Override
+            public SideEffect sideEffect(EvaluationContext evaluationContext) {
+                return null;
+            }
+
+            @Override
+            public OutputBuilder output() {
+                return null;
+            }
+        };
+    }
 }

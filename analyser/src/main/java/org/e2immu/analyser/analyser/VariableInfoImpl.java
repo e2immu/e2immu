@@ -361,6 +361,6 @@ class VariableInfoImpl implements VariableInfo {
             // something gone wrong, retreat
             return noConclusion(primitives);
         }
-        return result.value;
+        return result.value();
     }
 }

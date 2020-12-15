@@ -82,7 +82,7 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method2".equals(d.methodInfo().name) && "0.1.0".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                Assert.assertEquals("b", d.evaluationResult().value.toString());
+                Assert.assertEquals("b", d.evaluationResult().value().toString());
             }
         };
 

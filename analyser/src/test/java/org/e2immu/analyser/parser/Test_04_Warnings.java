@@ -172,11 +172,11 @@ public class Test_04_Warnings extends CommonTestRunner {
                 // int[] integers = {1, 2, 3};
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
-                    Assert.assertEquals("{1,2,3}", d.evaluationResult().value.toString());
-                    Variable integers = d.evaluationResult().valueChanges.keySet().stream().findFirst().orElseThrow();
+                    Assert.assertEquals("{1,2,3}", d.evaluationResult().value().toString());
+                    Variable integers = d.evaluationResult().valueChanges().keySet().stream().findFirst().orElseThrow();
                     Assert.assertEquals("integers", integers.fullyQualifiedName());
                     Assert.assertTrue(integers instanceof LocalVariableReference);
-                    Assert.assertEquals("{1,2,3}", d.evaluationResult().valueChanges.get(integers).value().toString());
+                    Assert.assertEquals("{1,2,3}", d.evaluationResult().valueChanges().get(integers).value().toString());
                 }
                 // int i=0;
 
@@ -188,8 +188,8 @@ public class Test_04_Warnings extends CommonTestRunner {
             }
             if ("method1".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                Assert.assertEquals("t.length()<=18", d.evaluationResult().value.toString());
-                Assert.assertTrue(d.evaluationResult().value.isInstanceOf(GreaterThanZero.class));
+                Assert.assertEquals("t.length()<=18", d.evaluationResult().value().toString());
+                Assert.assertTrue(d.evaluationResult().value().isInstanceOf(GreaterThanZero.class));
             }
         };
 

@@ -133,7 +133,7 @@ public class EvaluateMethodCall {
                 inlineValue.canBeApplied(evaluationContext)) {
             Map<Expression, Expression> translationMap = EvaluateParameters.translationMap(methodInfo, parameters);
             EvaluationResult reInline = inlineValue.reEvaluate(evaluationContext, translationMap);
-            return builder.compose(reInline).setExpression(reInline.value).build();
+            return builder.compose(reInline).setExpression(reInline.value()).build();
         }
 
         // singleReturnValue implies non-modifying
@@ -166,7 +166,7 @@ public class EvaluateMethodCall {
                 }
                 Map<Expression, Expression> translationMap = EvaluateParameters.translationMap(methodInfo, parameters);
                 EvaluationResult reSrv = srv.reEvaluate(evaluationContext, translationMap);
-                return builder.compose(reSrv).setExpression(reSrv.value).build();
+                return builder.compose(reSrv).setExpression(reSrv.value()).build();
             }
             if (srv.isConstant()) {
                 return builder.setExpression(srv).build();
@@ -225,7 +225,7 @@ public class EvaluateMethodCall {
         */
         // we might encounter isFact or isKnown, so we add the instance's state to the context
         EvaluationContext child = evaluationContext.child(instance.state, true);
-        Expression resultingValue = companionValue.reEvaluate(child, translationMap).value;
+        Expression resultingValue = companionValue.reEvaluate(child, translationMap).value();
         // FIXME
         if (instance.state != EmptyExpression.EMPTY_EXPRESSION && resultingValue != EmptyExpression.EMPTY_EXPRESSION) {
             if (Primitives.isBoolean(methodInfo.returnType().typeInfo)) {
@@ -277,7 +277,7 @@ public class EvaluateMethodCall {
                 });
 
         if (translationMap.isEmpty()) return null;
-        Expression newState = instance.state.reEvaluate(evaluationContext, translationMap).value;
+        Expression newState = instance.state.reEvaluate(evaluationContext, translationMap).value();
         // TODO object flow
         return new NewObject(null, methodInfo.returnType(), List.of(), newState, ObjectFlow.NO_FLOW);
     }

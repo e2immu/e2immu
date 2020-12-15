@@ -31,6 +31,7 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.analyser.util.SetUtil;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -91,8 +92,8 @@ public class InlineConditional implements Expression {
         EvaluationResult reFalse = ifFalse.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder().compose(reCondition, reTrue, reFalse);
         EvaluationResult res = EvaluateInlineConditional.conditionalValueConditionResolved(
-                evaluationContext, reCondition.value, reTrue.value, reFalse.value, objectFlow);
-        return builder.setExpression(res.value).build();
+                evaluationContext, reCondition.value(), reTrue.value(), reFalse.value(), objectFlow);
+        return builder.setExpression(res.value()).build();
     }
 
 
@@ -161,7 +162,7 @@ public class InlineConditional implements Expression {
     @Override
     public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
         Set<Variable> result = null;
-        for (Variable variable : variables()) {
+        for (Variable variable : ListUtil.immutableConcat(ifTrue.variables(), ifFalse.variables())) {
             Set<Variable> links = evaluationContext.linkedVariables(variable);
             if (links == null) {
                 return null;
@@ -172,7 +173,7 @@ public class InlineConditional implements Expression {
                 result.addAll(links);
             }
         }
-        return result;
+        return result == null ? Set.of(): result;
     }
 
     @Override
@@ -211,29 +212,33 @@ public class InlineConditional implements Expression {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(conditionResult);
 
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
-        EvaluationContext copyForThen = evaluationContext.child(conditionResult.value);
+        EvaluationContext copyForThen = evaluationContext.child(conditionResult.value());
         EvaluationResult ifTrueResult = ifTrue.evaluate(copyForThen, forwardEvaluationInfo);
         builder.compose(ifTrueResult);
 
-        EvaluationContext copyForElse = evaluationContext.child(Negation.negate(evaluationContext, conditionResult.value));
+        EvaluationContext copyForElse = evaluationContext.child(Negation.negate(evaluationContext, conditionResult.value()));
         EvaluationResult ifFalseResult = ifFalse.evaluate(copyForElse, forwardEvaluationInfo);
         builder.compose(ifFalseResult);
 
+        Expression c = conditionResult.value();
+        Expression t = ifTrueResult.value();
+        Expression f = ifFalseResult.value();
+
         EmptyExpression combinedUnknown = null;
-        if (conditionResult.value.isUnknown()) {
-            combinedUnknown = conditionResult.value.combineUnknown(ifTrueResult.value).combineUnknown(ifFalseResult.value);
-        } else if (ifTrueResult.value.isUnknown()) {
-            combinedUnknown = ifTrueResult.value.combineUnknown(conditionResult.value).combineUnknown(ifFalseResult.value);
-        } else if (ifFalseResult.value.isUnknown()) {
-            combinedUnknown = ifFalseResult.value.combineUnknown(conditionResult.value).combineUnknown(ifTrueResult.value);
+        if (c.isUnknown()) {
+            combinedUnknown = c.combineUnknown(t).combineUnknown(f);
+        } else if (t.isUnknown()) {
+            combinedUnknown = t.combineUnknown(c).combineUnknown(f);
+        } else if (f.isUnknown()) {
+            combinedUnknown = f.combineUnknown(c).combineUnknown(t);
         }
         if (combinedUnknown != null) {
             return builder.setExpression(combinedUnknown).build();
         }
         // TODO ObjectFlow
         EvaluationResult cv = EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext,
-                conditionResult.value, ifTrueResult.value, ifFalseResult.value, ObjectFlow.NO_FLOW);
-        return builder.setExpression(cv.value).compose(cv).build();
+                c, t, f, ObjectFlow.NO_FLOW);
+        return builder.setExpression(cv.value()).compose(cv).build();
     }
 
     @Override

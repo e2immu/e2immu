@@ -177,12 +177,12 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (fieldInitialiser.initialiser() != EmptyExpression.EMPTY_EXPRESSION) {
                 EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, new ConditionManager(analyserContext.getPrimitives()));
                 EvaluationResult evaluationResult = fieldInitialiser.initialiser().evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-                Expression initialiserValue = evaluationResult.value;
+                Expression initialiserValue = evaluationResult.value();
                 if (initialiserValue != NO_VALUE) {
                     fieldAnalysis.initialValue.set(initialiserValue);
                 }
                 AnalysisStatus resultOfObjectFlow = makeInternalObjectFlowsPermanent(evaluationResult);
-                log(FINAL, "Set initialiser of field {} to {}", fieldInfo.fullyQualifiedName(), evaluationResult.value);
+                log(FINAL, "Set initialiser of field {} to {}", fieldInfo.fullyQualifiedName(), evaluationResult.value());
                 return resultOfObjectFlow.combine(initialiserValue == NO_VALUE ? DELAYS : DONE);
             }
         }
@@ -357,15 +357,21 @@ public class FieldAnalyser extends AbstractAnalyser {
                 }
                 return DONE;
             }
-        } else if (fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.FALSE) {
-            // only react once we're certain the variable is not effectively final
-            // error, unless we're in a record
-            boolean record = fieldInfo.owner.isRecord();
-            fieldAnalysis.fieldError.set(!record);
-            if (!record) {
-                messages.add(Message.newMessage(new Location(fieldInfo), Message.NON_PRIVATE_FIELD_NOT_FINAL));
-            } // else: nested private types can have fields the way they like it
-            return DONE;
+        } else {
+            int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+            if (effectivelyFinal == Level.FALSE) {
+                // only react once we're certain the variable is not effectively final
+                // error, unless we're in a record
+                boolean record = fieldInfo.owner.isRecord();
+                fieldAnalysis.fieldError.set(!record);
+                if (!record) {
+                    messages.add(Message.newMessage(new Location(fieldInfo), Message.NON_PRIVATE_FIELD_NOT_FINAL));
+                } // else: nested private types can have fields the way they like it
+                return DONE;
+            } else if(effectivelyFinal == Level.DELAY) {
+                log(DELAYED, "Not yet ready to decide on non-private non-final");
+                return DELAYS;
+            }
         }
         // not for me
         return DONE;

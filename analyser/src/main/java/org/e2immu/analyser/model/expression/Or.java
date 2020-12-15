@@ -244,7 +244,7 @@ public record Or(Primitives primitives,
         List<EvaluationResult> reClauseERs = expressions.stream()
                 .map(v -> v.reEvaluate(evaluationContext, translation))
                 .collect(Collectors.toList());
-        Expression[] reClauses = reClauseERs.stream().map(er -> er.value).toArray(Expression[]::new);
+        Expression[] reClauses = reClauseERs.stream().map(EvaluationResult::value).toArray(Expression[]::new);
         return new EvaluationResult.Builder()
                 .compose(reClauseERs)
                 .setExpression(new Or(primitives, objectFlow).append(evaluationContext, reClauses))

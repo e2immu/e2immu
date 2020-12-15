@@ -22,9 +22,6 @@ public class Test_05_ConditionalChecks extends CommonTestRunner {
     @Test
     public void test0() throws IOException {
         final String RETURN1 = "org.e2immu.analyser.testexample.ConditionalChecks_0.method1(boolean,boolean)";
-        final String A1 = RETURN1 + ":0:a";
-        final String B1 = RETURN1 + ":1:b";
-
         final String RETURN_1_VALUE = "!a&&b?4:a&&!b?3:!a&&!b?2:a&&b?1:<return value>";
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
@@ -303,15 +300,15 @@ public class Test_05_ConditionalChecks extends CommonTestRunner {
             if ("method5".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                    Assert.assertEquals("o==this", d.evaluationResult().value.toString());
+                    Assert.assertEquals("o==this", d.evaluationResult().value().toString());
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                    Assert.assertEquals("true", d.evaluationResult().value.toString());
+                    Assert.assertEquals("true", d.evaluationResult().value().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                    Assert.assertEquals("null==o||o.getClass()!=this.getClass()", d.evaluationResult().value.toString());
+                    Assert.assertEquals("null==o||o.getClass()!=this.getClass()", d.evaluationResult().value().toString());
                     Assert.assertTrue(d.evaluationResult().getModificationStream().count() > 0);
                     Assert.assertTrue(d.haveMarkRead(O5));
                     Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
@@ -320,12 +317,12 @@ public class Test_05_ConditionalChecks extends CommonTestRunner {
                     Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
                     Assert.assertTrue(d.haveValueChange(CONDITIONAL_CHECKS));
                     Assert.assertEquals("o", d.findValueChange(CONDITIONAL_CHECKS).value().toString());
-                    Assert.assertEquals("o", d.evaluationResult().value.toString());
+                    Assert.assertEquals("o", d.evaluationResult().value().toString());
                 }
                 if ("3".equals(d.statementId())) {
                     // there will be two iterations, in the second one, i will not have value "NO_VALUE" anymore
                     String expectValueString = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i==o.i";
-                    Assert.assertEquals(expectValueString, d.evaluationResult().value.toString());
+                    Assert.assertEquals(expectValueString, d.evaluationResult().value().toString());
                     if (d.iteration() == 0) {
                         // markRead is only done in the first iteration
                         Assert.assertTrue(d.haveMarkRead(CONDITIONAL_CHECKS));

@@ -1,5 +1,7 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -17,6 +19,7 @@ import java.io.IOException;
 import java.util.Set;
 
 public class Test_16_Modification extends CommonTestRunner {
+
     public Test_16_Modification() {
         super(true);
     }
@@ -79,29 +82,49 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test2() throws IOException {
+        final String GET_FIRST_VALUE = "set2ter.isEmpty()?\"\":(instance type Stream<E>).findAny().orElseThrow()";
 
-        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
-            int iteration = d.iteration();
-            String name = d.fieldInfo().name;
-            if (name.equals("set2ter")) {
-                if (iteration == 0) {
-                    Assert.assertEquals(Level.DELAY, modified);
-                } else {
-                    Assert.assertEquals(Level.TRUE, modified);
-                }
-            }
-            if (name.equals("set2bis")) {
-                if (iteration == 0) {
-                    Assert.assertEquals(Level.DELAY, modified);
-                } else {
-                    Assert.assertEquals(Level.TRUE, modified);
-                }
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("getFirst".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                Assert.assertEquals(GET_FIRST_VALUE, d.evaluationResult().value().toString());
             }
         };
 
-        testClass("Modification_2", 0, 0, new DebugConfiguration.Builder()
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("org.e2immu.analyser.testexample.Modification_2.Example2ter.getFirst(String)".equals(d.variableName())) {
+                Assert.assertEquals(GET_FIRST_VALUE, d.currentValue().toString());
+                Set<Variable> lv = d.currentValue().linkedVariables(d.evaluationContext());
+                Assert.assertNotSame(EvaluationResult.LINKED_VARIABLE_DELAY, lv);
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            int iteration = d.iteration();
+            String name = d.fieldInfo().name;
+            if (name.equals("set2ter")) {
+                int effFinal = d.fieldAnalysis().getProperty(VariableProperty.FINAL);
+                Assert.assertEquals(Level.TRUE, effFinal);
+
+                int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
+                int expectModified = iteration == 0 ? Level.DELAY: Level.TRUE;
+                    Assert.assertEquals(expectModified, modified);
+            }
+            if (name.equals("set2bis")) {
+                int effFinal = d.fieldAnalysis().getProperty(VariableProperty.FINAL);
+                int expectFinal = iteration == 0 ? Level.DELAY: Level.FALSE;
+                Assert.assertEquals(expectFinal, effFinal);
+
+                int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
+                int expectModified = iteration == 0 ? Level.DELAY: Level.TRUE;
+                Assert.assertEquals(expectModified, modified);
+            }
+        };
+
+        testClass("Modification_2", 1, 2, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

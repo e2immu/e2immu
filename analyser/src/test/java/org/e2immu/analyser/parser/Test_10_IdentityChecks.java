@@ -114,7 +114,7 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
             Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
             // double property wrapper
             String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/";
-            Assert.assertEquals(expect, d.evaluationResult().value.toString());
+            Assert.assertEquals(expect, d.evaluationResult().value().toString());
         }
     };
 

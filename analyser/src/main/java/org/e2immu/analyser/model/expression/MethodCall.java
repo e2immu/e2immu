@@ -116,17 +116,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (o == null || getClass() != o.getClass()) return false;
         MethodCall that = (MethodCall) o;
         boolean sameMethod = methodInfo.equals(that.methodInfo) ||
-                checkSpecialCasesWhereDifferentMethodsAreEquals(methodInfo, that.methodInfo);
+                checkSpecialCasesWhereDifferentMethodsAreEqual(methodInfo, that.methodInfo);
         return sameMethod &&
                 parameterExpressions.equals(that.parameterExpressions) &&
-                object.equals(that.object) &&
-                methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE;
+                object.equals(that.object);// &&
+             // FIXME seems harsh   methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE;
     }
 
     /*
      the interface and the implementation, or the interface and sub-interface
      */
-    private boolean checkSpecialCasesWhereDifferentMethodsAreEquals(MethodInfo m1, MethodInfo m2) {
+    private boolean checkSpecialCasesWhereDifferentMethodsAreEqual(MethodInfo m1, MethodInfo m2) {
         Set<MethodInfo> overrides1 = m1.methodResolution.get().overrides();
         if (m2.typeInfo.isInterface() && overrides1.contains(m2)) return true;
         Set<MethodInfo> overrides2 = m2.methodResolution.get().overrides();
@@ -192,12 +192,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         List<EvaluationResult> reParams = parameterExpressions.stream().map(v -> v.reEvaluate(evaluationContext, translation)).collect(Collectors.toList());
         EvaluationResult reObject = object.reEvaluate(evaluationContext, translation);
-        List<Expression> reParamValues = reParams.stream().map(er -> er.value).collect(Collectors.toList());
+        List<Expression> reParamValues = reParams.stream().map(EvaluationResult::value).collect(Collectors.toList());
         int modified = evaluationContext.getMethodAnalysis(methodInfo).getProperty(VariableProperty.MODIFIED);
         EvaluationResult mv = EvaluateMethodCall.methodValue(modified, evaluationContext, methodInfo,
-                evaluationContext.getMethodAnalysis(methodInfo), reObject.value, reParamValues, getObjectFlow());
+                evaluationContext.getMethodAnalysis(methodInfo), reObject.value(), reParamValues, getObjectFlow());
         return new EvaluationResult.Builder(evaluationContext).compose(reParams).compose(reObject, mv)
-                .setExpression(mv.value).build();
+                .setExpression(mv.value()).build();
     }
 
     @Override
@@ -264,7 +264,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 VariableProperty.MODIFIED, modified), true));
 
         // null scope
-        Expression objectValue = objectResult.value;
+        Expression objectValue = objectResult.value();
         if (objectValue.isInstanceOf(NullConstant.class)) {
             builder.raiseError(Message.NULL_POINTER_EXCEPTION);
         }
@@ -331,10 +331,10 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             EvaluationResult mv = EvaluateMethodCall.methodValue(modified, evaluationContext, methodInfo,
                     methodAnalysis, objectValue, parameterValues, objectFlowOfResult);
             builder.compose(mv);
-            if (mv.value == objectValue && mv.value instanceof NewObject && modifiedInstance != null) {
+            if (mv.value() == objectValue && mv.value() instanceof NewObject && modifiedInstance != null) {
                 result = modifiedInstance;
             } else {
-                result = mv.value;
+                result = mv.value();
             }
         } else {
             result = EmptyExpression.NO_RETURN_VALUE;
@@ -453,7 +453,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         EvaluationContext child = evaluationContext.child(instanceState, true);
         EvaluationResult companionValueTranslationResult = companionValue.reEvaluate(child, translationMap);
         // no need to compose: this is a separate operation. builder.compose(companionValueTranslationResult);
-        return companionValueTranslationResult.value;
+        return companionValueTranslationResult.value();
     }
 
     /*

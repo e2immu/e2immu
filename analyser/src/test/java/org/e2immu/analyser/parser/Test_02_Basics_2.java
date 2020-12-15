@@ -135,7 +135,7 @@ public class Test_02_Basics_2 extends CommonTestRunner {
 
             // link to empty set, because String is E2Immutable
             Assert.assertTrue(d.haveLinkVariable(STRING_FIELD, Set.of()));
-            Assert.assertEquals("string", d.evaluationResult().value.debugOutput());
+            Assert.assertEquals("string", d.evaluationResult().value().debugOutput());
         }
         if (d.methodInfo().name.equals("getString") && "0".equals(d.statementId()) && d.iteration() == 0) {
             Assert.assertEquals(d.evaluationResult().toString(), 2L, d.evaluationResult().getModificationStream().count());
@@ -144,7 +144,7 @@ public class Test_02_Basics_2 extends CommonTestRunner {
         }
         if (d.methodInfo().name.equals("add") && "0".equals(d.statementId())) {
             String expectEvalString = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : METHOD_VALUE_ADD;
-            Assert.assertEquals(d.evaluationResult().toString(), expectEvalString, d.evaluationResult().value.toString());
+            Assert.assertEquals(d.evaluationResult().toString(), expectEvalString, d.evaluationResult().value().toString());
         }
     };
 

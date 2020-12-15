@@ -94,16 +94,16 @@ public class CompanionAnalyser {
                     .getMethodBody().structure.statements.get(0);
             EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, new ConditionManager(analyserContext.getPrimitives()));
             EvaluationResult evaluationResult = returnStatement.expression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
-            if (evaluationResult.value == EmptyExpression.NO_VALUE) {
+            if (evaluationResult.value() == EmptyExpression.NO_VALUE) {
                 log(DELAYED, "Delaying companion analysis of {} of {}, delay in evaluation",
                         companionMethodName, mainMethod.fullyQualifiedName());
                 visit(iteration, DELAYS, evaluationContext, evaluationResult);
                 return AnalysisStatus.DELAYS;
             }
-            if (evaluationResult.value == null) {
+            if (evaluationResult.value() == null) {
                 throw new RuntimeException("? have null result");
             }
-            companionAnalysis.value.set(evaluationResult.value);
+            companionAnalysis.value.set(evaluationResult.value());
 
             log(ANALYSER, "Finished companion analysis of {} in {}", companionMethodName, mainMethod.fullyQualifiedName());
             visit(iteration, DONE, evaluationContext, evaluationResult);

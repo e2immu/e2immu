@@ -44,15 +44,19 @@ public class TestConditionalValue extends CommonAbstractValue {
         Assert.assertEquals(cv1, cv2);
     }
 
+    private static Expression inline(Expression c, Expression t, Expression f) {
+        return EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext,
+                c, t, f, ObjectFlow.NO_FLOW).value();
+    }
     @Test
     public void test2() {
-        Expression cv1 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext, a, TRUE, b, ObjectFlow.NO_FLOW).value;
+        Expression cv1 = inline(a, TRUE, b);
         Assert.assertEquals("a||b", cv1.toString());
-        Expression cv2 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext, a, FALSE, b, ObjectFlow.NO_FLOW).value;
+        Expression cv2 = inline(a, FALSE, b);
         Assert.assertEquals("!a&&b", cv2.toString());
-        Expression cv3 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext, a, b, TRUE, ObjectFlow.NO_FLOW).value;
+        Expression cv3 = inline(a, b, TRUE);
         Assert.assertEquals("!a||b", cv3.toString());
-        Expression cv4 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext, a, b, FALSE, ObjectFlow.NO_FLOW).value;
+        Expression cv4 = inline(a, b, FALSE);
         Assert.assertEquals("a&&b", cv4.toString());
     }
 
@@ -68,33 +72,33 @@ public class TestConditionalValue extends CommonAbstractValue {
         Assert.assertEquals("AnnotatedAPI.isFact(b)", isFactB.toString());
 
         Assert.assertTrue(minimalEvaluationContext.getConditionManager().state.isBoolValueTrue());
-        Expression cv1 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext, isFactA, a, b, ObjectFlow.NO_FLOW).value;
+        Expression cv1 = inline(isFactA, a, b);
         Assert.assertSame(b, cv1);
 
         EvaluationContext child = minimalEvaluationContext.child(a);
         Assert.assertSame(a, child.getConditionManager().state);
-        Expression cv2 = EvaluateInlineConditional.conditionalValueConditionResolved(child, isFactA, a, b, ObjectFlow.NO_FLOW).value;
+        Expression cv2 = EvaluateInlineConditional.conditionalValueConditionResolved(child, isFactA, a, b, ObjectFlow.NO_FLOW).value();
         Assert.assertSame(a, cv2);
 
         EvaluationContext child2 = minimalEvaluationContext.child(new And(PRIMITIVES).append(minimalEvaluationContext, a, b));
         Assert.assertEquals("a&&b", child2.getConditionManager().state.toString());
-        Expression cv3 = EvaluateInlineConditional.conditionalValueConditionResolved(child2, isFactA, a, b, ObjectFlow.NO_FLOW).value;
+        Expression cv3 = EvaluateInlineConditional.conditionalValueConditionResolved(child2, isFactA, a, b, ObjectFlow.NO_FLOW).value();
         Assert.assertSame(a, cv3);
 
-        Expression cv3b = EvaluateInlineConditional.conditionalValueConditionResolved(child2, isFactB, a, b, ObjectFlow.NO_FLOW).value;
+        Expression cv3b = EvaluateInlineConditional.conditionalValueConditionResolved(child2, isFactB, a, b, ObjectFlow.NO_FLOW).value();
         Assert.assertSame(a, cv3b);
 
         EvaluationContext child3 = minimalEvaluationContext.child(
                 new Or(PRIMITIVES).append(minimalEvaluationContext, c,
                         new And(PRIMITIVES).append(minimalEvaluationContext, a, b)));
         Assert.assertEquals("(a||c)&&(b||c)", child3.getConditionManager().state.toString());
-        Expression cv4 = EvaluateInlineConditional.conditionalValueConditionResolved(child3, isFactA, a, b, ObjectFlow.NO_FLOW).value;
+        Expression cv4 = EvaluateInlineConditional.conditionalValueConditionResolved(child3, isFactA, a, b, ObjectFlow.NO_FLOW).value();
         Assert.assertSame(b, cv4);
     }
 
     @Test
     public void test4() {
-        Expression cv1 = EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext, a, b, c, ObjectFlow.NO_FLOW).value;
+        Expression cv1 = inline(a, b, c);
         Assert.assertEquals("a?b:c", cv1.toString());
         Expression and1 = new And(PRIMITIVES).append(minimalEvaluationContext, a, cv1);
         Assert.assertEquals("a&&b", and1.toString());

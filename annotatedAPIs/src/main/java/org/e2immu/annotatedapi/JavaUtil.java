@@ -348,7 +348,7 @@ public class JavaUtil extends AnnotatedAPI {
         static <U> java.util.Comparator<U> comparingInt(@NotNull ToIntFunction<? super U> keyExtractor) { return null; }
     }
 
-    @E1Container
+    @E2Container
     static class Optional$<T> {
         @Independent
         @NotNull

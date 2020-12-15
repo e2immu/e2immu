@@ -66,7 +66,8 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
     public EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         EvaluationResult reValue = expression.reEvaluate(evaluationContext, translation);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(reValue);
-        return builder.setExpression(PropertyWrapper.propertyWrapper(evaluationContext, reValue.value, properties, getObjectFlow())).build();
+        return builder.setExpression(PropertyWrapper.propertyWrapper(evaluationContext, reValue.value(),
+                properties, getObjectFlow())).build();
     }
 
     public static Expression propertyWrapper(EvaluationContext evaluationContext, Expression value,

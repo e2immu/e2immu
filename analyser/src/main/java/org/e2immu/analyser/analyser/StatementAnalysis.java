@@ -673,7 +673,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             Expression state = conditionManager.individualStateInfo(evaluationContext, valueWithVariable.variable());
             // now translate the state (j < 0) into state of the assignment target (this.j < 0)
             // TODO for now we're ignoring messages etc. encountered in the re-evaluation
-            return state.reEvaluate(evaluationContext, Map.of(value, new VariableExpression(assignmentTarget, ObjectFlow.NO_FLOW))).value;
+            return state.reEvaluate(evaluationContext, Map.of(value, new VariableExpression(assignmentTarget, ObjectFlow.NO_FLOW))).value();
         }
         return new BooleanConstant(primitives, true);
     }
