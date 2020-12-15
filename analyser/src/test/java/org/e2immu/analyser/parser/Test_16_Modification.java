@@ -145,6 +145,9 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add3".equals(d.methodInfo().name) && "local3".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
+                    Assert.assertEquals(1, d.getProperty(VariableProperty.ASSIGNED));
+                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.READ));
+
                     if (d.iteration() == 0) {
                         Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
                     } else {
@@ -157,16 +160,42 @@ public class Test_16_Modification extends CommonTestRunner {
                     }
                 }
                 if ("1".equals(d.statementId())) {
+                    Assert.assertEquals(3, d.variableInfoContainer().getCurrentLevel());
+                    Assert.assertEquals(1, d.getProperty(VariableProperty.ASSIGNED));
+                    Assert.assertEquals(2, d.getProperty(VariableProperty.READ));
                     if (d.iteration() == 0) {
                         // there is a variable info at levels 0 and 3
-                        Assert.assertEquals(3, d.variableInfoContainer().getCurrentLevel());
                         Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
                         Assert.assertNotNull(d.variableInfoContainer().best(0));
                     } else {
                         // there is a variable info in level 1, copied from level 1 in statement 0
                         // problem is that there is one in level 3 already, with a NO_VALUE
-                        VariableInfo variableInfo = d.variableInfoContainer().best(1);
-                        Assert.assertEquals("set3", variableInfo.getValue().toString());
+                        VariableInfo vi1 = d.variableInfoContainer().best(1);
+                        Assert.assertEquals("set3", vi1.getValue().toString());
+                        Assert.assertEquals("this.set3", debug(vi1.getLinkedVariables()));
+                        VariableInfo vi3 = d.variableInfoContainer().best(3);
+                        Assert.assertSame(EmptyExpression.NO_VALUE, vi3.getValue()); // never updated...
+                        Assert.assertNull(vi3.getLinkedVariables());
+                        Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                    }
+                }
+            }
+            if ("add3".equals(d.methodInfo().name) &&
+                    "org.e2immu.analyser.testexample.Modification_3.set3".equals(d.variableName())) {
+                if ("0".equals(d.statementId())) {
+                    if (d.iteration() == 0) Assert.assertNull(d.variableInfo().getLinkedVariables());
+                    else {
+                        Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
+                        Assert.assertEquals("instance type Set<String>", d.variableInfo().getValue().toString());
+                    }
+                }
+                // FIXME the /*empty*/ prob. comes from the add() method
+                if ("1".equals(d.statementId())) {
+                    if (d.iteration() == 0) Assert.assertNull(d.variableInfo().getLinkedVariables());
+                    else {
+                        Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
+                     //   Assert.assertEquals("instance type Set<String>", d.variableInfo().getValue().toString());
+                       // Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                     }
                 }
             }

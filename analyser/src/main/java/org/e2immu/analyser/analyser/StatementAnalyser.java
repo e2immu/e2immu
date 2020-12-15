@@ -496,17 +496,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
         }
 
-
         evaluationResult.getLinkedVariablesStream().forEach(e -> {
             Variable variable = e.getKey();
-            if (e.getValue() == EvaluationResult.LINKED_VARIABLE_DELAY) {
+            Set<Variable> linkTo = e.getValue();
+            if (linkTo == EvaluationResult.LINKED_VARIABLE_DELAY) {
                 log(DELAYED, "Apply of step {} in {}, {} is delayed because of linked variables of {}",
                         step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
                         variable.fullyQualifiedName());
                 status.set(DELAYS);
             } else {
                 VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, variable);
-                log(ANALYSER, "Set linked variables of {} to {}", variable, e.getValue());
+                log(ANALYSER, "Set linked variables of {} to {}", variable, linkTo);
                 if (!createdAssignmentLevel.contains(variable)) {
                     VariableInfo vi = vic.best(level); // before the assignment call!
                     vic.assignment(level);
@@ -514,10 +514,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     vic.setValueAndStateOnAssignment(level, vi.getValue(), vi.getStateOnAssignment(), vi.getProperties());
                     createdAssignmentLevel.add(variable);
                 }
-                vic.setLinkedVariables(level, e.getValue());
+                vic.setLinkedVariables(level, linkTo);
             }
         });
-
 
         // then all modifications get applied
         evaluationResult.getModificationStream().forEach(mod -> mod.accept(new ModificationData(sharedState.builder, level)));

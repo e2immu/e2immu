@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
+
 public class VariableInfoContainerImpl extends Freezable implements VariableInfoContainer {
     private final static Logger LOGGER = LoggerFactory.getLogger(VariableInfoContainerImpl.class);
 
@@ -127,7 +129,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        if (!value.isUnknown()) {
+        if (value != NO_VALUE) {
             variableInfo.setValue(value);
         }
         propertiesToSet.forEach(variableInfo::setProperty);
@@ -138,10 +140,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        if (!value.isUnknown()) {
+        if (value != NO_VALUE) {
             variableInfo.setValue(value);
         }
-        if (!state.isUnknown()) {
+        if (state != NO_VALUE && (!variableInfo.stateOnAssignmentIsSet() ||
+                !state.equals(variableInfo.stateOnAssignment.get()))) {
             variableInfo.stateOnAssignment.set(state);
         }
         propertiesToSet.forEach(variableInfo::setProperty);
@@ -153,7 +156,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
         Objects.requireNonNull(state);
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        if (!state.isUnknown() && (!variableInfo.stateOnAssignment.isSet() || !state.equals(variableInfo.stateOnAssignment.get()))) {
+        if (state != NO_VALUE && (!variableInfo.stateOnAssignment.isSet() || !state.equals(variableInfo.stateOnAssignment.get()))) {
             variableInfo.stateOnAssignment.set(state);
         }
     }

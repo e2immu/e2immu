@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
 import java.util.Set;
@@ -69,22 +70,22 @@ public interface Variable {
         return new Variable() {
             @Override
             public ParameterizedType concreteReturnType() {
-                return null;
+                return ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
             }
 
             @Override
             public ParameterizedType parameterizedType() {
-                return null;
+                return ParameterizedType.RETURN_TYPE_OF_CONSTRUCTOR;
             }
 
             @Override
             public String simpleName() {
-                return null;
+                return "fake variable";
             }
 
             @Override
             public String fullyQualifiedName() {
-                return null;
+                return "fake variable";
             }
 
             @Override
@@ -99,7 +100,7 @@ public interface Variable {
 
             @Override
             public OutputBuilder output() {
-                return null;
+                return new OutputBuilder().add(new Text("fake variable"));
             }
         };
     }

@@ -119,7 +119,7 @@ public class DependencyGraph<T> extends Freezable {
 
     @Only(before = "frozen")
     @Modified
-    public void addNode(@NotNull T t, @NotNull List<T> dependsOn) {
+    public void addNode(@NotNull T t, @NotNull Collection<T> dependsOn) {
         ensureNotFrozen();
         Node<T> node = getOrCreate(t);
         for (T d : dependsOn) {

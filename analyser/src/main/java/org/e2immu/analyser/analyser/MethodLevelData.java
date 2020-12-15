@@ -129,14 +129,15 @@ public class MethodLevelData {
         return DONE;
     }
 
+    private static final Variable DELAY_VAR = Variable.fake();
+
     private AnalysisStatus computeContentModifications(SharedState sharedState) {
         assert !linksHaveBeenEstablished.isSet();
 
         final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
-        final AtomicBoolean progress = new AtomicBoolean();
+        final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
 
-        // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
-        sharedState.statementAnalysis.safeVariableStream().forEach(variableInfo -> {
+        sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
             if (!variableInfo.linkedVariablesIsSet()) {
                 if (!(variableInfo.variable() instanceof LocalVariableReference) ||
                         variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) {
@@ -144,16 +145,33 @@ public class MethodLevelData {
                             variableInfo.variable().fullyQualifiedName(),
                             sharedState.evaluationContext.getCurrentStatement());
                     analysisStatus.set(DELAYS);
+                    dependencyGraph.addNode(variableInfo.variable(), Set.of(DELAY_VAR));
                 } else {
                     log(LINKED_VARIABLES, "Local variable {} not yet assigned, so cannot yet be linked");
                 }
             } else {
-                Set<Variable> linkedVariables = SetUtil.immutableUnion(Set.of(variableInfo.variable()), variableInfo.getLinkedVariables());
-                int summary = sharedState.evaluationContext.summarizeModification(linkedVariables);
+                Set<Variable> linkedVariables = variableInfo.getLinkedVariables();
+                dependencyGraph.addNode(variableInfo.variable(), linkedVariables);
+            }
+        });
+        if (analysisStatus.get() == DELAYS) {
+            dependencyGraph.addNode(DELAY_VAR, Set.of()); // to make sure that the delay var is there too
+        }
+        final AtomicBoolean progress = new AtomicBoolean();
+
+        // we make a copy of the values, because in summarizeModification there is the possibility of adding to the map
+
+        sharedState.statementAnalysis.safeVariableStream().forEach(variableInfo -> {
+            Variable baseVariable = variableInfo.variable();
+            Set<Variable> dependentVariables = SetUtil.immutableUnion(Set.of(baseVariable), dependencyGraph.dependencies(baseVariable));
+            boolean containsDelayVar = dependentVariables.stream().anyMatch(v -> v == DELAY_VAR);
+            if (!containsDelayVar) {
+                int summary = sharedState.evaluationContext.summarizeModification(dependentVariables);
                 String logLocation = sharedState.logLocation;
-                for (Variable linkedVariable : linkedVariables) {
-                    if (linkedVariable instanceof FieldReference) {
-                        FieldInfo fieldInfo = ((FieldReference) linkedVariable).fieldInfo;
+
+                for (Variable dependentVariable : dependentVariables) {
+                    if (dependentVariable instanceof FieldReference) {
+                        FieldInfo fieldInfo = ((FieldReference) dependentVariable).fieldInfo;
                         VariableInfo vi = sharedState.statementAnalysis.getLatestVariableInfo(fieldInfo.fullyQualifiedName());
                         int modified = vi.getProperty(VariableProperty.MODIFIED);
                         if (modified == Level.DELAY) {
@@ -163,28 +181,28 @@ public class MethodLevelData {
                                 fieldModified = Level.FALSE;
                             } else fieldModified = summary;
                             if (fieldModified == Level.DELAY) {
-                                log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), logLocation);
+                                log(DELAYED, "Delay marking {} as @NotModified in {}", dependentVariable.fullyQualifiedName(), logLocation);
                                 analysisStatus.set(DELAYS);
                             } else {
                                 log(NOT_MODIFIED, "Mark {} " + (fieldModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
-                                        linkedVariable.fullyQualifiedName(), logLocation);
+                                        dependentVariable.fullyQualifiedName(), logLocation);
                                 VariableInfoContainer vic = sharedState.statementAnalysis.findForWriting(vi.name());
                                 vic.setProperty(VIC_LEVEL, VariableProperty.MODIFIED, fieldModified);
                                 progress.set(true);
                             }
                         }
-                    } else if (linkedVariable instanceof ParameterInfo) {
-                        ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getParameterAnalysis((ParameterInfo) linkedVariable);
+                    } else if (dependentVariable instanceof ParameterInfo) {
+                        ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getParameterAnalysis((ParameterInfo) dependentVariable);
                         FieldInfo assigned = parameterAnalysis.getAssignedToField();
                         if (assigned != null) {
                             log(NOT_MODIFIED, "Parameter {} is assigned to field {}, not setting @NotModified {} directly",
-                                    linkedVariable.fullyQualifiedName(), assigned.fullyQualifiedName(), summary);
+                                    dependentVariable.fullyQualifiedName(), assigned.fullyQualifiedName(), summary);
                         } else {
                             if (summary == Level.DELAY) {
-                                log(DELAYED, "Delay marking {} as @NotModified in {}", linkedVariable.fullyQualifiedName(), logLocation);
+                                log(DELAYED, "Delay marking {} as @NotModified in {}", dependentVariable.fullyQualifiedName(), logLocation);
                                 analysisStatus.set(DELAYS);
                             } else {
-                                log(NOT_MODIFIED, "Mark {} as {} in {}", linkedVariable.fullyQualifiedName(),
+                                log(NOT_MODIFIED, "Mark {} as {} in {}", dependentVariable.fullyQualifiedName(),
                                         summary == Level.TRUE ? "@Modified" : "@NotModified", logLocation);
                                 int currentModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
                                 if (currentModified == Level.DELAY) {
