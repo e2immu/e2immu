@@ -29,7 +29,7 @@ public class Modification_3 {
     @Final
     private Set<String> set3 = new HashSet<>();
 
-    @NotModified(absent = true)
+    @Modified
     public void add3(@NotNull String v) {
         Set<String> local3 = set3;
         local3.add(v);

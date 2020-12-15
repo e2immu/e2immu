@@ -65,7 +65,7 @@ public class Test_16_Modification extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.fieldInfo().name.equals("set2")) {
                 int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
-                if (d.iteration() == 0) {
+                if (d.iteration() <= 1) {
                     Assert.assertEquals(Level.DELAY, modified);
                 } else {
                     Assert.assertEquals(Level.FALSE, modified);
@@ -107,7 +107,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, effFinal);
 
                 int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
-                int expectModified = iteration == 0 ? Level.DELAY : Level.TRUE;
+                int expectModified = iteration <= 1 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectModified, modified);
             }
             if (name.equals("set2bis")) {
@@ -160,7 +160,8 @@ public class Test_16_Modification extends CommonTestRunner {
                     }
                 }
                 if ("1".equals(d.statementId())) {
-                    Assert.assertEquals(3, d.variableInfoContainer().getCurrentLevel());
+                    // thanks to the code in ModificationData.level, the READ is written at level 1 instead of 3
+                    Assert.assertEquals(1, d.variableInfoContainer().getCurrentLevel());
                     Assert.assertEquals(1, d.getProperty(VariableProperty.ASSIGNED));
                     Assert.assertEquals(2, d.getProperty(VariableProperty.READ));
                     if (d.iteration() == 0) {
@@ -170,12 +171,9 @@ public class Test_16_Modification extends CommonTestRunner {
                     } else {
                         // there is a variable info in level 1, copied from level 1 in statement 0
                         // problem is that there is one in level 3 already, with a NO_VALUE
-                        VariableInfo vi1 = d.variableInfoContainer().best(1);
+                        VariableInfo vi1 = d.variableInfoContainer().current();
                         Assert.assertEquals("set3", vi1.getValue().toString());
                         Assert.assertEquals("this.set3", debug(vi1.getLinkedVariables()));
-                        VariableInfo vi3 = d.variableInfoContainer().best(3);
-                        Assert.assertSame(EmptyExpression.NO_VALUE, vi3.getValue()); // never updated...
-                        Assert.assertNull(vi3.getLinkedVariables());
                         Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                     }
                 }
@@ -189,14 +187,27 @@ public class Test_16_Modification extends CommonTestRunner {
                         Assert.assertEquals("instance type Set<String>", d.variableInfo().getValue().toString());
                     }
                 }
-                // FIXME the /*empty*/ prob. comes from the add() method
                 if ("1".equals(d.statementId())) {
-                    if (d.iteration() == 0) Assert.assertNull(d.variableInfo().getLinkedVariables());
-                    else {
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+
+                    if (d.iteration() == 0) {
+                        Assert.assertNull(d.variableInfo().getLinkedVariables());
+                        // start off with FALSE
+                        Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+                    } else {
                         Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
-                     //   Assert.assertEquals("instance type Set<String>", d.variableInfo().getValue().toString());
-                       // Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                        // FIXME the /*empty*/ prob. comes from the add() method
+                        // Assert.assertEquals("instance type Set<String>", d.variableInfo().getValue().toString());
+                        Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                     }
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("add3".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+                if (d.iteration() > 0) {
+                    Assert.assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
                 }
             }
         };
@@ -208,12 +219,16 @@ public class Test_16_Modification extends CommonTestRunner {
                 } else {
                     Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                     Assert.assertEquals("set3", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                    if (d.iteration() > 1) {
+                        Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
+                    }
                 }
             }
         };
 
         testClass("Modification_3", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());

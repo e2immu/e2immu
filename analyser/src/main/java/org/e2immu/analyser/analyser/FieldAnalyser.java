@@ -664,7 +664,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .allMatch(m ->
                         !m.haveFieldAsVariable(fieldInfo) ||
                                 m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.READ) < Level.TRUE ||
-                                m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.MODIFIED) != Level.DELAY);
+                                m.methodLevelData().linksHaveBeenEstablished.isSet());
 
         if (allContentModificationsDefined) {
             boolean modified = fieldCanBeWrittenFromOutsideThisType ||
@@ -678,13 +678,13 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DONE;
         }
         if (Logger.isLogEnabled(DELAYED)) {
-            log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or defined",
+            log(DELAYED, "Cannot yet conclude if field {}'s contents have been modified, not all read or links",
                     fieldInfo.fullyQualifiedName());
             allMethodsAndConstructors.stream().filter(m -> !m.methodInfo.isConstructor &&
                     m.haveFieldAsVariable(fieldInfo) &&
                     m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.READ) == Level.TRUE &&
-                    m.getFieldAsVariable(fieldInfo).getProperty(VariableProperty.MODIFIED) == Level.DELAY)
-                    .forEach(m -> log(DELAYED, "... method {} reads the field, but we're still waiting", m.methodInfo.name));
+                    !m.methodLevelData().linksHaveBeenEstablished.isSet())
+                    .forEach(m -> log(DELAYED, "... method {} reads the field, but we're still waiting on links to be established", m.methodInfo.name));
         }
         return DELAYS;
     }
