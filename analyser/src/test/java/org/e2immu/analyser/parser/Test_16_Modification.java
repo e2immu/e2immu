@@ -50,10 +50,12 @@ public class Test_16_Modification extends CommonTestRunner {
     @Test
     public void test1() throws IOException {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-
             if ("size".equals(d.methodInfo().name) && "Modification_1".equals(d.methodInfo().typeInfo.simpleName)) {
                 int expect = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 Assert.assertEquals(expect, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+            }
+            if("getFirst".equals(d.methodInfo().name)) {
+               Assert.assertNotNull(d.haveError(Message.UNUSED_PARAMETER));
             }
         };
 
@@ -68,7 +70,7 @@ public class Test_16_Modification extends CommonTestRunner {
             }
         };
 
-        testClass("Modification_1", 0, 0, new DebugConfiguration.Builder()
+        testClass("Modification_1", 0, 1, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());

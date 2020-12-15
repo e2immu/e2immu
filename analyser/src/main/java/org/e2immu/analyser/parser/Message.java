@@ -96,6 +96,7 @@ public class Message {
     static {
         ImmutableMap.Builder<String, Severity> map = new ImmutableMap.Builder<>();
 
+        map.put(UNUSED_PARAMETER, Severity.WARN);
         map.put(POTENTIAL_NULL_POINTER_EXCEPTION, Severity.WARN);
         map.put(UNNECESSARY_METHOD_CALL, Severity.WARN);
         map.put(IGNORING_RESULT_OF_METHOD_CALL, Severity.WARN);

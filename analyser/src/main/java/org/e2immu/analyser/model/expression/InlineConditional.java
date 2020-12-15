@@ -219,11 +219,16 @@ public class InlineConditional implements Expression {
         EvaluationResult ifFalseResult = ifFalse.evaluate(copyForElse, forwardEvaluationInfo);
         builder.compose(ifFalseResult);
 
-        if (conditionResult.value.isUnknown() ||
-                ifTrueResult.value.isUnknown() ||
-                ifFalseResult.value.isUnknown()) {
-            return builder.setExpression(conditionResult.value
-                    .combineUnknown(ifFalseResult.value.combineUnknown(ifTrueResult.value))).build();
+        EmptyExpression combinedUnknown = null;
+        if (conditionResult.value.isUnknown()) {
+            combinedUnknown = conditionResult.value.combineUnknown(ifTrueResult.value).combineUnknown(ifFalseResult.value);
+        } else if (ifTrueResult.value.isUnknown()) {
+            combinedUnknown = ifTrueResult.value.combineUnknown(conditionResult.value).combineUnknown(ifFalseResult.value);
+        } else if (ifFalseResult.value.isUnknown()) {
+            combinedUnknown = ifFalseResult.value.combineUnknown(conditionResult.value).combineUnknown(ifTrueResult.value);
+        }
+        if (combinedUnknown != null) {
+            return builder.setExpression(combinedUnknown).build();
         }
         // TODO ObjectFlow
         EvaluationResult cv = EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext,

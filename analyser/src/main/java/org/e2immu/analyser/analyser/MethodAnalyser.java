@@ -275,7 +275,8 @@ public class MethodAnalyser extends AbstractAnalyser {
                 for (MethodAnalyserVisitor methodAnalyserVisitor : visitors) {
                     methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration,
                             evaluationContext, methodInfo, methodAnalysis,
-                            parameterAnalyses, analyserComponents.getStatusesAsMap()));
+                            parameterAnalyses, analyserComponents.getStatusesAsMap(),
+                            this::getMessageStream));
                 }
             }
             return analysisStatus;
@@ -610,7 +611,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         return applicability.get();
     }
 
-    private AnalysisStatus computeModified( ) {
+    private AnalysisStatus computeModified() {
         if (methodAnalysis.getProperty(VariableProperty.MODIFIED) != Level.DELAY) return DONE;
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
 
