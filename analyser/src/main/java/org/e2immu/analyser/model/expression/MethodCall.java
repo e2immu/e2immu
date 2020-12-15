@@ -40,6 +40,7 @@ import org.e2immu.annotation.Only;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -120,7 +121,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return sameMethod &&
                 parameterExpressions.equals(that.parameterExpressions) &&
                 object.equals(that.object);// &&
-             // FIXME seems harsh   methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE;
+        // FIXME seems harsh   methodInfo.methodAnalysis.get().getProperty(VariableProperty.MODIFIED) == Level.FALSE;
     }
 
     /*
@@ -420,6 +421,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                                 companionValueTranslated));
                     }
                 });
+        if (containsEmptyExpression(newState.get())) {
+            newState.set(new BooleanConstant(evaluationContext.getPrimitives(), true));
+        }
         NewObject modifiedInstance = methodInfo.isConstructor ? new NewObject(newObject, newState.get()) :
                 // we clear the constructor and its arguments after calling a modifying method on the object
                 new NewObject(null, newObject.parameterizedType, List.of(), newState.get(), newObject.getObjectFlow());
@@ -430,6 +434,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             builder.modifyingMethodAccess(variableValue.variable(), modifiedInstance, linkedVariables);
         }
         return modifiedInstance;
+    }
+
+    private static boolean containsEmptyExpression(Expression expression) {
+        AtomicBoolean result = new AtomicBoolean();
+        expression.visit(e -> {
+            if (e == EmptyExpression.EMPTY_EXPRESSION) result.set(true);
+            return true;
+        });
+        return result.get();
     }
 
     private static Expression translateCompanionValue(EvaluationContext evaluationContext,

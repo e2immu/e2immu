@@ -196,8 +196,7 @@ public class Test_16_Modification extends CommonTestRunner {
                         Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
                     } else {
                         Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
-                        // FIXME the /*empty*/ prob. comes from the add() method
-                        // Assert.assertEquals("instance type Set<String>", d.variableInfo().getValue().toString());
+                        Assert.assertEquals("instance type Set<String>", d.variableInfo().getValue().toString());
                         Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                     }
                 }
