@@ -473,7 +473,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             vic.assignment(level);
             createdAssignmentLevel.add(variable);
             Expression value = valueChangeData.value();
-            if (!value.isUnknown()) {
+            // we explicitly check for NO_VALUE, because "<no return value>" is legal!
+            if (value != NO_VALUE) {
                 log(ANALYSER, "Write value {} to variable {}", value, variable.fullyQualifiedName());
                 Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(value);
                 vic.setValueOnAssignment(level, value, propertiesToSet);
@@ -484,12 +485,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // simply copy the READ value; nothing has changed here
             vic.setProperty(level, VariableProperty.READ, read);
             Expression stateOnAssignment = valueChangeData.stateOnAssignment();
-            if (!stateOnAssignment.isUnknown()) {
+            if (stateOnAssignment != NO_VALUE) {
                 vic.setStateOnAssignment(level, stateOnAssignment);
             }
         });
 
-        AtomicReference<AnalysisStatus> status = new AtomicReference<>(evaluationResult.value().isUnknown() ? DELAYS : DONE);
+        AtomicReference<AnalysisStatus> status = new AtomicReference<>(evaluationResult.value() == NO_VALUE ? DELAYS : DONE);
         if (status.get() == DELAYS) {
             log(DELAYED, "Apply of step {} in {}, {} is delayed because of unknown value",
                     step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
@@ -748,7 +749,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             // the evaluation system should be pretty good at always returning NO_VALUE when a NO_VALUE has been encountered
             Expression value = result.value();
-            boolean delays = value.isUnknown();
+            boolean delays = value == NO_VALUE;
 
             if (returnConditionally) {
                 step3_ReturnConditionally(sharedState, value);

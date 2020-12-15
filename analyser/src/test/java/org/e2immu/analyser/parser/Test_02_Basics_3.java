@@ -19,12 +19,15 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.EvaluationResultVisitor;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -46,6 +49,16 @@ public class Test_02_Basics_3 extends CommonTestRunner {
         final String TYPE = "org.e2immu.analyser.testexample.Basics_3";
         final String S = TYPE + ".s";
 
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("setS1".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                if (d.iteration() == 0) {
+                    Assert.assertSame(EmptyExpression.NO_VALUE, d.evaluationResult().value());
+                } else {
+                    Assert.assertSame(EmptyExpression.NO_RETURN_VALUE, d.evaluationResult().value());
+                }
+            }
+        };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setS1".equals(d.methodInfo().name) && S.equals(d.variableName())) {
                 if ("1".equals(d.statementId())) {
@@ -75,6 +88,7 @@ public class Test_02_Basics_3 extends CommonTestRunner {
 
         testClass("Basics_3", 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
