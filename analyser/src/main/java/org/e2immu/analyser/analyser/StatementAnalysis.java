@@ -314,7 +314,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // first statement of a method
         if (previous == null && parent == null) {
             for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().getParameters()) {
-                VariableInfo prevIteration = findOrNull(parameterInfo);
+                VariableInfo prevIteration = findOrNull(parameterInfo, VariableInfoContainer.LEVEL_1_INITIALISER);
                 if (prevIteration != null) {
                     VariableInfoContainer vic = findForWriting(analyserContext, parameterInfo);
                     ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
@@ -679,7 +679,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     public int getProperty(AnalyserContext analyserContext, Variable variable, VariableProperty variableProperty) {
-        VariableInfo variableInfo = find(analyserContext, variable);
+        VariableInfo variableInfo = findOrCreateL1(analyserContext, variable);
         return variableInfo.getProperty(variableProperty);
     }
 
@@ -701,7 +701,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param variable        the variable
      * @return the most current variable info object
      */
-    public VariableInfo find(@NotNull AnalyserContext analyserContext, @NotNull Variable variable) {
+    public VariableInfo findOrCreateL1(@NotNull AnalyserContext analyserContext, @NotNull Variable variable) {
         String fqn = variable.fullyQualifiedName();
         VariableInfoContainer vic;
         if (!variables.isSet(fqn)) {
@@ -709,7 +709,21 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         } else {
             vic = variables.get(fqn);
         }
-        return vic.current();
+        return vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
+    }
+
+    /**
+     * for reading
+     *
+     * @param variable the variable
+     * @return the most current variable info object
+     * @throws IllegalArgumentException when the variable does not yet exist
+     */
+    public VariableInfo findOrThrow(@NotNull Variable variable, int level) {
+        String fqn = variable.fullyQualifiedName();
+        VariableInfoContainer vic = variables.getOtherwiseNull(fqn);
+        if (vic == null) throw new IllegalArgumentException();
+        return vic.best(level);
     }
 
     /**
@@ -718,11 +732,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param variable the variable
      * @return the most current variable info object, or null if the variable does not exist
      */
-    public VariableInfo findOrNull(@NotNull Variable variable) {
+    public VariableInfo findOrNull(@NotNull Variable variable, int level) {
         String fqn = variable.fullyQualifiedName();
         VariableInfoContainer vic = variables.getOtherwiseNull(fqn);
         if (vic == null) return null;
-        return vic.current();
+        return vic.best(level);
     }
 
     public boolean isLocalVariableAndLocalToThisBlock(String variableName) {
@@ -785,7 +799,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     // ***************** OBJECT FLOW CODE ***************
 
     public ObjectFlow getObjectFlow(AnalyserContext analyserContext, Variable variable) {
-        VariableInfo aboutVariable = find(analyserContext, variable);
+        VariableInfo aboutVariable = findOrCreateL1(analyserContext, variable);
         return aboutVariable.getObjectFlow();
     }
 
@@ -853,12 +867,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public Stream<VariableInfo> variableStream() {
         return variables.stream().map(Map.Entry::getValue)
                 .map(VariableInfoContainer::current)
-                .filter(vi -> !vi.hasProperty(VariableProperty.REMOVED));
-    }
-
-    public Stream<VariableInfo> variableStream(int level) {
-        return variables.stream().map(Map.Entry::getValue)
-                .map(vic -> vic.best(level))
                 .filter(vi -> !vi.hasProperty(VariableProperty.REMOVED));
     }
 

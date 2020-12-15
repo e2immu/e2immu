@@ -140,7 +140,8 @@ public class MethodLevelData {
             if (!variableInfo.linkedVariablesIsSet()) {
                 if (!(variableInfo.variable() instanceof LocalVariableReference) ||
                         variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) {
-                    log(DELAYED, "Delaying content modification in MethodLevelData for {} in {}", variableInfo.variable().fullyQualifiedName(),
+                    log(DELAYED, "Delaying content modification in MethodLevelData for {} in {}: linked variables not set",
+                            variableInfo.variable().fullyQualifiedName(),
                             sharedState.evaluationContext.getCurrentStatement());
                     analysisStatus.set(DELAYS);
                 } else {

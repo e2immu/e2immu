@@ -664,7 +664,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (assignedInLoop) {
                     saToCreate.addProperty(analyserContext, VariableInfoContainer.LEVEL_1_INITIALISER, lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
                 } else {
-                    saToCreate.find(analyserContext, lvr); // "touch" it
+                    saToCreate.findOrCreateL1(analyserContext, lvr); // "touch" it
                 }
             }
             try {
@@ -785,7 +785,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      */
     private void step3_ReturnConditionally(SharedState sharedState, Expression value) {
         ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
-        Expression currentRV = statementAnalysis.find(analyserContext, returnVariable).getValue();
+        Expression currentRV = statementAnalysis.findOrThrow(returnVariable, VariableInfoContainer.LEVEL_3_EVALUATION).getValue();
         InlineConditional inlineConditional;
 
         Expression newInline;
@@ -815,7 +815,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      */
     private Expression step3_prepare_Return(Structure structure, EvaluationContext evaluationContext) {
         ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
-        Expression currentRV = statementAnalysis.find(analyserContext, returnVariable).getValue();
+        Expression currentRV = statementAnalysis.findOrThrow(returnVariable, VariableInfoContainer.LEVEL_3_EVALUATION).getValue();
         if (conditionIsNotExactOpposite(currentRV, evaluationContext) || currentRV instanceof EmptyExpression) {
             VariableExpression returnVariableExpression = new VariableExpression(returnVariable);
             return new Assignment(statementAnalysis.primitives, returnVariableExpression, structure.expression);
@@ -1304,14 +1304,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public Expression currentValue(Variable variable) {
-            VariableInfo vi = statementAnalysis.find(analyserContext, variable);
+            VariableInfo vi = statementAnalysis.findOrCreateL1(analyserContext, variable);
             Expression value = vi.getValue();
             return value instanceof NewObject ? new VariableExpression(variable, vi.getObjectFlow(), vi.isVariableField()) : value;
         }
 
         @Override
         public NewObject currentInstance(Variable variable) {
-            VariableInfo vi = statementAnalysis.find(analyserContext, variable);
+            VariableInfo vi = statementAnalysis.findOrCreateL1(analyserContext, variable);
             Expression value = vi.getValue();
 
             // redirect to other variable
@@ -1326,7 +1326,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public int getProperty(Variable variable, VariableProperty variableProperty) {
-            VariableInfo vi = statementAnalysis.find(analyserContext, variable);
+            VariableInfo vi = statementAnalysis.findOrCreateL1(analyserContext, variable);
             return vi.getProperty(variableProperty); // ALWAYS from the map!!!!
         }
 
@@ -1354,12 +1354,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
             boolean notSelf = typeInfo != getCurrentType();
             if (notSelf) {
-                VariableInfo variableInfo = statementAnalysis.find(analyserContext, variable);
+                VariableInfo variableInfo = statementAnalysis.findOrCreateL1(analyserContext, variable);
                 int immutable = variableInfo.getProperty(VariableProperty.IMMUTABLE);
                 if (immutable == MultiLevel.DELAY) return null;
                 if (MultiLevel.isE2Immutable(immutable)) return Set.of();
             }
-            VariableInfo variableInfo = statementAnalysis.find(analyserContext, variable);
+            VariableInfo variableInfo = statementAnalysis.findOrCreateL1(analyserContext, variable);
             // we've encountered the variable before
             if (variableInfo.linkedVariablesIsSet()) {
                 return SetUtil.immutableUnion(variableInfo.getLinkedVariables(), Set.of(variable));

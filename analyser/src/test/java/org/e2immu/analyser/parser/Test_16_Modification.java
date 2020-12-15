@@ -107,16 +107,16 @@ public class Test_16_Modification extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, effFinal);
 
                 int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
-                int expectModified = iteration == 0 ? Level.DELAY: Level.TRUE;
-                    Assert.assertEquals(expectModified, modified);
+                int expectModified = iteration == 0 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectModified, modified);
             }
             if (name.equals("set2bis")) {
                 int effFinal = d.fieldAnalysis().getProperty(VariableProperty.FINAL);
-                int expectFinal = iteration == 0 ? Level.DELAY: Level.FALSE;
+                int expectFinal = iteration == 0 ? Level.DELAY : Level.FALSE;
                 Assert.assertEquals(expectFinal, effFinal);
 
                 int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
-                int expectModified = iteration == 0 ? Level.DELAY: Level.TRUE;
+                int expectModified = iteration == 0 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectModified, modified);
             }
         };
@@ -126,11 +126,21 @@ public class Test_16_Modification extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
-    }
 
+    }
 
     @Test
     public void test3() throws IOException {
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("add3".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+                if (d.iteration() == 0) {
+                    Assert.assertSame(EmptyExpression.NO_VALUE, d.evaluationResult().value());
+                } else {
+                    Assert.assertEquals("set3.add(v)", d.evaluationResult().value().toString());
+                }
+            }
+        };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add3".equals(d.methodInfo().name) && "local3".equals(d.variableName())) {
@@ -138,10 +148,25 @@ public class Test_16_Modification extends CommonTestRunner {
                     if (d.iteration() == 0) {
                         Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
                     } else {
-                        Assert.assertTrue(d.currentValue() instanceof VariableExpression);
+                        Assert.assertEquals(1, d.variableInfoContainer().getCurrentLevel());
+                        VariableInfo variableInfo = d.variableInfoContainer().get(1);
+                        Assert.assertTrue(variableInfo.getValue() instanceof VariableExpression);
                         VariableExpression variableValue = (VariableExpression) d.currentValue();
                         Assert.assertTrue(variableValue.variable() instanceof FieldReference);
                         Assert.assertEquals("set3", d.currentValue().toString());
+                    }
+                }
+                if ("1".equals(d.statementId())) {
+                    if (d.iteration() == 0) {
+                        // there is a variable info at levels 0 and 3
+                        Assert.assertEquals(3, d.variableInfoContainer().getCurrentLevel());
+                        Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
+                        Assert.assertNotNull(d.variableInfoContainer().best(0));
+                    } else {
+                        // there is a variable info in level 1, copied from level 1 in statement 0
+                        // problem is that there is one in level 3 already, with a NO_VALUE
+                        VariableInfo variableInfo = d.variableInfoContainer().best(1);
+                        Assert.assertEquals("set3", variableInfo.getValue().toString());
                     }
                 }
             }
@@ -151,15 +176,16 @@ public class Test_16_Modification extends CommonTestRunner {
             if (d.fieldInfo().name.equals("set3")) {
                 if (d.iteration() == 0) {
                     Assert.assertEquals(Level.DELAY, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                }
-                if (d.iteration() == 1) {
+                } else {
                     Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                    Assert.assertNotNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                    Assert.assertEquals("set3", d.fieldAnalysis().getEffectivelyFinalValue().toString());
                 }
             }
         };
+
         testClass("Modification_3", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }

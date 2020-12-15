@@ -176,7 +176,8 @@ public class ParameterAnalyser {
                 }
             } else {
                 StatementAnalysis lastStatementAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner).getLastStatement();
-                VariableInfo vi = lastStatementAnalysis == null ? null : lastStatementAnalysis.findOrNull(parameterInfo);
+                VariableInfo vi = lastStatementAnalysis == null ? null :
+                        lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.LEVEL_4_SUMMARY);
                 if (vi != null) {
                     if (parameterAnalysis.isAssignedToAField.isSet()) { // not assigned to a field, we're sure
                         int notNullDelayResolved = vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED);
