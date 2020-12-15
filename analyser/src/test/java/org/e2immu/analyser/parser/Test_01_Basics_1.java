@@ -103,8 +103,8 @@ public class Test_01_Basics_1 extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        // two errors: two unused parameters
-        testClass(BASICS_1, 2, 0, new DebugConfiguration.Builder()
+        // two warnings: two unused parameters
+        testClass(BASICS_1, 0, 2, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
