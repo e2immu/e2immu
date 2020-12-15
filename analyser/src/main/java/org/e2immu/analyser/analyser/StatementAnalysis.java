@@ -352,7 +352,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     // this is the first statement in the method where this field occurs
                     ExpressionAndLinkedVariables initialValue = initialValueOfField(analyserContext, fieldReference);
                     Map<VariableProperty, Integer> map = propertyMap(analyserContext, fieldReference.fieldInfo);
-                    if (!viLevel1.valueIsSet()) {
+                    if (!viLevel1.valueIsSet() && !initialValue.expression.isUnknown()) {
                         vic.setInitialValueFromAnalyser(initialValue.expression, map);
                     } else {
                         map.forEach((k, v) -> vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, k, v, false));

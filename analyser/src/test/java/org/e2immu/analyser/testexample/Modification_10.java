@@ -25,7 +25,7 @@ import java.util.*;
 @Container(absent = true)
 @E1Container(absent = true)
 @E1Immutable
-public class NotModifiedChecks {
+public class Modification_10 {
     @NotModified
     @Linked(to = {"list"})
     final Collection<String> c0;
@@ -63,10 +63,10 @@ public class NotModifiedChecks {
     @Linked(absent = true)
     final int l2;
 
-    public NotModifiedChecks(@NotModified @NotNull List<String> list,
-                             @Modified @NotModified(absent = true) Set<String> set2,
-                             @Modified @NotModified(absent = true) Set<String> set3,
-                             @Modified @NotModified(absent = true) Set<String> set4) {
+    public Modification_10(@NotModified @NotNull List<String> list,
+                           @Modified @NotModified(absent = true) Set<String> set2,
+                           @Modified @NotModified(absent = true) Set<String> set3,
+                           @Modified @NotModified(absent = true) Set<String> set4) {
         c0 = list;
         c1 = list.subList(0, list.size() / 2);
         s0 = set3;

@@ -18,26 +18,27 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.E1Container;
 import org.e2immu.annotation.NotModified;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
 
+@E1Container
+public class Modification_1 {
 
-public class NotModifiedChecks2 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NotModifiedChecks2.class);
+    // IMPORTANT: the @NotModified shows that Example2 does not modify it. It can be modified from the outside.
+    // this is part of the Level 2 immutability rules.
+    @NotModified
+    public final Set<String> set2 = new HashSet<>();
 
-    @NotModified(absent = true) // modified by add method
-    final Set<String> s2 = new HashSet<>();
-
-    @NotModified(absent = true) // modifies s2
-    public int add(String s) {
-        Set<String> theSet = s2; // linked to s2, which is linked to set2
-        LOGGER.debug("The set has {} elements before adding {}", theSet.size(), s);
-        theSet.add(s); // this one modifies set2!
-        return 1;
+    @NotModified
+    int size() {
+        return set2.size();
     }
 
+    @NotModified
+    public String getFirst(String s) {
+        return size() > 0 ? set2.stream().findAny().orElseThrow() : "";
+    }
 }

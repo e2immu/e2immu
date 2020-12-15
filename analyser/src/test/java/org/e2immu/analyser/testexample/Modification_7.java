@@ -29,14 +29,14 @@ import java.util.stream.Stream;
  * At the same time, the not-null property travels along.
  */
 @E1Immutable
-public class SimpleNotModified1 {
+public class Modification_7 {
 
     @NotNull
     @Modified
     @Final
     private Set<String> set;
 
-    public SimpleNotModified1(@NotNull @Modified Set<String> input) {
+    public Modification_7(@NotNull @Modified Set<String> input) {
         set = input;
     }
 

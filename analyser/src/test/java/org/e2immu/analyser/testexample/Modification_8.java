@@ -39,13 +39,13 @@ import java.util.stream.Stream;
  * has to link an already known to be <code>@Modified</code> field <code>set</code> to the parameter.
  */
 @E1Immutable
-public class SimpleNotModified2 {
+public class Modification_8 {
 
     @NotNull
     @Modified
     private final Set<String> set;
 
-    public SimpleNotModified2(@NotNull @Modified Set<String> input) {
+    public Modification_8(@NotNull @Modified Set<String> input) {
         set = Objects.requireNonNull(input);
     }
 
