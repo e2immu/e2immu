@@ -24,9 +24,7 @@ import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.ConstantExpression;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -368,7 +366,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     messages.add(Message.newMessage(new Location(fieldInfo), Message.NON_PRIVATE_FIELD_NOT_FINAL));
                 } // else: nested private types can have fields the way they like it
                 return DONE;
-            } else if(effectivelyFinal == Level.DELAY) {
+            } else if (effectivelyFinal == Level.DELAY) {
                 log(DELAYED, "Not yet ready to decide on non-private non-final");
                 return DELAYS;
             }
@@ -430,7 +428,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         return allMethodsAndConstructors.stream()
                 .filter(m -> m.haveFieldAsVariable(fieldInfo))
                 .allMatch(m -> m.methodLevelData().linksHaveBeenEstablished.isSet());
-       //         .map(m -> m.getFieldAsVariable(fieldInfo))
+        //         .map(m -> m.getFieldAsVariable(fieldInfo))
         //        .noneMatch(fs -> fs.getProperty(VariableProperty.METHOD_DELAY_RESOLVED) == Level.FALSE);
         // FALSE indicates that there are delays, TRUE that they have been resolved, DELAY that we're not aware
     }
@@ -541,26 +539,32 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         log(CONSTANT, "Setting initial value of effectively final of field {} to {}",
                 fieldInfo.fullyQualifiedName(), effectivelyFinalValue);
+
         return DONE;
     }
 
     private Expression determineEffectivelyFinalValue(List<Expression> values) {
-        //Expression combinedValue;
-        if (values.size() == 1) {
-            Expression value = values.get(0);
-            if (value.isConstant()) return value;
+        // suppose there are 2 constructors, and the field gets the same value...
+        Set<Expression> set = new HashSet<>(values);
+        if (set.size() == 1) {
+            Expression expression = values.get(0);
+
+            BooleanConstant TRUE = new BooleanConstant(analyserContext.getPrimitives(), true);
+            if (expression instanceof NewObject newObject && !newObject.state.isBoolValueTrue()) {
+                // now the state of the new object may survive if there are no modifying methods called,
+                // but that's too early to know now
+                // we'll store it, and
+                fieldAnalysis.setStateOfEffectivelyFinalValue(newObject.state);
+                return new NewObject(newObject, TRUE);
+            }
+
+            fieldAnalysis.setStateOfEffectivelyFinalValue(TRUE);
+            return expression;
         }
         This thisVariable = new This(analyserContext, fieldInfo.owner);
         FieldReference fieldReference = new FieldReference(analyserContext,
                 fieldInfo, fieldInfo.isStatic() ? null : thisVariable);
-        /*
-           Map<VariableProperty, Integer> properties = new HashMap<>();
-        for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PROPERTIES) {
-            properties.put(variableProperty, fieldAnalysis.getProperty(variableProperty));
-        }
-        Set<Variable> linkedVariables = fieldAnalysis.variablesLinkedToMe.isSet() ? fieldAnalysis.variablesLinkedToMe.get() : Set.of();
-         */
-        // TODO combined object flow
+
         return new VariableExpression(fieldReference, ObjectFlow.NO_FLOW);
     }
 

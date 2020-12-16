@@ -139,7 +139,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             if (d.iteration() == 0) {
                 Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
             } else {
-                Assert.assertEquals("effectivelyFinal", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                Assert.assertEquals("in", d.fieldAnalysis().getEffectivelyFinalValue().toString());
             }
         }
         if ("e".equals(d.fieldInfo().name)) {

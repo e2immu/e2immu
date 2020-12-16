@@ -33,6 +33,8 @@ public interface FieldAnalysis extends Analysis {
      */
     Expression getEffectivelyFinalValue();
 
+    Expression getStateOfEffectivelyFinalValue();
+
     // end product of the dependency analysis of linkage between the variables in a method
     // if A links to B, and A is modified, then B must be too.
     // In other words, if A->B, then B cannot be @NotModified unless A is too

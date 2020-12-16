@@ -179,6 +179,8 @@ public class MethodAnalyser extends AbstractAnalyser {
         // copy CONTRACT annotations into the properties
         methodAnalysis.fromAnnotationsIntoProperties(false, methodInspection.getAnnotations(),
                 analyserContext.getE2ImmuAnnotationExpressions());
+
+        parameterAnalysers.forEach(pa -> pa.initialize(analyserContext.getFieldAnalysers()));
     }
 
     @Override

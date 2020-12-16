@@ -30,6 +30,7 @@ import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.NotModified;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
@@ -42,6 +43,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     public final Set<Variable> variablesLinkedToMe;
     public final Expression effectivelyFinalValue;
     public final Expression initialValue;  // value from the initialiser
+    public final Expression stateOfEffectivelyFinalValue;
 
     private FieldAnalysisImpl(FieldInfo fieldInfo,
                               boolean isOfImplicitlyImmutableDataType,
@@ -51,6 +53,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                               Set<Variable> variablesLinkedToMe,
                               Expression effectivelyFinalValue,
                               Expression initialValue,
+                              Expression stateOfEffectivelyFinalValue,
                               Map<VariableProperty, Integer> properties,
                               Map<AnnotationExpression, Boolean> annotations) {
         super(properties, annotations);
@@ -62,6 +65,12 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         this.variablesLinkedToMe = variablesLinkedToMe;
         this.effectivelyFinalValue = effectivelyFinalValue;
         this.initialValue = initialValue;
+        this.stateOfEffectivelyFinalValue = stateOfEffectivelyFinalValue; // null when there is no EFV
+    }
+
+    @Override
+    public Expression getStateOfEffectivelyFinalValue() {
+        return stateOfEffectivelyFinalValue;
     }
 
     @Override
@@ -123,6 +132,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         private final TypeAnalysis typeAnalysisOfOwner;
         private final AnalysisProvider analysisProvider;
         public final SetOnce<Expression> initialValue = new SetOnce<>();
+        public Expression stateOfEffectivelyFinalValue;
 
         public Builder(Primitives primitives, AnalysisProvider analysisProvider, @NotModified FieldInfo fieldInfo, TypeAnalysis typeAnalysisOfOwner) {
             super(primitives, fieldInfo.name);
@@ -219,6 +229,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     linkedVariables.getOrElse(Set.of()),
                     getEffectivelyFinalValue(),
                     getInitialValue(),
+                    getStateOfEffectivelyFinalValue(),
                     properties.toImmutableMap(),
                     annotations.toImmutableMap());
         }
@@ -285,6 +296,15 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
 
         public boolean isDeclaredFunctionalInterface() {
             return false; // TODO
+        }
+
+        @Override
+        public Expression getStateOfEffectivelyFinalValue() {
+            return stateOfEffectivelyFinalValue;
+        }
+
+        public void setStateOfEffectivelyFinalValue(Expression stateOfEffectivelyFinalValue) {
+            this.stateOfEffectivelyFinalValue = Objects.requireNonNull(stateOfEffectivelyFinalValue);
         }
     }
 }

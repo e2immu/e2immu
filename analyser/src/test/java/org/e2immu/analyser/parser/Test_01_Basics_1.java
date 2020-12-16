@@ -84,7 +84,7 @@ public class Test_01_Basics_1 extends CommonTestRunner {
         if ("f1".equals(d.fieldInfo().name)) {
             if (d.iteration() > 0) {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                Assert.assertEquals("this.f1", d.fieldAnalysis().getEffectivelyFinalValue().output().debug());
+                Assert.assertEquals("p0", d.fieldAnalysis().getEffectivelyFinalValue().output().debug());
                 Assert.assertEquals("p0", debug(d.fieldAnalysis().getLinkedVariables()));
                 if(d.iteration()>1) {
                     Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));

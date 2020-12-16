@@ -27,6 +27,7 @@ import org.e2immu.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
@@ -55,7 +56,7 @@ public class ParameterAnalyser {
     }
 
     public void initialize(Map<FieldInfo, FieldAnalyser> fieldAnalysers) {
-        this.fieldAnalysers = fieldAnalysers;
+        this.fieldAnalysers = Objects.requireNonNull( fieldAnalysers);
     }
 
     public void check() {

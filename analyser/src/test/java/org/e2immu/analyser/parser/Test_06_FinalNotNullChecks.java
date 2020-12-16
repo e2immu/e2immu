@@ -91,7 +91,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         if (d.iteration() == 0) {
             Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
         } else {
-            Assert.assertEquals("input", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            Assert.assertEquals("param/*@NotNull*/", d.fieldAnalysis().getEffectivelyFinalValue().toString());
         }
     };
 
