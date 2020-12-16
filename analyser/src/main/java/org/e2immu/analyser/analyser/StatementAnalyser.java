@@ -419,10 +419,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private AnalysisStatus analyseLambdas(SharedState sharedState) {
         if (!lambdaAnalysers.isSet()) {
             List<Lambda> lambdas = statementAnalysis.statement.getStructure().findLambdas();
-            List<MethodAnalyser> methodAnalysers = lambdas.stream().map(lambda ->
-                    new MethodAnalyser(lambda.methodInfo, analyserContext.getTypeAnalysis(lambda.methodInfo.typeInfo),
-                            true, analyserContext)
-            ).collect(Collectors.toUnmodifiableList());
+            List<MethodAnalyser> methodAnalysers = lambdas.stream().map(lambda -> {
+                MethodAnalyser methodAnalyser = new MethodAnalyser(lambda.methodInfo, analyserContext.getTypeAnalysis(lambda.methodInfo.typeInfo),
+                        true, analyserContext);
+                methodAnalyser.initialize();
+                return methodAnalyser;
+            }).collect(Collectors.toUnmodifiableList());
             lambdaAnalysers.set(methodAnalysers);
         }
 
@@ -657,8 +659,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         boolean assignedInLoop = statementAnalysis.statement instanceof LoopStatement;
 
         if (structure.localVariableCreation != null) {
-            LocalVariableReference lvr = new LocalVariableReference(analyserContext,
-                    structure.localVariableCreation, List.of());
+            LocalVariableReference lvr = new LocalVariableReference(analyserContext, structure.localVariableCreation, List.of());
             StatementAnalysis firstStatementInBlock = firstStatementFirstBlock();
             final int l1 = VariableInfoContainer.LEVEL_1_INITIALISER;
             VariableInfoContainer vic = firstStatementInBlock.findForWriting(analyserContext, lvr);
@@ -683,7 +684,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         StatementAnalysis saToCreate = structure.createVariablesInsideBlock ? firstStatementFirstBlock() : statementAnalysis;
         for (Expression initialiser : structure.initialisers) {
             if (initialiser instanceof LocalVariableCreation lvc) {
-                LocalVariableReference lvr = new LocalVariableReference(analyserContext, (lvc).localVariable, List.of());
+                LocalVariableReference lvr = new LocalVariableReference(analyserContext, lvc.localVariable, List.of());
                 // the NO_VALUE here becomes the initial (and reset) value, which should not be a problem because variables
                 // introduced here should not become "reset" to an initial value; they'll always be assigned one
                 if (assignedInLoop) {
@@ -1330,16 +1331,27 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return notNullVariablesInCondition.contains(variable);
         }
 
+        private VariableInfo findOrCreateL1(Variable variable) {
+            if (closure != null && isNotMine(variable)) {
+                return ((EvaluationContextImpl) closure).findOrCreateL1(variable);
+            }
+            return statementAnalysis.findOrCreateL1(analyserContext, variable);
+        }
+
+        private boolean isNotMine(Variable variable) {
+            return getCurrentType() != variable.getOwningType();
+        }
+
         @Override
         public Expression currentValue(Variable variable) {
-            VariableInfo vi = statementAnalysis.findOrCreateL1(analyserContext, variable);
+            VariableInfo vi = findOrCreateL1(variable);
             Expression value = vi.getValue();
             return value instanceof NewObject ? new VariableExpression(variable, vi.getObjectFlow(), vi.isVariableField()) : value;
         }
 
         @Override
         public NewObject currentInstance(Variable variable) {
-            VariableInfo vi = statementAnalysis.findOrCreateL1(analyserContext, variable);
+            VariableInfo vi = findOrCreateL1(variable);
             Expression value = vi.getValue();
 
             // redirect to other variable
@@ -1354,7 +1366,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public int getProperty(Variable variable, VariableProperty variableProperty) {
-            VariableInfo vi = statementAnalysis.findOrCreateL1(analyserContext, variable);
+            VariableInfo vi = findOrCreateL1(variable);
             return vi.getProperty(variableProperty); // ALWAYS from the map!!!!
         }
 
@@ -1382,12 +1394,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
             boolean notSelf = typeInfo != getCurrentType();
             if (notSelf) {
-                VariableInfo variableInfo = statementAnalysis.findOrCreateL1(analyserContext, variable);
+                VariableInfo variableInfo = findOrCreateL1(variable);
                 int immutable = variableInfo.getProperty(VariableProperty.IMMUTABLE);
                 if (immutable == MultiLevel.DELAY) return null;
                 if (MultiLevel.isE2Immutable(immutable)) return Set.of();
             }
-            VariableInfo variableInfo = statementAnalysis.findOrCreateL1(analyserContext, variable);
+            VariableInfo variableInfo = findOrCreateL1(variable);
             // we've encountered the variable before
             if (variableInfo.linkedVariablesIsSet()) {
                 return SetUtil.immutableUnion(variableInfo.getLinkedVariables(), Set.of(variable));

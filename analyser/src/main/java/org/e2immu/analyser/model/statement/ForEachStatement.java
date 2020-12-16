@@ -53,7 +53,7 @@ public class ForEachStatement extends LoopStatement {
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(expression.typesReferenced(),
                 structure.block.typesReferenced(),
-                structure.localVariableCreation.parameterizedType.typesReferenced(true));
+                structure.localVariableCreation.parameterizedType().typesReferenced(true));
     }
 
 
@@ -65,9 +65,9 @@ public class ForEachStatement extends LoopStatement {
         }
         return outputBuilder.add(new Text("for"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(structure.localVariableCreation.parameterizedType.output())
+                .add(structure.localVariableCreation.parameterizedType().output())
                 .add(Space.ONE)
-                .add(new Text(structure.localVariableCreation.name))
+                .add(new Text(structure.localVariableCreation.name()))
                 .add(Symbol.COLON)
                 .add(structure.expression.output())
                 .add(Symbol.RIGHT_PARENTHESIS)

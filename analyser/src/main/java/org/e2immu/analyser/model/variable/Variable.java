@@ -102,6 +102,9 @@ public interface Variable {
             public OutputBuilder output() {
                 return new OutputBuilder().add(new Text("fake variable"));
             }
+
         };
     }
+
+    default TypeInfo getOwningType() { return null; }
 }

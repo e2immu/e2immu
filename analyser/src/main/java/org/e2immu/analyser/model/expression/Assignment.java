@@ -79,8 +79,9 @@ public class Assignment implements Expression {
         } else if (target instanceof ArrayAccess arrayAccess) {
             variableTarget = arrayAccess.variableTarget;
         } else {
+            TypeInfo owningType = null;
             String name = target.minimalOutput() + "[" + value.minimalOutput() + "]";
-            variableTarget = new DependentVariable(name, target.returnType(), value.variables(), null);
+            variableTarget = new DependentVariable(name, null, target.returnType(), value.variables(), null);
         }
     }
 

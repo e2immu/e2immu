@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Text;
@@ -31,11 +32,13 @@ public class ReturnVariable implements Variable {
     public final ParameterizedType returnType;
     public final String simpleName;
     public final String fqn;
+    private final TypeInfo owningType;
 
     public ReturnVariable(MethodInfo methodInfo) {
         this.returnType = methodInfo.returnType();
         simpleName = methodInfo.name;
         fqn = methodInfo.fullyQualifiedName();
+        owningType = methodInfo.typeInfo;
     }
 
     @Override
@@ -45,6 +48,11 @@ public class ReturnVariable implements Variable {
         ReturnVariable that = (ReturnVariable) o;
         return returnType.equals(that.returnType) &&
                 fqn.equals(that.fqn);
+    }
+
+    @Override
+    public TypeInfo getOwningType() {
+        return owningType;
     }
 
     @Override

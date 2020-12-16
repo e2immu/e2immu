@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.VariableName;
@@ -40,6 +41,11 @@ public class FieldReference extends VariableWithConcreteReturnType {
                 (inspectionProvider, scope.concreteReturnType()));
         this.fieldInfo = Objects.requireNonNull(fieldInfo);
         this.scope = scope;
+    }
+
+    @Override
+    public TypeInfo getOwningType() {
+        return fieldInfo.owner;
     }
 
     /**

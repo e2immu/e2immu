@@ -22,22 +22,25 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.*;
 
-public class LocalVariable {
-    public final List<AnnotationExpression> annotations;
-    public final Set<LocalVariableModifier> modifiers;
-    public final ParameterizedType parameterizedType;
-    @NotNull
-    public final String name;
-
-    public LocalVariable(Set<LocalVariableModifier> modifiers, @NotNull String name, ParameterizedType parameterizedType, List<AnnotationExpression> annotations) {
+public record LocalVariable(Set<LocalVariableModifier> modifiers,
+                            @NotNull String name,
+                            ParameterizedType parameterizedType,
+                            List<AnnotationExpression> annotations,
+                            TypeInfo owningType) {
+    public LocalVariable(Set<LocalVariableModifier> modifiers,
+                         @NotNull String name,
+                         ParameterizedType parameterizedType,
+                         List<AnnotationExpression> annotations,
+                         TypeInfo owningType) {
         this.parameterizedType = parameterizedType;
         this.name = Objects.requireNonNull(name);
         this.modifiers = modifiers;
         this.annotations = annotations;
+        this.owningType = Objects.requireNonNull(owningType);
     }
 
     public LocalVariable translate(TranslationMap translationMap) {
-        return new LocalVariable(modifiers, name, translationMap.translateType(parameterizedType), annotations);
+        return new LocalVariable(modifiers, name, translationMap.translateType(parameterizedType), annotations, owningType);
     }
 
     @Override
@@ -63,6 +66,12 @@ public class LocalVariable {
         private final Set<LocalVariableModifier> modifiers = new HashSet<>();
         private ParameterizedType parameterizedType;
         private String name;
+        private TypeInfo owningType;
+
+        public LocalVariableBuilder setOwningType(TypeInfo owningType) {
+            this.owningType = owningType;
+            return this;
+        }
 
         public LocalVariableBuilder setName(String name) {
             this.name = name;
@@ -85,7 +94,7 @@ public class LocalVariable {
         }
 
         public LocalVariable build() {
-            return new LocalVariable(modifiers, name, parameterizedType, annotations);
+            return new LocalVariable(modifiers, name, parameterizedType, annotations, owningType);
         }
     }
 }

@@ -57,6 +57,11 @@ public class This implements Variable {
     }
 
     @Override
+    public TypeInfo getOwningType() {
+        return typeInfo;
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(typeInfo);
     }

@@ -21,6 +21,7 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.annotation.NotNull;
@@ -40,11 +41,13 @@ import java.util.Objects;
  */
 public class DependentVariable extends VariableWithConcreteReturnType {
     public final ParameterizedType parameterizedType;
+    public final TypeInfo owningType;
     public final String name;
     public final Variable arrayVariable;
     public final List<Variable> dependencies; // idea: a change to these will invalidate the variable
 
     public DependentVariable(String name,
+                             TypeInfo owningType,
                              @NotNull ParameterizedType parameterizedType,  // the formal type
                              @NotNull1 List<Variable> dependencies,         // all variables on which this one depends
                              Variable arrayVariable) {     // can be null!
@@ -53,6 +56,12 @@ public class DependentVariable extends VariableWithConcreteReturnType {
         this.name = name;
         this.arrayVariable = arrayVariable;
         this.dependencies = dependencies;
+        this.owningType = owningType;
+    }
+
+    @Override
+    public TypeInfo getOwningType() {
+        return owningType;
     }
 
     // array access

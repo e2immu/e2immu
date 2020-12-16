@@ -98,14 +98,14 @@ public class LocalVariableCreation implements Expression {
     @Override
     public OutputBuilder output() {
         OutputBuilder outputBuilder = new OutputBuilder()
-                .add(localVariable.annotations.stream().map(AnnotationExpression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
-                .add(localVariable.annotations.isEmpty() ? Space.NONE : Space.ONE)
-                .add(Arrays.stream(LocalVariableModifier.toJava(localVariable.modifiers)).map(s -> new OutputBuilder().add(new Text(s)))
+                .add(localVariable.annotations().stream().map(AnnotationExpression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                .add(localVariable.annotations().isEmpty() ? Space.NONE : Space.ONE)
+                .add(Arrays.stream(LocalVariableModifier.toJava(localVariable.modifiers())).map(s -> new OutputBuilder().add(new Text(s)))
                         .collect(OutputBuilder.joining(Space.ONE)))
-                .add(localVariable.modifiers.isEmpty() ? Space.NONE : Space.ONE)
-                .add(localVariable.parameterizedType.output())
+                .add(localVariable.modifiers().isEmpty() ? Space.NONE : Space.ONE)
+                .add(localVariable.parameterizedType().output())
                 .add(Space.ONE)
-                .add(new Text(localVariable.name));
+                .add(new Text(localVariable.name()));
         if (expression != EmptyExpression.EMPTY_EXPRESSION) {
             outputBuilder.add(Symbol.assignment("=")).add(expression.output());
         }
@@ -126,7 +126,7 @@ public class LocalVariableCreation implements Expression {
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(
                 expression.typesReferenced(),
-                localVariable.parameterizedType.typesReferenced(true));
+                localVariable.parameterizedType().typesReferenced(true));
     }
 
     @Override

@@ -24,7 +24,7 @@ public class TestAssignment {
 
     @Test
     public void testNormal() {
-        LocalVariable lvi = new LocalVariable(Set.of(), "i", primitives.intParameterizedType, List.of());
+        LocalVariable lvi = new LocalVariable(Set.of(), "i", primitives.intParameterizedType, List.of(), primitives.stringTypeInfo);
         LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0));
         Expression iPlusEquals1 = new Assignment(primitives,
                 new VariableExpression(i.localVariableReference), new IntConstant(primitives, 1));
@@ -33,7 +33,7 @@ public class TestAssignment {
 
     @Test
     public void testPlusEqualsOne() {
-        LocalVariable lvi = new LocalVariable(Set.of(), "i", primitives.intParameterizedType, List.of());
+        LocalVariable lvi = new LocalVariable(Set.of(), "i", primitives.intParameterizedType, List.of(), primitives.stringTypeInfo);
         LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0));
         Expression iPlusEquals1 = new Assignment(primitives, new VariableExpression(i.localVariableReference),
                 new IntConstant(primitives, 1), primitives.assignPlusOperatorInt, null);
@@ -50,7 +50,7 @@ public class TestAssignment {
 
     @Test
     public void testPlusPlus() {
-        LocalVariable lvi = new LocalVariable(Set.of(), "i", primitives.intParameterizedType, List.of());
+        LocalVariable lvi = new LocalVariable(Set.of(), "i", primitives.intParameterizedType, List.of(), primitives.stringTypeInfo);
         LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0));
 
         Expression iPlusPlus = new UnaryOperator(primitives.postfixIncrementOperatorInt,

@@ -93,7 +93,7 @@ public class TryStatement extends StatementWithStructure {
                     .add(unionOfTypes.stream()
                             .map(pt -> new OutputBuilder().add(new TypeName(pt.typeInfo)))
                             .collect(OutputBuilder.joining(Symbol.PIPE)))
-                    .add(Space.ONE).add(new Text(localVariable.name));
+                    .add(Space.ONE).add(new Text(localVariable.name()));
         }
 
         @Override

@@ -38,13 +38,14 @@ public abstract class CommonVariableInfo {
 
     protected Variable makeLocalIntVar(String name) {
         return new LocalVariableReference(inspectionProvider,
-                new LocalVariable(Set.of(), name, primitives.intParameterizedType, List.of()),
+                // owningType is completely arbitrary
+                new LocalVariable(Set.of(), name, primitives.intParameterizedType, List.of(), primitives.stringTypeInfo),
                 List.of());
     }
 
     protected Variable makeLocalBooleanVar(String name) {
         return new LocalVariableReference(inspectionProvider,
-                new LocalVariable(Set.of(), name, primitives.booleanParameterizedType, List.of()),
+                new LocalVariable(Set.of(), name, primitives.booleanParameterizedType, List.of(), primitives.stringTypeInfo),
                 List.of());
     }
 

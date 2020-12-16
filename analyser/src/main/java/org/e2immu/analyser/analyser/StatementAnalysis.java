@@ -739,6 +739,19 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return vic.best(level);
     }
 
+    /**
+     * for reading
+     *
+     * @param variable the variable
+     * @return the most current variable info object, or null if the variable does not exist
+     */
+    public VariableInfo findOrNull(@NotNull Variable variable) {
+        String fqn = variable.fullyQualifiedName();
+        VariableInfoContainer vic = variables.getOtherwiseNull(fqn);
+        if (vic == null) return null;
+        return vic.current();
+    }
+
     public boolean isLocalVariableAndLocalToThisBlock(String variableName) {
         if (!variables.isSet(variableName)) return false;
         VariableInfoContainer vic = variables.get(variableName);

@@ -128,6 +128,7 @@ public class TestTypeInfoStream {
                 .addModifier(FieldModifier.FINAL)
                 .build());
         LocalVariable mapLocalVariable = new LocalVariable.LocalVariableBuilder()
+                .setOwningType(testTypeInfo)
                 .setName("map")
                 .setParameterizedType(new ParameterizedType(map, List.of(primitives.stringParameterizedType, typeT)))
                 .build();
@@ -152,6 +153,7 @@ public class TestTypeInfoStream {
                                 .addStatement(
                                         new ForEachStatement(null,
                                                 new LocalVariable.LocalVariableBuilder()
+                                                        .setOwningType(testTypeInfo)
                                                         .setName("entry")
                                                         .setParameterizedType(new ParameterizedType(mapEntry, List.of(primitives.stringParameterizedType, typeT)))
                                                         .build(),

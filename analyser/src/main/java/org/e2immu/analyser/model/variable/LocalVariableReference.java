@@ -18,10 +18,7 @@
 package org.e2immu.analyser.model.variable;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.LocalVariable;
-import org.e2immu.analyser.model.ParameterizedType;
-import org.e2immu.analyser.model.SideEffect;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.VariableName;
 import org.e2immu.analyser.parser.InspectionProvider;
@@ -36,11 +33,16 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
     public LocalVariableReference(InspectionProvider inspectionProvider,
                                   LocalVariable localVariable,
                                   List<Expression> assignmentExpressions) {
-        super(assignmentExpressions.isEmpty() ? localVariable.parameterizedType :
-                localVariable.parameterizedType.fillTypeParameters(inspectionProvider,
+        super(assignmentExpressions.isEmpty() ? localVariable.parameterizedType() :
+                localVariable.parameterizedType().fillTypeParameters(inspectionProvider,
                         assignmentExpressions.get(0).returnType()));
         this.variable = Objects.requireNonNull(localVariable);
         this.assignmentExpressions = Objects.requireNonNull(assignmentExpressions);
+    }
+
+    @Override
+    public TypeInfo getOwningType() {
+        return variable.owningType();
     }
 
     @Override
@@ -58,17 +60,17 @@ public class LocalVariableReference extends VariableWithConcreteReturnType {
 
     @Override
     public ParameterizedType parameterizedType() {
-        return variable.parameterizedType;
+        return variable.parameterizedType();
     }
 
     @Override
     public String simpleName() {
-        return variable.name;
+        return variable.name();
     }
 
     @Override
     public String fullyQualifiedName() {
-        return variable.name;
+        return variable.name();
     }
 
     @Override

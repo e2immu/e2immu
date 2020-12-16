@@ -319,7 +319,9 @@ public class ExpressionContext {
                 unionOfTypes = List.of(typeOfVariable);
             }
             String name = parameter.getName().asString();
-            LocalVariable localVariable = new LocalVariable.LocalVariableBuilder().setName(name).setParameterizedType(typeOfVariable).build();
+            LocalVariable localVariable = new LocalVariable.LocalVariableBuilder()
+                    .setOwningType(enclosingType)
+                    .setName(name).setParameterizedType(typeOfVariable).build();
             TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(localVariable, unionOfTypes);
             ExpressionContext catchExpressionContext = newVariableContext("catch-clause");
             catchExpressionContext.variableContext.add(typeContext, localVariable, List.of());
@@ -369,6 +371,7 @@ public class ExpressionContext {
         VariableContext newVariableContext = VariableContext.dependentVariableContext(variableContext);
         VariableDeclarationExpr vde = forEachStmt.getVariable();
         LocalVariable localVariable = new LocalVariable.LocalVariableBuilder()
+                .setOwningType(enclosingType)
                 .setName(vde.getVariables().get(0).getNameAsString())
                 .setParameterizedType(ParameterizedTypeFactory.from(typeContext, vde.getVariables().get(0).getType()))
                 .build();
@@ -532,7 +535,7 @@ public class ExpressionContext {
                 org.e2immu.analyser.model.Expression initializer = var.getInitializer()
                         .map(i -> parseExpression(i, parameterizedType.findSingleAbstractMethodOfInterface(typeContext)))
                         .orElse(EmptyExpression.EMPTY_EXPRESSION);
-                return new LocalVariableCreation(typeContext, localVariable.build(), initializer);
+                return new LocalVariableCreation(typeContext, localVariable.setOwningType(enclosingType).build(), initializer);
             }
             if (expression.isAssignExpr()) {
                 AssignExpr assignExpr = (AssignExpr) expression;

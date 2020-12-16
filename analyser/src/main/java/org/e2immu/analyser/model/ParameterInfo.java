@@ -59,6 +59,11 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
     }
 
     @Override
+    public TypeInfo getOwningType() {
+        return owner.typeInfo;
+    }
+
+    @Override
     public TypeInfo primaryType() {
         return owner.typeInfo.primaryType();
     }
