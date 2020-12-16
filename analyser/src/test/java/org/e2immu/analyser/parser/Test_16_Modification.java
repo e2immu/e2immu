@@ -236,14 +236,14 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test4() throws IOException {
+        final String SET4 = "org.e2immu.analyser.testexample.Modification_4.set4";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("add4".equals(d.methodInfo().name) && "org.e2immu.analyser.testexample.Modification_4.set4".equals(d.variableName())) {
+            if ("add4".equals(d.methodInfo().name) && SET4.equals(d.variableName())) {
                 if ("1".equals(d.statementId())) {
                     if (d.iteration() == 0) {
                         Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
                     } else {
-                        Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.FINAL));
                         Assert.assertEquals("instance type Set<String>", d.currentValue().toString());
                         if (d.iteration() > 1) {
                             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
@@ -251,8 +251,14 @@ public class Test_16_Modification extends CommonTestRunner {
                     }
                 }
             }
-            if ("Modification_4".equals(d.methodInfo().name) && "set4".equals(d.variableName()) && "0".equals(d.statementId())) {
-                if (d.iteration() == 3) {
+            if ("Modification_4".equals(d.methodInfo().name) && "local4".equals(d.variableName()) && "0".equals(d.statementId())) {
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+            }
+            if ("Modification_4".equals(d.methodInfo().name) && SET4.equals(d.variableName()) && "0".equals(d.statementId())) {
+                if (d.iteration() == 0) {
+                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.NOT_NULL));
+                } else {
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
                 }

@@ -133,6 +133,7 @@ public class MethodInspector {
         MethodInspectionImpl.Builder tempBuilder = new MethodInspectionImpl.Builder(typeInfo);
         addParameters(tempBuilder, cd.getParameters(), expressionContext, dollarResolver);
         MethodInspectionImpl.Builder builder = fqnIsKnown(expressionContext.typeContext, tempBuilder);
+        inspectParameters(cd.getParameters(), builder.getParameterBuilders(), expressionContext);
 
         builder.addCompanionMethods(companionMethods);
         checkCompanionMethods(companionMethods, typeInfo.simpleName);

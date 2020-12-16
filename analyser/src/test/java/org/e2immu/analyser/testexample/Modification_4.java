@@ -29,7 +29,7 @@ public class Modification_4 {
     @NotNull
     private final Set<String> set4;
 
-    public Modification_4(@NotModified(absent = true) @NotNull Set<String> in4) {
+    public Modification_4(@Modified @NotNull Set<String> in4) {
         this.set4 = in4;
     }
 

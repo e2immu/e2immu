@@ -429,8 +429,9 @@ public class FieldAnalyser extends AbstractAnalyser {
     private boolean delaysOnFieldSummariesResolved() {
         return allMethodsAndConstructors.stream()
                 .filter(m -> m.haveFieldAsVariable(fieldInfo))
-                .map(m -> m.getFieldAsVariable(fieldInfo))
-                .noneMatch(fs -> fs.getProperty(VariableProperty.METHOD_DELAY_RESOLVED) == Level.FALSE);
+                .allMatch(m -> m.methodLevelData().linksHaveBeenEstablished.isSet());
+       //         .map(m -> m.getFieldAsVariable(fieldInfo))
+        //        .noneMatch(fs -> fs.getProperty(VariableProperty.METHOD_DELAY_RESOLVED) == Level.FALSE);
         // FALSE indicates that there are delays, TRUE that they have been resolved, DELAY that we're not aware
     }
 
