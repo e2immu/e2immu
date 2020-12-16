@@ -28,12 +28,18 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 public abstract class AbstractEvaluationContextImpl implements EvaluationContext {
 
     public final int iteration;
-
+    public final EvaluationContext closure;
     public final ConditionManager conditionManager;
 
-    protected AbstractEvaluationContextImpl(int iteration, ConditionManager conditionManager) {
+    protected AbstractEvaluationContextImpl(int iteration, ConditionManager conditionManager, EvaluationContext closure) {
         this.iteration = iteration;
         this.conditionManager = conditionManager;
+        this.closure = closure;
+    }
+
+    @Override
+    public EvaluationContext getClosure() {
+        return closure;
     }
 
     @Override

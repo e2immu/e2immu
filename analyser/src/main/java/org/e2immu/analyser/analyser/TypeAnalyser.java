@@ -923,7 +923,7 @@ public class TypeAnalyser extends AbstractAnalyser {
     class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
 
         protected EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
-            super(iteration, conditionManager);
+            super(iteration, conditionManager, null);
         }
 
         @Override

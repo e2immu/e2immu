@@ -776,7 +776,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
         private EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
-            super(iteration, conditionManager);
+            super(iteration, conditionManager, null);
         }
 
         @Override

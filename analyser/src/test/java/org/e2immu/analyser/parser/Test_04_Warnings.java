@@ -1,8 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.StatementAnalyser;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -289,6 +287,15 @@ public class Test_04_Warnings extends CommonTestRunner {
             }
         };
 
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("methodMustNotBeStatic4".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                VariableInfoContainer vic = d.statementAnalysis().variables.
+                        get("org.e2immu.analyser.testexample.Warnings_5.ChildClass.t");
+                VariableInfo vi = vic.current();
+                Assert.assertEquals(Level.TRUE, vi.getProperty(VariableProperty.READ));
+            }
+        };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("methodMustNotBeStatic3".equals(d.methodInfo().name)) {
                 ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);
@@ -312,6 +319,7 @@ public class Test_04_Warnings extends CommonTestRunner {
                 .addTypeMapVisitor(typeMapVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 }

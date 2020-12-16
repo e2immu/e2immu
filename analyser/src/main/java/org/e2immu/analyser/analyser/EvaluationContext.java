@@ -203,4 +203,8 @@ public interface EvaluationContext {
     default boolean disableEvaluationOfMethodCallsUsingCompanionMethods() {
         return getAnalyserContext().inAnnotatedAPIAnalysis();
     }
+
+    default EvaluationContext getClosure() {
+        return null;
+    }
 }

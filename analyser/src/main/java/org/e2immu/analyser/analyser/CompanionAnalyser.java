@@ -167,7 +167,7 @@ public class CompanionAnalyser {
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
 
         protected EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
-            super(iteration, conditionManager);
+            super(iteration, conditionManager, null);
         }
 
         @Override

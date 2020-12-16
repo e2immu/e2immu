@@ -19,13 +19,18 @@ package org.e2immu.analyser.model.statement;
 
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.LocalVariable;
+import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.StatementExecution;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.Lambda;
 import org.e2immu.annotation.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * <ul>
@@ -82,6 +87,20 @@ public class Structure {
         this.statementExecution = statementExecution;
         this.createVariablesInsideBlock = createVariablesInsideBlock;
         this.expressionIsCondition = expressionIsCondition;
+    }
+
+    public List<Lambda> findLambdas() {
+        Stream<Expression> expressions = Stream.concat(Stream.concat(initialisers.stream(), updaters.stream()),
+                expression == EmptyExpression.EMPTY_EXPRESSION ? Stream.empty() : Stream.of(expression));
+        List<Lambda> lambdas = new ArrayList<>();
+        expressions.forEach(expression -> expression.visit(e -> {
+            if (e instanceof Lambda lambda) {
+                lambdas.add(lambda);
+                return false;
+            }
+            return true;
+        }));
+        return lambdas;
     }
 
     public List<Statement> getStatements() {

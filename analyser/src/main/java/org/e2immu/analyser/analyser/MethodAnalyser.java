@@ -78,7 +78,7 @@ public class MethodAnalyser extends AbstractAnalyser {
     Note that MethodLevelData is not part of the shared state, as the "lastStatement", where it resides,
     is only computed in the first step of the analyser components.
      */
-    private record SharedState(int iteration) {
+    private record SharedState(EvaluationContext evaluationContext) {
     }
 
     public MethodAnalyser(MethodInfo methodInfo,
@@ -124,11 +124,13 @@ public class MethodAnalyser extends AbstractAnalyser {
         if (firstStatementAnalyser != null) {
 
             for (CompanionAnalyser companionAnalyser : companionAnalysers.values()) {
-                builder.add(companionAnalyser.companionMethodName.toString(), (sharedState -> companionAnalyser.analyse(sharedState.iteration)));
+                builder.add(companionAnalyser.companionMethodName.toString(), (sharedState ->
+                        companionAnalyser.analyse(sharedState.evaluationContext.getIteration())));
             }
             AnalysisStatus.AnalysisResultSupplier<SharedState> statementAnalyser = (sharedState) -> {
-                StatementAnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(sharedState.iteration,
-                        ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives()));
+                StatementAnalyserResult result = firstStatementAnalyser.analyseAllStatementsInBlock(sharedState.evaluationContext.getIteration(),
+                        ForwardAnalysisInfo.startOfMethod(analyserContext.getPrimitives()),
+                        sharedState.evaluationContext.getClosure());
                 // apply all modifications
                 result.getModifications().forEach(Runnable::run);
                 this.messages.addAll(result.messages);
@@ -254,7 +256,6 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
     }
 
-
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {
         methodInfo.error(methodAnalysis, annotation, annotationExpression).ifPresent(mustBeAbsent -> {
             Message error = Message.newMessage(new Location(methodInfo),
@@ -263,17 +264,23 @@ public class MethodAnalyser extends AbstractAnalyser {
         });
     }
 
+    // called from primary type analyser
     @Override
     public AnalysisStatus analyse(int iteration) {
+        return analyse(iteration, null);
+    }
+
+    // called from statement analyser
+    public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
         log(ANALYSER, "Analysing method {}", methodInfo.fullyQualifiedName());
-        SharedState sharedState = new SharedState(iteration);
+        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, new ConditionManager(analyserContext.getPrimitives()), closure);
+        SharedState sharedState = new SharedState(evaluationContext);
 
         try {
             AnalysisStatus analysisStatus = analyserComponents.run(sharedState);
 
             List<MethodAnalyserVisitor> visitors = analyserContext.getConfiguration().debugConfiguration.afterMethodAnalyserVisitors;
             if (!visitors.isEmpty()) {
-                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, new ConditionManager(analyserContext.getPrimitives()));
                 for (MethodAnalyserVisitor methodAnalyserVisitor : visitors) {
                     methodAnalyserVisitor.visit(new MethodAnalyserVisitor.Data(iteration,
                             evaluationContext, methodInfo, methodAnalysis,
@@ -394,7 +401,6 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         boolean mark = false;
         Boolean after = null;
-        EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration, new ConditionManager(analyserContext.getPrimitives()));
         for (Expression precondition : preconditions) {
             String markLabel = TypeAnalyser.labelOfPreconditionForMarkAndOnly(precondition);
             if (!approvedPreconditions.isSet(markLabel)) {
@@ -407,7 +413,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             if (before.toString().equals(precondition.toString())) {
                 after = false;
             } else {
-                Expression negated = Negation.negate(evaluationContext, precondition);
+                Expression negated = Negation.negate(sharedState.evaluationContext, precondition);
                 if (before.toString().equals(negated.toString())) {
                     if (after == null) after = true;
                 } else {
@@ -427,7 +433,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                 log(MARK, "Method {} is @NotModified, so it'll be @Only rather than @Mark", methodInfo.distinguishingName());
             } else {
                 // for the before methods, we need to check again if we were mark or only
-                mark = mark || (!after && TypeAnalyser.assignmentIncompatibleWithPrecondition(evaluationContext,
+                mark = mark || (!after && TypeAnalyser.assignmentIncompatibleWithPrecondition(sharedState.evaluationContext,
                         precondition, this));
             }
         }
@@ -494,8 +500,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         // at this point, the null and size checks on parameters have been removed.
         // we still need to remove other parameter components; what remains can be used for marking/only
 
-        EvaluationContext evaluationContext = new EvaluationContextImpl(sharedState.iteration, new ConditionManager(analyserContext.getPrimitives()));
-        Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
+        Filter filter = new Filter(sharedState.evaluationContext, Filter.FilterMode.ACCEPT);
         Filter.FilterResult<FieldReference> filterResult = filter.filter(precondition, filter.individualFieldClause());
         if (filterResult.accepted().isEmpty()) {
             log(MARK, "No @Mark/@Only annotation in {}: found no individual field preconditions", methodInfo.distinguishingName());
@@ -927,8 +932,8 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
 
-        protected EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
-            super(iteration, conditionManager);
+        protected EvaluationContextImpl(int iteration, ConditionManager conditionManager, EvaluationContext closure) {
+            super(iteration, conditionManager, closure);
         }
 
         @Override

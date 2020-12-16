@@ -32,6 +32,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
+import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.annotation.Container;
 import org.slf4j.Logger;
@@ -70,6 +71,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private ConditionManager localConditionManager;
     private AnalysisStatus analysisStatus;
     private AnalyserComponents<String, SharedState> analyserComponents;
+
+    private SetOnce<List<MethodAnalyser>> lambdaAnalysers = new SetOnce<>();
 
     private StatementAnalyser(AnalyserContext analyserContext,
                               MethodAnalyser methodAnalyser,
@@ -173,7 +176,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      * @return the combination of a list of all modifications to be done to parameters, methods, and an AnalysisStatus object.
      * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
      */
-    public StatementAnalyserResult analyseAllStatementsInBlock(int iteration, ForwardAnalysisInfo forwardAnalysisInfo) {
+    public StatementAnalyserResult analyseAllStatementsInBlock(int iteration, ForwardAnalysisInfo forwardAnalysisInfo, EvaluationContext closure) {
         try {
             // skip all the statements that are already in the DONE state...
             PreviousAndFirst previousAndFirst = goToFirstStatementToAnalyse();
@@ -191,13 +194,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (analyserContext.getConfiguration().analyserConfiguration.skipTransformations) {
                     wasReplacement = false;
                 } else {
-                    EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager());
+                    EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, forwardAnalysisInfo.conditionManager(), closure);
                     // first attempt at detecting a transformation
                     wasReplacement = checkForPatterns(evaluationContext);
                     statementAnalyser = statementAnalyser.followReplacements();
                 }
                 StatementAnalysis previousStatementAnalysis = previousStatement == null ? null : previousStatement.statementAnalysis;
-                StatementAnalyserResult result = statementAnalyser.analyseSingleStatement(iteration,
+                StatementAnalyserResult result = statementAnalyser.analyseSingleStatement(iteration, closure,
                         wasReplacement, previousStatementAnalysis, forwardAnalysisInfo);
                 builder.add(result);
                 previousStatement = statementAnalyser;
@@ -308,6 +311,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      * Once the AnalysisStatus reaches DONE, this particular block is not analysed again.
      */
     private StatementAnalyserResult analyseSingleStatement(int iteration,
+                                                           EvaluationContext closure,
                                                            boolean wasReplacement,
                                                            StatementAnalysis previous,
                                                            ForwardAnalysisInfo forwardAnalysisInfo) {
@@ -320,6 +324,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         .add("checkUnreachableStatement", sharedState -> checkUnreachableStatement(previous,
                                 forwardAnalysisInfo.execution()))
                         .add("initialiseOrUpdateVariables", this::initialiseOrUpdateVariables)
+                        .add("analyseLambdas", this::analyseLambdas)
                         .add("step1_initialisation", this::step1_initialisation)
                         .add("step2_updaters", this::step2_updaters)
                         .add("step3_evaluationOfMainExpression", this::step3_evaluationOfMainExpression)
@@ -346,7 +351,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             localConditionManager = startOfNewBlock ? forwardAnalysisInfo.conditionManager() : previous.stateData.getConditionManager();
 
             StatementAnalyserResult.Builder builder = new StatementAnalyserResult.Builder();
-            EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, localConditionManager);
+            EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, localConditionManager, closure);
             SharedState sharedState = new SharedState(evaluationContext, builder, previous, forwardAnalysisInfo);
             AnalysisStatus overallStatus = analyserComponents.run(sharedState);
 
@@ -409,6 +414,26 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                             statementAnalysis.stateData.getConditionManager().state,
                             analyserComponents.getStatusesAsMap()));
         }
+    }
+
+    private AnalysisStatus analyseLambdas(SharedState sharedState) {
+        if (!lambdaAnalysers.isSet()) {
+            List<Lambda> lambdas = statementAnalysis.statement.getStructure().findLambdas();
+            List<MethodAnalyser> methodAnalysers = lambdas.stream().map(lambda ->
+                    new MethodAnalyser(lambda.methodInfo, analyserContext.getTypeAnalysis(lambda.methodInfo.typeInfo),
+                            true, analyserContext)
+            ).collect(Collectors.toUnmodifiableList());
+            lambdaAnalysers.set(methodAnalysers);
+        }
+
+        AnalysisStatus analysisStatus = DONE;
+        for (MethodAnalyser lambdaAnalyser : lambdaAnalysers.get()) {
+            log(ANALYSER, "------- Starting lambda analyser ------");
+            AnalysisStatus lambdaStatus = lambdaAnalyser.analyse(sharedState.evaluationContext.getIteration(), sharedState.evaluationContext);
+            log(ANALYSER, "------- Ending lambda analyser   ------");
+            analysisStatus = analysisStatus.combine(lambdaStatus);
+        }
+        return analysisStatus;
     }
 
 
@@ -543,7 +568,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
         if (vi1 != null) {
             Expression e = vi1.getValue();
-            if(e instanceof UnknownExpression ue && ue.msg().equals(UnknownExpression.RETURN_VALUE)) {
+            if (e instanceof UnknownExpression ue && ue.msg().equals(UnknownExpression.RETURN_VALUE)) {
                 return NO_VALUE;
             }
             return vi1.getValue();
@@ -978,7 +1003,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (executionOfBlock.execution != NEVER && executionOfBlock.startOfBlock != null) {
 
                 StatementAnalyserResult result = executionOfBlock.startOfBlock.analyseAllStatementsInBlock(evaluationContext.getIteration(),
-                        new ForwardAnalysisInfo(executionOfBlock.execution, executionOfBlock.conditionManager, executionOfBlock.inCatch));
+                        new ForwardAnalysisInfo(executionOfBlock.execution, executionOfBlock.conditionManager, executionOfBlock.inCatch),
+                        evaluationContext.getClosure());
                 sharedState.builder.add(result);
                 analysisStatus = analysisStatus.combine(result.analysisStatus);
                 blocksExecuted++;
@@ -1204,13 +1230,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
         private final boolean disableEvaluationOfMethodCallsUsingCompanionMethods;
 
-        private EvaluationContextImpl(int iteration, ConditionManager conditionManager) {
-            this(iteration, conditionManager, false);
+        private EvaluationContextImpl(int iteration, ConditionManager conditionManager, EvaluationContext closure) {
+            this(iteration, conditionManager, closure, false);
         }
 
         private EvaluationContextImpl(int iteration, ConditionManager conditionManager,
+                                      EvaluationContext closure,
                                       boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
-            super(iteration, conditionManager);
+            super(iteration, conditionManager, closure);
             this.disableEvaluationOfMethodCallsUsingCompanionMethods = disableEvaluationOfMethodCallsUsingCompanionMethods;
         }
 
@@ -1272,6 +1299,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         @Override
         public EvaluationContext child(Expression condition, boolean disableEvaluationOfMethodCallsUsingCompanionMethods) {
             return new EvaluationContextImpl(iteration, conditionManager.addCondition(this, condition),
+                    closure,
                     disableEvaluationOfMethodCallsUsingCompanionMethods);
         }
 
