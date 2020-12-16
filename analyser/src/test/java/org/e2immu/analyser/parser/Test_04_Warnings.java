@@ -283,8 +283,35 @@ public class Test_04_Warnings extends CommonTestRunner {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, of.methodAnalysis.get().getProperty(VariableProperty.NOT_NULL));
         };
 
-        testClass("Warnings_5", 0, 1, new DebugConfiguration.Builder()
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("methodMustNotBeStatic5".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo) {
+                Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.METHOD_DELAY));
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("methodMustNotBeStatic3".equals(d.methodInfo().name)) {
+                ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);
+
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.NULLABLE, parameterAnalysis.getProperty(VariableProperty.NOT_NULL));
+
+                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, parameterAnalysis.getProperty(VariableProperty.MODIFIED));
+
+                Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
+            }
+            if ("methodMustNotBeStatic5".equals(d.methodInfo().name)) {
+                Assert.assertEquals("this", d.methodAnalysis().getSingleReturnValue().toString());
+                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.FLUENT));
+            }
+        };
+
+        testClass("Warnings_5", 0, 2, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 }

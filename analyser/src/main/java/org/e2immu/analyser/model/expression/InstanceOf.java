@@ -99,9 +99,8 @@ public record InstanceOf(Primitives primitives,
 
     @Override
     public OutputBuilder output() {
-        return new OutputBuilder().add(variable.output())
-                .add(Symbol.INSTANCE_OF)
-                .add(parameterizedType.output());
+        return new OutputBuilder().add(expression != null ? expression.output() : variable.output())
+                .add(Symbol.INSTANCE_OF).add(parameterizedType.output());
     }
 
     @Override

@@ -134,11 +134,12 @@ public class Lambda implements Expression {
         if (singleExpression != null) {
             outputBuilder.add(outputInParenthesis(precedence(), singleExpression));
         } else {
-            Guide.GuideGenerator guideGenerator = Guide.defaultGuideGenerator();
-            outputBuilder.add(guideGenerator.start());
+            Guide.GuideGenerator guideGenerator = Guide.generatorForBlock();
             outputBuilder.add(Symbol.LEFT_BRACE);
+            outputBuilder.add(guideGenerator.start());
             StatementAnalysis firstStatement = methodInfo.methodAnalysis.get().getFirstStatement().followReplacements();
             Block.statementsString(outputBuilder, guideGenerator, firstStatement);
+            outputBuilder.add(guideGenerator.end());
             outputBuilder.add(Symbol.RIGHT_BRACE);
         }
         return outputBuilder;

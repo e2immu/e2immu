@@ -402,12 +402,11 @@ public class Test_16_Modification extends CommonTestRunner {
                 if (iteration == 0) {
                     Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 }
-                if (iteration == 1) {
-                    Assert.assertNotNull(d.fieldAnalysis().getEffectivelyFinalValue());
-                    Assert.assertNull(d.fieldAnalysis().getLinkedVariables());
+                if (iteration >= 1) {
+                    Assert.assertEquals("in6", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                    Assert.assertEquals("in6", debug(d.fieldAnalysis().getLinkedVariables()));
                 }
                 if (iteration >= 2) {
-                    Assert.assertEquals("in6", d.fieldAnalysis().getLinkedVariables().stream().findFirst().orElseThrow().simpleName());
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
                     int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
                     Assert.assertEquals(Level.TRUE, modified);

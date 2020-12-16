@@ -56,7 +56,7 @@ public class ParameterAnalyser {
     }
 
     public void initialize(Map<FieldInfo, FieldAnalyser> fieldAnalysers) {
-        this.fieldAnalysers = Objects.requireNonNull( fieldAnalysers);
+        this.fieldAnalysers = Objects.requireNonNull(fieldAnalysers);
     }
 
     public void check() {
@@ -118,6 +118,30 @@ public class ParameterAnalyser {
      * Does not apply to variable fields.
      */
     public AnalysisStatus analyse() {
+        StatementAnalysis lastStatementAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner).getLastStatement();
+        VariableInfo vi = lastStatementAnalysis == null ? null :
+                lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.LEVEL_4_SUMMARY);
+        if (vi == null) {
+            // unused variable
+            parameterAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
+            parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.NULLABLE);
+            parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, Level.FALSE);
+            parameterAnalysis.isAssignedToAField.set(false);
+
+            if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()) {
+                messages.add(Message.newMessage(new Location(parameterInfo.owner), Message.UNUSED_PARAMETER, parameterInfo.simpleName()));
+            }
+
+            return DONE;
+        } else {
+            // sanity check
+            int read = vi.getProperty(VariableProperty.READ);
+            int assigned = vi.getProperty(VariableProperty.ASSIGNED);
+            if (read == Level.DELAY && assigned == Level.DELAY) {
+                throw new UnsupportedOperationException("How possible? we haven't seen it, still it has been created");
+            }
+        }
+
         boolean changed = false;
         if (!parameterAnalysis.isAssignedToAField.isSet()) {
             boolean delays = false;
@@ -176,27 +200,10 @@ public class ParameterAnalyser {
                     changed = true;
                 }
             } else {
-                StatementAnalysis lastStatementAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner).getLastStatement();
-                VariableInfo vi = lastStatementAnalysis == null ? null :
-                        lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.LEVEL_4_SUMMARY);
-                if (vi != null) {
-                    if (parameterAnalysis.isAssignedToAField.isSet()) { // not assigned to a field, we're sure
-                        int notNullDelayResolved = vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED);
-                        if (notNullDelayResolved != Level.FALSE && parameterAnalysis.getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
-                            parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
-                        }
-                    }
-
-                    int read = vi.getProperty(VariableProperty.READ);
-                    int assigned = vi.getProperty(VariableProperty.ASSIGNED);
-                    if (read == Level.DELAY && assigned == Level.DELAY) {
-                        throw new UnsupportedOperationException("How possible? we haven't seen it, still it has been created");
-                    }
-                } else {
-                    // unused parameter... let's ensure we don't block things
-                    parameterAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
-                    if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()) {
-                        messages.add(Message.newMessage(new Location(parameterInfo.owner), Message.UNUSED_PARAMETER, parameterInfo.simpleName()));
+                if (parameterAnalysis.isAssignedToAField.isSet()) { // not assigned to a field, we're sure
+                    int notNullDelayResolved = vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED);
+                    if (notNullDelayResolved != Level.FALSE && parameterAnalysis.getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
+                        parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
                     }
                 }
             }
