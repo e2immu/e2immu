@@ -96,7 +96,7 @@ public class EvaluateParameters {
                 }
 
                 if (parameterInfo.parameterizedType.isFunctionalInterface()) {
-                    Boolean undeclared = tryToDetectUndeclared(evaluationContext, parameterExpression);
+                    Boolean undeclared = tryToDetectUndeclared(evaluationContext, builder.getStatementTime(), parameterExpression);
                     MethodLevelData methodLevelData = evaluationContext.getCurrentMethod() != null ?
                             evaluationContext.getCurrentMethod().methodLevelData() : null;
                     if (undeclared == Boolean.TRUE && methodLevelData != null &&
@@ -194,10 +194,10 @@ public class EvaluateParameters {
 
 
     // we should normally look at the value, but there is a chicken and egg problem
-    public static Boolean tryToDetectUndeclared(EvaluationContext evaluationContext, Expression scope) {
+    public static Boolean tryToDetectUndeclared(EvaluationContext evaluationContext, int statementTime, Expression scope) {
         if (scope instanceof VariableExpression variableExpression) {
             if (variableExpression.variable() instanceof ParameterInfo) return true;
-            Expression value = evaluationContext.currentValue(variableExpression.variable());
+            Expression value = evaluationContext.currentValue(variableExpression.variable(), statementTime);
             if (value == EmptyExpression.NO_VALUE) return null; // delay
             // TODO
             return true;

@@ -103,11 +103,6 @@ public class TypeExpression implements Expression {
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
-        return null;
-    }
-
-    @Override
     public int internalCompareTo(Expression v) {
         return parameterizedType.detailedString().compareTo(((TypeExpression) v).parameterizedType.detailedString());
     }

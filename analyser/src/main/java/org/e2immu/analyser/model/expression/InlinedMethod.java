@@ -164,7 +164,7 @@ public record InlinedMethod(MethodInfo methodInfo, Expression expression,
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationResult evaluationContext) {
         // TODO verify this
         return expression.getInstance(evaluationContext);
     }

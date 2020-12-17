@@ -68,7 +68,7 @@ public abstract class CommonVariableInfo {
         }
 
         @Override
-        public Expression currentValue(Variable variable) {
+        public Expression currentValue(Variable variable, int statementTime) {
             return new VariableExpression(variable);
         }
 

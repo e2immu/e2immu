@@ -48,6 +48,11 @@ public class FlowData {
     // are there any statements in sub-blocks that interrupt the flow?
     public final SetOnce<Map<InterruptsFlow, Execution>> interruptsFlow = new SetOnce<>();
 
+    // counts all increases in statement time
+    public final SetOnce<Integer> initialTime = new SetOnce<>(); // STEP 1
+    public final SetOnce<Integer> timeAfterExecution = new SetOnce<>(); // STEP 3
+    public final SetOnce<Integer> timeAfterSubBlocks = new SetOnce<>(); // STEP 4
+
     public Execution interruptStatus() {
         // what is the worst that can happen? ESCAPE-ALWAYS
         return interruptsFlow.get().values().stream().reduce(Execution.NEVER, Execution::best);

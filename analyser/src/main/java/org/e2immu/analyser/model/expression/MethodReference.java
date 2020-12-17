@@ -70,11 +70,6 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
-        return null;
-    }
-
-    @Override
     public ObjectFlow getObjectFlow() {
         return ObjectFlow.NYE;
     }
@@ -164,6 +159,11 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             }
             builder.setExpression(result);
         }
+
+        if (!methodInfo.methodResolution.isSet() || methodInfo.methodResolution.get().allowsInterrupts()) {
+            builder.incrementStatementTime();
+        }
+
         return builder.build();
     }
 

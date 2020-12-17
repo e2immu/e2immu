@@ -447,7 +447,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         String fqn = variable.fullyQualifiedName();
         if (variables.isSet(fqn)) throw new UnsupportedOperationException("Already exists");
 
-        VariableInfoContainer vic = new VariableInfoContainerImpl(variable);
+        int statementTime;
+        if(variable instanceof FieldReference fieldReference) {
+            statementTime = 0; // FIXME
+        } else {
+            statementTime = VariableInfoImpl.NOT_A_VARIABLE_FIELD;
+        }
+        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, statementTime);
+
         variables.put(variable.fullyQualifiedName(), vic);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", variable.fullyQualifiedName());
 
@@ -570,7 +577,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      *         </ol>
      *     </li>
      * </ol>
-     *
      */
     // FIXME the NewObject's need something from the preconditions?
 
@@ -678,8 +684,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return new BooleanConstant(primitives, true);
     }
 
-    public int getProperty(AnalyserContext analyserContext, Variable variable, VariableProperty variableProperty) {
-        VariableInfo variableInfo = findOrCreateL1(analyserContext, variable);
+    public int getProperty(Variable variable, VariableProperty variableProperty) {
+        VariableInfo variableInfo = findOrThrow(variable);
         return variableInfo.getProperty(variableProperty);
     }
 
@@ -701,7 +707,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param variable        the variable
      * @return the most current variable info object
      */
-    public VariableInfo findOrCreateL1(@NotNull AnalyserContext analyserContext, @NotNull Variable variable) {
+    public VariableInfo findOrCreateL1(@NotNull AnalyserContext analyserContext, @NotNull Variable variable, int statementTime) {
         String fqn = variable.fullyQualifiedName();
         VariableInfoContainer vic;
         if (!variables.isSet(fqn)) {
@@ -745,10 +751,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param variable the variable
      * @return the most current variable info object, or null if the variable does not exist
      */
-    public VariableInfo findOrNull(@NotNull Variable variable) {
+    public VariableInfo findOrThrow(@NotNull Variable variable) {
         String fqn = variable.fullyQualifiedName();
         VariableInfoContainer vic = variables.getOtherwiseNull(fqn);
-        if (vic == null) return null;
+        if (vic == null) throw new UnsupportedOperationException("Have not yet evaluated "+variable.fullyQualifiedName());
         return vic.current();
     }
 
@@ -811,8 +817,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     // ***************** OBJECT FLOW CODE ***************
 
-    public ObjectFlow getObjectFlow(AnalyserContext analyserContext, Variable variable) {
-        VariableInfo aboutVariable = findOrCreateL1(analyserContext, variable);
+    public ObjectFlow getObjectFlow(Variable variable) {
+        VariableInfo aboutVariable = findOrThrow(variable);
         return aboutVariable.getObjectFlow();
     }
 

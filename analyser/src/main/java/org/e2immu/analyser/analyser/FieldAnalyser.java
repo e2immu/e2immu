@@ -720,11 +720,11 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (effectivelyFinal == Level.DELAY) return NO_VALUE;
         ObjectFlow objectFlow = fieldAnalysis.getObjectFlow();
         if (effectivelyFinal == Level.FALSE) {
-            return new VariableExpression(variable, objectFlow, true);
+            return new VariableExpression(variable, objectFlow);
         }
         Expression effectivelyFinalValue = fieldAnalysis.getEffectivelyFinalValue();
         return Objects.requireNonNullElseGet(effectivelyFinalValue,
-                () -> new VariableExpression(variable, objectFlow, false));
+                () -> new VariableExpression(variable, objectFlow));
     }
 
     @Override
@@ -790,11 +790,6 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public MethodAnalysis getCurrentMethodAnalysis() {
-            return null;
-        }
-
-        @Override
         public MethodAnalyser getCurrentMethod() {
             return null;
         }
@@ -824,8 +819,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public ObjectFlow getObjectFlow(Variable variable) {
-            return currentValue(variable).getObjectFlow();
+        public ObjectFlow getObjectFlow(Variable variable, int statementTime) {
+            return currentValue(variable, statementTime).getObjectFlow();
         }
 
         @Override
@@ -847,7 +842,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public Expression currentValue(Variable variable) {
+        public Expression currentValue(Variable variable, int statementTime) {
             if (variable instanceof FieldReference) {
                 return getVariableValue(variable);
             }

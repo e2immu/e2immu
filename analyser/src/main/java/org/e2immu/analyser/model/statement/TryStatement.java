@@ -112,11 +112,6 @@ public class TryStatement extends StatementWithStructure {
         }
 
         @Override
-        public NewObject getInstance(EvaluationContext evaluationContext) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
         public ObjectFlow getObjectFlow() {
             return ObjectFlow.NO_FLOW;
         }

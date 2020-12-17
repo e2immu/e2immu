@@ -23,11 +23,15 @@ import org.e2immu.analyser.util.SetOnce;
 
 import java.util.Set;
 
+/*
+allowsInterrupts == increases statement time
+ */
 public record MethodResolution(Set<MethodInfo> overrides,
                                Set<MethodInfo> methodsOfOwnClassReached,
                                CallStatus partOfConstruction,
                                boolean createObjectOfSelf,
-                               boolean staticMethodCallsOnly) {
+                               boolean staticMethodCallsOnly,
+                               boolean allowsInterrupts) {
 
     public enum CallStatus {
         PART_OF_CONSTRUCTION,
@@ -49,7 +53,8 @@ public record MethodResolution(Set<MethodInfo> overrides,
                     getMethodsOfOwnClassReached(),
                     getPartOfConstruction(),
                     isCreateObjectOfSelf(),
-                    isStaticMethodCallsOnly());
+                    isStaticMethodCallsOnly(),
+                    isAllowsInterrupts());
         }
 
         public final SetOnce<Set<MethodInfo>> overrides = new SetOnce<>();
@@ -90,6 +95,13 @@ public record MethodResolution(Set<MethodInfo> overrides,
         public boolean isStaticMethodCallsOnly() {
             return staticMethodCallsOnly.getOrElse(false);
         }
+
+        public final SetOnce<Boolean> allowsInterrupts = new SetOnce<>();
+
+        public boolean isAllowsInterrupts() {
+            return allowsInterrupts.getOrElse(true);
+        }
+
         // ***************
 
     }

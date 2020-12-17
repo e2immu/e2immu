@@ -210,7 +210,7 @@ public abstract class CommonAbstractValue {
         }
 
         @Override
-        public Expression currentValue(Variable variable) {
+        public Expression currentValue(Variable variable, int statementTime) {
             return new VariableExpression(variable);
         }
 

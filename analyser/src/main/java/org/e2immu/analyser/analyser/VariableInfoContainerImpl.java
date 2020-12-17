@@ -47,9 +47,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         currentLevel = LEVEL_0_PREVIOUS;
     }
 
-    public VariableInfoContainerImpl(Variable variable) {
+    public VariableInfoContainerImpl(Variable variable, int statementTime) {
         Objects.requireNonNull(variable);
-        data[LEVEL_1_INITIALISER] = new VariableInfoImpl(variable);
+        data[LEVEL_1_INITIALISER] = new VariableInfoImpl(variable, statementTime);
         currentLevel = LEVEL_1_INITIALISER;
     }
 
@@ -97,18 +97,20 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     /* ******************************* modifying methods related to assignment ************************************** */
 
     @Override
-    public void assignment(int level) {
+    public void assignment(int level, int statementTime) {
         ensureNotFrozen();
         if (level <= currentLevel) {
-            if (data[level] != null) {
-                // the data is already there
+            VariableInfo vi = data[level];
+            if (vi != null) {
+                // the data is already there (we're in the next iteration?)
+                assert statementTime == vi.getStatementTime();
                 return;
             }
             throw new UnsupportedOperationException("In the first iteration, an assignment should start a new level for " +
                     current().variable().fullyQualifiedName());
         }
         int assigned = data[currentLevel].getProperty(VariableProperty.ASSIGNED);
-        VariableInfoImpl variableInfo = new VariableInfoImpl(data[currentLevel].variable());
+        VariableInfoImpl variableInfo = new VariableInfoImpl(data[currentLevel].variable(), statementTime);
         currentLevel = level;
         data[currentLevel] = variableInfo;
         variableInfo.setProperty(VariableProperty.ASSIGNED, assigned);

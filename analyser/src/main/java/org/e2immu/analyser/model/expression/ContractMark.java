@@ -73,8 +73,4 @@ public record ContractMark(String mark) implements Expression {
         return ObjectFlow.NYE;
     }
 
-    @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
-        throw new UnsupportedOperationException();
-    }
 }

@@ -442,11 +442,6 @@ public record And(Primitives primitives,
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
-        return null;
-    }
-
-    @Override
     public int internalCompareTo(Expression v) {
         And andValue = (And) v;
         return ListUtil.compare(expressions, andValue.expressions);

@@ -204,7 +204,7 @@ public class NewObject implements HasParameterExpressions {
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationResult evaluationContext) {
         return this;
     }
 

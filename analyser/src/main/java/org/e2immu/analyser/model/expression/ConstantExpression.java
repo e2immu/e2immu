@@ -54,11 +54,6 @@ public interface ConstantExpression<T> extends Expression {
     }
 
     @Override
-    default NewObject getInstance(EvaluationContext evaluationContext) {
-        return null;
-    }
-
-    @Override
     default int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         switch (variableProperty) {
             case CONTAINER:

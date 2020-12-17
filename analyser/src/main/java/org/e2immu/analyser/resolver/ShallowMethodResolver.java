@@ -33,7 +33,7 @@ public class ShallowMethodResolver {
 
     public static MethodResolution onlyOverrides(InspectionProvider inspectionProvider, MethodInfo methodInfo) {
         return new MethodResolution(overrides(inspectionProvider, methodInfo), Set.of(), MethodResolution.CallStatus.NOT_RESOLVED,
-                false, false);
+                false, false, true);
     }
 
     /**

@@ -73,11 +73,6 @@ public record FieldAccess(Expression expression,
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
-        return null;
-    }
-
-    @Override
     public ObjectFlow getObjectFlow() {
         return ObjectFlow.NYE;
     }

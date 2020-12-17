@@ -38,7 +38,6 @@ import java.util.Set;
 @E2Container
 public record VariableExpression(Variable variable,
                                  String name,
-                                 boolean variableField,
                                  ObjectFlow objectFlow) implements Expression {
 
     public VariableExpression(Variable variable) {
@@ -46,19 +45,14 @@ public record VariableExpression(Variable variable,
     }
 
     public VariableExpression(Variable variable, ObjectFlow objectFlow) {
-        this(variable, objectFlow, false);
-    }
-
-    public VariableExpression(Variable variable, ObjectFlow objectFlow, boolean variableField) {
-        this(variable, variable.fullyQualifiedName(), variableField, objectFlow);
+        this(variable, variable.fullyQualifiedName(), objectFlow);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof VariableExpression that)) return false;
-        if (!variable.equals(that.variable)) return false;
-        return !variableField;
+        return variable.equals(that.variable);
     }
 
     @Override
@@ -98,8 +92,8 @@ public record VariableExpression(Variable variable,
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
-        return evaluationContext.currentInstance(variable);
+    public NewObject getInstance(EvaluationResult evaluationResult) {
+        return evaluationResult.evaluationContext().currentInstance(variable, evaluationResult.statementTime());
     }
 
     @Override

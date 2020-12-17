@@ -217,11 +217,6 @@ public record Or(Primitives primitives,
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
-        return null;
-    }
-
-    @Override
     public int internalCompareTo(Expression v) {
         Or orValue = (Or) v;
         return ListUtil.compare(expressions, orValue.expressions);

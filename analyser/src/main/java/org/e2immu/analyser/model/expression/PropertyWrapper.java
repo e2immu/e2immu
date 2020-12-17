@@ -173,8 +173,8 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
-        return expression.getInstance(evaluationContext);
+    public NewObject getInstance(EvaluationResult evaluationResult) {
+        return expression.getInstance(evaluationResult);
     }
 
     @Override

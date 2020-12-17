@@ -131,11 +131,6 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
-        return null;
-    }
-
-    @Override
     public int internalCompareTo(Expression v) {
         throw new UnsupportedOperationException();
     }

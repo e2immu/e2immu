@@ -86,11 +86,6 @@ public record SwitchExpression(Expression selector,
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
-        return null;
-    }
-
-    @Override
     public ObjectFlow getObjectFlow() {
         return null;
     }

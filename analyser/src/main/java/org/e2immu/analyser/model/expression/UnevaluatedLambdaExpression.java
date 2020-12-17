@@ -104,11 +104,6 @@ public class UnevaluatedLambdaExpression implements Expression {
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
-        return null;
-    }
-
-    @Override
     public ObjectFlow getObjectFlow() {
         return ObjectFlow.NYE;
     }

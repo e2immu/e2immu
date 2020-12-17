@@ -40,7 +40,9 @@ import static org.e2immu.analyser.util.Logger.LogTarget.DEBUG_MODIFY_CONTENT;
 import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
 import static org.e2immu.analyser.util.Logger.log;
 
-public record EvaluationResult(int iteration, Expression value,
+public record EvaluationResult(EvaluationContext evaluationContext,
+                               int statementTime,
+                               Expression value,
                                List<StatementAnalyser.StatementAnalysisModification> modifications,
                                List<StatementAnalysis.StateChange> stateChanges,
                                List<ObjectFlow> objectFlows,
@@ -75,19 +77,6 @@ public record EvaluationResult(int iteration, Expression value,
         return value;
     }
 
-    @Override
-    public String toString() {
-        return "EvaluationResult{" +
-                "modifications=" + modifications +
-                ", stateChanges=" + stateChanges +
-                ", objectFlows=" + objectFlows +
-                ", value=" + value +
-                ", iteration=" + iteration +
-                ", valueChanges=" + valueChanges +
-                ", linkedVariables=" + linkedVariables +
-                '}';
-    }
-
     public boolean isNotNull0(EvaluationContext evaluationContext) {
         // should we trawl through the modifications?
         return evaluationContext.isNotNull0(value);
@@ -110,6 +99,7 @@ public record EvaluationResult(int iteration, Expression value,
         private List<StatementAnalysis.StateChange> stateChanges;
         private List<ObjectFlow> objectFlows;
         private Expression value;
+        private int statementTime;
         private final Map<Variable, ExpressionChangeData> valueChanges = new HashMap<>();
         private final Map<Variable, Set<Variable>> linkedVariables = new HashMap<>();
 
@@ -130,6 +120,7 @@ public record EvaluationResult(int iteration, Expression value,
 
         public Builder(EvaluationContext evaluationContext) {
             this.evaluationContext = evaluationContext;
+            this.statementTime = evaluationContext.getInitialStatementTime();
         }
 
         public Builder compose(EvaluationResult... previousResults) {
@@ -179,6 +170,12 @@ public record EvaluationResult(int iteration, Expression value,
                     set.addAll(entry.getValue());
                 }
             }
+
+            statementTime = Math.max(statementTime, evaluationResult.statementTime);
+        }
+
+        public void incrementStatementTime() {
+            statementTime++;
         }
 
         // also sets result of expression, but cannot overwrite NO_VALUE
@@ -199,7 +196,8 @@ public record EvaluationResult(int iteration, Expression value,
         }
 
         public EvaluationResult build() {
-            return new EvaluationResult(getIteration(),
+            return new EvaluationResult(evaluationContext,
+                    statementTime,
                     value,
                     modifications == null ? List.of() : modifications,
                     stateChanges == null ? List.of() : stateChanges,
@@ -307,7 +305,7 @@ public record EvaluationResult(int iteration, Expression value,
             if (currentExpression == null || currentExpression.value == NO_VALUE) {
                 assert evaluationContext != null;
 
-                return evaluationContext.currentValue(variable);
+                return evaluationContext.currentValue(variable, statementTime);
             }
             return currentExpression.value;
         }
@@ -317,7 +315,7 @@ public record EvaluationResult(int iteration, Expression value,
             if (currentExpression != null && currentExpression.value instanceof NewObject instance) return instance;
             assert evaluationContext != null;
 
-            NewObject inContext = evaluationContext.currentInstance(variable);
+            NewObject inContext = evaluationContext.currentInstance(variable, statementTime);
             if (inContext != null) return inContext;
             // there is no instance yet... we'll have to create one, but only if the value can have an instance
             if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
@@ -400,7 +398,7 @@ public record EvaluationResult(int iteration, Expression value,
         Called from Assignment and from LocalVariableCreation.
          */
         public Builder assignment(Variable assignmentTarget, Expression resultOfExpression, boolean assignmentToNonEmptyExpression, int iteration) {
-            assert  evaluationContext != null;
+            assert evaluationContext != null;
 
             ExpressionChangeData valueChangeData = new ExpressionChangeData(resultOfExpression, evaluationContext.getConditionManager().state,
                     iteration == 0 && assignmentToNonEmptyExpression);
@@ -449,6 +447,10 @@ public record EvaluationResult(int iteration, Expression value,
             assert evaluationContext != null;
             MethodLevelData methodLevelData = evaluationContext.getCurrentStatement().statementAnalysis.methodLevelData;
             addToModifications(methodLevelData.new SetCircularCallOrUndeclaredFunctionalInterface());
+        }
+
+        public int getStatementTime() {
+            return statementTime;
         }
     }
 }

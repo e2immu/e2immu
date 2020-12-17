@@ -26,3 +26,17 @@ Eventual destinations of properties, values, object flows:
 During statement analysis, the maps in `StatementAnalysis` hold values and properties for all types of variables.
 These maps are incremental: once the analyser writes a value, it cannot remove the key anymore; it can only increase this value.
 
+
+==== Variable fields
+
+Variable fields interact with synchronisation.
+A time increase is equivalent to an opportunity for another thread to update the content of variable fields.
+
+The analyser can determine if a method increases time when called.
+Calls to non-private methods always increase time because the user can override them.
+Certain statements increase time (`try-catch`, `synchronized`).
+The method resolver determines if a method increases time or not.
+
+The statement analyser keeps track of time.
+Determining time obviously depends on the methods being called, but because the method resolver determines if a method increases time, this happens in a deterministic way in the first iteration of the analyser.
+

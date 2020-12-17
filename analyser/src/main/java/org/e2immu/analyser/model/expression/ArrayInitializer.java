@@ -165,7 +165,7 @@ public class ArrayInitializer implements Expression {
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationResult evaluationContext) {
         return new NewObject(primitives, returnType(), getObjectFlow());
     }
 }

@@ -54,10 +54,6 @@ public interface EvaluationContext {
         return null;
     }
 
-    default MethodAnalysis getCurrentMethodAnalysis() {
-        return null;
-    }
-
     default StatementAnalyser getCurrentStatement() {
         return null;
     }
@@ -83,7 +79,7 @@ public interface EvaluationContext {
         return child(condition);
     }
 
-    default Expression currentValue(Variable variable) {
+    default Expression currentValue(Variable variable, int statementTime) {
         return EmptyExpression.NO_VALUE;
     }
 
@@ -126,8 +122,8 @@ public interface EvaluationContext {
         return Stream.empty();
     }
 
-    default ObjectFlow getObjectFlow(Variable variable) {
-        return currentValue(variable).getObjectFlow();
+    default ObjectFlow getObjectFlow(Variable variable, int statementTime) {
+        return currentValue(variable, statementTime).getObjectFlow();
     }
 
     default int getProperty(Expression value, VariableProperty variableProperty) {
@@ -150,6 +146,9 @@ public interface EvaluationContext {
         return value.getProperty(this, variableProperty); // will work in many cases
     }
 
+    /*
+     assumes that currentValue has been queried before!
+     */
     default int getProperty(Variable variable, VariableProperty variableProperty) {
         throw new UnsupportedOperationException();
     }
@@ -182,6 +181,9 @@ public interface EvaluationContext {
         return value.linkedVariables(this);
     }
 
+    /*
+    assumes that currentValue has been queried before!
+     */
     default Set<Variable> linkedVariables(Variable variable) {
         return Set.of();
     }
@@ -194,7 +196,7 @@ public interface EvaluationContext {
     This default implementation is the correct one for basic tests and the companion analyser (we cannot use companions in the
     companion analyser, that would be chicken-and-egg).
      */
-    default NewObject currentInstance(Variable variable) {
+    default NewObject currentInstance(Variable variable, int statementTime) {
         if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
         // always a new one with empty state -- we cannot be bothered here.
         return new NewObject(getPrimitives(), variable.parameterizedType(), ObjectFlow.NO_FLOW);
@@ -207,4 +209,12 @@ public interface EvaluationContext {
     default EvaluationContext getClosure() {
         return null;
     }
+
+    default int getInitialStatementTime() {
+        return 0;
+    }
+
+    default int getFinalStatementTime() { return 0; }
+
+    default void ensureVariableAtTimeOfSubBlocks(Variable variable) { throw new UnsupportedOperationException(); }
 }

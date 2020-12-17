@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
@@ -37,6 +36,8 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 
 class VariableInfoImpl implements VariableInfo {
+    public static final int NOT_A_VARIABLE_FIELD = -1;
+
     public final Variable variable;
     /**
      * Generally the variable's fully qualified name, but can be more complicated (see DependentVariable)
@@ -52,9 +53,17 @@ class VariableInfoImpl implements VariableInfo {
     public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
     public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
 
+    public final int statementTime;
+
+    // ONLY for testing!
     VariableInfoImpl(Variable variable) {
+        this(variable, NOT_A_VARIABLE_FIELD);
+    }
+
+    VariableInfoImpl(Variable variable, int statementTime) {
         this.variable = Objects.requireNonNull(variable);
         this.name = variable.fullyQualifiedName();
+        this.statementTime = statementTime;
     }
 
     VariableInfoImpl(VariableInfoImpl previous) {
@@ -65,11 +74,12 @@ class VariableInfoImpl implements VariableInfo {
         this.stateOnAssignment.copy(previous.stateOnAssignment);
         this.linkedVariables.copy(previous.linkedVariables);
         this.objectFlow.copy(previous.objectFlow);
+        this.statementTime = previous.statementTime;
     }
 
     @Override
-    public boolean isVariableField() {
-        return variable instanceof FieldReference; // FIXME and some other criterion
+    public int getStatementTime() {
+        return statementTime;
     }
 
     @Override
@@ -214,12 +224,15 @@ class VariableInfoImpl implements VariableInfo {
         Expression currentValue = getValue();
         if (mergedValue == NO_VALUE || currentValue.equals(mergedValue))
             return newObject == null ? this : newObject; // no need to create
+
+        int mergedStatementTime = mergedStatementTime(evaluationContext);
+
         if (newObject == null) {
             //if (!value.isSet()) {
             //    setValue(mergedValue);
             //    return this;
             //}
-            VariableInfoImpl newVi = new VariableInfoImpl(variable);
+            VariableInfoImpl newVi = new VariableInfoImpl(variable, mergedStatementTime);
             //if (!existingValuesWillBeOverwritten) newVi.properties.putAll(properties);
             newVi.setValue(mergedValue);
             newVi.stateOnAssignment.copy(stateOnAssignment);
@@ -227,8 +240,14 @@ class VariableInfoImpl implements VariableInfo {
         }
         if (!newObject.value.isSet() || !newObject.value.get().equals(mergedValue)) {
             newObject.setValue(mergedValue); // will cause severe problems if the value already there is different :-)
+            assert newObject.statementTime == mergedStatementTime;
         }
         return newObject;
+    }
+
+    private int mergedStatementTime(EvaluationContext evaluationContext) {
+        if (statementTime == NOT_A_VARIABLE_FIELD) return NOT_A_VARIABLE_FIELD;
+        return evaluationContext.getFinalStatementTime();
     }
 
     void setValue(Expression value) {

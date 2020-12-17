@@ -142,7 +142,9 @@ public interface Expression extends Element, Comparable<Expression> {
         return ((boolValue = this.asInstanceOf(BooleanConstant.class)) != null) && !boolValue.getValue();
     }
 
-    NewObject getInstance(EvaluationContext evaluationContext);
+    default NewObject getInstance(EvaluationResult evaluationResult) {
+        return null;
+    }
 
     default EvaluationResult reEvaluate(EvaluationContext evaluationContext, Map<Expression, Expression> translation) {
         Expression inMap = translation.get(this);

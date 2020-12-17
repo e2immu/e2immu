@@ -280,11 +280,6 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
-        return null;
-    }
-
-    @Override
     public int internalCompareTo(Expression v) {
         return expression.compareTo(((GreaterThanZero) v).expression);
     }

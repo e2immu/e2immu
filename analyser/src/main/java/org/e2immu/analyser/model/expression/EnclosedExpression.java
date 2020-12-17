@@ -60,7 +60,7 @@ public record EnclosedExpression(Expression inner) implements Expression {
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationResult evaluationContext) {
         return inner.getInstance(evaluationContext);
     }
 

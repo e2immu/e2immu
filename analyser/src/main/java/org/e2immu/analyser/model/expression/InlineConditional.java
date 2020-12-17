@@ -182,9 +182,9 @@ public class InlineConditional implements Expression {
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationResult evaluationResult) {
         if (Primitives.isPrimitiveExcludingVoid(returnType())) return null;
-        return new NewObject(evaluationContext.getPrimitives(), returnType(), getObjectFlow());
+        return new NewObject(evaluationResult.evaluationContext().getPrimitives(), returnType(), getObjectFlow());
     }
 
     @Override

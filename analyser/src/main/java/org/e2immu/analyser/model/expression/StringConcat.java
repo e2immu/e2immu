@@ -18,6 +18,7 @@
 package org.e2immu.analyser.model.expression;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
@@ -80,7 +81,7 @@ public class StringConcat extends BinaryOperator {
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
-        return new NewObject(evaluationContext.getPrimitives(), returnType(), getObjectFlow());
+    public NewObject getInstance(EvaluationResult evaluationResult) {
+        return new NewObject(evaluationResult.evaluationContext().getPrimitives(), returnType(), getObjectFlow());
     }
 }

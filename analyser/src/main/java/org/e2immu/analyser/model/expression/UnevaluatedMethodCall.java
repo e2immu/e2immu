@@ -93,11 +93,6 @@ public record UnevaluatedMethodCall(String methodName) implements Expression {
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
-        return null;
-    }
-
-    @Override
     public ObjectFlow getObjectFlow() {
         return null;
     }

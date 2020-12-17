@@ -36,9 +36,9 @@ public record EmptyExpression(String msg, int order) implements Expression {
     public static final EmptyExpression EMPTY_EXPRESSION = new EmptyExpression("<empty>", 0);
     public static final EmptyExpression NO_VALUE = new EmptyExpression("<no value>", 1);
 
-    public static final EmptyExpression DEFAULT_EXPRESSION = new EmptyExpression("<default>",-1); // negation of the disjunction of all earlier conditions
-    public static final EmptyExpression FINALLY_EXPRESSION = new EmptyExpression("<finally>",-1); // always true condition
-    public static final EmptyExpression NO_RETURN_VALUE = new EmptyExpression("<no return value>",-1); // assigned to void methods
+    public static final EmptyExpression DEFAULT_EXPRESSION = new EmptyExpression("<default>", -1); // negation of the disjunction of all earlier conditions
+    public static final EmptyExpression FINALLY_EXPRESSION = new EmptyExpression("<finally>", -1); // always true condition
+    public static final EmptyExpression NO_RETURN_VALUE = new EmptyExpression("<no return value>", -1); // assigned to void methods
 
     @Override
     public boolean equals(Object obj) {
@@ -74,11 +74,6 @@ public record EmptyExpression(String msg, int order) implements Expression {
     @Override
     public int order() {
         return ExpressionComparator.ORDER_NO_VALUE;
-    }
-
-    @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
-        return null;
     }
 
     @Override

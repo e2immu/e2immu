@@ -166,6 +166,7 @@ public class MethodLevelData {
             Set<Variable> dependentVariables = SetUtil.immutableUnion(Set.of(baseVariable), dependencyGraph.dependencies(baseVariable));
             boolean containsDelayVar = dependentVariables.stream().anyMatch(v -> v == DELAY_VAR);
             if (!containsDelayVar) {
+                dependentVariables.forEach(sharedState.evaluationContext::ensureVariableAtTimeOfSubBlocks);
                 int summary = sharedState.evaluationContext.summarizeModification(dependentVariables);
                 String logLocation = sharedState.logLocation;
 

@@ -92,9 +92,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     @Override
-    public NewObject getInstance(EvaluationContext evaluationContext) {
+    public NewObject getInstance(EvaluationResult evaluationResult) {
         if (Primitives.isPrimitiveExcludingVoid(returnType())) return null;
-        return new NewObject(evaluationContext.getPrimitives(), returnType(), objectFlow);
+        return new NewObject(evaluationResult.evaluationContext().getPrimitives(), returnType(), objectFlow);
     }
 
     @Override
@@ -229,7 +229,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
             boolean undeclaredFunctionalInterface;
             if (methodInfo.isSingleAbstractMethod()) {
-                Boolean b = EvaluateParameters.tryToDetectUndeclared(evaluationContext, object);
+                Boolean b = EvaluateParameters.tryToDetectUndeclared(evaluationContext, builder.getStatementTime(), object);
                 undeclaredFunctionalInterface = b != null && b;
                 delayUndeclared = b == null;
             } else {
@@ -344,6 +344,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         checkCommonErrors(builder, evaluationContext, objectValue);
 
+        if (!methodInfo.methodResolution.isSet() || methodInfo.methodResolution.get().allowsInterrupts()) {
+            builder.incrementStatementTime();
+        }
         return builder.build();
     }
 
@@ -366,7 +369,8 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             assert methodInfo.methodInspection.get().isStatic();
             return null; // static method
         } else {
-            newObject = objectValue.getInstance(evaluationContext);
+            // note that we can build multiple times; alt., we make interface and implementation
+            newObject = objectValue.getInstance(builder.build());
         }
         Objects.requireNonNull(newObject, "Modifying method on constant or primitive? Impossible: " + objectValue.getClass());
 

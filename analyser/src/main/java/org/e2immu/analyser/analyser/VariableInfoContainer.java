@@ -84,9 +84,11 @@ public interface VariableInfoContainer {
      * Important to note that an assignment is split in multiple methods (markAssigned, setValue, assigned) because
      * not all data may be available in the same iteration.
      *
-     * @param level the level at which the assignment takes place (1, 2, 3, 4, cannot be 0)
+     * @param level         the level at which the assignment takes place (1, 2, 3, 4, cannot be 0)
+     * @param statementTime the time at which the assignment takes place; it needs to be set ONLY for variable fields;
+     *                      otherwise, it must have value VariableInfoImpl.NOT_A_VARIABLE_FIELD
      */
-    void assignment(int level);
+    void assignment(int level, int statementTime);
 
     // explicit freezing (DONE at the end of statement analyser): forbid any future writing
     void freeze();
