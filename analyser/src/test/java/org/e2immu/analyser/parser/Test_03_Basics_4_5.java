@@ -22,10 +22,7 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
-import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
@@ -139,6 +136,9 @@ public class Test_03_Basics_4_5 extends CommonTestRunner {
                         Assert.assertEquals(4, d.statementAnalysis().variables.size());
                     }
                 }
+                if ("3".equals(d.statementId())) {
+                    Assert.assertNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
+                }
             }
             if ("test2".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId()) && d.iteration() > 0) {
@@ -156,6 +156,19 @@ public class Test_03_Basics_4_5 extends CommonTestRunner {
                     Variable v2Redirected = ((VariableExpression) valueV2).variable();
                     Assert.assertEquals(v1Redirected, v2Redirected);
                 }
+                if ("2".equals(d.statementId()) && d.iteration() > 0) {
+                    Assert.assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
+                }
+            }
+            if ("test3".equals(d.methodInfo().name)) {
+                if ("3".equals(d.statementId()) && d.iteration() > 0) {
+                    Assert.assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
+                }
+            }
+            if ("test6".equals(d.methodInfo().name)) {
+                if ("3".equals(d.statementId()) && d.iteration() > 0) {
+                    Assert.assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
+                }
             }
         };
 
@@ -163,9 +176,13 @@ public class Test_03_Basics_4_5 extends CommonTestRunner {
             TypeInfo system = typeMap.get(System.class);
             FieldInfo out = system.getFieldByName("out", true);
             Assert.assertEquals(Level.TRUE, out.fieldAnalysis.get().getProperty(VariableProperty.FINAL));
+
+            TypeInfo string = typeMap.get(String.class);
+            MethodInfo equals = string.findUniqueMethod("equals", 1);
+            Assert.assertEquals(Level.FALSE, equals.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
         };
 
-        testClass("Basics_6", 0, 0, new DebugConfiguration.Builder()
+        testClass("Basics_6", 0, 12, new DebugConfiguration.Builder()
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

@@ -86,6 +86,11 @@ public class EvaluateMethodCall {
             return builder.setExpression(evaluationOnConstant).build();
         }
 
+        Expression evaluationOfEquals = computeEvaluationOfEquals(evaluationContext, methodInfo, objectValue, parameters);
+        if (evaluationOfEquals != null) {
+            return builder.setExpression(evaluationOfEquals).build();
+        }
+
         if (!evaluationContext.disableEvaluationOfMethodCallsUsingCompanionMethods()) {
             // boolean added = set.add(e);  -- if the set is empty, we know the result will be "true"
             Expression assistedByCompanion = valueAssistedByCompanion(builder, evaluationContext,
@@ -179,6 +184,30 @@ public class EvaluateMethodCall {
         // normal method value
         MethodCall methodValue = new MethodCall(objectValue, methodInfo, parameters, objectFlowOfResult);
         return builder.setExpression(methodValue).build();
+    }
+
+    private static Expression computeEvaluationOfEquals(EvaluationContext evaluationContext,
+                                                        MethodInfo methodInfo,
+                                                        Expression objectValue,
+                                                        List<Expression> parameters) {
+        if ("equals".equals(methodInfo.name) && parameters.size() == 1) {
+            Expression paramValue = parameters.get(0);
+            Boolean nonModifying = nonModifying(evaluationContext, paramValue);
+            if (nonModifying == null) return EmptyExpression.NO_VALUE;
+            if (paramValue.equals(objectValue) && nonModifying) {
+                return new BooleanConstant(evaluationContext.getPrimitives(), true);
+            }
+        }
+        return null;
+    }
+
+    private static Boolean nonModifying(EvaluationContext evaluationContext, Expression expression) {
+        if (expression instanceof MethodCall) {
+            int modified = evaluationContext.getProperty(expression, VariableProperty.MODIFIED);
+            if (modified == Level.DELAY) return null;
+            return modified == Level.FALSE;
+        }
+        return true;
     }
 
     private static NewObject obtainInstance(EvaluationResult.Builder builder, EvaluationContext evaluationContext, Expression objectValue) {

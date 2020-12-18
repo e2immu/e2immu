@@ -957,9 +957,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             } else if (statementAnalysis.statement instanceof AssertStatement) {
                 boolean isTrue = constant.isBoolValueTrue();
                 if (isTrue) {
-                    message = Message.ALERT_EVALUATES_TO_CONSTANT_TRUE;
+                    message = Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE;
                 } else {
-                    message = Message.ALERT_EVALUATES_TO_CONSTANT_FALSE;
+                    message = Message.ASSERT_EVALUATES_TO_CONSTANT_FALSE;
                     Optional<StatementAnalysis> next = statementAnalysis.navigationData.next.get();
                     next.ifPresent(nextAnalysis -> {
                         nextAnalysis.flowData.setGuaranteedToBeReached(NEVER);
