@@ -36,7 +36,6 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 
 class VariableInfoImpl implements VariableInfo {
-    public static final int NOT_A_VARIABLE_FIELD = -1;
 
     public final Variable variable;
     /**
@@ -53,17 +52,19 @@ class VariableInfoImpl implements VariableInfo {
     public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
     public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
 
-    public final int statementTime;
+    public final SetOnce<Integer> statementTime = new SetOnce<>();
 
     // ONLY for testing!
     VariableInfoImpl(Variable variable) {
-        this(variable, NOT_A_VARIABLE_FIELD);
+        this(variable, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
     }
 
     VariableInfoImpl(Variable variable, int statementTime) {
         this.variable = Objects.requireNonNull(variable);
         this.name = variable.fullyQualifiedName();
-        this.statementTime = statementTime;
+        if (statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
+            this.statementTime.set(statementTime);
+        }
     }
 
     VariableInfoImpl(VariableInfoImpl previous) {
@@ -74,12 +75,12 @@ class VariableInfoImpl implements VariableInfo {
         this.stateOnAssignment.copy(previous.stateOnAssignment);
         this.linkedVariables.copy(previous.linkedVariables);
         this.objectFlow.copy(previous.objectFlow);
-        this.statementTime = previous.statementTime;
+        this.statementTime.copy(previous.statementTime);
     }
 
     @Override
     public int getStatementTime() {
-        return statementTime;
+        return statementTime.getOrElse(VariableInfoContainer.VARIABLE_FIELD_DELAY);
     }
 
     @Override
@@ -167,12 +168,6 @@ class VariableInfoImpl implements VariableInfo {
         return properties.isSet(variableProperty);
     }
 
-    public void writeValue(Expression value) {
-        if (value != NO_VALUE) {
-            setValue(value);
-        }
-    }
-
     // we essentially compute the union
     public void mergeLinkedVariables(boolean existingValuesWillBeOverwritten, VariableInfoImpl existing, List<VariableInfo> merge) {
         Set<Variable> merged = new HashSet<>();
@@ -228,25 +223,20 @@ class VariableInfoImpl implements VariableInfo {
         int mergedStatementTime = mergedStatementTime(evaluationContext);
 
         if (newObject == null) {
-            //if (!value.isSet()) {
-            //    setValue(mergedValue);
-            //    return this;
-            //}
             VariableInfoImpl newVi = new VariableInfoImpl(variable, mergedStatementTime);
-            //if (!existingValuesWillBeOverwritten) newVi.properties.putAll(properties);
             newVi.setValue(mergedValue);
             newVi.stateOnAssignment.copy(stateOnAssignment);
             return newVi;
         }
         if (!newObject.value.isSet() || !newObject.value.get().equals(mergedValue)) {
             newObject.setValue(mergedValue); // will cause severe problems if the value already there is different :-)
-            assert newObject.statementTime == mergedStatementTime;
+            assert newObject.statementTime.getOrElse(VariableInfoContainer.VARIABLE_FIELD_DELAY) == mergedStatementTime;
         }
         return newObject;
     }
 
     private int mergedStatementTime(EvaluationContext evaluationContext) {
-        if (statementTime == NOT_A_VARIABLE_FIELD) return NOT_A_VARIABLE_FIELD;
+        if (statementTime.getOrElse(VariableInfoContainer.VARIABLE_FIELD_DELAY) == VariableInfoContainer.NOT_A_VARIABLE_FIELD) return VariableInfoContainer.NOT_A_VARIABLE_FIELD;
         return evaluationContext.getFinalStatementTime();
     }
 
@@ -310,15 +300,7 @@ class VariableInfoImpl implements VariableInfo {
                     : two(evaluationContext, currentValue, merge.get(0), merge.get(1));
             if (result != null) return result;
         }
-/*
-        boolean noneEmpty = merge.stream().noneMatch(vi -> vi.getStateOnAssignment().isBoolValueTrue());
-        if (noneEmpty) {
-            Variable variable = allInvolveConstantsEqualToAVariable(merge);
-            if (variable != null) {
-                return inlineSwitch(existingValuesWillBeOverwritten, currentValue, variable, merge);
-            }
-        }
-*/
+
         // no clue
         return noConclusion(evaluationContext.getPrimitives());
     }

@@ -24,6 +24,7 @@ import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
@@ -439,6 +440,8 @@ public class TypeInspector {
             });
         }
 
+        // add @FunctionalInterface interface if needed
+
         if (countNonStaticNonDefaultIfInterface.get() == 1 && !haveFunctionalInterface && fullInspection) {
             boolean haveNonStaticNonDefaultsInSuperType = false;
             for (ParameterizedType superInterface : builder.getInterfacesImplemented()) {
@@ -452,9 +455,25 @@ public class TypeInspector {
                 builder.addAnnotation(expressionContext.typeContext.getPrimitives().functionalInterfaceAnnotationExpression);
             }
         }
+
+        // add empty constructor if needed
+
+        if (builder.constructors().isEmpty()) {
+            builder.addConstructor(createEmptyConstructor(expressionContext.typeContext));
+        }
+
         log(INSPECT, "Setting type inspection of {}", typeInfo.fullyQualifiedName);
         typeInfo.typeInspection.set(builder.build());
         return dollarTypes;
+    }
+
+    private MethodInfo createEmptyConstructor(TypeContext typeContext) {
+        MethodInspectionImpl.Builder builder = new MethodInspectionImpl.Builder(typeInfo);
+        builder.setInspectedBlock(Block.EMPTY_BLOCK);
+        builder.addModifier(MethodModifier.PUBLIC);
+        builder.readyToComputeFQN(typeContext);
+        typeContext.typeMapBuilder.registerMethodInspection(builder);
+        return builder.getMethodInfo();
     }
 
     private record DollarResolverResult(TypeInfo subType, boolean isDollarType) {

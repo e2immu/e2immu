@@ -505,13 +505,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             EvaluationResult.ExpressionChangeData valueChangeData = evaluationResult.valueChanges().get(variable);
             Set<Variable> linkTo = evaluationResult.linkedVariables().get(variable);
 
-            VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, variable);
+            VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, variable,
+                    statementAnalysis.statementTime(level));
             VariableInfo vi = vic.best(level);
             int read = vi.getProperty(VariableProperty.READ);
             int assigned = vi.getProperty(VariableProperty.ASSIGNED);
             VariableInfo vi1 = vic.best(1);
 
-            vic.assignment(level, VariableInfoImpl.NOT_A_VARIABLE_FIELD); // FIXME
+            vic.assignment(level, VariableInfoContainer.NOT_A_VARIABLE_FIELD); // FIXME
             Expression value = bestValue(valueChangeData, vi1);
             // we explicitly check for NO_VALUE, because "<no return value>" is legal!
             if (value != NO_VALUE) {
@@ -574,6 +575,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return status.get();
         // IMPROVE check that AddOnceSet is the right data structure
     }
+
 
     private Expression bestValue(EvaluationResult.ExpressionChangeData valueChangeData, VariableInfo vi1) {
         if (valueChangeData != null && valueChangeData.value() != NO_VALUE) {
@@ -665,6 +667,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      */
     private AnalysisStatus step1_initialisation(SharedState sharedState) {
         Structure structure = statementAnalysis.statement.getStructure();
+        int statementTime = sharedState.evaluationContext.getInitialStatementTime();
 
         // part 1: Create a local variable x for(X x: Xs) {...}, or in catch(Exception e)
         boolean assignedInLoop = statementAnalysis.statement instanceof LoopStatement;
@@ -673,8 +676,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             LocalVariableReference lvr = new LocalVariableReference(analyserContext, structure.localVariableCreation, List.of());
             StatementAnalysis firstStatementInBlock = firstStatementFirstBlock();
             final int l1 = VariableInfoContainer.LEVEL_1_INITIALISER;
-            VariableInfoContainer vic = firstStatementInBlock.findForWriting(analyserContext, lvr);
-            vic.assignment(l1, VariableInfoImpl.NOT_A_VARIABLE_FIELD);
+            VariableInfoContainer vic = firstStatementInBlock.findForWriting(analyserContext, lvr, statementTime);
+            vic.assignment(l1, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
             Map<VariableProperty, Integer> propertiesToSet = new HashMap<>();
             if (sharedState.forwardAnalysisInfo.inCatch()) {
                 propertiesToSet.put(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -701,7 +704,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (assignedInLoop) {
                     saToCreate.addProperty(analyserContext, VariableInfoContainer.LEVEL_1_INITIALISER, lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
                 } else {
-                    saToCreate.findOrCreateL1(analyserContext, lvr, sharedState.evaluationContext.getInitialStatementTime()); // "touch" it
+                    saToCreate.findOrCreateL1(analyserContext, lvr, statementTime); // "touch" it
                 }
             }
             try {
@@ -785,7 +788,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     // we still need to ensure that there is a level 3 present, because a 4 could be written in this iteration,
                     // and in the next one 3 needs to exist
                     VariableInfoContainer variableInfo = findReturnAsVariableForWriting();
-                    variableInfo.assignment(VariableInfoContainer.LEVEL_3_EVALUATION, VariableInfoImpl.NOT_A_VARIABLE_FIELD);
+                    variableInfo.assignment(VariableInfoContainer.LEVEL_3_EVALUATION, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
                     // all the rest in the new variableInfo object stays on DELAY
                 }
                 log(DELAYED, "Step 3 in statement {}, {} is delayed, apply", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
@@ -847,7 +850,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         } else throw new UnsupportedOperationException("? " + currentRV.getClass());
 
         VariableInfoContainer vic = statementAnalysis.findForWriting(returnVariable);
-        vic.assignment(VariableInfoContainer.LEVEL_3_EVALUATION, VariableInfoImpl.NOT_A_VARIABLE_FIELD);
+        vic.assignment(VariableInfoContainer.LEVEL_3_EVALUATION, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
         Map<VariableProperty, Integer> properties = sharedState.evaluationContext.getValueProperties(newInline);
         vic.setValueOnAssignment(VariableInfoContainer.LEVEL_3_EVALUATION, newInline, properties);
         vic.setLinkedVariables(VariableInfoContainer.LEVEL_3_EVALUATION, newInline.linkedVariables(sharedState.evaluationContext));
@@ -980,7 +983,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (!startOfBlocks.isEmpty()) {
             analysisStatus = step4_haveSubBlocks(sharedState, startOfBlocks);
         } else {
-            if (statementAnalysis.statement instanceof AssertStatement) {
+            if (statementAnalysis.statement instanceof AssertStatement &&
+                    statementAnalysis.stateData.valueOfExpression.isSet()) {
                 Expression assertion = statementAnalysis.stateData.valueOfExpression.get();
                 localConditionManager = localConditionManager.addToState(sharedState.evaluationContext, assertion);
                 boolean atLeastFieldOrParameterInvolved = assertion.variables().stream()
@@ -1043,7 +1047,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .filter(statementAnalyser -> !statementAnalyser.statementAnalysis.flowData.isUnreachable())
                     .map(StatementAnalyser::lastStatement)
                     .collect(Collectors.toList());
-            statementAnalysis.copyBackLocalCopies(evaluationContext, lastStatements, atLeastOneBlockExecuted, sharedState.previous);
+            maxTime = lastStatements.stream().mapToInt(sa -> sa.statementAnalysis.flowData.timeAfterSubBlocks.get()).max().orElseThrow();
+
+            statementAnalysis.copyBackLocalCopies(evaluationContext, lastStatements, atLeastOneBlockExecuted, sharedState.previous, maxTime);
 
             // compute the escape situation of the sub-blocks
             Expression addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
@@ -1052,7 +1058,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", addToStateAfterStatement);
             }
 
-            maxTime = lastStatements.stream().mapToInt(sa -> sa.statementAnalysis.flowData.timeAfterSubBlocks.get()).max().orElseThrow();
+
         } else {
             maxTime = statementAnalysis.flowData.timeAfterExecution.get();
         }
@@ -1436,6 +1442,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         public void ensureVariableAtTimeOfSubBlocks(Variable variable) {
             findOrCreateL1(variable, statementAnalysis.flowData.timeAfterSubBlocks.get());
         }
+
+        @Override
+        public int getInitialStatementTime() {
+            return statementAnalysis.flowData.initialTime.get();
+        }
+
+        @Override
+        public int getFinalStatementTime() {
+            return statementAnalysis.flowData.timeAfterSubBlocks.get();
+        }
+
     }
 
 
@@ -1543,14 +1560,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     public class MarkRead implements StatementAnalysisModification {
         public final Variable variable;
+        public final int statementTime;
 
-        public MarkRead(Variable variable) {
+        public MarkRead(Variable variable, int statementTime) {
             this.variable = variable;
+            this.statementTime = statementTime;
         }
 
         @Override
         public void accept(ModificationData modificationData) {
-            statementAnalysis.findForWriting(analyserContext, variable).markRead(modificationData.level(variable));
+            statementAnalysis.findForWriting(analyserContext, variable, statementTime).markRead(modificationData.level(variable));
         }
 
         @Override

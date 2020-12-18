@@ -77,10 +77,6 @@ public interface AnalyserContext extends AnalysisProvider, InspectionProvider {
         return null;
     }
 
-    default TypeAnalysis getPrimaryTypeAnalysis() {
-        return null;
-    }
-
     default FieldAnalysis getFieldAnalysis(FieldInfo fieldInfo) {
         try {
             FieldAnalyser fieldAnalyser = getFieldAnalysers().get(fieldInfo);

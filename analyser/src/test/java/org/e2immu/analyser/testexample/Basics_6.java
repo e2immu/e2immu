@@ -37,11 +37,12 @@ public class Basics_6 {
         assert v1.equals(v2); // always true
     }
 
-    public void test3() {
+    public String test3() {
         String v1 = field;
         String v3 = someMinorMethod(v1);
         String v2 = field;
         assert v1.equals(v2); // always true... nothing "interrupting"
+        return v3;
     }
 
     public void test4() {

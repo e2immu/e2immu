@@ -54,6 +54,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
+    public void setStatementTime(int level, int statementTime) {
+        int writeLevel = findLevelForWriting(level);
+        VariableInfoImpl variableInfo = getAndCast(writeLevel);
+        variableInfo.statementTime.set(statementTime);
+    }
+
+    @Override
     public VariableInfo best(int maxLevel) {
         VariableInfo vi = null;
         int level = maxLevel;

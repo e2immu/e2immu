@@ -276,6 +276,11 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         List<Expression> parameterValues = res.v;
         builder.compose(objectResult, res.k.build());
 
+        // before we return, increment the time, irrespective of NO_VALUE
+        if (!methodInfo.methodResolution.isSet() || methodInfo.methodResolution.get().allowsInterrupts()) {
+            builder.incrementStatementTime();
+        }
+
         if (parameterValues.stream().anyMatch(pv -> pv == EmptyExpression.NO_VALUE)) {
             Logger.log(DELAYED, "Delayed method call because one of the parameter values of {} is delayed: {}",
                     methodInfo.name, parameterValues);
@@ -344,9 +349,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         checkCommonErrors(builder, evaluationContext, objectValue);
 
-        if (!methodInfo.methodResolution.isSet() || methodInfo.methodResolution.get().allowsInterrupts()) {
-            builder.incrementStatementTime();
-        }
         return builder.build();
     }
 

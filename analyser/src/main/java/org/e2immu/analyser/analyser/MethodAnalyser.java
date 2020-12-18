@@ -915,11 +915,13 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     public boolean haveFieldAsVariable(FieldInfo fieldInfo) {
-        return methodAnalysis.getLastStatement().variables.isSet(fieldInfo.fullyQualifiedName());
+        StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
+        return lastStatement != null && lastStatement.variables.isSet(fieldInfo.fullyQualifiedName());
     }
 
     public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
-        return methodAnalysis.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
+        StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
+        return lastStatement == null ? null : methodAnalysis.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
     }
 
     public VariableInfo getThisAsVariable() {
@@ -927,7 +929,9 @@ public class MethodAnalyser extends AbstractAnalyser {
     }
 
     public VariableInfo getReturnAsVariable() {
-        return methodAnalysis.getLastStatement().getLatestVariableInfo(methodInfo.fullyQualifiedName());
+        StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
+        assert lastStatement != null; // either constructor, and then we shouldn't ask; or compilation error
+        return lastStatement.getLatestVariableInfo(methodInfo.fullyQualifiedName());
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {

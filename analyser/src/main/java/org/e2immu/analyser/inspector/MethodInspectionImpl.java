@@ -259,12 +259,6 @@ public class MethodInspectionImpl extends InspectionImpl implements MethodInspec
         }
 
         @Fluent
-        public Builder addParameters(@NotNull Collection<ParameterInspectionImpl.Builder> parameters) {
-            parameters.forEach(this::addParameter);
-            return this;
-        }
-
-        @Fluent
         public Builder addModifier(@NotNull MethodModifier methodModifier) {
             modifiers.add(methodModifier);
             return this;

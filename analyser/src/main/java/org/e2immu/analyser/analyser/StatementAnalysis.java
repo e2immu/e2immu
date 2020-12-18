@@ -290,7 +290,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // at the beginning of the method
             if (methodAnalysis.getMethodInfo().hasReturnValue()) {
                 Variable retVar = new ReturnVariable(methodAnalysis.getMethodInfo());
-                VariableInfoContainer vic = createVariable(analyserContext, retVar);
+                VariableInfoContainer vic = createVariable(analyserContext, retVar, 0);
                 vic.setStateOnAssignment(VariableInfoContainer.LEVEL_1_INITIALISER, new BooleanConstant(primitives, true));
                 READ_FROM_RETURN_VALUE_PROPERTIES.forEach(vp -> vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, vp, vp.falseValue));
             }
@@ -316,7 +316,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().getParameters()) {
                 VariableInfo prevIteration = findOrNull(parameterInfo, VariableInfoContainer.LEVEL_1_INITIALISER);
                 if (prevIteration != null) {
-                    VariableInfoContainer vic = findForWriting(analyserContext, parameterInfo);
+                    VariableInfoContainer vic = findForWriting(analyserContext, parameterInfo, flowData.initialTime.get());
                     ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                     for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
                         int value = parameterAnalysis.getProperty(variableProperty);
@@ -347,6 +347,18 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
             // specifically for fields
             if (variableInfo.variable() instanceof FieldReference fieldReference) {
+
+                if (viLevel1.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
+                    // see if we can resolve the delay
+                    FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+                    int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+                    if (effectivelyFinal == Level.TRUE) {
+                        vic.setStatementTime(VariableInfoContainer.LEVEL_1_INITIALISER, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+                    } else if (effectivelyFinal == Level.FALSE) {
+                        vic.setStatementTime(VariableInfoContainer.LEVEL_1_INITIALISER, flowData.initialTime.get());
+                    }
+                }
+
                 int read = variableInfo.getProperty(READ);
                 if (read >= Level.TRUE && noEarlierAccess(variableInfo.variable(), copyFrom)) {
                     // this is the first statement in the method where this field occurs
@@ -374,11 +386,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param lastStatements          the last statement of each of the blocks
      * @param atLeastOneBlockExecuted true if we can (potentially) discard the current value
      * @param previous                the previous statement
+     * @param statementTime           the statement time of subBlocks
      */
     public void copyBackLocalCopies(EvaluationContext evaluationContext,
                                     List<StatementAnalyser> lastStatements,
                                     boolean atLeastOneBlockExecuted,
-                                    StatementAnalysis previous) {
+                                    StatementAnalysis previous,
+                                    int statementTime) {
         methodLevelData.copyFrom(Stream.concat(previous == null ? Stream.empty() : Stream.of(previous.methodLevelData),
                 lastStatements.stream().map(sa -> sa.statementAnalysis.methodLevelData)));
 
@@ -401,7 +415,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 VariableInfoContainer destination;
                 if (!variables.isSet(fqn)) {
                     Variable variable = e.getValue().current().variable();
-                    destination = createVariable(evaluationContext.getAnalyserContext(), variable);
+                    destination = createVariable(evaluationContext.getAnalyserContext(), variable, statementTime);
                 } else {
                     destination = vic;
                 }
@@ -443,17 +457,24 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param variable        the variable
      * @return the container of the new variable
      */
-    private VariableInfoContainer createVariable(AnalyserContext analyserContext, Variable variable) {
+    private VariableInfoContainer createVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
         String fqn = variable.fullyQualifiedName();
         if (variables.isSet(fqn)) throw new UnsupportedOperationException("Already exists");
 
-        int statementTime;
-        if(variable instanceof FieldReference fieldReference) {
-            statementTime = 0; // FIXME
+        int statementTimeForVariable;
+        if (variable instanceof FieldReference fieldReference) {
+            int effectivelyFinal = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(VariableProperty.FINAL);
+            if (effectivelyFinal == Level.DELAY) {
+                statementTimeForVariable = VariableInfoContainer.VARIABLE_FIELD_DELAY;
+            } else if (effectivelyFinal == Level.FALSE) {
+                statementTimeForVariable = statementTime;
+            } else {
+                statementTimeForVariable = VariableInfoContainer.NOT_A_VARIABLE_FIELD;
+            }
         } else {
-            statementTime = VariableInfoImpl.NOT_A_VARIABLE_FIELD;
+            statementTimeForVariable = VariableInfoContainer.NOT_A_VARIABLE_FIELD;
         }
-        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, statementTime);
+        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, statementTimeForVariable);
 
         variables.put(variable.fullyQualifiedName(), vic);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", variable.fullyQualifiedName());
@@ -475,13 +496,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setLinkedVariablesFromAnalyser(Set.of());
         } else if (variable instanceof FieldReference fieldReference) {
             ExpressionAndLinkedVariables initialValue = initialValueOfField(analyserContext, fieldReference);
-            if (initialValue.expression != EmptyExpression.NO_VALUE) {
+            if (!initialValue.expression.isUnknown()) { // both NO_VALUE and EMPTY_EXPRESSION
                 vic.setInitialValueFromAnalyser(initialValue.expression, propertyMap(analyserContext, fieldReference.fieldInfo));
             }
             // a field's local copy is always created not modified... can only go "up"
             vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, MODIFIED, 0);
             if (initialValue.linkedVariables != null) {
-                vic.setLinkedVariables(VariableInfoContainer.LEVEL_1_INITIALISER, initialValue.linkedVariables);
+                vic.setLinkedVariablesFromAnalyser(initialValue.linkedVariables);
             }
         } else if (variable instanceof LocalVariableReference lvr) {
             // but local variables get their linked variables from an assignment, potentially at LEVEL 1
@@ -653,7 +674,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public void addProperty(AnalyserContext analyserContext, int level, Variable variable, VariableProperty variableProperty, int value) {
         Objects.requireNonNull(variable);
-        VariableInfoContainer vic = findForWriting(analyserContext, variable);
+        VariableInfoContainer vic = findForWriting(analyserContext, variable, statementTime(level));
         vic.ensureProperty(level, variableProperty, value);
 
         Expression currentValue = vic.current().getValue();
@@ -663,6 +684,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (!variable.equals(other)) {
             addProperty(analyserContext, level, other, variableProperty, value);
         }
+    }
+
+    public int statementTime(int level) {
+        return level < 3 ? flowData.initialTime.get() : level < 4 ? flowData.timeAfterExecution.get() : flowData.timeAfterSubBlocks.get();
     }
 
     /**
@@ -711,11 +736,30 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         String fqn = variable.fullyQualifiedName();
         VariableInfoContainer vic;
         if (!variables.isSet(fqn)) {
-            vic = createVariable(analyserContext, variable);
+            vic = createVariable(analyserContext, variable, statementTime);
         } else {
             vic = variables.get(fqn);
         }
-        return vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
+        VariableInfo vi = vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
+        if (vi.variable() instanceof FieldReference fieldReference && vi.getStatementTime() >= 0) {
+            LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), fieldReference.fullyQualifiedName() + "$" + statementTime,
+                    fieldReference.parameterizedType(), List.of(), methodAnalysis.getMethodInfo().typeInfo);
+            LocalVariableReference lvr = new LocalVariableReference(analyserContext, lv, List.of());
+            VariableInfoContainer lvrVic;
+            if (variables.isSet(lvr.fullyQualifiedName())) {
+                lvrVic = variables.get(lvr.fullyQualifiedName());
+            } else {
+                lvrVic = createVariable(analyserContext, lvr, statementTime);
+
+                // same as from the field
+                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+                Expression newObject = new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
+                lvrVic.setInitialValueFromAnalyser(newObject, propertyMap(analyserContext, fieldReference.fieldInfo));
+                lvrVic.setLinkedVariablesFromAnalyser(Set.of()); // there cannot be linked variables for a variable field...
+            }
+            return lvrVic.current();
+        }
+        return vi;
     }
 
     /**
@@ -754,7 +798,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public VariableInfo findOrThrow(@NotNull Variable variable) {
         String fqn = variable.fullyQualifiedName();
         VariableInfoContainer vic = variables.getOtherwiseNull(fqn);
-        if (vic == null) throw new UnsupportedOperationException("Have not yet evaluated "+variable.fullyQualifiedName());
+        if (vic == null)
+            throw new UnsupportedOperationException("Have not yet evaluated " + variable.fullyQualifiedName());
         return vic.current();
     }
 
@@ -774,10 +819,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @return the container from which the setXX methods can be called
      */
 
-    public VariableInfoContainer findForWriting(@NotNull AnalyserContext analyserContext, @NotNull Variable variable) {
+    public VariableInfoContainer findForWriting(@NotNull AnalyserContext analyserContext,
+                                                @NotNull Variable variable,
+                                                int statementTime) {
         String fqn = variable.fullyQualifiedName();
         if (variables.isSet(fqn)) return variables.get(fqn);
-        return createVariable(analyserContext, variable);
+        return createVariable(analyserContext, variable, statementTime);
     }
 
     /**

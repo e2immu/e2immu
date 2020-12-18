@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -51,14 +50,12 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
     public final List<Analyser> analysers;
     public final Configuration configuration;
     public final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
-    private final TypeAnalysis primaryTypeAnalysis;
     private final Map<TypeInfo, TypeAnalyser> typeAnalysers;
     private final Map<MethodInfo, MethodAnalyser> methodAnalysers;
     private final Map<FieldInfo, FieldAnalyser> fieldAnalysers;
     private final Map<ParameterInfo, ParameterAnalyser> parameterAnalysers;
     private final Messages messages = new Messages();
     private final Primitives primitives;
-    private final ShallowMethodAnalyser shallowMethodAnalyser;
 
     public PrimaryTypeAnalyser(@NotNull SortedType sortedType,
                                @NotNull Configuration configuration,
@@ -71,7 +68,6 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         this.primitives = primitives;
         this.primaryType = Objects.requireNonNull(sortedType.primaryType());
         assert this.primaryType.isPrimaryType();
-        this.shallowMethodAnalyser = new ShallowMethodAnalyser(primitives, this, e2ImmuAnnotationExpressions);
 
         // do the types first, so we can pass on a TypeAnalysis objects
         ImmutableMap.Builder<TypeInfo, TypeAnalyser> typeAnalysersBuilder = new ImmutableMap.Builder<>();
@@ -84,25 +80,20 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
             }
         });
         typeAnalysers = typeAnalysersBuilder.build();
-        this.primaryTypeAnalysis = primaryTypeAnalyser.get().typeAnalysis;
 
         // then methods
-        // filter out those that have NOT been defined!
+        // filtering out those methods that have not been defined is not a good idea, since the MethodAnalysisImpl object
+        // can only reach TypeAnalysisImpl, and not its builder. We'd better live with empty methods in the method analyser.
         ImmutableMap.Builder<ParameterInfo, ParameterAnalyser> parameterAnalysersBuilder = new ImmutableMap.Builder<>();
         ImmutableMap.Builder<MethodInfo, MethodAnalyser> methodAnalysersBuilder = new ImmutableMap.Builder<>();
         sortedType.methodsFieldsSubTypes().forEach(mfs -> {
             if (mfs instanceof MethodInfo methodInfo) {
-                if (methodInfo.shallowAnalysis()) {
-                    MethodAnalysisImpl.Builder builder = shallowMethodAnalyser.copyAnnotationsIntoMethodAnalysisProperties(methodInfo);
-                    methodInfo.setAnalysis(builder.build());
-                } else {
-                    MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo).typeAnalysis,
-                            false, this);
-                    for (ParameterAnalyser parameterAnalyser : analyser.getParameterAnalysers()) {
-                        parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
-                    }
-                    methodAnalysersBuilder.put(methodInfo, analyser);
+                MethodAnalyser analyser = new MethodAnalyser(methodInfo, typeAnalysers.get(methodInfo.typeInfo).typeAnalysis,
+                        false, this);
+                for (ParameterAnalyser parameterAnalyser : analyser.getParameterAnalysers()) {
+                    parameterAnalysersBuilder.put(parameterAnalyser.parameterInfo, parameterAnalyser);
                 }
+                methodAnalysersBuilder.put(methodInfo, analyser);
             }
         });
 
@@ -128,10 +119,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
                 if (samAnalyser != null) {
                     return List.of(analyser, samAnalyser).stream();
                 }
-            } else if (mfs instanceof MethodInfo methodInfo) {
-                if (methodInfo.shallowAnalysis()) {
-                    return Stream.empty(); // interface method
-                }
+            } else if (mfs instanceof MethodInfo) {
                 analyser = methodAnalysers.get(mfs);
             } else if (mfs instanceof TypeInfo) {
                 analyser = typeAnalysers.get(mfs);
@@ -152,8 +140,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
     }
 
     public Stream<Message> getMessageStream() {
-        return Stream.concat(shallowMethodAnalyser.getMessageStream(),
-                Stream.concat(messages.getMessageStream(), analysers.stream().flatMap(Analyser::getMessageStream)));
+        return Stream.concat(messages.getMessageStream(), analysers.stream().flatMap(Analyser::getMessageStream));
     }
 
     public void check() {
@@ -237,10 +224,5 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
 
     public Map<ParameterInfo, ParameterAnalyser> getParameterAnalysers() {
         return parameterAnalysers;
-    }
-
-    @Override
-    public TypeAnalysis getPrimaryTypeAnalysis() {
-        return primaryTypeAnalysis;
     }
 }

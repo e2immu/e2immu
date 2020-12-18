@@ -48,6 +48,9 @@ public interface VariableInfoContainer {
     int LEVEL_3_EVALUATION = 3;
     int LEVEL_4_SUMMARY = 4;
 
+    int VARIABLE_FIELD_DELAY = -1;
+    int NOT_A_VARIABLE_FIELD = -2;
+
     /**
      * General method for obtaining the "most relevant" <code>VariableInfo</code> object describing the state
      * of the variable after executing this statement.
@@ -149,4 +152,5 @@ public interface VariableInfoContainer {
                boolean existingValuesWillBeOverwritten,
                List<VariableInfo> merge);
 
+    void setStatementTime(int level, int statementTime);
 }

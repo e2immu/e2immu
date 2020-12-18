@@ -246,12 +246,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void markRead(Variable variable, int iteration) {
             StatementAnalyser statementAnalyser = statementAnalyser(variable);
             if (iteration == 0 && statementAnalyser != null) {
-                addToModifications(statementAnalyser.new MarkRead(variable));
+                addToModifications(statementAnalyser.new MarkRead(variable, statementTime));
 
                 // we do this because this. is often implicit
                 // when explicit, there may be two MarkRead modifications, which should not bother us too much??
                 if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof This) {
-                    addToModifications(statementAnalyser.new MarkRead(fieldReference.scope));
+                    addToModifications(statementAnalyser.new MarkRead(fieldReference.scope, statementTime));
                 }
             }
         }
