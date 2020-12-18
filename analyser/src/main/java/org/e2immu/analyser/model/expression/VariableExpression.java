@@ -109,7 +109,7 @@ public record VariableExpression(Variable variable,
     // code also used by FieldAccess
     public static EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo, Variable variable) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        Expression currentValue = builder.currentExpression(variable);
+        Expression currentValue = builder.currentExpression(variable, forwardEvaluationInfo.isNotAssignmentTarget());
         builder.setExpression(currentValue);
 
         // no statement analyser... we're in the shallow analyser

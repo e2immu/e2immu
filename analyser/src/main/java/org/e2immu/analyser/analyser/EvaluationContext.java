@@ -79,7 +79,7 @@ public interface EvaluationContext {
         return child(condition);
     }
 
-    default Expression currentValue(Variable variable, int statementTime) {
+    default Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
         return EmptyExpression.NO_VALUE;
     }
 
@@ -123,7 +123,7 @@ public interface EvaluationContext {
     }
 
     default ObjectFlow getObjectFlow(Variable variable, int statementTime) {
-        return currentValue(variable, statementTime).getObjectFlow();
+        return currentValue(variable, statementTime, true).getObjectFlow();
     }
 
     default int getProperty(Expression value, VariableProperty variableProperty) {

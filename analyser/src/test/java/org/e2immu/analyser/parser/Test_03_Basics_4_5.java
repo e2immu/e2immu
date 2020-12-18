@@ -40,8 +40,20 @@ public class Test_03_Basics_4_5 extends CommonTestRunner {
     // i = i + 1 on a field
     @Test
     public void test4() throws IOException {
-        testClass("Basics_4", 0, 0, new DebugConfiguration.Builder()
+        final String TYPE = "org.e2immu.analyser.testexample.Basics_4";
+        final String I = TYPE + ".i";
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("increment".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                if (I.equals(d.variableName())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
+                            "1+org.e2immu.analyser.testexample.Basics_4.i$0";
+                    Assert.assertEquals(expect, d.currentValue().toString());
+                }
+            }
+        };
+        testClass("Basics_4", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

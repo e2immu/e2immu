@@ -706,7 +706,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (assignedInLoop) {
                     saToCreate.addProperty(analyserContext, VariableInfoContainer.LEVEL_1_INITIALISER, lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
                 } else {
-                    saToCreate.findOrCreateL1(analyserContext, lvr, statementTime); // "touch" it
+                    saToCreate.findOrCreateL1(analyserContext, lvr, statementTime,false); // "touch" it
                 }
             }
             try {
@@ -1368,11 +1368,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return notNullVariablesInCondition.contains(variable);
         }
 
-        private VariableInfo findOrCreateL1(Variable variable, int statementTime) {
+        private VariableInfo findOrCreateL1(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
             if (closure != null && isNotMine(variable)) {
-                return ((EvaluationContextImpl) closure).findOrCreateL1(variable, statementTime);
+                return ((EvaluationContextImpl) closure).findOrCreateL1(variable, statementTime, isNotAssignmentTarget);
             }
-            return statementAnalysis.findOrCreateL1(analyserContext, variable, statementTime);
+            return statementAnalysis.findOrCreateL1(analyserContext, variable, statementTime, isNotAssignmentTarget);
         }
 
         private boolean isNotMine(Variable variable) {
@@ -1380,8 +1380,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public Expression currentValue(Variable variable, int statementTime) {
-            VariableInfo vi = findOrCreateL1(variable, statementTime);
+        public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+            VariableInfo vi = findOrCreateL1(variable, statementTime, isNotAssignmentTarget);
             Expression value = vi.getValue();
             // important! do not use variable in the next statement, but vi.variable()
             // we could have redirected from a variable field to a local variable copy
@@ -1390,7 +1390,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public NewObject currentInstance(Variable variable, int statementTime) {
-            VariableInfo vi = findOrCreateL1(variable, statementTime);
+            VariableInfo vi = findOrCreateL1(variable, statementTime, true);
             Expression value = vi.getValue();
 
             // redirect to other variable
@@ -1448,7 +1448,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void ensureVariableAtTimeOfSubBlocks(Variable variable) {
-            findOrCreateL1(variable, statementAnalysis.flowData.timeAfterSubBlocks.get());
+            findOrCreateL1(variable, statementAnalysis.flowData.timeAfterSubBlocks.get(), false);
         }
 
         @Override

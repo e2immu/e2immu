@@ -819,7 +819,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         @Override
         public ObjectFlow getObjectFlow(Variable variable, int statementTime) {
-            return currentValue(variable, statementTime).getObjectFlow();
+            return currentValue(variable, statementTime, true).getObjectFlow();
         }
 
         @Override
@@ -841,7 +841,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public Expression currentValue(Variable variable, int statementTime) {
+        public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
             if (variable instanceof FieldReference) {
                 return getVariableValue(variable);
             }

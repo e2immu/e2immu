@@ -215,7 +215,8 @@ public class EvaluateMethodCall {
             return theInstance;
         }
         if (objectValue instanceof VariableExpression variableValue) {
-            return builder.currentInstance(variableValue.variable(), ObjectFlow.NO_FLOW, new BooleanConstant(evaluationContext.getPrimitives(), true));
+            return builder.currentInstance(variableValue.variable(), ObjectFlow.NO_FLOW,
+                    new BooleanConstant(evaluationContext.getPrimitives(), true));
         }
         return null;
     }

@@ -747,11 +747,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return isEffectivelyFinal || inSyncBlock || inPartOfConstruction ? SINGLE_COPY : MULTI_COPY;
     }
 
-    public void assertVariableExists(Variable variable) {
-        assert variables.isSet(variable.fullyQualifiedName());
-    }
-
-
     /**
      * for reading
      *
@@ -759,7 +754,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param variable        the variable
      * @return the most current variable info object
      */
-    public VariableInfo findOrCreateL1(@NotNull AnalyserContext analyserContext, @NotNull Variable variable, int statementTime) {
+    public VariableInfo findOrCreateL1(@NotNull AnalyserContext analyserContext,
+                                       @NotNull Variable variable, int statementTime,
+                                       boolean isNotAssignmentTarget) {
         String fqn = variable.fullyQualifiedName();
         VariableInfoContainer vic;
         if (!variables.isSet(fqn)) {
@@ -768,7 +765,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic = variables.get(fqn);
         }
         VariableInfo vi = vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
-        if (vi.variable() instanceof FieldReference fieldReference && vi.getStatementTime() >= 0) {
+        if (vi.variable() instanceof FieldReference fieldReference && vi.getStatementTime() >= 0 && isNotAssignmentTarget) {
             LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), fieldReference.fullyQualifiedName() + "$" + statementTime,
                     fieldReference.parameterizedType(), List.of(), methodAnalysis.getMethodInfo().typeInfo);
             LocalVariableReference lvr = new LocalVariableReference(analyserContext, lv, List.of());

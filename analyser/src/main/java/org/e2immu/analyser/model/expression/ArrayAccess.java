@@ -168,7 +168,7 @@ public class ArrayAccess implements Expression {
             }
             if (forwardEvaluationInfo.isNotAssignmentTarget()) {
                 builder.markRead(variableTarget, evaluationContext.getIteration());
-                Expression variableValue = builder.currentExpression(dependentVariable);
+                Expression variableValue = builder.currentExpression(dependentVariable, true);
                 builder.setExpression(variableValue);
             } else {
                 builder.setExpression(new VariableExpression(dependentVariable));

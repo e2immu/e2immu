@@ -300,12 +300,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
-        public Expression currentExpression(Variable variable) {
+        public Expression currentExpression(Variable variable, boolean isNotAssignmentTarget) {
             ExpressionChangeData currentExpression = valueChanges.get(variable);
             if (currentExpression == null || currentExpression.value == NO_VALUE) {
                 assert evaluationContext != null;
-
-                return evaluationContext.currentValue(variable, statementTime);
+                return evaluationContext.currentValue(variable, statementTime, isNotAssignmentTarget);
             }
             return currentExpression.value;
         }
@@ -319,7 +318,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (inContext != null) return inContext;
             // there is no instance yet... we'll have to create one, but only if the value can have an instance
             if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
-            Expression value = currentExpression(variable);
+            Expression value = currentExpression(variable, true);
             if (value.isConstant()) return null;
             NewObject instance = new NewObject(null, variable.parameterizedType(), List.of(),
                     stateFromPreconditions, objectFlowForCreation);
