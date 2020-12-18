@@ -686,9 +686,22 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return ObjectFlow.NO_FLOW; // will be assigned to soon enough
     }
 
-    public void addProperty(AnalyserContext analyserContext, int level, Variable variable, VariableProperty variableProperty, int value) {
+    public void addProperty(AnalyserContext analyserContext,
+                            int level,
+                            Variable variable,
+                            VariableProperty variableProperty,
+                            int value) {
+        addProperty(analyserContext, level, statementTime(level), variable, variableProperty, value);
+    }
+
+    public void addProperty(AnalyserContext analyserContext,
+                            int level,
+                            int statementTime,
+                            Variable variable,
+                            VariableProperty variableProperty,
+                            int value) {
         Objects.requireNonNull(variable);
-        VariableInfoContainer vic = findForWriting(analyserContext, variable, statementTime(level));
+        VariableInfoContainer vic = findForWriting(analyserContext, variable, statementTime);
         vic.ensureProperty(level, variableProperty, value);
 
         Expression currentValue = vic.current().getValue();
@@ -768,7 +781,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 // same as from the field
                 FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
                 Expression initialValue;
-                if(statementTime == vi.getStatementTime() && vi.getProperty(ASSIGNED)>=Level.TRUE) {
+                if (statementTime == vi.getStatementTime() && vi.getProperty(ASSIGNED) >= Level.TRUE) {
                     initialValue = vi.getValue();
                 } else {
                     initialValue = new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());

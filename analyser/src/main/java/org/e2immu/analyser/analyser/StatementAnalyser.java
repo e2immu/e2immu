@@ -618,7 +618,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .findIndividualNullInCondition(sharedState.evaluationContext, true);
             for (Variable nullVariable : nullVariables) {
                 log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
-                if(nullVariable instanceof ParameterInfo parameterInfo) {
+                if (nullVariable instanceof ParameterInfo parameterInfo) {
                     ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
                     sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
 
@@ -908,8 +908,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             LocalVariableReference localVariableReference = new LocalVariableReference(
                     analyserContext, structure.localVariableCreation, List.of());
             StatementAnalysis firstStatementInBlock = firstStatementFirstBlock();
-            firstStatementInBlock.addProperty(analyserContext, VariableInfoContainer.LEVEL_3_EVALUATION,
-                    localVariableReference, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+            firstStatementInBlock.addProperty(analyserContext,
+                    VariableInfoContainer.LEVEL_3_EVALUATION,
+                    statementAnalysis.flowData.timeAfterExecution.get(), // cannot compute yet
+                    localVariableReference,
+                    VariableProperty.NOT_NULL,
+                    MultiLevel.EFFECTIVELY_NOT_NULL);
         }
     }
 
