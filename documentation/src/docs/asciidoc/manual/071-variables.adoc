@@ -40,3 +40,21 @@ The method resolver determines if a method increases time or not.
 The statement analyser keeps track of time.
 Determining time obviously depends on the methods being called, but because the method resolver determines if a method increases time, this happens in a deterministic way in the first iteration of the analyser.
 
+==== Different levels
+
+Because of the write-once policy, we require five different levels to write information about a variable.
+
+Level 0:: a level containing a direct link to the latest information of the previous or parent statement.
+This link tries to save memory when a variable is not touched in the current statement.
+
+Level 1:: the level of the creation of local variables and return variables.
+A field which is read for the first time is introduced at this level.
+
+Level 2:: the level op updaters (currently not implemented.)
+
+Level 3:: the level of the primary expression of the statement. It includes assignments, which store the new value.
+
+Level 4:: the level of synthesis of the sub-blocks.
+
+Information is always copied up the levels, never down.
+

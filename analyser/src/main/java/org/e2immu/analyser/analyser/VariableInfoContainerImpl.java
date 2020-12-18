@@ -109,8 +109,14 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         if (level <= currentLevel) {
             VariableInfo vi = data[level];
             if (vi != null) {
-                // the data is already there (we're in the next iteration?)
-                assert statementTime == vi.getStatementTime();
+                // the data is already there; only update delays
+                if (vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY &&
+                        statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
+                    ((VariableInfoImpl) vi).statementTime.set(statementTime);
+                } else {
+                    assert statementTime == vi.getStatementTime() :
+                            "Current statement time is " + statementTime + ", had " + vi.getStatementTime();
+                }
                 return;
             }
             throw new UnsupportedOperationException("In the first iteration, an assignment should start a new level for " +

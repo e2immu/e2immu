@@ -28,6 +28,21 @@ public class Test_16_Modification extends CommonTestRunner {
     @Test
     public void test0() throws IOException {
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("org.e2immu.analyser.testexample.Modification_0.set1".equals(d.variableName())) {
+                Assert.assertEquals(3, d.variableInfoContainer().getCurrentLevel());
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ)); // set at level 1
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("set1".equals(d.fieldInfo().name)) {
+                int expect = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expect, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
+            }
+        };
+
         TypeMapVisitor typeMapVisitor = typeMap -> {
             TypeInfo set = typeMap.get(Set.class);
             Assert.assertEquals(AnnotationMode.DEFENSIVE, set.typeInspection.get().annotationMode());
@@ -48,6 +63,8 @@ public class Test_16_Modification extends CommonTestRunner {
 
         testClass("Modification_0", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
@@ -168,7 +185,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     }
                 }
                 if ("1".equals(d.statementId())) {
-                    // thanks to the code in ModificationData.level, the READ is written at level 1 instead of 3
+                    //  the READ is written at level 1
                     Assert.assertEquals(1, d.variableInfoContainer().getCurrentLevel());
                     Assert.assertEquals(1, d.getProperty(VariableProperty.ASSIGNED));
                     Assert.assertEquals(2, d.getProperty(VariableProperty.READ));
