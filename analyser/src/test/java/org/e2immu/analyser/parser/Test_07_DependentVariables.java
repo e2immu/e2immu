@@ -53,11 +53,14 @@ public class Test_07_DependentVariables extends CommonTestRunner {
             if ("b".equals(d.variableName())) {
                 Assert.assertEquals("a", d.variableInfo().getValue().toString());
             }
+            if ("array[a]".equals(d.variableName())) {
+                Assert.fail("This variable should not be produced");
+            }
             if ("array[b]".equals(d.variableName())) {
                 Assert.fail("This variable should not be produced");
             }
             if (("array[" + A2 + "]").equals(d.variableName())) {
-          // FIXME <no value>? infinite loop, delay in content modification MLD      Assert.assertEquals("12", d.variableInfo().getValue().toString());
+                Assert.assertEquals("12", d.variableInfo().getValue().toString());
             }
         }
     };
@@ -75,7 +78,8 @@ public class Test_07_DependentVariables extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("DependentVariables", 0, 0, new DebugConfiguration.Builder()
+        // unused parameter in method1
+        testClass("DependentVariables", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());

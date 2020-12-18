@@ -156,7 +156,9 @@ public class ArrayAccess implements Expression {
             if (array.value() instanceof VariableExpression evaluatedArrayValue) {
                 arrayVariable = evaluatedArrayValue.variable();
             }
-            String index = indexValue.value().toString();
+            Variable indexVariable = singleVariable(indexValue.value());
+            String index = indexVariable == null ?  indexValue.value().minimalOutput() : indexVariable.fullyQualifiedName();
+
             String name = (arrayVariable != null ? arrayVariable.fullyQualifiedName() : array.value().toString()) + "[" + index + "]";
             DependentVariable dependentVariable = new DependentVariable(name,
                     arrayVariable == null ? null : arrayVariable.getOwningType(),
