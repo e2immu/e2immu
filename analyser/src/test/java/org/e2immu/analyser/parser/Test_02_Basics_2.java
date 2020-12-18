@@ -19,10 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.AnalysisStatus;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.FieldAnalyser;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -42,7 +39,7 @@ public class Test_02_Basics_2 extends CommonTestRunner {
     private static final String STRING_FIELD = TYPE + ".string";
     private static final String THIS = TYPE + ".this";
     private static final String COLLECTION = TYPE + ".add(Collection<String>):0:collection";
-    private static final String METHOD_VALUE_ADD = "collection.add(string)";
+    private static final String METHOD_VALUE_ADD = "collection.add(org.e2immu.analyser.testexample.Basics_2.string$0)";
     private static final String RETURN_GET_STRING = TYPE + ".getString()";
 
     public Test_02_Basics_2() {
@@ -101,12 +98,14 @@ public class Test_02_Basics_2 extends CommonTestRunner {
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         if (TYPE.equals(d.methodInfo().typeInfo.fullyQualifiedName)) {
             FieldInfo string = d.methodInfo().typeInfo.getFieldByName("string", true);
-            int fieldModified = d.getFieldAsVariable(string).getProperty(VariableProperty.MODIFIED);
+            VariableInfo fieldAsVariable = d.getFieldAsVariable(string);
+            int fieldModified = fieldAsVariable == null ? -10 : fieldAsVariable.getProperty(VariableProperty.MODIFIED);
 
             if ("getString".equals(d.methodInfo().name)) {
                 int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 Assert.assertEquals(expectNotNull, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Level.TRUE, d.getFieldAsVariable(string).getProperty(VariableProperty.READ));
+                assert fieldAsVariable != null;
+                Assert.assertEquals(Level.TRUE, fieldAsVariable.getProperty(VariableProperty.READ));
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
 
@@ -114,7 +113,8 @@ public class Test_02_Basics_2 extends CommonTestRunner {
                 Assert.assertEquals(Level.FALSE, fieldModified);
             }
             if ("setString".equals(d.methodInfo().name)) {
-                Assert.assertEquals(Level.TRUE, d.getFieldAsVariable(string).getProperty(VariableProperty.ASSIGNED));
+                assert fieldAsVariable != null;
+                Assert.assertEquals(Level.TRUE, fieldAsVariable.getProperty(VariableProperty.ASSIGNED));
                 Assert.assertEquals(Level.FALSE, fieldModified); // Assigned, but not modified
             }
             if ("add".equals(d.methodInfo().name)) {

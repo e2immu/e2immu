@@ -618,13 +618,15 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .findIndividualNullInCondition(sharedState.evaluationContext, true);
             for (Variable nullVariable : nullVariables) {
                 log(VARIABLE_PROPERTIES, "Escape with check not null on {}", nullVariable.fullyQualifiedName());
-                ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser((ParameterInfo) nullVariable).parameterAnalysis;
-                sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
+                if(nullVariable instanceof ParameterInfo parameterInfo) {
+                    ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
+                    sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
 
-                // as a context property, at the highest level (AFTER summary, but we're simply increasing)
-                statementAnalysis.addProperty(analyserContext, VariableInfoContainer.LEVEL_4_SUMMARY,
-                        nullVariable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-                disableErrorsOnIfStatement();
+                    // as a context property, at the highest level (AFTER summary, but we're simply increasing)
+                    statementAnalysis.addProperty(analyserContext, VariableInfoContainer.LEVEL_4_SUMMARY,
+                            nullVariable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                    disableErrorsOnIfStatement();
+                }
             }
         }
         return DONE;
@@ -1039,7 +1041,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             }
         }
 
-        int maxTime;
         if (blocksExecuted > 0) {
             boolean atLeastOneBlockExecuted = atLeastOneBlockExecuted(executions);
 
@@ -1047,8 +1048,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .filter(statementAnalyser -> !statementAnalyser.statementAnalysis.flowData.isUnreachable())
                     .map(StatementAnalyser::lastStatement)
                     .collect(Collectors.toList());
-            maxTime = lastStatements.stream().mapToInt(sa -> sa.statementAnalysis.flowData.timeAfterSubBlocks.get()).max().orElseThrow();
-
+            int maxTime = lastStatements.stream().mapToInt(sa -> sa.statementAnalysis.flowData.timeAfterSubBlocks.get())
+                    .max().orElseThrow();
+            if (!statementAnalysis.flowData.timeAfterSubBlocks.isSet()) {
+                statementAnalysis.flowData.timeAfterSubBlocks.set(maxTime);
+            }
+            // need timeAfterSubBlocks set already
             statementAnalysis.copyBackLocalCopies(evaluationContext, lastStatements, atLeastOneBlockExecuted, sharedState.previous, maxTime);
 
             // compute the escape situation of the sub-blocks
@@ -1057,14 +1062,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 localConditionManager = localConditionManager.addToState(evaluationContext, addToStateAfterStatement);
                 log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", addToStateAfterStatement);
             }
-
-
         } else {
-            maxTime = statementAnalysis.flowData.timeAfterExecution.get();
-        }
-        if (!statementAnalysis.flowData.timeAfterSubBlocks.isSet()) {
-            statementAnalysis.flowData.timeAfterSubBlocks.set(maxTime);
-
+            int maxTime = statementAnalysis.flowData.timeAfterExecution.get();
+            if (!statementAnalysis.flowData.timeAfterSubBlocks.isSet()) {
+                statementAnalysis.flowData.timeAfterSubBlocks.set(maxTime);
+            }
         }
         return analysisStatus;
     }

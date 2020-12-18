@@ -18,7 +18,7 @@ public class Basics_3 {
         } else {
             s = "abc";
         }
-        assert s != null;
+        assert s != null; // should produce a warning
     }
 
     @Modified

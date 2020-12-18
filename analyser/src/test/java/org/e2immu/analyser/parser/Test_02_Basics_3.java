@@ -21,10 +21,7 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.EvaluationResultVisitor;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -42,7 +39,7 @@ public class Test_02_Basics_3 extends CommonTestRunner {
 
 
     // not loading in the AnnotatedAPIs, so System.out will have @Modified=1 after println()
-
+    // this also causes a potential null pointer exception, as we don't know if out will be @NotNull
 
     @Test
     public void test() throws IOException {
@@ -77,6 +74,12 @@ public class Test_02_Basics_3 extends CommonTestRunner {
             }
         };
 
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("setS1".equals(d.methodInfo().name) && "1".equals(d.statementId()) && d.iteration() > 0) {
+                Assert.assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
+            }
+        };
+
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name) && d.iteration() > 0) {
                 Assert.assertEquals("", debug(d.fieldAnalysis().getLinkedVariables()));
@@ -90,6 +93,7 @@ public class Test_02_Basics_3 extends CommonTestRunner {
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

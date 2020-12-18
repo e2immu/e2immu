@@ -383,9 +383,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 String fqn = e.getKey();
                 VariableInfoContainer vicFrom = e.getValue();
                 Variable variable = vicFrom.current().variable();
-                if (!variables.isSet(fqn)) {
-                    // this has to be a locally created copy of a variable field... cannot be present here
-                    assert variable instanceof LocalVariableReference;
+                if (!variables.isSet(fqn) && variable instanceof LocalVariableReference) {
+                    // other variables that don't exist here and that we do not want to copy: foreign fields,
+                    // such as System.out
                     VariableInfoContainer newVic = new VariableInfoContainerImpl(vicFrom.current());
                     variables.put(fqn, newVic);
                 }
@@ -770,6 +770,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 Expression newObject = new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
                 lvrVic.setInitialValueFromAnalyser(newObject, propertyMap(analyserContext, fieldReference.fieldInfo));
                 lvrVic.setLinkedVariablesFromAnalyser(Set.of()); // there cannot be linked variables for a variable field...
+                lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, ASSIGNED, 1);
+                lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, READ, 2);
             }
             return lvrVic.current();
         }
