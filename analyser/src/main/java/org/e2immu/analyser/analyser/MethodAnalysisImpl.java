@@ -437,6 +437,16 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
         public void addCompanion(CompanionMethodName companionMethodName, MethodInfo companion) {
             computedCompanions.put(companionMethodName, companion);
         }
+
+        public void minimalInfoForEmptyMethod() {
+            preconditionForMarkAndOnly.set(List.of());
+            if (!methodInfo.isAbstract()) {
+                setProperty(VariableProperty.MODIFIED, Level.FALSE);
+                setProperty(VariableProperty.INDEPENDENT, Level.TRUE);
+                setProperty(VariableProperty.FLUENT, Level.FALSE);
+                setProperty(VariableProperty.IDENTITY, Level.FALSE);
+            }
+        }
     }
 
     private static Set<MethodAnalysis> overrides(AnalysisProvider analysisProvider, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {

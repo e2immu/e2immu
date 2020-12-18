@@ -150,6 +150,8 @@ public class MethodAnalyser extends AbstractAnalyser {
             for (ParameterAnalyser parameterAnalyser : parameterAnalysers) {
                 builder.add("Parameter " + parameterAnalyser.parameterInfo.name, (sharedState -> parameterAnalyser.analyse()));
             }
+        } else {
+            methodAnalysis.minimalInfoForEmptyMethod();
         }
         analyserComponents = builder.build();
     }

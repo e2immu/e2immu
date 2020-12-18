@@ -22,10 +22,13 @@ package org.e2immu.analyser.parser;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -79,10 +82,6 @@ public class Test_03_Basics_4_5 extends CommonTestRunner {
                         Assert.assertEquals(expect, d.variableInfo().getStatementTime());
                     }
                 }
-                if ("v1".equals(d.variableName()) && "0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "field";
-                    Assert.assertEquals(expect, d.currentValue().toString());
-                }
                 if (FIELD_0.equals(d.variableName())) {
                     Assert.assertTrue(d.iteration() > 0);
                     Assert.assertEquals("instance type String", d.currentValue().toString());
@@ -92,7 +91,11 @@ public class Test_03_Basics_4_5 extends CommonTestRunner {
                     Assert.assertTrue(d.iteration() > 0);
                     Assert.assertEquals("instance type String", d.currentValue().toString());
                     Assert.assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
-                    Assert.assertTrue("Have "+d.statementId(), "2".compareTo(d.statementId()) <= 0);
+                    Assert.assertTrue("Have " + d.statementId(), "2".compareTo(d.statementId()) <= 0);
+                }
+                if ("v1".equals(d.variableName()) && "0".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : FIELD_0;
+                    Assert.assertEquals(expect, d.currentValue().toString());
                 }
             }
         };
@@ -135,6 +138,23 @@ public class Test_03_Basics_4_5 extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         Assert.assertEquals(4, d.statementAnalysis().variables.size());
                     }
+                }
+            }
+            if ("test2".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId()) && d.iteration() > 0) {
+                    // this, field, field$0, v1
+                    Assert.assertEquals(4, d.statementAnalysis().variables.size());
+                }
+                if ("1".equals(d.statementId()) && d.iteration() > 0) {
+                    // this, field, field$0, v1, v2
+                    Assert.assertEquals(5, d.statementAnalysis().variables.size());
+                    Expression valueV1 = d.statementAnalysis().variables.get("v1").current().getValue();
+                    Expression valueV2 = d.statementAnalysis().variables.get("v2").current().getValue();
+                    Assert.assertTrue(valueV1 instanceof VariableExpression);
+                    Assert.assertTrue(valueV2 instanceof VariableExpression);
+                    Variable v1Redirected = ((VariableExpression) valueV1).variable();
+                    Variable v2Redirected = ((VariableExpression) valueV2).variable();
+                    Assert.assertEquals(v1Redirected, v2Redirected);
                 }
             }
         };

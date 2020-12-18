@@ -377,6 +377,20 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
             }
         });
+
+        if (copyFrom != null) {
+            copyFrom.variables.stream().forEach(e -> {
+                String fqn = e.getKey();
+                VariableInfoContainer vicFrom = e.getValue();
+                Variable variable = vicFrom.current().variable();
+                if (!variables.isSet(fqn)) {
+                    // this has to be a locally created copy of a variable field... cannot be present here
+                    assert variable instanceof LocalVariableReference;
+                    VariableInfoContainer newVic = new VariableInfoContainerImpl(vicFrom.current());
+                    variables.put(fqn, newVic);
+                }
+            });
+        }
     }
 
     /**

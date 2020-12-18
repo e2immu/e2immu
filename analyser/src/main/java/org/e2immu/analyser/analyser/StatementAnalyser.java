@@ -1377,7 +1377,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         public Expression currentValue(Variable variable, int statementTime) {
             VariableInfo vi = findOrCreateL1(variable, statementTime);
             Expression value = vi.getValue();
-            return value instanceof NewObject ? new VariableExpression(variable, vi.getObjectFlow()) : value;
+            // important! do not use variable in the next statement, but vi.variable()
+            // we could have redirected from a variable field to a local variable copy
+            return value instanceof NewObject ? new VariableExpression(vi.variable(), vi.getObjectFlow()) : value;
         }
 
         @Override

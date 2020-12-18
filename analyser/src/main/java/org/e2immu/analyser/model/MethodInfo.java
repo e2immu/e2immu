@@ -306,6 +306,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean isAbstract() {
+        if(typeInfo.typeInspection.get().isInterface()) {
+            return !methodInspection.get().getModifiers().contains(MethodModifier.DEFAULT);
+        }
         return methodInspection.get().getModifiers().contains(MethodModifier.ABSTRACT);
     }
 
