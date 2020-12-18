@@ -75,8 +75,38 @@ public class Test_02_Basics_3 extends CommonTestRunner {
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("setS1".equals(d.methodInfo().name) && "1".equals(d.statementId()) && d.iteration() > 0) {
-                Assert.assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
+            if ("setS1".equals(d.methodInfo().name)) {
+                int time1 = d.statementAnalysis().flowData.initialTime.get();
+                int time3 = d.statementAnalysis().flowData.timeAfterExecution.get();
+                int time4 = d.statementAnalysis().flowData.timeAfterSubBlocks.get();
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals(0, time1);
+                    Assert.assertEquals(1, time3);
+                    Assert.assertEquals(2, time4); // merge
+                }
+                if ("0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals(1, time1);
+                    Assert.assertEquals(2, time3);
+                    Assert.assertEquals(2, time4);
+                }
+                if ("0.0.1".equals(d.statementId())) { // first assignment
+                    Assert.assertEquals(2, time1);
+                    Assert.assertEquals(2, time3);
+                    Assert.assertEquals(2, time4);
+                }
+                if ("1.0.0".equals(d.statementId())) { // second assignment
+                    Assert.assertEquals(0, time1);
+                    Assert.assertEquals(0, time3);
+                    Assert.assertEquals(0, time4);
+                }
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals(2, time1);
+                    Assert.assertEquals(2, time3);
+                    Assert.assertEquals(2, time4);
+                    if (d.iteration() > 0) {
+                        Assert.assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
+                    }
+                }
             }
         };
 

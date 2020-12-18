@@ -767,8 +767,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
                 // same as from the field
                 FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-                Expression newObject = new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
-                lvrVic.setInitialValueFromAnalyser(newObject, propertyMap(analyserContext, fieldReference.fieldInfo));
+                Expression initialValue;
+                if(statementTime == vi.getStatementTime() && vi.getProperty(ASSIGNED)>=Level.TRUE) {
+                    initialValue = vi.getValue();
+                } else {
+                    initialValue = new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
+                }
+                lvrVic.setInitialValueFromAnalyser(initialValue, propertyMap(analyserContext, fieldReference.fieldInfo));
                 lvrVic.setLinkedVariablesFromAnalyser(Set.of()); // there cannot be linked variables for a variable field...
                 lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, ASSIGNED, 1);
                 lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, READ, 2);
