@@ -475,19 +475,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         String fqn = variable.fullyQualifiedName();
         if (variables.isSet(fqn)) throw new UnsupportedOperationException("Already exists");
 
-        int statementTimeForVariable;
-        if (variable instanceof FieldReference fieldReference) {
-            int effectivelyFinal = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(VariableProperty.FINAL);
-            if (effectivelyFinal == Level.DELAY) {
-                statementTimeForVariable = VariableInfoContainer.VARIABLE_FIELD_DELAY;
-            } else if (effectivelyFinal == Level.FALSE) {
-                statementTimeForVariable = statementTime;
-            } else {
-                statementTimeForVariable = VariableInfoContainer.NOT_A_VARIABLE_FIELD;
-            }
-        } else {
-            statementTimeForVariable = VariableInfoContainer.NOT_A_VARIABLE_FIELD;
-        }
+        int statementTimeForVariable = statementTimeForVariable(analyserContext, variable, statementTime);
         VariableInfoContainer vic = new VariableInfoContainerImpl(variable, statementTimeForVariable);
 
         variables.put(variable.fullyQualifiedName(), vic);
@@ -526,6 +514,19 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
 
         return vic;
+    }
+
+    public int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
+        if (variable instanceof FieldReference fieldReference) {
+            int effectivelyFinal = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(VariableProperty.FINAL);
+            if (effectivelyFinal == Level.DELAY) {
+                return VariableInfoContainer.VARIABLE_FIELD_DELAY;
+            }
+            if (effectivelyFinal == Level.FALSE) {
+                return statementTime;
+            }
+        }
+        return VariableInfoContainer.NOT_A_VARIABLE_FIELD;
     }
 
     private Map<VariableProperty, Integer> propertyMap(AnalyserContext analyserContext, WithInspectionAndAnalysis object) {
@@ -709,7 +710,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if ((valueWithVariable = currentValue.asInstanceOf(VariableExpression.class)) == null) return;
         Variable other = valueWithVariable.variable();
         if (!variable.equals(other)) {
-            addProperty(analyserContext, level, other, variableProperty, value);
+            VariableInfoContainer vic2 = findForWriting(analyserContext, other, statementTime);
+            vic2.ensureProperty(level, variableProperty, value);
+
+            Expression otherValue = vic2.current().getValue();
+            assert !otherValue.isInstanceOf(VariableExpression.class);
         }
     }
 
@@ -784,7 +789,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     initialValue = new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
                 }
                 lvrVic.setInitialValueFromAnalyser(initialValue, propertyMap(analyserContext, fieldReference.fieldInfo));
-                lvrVic.setLinkedVariablesFromAnalyser(Set.of()); // there cannot be linked variables for a variable field...
+                lvrVic.setLinkedVariablesFromAnalyser(Set.of(fieldReference)); // linked to the reference
                 lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, ASSIGNED, 1);
                 lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, READ, 2);
             }

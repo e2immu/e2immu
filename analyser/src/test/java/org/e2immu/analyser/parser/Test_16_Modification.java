@@ -16,6 +16,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 
 public class Test_16_Modification extends CommonTestRunner {
@@ -139,6 +140,12 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertSame(EmptyExpression.NO_VALUE, d.evaluationResult().value());
                 } else {
                     Assert.assertEquals("set3.add(v)", d.evaluationResult().value().toString());
+                    StatementAnalyser.SetProperty setProperty = d.evaluationResult().getModificationStream()
+                            .filter(sam -> sam instanceof StatementAnalyser.SetProperty)
+                            .map(sam -> (StatementAnalyser.SetProperty) sam)
+                            .filter(sp -> sp.property == VariableProperty.MODIFIED && sp.variable.fullyQualifiedName().equals("local3"))
+                            .findFirst().orElseThrow();
+                    Assert.assertEquals(Level.TRUE, setProperty.value);
                 }
             }
         };
@@ -226,11 +233,23 @@ public class Test_16_Modification extends CommonTestRunner {
             }
         };
 
+
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo set = typeMap.get(Set.class);
+            MethodInfo addInSet = set.findUniqueMethod("add", 1);
+            Assert.assertEquals(Level.TRUE, addInSet.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+
+            TypeInfo hashSet = typeMap.get(HashSet.class);
+            MethodInfo addInHashSet = hashSet.findUniqueMethod("add", 1);
+            Assert.assertEquals(Level.TRUE, addInHashSet.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        };
+
         testClass("Modification_3", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 

@@ -512,7 +512,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             int assigned = vi.getProperty(VariableProperty.ASSIGNED);
             VariableInfo vi1 = vic.best(1);
 
-            vic.assignment(level, VariableInfoContainer.NOT_A_VARIABLE_FIELD); // FIXME
+            int statementTimeForVariable = statementAnalysis.statementTimeForVariable(analyserContext, variable,
+                    statementAnalysis.statementTime(level));
+            vic.assignment(level, statementTimeForVariable);
+
             Expression value = bestValue(valueChangeData, vi1);
             // we explicitly check for NO_VALUE, because "<no return value>" is legal!
             if (value != NO_VALUE) {
@@ -546,6 +549,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         // then all modifications get applied
+        // we want to apply to the correct level, which we pass on with L1 being the default
+        // for the variables in valueOrLink we're certain that 'level' is correct.
+        // but what for the value referred to by one of these variables?
+        // Example: localVar = field; localVar.modifyingMethod() -> causes a @Modified=1 to be set on localVar,
+        // which will have to be set on field as well. But we don't know about the level of 'field'
         evaluationResult.getModificationStream().forEach(mod -> mod.accept(new ModificationData(sharedState.builder, level, valueOrLink)));
 
         if (status.get() == DONE && !statementAnalysis.methodLevelData.internalObjectFlows.isFrozen()) {
@@ -706,7 +714,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (assignedInLoop) {
                     saToCreate.addProperty(analyserContext, VariableInfoContainer.LEVEL_1_INITIALISER, lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
                 } else {
-                    saToCreate.findOrCreateL1(analyserContext, lvr, statementTime,false); // "touch" it
+                    saToCreate.findOrCreateL1(analyserContext, lvr, statementTime, false); // "touch" it
                 }
             }
             try {
