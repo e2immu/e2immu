@@ -127,7 +127,7 @@ public record FieldAccess(Expression expression,
 
         if (scopeResult.value() instanceof NullConstant) {
             builder.raiseError(Message.NULL_POINTER_EXCEPTION);
-        } else if (scopeResult.value() != EmptyExpression.NO_VALUE && !evaluationContext.isNotNull0(scopeResult.value())) {
+        } else if (scopeResult.value() != EmptyExpression.NO_VALUE && !builder.isNotNull0(scopeResult.value())) {
             builder.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Scope " + scopeResult.value());
         }
 

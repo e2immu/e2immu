@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -450,6 +451,18 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public int getStatementTime() {
             return statementTime;
+        }
+
+        public boolean isNotNull0(Expression expression) {
+            assert evaluationContext != null;
+            // intercept modifications?
+            if (modifications != null && expression instanceof VariableExpression variableExpression) {
+                if (modifications.stream().anyMatch(m -> m instanceof StatementAnalyser.SetProperty setProperty &&
+                        setProperty.property == VariableProperty.NOT_NULL &&
+                        variableExpression.variable().equals(setProperty.variable) &&
+                        setProperty.value >= MultiLevel.EFFECTIVELY_NOT_NULL)) return true;
+            }
+            return evaluationContext.isNotNull0(expression);
         }
     }
 }
