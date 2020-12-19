@@ -87,12 +87,11 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
         VariableInfoImpl viC2 = viC.merge(minimalEvaluationContext, null, true, List.of(viB));
-        Assert.assertSame(viC, viC2);
 
-        Expression res = viC.getValue();
+        Expression res = viC2.getValue();
         Assert.assertEquals("4", res.toString());
-        viC.mergeProperties(true, viA, List.of(viB));
-        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, viC.getProperty(VariableProperty.NOT_NULL));
+        viC2.mergeProperties(true, viA, List.of(viB));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, viC2.getProperty(VariableProperty.NOT_NULL));
     }
 
     @Test
@@ -157,7 +156,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         Assert.assertNotSame(ret, ret2);
 
         Expression value2 = ret2.getValue();
-        Assert.assertEquals("instance type boolean?4:<return value>", value2.debugOutput());
+        Assert.assertEquals("instance type boolean?4:<return value:boolean>", value2.debugOutput());
         ret2.mergeProperties(false, ret, List.of(viB));
         Assert.assertEquals(MultiLevel.MUTABLE, ret2.getProperty(VariableProperty.NOT_NULL));
 
@@ -204,7 +203,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl ret2 = ret.merge(minimalEvaluationContext, null, false, List.of(viB));
         Assert.assertNotSame(ret2, ret);
-        Assert.assertEquals("3==instance type int?4:<return value>", ret2.getValue().debugOutput());
+        Assert.assertEquals("3==instance type int?4:<return value:boolean>", ret2.getValue().debugOutput());
 
         ret2.mergeProperties(false, ret, List.of(viB));
         Assert.assertEquals(MultiLevel.MUTABLE, ret2.getProperty(VariableProperty.NOT_NULL));
@@ -226,7 +225,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl ret3 = ret2.merge(minimalEvaluationContext, null, false, List.of(viA));
         Assert.assertNotSame(ret3, ret2);
-        Assert.assertEquals("4==instance type int?3:3==instance type int?4:<return value>",
+        Assert.assertEquals("4==instance type int?3:3==instance type int?4:<return value:boolean>",
                 ret3.getValue().debugOutput());
         ret3.mergeProperties(false, ret2, List.of(viA));
         Assert.assertEquals(MultiLevel.MUTABLE, ret3.getProperty(VariableProperty.NOT_NULL));
@@ -248,7 +247,8 @@ public class TestVariableInfo extends CommonVariableInfo {
         VariableInfoImpl ret4 = ret3.merge(minimalEvaluationContext, null, false, List.of(viC));
         Assert.assertNotSame(ret3, ret4);
         // IMPROVE actually the value should be 4 == x?3:3 == x?4:2
-        Assert.assertEquals("!(3==instance type int)&&!(4==instance type int)?2:4==instance type int?3:3==instance type int?4:<return value>", ret4.getValue().debugOutput());
+        Assert.assertEquals("3!=instance type int&&4!=instance type int?2:4==instance type int?3" +
+                ":3==instance type int?4:<return value:boolean>", ret4.getValue().debugOutput());
 
         ret4.mergeProperties(false, ret3, List.of(viC));
         Assert.assertEquals(MultiLevel.MUTABLE, ret4.getProperty(VariableProperty.NOT_NULL));
@@ -278,7 +278,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         viC.stateOnAssignment.set(EmptyExpression.EMPTY_EXPRESSION);
         VariableInfoImpl viC2 = viC.merge(minimalEvaluationContext, null, false, List.of(viB));
         Assert.assertNotSame(viA, viC2);
-        Assert.assertEquals("instance type int", viC2.getValue().toString());
+        Assert.assertEquals("<empty>?4:instance type int", viC2.getValue().toString());
 
         viC2.mergeProperties(false, viA, List.of(viB));
         Assert.assertEquals(MultiLevel.MUTABLE, viC2.getProperty(VariableProperty.NOT_NULL));

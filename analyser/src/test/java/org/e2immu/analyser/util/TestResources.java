@@ -60,7 +60,7 @@ public class TestResources {
     public void testLoadBytesViaClassPath() throws IOException {
         Resources resources = new Resources();
         resources.addJarFromClassPath("org/e2immu/annotation");
-        byte[] bytes = resources.loadBytes("org/e2immu/annotation/AnnotationType.class");
+        byte[] bytes = resources.loadBytes("org/e2immu/annotation/Final.class");
         Assert.assertNotNull(bytes);
         Assert.assertTrue(bytes.length > 10);
     }
