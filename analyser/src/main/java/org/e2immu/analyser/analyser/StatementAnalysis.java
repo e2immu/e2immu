@@ -346,17 +346,21 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         variables.stream().map(Map.Entry::getValue).forEach(vic -> {
             VariableInfo viLevel1 = vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
             VariableInfo variableInfo = vic.current();
+            boolean haveValueAt3 = vic.getCurrentLevel() == VariableInfoContainer.LEVEL_3_EVALUATION &&
+                    variableInfo.getValue() != EmptyExpression.NO_VALUE;
+            int destinationLevel = haveValueAt3 ? VariableInfoContainer.LEVEL_3_EVALUATION :
+                    VariableInfoContainer.LEVEL_1_INITIALISER;
 
             // for all variables present higher up
             if (copyFrom != null && copyFrom.variables.isSet(variableInfo.name())) {
                 // it is important that we copy from the same level when copying from the parent! (and not use getLatestVariableInfo)
                 VariableInfo previousVariableInfo = copyFrom.variables.get(variableInfo.name()).best(bestLevel);
                 if (previousVariableInfo != null) {
-                    vic.copy(VariableInfoContainer.LEVEL_1_INITIALISER, previousVariableInfo, false);
+                    vic.copy(destinationLevel, previousVariableInfo, false, !haveValueAt3);
                 }
             }
-            // specifically for fields
-            if (variableInfo.variable() instanceof FieldReference fieldReference) {
+            // specifically for fields, introduce new data from the field analyser; only at level 1
+            if (variableInfo.variable() instanceof FieldReference fieldReference && destinationLevel == VariableInfoContainer.LEVEL_1_INITIALISER) {
 
                 if (viLevel1.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
                     // see if we can resolve the delay

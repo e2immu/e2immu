@@ -315,13 +315,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void copy(int level, VariableInfo previousVariableInfo, boolean failWhenTryingToWriteALowerValue) {
+    public void copy(int level, VariableInfo previousVariableInfo, boolean failWhenTryingToWriteALowerValue, boolean copyValue) {
         previousVariableInfo.propertyStream().forEach(e -> setProperty(level, e.getKey(), e.getValue(), failWhenTryingToWriteALowerValue));
 
-        if (previousVariableInfo.valueIsSet()) {
+        if (copyValue && previousVariableInfo.valueIsSet()) {
             internalSetValue(level, previousVariableInfo.getValue());
         }
-        if (previousVariableInfo.stateOnAssignmentIsSet()) {
+        if (copyValue && previousVariableInfo.stateOnAssignmentIsSet()) {
             internalSetStateOnAssignment(level, previousVariableInfo.getStateOnAssignment());
         }
         if (previousVariableInfo.linkedVariablesIsSet()) {

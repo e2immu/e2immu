@@ -519,6 +519,8 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test9() throws IOException {
+        final String S2 = "org.e2immu.analyser.testexample.Modification_9.s2";
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "theSet".equals(d.variableName())) {
                 if ("1".equals(d.statementId())) {
@@ -526,6 +528,11 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                }
+            }
+            if ("add".equals(d.methodInfo().name) && S2.equals(d.variableName())) {
+                if (d.iteration() > 0) {
+                    Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
                 }
             }
         };

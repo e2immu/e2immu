@@ -137,7 +137,7 @@ public interface VariableInfoContainer {
      *                                         in a particular method it has non-null assigned values; also, when a field not belonging
      *                                         to the type being analysed, is being modified. See test Basics_3
      */
-    void copy(int level, VariableInfo previousVariableInfo, boolean failWhenTryingToWriteALowerValue);
+    void copy(int level, VariableInfo previousVariableInfo, boolean failWhenTryingToWriteALowerValue, boolean copyValue);
 
     void setObjectFlow(int level, ObjectFlow objectFlow);
 

@@ -245,7 +245,9 @@ class VariableInfoImpl implements VariableInfo {
             throw new UnsupportedOperationException("Cannot redirect to myself");
         }
         if (value == NO_VALUE) throw new UnsupportedOperationException("Cannot set NO_VALUE");
-        this.value.set(value);
+        if(!this.value.isSet() || !this.value.get().equals(value)) { // crash if different, keep same
+            this.value.set(value);
+        }
     }
 
     public void mergeProperties(boolean existingValuesWillBeOverwritten, VariableInfo previous, List<VariableInfo> merge) {

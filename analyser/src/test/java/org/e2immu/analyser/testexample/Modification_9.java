@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.testexample;
 
+import org.e2immu.annotation.Modified;
 import org.e2immu.annotation.NotModified;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,10 +30,10 @@ import java.util.Set;
 public class Modification_9 {
     private static final Logger LOGGER = LoggerFactory.getLogger(Modification_9.class);
 
-    @NotModified(absent = true) // modified by add method
+    @Modified // modified by add method
     final Set<String> s2 = new HashSet<>();
 
-    @NotModified(absent = true) // modifies s2
+    @Modified // modifies s2
     public int add(String s) {
         Set<String> theSet = s2; // linked to s2, which is linked to set2
         LOGGER.debug("The set has {} elements before adding {}", theSet.size(), s);

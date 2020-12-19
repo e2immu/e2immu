@@ -195,7 +195,10 @@ public class Assignment implements Expression {
         builder.compose(valueResult);
         builder.composeIgnoreExpression(targetResult);
 
-        Variable newVariableTarget = targetResult.value() instanceof VariableExpression variableValue ? variableValue.variable() : variableTarget;
+        // re-assess the index in dependent variables TODO feels shaky implementation (re-assessing the index is correct)
+        Variable newVariableTarget = targetResult.value() instanceof VariableExpression variableValue &&
+                variableValue.variable() instanceof DependentVariable
+                ? variableValue.variable() : variableTarget;
 
         log(VARIABLE_PROPERTIES, "Assignment: {} = {}", newVariableTarget.fullyQualifiedName(), value);
 
