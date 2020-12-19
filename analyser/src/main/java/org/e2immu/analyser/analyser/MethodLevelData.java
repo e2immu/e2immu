@@ -180,9 +180,9 @@ public class MethodLevelData {
                 String logLocation = sharedState.logLocation;
 
                 for (Variable dependentVariable : dependentVariables) {
-                    if (dependentVariable instanceof FieldReference) {
-                        FieldInfo fieldInfo = ((FieldReference) dependentVariable).fieldInfo;
-                        VariableInfo vi = sharedState.statementAnalysis.getLatestVariableInfo(fieldInfo.fullyQualifiedName());
+                    if (dependentVariable instanceof FieldReference fieldReference) {
+                        // NOTE: not redirecting to "raw" field, via fieldReference.fieldInfo.fullyQualifiedName
+                        VariableInfo vi = sharedState.statementAnalysis.getLatestVariableInfo(fieldReference.fullyQualifiedName());
                         int modified = vi.getProperty(VariableProperty.MODIFIED);
                         if (modified == Level.DELAY) {
                             // break the delay in case the variable is not even read

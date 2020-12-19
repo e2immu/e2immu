@@ -402,31 +402,39 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test6() throws IOException {
+        final String TYPE = "org.e2immu.analyser.testexample.Modification_6";
+        final String SET6 = TYPE + ".set6";
+        final String IN6 = TYPE + ".Modification_6(Set<String>):0:in6";
+        final String EXAMPLE6_SET6 = TYPE + ".set6#" + TYPE + ".add6(Modification_6,Set<String>):0:example6";
+        final String EXAMPLE6 = TYPE + ".add6(Modification_6,Set<String>):0:example6";
+        final String VALUES6 = TYPE + ".add6(Modification_6,Set<String>):1:values6";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("add6".equals(d.methodInfo().name) && "values6".equals(d.variableName())) {
-                if (d.iteration() > 1) {
+
+            if ("add6".equals(d.methodInfo().name)) {
+                if (VALUES6.equals(d.variableName())) {
                     Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                }
+
+                if (EXAMPLE6.equals(d.variableName())) {
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
+                }
+                if (EXAMPLE6_SET6.equals(d.variableName())) {
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                    if (d.iteration() > 1)
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
                 }
             }
-            if ("add6".equals(d.methodInfo().name) && "example6".equals(d.variableName())) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
-            }
-            if ("add6".equals(d.methodInfo().name) && "example6.set6".equals(d.variableName())) {
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
-                if (d.iteration() > 1)
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
-            }
-            if ("Modification_6".equals(d.methodInfo().name) && "set6".equals(d.variableName()) && "0".equals(d.statementId())) {
-                if (d.iteration() == 3) {
+            if ("Modification_6".equals(d.methodInfo().name)) {
+                if (SET6.equals(d.variableName()) && "0".equals(d.statementId()) && d.iteration() == 3) {
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
                 }
-            }
-            if ("Modification_6".equals(d.methodInfo().name) && "in6".equals(d.variableName()) && "0".equals(d.statementId())) {
-                if (d.iteration() == 0) {
-                    Assert.assertFalse(d.hasProperty(VariableProperty.MODIFIED));
+                if (IN6.equals(d.variableName()) && "0".equals(d.statementId())) {
+                    if (d.iteration() == 0) {
+                        Assert.assertFalse(d.hasProperty(VariableProperty.MODIFIED));
+                    }
                 }
             }
         };
@@ -454,29 +462,42 @@ public class Test_16_Modification extends CommonTestRunner {
             int iteration = d.iteration();
             String name = d.methodInfo().name;
             if ("Example6".equals(name)) {
-                ParameterInfo in6 = d.methodInfo().methodInspection.get().getParameters().get(0);
-                if (iteration == 0 || iteration == 1) {
-                    Assert.assertEquals(Level.DELAY, in6.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-                    // NOTE: an "improvement from FALSE to TRUE" will be made from iteration 1 to iteration 2
-                    Assert.assertEquals(Level.FALSE, in6.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
-                } else {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, in6.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
-                    Assert.assertEquals(Level.TRUE, in6.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
-                }
+                ParameterAnalysis in6 = d.parameterAnalyses().get(0);
+
+                int expectIn6NotNull = iteration < 2 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectIn6NotNull, in6.getProperty(VariableProperty.NOT_NULL));
+
+                int expectIn6Modified = iteration < 2 ? Level.FALSE : Level.TRUE;
+                Assert.assertEquals(expectIn6Modified, in6.getProperty(VariableProperty.MODIFIED));
             }
             if ("add6".equals(name)) {
-                FieldInfo set6 = d.methodInfo().typeInfo.getFieldByName("set6", true);
+                ParameterAnalysis values6 = d.parameterAnalyses().get(1);
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, values6.getProperty(VariableProperty.NOT_NULL));
 
+                // FIXME here's the crux of this example, set6 or example6.set6??
+                FieldInfo set6 = d.methodInfo().typeInfo.getFieldByName("set6", true);
+                VariableInfo set6VariableInfo = d.getFieldAsVariable(set6);
                 if (iteration >= 2) {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getFieldAsVariable(set6).getProperty(VariableProperty.NOT_NULL));
+                    Assert.assertNotNull(set6VariableInfo);
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, set6VariableInfo.getProperty(VariableProperty.NOT_NULL));
                     Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
                 }
             }
         };
+
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo set = typeMap.get(Set.class);
+            MethodInfo addAll = set.findUniqueMethod("addAll", 1);
+            ParameterInfo p0 = addAll.methodInspection.get().getParameters().get(0);
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, p0.parameterAnalysis.get()
+                    .getProperty(VariableProperty.NOT_NULL));
+        };
+
         testClass("Modification_6", 0, 0, new DebugConfiguration.Builder()
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 

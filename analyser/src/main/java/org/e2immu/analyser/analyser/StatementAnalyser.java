@@ -1501,7 +1501,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (property == VariableProperty.NOT_NULL && variable instanceof ParameterInfo parameterInfo) {
                 log(VARIABLE_PROPERTIES, "Propagating not-null value of {} to {}", value, variable.fullyQualifiedName());
                 ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
-                modificationData.builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
+                modificationData.builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, value));
             }
         }
 
