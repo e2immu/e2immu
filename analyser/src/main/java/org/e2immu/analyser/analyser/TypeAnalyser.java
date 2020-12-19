@@ -325,7 +325,6 @@ public class TypeAnalyser extends AbstractAnalyser {
         Set<ParameterizedType> explicitTypes = typeInspection.explicitTypes();
         log(E2IMMUTABLE, "Explicit types: {}", explicitTypes);
 
-        Primitives primitives = analyserContext.getPrimitives();
         typesOfFields.removeIf(type -> {
             if (type.arrays > 0) return true;
             if (type.isUnboundParameterType()) return false;
@@ -457,10 +456,10 @@ public class TypeAnalyser extends AbstractAnalyser {
         for (Variable variable : variables) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
             // fieldSummaries are set after the first iteration
-            if (methodAnalyser.haveFieldAsVariable(fieldInfo)) {
-                VariableInfo tv = methodAnalyser.getFieldAsVariable(fieldInfo);
+            return methodAnalyser.getFieldAsVariableStream(fieldInfo).anyMatch(tv -> {
                 boolean assigned = tv.getProperty(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
-                log(MARK, "Field {} is assigned in {}? {}", variable.fullyQualifiedName(), methodAnalyser.methodInfo.distinguishingName(), assigned);
+                log(MARK, "Field {} is assigned in {}? {}", variable.fullyQualifiedName(),
+                        methodAnalyser.methodInfo.distinguishingName(), assigned);
 
                 Expression state = tv.getStateOnAssignment();
                 if (assigned && state != null && isCompatible(evaluationContext, state, precondition)) {
@@ -468,7 +467,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                     return false;
                 }
                 return assigned;
-            }
+            });
         }
         return false;
     }

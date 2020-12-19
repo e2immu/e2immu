@@ -36,8 +36,8 @@ public class Modification_6 {
         this.set6 = in6;
     }
 
-    @NotModified(absent = true)
-    public static void add6(@NotNull Modification_6 example6, @NotNull @NotModified Set<String> values6) {
+    @Modified
+    public static void add6(@NotNull @Modified Modification_6 example6, @NotNull1 @NotModified Set<String> values6) {
         example6.set6.addAll(values6);
     }
 

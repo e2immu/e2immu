@@ -257,6 +257,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return variables.get(variableName).current();
     }
 
+    public Stream<VariableInfo> streamOfLatestInfoOfVariablesReferringTo(FieldInfo fieldInfo) {
+        return variables.stream()
+                .map(e -> e.getValue().current())
+                .filter(v -> v.variable() instanceof FieldReference fieldReference && fieldReference.fieldInfo == fieldInfo);
+    }
+
+    public List<VariableInfo> latestInfoOfVariablesReferringTo(FieldInfo fieldInfo) {
+        return streamOfLatestInfoOfVariablesReferringTo(fieldInfo).collect(Collectors.toUnmodifiableList());
+    }
+
     public interface StateChange extends Function<Expression, Expression> {
         // nothing
     }

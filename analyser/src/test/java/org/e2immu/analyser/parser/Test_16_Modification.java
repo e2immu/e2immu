@@ -17,6 +17,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class Test_16_Modification extends CommonTestRunner {
@@ -474,14 +475,16 @@ public class Test_16_Modification extends CommonTestRunner {
                 ParameterAnalysis values6 = d.parameterAnalyses().get(1);
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, values6.getProperty(VariableProperty.NOT_NULL));
 
-                // FIXME here's the crux of this example, set6 or example6.set6??
                 FieldInfo set6 = d.methodInfo().typeInfo.getFieldByName("set6", true);
                 VariableInfo set6VariableInfo = d.getFieldAsVariable(set6);
-                if (iteration >= 2) {
-                    Assert.assertNotNull(set6VariableInfo);
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, set6VariableInfo.getProperty(VariableProperty.NOT_NULL));
-                    Assert.assertEquals(Level.TRUE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
-                }
+                Assert.assertNull(set6VariableInfo); // this variable does not occur!
+
+                List<VariableInfo> vis = d.methodAnalysis().getLastStatement().latestInfoOfVariablesReferringTo(set6);
+                Assert.assertEquals(1, vis.size());
+                VariableInfo vi = vis.get(0);
+                if (d.iteration() > 0)
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(Level.TRUE, vi.getProperty(VariableProperty.MODIFIED));
             }
         };
 

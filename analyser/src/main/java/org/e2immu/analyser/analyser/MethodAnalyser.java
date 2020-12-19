@@ -916,14 +916,17 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
     }
 
-    public boolean haveFieldAsVariable(FieldInfo fieldInfo) {
+    public List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo) {
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-        return lastStatement != null && lastStatement.variables.isSet(fieldInfo.fullyQualifiedName());
+        return lastStatement == null ? List.of() :
+                methodAnalysis.getLastStatement().latestInfoOfVariablesReferringTo(fieldInfo);
     }
 
-    public VariableInfo getFieldAsVariable(FieldInfo fieldInfo) {
+    // occurs as often in a flatMap as not, so a stream version is useful
+    public Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo) {
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
-        return lastStatement == null ? null : methodAnalysis.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
+        return lastStatement == null ? Stream.empty() :
+                methodAnalysis.getLastStatement().streamOfLatestInfoOfVariablesReferringTo(fieldInfo);
     }
 
     public VariableInfo getThisAsVariable() {
