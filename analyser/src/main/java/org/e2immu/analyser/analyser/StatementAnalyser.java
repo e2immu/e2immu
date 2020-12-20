@@ -39,7 +39,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -495,28 +494,26 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (reducedState != localConditionManager.state) {
             localConditionManager = new ConditionManager(localConditionManager.condition, reducedState);
         }
+        AnalysisStatus status = evaluationResult.value() == NO_VALUE ? DELAYS : DONE;
 
-        AtomicReference<AnalysisStatus> status = new AtomicReference<>(evaluationResult.value() == NO_VALUE ? DELAYS : DONE);
-        Set<Variable> valueOrLink = SetUtil.immutableUnion(evaluationResult.valueChanges().keySet(),
-                evaluationResult.linkedVariables().keySet());
+        for (Map.Entry<Variable, EvaluationResult.ExpressionChangeData> entry : evaluationResult.valueChanges().entrySet()) {
+            Variable variable = entry.getKey();
+            EvaluationResult.ExpressionChangeData changeData = entry.getValue();
 
-        // first assignments, because they may create a new level in VariableInfoContainer
-        for (Variable variable : valueOrLink) {
-            EvaluationResult.ExpressionChangeData valueChangeData = evaluationResult.valueChanges().get(variable);
             VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, variable,
-                    statementAnalysis.statementTime(level));
+                    statementAnalysis.statementTime(level), changeData.isNotAssignmentTarget());
             VariableInfo vi = vic.best(level);
             int read = vi.getProperty(VariableProperty.READ);
             int assigned = vi.getProperty(VariableProperty.ASSIGNED);
             VariableInfo vi1 = vic.best(1);
-            Expression value = bestValue(valueChangeData, vi1);
+            Expression value = bestValue(changeData, vi1);
 
             boolean goAhead = value != NO_VALUE || level >= vic.getCurrentLevel();
             if (goAhead) {
                 int statementTimeForVariable = statementAnalysis.statementTimeForVariable(analyserContext, variable,
                         statementAnalysis.statementTime(level));
-                vic.assignment(level, statementTimeForVariable);
 
+                vic.prepareForValueChange(level, index(), statementTimeForVariable);
 
                 // we explicitly check for NO_VALUE, because "<no return value>" is legal!
                 if (value != NO_VALUE) {
@@ -526,41 +523,41 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 } else {
                     log(DELAYED, "Apply of step {} in {}, {} is delayed because of unknown value for {}",
                             step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
-                    status.set(DELAYS);
+                    status = DELAYS;
                 }
-                if (valueChangeData.markAssignment()) {
+                if (changeData.markAssignment()) {
                     vic.setProperty(level, VariableProperty.ASSIGNED, Math.max(Level.TRUE, assigned + 1));
                 }
                 // simply copy the READ value; nothing has changed here
                 vic.setProperty(level, VariableProperty.READ, read);
-                Expression stateOnAssignment = valueChangeData.stateOnAssignment();
+                Expression stateOnAssignment = changeData.stateOnAssignment();
                 if (stateOnAssignment != NO_VALUE) {
                     vic.setStateOnAssignment(level, stateOnAssignment);
                 }
 
-                Set<Variable> linkTo = evaluationResult.linkedVariables().get(variable);
-                if (linkTo == EvaluationResult.LINKED_VARIABLE_DELAY) {
+                if (changeData.linkedVariables() == EvaluationResult.LINKED_VARIABLE_DELAY) {
                     log(DELAYED, "Apply of step {} in {}, {} is delayed because of linked variables of {}",
                             step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
                             variable.fullyQualifiedName());
-                    status.set(DELAYS);
-                } else if (linkTo != null) {
-                    log(ANALYSER, "Set linked variables of {} to {}", variable, linkTo);
-                    vic.setLinkedVariables(level, linkTo);
+                    status = DELAYS;
+                } else if (changeData.linkedVariables() != null) {
+                    log(ANALYSER, "Set linked variables of {} to {}", variable, changeData.linkedVariables());
+                    vic.setLinkedVariables(level, changeData.linkedVariables());
                 }
             } else {
                 log(DELAYED, "Apply of step {} in {}, {} is delayed and skipped because of unknown value for {}",
                         step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
-                status.set(DELAYS);
+                status = DELAYS;
             }
         }
 
+        AnalysisStatus statusBeforeModificationStream = status;
         evaluationResult.getModificationStream()
-        //        .filter(mod -> status.get() == DONE || mod instanceof MarkRead)
-                .forEach(mod -> mod.accept(new ModificationData(sharedState.builder, status.get() == DONE ? level
-                        : VariableInfoContainer.LEVEL_1_INITIALISER)));
+                //        .filter(mod -> status.get() == DONE || mod instanceof MarkRead)
+                .forEach(mod -> mod.accept(new ModificationData(sharedState.builder, statusBeforeModificationStream == DONE
+                        ? level : VariableInfoContainer.LEVEL_1_INITIALISER)));
 
-        if (status.get() == DONE && !statementAnalysis.methodLevelData.internalObjectFlows.isFrozen()) {
+        if (status == DONE && !statementAnalysis.methodLevelData.internalObjectFlows.isFrozen()) {
             boolean delays = false;
             for (ObjectFlow objectFlow : evaluationResult.getObjectFlowStream().collect(Collectors.toSet())) {
                 if (objectFlow.isDelayed()) {
@@ -572,20 +569,20 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (delays) {
                 log(DELAYED, "Apply of step {} in {}, {} is delayed because of internal object flows",
                         step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
-                status.set(DELAYS);
+                status = DELAYS;
             } else {
                 statementAnalysis.methodLevelData.internalObjectFlows.freeze();
             }
         }
 
         // debugging...
-        for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration().debugConfiguration.evaluationResultVisitors) {
+        for (EvaluationResultVisitor evaluationResultVisitor : analyserContext.getConfiguration()
+                .debugConfiguration.evaluationResultVisitors) {
             evaluationResultVisitor.visit(new EvaluationResultVisitor.Data(evaluationResult.evaluationContext().getIteration(), step,
                     myMethodAnalyser.methodInfo, statementAnalysis.index, evaluationResult));
         }
 
-        return status.get();
-        // IMPROVE check that AddOnceSet is the right data structure
+        return status;
     }
 
 
@@ -690,8 +687,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             LocalVariableReference lvr = new LocalVariableReference(analyserContext, structure.localVariableCreation, List.of());
             StatementAnalysis firstStatementInBlock = firstStatementFirstBlock();
             final int l1 = VariableInfoContainer.LEVEL_1_INITIALISER;
-            VariableInfoContainer vic = firstStatementInBlock.findForWriting(analyserContext, lvr, statementTime);
-            vic.assignment(l1, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+            VariableInfoContainer vic = firstStatementInBlock.findForWriting(analyserContext, lvr, statementTime, false);
+            vic.prepareForValueChange(l1, firstStatementInBlock.index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
             Map<VariableProperty, Integer> propertiesToSet = new HashMap<>();
             if (sharedState.forwardAnalysisInfo.inCatch()) {
                 propertiesToSet.put(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -802,7 +799,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     // we still need to ensure that there is a level 3 present, because a 4 could be written in this iteration,
                     // and in the next one 3 needs to exist
                     VariableInfoContainer variableInfo = findReturnAsVariableForWriting();
-                    variableInfo.assignment(VariableInfoContainer.LEVEL_3_EVALUATION, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+                    variableInfo.prepareForValueChange(VariableInfoContainer.LEVEL_3_EVALUATION, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
                     // all the rest in the new variableInfo object stays on DELAY
                 }
                 log(DELAYED, "Step 3 in statement {}, {} is delayed, apply", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
@@ -864,7 +861,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         } else throw new UnsupportedOperationException("? " + currentRV.getClass());
 
         VariableInfoContainer vic = statementAnalysis.findForWriting(returnVariable);
-        vic.assignment(VariableInfoContainer.LEVEL_3_EVALUATION, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+        vic.prepareForValueChange(VariableInfoContainer.LEVEL_3_EVALUATION, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
         Map<VariableProperty, Integer> properties = sharedState.evaluationContext.getValueProperties(newInline);
         vic.setValueOnAssignment(VariableInfoContainer.LEVEL_3_EVALUATION, newInline, properties);
         vic.setLinkedVariables(VariableInfoContainer.LEVEL_3_EVALUATION, newInline.linkedVariables(sharedState.evaluationContext));
@@ -923,6 +920,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             firstStatementInBlock.addProperty(analyserContext,
                     VariableInfoContainer.LEVEL_3_EVALUATION,
                     statementAnalysis.flowData.timeAfterExecution.get(), // cannot compute yet
+                    false,
                     localVariableReference,
                     VariableProperty.NOT_NULL,
                     MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -1070,7 +1068,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 statementAnalysis.flowData.timeAfterSubBlocks.set(maxTime);
             }
             // need timeAfterSubBlocks set already
-            statementAnalysis.copyBackLocalCopies(evaluationContext, lastStatements, atLeastOneBlockExecuted, sharedState.previous, maxTime);
+            statementAnalysis.copyBackLocalCopies(evaluationContext, lastStatements, atLeastOneBlockExecuted, maxTime);
 
             // compute the escape situation of the sub-blocks
             Expression addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
@@ -1588,7 +1586,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void accept(ModificationData modificationData) {
-            statementAnalysis.findForWriting(analyserContext, variable, statementTime).markRead(modificationData.level);
+            statementAnalysis.findForWriting(analyserContext, variable, statementTime, true)
+                    .markRead(modificationData.level);
         }
 
         @Override

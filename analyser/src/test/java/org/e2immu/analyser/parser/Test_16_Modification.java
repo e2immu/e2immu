@@ -8,7 +8,6 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -509,7 +508,9 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test9() throws IOException {
-        final String S2 = "org.e2immu.analyser.testexample.Modification_9.s2";
+        final String TYPE = "org.e2immu.analyser.testexample.Modification_9";
+        final String S2 = TYPE + ".s2";
+        final String ADD = TYPE + ".add(String)";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "theSet".equals(d.variableName())) {
@@ -519,6 +520,15 @@ public class Test_16_Modification extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                 }
+                if (d.iteration() > 0) {
+                    Assert.assertNull(d.variableInfo().getLinkedVariables());
+                    if (d.currentValue() instanceof VariableExpression ve) {
+                        // we read the linkedVariables from s2
+                        Assert.assertEquals("s2", ve.variable().simpleName());
+                    } else {
+                        Assert.fail();
+                    }
+                }
             }
             if ("add".equals(d.methodInfo().name) && S2.equals(d.variableName())) {
                 if (d.iteration() > 0) {
@@ -526,9 +536,14 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
             }
         };
-
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if (ADD.equals(d.methodInfo().fullyQualifiedName) && d.iteration() > 0) {
+                Assert.assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
+            }
+        };
         testClass("Modification_9", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

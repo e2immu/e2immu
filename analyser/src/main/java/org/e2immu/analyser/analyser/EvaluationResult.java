@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -29,7 +28,6 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
-import org.e2immu.analyser.util.SetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +45,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                List<StatementAnalyser.StatementAnalysisModification> modifications,
                                List<StatementAnalysis.StateChange> stateChanges,
                                List<ObjectFlow> objectFlows,
-                               Map<Variable, Set<Variable>> linkedVariables,
                                Map<Variable, ExpressionChangeData> valueChanges) {
 
     public final static Set<Variable> LINKED_VARIABLE_DELAY = Set.of(Variable.fake());
@@ -70,10 +67,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         return valueChanges.entrySet().stream();
     }
 
-    public Stream<Map.Entry<Variable, Set<Variable>>> getLinkedVariablesStream() {
-        return linkedVariables.entrySet().stream();
-    }
-
     public Expression getExpression() {
         return value;
     }
@@ -84,12 +77,21 @@ public record EvaluationResult(EvaluationContext evaluationContext,
     }
 
     /**
-     * Any of the three can be used independently: possibly we want to mark assignment, but still have NO_VALUE for the value.
+     * Any of [value, markAssignment, linkedVariables]
+     * can be used independently: possibly we want to mark assignment, but still have NO_VALUE for the value.
      * The stateOnAssignment can also still be NO_VALUE while the value is known, and vice versa.
      */
-    public record ExpressionChangeData(Expression value, Expression stateOnAssignment, boolean markAssignment) {
+    public record ExpressionChangeData(Expression value,
+                                       Expression stateOnAssignment,
+                                       boolean markAssignment,
+                                       boolean isNotAssignmentTarget,
+                                       Set<Variable> linkedVariables) {
         public ExpressionChangeData {
             Objects.requireNonNull(value);
+        }
+
+        public ExpressionChangeData merge(ExpressionChangeData other) {
+            return other; //  should we merge? don't think so
         }
     }
 
@@ -102,7 +104,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private Expression value;
         private int statementTime;
         private final Map<Variable, ExpressionChangeData> valueChanges = new HashMap<>();
-        private final Map<Variable, Set<Variable>> linkedVariables = new HashMap<>();
 
         private void addToModifications(StatementAnalyser.StatementAnalysisModification modification) {
             if (modifications == null) modifications = new ArrayList<>();
@@ -162,14 +163,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 if (stateChanges == null) stateChanges = new LinkedList<>(evaluationResult.stateChanges);
                 else stateChanges.addAll(evaluationResult.stateChanges);
             }
-            valueChanges.putAll(evaluationResult.valueChanges);
-            for (Map.Entry<Variable, Set<Variable>> entry : evaluationResult.linkedVariables.entrySet()) {
-                Set<Variable> set = linkedVariables.get(entry.getKey());
-                if (set == null) {
-                    linkedVariables.put(entry.getKey(), entry.getValue());
-                } else {
-                    set.addAll(entry.getValue());
-                }
+            for (Map.Entry<Variable, ExpressionChangeData> e : evaluationResult.valueChanges.entrySet()) {
+                valueChanges.merge(e.getKey(), e.getValue(), ExpressionChangeData::merge);
             }
 
             statementTime = Math.max(statementTime, evaluationResult.statementTime);
@@ -205,7 +200,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     modifications == null ? List.of() : modifications,
                     stateChanges == null ? List.of() : stateChanges,
                     objectFlows == null ? List.of() : objectFlows,
-                    ImmutableMap.copyOf(linkedVariables),
                     valueChanges);
         }
 
@@ -325,17 +319,19 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (value.isConstant()) return null;
             NewObject instance = new NewObject(null, variable.parameterizedType(), List.of(),
                     stateFromPreconditions, objectFlowForCreation);
-            assignInstanceToVariable(variable, instance);
+            assignInstanceToVariable(variable, instance, null); // no change to linked variables
             return instance;
         }
 
-        private void assignInstanceToVariable(Variable variable, NewObject instance) {
+        // called when a new instance is needed because of a modifying method call, or when a variable doesn't have
+        // an instance yet. Not called upon assignment.
+        private void assignInstanceToVariable(Variable variable, NewObject instance, Set<Variable> linkedVariables) {
             ExpressionChangeData current = valueChanges.get(variable);
             ExpressionChangeData newVcd;
             if (current == null) {
-                newVcd = new ExpressionChangeData(instance, NO_VALUE, false);
+                newVcd = new ExpressionChangeData(instance, NO_VALUE, false, true, linkedVariables);
             } else {
-                newVcd = new ExpressionChangeData(instance, current.stateOnAssignment, current.markAssignment);
+                newVcd = new ExpressionChangeData(instance, current.stateOnAssignment, current.markAssignment, true, linkedVariables);
             }
             valueChanges.put(variable, newVcd);
         }
@@ -385,25 +381,21 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
-        public void linkVariables(Variable at, Set<Variable> linked) {
-            Set<Variable> current = linkedVariables.get(at);
-            if (current != LINKED_VARIABLE_DELAY) {
-                if (linked == null) {
-                    linkedVariables.put(at, LINKED_VARIABLE_DELAY);
-                } else {
-                    linkedVariables.merge(at, linked, SetUtil::immutableUnion);
-                }
-            }
-        }
-
         /*
         Called from Assignment and from LocalVariableCreation.
          */
-        public Builder assignment(Variable assignmentTarget, Expression resultOfExpression, boolean assignmentToNonEmptyExpression, int iteration) {
+        public Builder assignment(Variable assignmentTarget,
+                                  Expression resultOfExpression,
+                                  boolean assignmentToNonEmptyExpression,
+                                  Set<Variable> linkedVariables,
+                                  int iteration) {
             assert evaluationContext != null;
 
-            ExpressionChangeData valueChangeData = new ExpressionChangeData(resultOfExpression, evaluationContext.getConditionManager().state,
-                    iteration == 0 && assignmentToNonEmptyExpression);
+            ExpressionChangeData valueChangeData = new ExpressionChangeData(resultOfExpression,
+                    evaluationContext.getConditionManager().state,
+                    iteration == 0 && assignmentToNonEmptyExpression,
+                    false,
+                    linkedVariables);
             valueChanges.put(assignmentTarget, valueChangeData);
             return this;
         }
@@ -429,8 +421,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public void modifyingMethodAccess(Variable variable, NewObject newInstance, Set<Variable> linkedVariables) {
             add(new StateData.RemoveVariableFromState(evaluationContext, variable));
-            assignInstanceToVariable(variable, newInstance);
-            linkVariables(variable, linkedVariables);
+            assignInstanceToVariable(variable, newInstance, linkedVariables);
         }
 
         public void addErrorAssigningToFieldOutsideType(FieldInfo fieldInfo) {

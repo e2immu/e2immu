@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
@@ -32,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
@@ -132,7 +132,11 @@ public class MethodLevelData {
         final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
 
         sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
-            if (!variableInfo.linkedVariablesIsSet()) {
+            Set<Variable> linkedVariables = variableInfo.getLinkedVariables();
+            if (linkedVariables == null && variableInfo.getValue() instanceof VariableExpression redirect) {
+                linkedVariables = sharedState.statementAnalysis.findOrThrow(redirect.variable()).getLinkedVariables();
+            }
+            if (linkedVariables == null) {
                 if (!(variableInfo.variable() instanceof LocalVariableReference) ||
                         variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) {
                     log(DELAYED, "Delaying content modification in MethodLevelData for {} in {}: linked variables not set",
@@ -144,7 +148,6 @@ public class MethodLevelData {
                     log(LINKED_VARIABLES, "Local variable {} not yet assigned, so cannot yet be linked");
                 }
             } else {
-                Set<Variable> linkedVariables = variableInfo.getLinkedVariables();
                 dependencyGraph.addNode(variableInfo.variable(), linkedVariables);
             }
         });
@@ -239,7 +242,7 @@ public class MethodLevelData {
 
         VariableInfoContainer thisVi = statementAnalysis.findForWriting(evaluationContext.getAnalyserContext(),
                 new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType()),
-                evaluationContext.getFinalStatementTime());
+                evaluationContext.getFinalStatementTime(), true);
         thisVi.setProperty(VIC_LEVEL, VariableProperty.ASSIGNED, Level.FALSE);
         thisVi.ensureProperty(VIC_LEVEL, VariableProperty.READ, Level.FALSE);
         thisVi.ensureProperty(VIC_LEVEL, VariableProperty.METHOD_CALLED, Level.FALSE);

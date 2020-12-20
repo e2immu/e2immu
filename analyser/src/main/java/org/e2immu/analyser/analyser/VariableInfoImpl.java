@@ -53,29 +53,37 @@ class VariableInfoImpl implements VariableInfo {
     public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
 
     public final SetOnce<Integer> statementTime = new SetOnce<>();
+    public final String assignmentId;
 
     // ONLY for testing!
     VariableInfoImpl(Variable variable) {
-        this(variable, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+        this(variable, VariableInfoContainer.START_OF_METHOD, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
     }
 
-    VariableInfoImpl(Variable variable, int statementTime) {
+    VariableInfoImpl(Variable variable, String assignmentId, int statementTime) {
         this.variable = Objects.requireNonNull(variable);
         this.name = variable.fullyQualifiedName();
+        this.assignmentId = assignmentId;
         if (statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
             this.statementTime.set(statementTime);
         }
     }
 
     VariableInfoImpl(VariableInfoImpl previous) {
-        this.name = previous.name();
-        this.variable = previous.variable();
+        this.assignmentId = previous.assignmentId;
+        this.name = previous.name;
+        this.variable = previous.variable;
         this.properties.copyFrom(previous.properties);
         this.value.copy(previous.value);
         this.stateOnAssignment.copy(previous.stateOnAssignment);
         this.linkedVariables.copy(previous.linkedVariables);
         this.objectFlow.copy(previous.objectFlow);
         this.statementTime.copy(previous.statementTime);
+    }
+
+    @Override
+    public String getAssignmentId() {
+        return assignmentId;
     }
 
     @Override
@@ -221,13 +229,16 @@ class VariableInfoImpl implements VariableInfo {
             return newObject == null ? this : newObject; // no need to create
 
         int mergedStatementTime = mergedStatementTime(evaluationContext);
+        String assignmentId = mergedAssignmentId(evaluationContext, existingValuesWillBeOverwritten, merge);
 
         if (newObject == null) {
-            VariableInfoImpl newVi = new VariableInfoImpl(variable, mergedStatementTime);
+            VariableInfoImpl newVi = new VariableInfoImpl(variable, assignmentId, mergedStatementTime);
             newVi.setValue(mergedValue);
             newVi.stateOnAssignment.copy(stateOnAssignment);
             return newVi;
         }
+        assert assignmentId.equals(newObject.assignmentId);
+
         if (!newObject.value.isSet() || !newObject.value.get().equals(mergedValue)) {
             newObject.setValue(mergedValue); // will cause severe problems if the value already there is different :-)
             assert newObject.statementTime.getOrElse(VariableInfoContainer.VARIABLE_FIELD_DELAY) == mergedStatementTime;
@@ -235,8 +246,17 @@ class VariableInfoImpl implements VariableInfo {
         return newObject;
     }
 
+    private String mergedAssignmentId(EvaluationContext evaluationContext, boolean existingValuesWillBeOverwritten,
+                                      List<VariableInfo> merge) {
+        String currentStatementId = evaluationContext.getCurrentStatement().index();
+        boolean assignmentInSubBlocks = existingValuesWillBeOverwritten ||
+                merge.stream().anyMatch(vi -> vi.getAssignmentId().compareTo(currentStatementId) > 0);
+        return assignmentInSubBlocks ? currentStatementId : assignmentId;
+    }
+
     private int mergedStatementTime(EvaluationContext evaluationContext) {
-        if (statementTime.getOrElse(VariableInfoContainer.VARIABLE_FIELD_DELAY) == VariableInfoContainer.NOT_A_VARIABLE_FIELD) return VariableInfoContainer.NOT_A_VARIABLE_FIELD;
+        if (statementTime.getOrElse(VariableInfoContainer.VARIABLE_FIELD_DELAY) == VariableInfoContainer.NOT_A_VARIABLE_FIELD)
+            return VariableInfoContainer.NOT_A_VARIABLE_FIELD;
         return evaluationContext.getFinalStatementTime();
     }
 
@@ -245,7 +265,7 @@ class VariableInfoImpl implements VariableInfo {
             throw new UnsupportedOperationException("Cannot redirect to myself");
         }
         if (value == NO_VALUE) throw new UnsupportedOperationException("Cannot set NO_VALUE");
-        if(!this.value.isSet() || !this.value.get().equals(value)) { // crash if different, keep same
+        if (!this.value.isSet() || !this.value.get().equals(value)) { // crash if different, keep same
             this.value.set(value);
         }
     }

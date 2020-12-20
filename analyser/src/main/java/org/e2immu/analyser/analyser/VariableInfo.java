@@ -19,6 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -87,11 +88,16 @@ public interface VariableInfo {
     if statement time < 0, this means that statement time is irrelevant for this variable.
 
     Otherwise, it depends on the type of variable.
-    If it is a local variable, this time is the time of creation (i.e. when a new copy from a variable field was made)
     If it is a field reference, it is variable, and this is the time of the latest assignment in this method.
     If there has not yet been an assignment is this method for a variable field reference, 0 is used.
      */
     int getStatementTime();
+
+    /**
+     * @return the empty string if there was no assignment in this method; otherwise the statement id
+     * of the latest assignment to this variable (field, local variable, dependent variable)
+     */
+    String getAssignmentId();
 
     default boolean isVariableField() {
         return variable() instanceof FieldReference && getStatementTime() >= 0;

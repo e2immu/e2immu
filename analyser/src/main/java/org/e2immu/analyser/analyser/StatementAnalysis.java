@@ -300,7 +300,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // at the beginning of the method
             if (methodAnalysis.getMethodInfo().hasReturnValue()) {
                 Variable retVar = new ReturnVariable(methodAnalysis.getMethodInfo());
-                VariableInfoContainer vic = createVariable(analyserContext, retVar, 0);
+                VariableInfoContainer vic = createVariable(analyserContext, retVar, 0, true);
                 vic.setStateOnAssignment(VariableInfoContainer.LEVEL_1_INITIALISER, new BooleanConstant(primitives, true));
                 READ_FROM_RETURN_VALUE_PROPERTIES.forEach(vp -> vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, vp, vp.falseValue));
             }
@@ -326,7 +326,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().getParameters()) {
                 VariableInfo prevIteration = findOrNull(parameterInfo, VariableInfoContainer.LEVEL_1_INITIALISER);
                 if (prevIteration != null) {
-                    VariableInfoContainer vic = findForWriting(analyserContext, parameterInfo, flowData.initialTime.get());
+                    VariableInfoContainer vic = findForWriting(analyserContext, parameterInfo, flowData.initialTime.get(), true);
                     ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                     for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
                         int value = parameterAnalysis.getProperty(variableProperty);
@@ -413,13 +413,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param evaluationContext       for expression evaluations
      * @param lastStatements          the last statement of each of the blocks
      * @param atLeastOneBlockExecuted true if we can (potentially) discard the current value
-     * @param previous                the previous statement
      * @param statementTime           the statement time of subBlocks
      */
     public void copyBackLocalCopies(EvaluationContext evaluationContext,
                                     List<StatementAnalyser> lastStatements,
                                     boolean atLeastOneBlockExecuted,
-                                    StatementAnalysis previous,
                                     int statementTime) {
 
         // we need to make a synthesis of the variable state of fields, local copies, etc.
@@ -430,9 +428,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             String fqn = e.getKey();
             VariableInfoContainer vic = e.getValue();
 
-            //boolean someChange = lastStatements.stream()
-            //        .anyMatch(sa -> sa.statementAnalysis.variables.isSet(fqn) && // possibly not set if field, parameter
-            //                sa.statementAnalysis.variables.get(fqn).getCurrentLevel() > VariableInfoContainer.LEVEL_0_PREVIOUS);
             if (merged.add(fqn)) {
                 List<VariableInfo> toMerge = lastStatements.stream()
                         .filter(sa -> sa.statementAnalysis.variables.isSet(fqn))
@@ -441,7 +436,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 VariableInfoContainer destination;
                 if (!variables.isSet(fqn)) {
                     Variable variable = e.getValue().current().variable();
-                    destination = createVariable(evaluationContext.getAnalyserContext(), variable, statementTime);
+                    destination = createVariable(evaluationContext.getAnalyserContext(), variable, statementTime, false);
                 } else {
                     destination = vic;
                 }
@@ -483,12 +478,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param variable        the variable
      * @return the container of the new variable
      */
-    private VariableInfoContainer createVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
+    private VariableInfoContainer createVariable(AnalyserContext analyserContext, Variable variable, int statementTime,
+                                                 boolean isNotAssignmentTarget) {
         String fqn = variable.fullyQualifiedName();
         if (variables.isSet(fqn)) throw new UnsupportedOperationException("Already exists");
 
         int statementTimeForVariable = statementTimeForVariable(analyserContext, variable, statementTime);
-        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, statementTimeForVariable);
+        String assignmentId = assignmentIdAtCreation(variable, isNotAssignmentTarget);
+        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, assignmentId, statementTimeForVariable);
 
         variables.put(variable.fullyQualifiedName(), vic);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", variable.fullyQualifiedName());
@@ -528,6 +525,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return vic;
     }
 
+    private String assignmentIdAtCreation(Variable variable, boolean isNotAssignmentTarget) {
+        if (isNotAssignmentTarget) {
+            if (variable instanceof LocalVariableReference) throw new UnsupportedOperationException();
+            return VariableInfoContainer.START_OF_METHOD;
+        }
+        return index;
+    }
+
     public int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
         if (variable instanceof FieldReference fieldReference) {
             int effectivelyFinal = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(VariableProperty.FINAL);
@@ -556,77 +561,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return VariableProperty.FROM_ANALYSER_TO_PROPERTIES.stream()
                 .collect(Collectors.toUnmodifiableMap(vp -> vp, f));
     }
-
-    /**
-     * Properties of fields travel via {@link MethodLevelData}'s <code>fieldSummaries</code> to methods, then to fields.
-     * Methods in the construction process are private methods that are ONLY called (transitively) from
-     * any of the constructors.
-     *
-     * <p>
-     * Different situations arise for the value of the field set before the first statement:
-     *
-     * <ol>
-     *     <li>
-     *         Inside the constructor, or methods part of the construction process:
-     *          <ol>
-     *              <li>
-     *                  Inside a constructor: an initial value is assumed (null for references, zero or false for primitives).
-     * <p>
-     *                  Value: the relevant null-constant.
-     *              </li>
-     *              <li>
-     *                  After the first assignment (in a constructor, or part of construction process),
-     *                  the field acts as a local variable (as if in a sync block for a variable field outside construction).
-     *              </li>
-     *              <li>
-     *                  The initial null value is not appropriate (?) in constructors once modifying methods have been called,
-     *                  or in any of the methods in the construction process, before assignment.
-     *                  This situation should be forbidden or strongly discouraged.
-     * <p>
-     *                  TODO: implement a check
-     *               </li>
-     *          </ol>
-     *     </li>
-     *     <li>
-     *         Outside the construction process:
-     *         <ol>
-     *             <li>
-     *                 In the first iteration, we wait, because we need to determine if the field is effectively final.
-     *                 Constant: <code>EFFECTIVELY_FINAL_DELAYED</code>.
-     *                 No value set.
-     *             </li>
-     *             <li>
-     *                  Field is effectively final, but <code>effectivelyFinalValue</code> has not yet been set.
-     *                  Constant: <code>EFFECTIVELY_FINAL_DELAYED</code>.
-     *                  No value set.
-     *             </li>
-     *             <li>
-     *                 Field is effectively final, and an <code>effectivelyFinalValue</code> has been set.
-     *                 Constant: <code>EFFECTIVELY_FINAL</code>
-     * <p>
-     *                 Value: the <code>effectivelyFinalValue</code>.
-     *             </li>
-     *             <li>
-     *                 Field is variable (not effectively final).
-     *                 Constant: <code>VARIABLE</code>. Note that the field's value can change during the evaluation of a single
-     *                 expression from one evaluation to the next!
-     *                 E.g., <code>if(field != null) return field;</code> does NOT guarantee non-null.
-     * <p>
-     *                 Value: a simple {@link VariableExpression} at the start of the first statement of the method.
-     *                 Subsequent assignments to the field will potentially yield different values (e.g., a constant, parameter, etc.)
-     * <p>
-     *                 The field initialiser is taken into account; when absent, the implicit initial null value influences the
-     *                 properties such as NOT_NULL.
-     *             </li>
-     *             <li>
-     *                 Inside a synchronized block, a field acts as a local variable.
-     *                 Once the first assignment has been made, all properties are computed locally.
-     *             </li>
-     *         </ol>
-     *     </li>
-     * </ol>
-     */
-    // FIXME the NewObject's need something from the preconditions?
 
     record ExpressionAndLinkedVariables(Expression expression, Set<Variable> linkedVariables) {
     }
@@ -704,17 +638,18 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                             Variable variable,
                             VariableProperty variableProperty,
                             int value) {
-        addProperty(analyserContext, level, statementTime(level), variable, variableProperty, value);
+        addProperty(analyserContext, level, statementTime(level), true, variable, variableProperty, value);
     }
 
     public void addProperty(AnalyserContext analyserContext,
                             int level,
                             int statementTime,
+                            boolean isNotAssignmentTarget,
                             Variable variable,
                             VariableProperty variableProperty,
                             int value) {
         Objects.requireNonNull(variable);
-        VariableInfoContainer vic = findForWriting(analyserContext, variable, statementTime);
+        VariableInfoContainer vic = findForWriting(analyserContext, variable, statementTime, isNotAssignmentTarget);
         vic.ensureProperty(level, variableProperty, value);
 
         Expression currentValue = vic.current().getValue();
@@ -722,7 +657,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if ((valueWithVariable = currentValue.asInstanceOf(VariableExpression.class)) == null) return;
         Variable other = valueWithVariable.variable();
         if (!variable.equals(other)) {
-            VariableInfoContainer vic2 = findForWriting(analyserContext, other, statementTime);
+            VariableInfoContainer vic2 = findForWriting(analyserContext, other, statementTime, isNotAssignmentTarget);
             vic2.ensureProperty(level, variableProperty, value);
 
             Expression otherValue = vic2.current().getValue();
@@ -777,7 +712,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         String fqn = variable.fullyQualifiedName();
         VariableInfoContainer vic;
         if (!variables.isSet(fqn)) {
-            vic = createVariable(analyserContext, variable, statementTime);
+            vic = createVariable(analyserContext, variable, statementTime, isNotAssignmentTarget);
         } else {
             vic = variables.get(fqn);
         }
@@ -790,7 +725,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (variables.isSet(lvr.fullyQualifiedName())) {
                 lvrVic = variables.get(lvr.fullyQualifiedName());
             } else {
-                lvrVic = createVariable(analyserContext, lvr, statementTime);
+                lvrVic = createVariable(analyserContext, lvr, statementTime, false);
 
                 // same as from the field
                 FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
@@ -869,10 +804,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public VariableInfoContainer findForWriting(@NotNull AnalyserContext analyserContext,
                                                 @NotNull Variable variable,
-                                                int statementTime) {
+                                                int statementTime,
+                                                boolean isNotAssignmentTarget) {
         String fqn = variable.fullyQualifiedName();
         if (variables.isSet(fqn)) return variables.get(fqn);
-        return createVariable(analyserContext, variable, statementTime);
+        return createVariable(analyserContext, variable, statementTime, isNotAssignmentTarget);
     }
 
     /**

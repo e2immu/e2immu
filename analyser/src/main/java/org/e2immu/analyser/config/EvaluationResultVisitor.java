@@ -17,9 +17,9 @@
 
 package org.e2immu.analyser.config;
 
+import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.MethodInfo;
 
 import java.util.Map;
@@ -32,11 +32,6 @@ public interface EvaluationResultVisitor {
     record Data(int iteration, String step, MethodInfo methodInfo, String statementId,
                 EvaluationResult evaluationResult) {
 
-        public boolean haveSetProperty(String variableName, VariableProperty variableProperty, int value) {
-            return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.SetProperty)
-                    .map(sam -> (StatementAnalyser.SetProperty) sam)
-                    .anyMatch(sp -> variableName.equals(sp.variable.fullyQualifiedName()) && variableProperty == sp.property && value == sp.value);
-        }
 
         public boolean haveSetProperty(String variableName, VariableProperty variableProperty) {
             return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.SetProperty)
@@ -45,9 +40,10 @@ public interface EvaluationResultVisitor {
         }
 
         public boolean haveLinkVariable(String fromName, Set<String> toNames) {
-            return evaluationResult().getLinkedVariablesStream()
+            return evaluationResult().getExpressionChangeStream()
                     .anyMatch(e -> fromName.equals(e.getKey().fullyQualifiedName()) &&
-                            toNames.equals(e.getValue().stream().map(v -> v.fullyQualifiedName()).collect(Collectors.toSet())));
+                            toNames.equals(e.getValue().linkedVariables()
+                                    .stream().map(v -> v.fullyQualifiedName()).collect(Collectors.toSet())));
         }
 
         public boolean haveMarkRead(String variableName) {

@@ -247,15 +247,17 @@ public class Assignment implements Expression {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
         }
 
-        builder.assignment(at, resultOfExpression, true, evaluationContext.getIteration());
-
+        Set<Variable> linked;
         // connect the value to the assignment target
         if (resultOfExpression != NO_VALUE) {
-            Set<Variable> linked = evaluationContext.linkedVariables(resultOfExpression);
+            linked = evaluationContext.linkedVariables(resultOfExpression);
             log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.fullyQualifiedName(),
                     Variable.fullyQualifiedName(linked), Variable.fullyQualifiedName(linked));
-            builder.linkVariables(at, linked);
+        } else {
+            linked = null;
         }
+        builder.assignment(at, resultOfExpression, true, linked, evaluationContext.getIteration());
+
     }
 
     private static boolean checkIllegalAssignmentIntoNestedType(Variable at, FieldInfo fieldInfo, TypeInfo currentType) {

@@ -38,7 +38,8 @@ public class TestVariableInfoContainer extends CommonVariableInfo {
     @Test
     public void test1() {
         Variable a = makeLocalIntVar("a");
-        VariableInfoContainer vic = new VariableInfoContainerImpl(a, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+        VariableInfoContainer vic = new VariableInfoContainerImpl(a, VariableInfoContainer.START_OF_METHOD,
+                VariableInfoContainer.NOT_A_VARIABLE_FIELD);
         VariableInfo vi = vic.current();
         Assert.assertFalse(vi.hasProperty(VariableProperty.INDEPENDENT));
         Assert.assertEquals(VariableInfoContainer.LEVEL_1_INITIALISER, vic.getCurrentLevel());
@@ -116,7 +117,8 @@ public class TestVariableInfoContainer extends CommonVariableInfo {
         }
         Assert.assertFalse(vic.current().valueIsSet());
 
-        vic.assignment(VariableInfoContainer.LEVEL_4_SUMMARY, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+        vic.prepareForValueChange(VariableInfoContainer.LEVEL_4_SUMMARY, VariableInfoContainer.START_OF_METHOD,
+                VariableInfoContainer.NOT_A_VARIABLE_FIELD);
         Assert.assertEquals(VariableInfoContainer.LEVEL_4_SUMMARY, vic.getCurrentLevel());
         vic.setValueOnAssignment(VariableInfoContainer.LEVEL_4_SUMMARY, three, Map.of());
         Assert.assertSame(three, vic.current().getValue());
