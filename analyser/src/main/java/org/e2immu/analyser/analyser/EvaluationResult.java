@@ -176,7 +176,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public void incrementStatementTime() {
-            statementTime++;
+            if (evaluationContext.allowedToIncrementStatementTime()) {
+                statementTime++;
+            }
         }
 
         // also sets result of expression, but cannot overwrite NO_VALUE

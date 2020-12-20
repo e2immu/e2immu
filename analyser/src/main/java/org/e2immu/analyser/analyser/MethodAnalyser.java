@@ -115,7 +115,8 @@ public class MethodAnalyser extends AbstractAnalyser {
             firstStatementAnalyser = null;
         } else {
             firstStatementAnalyser = StatementAnalyser.recursivelyCreateAnalysisObjects(analyserContext,
-                    this, null, block.structure.statements, "", true, false);
+                    this, null, block.structure.statements, "", true,
+                    methodInfo.isSynchronized());
             methodAnalysis.setFirstStatement(firstStatementAnalyser.statementAnalysis);
         }
         this.isSAM = isSAM;

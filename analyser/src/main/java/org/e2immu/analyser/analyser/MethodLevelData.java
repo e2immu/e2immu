@@ -65,12 +65,6 @@ public class MethodLevelData {
     // not for local processing, but so that we know in the method and field analyser that this process has been completed
     public final FlipSwitch linksHaveBeenEstablished = new FlipSwitch();
 
-    public void copyFrom(Stream<MethodLevelData> others) {
-        others.forEach(mld -> {
-            // TODO
-        });
-    }
-
     record SharedState(StatementAnalyserResult.Builder builder,
                        EvaluationContext evaluationContext,
                        StatementAnalysis statementAnalysis,

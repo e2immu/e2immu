@@ -214,7 +214,15 @@ public interface EvaluationContext {
         return 0;
     }
 
-    default int getFinalStatementTime() { return 0; }
+    default int getFinalStatementTime() {
+        return 0;
+    }
 
-    default void ensureVariableAtTimeOfSubBlocks(Variable variable) { throw new UnsupportedOperationException(); }
+    default void ensureVariableAtTimeOfSubBlocks(Variable variable) {
+        throw new UnsupportedOperationException();
+    }
+
+    default boolean allowedToIncrementStatementTime() {
+        return true;
+    }
 }

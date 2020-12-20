@@ -19,6 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -31,9 +32,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class Test_03_Basics_4_5 extends CommonTestRunner {
+public class Test_03_Basics_4plus extends CommonTestRunner {
 
-    public Test_03_Basics_4_5() {
+    public Test_03_Basics_4plus() {
         super(true);
     }
 
@@ -199,6 +200,67 @@ public class Test_03_Basics_4_5 extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
+                .build());
+    }
+
+
+    // more on statement time
+    @Test
+    public void test7() throws IOException {
+        final String I = "org.e2immu.analyser.testexample.Basics_7.i";
+        final String I0 = I + "$0";
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("increment".equals(d.methodInfo().name) && "4".equals(d.statementId()) && d.iteration() > 0) {
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                Assert.assertEquals(I0 + "+q==" + I0, d.evaluationResult().value().toString());
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("increment".equals(d.methodInfo().name) && I.equals(d.variableName())) {
+                if ("2".equals(d.statementId()) && d.iteration() > 0) {
+                    Assert.assertEquals(I0 + "+q", d.currentValue().toString());
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            int time1 = d.statementAnalysis().statementTime(1);
+            int time3 = d.statementAnalysis().statementTime(3);
+            int time4 = d.statementAnalysis().statementTime(4);
+
+            // method itself is synchronised, so statement time stands still
+            if ("increment".equals(d.methodInfo().name)) {
+                Assert.assertEquals(0, time1);
+                Assert.assertEquals(0, time3);
+                Assert.assertEquals(0, time4);
+            }
+            if ("increment2".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals(0, time1);
+                    Assert.assertEquals(1, time3);
+                    Assert.assertEquals(1, time4);
+                }
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals(1, time1);
+                    Assert.assertEquals(1, time3);
+                    Assert.assertEquals(1, time4);
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("increment".equals(d.methodInfo().name)) {
+                Assert.assertTrue(d.methodInfo().isSynchronized());
+            }
+        };
+
+        testClass("Basics_7", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

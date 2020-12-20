@@ -8,6 +8,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.Map;
+import java.util.Objects;
 
 public interface StatementAnalyserVariableVisitor {
 
@@ -21,6 +22,10 @@ public interface StatementAnalyserVariableVisitor {
                 Map<VariableProperty, Integer> properties,
                 VariableInfo variableInfo,
                 VariableInfoContainer variableInfoContainer) {
+
+        public Data {
+            Objects.requireNonNull(currentValue);
+        }
 
         public int getProperty(VariableProperty variableProperty) {
             return properties.getOrDefault(variableProperty, Level.DELAY);

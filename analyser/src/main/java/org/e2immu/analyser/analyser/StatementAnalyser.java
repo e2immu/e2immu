@@ -1297,6 +1297,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
+        public boolean allowedToIncrementStatementTime() {
+            return !statementAnalysis.inSyncBlock;
+        }
+
+        @Override
         public boolean disableEvaluationOfMethodCallsUsingCompanionMethods() {
             return getAnalyserContext().inAnnotatedAPIAnalysis() || disableEvaluationOfMethodCallsUsingCompanionMethods;
         }
