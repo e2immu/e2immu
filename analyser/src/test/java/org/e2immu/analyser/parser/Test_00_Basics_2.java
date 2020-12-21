@@ -32,7 +32,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-public class Test_02_Basics_2 extends CommonTestRunner {
+public class Test_00_Basics_2 extends CommonTestRunner {
 
     private static final String TYPE = "org.e2immu.analyser.testexample.Basics_2";
     private static final String STRING_PARAMETER = TYPE + ".setString(String):0:string";
@@ -42,7 +42,7 @@ public class Test_02_Basics_2 extends CommonTestRunner {
     private static final String METHOD_VALUE_ADD = "collection.add(org.e2immu.analyser.testexample.Basics_2.string$0)";
     private static final String RETURN_GET_STRING = TYPE + ".getString()";
 
-    public Test_02_Basics_2() {
+    public Test_00_Basics_2() {
         super(true);
     }
 

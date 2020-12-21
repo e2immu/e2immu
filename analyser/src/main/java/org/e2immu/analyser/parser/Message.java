@@ -43,6 +43,8 @@ public class Message {
     public static final String ASSERT_EVALUATES_TO_CONSTANT_TRUE = "Condition in 'assert' is always true";
 
     public static final String EMPTY_LOOP = "Empty loop";
+    public static final String LOOP_WITHOUT_MODIFICATION = "Loop without modification";
+
     public static final String UNREACHABLE_STATEMENT = "Unreachable statement";
 
     public static final String POTENTIAL_NULL_POINTER_EXCEPTION = "Potential null pointer exception";

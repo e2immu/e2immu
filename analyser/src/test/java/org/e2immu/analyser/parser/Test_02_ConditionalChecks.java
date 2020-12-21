@@ -11,11 +11,11 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Map;
 
-public class Test_05_ConditionalChecks extends CommonTestRunner {
+public class Test_02_ConditionalChecks extends CommonTestRunner {
 
     public static final String CONDITIONAL_CHECKS = "conditionalChecks";
 
-    public Test_05_ConditionalChecks() {
+    public Test_02_ConditionalChecks() {
         super(false);
     }
 

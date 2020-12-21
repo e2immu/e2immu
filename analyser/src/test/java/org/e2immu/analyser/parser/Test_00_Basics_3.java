@@ -36,7 +36,7 @@ Aims to catch problems in assigning properties from the field to the variable in
 The values there are a summary of what happened deeper down, which is different from what is in the field.
 (The field cannot be @NotNull but locally we know s will not be null at that point.)
  */
-public class Test_02_Basics_3 extends CommonTestRunner {
+public class Test_00_Basics_3 extends CommonTestRunner {
 
 
     // not loading in the AnnotatedAPIs, so System.out will have @Modified=1 after println()

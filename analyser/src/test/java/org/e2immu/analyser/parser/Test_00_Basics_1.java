@@ -28,14 +28,14 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class Test_01_Basics_1 extends CommonTestRunner {
+public class Test_00_Basics_1 extends CommonTestRunner {
 
     public static final String BASICS_1 = "Basics_1";
     private static final String TYPE = "org.e2immu.analyser.testexample."+BASICS_1;
     private static final String FIELD1 = TYPE + ".f1";
     private static final String GET_F1_RETURN = TYPE + ".getF1()";
 
-    public Test_01_Basics_1() {
+    public Test_00_Basics_1() {
         super(true);
     }
 

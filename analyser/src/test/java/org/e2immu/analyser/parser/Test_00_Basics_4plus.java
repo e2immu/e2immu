@@ -32,9 +32,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class Test_03_Basics_4plus extends CommonTestRunner {
+public class Test_00_Basics_4plus extends CommonTestRunner {
 
-    public Test_03_Basics_4plus() {
+    public Test_00_Basics_4plus() {
         super(true);
     }
 
