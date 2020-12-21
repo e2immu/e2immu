@@ -700,7 +700,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     /**
-     * for reading
+     * Find a variable for reading. Intercepts fields and local variables.
      *
      * @param analyserContext because we create the variable if it doesn't exist yet (fields)
      * @param variable        the variable
