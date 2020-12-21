@@ -17,12 +17,21 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.FlowData;
+import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.model.expression.ArrayInitializer;
+import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.statement.ForEachStatement;
+import org.e2immu.analyser.model.statement.WhileStatement;
+import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.List;
 
 public class Test_01_Loops extends CommonTestRunner {
 
@@ -32,8 +41,17 @@ public class Test_01_Loops extends CommonTestRunner {
 
     @Test
     public void test0() throws IOException {
-
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
+                if (d.statementAnalysis().statement instanceof WhileStatement whileStatement) {
+                    FlowData.Execution exec = whileStatement.structure.statementExecution.apply(new BooleanConstant(d.statementAnalysis().primitives, true),
+                            d.evaluationContext());
+                    Assert.assertSame(FlowData.Execution.ALWAYS, exec);
+                } else Assert.fail();
+            }
+        };
         testClass("Loops_0", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
@@ -51,10 +69,26 @@ public class Test_01_Loops extends CommonTestRunner {
                 .build());
     }
 
+    // explicitly empty loop
     @Test
     public void test3() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+                if (d.statementAnalysis().statement instanceof ForEachStatement forEachStatement) {
+                    FlowData.Execution exec = forEachStatement.structure.statementExecution
+                            .apply(new ArrayInitializer(d.statementAnalysis().primitives, ObjectFlow.NO_FLOW,
+                                    List.of()), d.evaluationContext());
+                    Assert.assertSame(FlowData.Execution.NEVER, exec);
 
+                    StatementAnalysis firstInBlock = d.statementAnalysis().navigationData.blocks.get().get(0).orElseThrow();
+                    Assert.assertTrue(firstInBlock.flowData.isUnreachable());
+
+                    Assert.assertNotNull(d.haveError(Message.EMPTY_LOOP));
+                } else Assert.fail();
+            }
+        };
         testClass("Loops_3", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

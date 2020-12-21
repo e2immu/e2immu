@@ -23,6 +23,7 @@ import org.e2immu.analyser.inspector.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.BooleanConstant;
+import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -39,7 +40,7 @@ public class ParseArrayCreationExpr {
                                 .map(expressionContext::parseExpression).collect(Collectors.toList()))).orElse(null);
         List<Expression> indexExpressions = arrayCreationExpr.getLevels()
                 .stream().map(level -> level.getDimension().map(expressionContext::parseExpression)
-                        .orElseThrow()).collect(Collectors.toList());
+                        .orElse(new IntConstant(expressionContext.typeContext.getPrimitives(), 0))).collect(Collectors.toList());
         return new NewObject(createArrayCreationConstructor(expressionContext.typeContext, parameterizedType),
                 parameterizedType, indexExpressions, arrayInitializer,
                 new BooleanConstant(expressionContext.typeContext.getPrimitives(), true), ObjectFlow.NO_FLOW);

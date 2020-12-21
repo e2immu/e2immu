@@ -18,9 +18,14 @@
 
 package org.e2immu.analyser.model.statement;
 
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.ArrayInitializer;
+import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Space;
 import org.e2immu.analyser.output.Symbol;
@@ -33,13 +38,25 @@ public class ForEachStatement extends LoopStatement {
                             Expression expression,
                             Block block) {
         super(new Structure.Builder()
-                .setStatementExecution(StatementExecution.CONDITIONALLY)
+                .setStatementExecution(ForEachStatement::computeExecution)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
                 .setLocalVariableCreation(localVariable)
                 .setExpression(expression)
                 .setBlock(block).build(), label);
     }
 
+    private static FlowData.Execution computeExecution(Expression expression, EvaluationContext evaluationContext) {
+        if(expression instanceof ArrayInitializer arrayInitializer && arrayInitializer.multiExpression.expressions().length == 0) {
+            return FlowData.Execution.NEVER;
+        }
+        if(expression instanceof VariableExpression variableExpression) {
+            NewObject newObject  = evaluationContext.currentInstance(variableExpression.variable(), evaluationContext.getInitialStatementTime());
+            if(newObject != null && !newObject.state.isBoolValueTrue()) {
+                // TODO we can try to extract a length or size
+            }
+        }
+        return FlowData.Execution.CONDITIONALLY; // we have no clue
+    }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
