@@ -55,7 +55,13 @@ public class Test_02_Basics_3 extends CommonTestRunner {
                     Assert.assertSame(EmptyExpression.NO_RETURN_VALUE, d.evaluationResult().value());
                 }
             }
+            if ("setS1".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                // should not be sth like null != s$2, because statement time has not advanced since the assignments
+                Assert.assertEquals("null!=input1.contains(\"a\")?\"xyz\":\"abc\"", d.evaluationResult().value().debugOutput());
+            }
         };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setS1".equals(d.methodInfo().name) && S.equals(d.variableName())) {
                 if ("1".equals(d.statementId())) {

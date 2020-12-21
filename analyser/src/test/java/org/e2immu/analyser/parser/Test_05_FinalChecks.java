@@ -103,6 +103,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if (FINAL_CHECKS_FQN.equals(d.methodInfo().fullyQualifiedName())) {
+            Assert.assertTrue(d.statementAnalysis().inSyncBlock);
             if ("0.0.1".equals(d.statementId())) {
                 Assert.fail(); // unreachable
             }

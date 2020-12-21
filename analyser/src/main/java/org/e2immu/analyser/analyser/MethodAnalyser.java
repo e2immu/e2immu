@@ -29,6 +29,7 @@ import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
+import org.e2immu.analyser.model.statement.ReturnStatement;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
@@ -116,7 +117,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         } else {
             firstStatementAnalyser = StatementAnalyser.recursivelyCreateAnalysisObjects(analyserContext,
                     this, null, block.structure.statements, "", true,
-                    methodInfo.isSynchronized());
+                    methodInfo.isSynchronized() || methodInfo.isConstructor);
             methodAnalysis.setFirstStatement(firstStatementAnalyser.statementAnalysis);
         }
         this.isSAM = isSAM;
@@ -525,6 +526,13 @@ public class MethodAnalyser extends AbstractAnalyser {
         VariableInfo variableInfo = getReturnAsVariable();
         Expression value = variableInfo.getValue();
         if (value == EmptyExpression.NO_VALUE || value.isInitialReturnExpression()) {
+
+            // it is possible that none of the return statements are reachable... in which case there should be no delay,
+            // and no SRV
+            if (noReturnStatementReachable()) {
+                methodAnalysis.singleReturnValue.set(new UnknownExpression(methodInfo.returnType(), "does not return a value"));
+                return DONE;
+            }
             log(DELAYED, "Method {} has return value {}, delaying", methodInfo.distinguishingName(), value.debugOutput());
             return DELAYS;
         }
@@ -589,6 +597,26 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
 
         return DONE;
+    }
+
+    private boolean noReturnStatementReachable() {
+        StatementAnalysis firstStatement = methodAnalysis.getFirstStatement();
+        return !recursivelyFindReachableReturnStatement(firstStatement);
+    }
+
+    private static boolean recursivelyFindReachableReturnStatement(StatementAnalysis statementAnalysis) {
+        StatementAnalysis sa = statementAnalysis;
+        while (!sa.flowData.isUnreachable()) {
+            if (sa.statement instanceof ReturnStatement) return true;
+            for (Optional<StatementAnalysis> first : sa.navigationData.blocks.get()) {
+                if (first.isPresent() && recursivelyFindReachableReturnStatement(first.get())) {
+                    return true;
+                }
+            }
+            if (sa.navigationData.next.get().isEmpty()) break;
+            sa = sa.navigationData.next.get().get();
+        }
+        return false;
     }
 
     private InlinedMethod.Applicability applicabilityField(FieldInfo fieldInfo) {

@@ -266,8 +266,13 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
 
     @Test
     public void test4() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if("test".equals(d.methodInfo().name) && "5".equals(d.statementId())){
+                Assert.assertTrue(d.statementAnalysis().flowData.isUnreachable());
+            }
+        };
         testClass("BasicCompanionMethods_4", 2, 1, new DebugConfiguration.Builder()
-
+            .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
