@@ -248,7 +248,7 @@ class VariableInfoImpl implements VariableInfo {
 
     private String mergedAssignmentId(EvaluationContext evaluationContext, boolean existingValuesWillBeOverwritten,
                                       List<VariableInfo> merge) {
-        String currentStatementId = evaluationContext.getCurrentStatement().index();
+        String currentStatementId = evaluationContext.getCurrentStatement().index() + ":4";
         boolean assignmentInSubBlocks = existingValuesWillBeOverwritten ||
                 merge.stream().anyMatch(vi -> vi.getAssignmentId().compareTo(currentStatementId) > 0);
         return assignmentInSubBlocks ? currentStatementId : assignmentId;

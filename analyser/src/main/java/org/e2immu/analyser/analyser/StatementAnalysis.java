@@ -309,6 +309,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         StatementAnalysis copyFrom = previous == null ? parent : previous;
         copyFrom.variableStream().forEach(variableInfo -> variables.put(variableInfo.name(),
                 new VariableInfoContainerImpl(variableInfo)));
+
+        flowData.initialiseAssignmentIds(copyFrom.flowData);
     }
 
     /**
@@ -326,7 +328,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().getParameters()) {
                 VariableInfo prevIteration = findOrNull(parameterInfo, VariableInfoContainer.LEVEL_1_INITIALISER);
                 if (prevIteration != null) {
-                    VariableInfoContainer vic = findForWriting(analyserContext, parameterInfo, flowData.initialTime.get(), true);
+                    VariableInfoContainer vic = findForWriting(analyserContext, parameterInfo, flowData.getInitialTime(), true);
                     ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
                     for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
                         int value = parameterAnalysis.getProperty(variableProperty);
@@ -369,7 +371,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     if (effectivelyFinal == Level.TRUE) {
                         vic.setStatementTime(VariableInfoContainer.LEVEL_1_INITIALISER, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
                     } else if (effectivelyFinal == Level.FALSE) {
-                        vic.setStatementTime(VariableInfoContainer.LEVEL_1_INITIALISER, flowData.initialTime.get());
+                        vic.setStatementTime(VariableInfoContainer.LEVEL_1_INITIALISER, flowData.getInitialTime());
                     }
                 }
 
@@ -515,13 +517,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (initialValue.linkedVariables != null) {
                 vic.setLinkedVariablesFromAnalyser(initialValue.linkedVariables);
             }
-        } else if (variable instanceof LocalVariableReference lvr) {
-            // but local variables get their linked variables from an assignment, potentially at LEVEL 1
-            // if (Primitives.isPrimitiveExcludingVoid(lvr.parameterizedType())) {
-            //    vic.setLinkedVariablesFromAnalyser(Set.of());
-            //}
         }
-
         return vic;
     }
 
@@ -666,7 +662,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     public int statementTime(int level) {
-        return level < 3 ? flowData.initialTime.get() : level < 4 ? flowData.timeAfterExecution.get() : flowData.timeAfterSubBlocks.get();
+        return level < 3 ? flowData.getInitialTime() : level < 4 ? flowData.getTimeAfterExecution() : flowData.getTimeAfterSubBlocks();
     }
 
     /**
@@ -718,6 +714,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic = variables.get(fqn);
         }
         VariableInfo vi = vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
+        // TODO: next: local variables, assigned in loop
         if (isNotAssignmentTarget && vi.variable() instanceof FieldReference fieldReference && vi.getStatementTime() >= 0) {
             FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
 
@@ -729,10 +726,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // (we temporarily treat the field as a local variable)
             // so we need to know: have there been assignments AFTER the latest statement time increase?
 
-            String indexOfStatementTime = indexOfStatementTime(statementTime);
+            String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
             Expression initialValue;
             String localVariableFqn;
-            if (statementTime == vi.getStatementTime() && vi.getAssignmentId().compareTo(indexOfStatementTime) > 0) {
+            if (statementTime == vi.getStatementTime() && vi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
                 // return a local variable with the current field value, numbered as the statement time + assignment ID
                 localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime + "$" + indexOfStatementTime.replace(".", "_");
                 initialValue = vi.getValue();
@@ -761,27 +758,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return lvrVic.current();
         } // else we need to go to the variable itself
         return vi;
-    }
-
-    /*
-    because we don't maintain a previous, but only a next and blocks in navigation, this method is a bit more
-    convoluted...
-     */
-    public String indexOfStatementTime(int statementTime) {
-        // first, we go up...
-        StatementAnalysis sa = this;
-        while (!sa.flowData.timeAfterExecution.isSet() || statementTime <= sa.flowData.timeAfterExecution.get()) {
-            if (sa.parent == null) {
-                sa = methodAnalysis.getFirstStatement();
-                break;
-            }
-            sa = sa.parent;
-        }
-        // then, we go down again until we have an exact hit
-        while (sa.flowData.timeAfterExecution.isSet() && sa.flowData.timeAfterExecution.get() < statementTime) {
-            sa = nextStepTowards(sa);
-        }
-        return sa.index;
     }
 
     // either go next, or go down

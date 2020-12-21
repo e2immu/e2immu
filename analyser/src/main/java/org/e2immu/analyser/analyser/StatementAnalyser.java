@@ -378,16 +378,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             statementAnalysis.initIteration1Plus(analyserContext, myMethodAnalyser.methodInfo, sharedState.previous);
         }
 
-        if (!statementAnalysis.flowData.initialTime.isSet()) {
+        if (!statementAnalysis.flowData.initialTimeIsSet()) {
             int time;
             if (sharedState.previous != null) {
-                time = sharedState.previous.flowData.timeAfterSubBlocks.get();
+                time = sharedState.previous.flowData.getTimeAfterSubBlocks();
             } else if (statementAnalysis.parent != null) {
-                time = statementAnalysis.parent.flowData.timeAfterExecution.get();
+                time = statementAnalysis.parent.flowData.getTimeAfterExecution();
             } else {
                 time = 0; // start
             }
-            statementAnalysis.flowData.initialTime.set(time);
+            statementAnalysis.flowData.setInitialTime(time, index());
         }
         return RUN_AGAIN;
     }
@@ -770,8 +770,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (structure.expression == EmptyExpression.EMPTY_EXPRESSION) {
             // try-statement has no main expression
             statementAnalysis.stateData.valueOfExpression.set(EmptyExpression.EMPTY_EXPRESSION);
-            if (!statementAnalysis.flowData.timeAfterExecution.isSet()) {
-                statementAnalysis.flowData.timeAfterExecution.copy(statementAnalysis.flowData.initialTime);
+            if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
+                statementAnalysis.flowData.copyTimeAfterExecutionFromInitialTime();
             }
             return DONE;
         }
@@ -789,8 +789,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             EvaluationResult result = expression.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo);
 
-            if (!statementAnalysis.flowData.timeAfterExecution.isSet()) {
-                statementAnalysis.flowData.timeAfterExecution.set(result.statementTime());
+            if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
+                statementAnalysis.flowData.setTimeAfterExecution(result.statementTime(), index());
             }
 
             AnalysisStatus status = apply(sharedState, result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_3);
@@ -919,7 +919,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             StatementAnalysis firstStatementInBlock = firstStatementFirstBlock();
             firstStatementInBlock.addProperty(analyserContext,
                     VariableInfoContainer.LEVEL_3_EVALUATION,
-                    statementAnalysis.flowData.timeAfterExecution.get(), // cannot compute yet
+                    statementAnalysis.flowData.getTimeAfterExecution(), // cannot compute yet
                     false,
                     localVariableReference,
                     VariableProperty.NOT_NULL,
@@ -1016,8 +1016,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     analysisStatus = DELAYS;
                 }
             }
-            if (!statementAnalysis.flowData.timeAfterSubBlocks.isSet()) {
-                statementAnalysis.flowData.timeAfterSubBlocks.copy(statementAnalysis.flowData.timeAfterExecution);
+            if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
+                statementAnalysis.flowData.copyTimeAfterSubBlocksFromTimeAfterExecution();
             }
         }
         if (localConditionManager.notInDelayedState() && !statementAnalysis.stateData.conditionManager.isSet()) {
@@ -1065,10 +1065,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     .filter(statementAnalyser -> !statementAnalyser.statementAnalysis.flowData.isUnreachable())
                     .map(StatementAnalyser::lastStatement)
                     .collect(Collectors.toList());
-            int maxTime = lastStatements.stream().mapToInt(sa -> sa.statementAnalysis.flowData.timeAfterSubBlocks.get())
+            int maxTime = lastStatements.stream().mapToInt(sa -> sa.statementAnalysis.flowData.getTimeAfterSubBlocks())
                     .max().orElseThrow();
-            if (!statementAnalysis.flowData.timeAfterSubBlocks.isSet()) {
-                statementAnalysis.flowData.timeAfterSubBlocks.set(maxTime);
+            if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
+                statementAnalysis.flowData.setTimeAfterSubBlocks(maxTime, index());
             }
             // need timeAfterSubBlocks set already
             statementAnalysis.copyBackLocalCopies(evaluationContext, lastStatements, atLeastOneBlockExecuted, maxTime);
@@ -1080,9 +1080,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", addToStateAfterStatement);
             }
         } else {
-            int maxTime = statementAnalysis.flowData.timeAfterExecution.get();
-            if (!statementAnalysis.flowData.timeAfterSubBlocks.isSet()) {
-                statementAnalysis.flowData.timeAfterSubBlocks.set(maxTime);
+            int maxTime = statementAnalysis.flowData.getTimeAfterExecution();
+            if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
+                statementAnalysis.flowData.setTimeAfterSubBlocks(maxTime, index());
             }
         }
         return analysisStatus;
@@ -1466,17 +1466,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void ensureVariableAtTimeOfSubBlocks(Variable variable) {
-            findOrCreateL1(variable, statementAnalysis.flowData.timeAfterSubBlocks.get(), false);
+            findOrCreateL1(variable, statementAnalysis.flowData.getTimeAfterSubBlocks(), false);
         }
 
         @Override
         public int getInitialStatementTime() {
-            return statementAnalysis.flowData.initialTime.get();
+            return statementAnalysis.flowData.getInitialTime();
         }
 
         @Override
         public int getFinalStatementTime() {
-            return statementAnalysis.flowData.timeAfterSubBlocks.get();
+            return statementAnalysis.flowData.getTimeAfterSubBlocks();
         }
 
     }

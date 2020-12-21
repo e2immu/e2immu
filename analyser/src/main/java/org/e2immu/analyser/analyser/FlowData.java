@@ -24,6 +24,7 @@ import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetOnceMap;
 
 import java.util.HashMap;
 import java.util.List;
@@ -49,9 +50,70 @@ public class FlowData {
     public final SetOnce<Map<InterruptsFlow, Execution>> interruptsFlow = new SetOnce<>();
 
     // counts all increases in statement time
-    public final SetOnce<Integer> initialTime = new SetOnce<>(); // STEP 1
-    public final SetOnce<Integer> timeAfterExecution = new SetOnce<>(); // STEP 3
-    public final SetOnce<Integer> timeAfterSubBlocks = new SetOnce<>(); // STEP 4
+    private final SetOnce<Integer> initialTime = new SetOnce<>(); // STEP 1
+    private final SetOnce<Integer> timeAfterExecution = new SetOnce<>(); // STEP 3
+    private final SetOnce<Integer> timeAfterSubBlocks = new SetOnce<>(); // STEP 4
+
+    public final SetOnceMap<Integer, String> assignmentIdOfStatementTime = new SetOnceMap<>();
+
+    public void initialiseAssignmentIds(FlowData previous) {
+        assignmentIdOfStatementTime.putAll(previous.assignmentIdOfStatementTime);
+    }
+
+    public void setInitialTime(int time, String index) {
+        initialTime.set(time);
+        if (!assignmentIdOfStatementTime.isSet(time)) {
+            assignmentIdOfStatementTime.put(time, index + ":1");
+        }
+    }
+
+    public void setTimeAfterExecution(int time, String index) {
+        timeAfterExecution.set(time);
+        if (!assignmentIdOfStatementTime.isSet(time)) {
+            assignmentIdOfStatementTime.put(time, index + ":3");
+        }
+    }
+
+    public void setTimeAfterSubBlocks(int time, String index) {
+        timeAfterSubBlocks.set(time);
+        if (!assignmentIdOfStatementTime.isSet(time)) {
+            assignmentIdOfStatementTime.put(time, index + ":4");
+        }
+    }
+
+    public void copyTimeAfterExecutionFromInitialTime() {
+        int ini = initialTime.get();
+        timeAfterExecution.set(ini);
+    }
+
+    public void copyTimeAfterSubBlocksFromTimeAfterExecution() {
+        int exe = timeAfterExecution.get();
+        timeAfterSubBlocks.set(exe);
+    }
+
+    public boolean initialTimeIsSet() {
+        return initialTime.isSet();
+    }
+
+    public boolean timeAfterExecutionNotYetSet() {
+        return !timeAfterExecution.isSet();
+    }
+
+    public boolean timeAfterSubBlocksNotYetSet() {
+        return !timeAfterSubBlocks.isSet();
+    }
+
+    public int getInitialTime() {
+        return initialTime.get();
+    }
+
+    public int getTimeAfterExecution() {
+        return timeAfterExecution.get();
+    }
+
+    public int getTimeAfterSubBlocks() {
+        return timeAfterSubBlocks.get();
+    }
 
     public Execution interruptStatus() {
         // what is the worst that can happen? ESCAPE-ALWAYS
@@ -116,7 +178,7 @@ public class FlowData {
                                                                  StatementAnalysis previousStatement,
                                                                  Execution blockExecution,
                                                                  Expression state) {
-        if(guaranteedToBeReachedInMethod.isSet()) {
+        if (guaranteedToBeReachedInMethod.isSet()) {
             return false; // already done!
         }
 

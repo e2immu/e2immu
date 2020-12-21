@@ -19,6 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -47,23 +48,31 @@ public class Test_02_Basics_3 extends CommonTestRunner {
         final String S = TYPE + ".s";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("setS1".equals(d.methodInfo().name) && "0.0.0".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                if (d.iteration() == 0) {
-                    Assert.assertSame(EmptyExpression.NO_VALUE, d.evaluationResult().value());
-                } else {
-                    Assert.assertSame(EmptyExpression.NO_RETURN_VALUE, d.evaluationResult().value());
+            if ("setS1".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                    if (d.iteration() == 0) {
+                        Assert.assertSame(EmptyExpression.NO_VALUE, d.evaluationResult().value());
+                    } else {
+                        Assert.assertSame(EmptyExpression.NO_RETURN_VALUE, d.evaluationResult().value());
+                    }
                 }
-            }
-            if ("setS1".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                // should not be sth like null != s$2, because statement time has not advanced since the assignments
-                Assert.assertEquals("null!=input1.contains(\"a\")?\"xyz\":\"abc\"", d.evaluationResult().value().debugOutput());
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                    // should not be sth like null != s$2, because statement time has not advanced since the assignments
+                    Assert.assertEquals("true", d.evaluationResult().value().debugOutput());
+                }
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setS1".equals(d.methodInfo().name) && S.equals(d.variableName())) {
+                if("0.0.1".equals(d.statementId())) {
+                    Assert.assertEquals("\"xyz\"", d.currentValue().debugOutput());
+                }
+                if("0.1.0".equals(d.statementId())) {
+                    Assert.assertEquals("\"abc\"", d.currentValue().debugOutput());
+                }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
                     Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
@@ -82,33 +91,48 @@ public class Test_02_Basics_3 extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("setS1".equals(d.methodInfo().name)) {
-                int time1 = d.statementAnalysis().flowData.initialTime.get();
-                int time3 = d.statementAnalysis().flowData.timeAfterExecution.get();
-                int time4 = d.statementAnalysis().flowData.timeAfterSubBlocks.get();
+                FlowData flowData = d.statementAnalysis().flowData;
+                int time1 = flowData.getInitialTime();
+                int time3 = flowData.getTimeAfterExecution();
+                int time4 = flowData.getTimeAfterSubBlocks();
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals(0, time1);
                     Assert.assertEquals(1, time3);
                     Assert.assertEquals(2, time4); // merge
+                    Assert.assertEquals("0:1", flowData.assignmentIdOfStatementTime.get(0));
+                    Assert.assertEquals("0:3", flowData.assignmentIdOfStatementTime.get(1));
+                    Assert.assertEquals("0:4", flowData.assignmentIdOfStatementTime.get(2));
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals(1, time1);
                     Assert.assertEquals(2, time3);
                     Assert.assertEquals(2, time4);
+                    Assert.assertEquals("0:1", flowData.assignmentIdOfStatementTime.get(0));
+                    Assert.assertEquals("0:3", flowData.assignmentIdOfStatementTime.get(1));
+                    Assert.assertEquals("0.0.0:3", flowData.assignmentIdOfStatementTime.get(2));
                 }
                 if ("0.0.1".equals(d.statementId())) { // first assignment
                     Assert.assertEquals(2, time1);
                     Assert.assertEquals(2, time3);
                     Assert.assertEquals(2, time4);
+                    Assert.assertEquals("0:1", flowData.assignmentIdOfStatementTime.get(0));
+                    Assert.assertEquals("0:3", flowData.assignmentIdOfStatementTime.get(1));
+                    Assert.assertEquals("0.0.0:3", flowData.assignmentIdOfStatementTime.get(2));
                 }
-                if ("1.0.0".equals(d.statementId())) { // second assignment
-                    Assert.assertEquals(0, time1);
-                    Assert.assertEquals(0, time3);
-                    Assert.assertEquals(0, time4);
+                if ("0.1.0".equals(d.statementId())) { // second assignment
+                    Assert.assertEquals(1, time1);
+                    Assert.assertEquals(1, time3);
+                    Assert.assertEquals(1, time4);
+                    Assert.assertEquals("0:1", flowData.assignmentIdOfStatementTime.get(0));
+                    Assert.assertEquals("0:3", flowData.assignmentIdOfStatementTime.get(1));
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals(2, time1);
                     Assert.assertEquals(2, time3);
                     Assert.assertEquals(2, time4);
+                    Assert.assertEquals("0:1", flowData.assignmentIdOfStatementTime.get(0));
+                    Assert.assertEquals("0:3", flowData.assignmentIdOfStatementTime.get(1));
+                    Assert.assertEquals("0:4", flowData.assignmentIdOfStatementTime.get(2));
                     if (d.iteration() > 0) {
                         Assert.assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                     }

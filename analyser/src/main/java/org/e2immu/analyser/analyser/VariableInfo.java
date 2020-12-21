@@ -94,7 +94,8 @@ public interface VariableInfo {
 
     /**
      * @return the empty string if there was no assignment in this method; otherwise the statement id
-     * of the latest assignment to this variable (field, local variable, dependent variable)
+     * of the latest assignment to this variable (field, local variable, dependent variable), followed
+     * by :1, :2 ... :4 depending on the step
      */
     String getAssignmentId();
 
