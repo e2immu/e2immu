@@ -19,7 +19,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -101,5 +100,9 @@ public interface VariableInfo {
 
     default boolean isVariableField() {
         return variable() instanceof FieldReference && getStatementTime() >= 0;
+    }
+
+    default boolean afterSecondAssignment() {
+        return getProperty(VariableProperty.ASSIGNED) > 1;
     }
 }

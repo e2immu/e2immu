@@ -264,4 +264,71 @@ public class Test_03_Basics_4plus extends CommonTestRunner {
                 .build());
     }
 
+    // assignment ids for local variables
+    @Test
+    public void test8() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("test1".equals(d.methodInfo().name)) {
+                if ("v".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                        Assert.assertEquals("l", d.currentValue().toString());
+                    }
+                    if ("3".equals(d.statementId())) {
+                        Assert.assertEquals(2, d.getProperty(VariableProperty.ASSIGNED));
+                        Assert.assertEquals("1+l", d.currentValue().toString());
+                    }
+                    if ("6".equals(d.statementId())) {
+                        Assert.assertEquals(3, d.getProperty(VariableProperty.ASSIGNED));
+                        Assert.assertEquals("2+l", d.currentValue().toString());
+                    }
+                }
+                if ("w".equals(d.variableName()) && "1".equals(d.statementId())) {
+                    Assert.assertEquals("1+l", d.currentValue().toString());
+                }
+                if ("u".equals(d.variableName()) && "4".equals(d.statementId())) {
+                    Assert.assertEquals("3+l", d.currentValue().toString());
+                }
+            }
+            final String TYPE = "org.e2immu.analyser.testexample.Basics_8";
+            final String I = TYPE + ".i";
+            final String I0 = TYPE + ".i$0";
+            final String I2 = TYPE + ".i$2";
+
+            if ("test3".equals(d.methodInfo().name) && d.iteration() > 0) {
+                if ("j".equals(d.variableName()) && "0".equals(d.statementId())) {
+                    Assert.assertEquals(I0, d.currentValue().toString());
+                }
+                if (I.equals(d.variableName()) && "1".equals(d.statementId())) {
+                    Assert.assertEquals(I0 + "+q", d.currentValue().toString());
+                }
+                if ("k".equals(d.variableName()) && "2".equals(d.statementId())) {
+                    Assert.assertEquals(I0 + "+q", d.currentValue().toString());
+                }
+            }
+            if ("test4".equals(d.methodInfo().name) && d.iteration() > 0) {
+                if ("j0".equals(d.variableName()) && "4.0.0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals(I2, d.currentValue().toString());
+                }
+                if (I.equals(d.variableName()) && "4.0.0.0.1".equals(d.statementId())) {
+                    Assert.assertEquals(I2 + "+q", d.currentValue().toString());
+                }
+                if ("k0".equals(d.variableName()) && "4.0.0.0.2".equals(d.statementId())) {
+                    Assert.assertEquals(I2 + "+q", d.currentValue().toString());
+                }
+            }
+        };
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("test4".equals(d.methodInfo().name) && d.iteration() > 0 && "4.0.0.0.3".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                Assert.assertEquals("true", d.evaluationResult().value().toString());
+            }
+        };
+
+        testClass("Basics_8", 0, 3, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .build());
+    }
 }

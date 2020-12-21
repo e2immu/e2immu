@@ -38,16 +38,6 @@ public class Basics_7 {
     }
 
     @Constant("true")
-    static boolean localVars(int l) {
-        int v = l;
-        int w = v + 1; // == l+1
-        v = v + 1; // == l+1
-        int u = w + 2; // == l+3
-        v = v + 1; // == l+2
-        return v == u - 1;
-    }
-
-    @Constant("true")
     synchronized boolean increment(int q) {
         int k = i;
         System.out.println("q is " + q);

@@ -41,6 +41,10 @@ public class Sum extends BinaryOperator {
 
     // we try to maintain a sum of products
     public static Expression sum(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow) {
+        return sum(evaluationContext, l, r, objectFlow, true);
+    }
+
+    private static Expression sum(EvaluationContext evaluationContext, Expression l, Expression r, ObjectFlow objectFlow, boolean tryAgain) {
         Primitives primitives = evaluationContext.getPrimitives();
 
         if (l.equals(r)) return Product.product(evaluationContext,
@@ -56,6 +60,12 @@ public class Sum extends BinaryOperator {
 
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) return l.combineUnknown(r);
+
+        // a + (b+c)
+        if (l instanceof Numeric ln && r instanceof Sum s && s.lhs instanceof Numeric l2) {
+            return Sum.sum(evaluationContext, IntConstant.intOrDouble(primitives, ln.doubleValue() + l2.doubleValue(), s.objectFlow),
+                    s.rhs, s.objectFlow);
+        }
 
         // a + x*a
         if (l instanceof Product lp && lp.lhs instanceof Numeric lpLn && r.equals(lp.rhs))
@@ -74,7 +84,14 @@ public class Sum extends BinaryOperator {
                     IntConstant.intOrDouble(primitives, lpLn.doubleValue() + rpLn.doubleValue(), objectFlow),
                     lp.rhs, objectFlow);
         }
-        return l.compareTo(r) < 0 ? new Sum(primitives, l, r, objectFlow) : new Sum(primitives, r, l, objectFlow);
+        Sum s = l.compareTo(r) < 0 ? new Sum(primitives, l, r, objectFlow) : new Sum(primitives, r, l, objectFlow);
+
+        // re-running the sum to solve substitutions of variables to constants
+        if (tryAgain) {
+            return Sum.sum(evaluationContext, s.lhs, s.rhs, s.objectFlow, false);
+        }
+
+        return s;
     }
 
     @Override

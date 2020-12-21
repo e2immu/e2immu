@@ -707,7 +707,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @return the most current variable info object
      */
     public VariableInfo findOrCreateL1(@NotNull AnalyserContext analyserContext,
-                                       @NotNull Variable variable, int statementTime,
+                                       @NotNull Variable variable,
+                                       int statementTime,
                                        boolean isNotAssignmentTarget) {
         String fqn = variable.fullyQualifiedName();
         VariableInfoContainer vic;
@@ -717,8 +718,31 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic = variables.get(fqn);
         }
         VariableInfo vi = vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
-        if (vi.variable() instanceof FieldReference fieldReference && vi.getStatementTime() >= 0 && isNotAssignmentTarget) {
-            LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), fieldReference.fullyQualifiedName() + "$" + statementTime,
+        if (isNotAssignmentTarget && vi.variable() instanceof FieldReference fieldReference && vi.getStatementTime() >= 0) {
+            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+
+            // a variable field can have any value when first read in a method.
+            // after statement time goes up, this value may have changed completely
+            // therefore we return a new local variable each time we read and statement time has gone up.
+
+            // when there are assignments within the same statement time, however, we stick to the assigned value
+            // (we temporarily treat the field as a local variable)
+            // so we need to know: have there been assignments AFTER the latest statement time increase?
+
+            String indexOfStatementTime = indexOfStatementTime(statementTime);
+            Expression initialValue;
+            String localVariableFqn;
+            if (statementTime == vi.getStatementTime() && vi.getAssignmentId().compareTo(indexOfStatementTime) > 0) {
+                // return a local variable with the current field value, numbered as the statement time + assignment ID
+                localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime + "$" + indexOfStatementTime.replace(".", "_");
+                initialValue = vi.getValue();
+            } else {
+                localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime;
+                initialValue = new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
+            }
+
+            // the statement time of the field indicates the time of the latest assignment
+            LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), localVariableFqn,
                     fieldReference.parameterizedType(), List.of(), methodAnalysis.getMethodInfo().typeInfo);
             LocalVariableReference lvr = new LocalVariableReference(analyserContext, lv, List.of());
             VariableInfoContainer lvrVic;
@@ -728,21 +752,46 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 lvrVic = createVariable(analyserContext, lvr, statementTime, false);
 
                 // same as from the field
-                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-                Expression initialValue;
-                if (statementTime == vi.getStatementTime() && vi.getProperty(ASSIGNED) >= Level.TRUE) {
-                    initialValue = vi.getValue();
-                } else {
-                    initialValue = new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
-                }
+
                 lvrVic.setInitialValueFromAnalyser(initialValue, propertyMap(analyserContext, fieldReference.fieldInfo));
                 lvrVic.setLinkedVariablesFromAnalyser(Set.of(fieldReference)); // linked to the reference
                 lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, ASSIGNED, 1);
                 lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, READ, 2);
             }
             return lvrVic.current();
-        }
+        } // else we need to go to the variable itself
         return vi;
+    }
+
+    /*
+    because we don't maintain a previous, but only a next and blocks in navigation, this method is a bit more
+    convoluted...
+     */
+    public String indexOfStatementTime(int statementTime) {
+        // first, we go up...
+        StatementAnalysis sa = this;
+        while (statementTime <= sa.flowData.timeAfterExecution.get()) {
+            if (sa.parent == null) {
+                sa = methodAnalysis.getFirstStatement();
+                break;
+            }
+            sa = sa.parent;
+        }
+        // then, we go down again until we have an exact hit
+        while (sa.flowData.timeAfterExecution.get() < statementTime) {
+            sa = nextStepTowards(sa);
+        }
+        return sa.index;
+    }
+
+    // either go next, or go down
+    private StatementAnalysis nextStepTowards(StatementAnalysis sa) {
+        for (Optional<StatementAnalysis> maybeDownIntoBlock : sa.navigationData.blocks.get()) {
+            if (maybeDownIntoBlock.isPresent() && index.startsWith(maybeDownIntoBlock.get().index)) {
+                return maybeDownIntoBlock.get();
+            }
+        }
+        return sa.navigationData.next.get().orElseThrow();
     }
 
     /**
