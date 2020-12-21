@@ -55,4 +55,15 @@ public class Basics_7 {
             assert j == i - 1;
         }
     }
+
+    @Constant("true")
+    boolean increment3() {
+        System.out.println("i is " + i);
+        synchronized (this) {
+            int j = i;
+            i++;
+            System.out.println("i is " + i);
+            return j == i - 1;
+        }
+    }
 }

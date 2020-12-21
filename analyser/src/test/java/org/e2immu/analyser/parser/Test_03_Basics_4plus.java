@@ -209,11 +209,12 @@ public class Test_03_Basics_4plus extends CommonTestRunner {
     public void test7() throws IOException {
         final String I = "org.e2immu.analyser.testexample.Basics_7.i";
         final String I0 = I + "$0";
+        final String INC3_RETURN_VAR = "org.e2immu.analyser.testexample.Basics_7.increment3()";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("increment".equals(d.methodInfo().name) && "4".equals(d.statementId()) && d.iteration() > 0) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                Assert.assertEquals(I0 + "+q==" + I0, d.evaluationResult().value().toString());
+                Assert.assertEquals("true", d.evaluationResult().value().toString());
             }
         };
 
@@ -221,6 +222,16 @@ public class Test_03_Basics_4plus extends CommonTestRunner {
             if ("increment".equals(d.methodInfo().name) && I.equals(d.variableName())) {
                 if ("2".equals(d.statementId()) && d.iteration() > 0) {
                     Assert.assertEquals(I0 + "+q", d.currentValue().toString());
+                }
+            }
+            if (INC3_RETURN_VAR.equals(d.variableName())) {
+                if ("1.0.3".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "true";
+                    Assert.assertEquals(expect, d.currentValue().toString());
+                }
+                if ("1".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? "<return value:boolean>" : "true";
+                    Assert.assertEquals(expect, d.currentValue().debugOutput());
                 }
             }
         };
@@ -254,9 +265,17 @@ public class Test_03_Basics_4plus extends CommonTestRunner {
             if ("increment".equals(d.methodInfo().name)) {
                 Assert.assertTrue(d.methodInfo().isSynchronized());
             }
+            if ("increment3".equals(d.methodInfo().name)) {
+                String expect = d.iteration() == 0 ? "<return value:boolean>" : "true";
+                Assert.assertEquals(expect, d.methodAnalysis().getLastStatement()
+                        .variables.get(INC3_RETURN_VAR).current().getValue().debugOutput());
+                if (d.iteration() > 0) {
+                    Assert.assertEquals("true", d.methodAnalysis().getSingleReturnValue().toString());
+                }
+            }
         };
 
-        testClass("Basics_7", 0, 0, new DebugConfiguration.Builder()
+        testClass("Basics_7", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
@@ -267,6 +286,12 @@ public class Test_03_Basics_4plus extends CommonTestRunner {
     // assignment ids for local variables
     @Test
     public void test8() throws IOException {
+        final String TYPE = "org.e2immu.analyser.testexample.Basics_8";
+        final String I = TYPE + ".i";
+        final String I0 = TYPE + ".i$0";
+        final String I1 = TYPE + ".i$1";
+        final String I2 = TYPE + ".i$2";
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test1".equals(d.methodInfo().name)) {
                 if ("v".equals(d.variableName())) {
@@ -290,10 +315,6 @@ public class Test_03_Basics_4plus extends CommonTestRunner {
                     Assert.assertEquals("3+l", d.currentValue().toString());
                 }
             }
-            final String TYPE = "org.e2immu.analyser.testexample.Basics_8";
-            final String I = TYPE + ".i";
-            final String I0 = TYPE + ".i$0";
-            final String I2 = TYPE + ".i$2";
 
             if ("test3".equals(d.methodInfo().name) && d.iteration() > 0) {
                 if ("j".equals(d.variableName()) && "0".equals(d.statementId())) {
@@ -326,8 +347,16 @@ public class Test_03_Basics_4plus extends CommonTestRunner {
             }
         };
 
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("4.0.0.0.0".equals(d.statementId()) && d.iteration() > 0) {
+                Assert.assertEquals(I1 + "==" + I2, d.state().toString());
+                Assert.assertEquals(I1 + "==" + I2, d.condition().toString());
+            }
+        };
+
         testClass("Basics_8", 0, 3, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }

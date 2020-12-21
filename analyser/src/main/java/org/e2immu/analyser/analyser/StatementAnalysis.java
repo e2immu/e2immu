@@ -770,7 +770,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public String indexOfStatementTime(int statementTime) {
         // first, we go up...
         StatementAnalysis sa = this;
-        while (statementTime <= sa.flowData.timeAfterExecution.get()) {
+        while (!sa.flowData.timeAfterExecution.isSet() || statementTime <= sa.flowData.timeAfterExecution.get()) {
             if (sa.parent == null) {
                 sa = methodAnalysis.getFirstStatement();
                 break;
@@ -778,7 +778,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             sa = sa.parent;
         }
         // then, we go down again until we have an exact hit
-        while (sa.flowData.timeAfterExecution.get() < statementTime) {
+        while (sa.flowData.timeAfterExecution.isSet() && sa.flowData.timeAfterExecution.get() < statementTime) {
             sa = nextStepTowards(sa);
         }
         return sa.index;

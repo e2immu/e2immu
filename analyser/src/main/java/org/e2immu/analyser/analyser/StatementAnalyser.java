@@ -592,7 +592,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
         if (vi1 != null) {
             Expression e = vi1.getValue();
-            if (e instanceof UnknownExpression ue && ue.msg().equals(UnknownExpression.RETURN_VALUE)) {
+            if (e.isInitialReturnExpression()) {
                 return NO_VALUE;
             }
             return vi1.getValue();
@@ -995,27 +995,30 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     private AnalysisStatus step4_subBlocks(SharedState sharedState) {
         List<Optional<StatementAnalyser>> startOfBlocks = navigationData.blocks.get();
-        AnalysisStatus analysisStatus;
-        if (!startOfBlocks.isEmpty()) {
-            analysisStatus = step4_haveSubBlocks(sharedState, startOfBlocks);
-        } else {
-            if (statementAnalysis.statement instanceof AssertStatement &&
-                    statementAnalysis.stateData.valueOfExpression.isSet()) {
-                Expression assertion = statementAnalysis.stateData.valueOfExpression.get();
-                localConditionManager = localConditionManager.addToState(sharedState.evaluationContext, assertion);
-                boolean atLeastFieldOrParameterInvolved = assertion.variables().stream()
-                        .anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
-                if (atLeastFieldOrParameterInvolved) {
-                    log(VARIABLE_PROPERTIES, "Assertion escape with precondition {}", assertion);
+        AnalysisStatus analysisStatus = localConditionManager.notInDelayedState() ? DONE : DELAYS;
 
-                    statementAnalysis.stateData.precondition.set(assertion);
-                    statementAnalysis.stateData.statementContributesToPrecondition.set();
+        if (!startOfBlocks.isEmpty()) {
+            analysisStatus = step4_haveSubBlocks(sharedState, startOfBlocks).combine(analysisStatus);
+        } else {
+            if (statementAnalysis.statement instanceof AssertStatement) {
+                if (statementAnalysis.stateData.valueOfExpression.isSet()) {
+                    Expression assertion = statementAnalysis.stateData.valueOfExpression.get();
+                    localConditionManager = localConditionManager.addToState(sharedState.evaluationContext, assertion);
+                    boolean atLeastFieldOrParameterInvolved = assertion.variables().stream()
+                            .anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
+                    if (atLeastFieldOrParameterInvolved) {
+                        log(VARIABLE_PROPERTIES, "Assertion escape with precondition {}", assertion);
+
+                        statementAnalysis.stateData.precondition.set(assertion);
+                        statementAnalysis.stateData.statementContributesToPrecondition.set();
+                    }
+                } else {
+                    analysisStatus = DELAYS;
                 }
             }
             if (!statementAnalysis.flowData.timeAfterSubBlocks.isSet()) {
                 statementAnalysis.flowData.timeAfterSubBlocks.copy(statementAnalysis.flowData.timeAfterExecution);
             }
-            analysisStatus = DONE;
         }
         if (localConditionManager.notInDelayedState() && !statementAnalysis.stateData.conditionManager.isSet()) {
             statementAnalysis.stateData.conditionManager.set(localConditionManager);

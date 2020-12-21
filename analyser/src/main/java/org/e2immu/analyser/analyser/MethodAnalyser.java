@@ -524,8 +524,8 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         VariableInfo variableInfo = getReturnAsVariable();
         Expression value = variableInfo.getValue();
-        if (value == EmptyExpression.NO_VALUE) {
-            log(DELAYED, "Not all return values have been set yet for {}, delaying", methodInfo.distinguishingName());
+        if (value == EmptyExpression.NO_VALUE || value.isInitialReturnExpression()) {
+            log(DELAYED, "Method {} has return value {}, delaying", methodInfo.distinguishingName(), value.debugOutput());
             return DELAYS;
         }
 
