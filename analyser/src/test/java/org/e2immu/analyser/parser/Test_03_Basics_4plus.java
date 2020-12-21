@@ -78,7 +78,7 @@ public class Test_03_Basics_4plus extends CommonTestRunner {
         final String TYPE = "org.e2immu.analyser.testexample.Basics_6";
         final String FIELD = TYPE + ".field";
         final String FIELD_0 = TYPE + ".field$0";
-        final String FIELD_1 = TYPE + ".field$1";
+        final String FIELD_1 = TYPE + ".field$1$1:3";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test1".equals(d.methodInfo().name)) {

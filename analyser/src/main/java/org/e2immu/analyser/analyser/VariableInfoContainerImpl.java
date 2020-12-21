@@ -49,7 +49,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     public VariableInfoContainerImpl(Variable variable, String assignmentId, int statementTime) {
         Objects.requireNonNull(variable);
-        data[LEVEL_1_INITIALISER] = new VariableInfoImpl(variable, assignmentId+":1", statementTime);
+        data[LEVEL_1_INITIALISER] = new VariableInfoImpl(variable, assignmentId + ":1", statementTime);
         currentLevel = LEVEL_1_INITIALISER;
     }
 
@@ -104,9 +104,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     /* ******************************* modifying methods related to assignment ************************************** */
 
     @Override
-    public void prepareForValueChange(int level, String assignmentId, int statementTime) {
+    public void prepareForValueChange(int level, String assignmentIndex, int statementTime) {
         ensureNotFrozen();
-        String computedAssignmentId = assignmentId + ":" + level;
+        String assignmentId = assignmentIndex + ":" + level;
         if (level <= currentLevel) {
             VariableInfo vi = data[level];
             if (vi != null) {
@@ -117,8 +117,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 } else {
                     assert statementTime == vi.getStatementTime() :
                             "New statement time is " + statementTime + ", had " + vi.getStatementTime();
-                    assert computedAssignmentId.equals(vi.getAssignmentId()) :
-                            "New assignment id is " + computedAssignmentId + ", had " + vi.getAssignmentId();
+                    assert assignmentId.equals(vi.getAssignmentId()) :
+                            "New assignment id is " + assignmentId + ", had " + vi.getAssignmentId();
                 }
                 return;
             }
@@ -126,8 +126,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                     current().variable().fullyQualifiedName());
         }
         int assigned = data[currentLevel].getProperty(VariableProperty.ASSIGNED);
-        VariableInfoImpl variableInfo = new VariableInfoImpl(data[currentLevel].variable(), computedAssignmentId,
-                statementTime);
+        VariableInfoImpl variableInfo = new VariableInfoImpl(data[currentLevel].variable(), assignmentId, statementTime);
         currentLevel = level;
         data[currentLevel] = variableInfo;
         variableInfo.setProperty(VariableProperty.ASSIGNED, assigned);

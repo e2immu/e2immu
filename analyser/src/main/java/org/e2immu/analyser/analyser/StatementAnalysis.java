@@ -486,8 +486,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (variables.isSet(fqn)) throw new UnsupportedOperationException("Already exists");
 
         int statementTimeForVariable = statementTimeForVariable(analyserContext, variable, statementTime);
-        String assignmentId = assignmentIdAtCreation(variable, isNotAssignmentTarget);
-        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, assignmentId, statementTimeForVariable);
+        String assignmentIndex = assignmentIndexAtCreation(variable, isNotAssignmentTarget);
+        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, assignmentIndex, statementTimeForVariable);
 
         variables.put(variable.fullyQualifiedName(), vic);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", variable.fullyQualifiedName());
@@ -521,7 +521,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return vic;
     }
 
-    private String assignmentIdAtCreation(Variable variable, boolean isNotAssignmentTarget) {
+    private String assignmentIndexAtCreation(Variable variable, boolean isNotAssignmentTarget) {
         if (isNotAssignmentTarget) {
             if (variable instanceof LocalVariableReference) throw new UnsupportedOperationException();
             return VariableInfoContainer.START_OF_METHOD;
@@ -731,7 +731,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             String localVariableFqn;
             if (statementTime == vi.getStatementTime() && vi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
                 // return a local variable with the current field value, numbered as the statement time + assignment ID
-                localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime + "$" + indexOfStatementTime.replace(".", "_");
+                localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime + "$" + vi.getAssignmentId().replace(".", "_");
                 initialValue = vi.getValue();
             } else {
                 localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime;
@@ -749,9 +749,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 lvrVic = createVariable(analyserContext, lvr, statementTime, false);
 
                 // same as from the field
-
+                assert initialValue != EmptyExpression.NO_VALUE;
                 lvrVic.setInitialValueFromAnalyser(initialValue, propertyMap(analyserContext, fieldReference.fieldInfo));
                 lvrVic.setLinkedVariablesFromAnalyser(Set.of(fieldReference)); // linked to the reference
+
                 lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, ASSIGNED, 1);
                 lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, READ, 2);
             }

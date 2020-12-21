@@ -51,7 +51,7 @@ public interface VariableInfoContainer {
     int VARIABLE_FIELD_DELAY = -1;
     int NOT_A_VARIABLE_FIELD = -2;
 
-    String START_OF_METHOD = "";
+    String START_OF_METHOD = "-";
 
     /**
      * General method for obtaining the "most relevant" <code>VariableInfo</code> object describing the state
