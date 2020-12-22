@@ -345,13 +345,111 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
 
     @Test
     public void test_5() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
+                Assert.assertEquals("", d.evaluationResult().value().toString());
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) & "s".equals(d.variableName())) {
+                if ("1.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("p<=2?q>=5?\"abc\":\"xyz\":<empty>", d.currentValue().toString());
+                }
+                if ("1.1.0".equals(d.statementId())) {
+                    Assert.assertEquals("p>=3&&q<=-1?\"tuv\":null", d.currentValue().toString());
+                }
+                if("1".equals(d.statementId())) {
+                    Assert.assertEquals("p>=3&&q<=-1?\"tuv\":null", d.currentValue().toString());
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("1.0.0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("p<=2&&q>=5", d.condition().toString());
+                    Assert.assertEquals("p<=2&&q>=5", d.state().toString());
+                }
+                if ("1.0.0.1.0".equals(d.statementId())) {
+                    Assert.assertEquals("p<=2&&q<=4", d.condition().toString());
+                    Assert.assertEquals("p<=2&&q<=4", d.state().toString());
+                }
+                if ("1.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("p<=2", d.condition().toString());
+                    Assert.assertEquals("p<=2", d.state().toString());
+                }
+                if ("1.1.0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("p>=3&&q<=-1", d.condition().toString());
+                    Assert.assertEquals("p>=3&&q<=-1", d.state().toString());
+                }
+                if ("1.1.0".equals(d.statementId())) {
+                    Assert.assertEquals("p>=3", d.condition().toString());
+                    Assert.assertEquals("p>=3", d.state().toString());
+                }
+            }
+        };
         testClass("ConditionalChecks_5", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 
     @Test
     public void test_6() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
+                Assert.assertEquals("true", d.evaluationResult().value().toString());
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) & "s".equals(d.variableName())) {
+                if ("1.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("p<=2?q>=5?\"abc\":\"xyz\":<empty>", d.currentValue().toString());
+                }
+                if ("1.1.0".equals(d.statementId())) {
+                    Assert.assertEquals("p>=3?q<=-1?\"tuv\":\"zzz\":<empty>", d.currentValue().toString());
+                }
+                if("1".equals(d.statementId())) {
+                    Assert.assertEquals("p<=2?q>=5?\"abc\":\"xyz\":q<=-1?\"tuv\":\"zzz\"", d.currentValue().toString());
+                }
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("1.0.0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("p<=2&&q>=5", d.condition().toString());
+                    Assert.assertEquals("p<=2&&q>=5", d.state().toString());
+                }
+                if ("1.0.0.1.0".equals(d.statementId())) {
+                    Assert.assertEquals("p<=2&&q<=4", d.condition().toString());
+                    Assert.assertEquals("p<=2&&q<=4", d.state().toString());
+                }
+                if ("1.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("p<=2", d.condition().toString());
+                    Assert.assertEquals("p<=2", d.state().toString());
+                }
+                if ("1.1.0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("p>=3&&q<=-1", d.condition().toString());
+                    Assert.assertEquals("p>=3&&q<=-1", d.state().toString());
+                }
+                if ("1.1.0.1.0".equals(d.statementId())) {
+                    Assert.assertEquals("p>=3&&q>=0", d.condition().toString());
+                    Assert.assertEquals("p>=3&&q>=0", d.state().toString());
+                }
+                if ("1.1.0".equals(d.statementId())) {
+                    Assert.assertEquals("p>=3", d.condition().toString());
+                    Assert.assertEquals("p>=3", d.state().toString());
+                }
+            }
+        };
         testClass("ConditionalChecks_6", 0, 1, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
 

@@ -48,6 +48,7 @@ public record And(Primitives primitives,
         Objects.requireNonNull(expressions);
         Objects.requireNonNull(objectFlow);
     }
+
     // testing only
     public And(Primitives primitives) {
         this(primitives, List.of(), ObjectFlow.NO_FLOW);
@@ -67,13 +68,14 @@ public record And(Primitives primitives,
         // STEP 0: combining an unknown with anything else results in unknown
 
         Expression unknown = null;
-        for(Expression value: values) {
-            if(value.isUnknown()) {
-                if(unknown == null) unknown = value; else unknown = unknown.combineUnknown(value);
+        for (Expression value : values) {
+            if (value.isUnknown()) {
+                if (unknown == null) unknown = value;
+                else unknown = unknown.combineUnknown(value);
             }
         }
-        if(unknown != null) {
-            log(CNF, "Return unknown value in And, order "+unknown.order());
+        if (unknown != null) {
+            log(CNF, "Return unknown value in And, order " + unknown.order());
             return unknown;
         }
 
@@ -478,5 +480,36 @@ public record And(Primitives primitives,
     @Override
     public int getProperty(EvaluationContext evaluationContext, VariableProperty variableProperty) {
         return UnknownExpression.primitiveGetProperty(variableProperty);
+    }
+
+    public record CommonComponentResult(Expression common, Expression rest1, Expression rest2) {
+    }
+
+    private Expression toAnd(EvaluationContext evaluationContext, Collection<Expression> list) {
+        if (list.isEmpty()) return new BooleanConstant(primitives, true);
+        return new And(primitives, objectFlow).append(evaluationContext, list.toArray(Expression[]::new));
+    }
+
+    public CommonComponentResult findCommon(EvaluationContext evaluationContext, Expression other) {
+        if (other instanceof And otherAnd) {
+            List<Expression> common = new ArrayList<>(Math.min(expressions.size(), otherAnd.expressions.size()));
+            List<Expression> rest = new ArrayList<>(expressions.size());
+            Set<Expression> otherRest = new HashSet<>(otherAnd.expressions); // make the copy
+            for (Expression expression : expressions) {
+                if (otherRest.contains(expression)) {
+                    common.add(expression);
+                    otherRest.remove(expression);
+                } else {
+                    rest.add(expression);
+                }
+            }
+            return new CommonComponentResult(toAnd(evaluationContext, common), toAnd(evaluationContext, rest),
+                    toAnd(evaluationContext, otherRest));
+        }
+        if (expressions.contains(other)) {
+            return new CommonComponentResult(other, new And(primitives, objectFlow).append(evaluationContext,
+                    expressions.stream().filter(e -> !e.equals(other)).toArray(Expression[]::new)), new BooleanConstant(primitives, true));
+        }
+        return new CommonComponentResult(new BooleanConstant(primitives, true), this, other);
     }
 }

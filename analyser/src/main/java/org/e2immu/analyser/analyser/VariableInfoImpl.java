@@ -19,9 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.expression.Negation;
-import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -219,7 +217,7 @@ class VariableInfoImpl implements VariableInfo {
                                   List<VariableInfo> merge) {
         Expression mergedValue = mergeValue(evaluationContext, existingValuesWillBeOverwritten, merge);
         Expression currentValue = getValue();
-        if (currentValue.equals(mergedValue)) { // FIXME mergedValue == NO_VALUE ||
+        if (currentValue.equals(mergedValue)) {
             return newObject == null ? this : newObject; // no need to create
         }
         int mergedStatementTime = mergedStatementTime(evaluationContext);
@@ -361,16 +359,56 @@ class VariableInfoImpl implements VariableInfo {
         return noConclusion(evaluationContext.getPrimitives());
     }
 
+    // working back from if {} else {} statements... maybe over the top, but hopefully the generic nature help somehow
+
     private Expression twoOverwritten(EvaluationContext evaluationContext, VariableInfo vi1, VariableInfo vi2) {
         Expression s1 = vi1.getStateOnAssignment();
         Expression s2 = vi2.getStateOnAssignment();
 
         if (!s1.isBoolValueTrue() && !s2.isBoolValueTrue()) {
             // int c; if(s1) c = a; else c = b;
-            if (Negation.negate(evaluationContext, s1).equals(s2)) {
-                return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s1, vi1.getValue(), vi2.getValue(), ObjectFlow.NO_FLOW),
-                        evaluationContext.getPrimitives());
-            } else throw new UnsupportedOperationException("? impossible situation");
+            And.CommonComponentResult ccr;
+            if (s1 instanceof And s1And) {
+                ccr = s1And.findCommon(evaluationContext, s2);
+            } else if (s2 instanceof And s2And) {
+                ccr = s2And.findCommon(evaluationContext, s1);
+            } else {
+                ccr = new And.CommonComponentResult(new BooleanConstant(evaluationContext.getPrimitives(), true), s1, s2);
+            }
+
+            if (Negation.negate(evaluationContext, ccr.rest1()).equals(ccr.rest2())) {
+                Expression inner = safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, ccr.rest1(),
+                        vi1.getValue(), vi2.getValue(), ObjectFlow.NO_FLOW), evaluationContext.getPrimitives());
+                if (ccr.common().isBoolValueTrue()) return inner;
+                return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, ccr.common(),
+                        inner, EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW), evaluationContext.getPrimitives());
+            } else {
+                throw new UnsupportedOperationException("? impossible situation");
+            }
+        }
+
+        Expression v1 = vi1.getValue();
+        Expression v2 = vi2.getValue();
+        // pretty concrete situation, arising from nested if- statements
+        // v1 = a?b:<empty> and v2 = !a?d:<empty> --> a?b:d
+        if (v1 instanceof InlineConditional i1 && v2 instanceof InlineConditional i2 &&
+                Negation.negate(evaluationContext, i1.condition).equals(i2.condition)) {
+            if (i1.ifFalse == EmptyExpression.EMPTY_EXPRESSION && i2.ifFalse == EmptyExpression.EMPTY_EXPRESSION) {
+                return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, i1.condition,
+                        i1.ifTrue, i2.ifTrue, ObjectFlow.NO_FLOW), evaluationContext.getPrimitives());
+            }
+        }
+        // there's symmetrical situations
+
+        if (v1 instanceof InlineConditional i1 && v2 instanceof InlineConditional i2 && i1.condition.equals(i2.condition)) {
+            if (i1.ifFalse == EmptyExpression.EMPTY_EXPRESSION && i2.ifTrue == EmptyExpression.EMPTY_EXPRESSION) {
+                return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, i1.condition,
+                        i1.ifTrue, i2.ifFalse, ObjectFlow.NO_FLOW), evaluationContext.getPrimitives());
+            }
+            if (i2.ifFalse == EmptyExpression.EMPTY_EXPRESSION && i1.ifTrue == EmptyExpression.EMPTY_EXPRESSION) {
+                return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, i1.condition,
+                        i1.ifFalse, i2.ifTrue, ObjectFlow.NO_FLOW), evaluationContext.getPrimitives());
+            }
         }
         return noConclusion(evaluationContext.getPrimitives());
     }
@@ -382,4 +420,6 @@ class VariableInfoImpl implements VariableInfo {
         }
         return result.value();
     }
+
+
 }
