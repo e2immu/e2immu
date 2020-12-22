@@ -111,8 +111,48 @@ public class Test_01_Loops extends CommonTestRunner {
 
     @Test
     public void test1() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("3".equals(d.statementId())) {
+                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                    Assert.assertEquals("?\"abc\":null", d.evaluationResult().value().debugOutput());
+                }
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "i".equals(d.variableName())) {
+                if ("1".equals(d.statementId()) || "2.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("true", d.variableInfo().getStateOnAssignment().debugOutput());
+                }
+            }
+        };
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                FlowData.Execution execution = d.statementAnalysis().flowData.guaranteedToBeReachedInCurrentBlock.get();
+                if ("2.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("false", d.condition().debugOutput());
+                    Assert.assertEquals("true", d.state().debugOutput());
+                    Assert.assertSame(FlowData.Execution.ALWAYS, execution);
+                }
+                if ("2.0.1".equals(d.statementId())) {
+                    Assert.assertSame(FlowData.Execution.ALWAYS, execution);
 
+                    // FIXME why is this NO_VALUE?
+                    Assert.assertEquals("false", d.condition().debugOutput());
+                    Assert.assertEquals("true", d.state().debugOutput());
+                }
+                if ("2.0.2".equals(d.statementId())) {
+                    Assert.assertSame(FlowData.Execution.CONDITIONALLY, execution);
+
+                    Assert.assertEquals("false", d.condition().debugOutput());
+                    Assert.assertEquals("i<n", d.state().debugOutput());
+                }
+            }
+        };
         testClass("Loops_1", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

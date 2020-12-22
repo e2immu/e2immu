@@ -1214,8 +1214,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (assigned >= Level.TRUE && read <= assigned) {
                     boolean isLocalAndLocalToThisBlock = statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name());
                     if (bestAlwaysInterrupt == InterruptsFlow.ESCAPE ||
-                            variableInfo.variable().isLocal() && bestAlwaysInterrupt == InterruptsFlow.RETURN && assignmentInThisBlock(variableInfo) ||
-                            isLocalAndLocalToThisBlock) {
+                            isLocalAndLocalToThisBlock ||
+                            variableInfo.variable().isLocal() && bestAlwaysInterrupt == InterruptsFlow.RETURN &&
+                                    localVariableAssignmentInThisBlock(variableInfo)) {
                         statementAnalysis.ensure(Message.newMessage(getLocation(), Message.USELESS_ASSIGNMENT, variableInfo.name()));
                     }
                 }
@@ -1224,8 +1225,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return DONE;
     }
 
-    private boolean assignmentInThisBlock(VariableInfo variableInfo) {
-        return false;// FIXME
+    private boolean localVariableAssignmentInThisBlock(VariableInfo variableInfo) {
+        assert variableInfo.variable().isLocal();
+        if (statementAnalysis.parent == null) return true;
+        int assigned = variableInfo.getProperty(VariableProperty.ASSIGNED);
+        String fqn = variableInfo.variable().fullyQualifiedName();
+        if (statementAnalysis.parent.variables.isSet(fqn)) {
+            VariableInfo oneUp = statementAnalysis.parent.variables.get(fqn).best(VariableInfoContainer.LEVEL_3_EVALUATION);
+            int assignedOneUp = oneUp.getProperty(VariableProperty.ASSIGNED);
+            return assignedOneUp < assigned;
+        }
+        return false;
     }
 
     private AnalysisStatus checkUnusedLocalVariables() {

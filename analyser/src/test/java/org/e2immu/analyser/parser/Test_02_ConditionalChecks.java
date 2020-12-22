@@ -342,4 +342,17 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
     }
+
+    @Test
+    public void test_5() throws IOException {
+        testClass("ConditionalChecks_5", 0, 0, new DebugConfiguration.Builder()
+                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+    }
+
+    @Test
+    public void test_6() throws IOException {
+        testClass("ConditionalChecks_6", 0, 1, new DebugConfiguration.Builder()
+                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+    }
+
 }

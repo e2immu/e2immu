@@ -704,12 +704,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return variableInfo.getProperty(variableProperty);
     }
 
-    private FieldReferenceState singleCopy(int effectivelyFinal, boolean inSyncBlock, boolean inPartOfConstruction) {
-        if (effectivelyFinal == Level.DELAY) return EFFECTIVELY_FINAL_DELAYED;
-        boolean isEffectivelyFinal = effectivelyFinal == Level.TRUE;
-        return isEffectivelyFinal || inSyncBlock || inPartOfConstruction ? SINGLE_COPY : MULTI_COPY;
-    }
-
     /**
      * Find a variable for reading. Intercepts fields and local variables.
      *
@@ -771,20 +765,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return lvrVic.current();
         }
         return vi;
-    }
-
-    /*
-    separate method because the local variables of for() loops are only known inside the loop (which invalidates
-    simple variable presence checking)
-     */
-    private boolean localVariableKnownToMe(LocalVariableReference localVariableReference) {
-        if (variables.isSet(localVariableReference.fullyQualifiedName())) return true; // explicitly known
-        // for(X x: xxx) { ... x defined only inside the block }
-        if (statement instanceof ForEachStatement || statement instanceof ForStatement) {
-            return statement.getStructure().initialisers.stream().anyMatch(e -> e instanceof LocalVariableCreation lvc &&
-                    lvc.localVariable.equals(localVariableReference.variable));
-        }
-        return false;
     }
 
     private VariableInfo variableInfoOfFieldWhenReading(AnalyserContext analyserContext,
