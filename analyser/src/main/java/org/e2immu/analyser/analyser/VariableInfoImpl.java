@@ -225,21 +225,23 @@ class VariableInfoImpl implements VariableInfo {
                                   List<VariableInfo> merge) {
         Expression mergedValue = mergeValue(evaluationContext, existingValuesWillBeOverwritten, merge);
         Expression currentValue = getValue();
-        if (mergedValue == NO_VALUE || currentValue.equals(mergedValue))
+        if (currentValue.equals(mergedValue)) { // FIXME mergedValue == NO_VALUE ||
             return newObject == null ? this : newObject; // no need to create
-
+        }
         int mergedStatementTime = mergedStatementTime(evaluationContext);
         String assignmentId = mergedAssignmentId(evaluationContext, existingValuesWillBeOverwritten, merge);
 
         if (newObject == null) {
             VariableInfoImpl newVi = new VariableInfoImpl(variable, assignmentId, mergedStatementTime);
-            newVi.setValue(mergedValue);
-            newVi.stateOnAssignment.copy(stateOnAssignment);
+            if (mergedValue != NO_VALUE) {
+                newVi.setValue(mergedValue);
+                newVi.stateOnAssignment.copy(stateOnAssignment);
+            }
             return newVi;
         }
         assert assignmentId.equals(newObject.assignmentId);
 
-        if (!newObject.value.isSet() || !newObject.value.get().equals(mergedValue)) {
+        if (mergedValue != NO_VALUE && (!newObject.value.isSet() || !newObject.value.get().equals(mergedValue))) {
             newObject.setValue(mergedValue); // will cause severe problems if the value already there is different :-)
             assert newObject.statementTime.getOrElse(VariableInfoContainer.VARIABLE_FIELD_DELAY) == mergedStatementTime;
         }

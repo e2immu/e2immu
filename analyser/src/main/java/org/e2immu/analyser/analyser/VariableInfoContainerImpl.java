@@ -44,17 +44,24 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     private int currentLevel;
     private final VariableInfoContainer firstOccurrence;
     public final AddOnceSet<String> assignmentsInLoop;
+    private final boolean localVariableInLoopDefinedOutside;
 
-    public VariableInfoContainerImpl(VariableInfo previous, VariableInfoContainer firstOccurrence) {
+    public VariableInfoContainerImpl(VariableInfoContainer previous) {
         Objects.requireNonNull(previous);
-        data[LEVEL_0_PREVIOUS] = previous;
+        VariableInfo current = previous.current();
+        data[LEVEL_0_PREVIOUS] = current;
         currentLevel = LEVEL_0_PREVIOUS;
-        Objects.requireNonNull(firstOccurrence);
-        this.firstOccurrence = firstOccurrence;
+        Objects.requireNonNull(previous.getFirstOccurrence());
+        this.firstOccurrence = previous.getFirstOccurrence();
         this.assignmentsInLoop = null;
+        localVariableInLoopDefinedOutside = previous.isLocalVariableInLoopDefinedOutside();
     }
 
-    public VariableInfoContainerImpl(Variable variable, String assignmentIndex, int statementTime, VariableInfoContainer firstOccurrence) {
+    public VariableInfoContainerImpl(Variable variable,
+                                     String assignmentIndex,
+                                     int statementTime,
+                                     boolean localVariableInLoopDefinedOutside,
+                                     VariableInfoContainer firstOccurrence) {
         Objects.requireNonNull(variable);
         data[LEVEL_1_INITIALISER] = new VariableInfoImpl(variable, assignmentIndex + ":1", statementTime);
         currentLevel = LEVEL_1_INITIALISER;
@@ -65,6 +72,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             this.firstOccurrence = firstOccurrence;
             this.assignmentsInLoop = null;
         }
+        this.localVariableInLoopDefinedOutside = localVariableInLoopDefinedOutside;
+    }
+
+    @Override
+    public boolean isLocalVariableInLoopDefinedOutside() {
+        return localVariableInLoopDefinedOutside;
     }
 
     @Override
@@ -252,7 +265,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
 
         Objects.requireNonNull(value);
-        if (value.isUnknown()) {
+        if (value == NO_VALUE) {
             throw new IllegalArgumentException("Value should not be NO_VALUE");
         }
         int writeLevel = findLevelForWriting(level);
@@ -267,7 +280,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         ensureNotFrozen();
 
         Objects.requireNonNull(state);
-        if (state.isUnknown()) {
+        if (state == NO_VALUE) {
             throw new IllegalArgumentException("State should not be NO_VALUE");
         }
         int writeLevel = findLevelForWriting(level);

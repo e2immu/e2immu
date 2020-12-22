@@ -542,8 +542,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (changeData.markAssignment()) {
                     vic.setProperty(level, VariableProperty.ASSIGNED, Math.max(Level.TRUE, assigned + 1));
 
-                    if (vi.variable() instanceof LocalVariableReference lvr &&
-                            statementAnalysis.localVariableInLoopButDefinedOutside(lvr)) {
+                    if (vic.isLocalVariableInLoopDefinedOutside()) {
                         vic.getFirstOccurrence().addAssignmentInLoop(index() + ":" + level);
                     }
                 }

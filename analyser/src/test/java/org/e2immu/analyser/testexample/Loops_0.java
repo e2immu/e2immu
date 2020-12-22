@@ -10,7 +10,7 @@ public class Loops_0 {
     public static String method(int n) {
         String res1;
         int i = 0;
-        while (true) { // executed at least once, which means that res1 MUST be equal to "abc"
+        while (true) {
             res1 = "abc";
             i++;
             if (i >= n) break;

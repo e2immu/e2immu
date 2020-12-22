@@ -315,15 +315,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfoContainer vic = entry.getValue();
         VariableInfo vi = vic.current();
         VariableInfoContainer newVic;
-        if (isParent && vi.variable() instanceof LocalVariableReference lvr &&
-                localVariableInLoopButDefinedOutside(lvr) && !copyFrom.localVariableInLoopButDefinedOutside(lvr)) {
-            assert copyFrom.statement instanceof LoopStatement; // we're entering a loop
-            newVic = new VariableInfoContainerImpl(vi.variable(), index, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
+        if (isParent && !vic.isLocalVariableInLoopDefinedOutside() && copyFrom.statement instanceof LoopStatement) {
+            newVic = new VariableInfoContainerImpl(vi.variable(), index, VariableInfoContainer.NOT_A_VARIABLE_FIELD, true,
                     vic.getFirstOccurrence());
             // newVic has a new level 1 vi, without a value at this point
         } else {
             // make a simple reference copy
-            newVic = new VariableInfoContainerImpl(vi, vic.getFirstOccurrence());
+            newVic = new VariableInfoContainerImpl(vic);
         }
         variables.put(fqn, newVic);
     }
@@ -417,7 +415,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 if (!variables.isSet(fqn) && variable instanceof LocalVariableReference) {
                     // other variables that don't exist here and that we do not want to copy: foreign fields,
                     // such as System.out
-                    VariableInfoContainer newVic = new VariableInfoContainerImpl(vicFrom.current(), vicFrom.getFirstOccurrence());
+                    VariableInfoContainer newVic = new VariableInfoContainerImpl(vicFrom);
                     variables.put(fqn, newVic);
                 }
             });
@@ -502,7 +500,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         int statementTimeForVariable = statementTimeForVariable(analyserContext, variable, statementTime);
         String assignmentIndex = assignmentIndexAtCreation(variable, isNotAssignmentTarget);
-        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, assignmentIndex, statementTimeForVariable, null);
+        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, assignmentIndex, statementTimeForVariable, false, null);
 
         variables.put(variable.fullyQualifiedName(), vic);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", variable.fullyQualifiedName());
@@ -733,20 +731,20 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (vi.variable() instanceof FieldReference fieldReference && vi.getStatementTime() >= 0) {
                 return variableInfoOfFieldWhenReading(analyserContext, fieldReference, vi, statementTime);
             }
-            if (vi.variable() instanceof LocalVariableReference lvr && localVariableInLoopButDefinedOutside(lvr)) {
-                return variableInfoOfVariableInLoopWhenReading(analyserContext, lvr, vic, vi);
+            if (vic.isLocalVariableInLoopDefinedOutside()) {
+                return variableInfoOfVariableInLoopWhenReading(analyserContext, vic, vi);
             }
         } // else we need to go to the variable itself
         return vi;
     }
 
     private VariableInfo variableInfoOfVariableInLoopWhenReading(AnalyserContext analyserContext,
-                                                                 LocalVariableReference variableInLoop,
                                                                  VariableInfoContainer vic,
                                                                  VariableInfo vi) {
         if (!vic.getFirstOccurrence().assignmentsInLoopAreFrozen()) return vi;
         String[] assignmentsInLoop = vic.getFirstOccurrence().streamAssignmentsInLoop()
                 .filter(assignmentId -> assignmentId.startsWith(index)).toArray(String[]::new);
+        LocalVariableReference variableInLoop = (LocalVariableReference) vi.variable();
         if (assignmentsInLoop.length > 0) {
             Arrays.sort(assignmentsInLoop, Comparator.comparingInt(String::length));
             String latestAssignment = assignmentsInLoop[assignmentsInLoop.length - 1];
@@ -783,24 +781,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (statement instanceof ForEachStatement || statement instanceof ForStatement) {
             return statement.getStructure().initialisers.stream().anyMatch(e -> e instanceof LocalVariableCreation lvc &&
                     lvc.localVariable.equals(localVariableReference.variable));
-        }
-        return false;
-    }
-
-    /**
-     * Given a local variable, decide if we're in a loop, and the local variable is defined outside.
-     */
-    public boolean localVariableInLoopButDefinedOutside(LocalVariableReference lvr) {
-        String fqn = lvr.fullyQualifiedName();
-        StatementAnalysis sa = this;
-        boolean inLoop = false;
-        // note that the IntelliJ engine knows that sa cannot be null in the while condition!
-        while (sa.variables.isSet(fqn)) { // explicitly known to me
-            if ((sa.parent == null || !sa.parent.localVariableKnownToMe(lvr))) return inLoop;
-            if (sa.parent.statement instanceof LoopStatement) {
-                inLoop = true;
-            }
-            sa = sa.parent;
         }
         return false;
     }

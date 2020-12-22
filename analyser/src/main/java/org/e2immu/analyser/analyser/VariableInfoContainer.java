@@ -162,6 +162,8 @@ public interface VariableInfoContainer {
 
     VariableInfoContainer getFirstOccurrence();
 
+    boolean isLocalVariableInLoopDefinedOutside();
+
     boolean assignmentsInLoopAreFrozen();
 
     Stream<String> streamAssignmentsInLoop();
