@@ -151,12 +151,6 @@ class VariableInfoImpl implements VariableInfo {
         return prev == null || prev < value;
     }
 
-    public boolean remove() {
-        Integer prev = properties.put(VariableProperty.REMOVED, Level.TRUE);
-        return prev == null || prev < Level.TRUE;
-
-    }
-
     public void setObjectFlow(ObjectFlow objectFlow) {
         this.objectFlow.set(objectFlow);
     }

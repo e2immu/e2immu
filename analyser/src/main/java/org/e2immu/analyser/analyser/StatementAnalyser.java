@@ -1199,7 +1199,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      * We recognize the following situations, looping over the local variables:
      * <ul>
      *     <li>NYR + CREATED at the same level</li>
-     *     <li>FIXME why ? NYR + local variable created higher up + EXIT (return stmt, anything beyond the level of the CREATED)</li>
+     *     <li NYR + local variable created higher up + return: <code>int i=0; if(xxx) { i=3; return; }</code></li>
      *     <li>NYR + escape: <code>int i=0; if(xxx) { i=3; throw new UnsupportedOperationException(); }</code></li>
      * </ul>
      */
@@ -1208,29 +1208,24 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         boolean alwaysInterrupts = bestAlwaysInterrupt != InterruptsFlow.NO;
         boolean atEndOfBlock = navigationData.next.get().isEmpty();
         if (atEndOfBlock || alwaysInterrupts) {
-            // we run at the local level
-            List<String> toRemove = new ArrayList<>();
             statementAnalysis.variableStream().forEach(variableInfo -> {
                 int assigned = variableInfo.getProperty(VariableProperty.ASSIGNED);
                 int read = variableInfo.getProperty(VariableProperty.READ);
                 if (assigned >= Level.TRUE && read <= assigned) {
-                    // IMPROVE we'll need code dealing with loop variables
                     boolean isLocalAndLocalToThisBlock = statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name());
-                    //boolean useless = bestAlwaysInterrupt == InterruptsFlow.ESCAPE ||
-                    //        variableInfo.variable().isLocal() && (alwaysInterrupts || isLocalAndLocalToThisBlock);
-                    if (bestAlwaysInterrupt == InterruptsFlow.ESCAPE || isLocalAndLocalToThisBlock) {
+                    if (bestAlwaysInterrupt == InterruptsFlow.ESCAPE ||
+                            variableInfo.variable().isLocal() && bestAlwaysInterrupt == InterruptsFlow.RETURN && assignmentInThisBlock(variableInfo) ||
+                            isLocalAndLocalToThisBlock) {
                         statementAnalysis.ensure(Message.newMessage(getLocation(), Message.USELESS_ASSIGNMENT, variableInfo.name()));
-                        //if (!isLocalAndLocalToThisBlock)
-                        toRemove.add(variableInfo.name());
                     }
                 }
             });
-            // if (!toRemove.isEmpty()) { // makes little sense if we stay at the same level
-            //    log(VARIABLE_PROPERTIES, "Removing local info for variables {}", toRemove);
-            //    statementAnalysis.removeAllVariables(toRemove);
-            //}
         }
         return DONE;
+    }
+
+    private boolean assignmentInThisBlock(VariableInfo variableInfo) {
+        return false;// FIXME
     }
 
     private AnalysisStatus checkUnusedLocalVariables() {

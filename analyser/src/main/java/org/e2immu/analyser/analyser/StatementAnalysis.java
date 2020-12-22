@@ -305,7 +305,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return;
         }
         StatementAnalysis copyFrom = previous == null ? parent : previous;
-        copyFrom.nonRemovedVariables().forEach(e -> copyVariableFromPrevious(e, copyFrom, previous == null));
+        copyFrom.variableEntryStream().forEach(e -> copyVariableFromPrevious(e, copyFrom, previous == null));
 
         flowData.initialiseAssignmentIds(copyFrom.flowData);
     }
@@ -925,10 +925,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return variables.get(variable.fullyQualifiedName());
     }
 
-    public void removeAllVariables(List<String> toRemove) {
-        toRemove.forEach(name -> variables.get(name).setProperty(VariableInfoContainer.LEVEL_4_SUMMARY, REMOVED, Level.TRUE));
-    }
-
     public int levelAtWhichVariableIsDefined(Variable variable) {
         if (variable instanceof FieldReference) return Integer.MAX_VALUE;
         return internalLevelAtWhichVariableIsDefined(variable.fullyQualifiedName(), 0);
@@ -1015,18 +1011,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     public Stream<VariableInfo> variableStream() {
-        return variables.stream().map(Map.Entry::getValue)
-                .map(VariableInfoContainer::current)
-                .filter(vi -> !vi.hasProperty(VariableProperty.REMOVED));
+        return variables.stream().map(Map.Entry::getValue).map(VariableInfoContainer::current);
     }
 
-    public Stream<Map.Entry<String, VariableInfoContainer>> nonRemovedVariables() {
-        return variables.stream().filter(e -> !e.getValue().current().hasProperty(VariableProperty.REMOVED));
+    public Stream<Map.Entry<String, VariableInfoContainer>> variableEntryStream() {
+        return variables.stream();
     }
 
     public Stream<VariableInfo> safeVariableStream() {
-        return variables.toImmutableMap().values().stream()
-                .map(VariableInfoContainer::current)
-                .filter(vi -> !vi.hasProperty(VariableProperty.REMOVED));
+        return variables.toImmutableMap().values().stream().map(VariableInfoContainer::current);
     }
 }

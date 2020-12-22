@@ -47,9 +47,6 @@ public enum VariableProperty {
     // goes to true when that delay has been resolved
     NOT_NULL_DELAYS_RESOLVED("notnull delay"),
 
-    // removed after detection of "not used"
-    REMOVED("removed"),
-
     // the ones corresponding to annotations
 
     NOT_NULL("@NotNull", true,
