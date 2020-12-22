@@ -32,12 +32,12 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, d.getProperty(VariableProperty.IMMUTABLE));
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.CONTAINER));
 
-                Assert.assertEquals(Level.READ_ASSIGN_ONCE, d.getProperty(VariableProperty.READ)); // read 1x
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ)); // read 1x
                 // there is an explicit @NotNull on the first parameter of debug
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             } else if ("1".equals(d.statementId())) {
                 Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.READ_ASSIGN_MULTIPLE_TIMES, d.getProperty(VariableProperty.READ)); // read 2x
+                Assert.assertEquals(2, d.getProperty(VariableProperty.READ)); // read 2x
                 // there is an explicit @NotNull on the first parameter of debug
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
             } else Assert.fail();

@@ -26,10 +26,10 @@ import java.util.Set;
 
 public enum VariableProperty {
     // can be read multiple times
-    READ("read", true, Level.FALSE, Level.READ_ASSIGN_MULTIPLE_TIMES, Level.FALSE, Level.FALSE),
+    READ("read", true, Level.FALSE, Integer.MAX_VALUE, Level.FALSE, Level.FALSE),
 
     // assigned multiple times
-    ASSIGNED("assigned", true, Level.FALSE, Level.READ_ASSIGN_MULTIPLE_TIMES, Level.FALSE, Level.FALSE),
+    ASSIGNED("assigned", true, Level.FALSE, Integer.MAX_VALUE, Level.FALSE, Level.FALSE),
 
     // in a block, are we guaranteed to reach the last assignment?
     // we focus on last assignment because that is what the 'currentValue' holds

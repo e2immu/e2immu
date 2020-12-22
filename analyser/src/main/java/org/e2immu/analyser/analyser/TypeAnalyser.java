@@ -457,7 +457,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
             // fieldSummaries are set after the first iteration
             return methodAnalyser.getFieldAsVariableStream(fieldInfo).anyMatch(tv -> {
-                boolean assigned = tv.getProperty(VariableProperty.ASSIGNED) >= Level.READ_ASSIGN_ONCE;
+                boolean assigned = tv.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE;
                 log(MARK, "Field {} is assigned in {}? {}", variable.fullyQualifiedName(),
                         methodAnalyser.methodInfo.distinguishingName(), assigned);
 

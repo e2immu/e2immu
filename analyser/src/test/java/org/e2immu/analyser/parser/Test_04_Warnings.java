@@ -126,28 +126,28 @@ public class Test_04_Warnings extends CommonTestRunner {
                 int assigned = d.properties().getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
 
                 if ("0".equals(d.statementId()) && "integers".equals(d.variableName())) {
-                    Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned); // integers=, and integers[i]=
+                    Assert.assertEquals(Level.TRUE, assigned); // integers=, and integers[i]=
                     Assert.assertEquals(Level.DELAY, read);
                     Assert.assertEquals("{1,2,3}", d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId()) && "i".equals(d.variableName())) {
-                    Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned); // integers=, and integers[i]=
+                    Assert.assertEquals(Level.TRUE, assigned); // integers=, and integers[i]=
                     Assert.assertEquals(Level.DELAY, read);
                     Assert.assertEquals("0", d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     if ("integers".equals(d.variableName())) {
-                        Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned); // integers=, NOT integers[i]=
+                        Assert.assertEquals(Level.TRUE, assigned); // integers=, NOT integers[i]=
                         Assert.assertEquals(assigned + 1, read);
                         Assert.assertEquals("{1,2,3}", d.currentValue().toString());
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL)); // because in scope side
                     } else if ("i".equals(d.variableName())) {
-                        Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned);
+                        Assert.assertEquals(Level.TRUE, assigned);
                         Assert.assertEquals(assigned + 1, read);
 
                         // the standardized name is the evaluation value of expression and index, in this particular case, both constants
                     } else if ("integers[i]".equals(d.variableName())) {
-                        Assert.assertEquals(Level.READ_ASSIGN_ONCE, assigned);
+                        Assert.assertEquals(Level.TRUE, assigned);
                         Assert.assertTrue(read <= assigned);
                         Assert.assertEquals("3", d.currentValue().toString());
                     } else if (THIS.equals(d.variableName())) {

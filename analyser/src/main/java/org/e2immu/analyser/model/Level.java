@@ -23,10 +23,6 @@ public class Level {
     public static final int FALSE = 0;
     public static final int TRUE = 1;
 
-    // READ, ASSIGN
-    public static final int READ_ASSIGN_ONCE = TRUE;
-    public static final int READ_ASSIGN_MULTIPLE_TIMES = 2;
-
     // be careful, assumes the same level everywhere
     public static final IntBinaryOperator OR = (i, j) -> i == DELAY || j == DELAY ? DELAY : Math.max(i, j);
 
@@ -59,9 +55,5 @@ public class Level {
 
     public static int fromBool(boolean b) {
         return b ? TRUE : FALSE;
-    }
-
-    public static int incrementReadAssigned(int read) {
-        return Math.max(Math.min(Level.READ_ASSIGN_MULTIPLE_TIMES, read + 1), Level.READ_ASSIGN_ONCE);
     }
 }

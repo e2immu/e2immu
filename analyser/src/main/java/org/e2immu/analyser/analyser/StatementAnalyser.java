@@ -710,7 +710,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             Map<VariableProperty, Integer> propertiesToSet = new HashMap<>();
             if (sharedState.forwardAnalysisInfo.inCatch()) {
                 propertiesToSet.put(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-                propertiesToSet.put(VariableProperty.READ, Level.READ_ASSIGN_ONCE);
+                propertiesToSet.put(VariableProperty.READ, Level.TRUE);
                 vic.setLinkedVariables(l1, Set.of());
             } else if (statementAnalysis.statement instanceof ForEachStatement forEach) {
                 // TODO we must set the links after step 3, before going into the block in step 4
@@ -1199,8 +1199,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      * We recognize the following situations, looping over the local variables:
      * <ul>
      *     <li>NYR + CREATED at the same level</li>
-     *     <li>NYR + local variable created higher up + EXIT (return stmt, anything beyond the level of the CREATED)</li>
-     *     <li>NYR + escape</li>
+     *     <li>FIXME why ? NYR + local variable created higher up + EXIT (return stmt, anything beyond the level of the CREATED)</li>
+     *     <li>NYR + escape: <code>int i=0; if(xxx) { i=3; throw new UnsupportedOperationException(); }</code></li>
      * </ul>
      */
     private AnalysisStatus checkUselessAssignments() {
@@ -1216,18 +1216,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (assigned >= Level.TRUE && read <= assigned) {
                     // IMPROVE we'll need code dealing with loop variables
                     boolean isLocalAndLocalToThisBlock = statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name());
-                    boolean useless = bestAlwaysInterrupt == InterruptsFlow.ESCAPE ||
-                            variableInfo.variable().isLocal() && (alwaysInterrupts || isLocalAndLocalToThisBlock);
-                    if (useless) {
+                    //boolean useless = bestAlwaysInterrupt == InterruptsFlow.ESCAPE ||
+                    //        variableInfo.variable().isLocal() && (alwaysInterrupts || isLocalAndLocalToThisBlock);
+                    if (bestAlwaysInterrupt == InterruptsFlow.ESCAPE || isLocalAndLocalToThisBlock) {
                         statementAnalysis.ensure(Message.newMessage(getLocation(), Message.USELESS_ASSIGNMENT, variableInfo.name()));
-                        if (!isLocalAndLocalToThisBlock) toRemove.add(variableInfo.name());
+                        //if (!isLocalAndLocalToThisBlock)
+                        toRemove.add(variableInfo.name());
                     }
                 }
             });
-            if (!toRemove.isEmpty()) {
-                log(VARIABLE_PROPERTIES, "Removing local info for variables {}", toRemove);
-                statementAnalysis.removeAllVariables(toRemove);
-            }
+            // if (!toRemove.isEmpty()) { // makes little sense if we stay at the same level
+            //    log(VARIABLE_PROPERTIES, "Removing local info for variables {}", toRemove);
+            //    statementAnalysis.removeAllVariables(toRemove);
+            //}
         }
         return DONE;
     }
@@ -1238,7 +1239,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // READ is set in the first iteration, so there is no reason to expect delays
             statementAnalysis.variableStream().forEach(variableInfo -> {
                 if (statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name())
-                        && variableInfo.getProperty(VariableProperty.READ) < Level.READ_ASSIGN_ONCE) {
+                        && variableInfo.getProperty(VariableProperty.READ) < Level.TRUE) {
                     statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNUSED_LOCAL_VARIABLE, variableInfo.name()));
                 }
             });
