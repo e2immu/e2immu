@@ -699,7 +699,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         int statementTime = sharedState.evaluationContext.getInitialStatementTime();
 
         // part 1: Create a local variable x for(X x: Xs) {...}, or in catch(Exception e)
-        boolean isLoop = statementAnalysis.statement instanceof LoopStatement;
+        // there is NO initialisation for these
 
         if (structure.localVariableCreation != null) {
             LocalVariableReference lvr = new LocalVariableReference(analyserContext, structure.localVariableCreation, List.of());
@@ -712,7 +712,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 propertiesToSet.put(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                 propertiesToSet.put(VariableProperty.READ, Level.READ_ASSIGN_ONCE);
                 vic.setLinkedVariables(l1, Set.of());
-            } else if (isLoop) {
+            } else if (statementAnalysis.statement instanceof ForEachStatement forEach) {
                 // TODO we must set the links after step 3, before going into the block in step 4
                 vic.setLinkedVariables(l1, Set.of());
             }
@@ -720,6 +720,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     propertiesToSet);
         }
 
+        // for(int i=0; ...) loop, normal local variable creation
         // part 2: initialisers
 
         boolean haveDelays = false;

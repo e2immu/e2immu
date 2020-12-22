@@ -230,7 +230,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? "<return value:boolean>" : "true";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "true";
                     Assert.assertEquals(expect, d.currentValue().debugOutput());
                 }
             }
@@ -266,7 +266,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 Assert.assertTrue(d.methodInfo().isSynchronized());
             }
             if ("increment3".equals(d.methodInfo().name)) {
-                String expect = d.iteration() == 0 ? "<return value:boolean>" : "true";
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "true";
                 Assert.assertEquals(expect, d.methodAnalysis().getLastStatement()
                         .variables.get(INC3_RETURN_VAR).current().getValue().debugOutput());
                 if (d.iteration() > 0) {

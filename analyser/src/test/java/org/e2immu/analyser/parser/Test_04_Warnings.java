@@ -112,6 +112,7 @@ public class Test_04_Warnings extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("checkForEach".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId()) && "integers".equals(d.variableName())) {
+                // so that we know that integers.iterator() has been called
                 Assert.assertEquals(2, d.getProperty(VariableProperty.READ));
             }
             if ("method1".equals(d.methodInfo().name) && "s".equals(d.variableName())) {

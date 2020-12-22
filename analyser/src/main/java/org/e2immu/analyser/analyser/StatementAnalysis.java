@@ -318,6 +318,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (isParent && !vic.isLocalVariableInLoopDefinedOutside() && copyFrom.statement instanceof LoopStatement) {
             newVic = new VariableInfoContainerImpl(vi.variable(), index, VariableInfoContainer.NOT_A_VARIABLE_FIELD, true,
                     vic.getFirstOccurrence());
+            // copy the properties
+            vi.propertyStream().forEach(e -> newVic.setProperty(VariableInfoContainer.LEVEL_3_EVALUATION, e.getKey(), e.getValue()));
             // newVic has a new level 1 vi, without a value at this point
         } else {
             // make a simple reference copy
