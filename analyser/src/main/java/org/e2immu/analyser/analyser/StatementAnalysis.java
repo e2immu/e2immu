@@ -21,9 +21,7 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.statement.LoopStatement;
-import org.e2immu.analyser.model.statement.Structure;
-import org.e2immu.analyser.model.statement.SynchronizedStatement;
+import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -307,10 +305,27 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return;
         }
         StatementAnalysis copyFrom = previous == null ? parent : previous;
-        copyFrom.variableStream().forEach(variableInfo -> variables.put(variableInfo.name(),
-                new VariableInfoContainerImpl(variableInfo)));
+        copyFrom.nonRemovedVariables().forEach(e -> copyVariableFromPrevious(e, copyFrom, previous == null));
 
         flowData.initialiseAssignmentIds(copyFrom.flowData);
+    }
+
+    private void copyVariableFromPrevious(Map.Entry<String, VariableInfoContainer> entry, StatementAnalysis copyFrom, boolean isParent) {
+        String fqn = entry.getKey();
+        VariableInfoContainer vic = entry.getValue();
+        VariableInfo vi = vic.current();
+        VariableInfoContainer newVic;
+        if (isParent && vi.variable() instanceof LocalVariableReference lvr &&
+                localVariableInLoopButDefinedOutside(lvr) && !copyFrom.localVariableInLoopButDefinedOutside(lvr)) {
+            assert copyFrom.statement instanceof LoopStatement; // we're entering a loop
+            newVic = new VariableInfoContainerImpl(vi.variable(), index, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
+                    vic.getFirstOccurrence());
+            // newVic has a new level 1 vi, without a value at this point
+        } else {
+            // make a simple reference copy
+            newVic = new VariableInfoContainerImpl(vi, vic.getFirstOccurrence());
+        }
+        variables.put(fqn, newVic);
     }
 
     /**
@@ -402,7 +417,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 if (!variables.isSet(fqn) && variable instanceof LocalVariableReference) {
                     // other variables that don't exist here and that we do not want to copy: foreign fields,
                     // such as System.out
-                    VariableInfoContainer newVic = new VariableInfoContainerImpl(vicFrom.current());
+                    VariableInfoContainer newVic = new VariableInfoContainerImpl(vicFrom.current(), vicFrom.getFirstOccurrence());
                     variables.put(fqn, newVic);
                 }
             });
@@ -487,7 +502,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         int statementTimeForVariable = statementTimeForVariable(analyserContext, variable, statementTime);
         String assignmentIndex = assignmentIndexAtCreation(variable, isNotAssignmentTarget);
-        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, assignmentIndex, statementTimeForVariable);
+        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, assignmentIndex, statementTimeForVariable, null);
 
         variables.put(variable.fullyQualifiedName(), vic);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", variable.fullyQualifiedName());
@@ -714,51 +729,127 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic = variables.get(fqn);
         }
         VariableInfo vi = vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
-        // TODO: next: local variables, assigned in loop
-        if (isNotAssignmentTarget && vi.variable() instanceof FieldReference fieldReference && vi.getStatementTime() >= 0) {
-            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-
-            // a variable field can have any value when first read in a method.
-            // after statement time goes up, this value may have changed completely
-            // therefore we return a new local variable each time we read and statement time has gone up.
-
-            // when there are assignments within the same statement time, however, we stick to the assigned value
-            // (we temporarily treat the field as a local variable)
-            // so we need to know: have there been assignments AFTER the latest statement time increase?
-
-            String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
-            Expression initialValue;
-            String localVariableFqn;
-            if (statementTime == vi.getStatementTime() && vi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
-                // return a local variable with the current field value, numbered as the statement time + assignment ID
-                localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime + "$" + vi.getAssignmentId().replace(".", "_");
-                initialValue = vi.getValue();
-            } else {
-                localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime;
-                initialValue = new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
+        if (isNotAssignmentTarget) {
+            if (vi.variable() instanceof FieldReference fieldReference && vi.getStatementTime() >= 0) {
+                return variableInfoOfFieldWhenReading(analyserContext, fieldReference, vi, statementTime);
             }
+            if (vi.variable() instanceof LocalVariableReference lvr && localVariableInLoopButDefinedOutside(lvr)) {
+                return variableInfoOfVariableInLoopWhenReading(analyserContext, lvr, vic, vi);
+            }
+        } // else we need to go to the variable itself
+        return vi;
+    }
+
+    private VariableInfo variableInfoOfVariableInLoopWhenReading(AnalyserContext analyserContext,
+                                                                 LocalVariableReference variableInLoop,
+                                                                 VariableInfoContainer vic,
+                                                                 VariableInfo vi) {
+        if (!vic.getFirstOccurrence().assignmentsInLoopAreFrozen()) return vi;
+        String[] assignmentsInLoop = vic.getFirstOccurrence().streamAssignmentsInLoop()
+                .filter(assignmentId -> assignmentId.startsWith(index)).toArray(String[]::new);
+        if (assignmentsInLoop.length > 0) {
+            Arrays.sort(assignmentsInLoop, Comparator.comparingInt(String::length));
+            String latestAssignment = assignmentsInLoop[assignmentsInLoop.length - 1];
+            String localVariableFqn = variableInLoop.fullyQualifiedName() + "$" + latestAssignment;
 
             // the statement time of the field indicates the time of the latest assignment
             LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), localVariableFqn,
-                    fieldReference.parameterizedType(), List.of(), methodAnalysis.getMethodInfo().typeInfo);
+                    variableInLoop.parameterizedType(), List.of(), methodAnalysis.getMethodInfo().typeInfo);
             LocalVariableReference lvr = new LocalVariableReference(analyserContext, lv, List.of());
             VariableInfoContainer lvrVic;
             if (variables.isSet(lvr.fullyQualifiedName())) {
                 lvrVic = variables.get(lvr.fullyQualifiedName());
             } else {
-                lvrVic = createVariable(analyserContext, lvr, statementTime, false);
-
-                // same as from the field
-                assert initialValue != EmptyExpression.NO_VALUE;
-                lvrVic.setInitialValueFromAnalyser(initialValue, propertyMap(analyserContext, fieldReference.fieldInfo));
-                lvrVic.setLinkedVariablesFromAnalyser(Set.of(fieldReference)); // linked to the reference
-
-                lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, ASSIGNED, 1);
-                lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, READ, 2);
+                lvrVic = createVariable(analyserContext, lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD, false);
+                Expression initialValue = new NewObject(primitives, variableInLoop.parameterizedType(), ObjectFlow.NO_FLOW);
+                Map<VariableProperty, Integer> map = new HashMap<>(vi.getProperties());
+                map.put(ASSIGNED, 1);
+                map.put(READ, 2);
+                lvrVic.setInitialValueFromAnalyser(initialValue, map);
+                lvrVic.setLinkedVariablesFromAnalyser(Set.of(variableInLoop)); // linked to the reference
             }
             return lvrVic.current();
-        } // else we need to go to the variable itself
+        }
         return vi;
+    }
+
+    /*
+    separate method because the local variables of for() loops are only known inside the loop (which invalidates
+    simple variable presence checking)
+     */
+    private boolean localVariableKnownToMe(LocalVariableReference localVariableReference) {
+        if (variables.isSet(localVariableReference.fullyQualifiedName())) return true; // explicitly known
+        // for(X x: xxx) { ... x defined only inside the block }
+        if (statement instanceof ForEachStatement || statement instanceof ForStatement) {
+            return statement.getStructure().initialisers.stream().anyMatch(e -> e instanceof LocalVariableCreation lvc &&
+                    lvc.localVariable.equals(localVariableReference.variable));
+        }
+        return false;
+    }
+
+    /**
+     * Given a local variable, decide if we're in a loop, and the local variable is defined outside.
+     */
+    public boolean localVariableInLoopButDefinedOutside(LocalVariableReference lvr) {
+        String fqn = lvr.fullyQualifiedName();
+        StatementAnalysis sa = this;
+        boolean inLoop = false;
+        // note that the IntelliJ engine knows that sa cannot be null in the while condition!
+        while (sa.variables.isSet(fqn)) { // explicitly known to me
+            if ((sa.parent == null || !sa.parent.localVariableKnownToMe(lvr))) return inLoop;
+            if (sa.parent.statement instanceof LoopStatement) {
+                inLoop = true;
+            }
+            sa = sa.parent;
+        }
+        return false;
+    }
+
+    private VariableInfo variableInfoOfFieldWhenReading(AnalyserContext analyserContext,
+                                                        FieldReference fieldReference,
+                                                        VariableInfo vi,
+                                                        int statementTime) {
+        FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+
+        // a variable field can have any value when first read in a method.
+        // after statement time goes up, this value may have changed completely
+        // therefore we return a new local variable each time we read and statement time has gone up.
+
+        // when there are assignments within the same statement time, however, we stick to the assigned value
+        // (we temporarily treat the field as a local variable)
+        // so we need to know: have there been assignments AFTER the latest statement time increase?
+
+        String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
+        Expression initialValue;
+        String localVariableFqn;
+        if (statementTime == vi.getStatementTime() && vi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
+            // return a local variable with the current field value, numbered as the statement time + assignment ID
+            localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime + "$" + vi.getAssignmentId().replace(".", "_");
+            initialValue = vi.getValue();
+        } else {
+            localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime;
+            initialValue = new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
+        }
+
+        // the statement time of the field indicates the time of the latest assignment
+        LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), localVariableFqn,
+                fieldReference.parameterizedType(), List.of(), methodAnalysis.getMethodInfo().typeInfo);
+        LocalVariableReference lvr = new LocalVariableReference(analyserContext, lv, List.of());
+        VariableInfoContainer lvrVic;
+        if (variables.isSet(lvr.fullyQualifiedName())) {
+            lvrVic = variables.get(lvr.fullyQualifiedName());
+        } else {
+            lvrVic = createVariable(analyserContext, lvr, statementTime, false);
+
+            // same as from the field
+            assert initialValue != EmptyExpression.NO_VALUE;
+            lvrVic.setInitialValueFromAnalyser(initialValue, propertyMap(analyserContext, fieldReference.fieldInfo));
+            lvrVic.setLinkedVariablesFromAnalyser(Set.of(fieldReference)); // linked to the reference
+
+            lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, ASSIGNED, 1);
+            lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, READ, 2);
+        }
+        return lvrVic.current();
     }
 
     // either go next, or go down
@@ -817,7 +908,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfoContainer vic = variables.get(variableName);
         VariableInfo variableInfo = vic.current();
         if (!variableInfo.variable().isLocal()) return false;
-        return parent == null || !parent.isLocalVariableAndLocalToThisBlock(variableName);
+        if (parent == null) return true;
+        return !parent.variables.isSet(variableName);
     }
 
     /**
@@ -944,6 +1036,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return variables.stream().map(Map.Entry::getValue)
                 .map(VariableInfoContainer::current)
                 .filter(vi -> !vi.hasProperty(VariableProperty.REMOVED));
+    }
+
+    public Stream<Map.Entry<String, VariableInfoContainer>> nonRemovedVariables() {
+        return variables.stream().filter(e -> !e.getValue().current().hasProperty(VariableProperty.REMOVED));
     }
 
     public Stream<VariableInfo> safeVariableStream() {

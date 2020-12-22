@@ -46,12 +46,12 @@ public class ForEachStatement extends LoopStatement {
     }
 
     private static FlowData.Execution computeExecution(Expression expression, EvaluationContext evaluationContext) {
-        if(expression instanceof ArrayInitializer arrayInitializer && arrayInitializer.multiExpression.expressions().length == 0) {
-            return FlowData.Execution.NEVER;
+        if (expression instanceof ArrayInitializer arrayInitializer) {
+            return arrayInitializer.multiExpression.expressions().length == 0 ? FlowData.Execution.NEVER : FlowData.Execution.ALWAYS;
         }
-        if(expression instanceof VariableExpression variableExpression) {
-            NewObject newObject  = evaluationContext.currentInstance(variableExpression.variable(), evaluationContext.getInitialStatementTime());
-            if(newObject != null && !newObject.state.isBoolValueTrue()) {
+        if (expression instanceof VariableExpression variableExpression) {
+            NewObject newObject = evaluationContext.currentInstance(variableExpression.variable(), evaluationContext.getInitialStatementTime());
+            if (newObject != null && !newObject.state.isBoolValueTrue()) {
                 // TODO we can try to extract a length or size
             }
         }
@@ -77,7 +77,7 @@ public class ForEachStatement extends LoopStatement {
     @Override
     public OutputBuilder output(StatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder();
-        if(label != null) {
+        if (label != null) {
             outputBuilder.add(new Text(label)).add(Symbol.COLON_LABEL);
         }
         return outputBuilder.add(new Text("for"))

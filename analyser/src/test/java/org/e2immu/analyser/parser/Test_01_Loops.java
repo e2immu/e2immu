@@ -18,14 +18,14 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.FlowData;
+import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.MethodAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.WhileStatement;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.Test;
@@ -41,17 +41,37 @@ public class Test_01_Loops extends CommonTestRunner {
 
     @Test
     public void test0() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "2.0.2".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                // FIXME Assert.assertEquals("i>=n", d.evaluationResult().value().debugOutput());
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "res1".equals(d.variableName())) {
+                if (d.variable() instanceof LocalVariableReference lvr) {
+                    boolean expect = d.statementId().startsWith("2.");
+                    boolean inLoop = d.evaluationContext().getCurrentStatement().statementAnalysis.localVariableInLoopButDefinedOutside(lvr);
+                    Assert.assertEquals("In " + d.statementId(), expect, inLoop);
+                } else Assert.fail();
+            }
+        };
+
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
+            if (!"method".equals(d.methodInfo().name)) return;
+            if ("2".equals(d.statementId())) {
                 if (d.statementAnalysis().statement instanceof WhileStatement whileStatement) {
-                    FlowData.Execution exec = whileStatement.structure.statementExecution.apply(new BooleanConstant(d.statementAnalysis().primitives, true),
-                            d.evaluationContext());
+                    FlowData.Execution exec = whileStatement.structure.statementExecution
+                            .apply(new BooleanConstant(d.statementAnalysis().primitives, true),
+                                    d.evaluationContext());
                     Assert.assertSame(FlowData.Execution.ALWAYS, exec);
                 } else Assert.fail();
             }
         };
         testClass("Loops_0", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

@@ -25,6 +25,7 @@ import org.e2immu.annotation.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Container to store different versions of a VariableInfo object, one or more of this list:
@@ -99,6 +100,8 @@ public interface VariableInfoContainer {
     // explicit freezing (DONE at the end of statement analyser): forbid any future writing
     void freeze();
 
+    // at end of 1st iteration, only at last statement in each block where a local variable has been defined
+    void freezeAssignmentsInLoop();
 
     // writing operations
     void setValueOnAssignment(int level, Expression value, Map<VariableProperty, Integer> propertiesToSet);
@@ -156,4 +159,12 @@ public interface VariableInfoContainer {
                List<VariableInfo> merge);
 
     void setStatementTime(int level, int statementTime);
+
+    VariableInfoContainer getFirstOccurrence();
+
+    boolean assignmentsInLoopAreFrozen();
+
+    Stream<String> streamAssignmentsInLoop();
+
+    void addAssignmentInLoop(String assignmentId);
 }

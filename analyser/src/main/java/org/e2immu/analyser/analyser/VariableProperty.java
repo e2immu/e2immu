@@ -35,9 +35,6 @@ public enum VariableProperty {
     // we focus on last assignment because that is what the 'currentValue' holds
     LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED("reached"),
 
-    // this variable is changing inside a loop; do not read its value
-    ASSIGNED_IN_LOOP("in loop"),
-
     // single simple purpose: on `this` to see if local methods have been called
     METHOD_CALLED("method called"),
 

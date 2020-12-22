@@ -329,7 +329,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         .add("step4_subBlocks", this::step4_subBlocks)
                         .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previous,
                                 forwardAnalysisInfo.execution()))
-
+                        .add("freezeAssignmentInBlock", this::freezeAssignmentInBlock)
                         .add("checkNotNullEscapes", this::checkNotNullEscapes)
                         .add("checkPrecondition", this::checkPrecondition)
                         .add("copyPrecondition", sharedState -> statementAnalysis.stateData.copyPrecondition(this,
@@ -368,6 +368,20 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             LOGGER.warn("Caught exception while analysing statement {} of {}", index(), myMethodAnalyser.methodInfo.fullyQualifiedName());
             throw rte;
         }
+    }
+
+    private AnalysisStatus freezeAssignmentInBlock(SharedState sharedState) {
+        if (statementAnalysis.navigationData.isLastStatementInBlock()) {
+            // last statement in block
+            statementAnalysis.variables.stream().map(Map.Entry::getValue).forEach(vic -> {
+                VariableInfo vi = vic.current();
+                if (vi.variable() instanceof LocalVariableReference && (statementAnalysis.parent == null ||
+                        !statementAnalysis.parent.variables.isSet(vi.name()))) {
+                    vic.getFirstOccurrence().freezeAssignmentsInLoop();
+                }
+            });
+        }
+        return DONE; // only in first iteration
     }
 
     // in a separate task, so that it can be skipped when the statement is unreachable
@@ -527,6 +541,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 }
                 if (changeData.markAssignment()) {
                     vic.setProperty(level, VariableProperty.ASSIGNED, Math.max(Level.TRUE, assigned + 1));
+
+                    if (vi.variable() instanceof LocalVariableReference lvr &&
+                            statementAnalysis.localVariableInLoopButDefinedOutside(lvr)) {
+                        vic.getFirstOccurrence().addAssignmentInLoop(index() + ":" + level);
+                    }
                 }
                 // simply copy the READ value; nothing has changed here
                 vic.setProperty(level, VariableProperty.READ, read);
@@ -681,7 +700,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         int statementTime = sharedState.evaluationContext.getInitialStatementTime();
 
         // part 1: Create a local variable x for(X x: Xs) {...}, or in catch(Exception e)
-        boolean assignedInLoop = statementAnalysis.statement instanceof LoopStatement;
+        boolean isLoop = statementAnalysis.statement instanceof LoopStatement;
 
         if (structure.localVariableCreation != null) {
             LocalVariableReference lvr = new LocalVariableReference(analyserContext, structure.localVariableCreation, List.of());
@@ -694,8 +713,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 propertiesToSet.put(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                 propertiesToSet.put(VariableProperty.READ, Level.READ_ASSIGN_ONCE);
                 vic.setLinkedVariables(l1, Set.of());
-            } else if (assignedInLoop) {
-                propertiesToSet.put(VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
+            } else if (isLoop) {
                 // TODO we must set the links after step 3, before going into the block in step 4
                 vic.setLinkedVariables(l1, Set.of());
             }
@@ -710,13 +728,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         for (Expression initialiser : structure.initialisers) {
             if (initialiser instanceof LocalVariableCreation lvc) {
                 LocalVariableReference lvr = new LocalVariableReference(analyserContext, lvc.localVariable, List.of());
-                // the NO_VALUE here becomes the initial (and reset) value, which should not be a problem because variables
-                // introduced here should not become "reset" to an initial value; they'll always be assigned one
-                if (assignedInLoop) {
-                    saToCreate.addProperty(analyserContext, VariableInfoContainer.LEVEL_1_INITIALISER, lvr, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
-                } else {
-                    saToCreate.findOrCreateL1(analyserContext, lvr, statementTime, false); // "touch" it
-                }
+                saToCreate.findOrCreateL1(analyserContext, lvr, statementTime, false); // "touch" it
             }
             try {
                 EvaluationResult result = initialiser.evaluate(sharedState.evaluationContext, ForwardEvaluationInfo.DEFAULT);
@@ -725,19 +737,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
                 Expression value = result.value();
                 if (value == NO_VALUE) haveDelays = true;
-
-                // IMPROVE move to a place where *every* assignment is verified (assignment-basics)
-                // are we in a loop (somewhere) assigning to a variable that already exists outside that loop?
-                if (initialiser instanceof Assignment assignment) {
-                    int levelLoop = saToCreate.stepsUpToLoop();
-                    if (levelLoop >= 0) {
-                        int levelAssignmentTarget = saToCreate.levelAtWhichVariableIsDefined(assignment.variableTarget);
-                        if (levelAssignmentTarget >= levelLoop) {
-                            saToCreate.addProperty(analyserContext, VariableInfoContainer.LEVEL_1_INITIALISER,
-                                    assignment.variableTarget, VariableProperty.ASSIGNED_IN_LOOP, Level.TRUE);
-                        }
-                    }
-                }
             } catch (RuntimeException rte) {
                 LOGGER.warn("Failed to evaluate initialiser expression in statement {} (created in {})",
                         statementAnalysis.index, saToCreate.index);
@@ -1215,11 +1214,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 int assigned = variableInfo.getProperty(VariableProperty.ASSIGNED);
                 int read = variableInfo.getProperty(VariableProperty.READ);
                 if (assigned >= Level.TRUE && read <= assigned) {
-                    boolean notAssignedInLoop = variableInfo.getProperty(VariableProperty.ASSIGNED_IN_LOOP) != Level.TRUE;
-                    // IMPROVE at some point we will do better than "notAssignedInLoop"
+                    // IMPROVE we'll need code dealing with loop variables
                     boolean isLocalAndLocalToThisBlock = statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name());
-                    boolean useless = bestAlwaysInterrupt == InterruptsFlow.ESCAPE || notAssignedInLoop && (
-                            variableInfo.variable().isLocal() && (alwaysInterrupts || isLocalAndLocalToThisBlock));
+                    boolean useless = bestAlwaysInterrupt == InterruptsFlow.ESCAPE ||
+                            variableInfo.variable().isLocal() && (alwaysInterrupts || isLocalAndLocalToThisBlock);
                     if (useless) {
                         statementAnalysis.ensure(Message.newMessage(getLocation(), Message.USELESS_ASSIGNMENT, variableInfo.name()));
                         if (!isLocalAndLocalToThisBlock) toRemove.add(variableInfo.name());

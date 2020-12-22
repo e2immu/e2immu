@@ -27,4 +27,7 @@ public class NavigationData<T> {
     public SetOnce<Optional<T>> next = new SetOnce<>();
     public final SetOnce<T> replacement = new SetOnce<>();
 
+    public boolean isLastStatementInBlock() {
+        return next.get().isEmpty();
+    }
 }

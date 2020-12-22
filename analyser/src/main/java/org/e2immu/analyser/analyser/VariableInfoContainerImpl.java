@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.util.AddOnceSet;
 import org.e2immu.analyser.util.Freezable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 
@@ -40,17 +42,46 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     private final VariableInfo[] data = new VariableInfo[LEVELS];
     private int currentLevel;
+    private final VariableInfoContainer firstOccurrence;
+    public final AddOnceSet<String> assignmentsInLoop;
 
-    public VariableInfoContainerImpl(VariableInfo previous) {
+    public VariableInfoContainerImpl(VariableInfo previous, VariableInfoContainer firstOccurrence) {
         Objects.requireNonNull(previous);
         data[LEVEL_0_PREVIOUS] = previous;
         currentLevel = LEVEL_0_PREVIOUS;
+        Objects.requireNonNull(firstOccurrence);
+        this.firstOccurrence = firstOccurrence;
+        this.assignmentsInLoop = null;
     }
 
-    public VariableInfoContainerImpl(Variable variable, String assignmentId, int statementTime) {
+    public VariableInfoContainerImpl(Variable variable, String assignmentIndex, int statementTime, VariableInfoContainer firstOccurrence) {
         Objects.requireNonNull(variable);
-        data[LEVEL_1_INITIALISER] = new VariableInfoImpl(variable, assignmentId + ":1", statementTime);
+        data[LEVEL_1_INITIALISER] = new VariableInfoImpl(variable, assignmentIndex + ":1", statementTime);
         currentLevel = LEVEL_1_INITIALISER;
+        if (firstOccurrence == null) {
+            this.firstOccurrence = this;
+            this.assignmentsInLoop = new AddOnceSet<>();
+        } else {
+            this.firstOccurrence = firstOccurrence;
+            this.assignmentsInLoop = null;
+        }
+    }
+
+    @Override
+    public VariableInfoContainer getFirstOccurrence() {
+        return firstOccurrence;
+    }
+
+    @Override
+    public Stream<String> streamAssignmentsInLoop() {
+        assert assignmentsInLoop != null;
+        return assignmentsInLoop.stream();
+    }
+
+    @Override
+    public boolean assignmentsInLoopAreFrozen() {
+        assert assignmentsInLoop != null;
+        return assignmentsInLoop.isFrozen();
     }
 
     @Override
@@ -99,6 +130,20 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             }
         }
         super.freeze();
+    }
+
+    // should only be called when relevant
+    public void freezeAssignmentsInLoop() {
+        assert assignmentsInLoop != null;
+        assignmentsInLoop.freeze();
+    }
+
+    @Override
+    public void addAssignmentInLoop(String assignmentId) {
+        assert assignmentsInLoop != null;
+        if (!assignmentsInLoop.contains(assignmentId)) {
+            assignmentsInLoop.add(assignmentId);
+        }
     }
 
     /* ******************************* modifying methods related to assignment ************************************** */
