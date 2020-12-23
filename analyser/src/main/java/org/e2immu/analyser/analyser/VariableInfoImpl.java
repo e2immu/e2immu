@@ -17,13 +17,12 @@
 
 package org.e2immu.analyser.analyser;
 
+import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
-import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
+import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnce;
 
@@ -304,122 +303,22 @@ class VariableInfoImpl implements VariableInfo {
         boolean allValuesIdentical = merge.stream().allMatch(v -> currentValue.equals(v.getValue()));
         if (allValuesIdentical) return currentValue;
 
+        MergeHelper mergeHelper = new MergeHelper(evaluationContext, this);
 
         if (merge.size() == 1) {
             if (existingValuesWillBeOverwritten) return merge.get(0).getValue();
-            Expression result = oneNotOverwritten(evaluationContext, currentValue, merge.get(0));
+            Expression result = mergeHelper.oneNotOverwritten(currentValue, merge.get(0));
             if (result != null) return result;
         }
 
         if (merge.size() == 2) {
-            Expression result = existingValuesWillBeOverwritten ? twoOverwritten(evaluationContext, merge.get(0), merge.get(1))
-                    : two(evaluationContext, currentValue, merge.get(0), merge.get(1));
+            Expression result = existingValuesWillBeOverwritten ?
+                    mergeHelper.twoOverwritten(merge.get(0), merge.get(1))
+                    : mergeHelper.two(currentValue, merge.get(0), merge.get(1));
             if (result != null) return result;
         }
 
         // no clue
-        return noConclusion(evaluationContext.getPrimitives());
+        return mergeHelper.noConclusion();
     }
-
-    private Expression noConclusion(Primitives primitives) {
-        return new NewObject(primitives, variable.parameterizedType(), getObjectFlow());
-    }
-
-
-    private Expression oneNotOverwritten(EvaluationContext evaluationContext, Expression a, VariableInfo vi) {
-        Expression b = vi.getValue();
-        Expression x = vi.getStateOnAssignment();
-
-        // int c = a; if(x) c = b;  --> c = x?b:a
-        if (!x.isBoolValueTrue()) {
-            return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, x, b, a, ObjectFlow.NO_FLOW),
-                    evaluationContext.getPrimitives());
-        }
-
-        return noConclusion(evaluationContext.getPrimitives());
-    }
-
-    private Expression two(EvaluationContext evaluationContext, Expression x, VariableInfo vi1, VariableInfo vi2) {
-        Expression s1 = vi1.getStateOnAssignment();
-        Expression s2 = vi2.getStateOnAssignment();
-
-        // silly situation, twice the same condition
-        // int c = ex; if(s1) c = a; if(s1) c =b;
-        if (s1.equals(s2) && !s1.isBoolValueTrue()) {
-            return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s1, vi2.getValue(), x, ObjectFlow.NO_FLOW),
-                    evaluationContext.getPrimitives());
-        }
-        // int c = x; if(s1) c = a; if(s2) c = b; --> s1?a:(s2?b:x)
-        if (!s1.isBoolValueTrue() && !s2.isBoolValueTrue()) {
-            Expression s2bx = safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s2, vi2.getValue(), x, ObjectFlow.NO_FLOW),
-                    evaluationContext.getPrimitives());
-            return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, s1, vi1.getValue(), s2bx, ObjectFlow.NO_FLOW),
-                    evaluationContext.getPrimitives());
-        }
-        return noConclusion(evaluationContext.getPrimitives());
-    }
-
-    // working back from if {} else {} statements... maybe over the top, but hopefully the generic nature help somehow
-
-    private Expression twoOverwritten(EvaluationContext evaluationContext, VariableInfo vi1, VariableInfo vi2) {
-        Expression s1 = vi1.getStateOnAssignment();
-        Expression s2 = vi2.getStateOnAssignment();
-
-        if (!s1.isBoolValueTrue() && !s2.isBoolValueTrue()) {
-            // int c; if(s1) c = a; else c = b;
-            And.CommonComponentResult ccr;
-            if (s1 instanceof And s1And) {
-                ccr = s1And.findCommon(evaluationContext, s2);
-            } else if (s2 instanceof And s2And) {
-                ccr = s2And.findCommon(evaluationContext, s1);
-            } else {
-                ccr = new And.CommonComponentResult(new BooleanConstant(evaluationContext.getPrimitives(), true), s1, s2);
-            }
-
-            if (Negation.negate(evaluationContext, ccr.rest1()).equals(ccr.rest2())) {
-                Expression inner = safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, ccr.rest1(),
-                        vi1.getValue(), vi2.getValue(), ObjectFlow.NO_FLOW), evaluationContext.getPrimitives());
-                if (ccr.common().isBoolValueTrue()) return inner;
-                return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, ccr.common(),
-                        inner, EmptyExpression.EMPTY_EXPRESSION, ObjectFlow.NO_FLOW), evaluationContext.getPrimitives());
-            } else {
-                throw new UnsupportedOperationException("? impossible situation");
-            }
-        }
-
-        Expression v1 = vi1.getValue();
-        Expression v2 = vi2.getValue();
-        // pretty concrete situation, arising from nested if- statements
-        // v1 = a?b:<empty> and v2 = !a?d:<empty> --> a?b:d
-        if (v1 instanceof InlineConditional i1 && v2 instanceof InlineConditional i2 &&
-                Negation.negate(evaluationContext, i1.condition).equals(i2.condition)) {
-            if (i1.ifFalse == EmptyExpression.EMPTY_EXPRESSION && i2.ifFalse == EmptyExpression.EMPTY_EXPRESSION) {
-                return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, i1.condition,
-                        i1.ifTrue, i2.ifTrue, ObjectFlow.NO_FLOW), evaluationContext.getPrimitives());
-            }
-        }
-        // there's symmetrical situations
-
-        if (v1 instanceof InlineConditional i1 && v2 instanceof InlineConditional i2 && i1.condition.equals(i2.condition)) {
-            if (i1.ifFalse == EmptyExpression.EMPTY_EXPRESSION && i2.ifTrue == EmptyExpression.EMPTY_EXPRESSION) {
-                return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, i1.condition,
-                        i1.ifTrue, i2.ifFalse, ObjectFlow.NO_FLOW), evaluationContext.getPrimitives());
-            }
-            if (i2.ifFalse == EmptyExpression.EMPTY_EXPRESSION && i1.ifTrue == EmptyExpression.EMPTY_EXPRESSION) {
-                return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, i1.condition,
-                        i1.ifFalse, i2.ifTrue, ObjectFlow.NO_FLOW), evaluationContext.getPrimitives());
-            }
-        }
-        return noConclusion(evaluationContext.getPrimitives());
-    }
-
-    private Expression safe(EvaluationResult result, Primitives primitives) {
-        if (result.getModificationStream().anyMatch(m -> m instanceof StatementAnalyser.RaiseErrorMessage)) {
-            // something gone wrong, retreat
-            return noConclusion(primitives);
-        }
-        return result.value();
-    }
-
-
 }

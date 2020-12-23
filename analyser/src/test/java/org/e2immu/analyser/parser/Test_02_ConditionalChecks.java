@@ -344,10 +344,22 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
     }
 
     @Test
+    public void test_5x() {
+        Assert.assertEquals("abc", method(0, 10));
+        Assert.assertEquals("xyz", method(0, 0));
+        Assert.assertEquals("tuv", method(10, -10));
+        Assert.assertNull(method(10, 10));
+    }
+
+    private static String method(int p, int q) {
+        return p <= 2 ? q >= 5 ? "abc" : "xyz" : q <= -1 ? "tuv" : null;
+    }
+
+    @Test
     public void test_5() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                Assert.assertEquals("", d.evaluationResult().value().toString());
+                Assert.assertEquals("null!=(p<=2?q>=5?\"abc\":\"xyz\":q<=-1?\"tuv\":null)", d.evaluationResult().value().toString());
             }
         };
 
@@ -359,8 +371,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("1.1.0".equals(d.statementId())) {
                     Assert.assertEquals("p>=3&&q<=-1?\"tuv\":null", d.currentValue().toString());
                 }
-                if("1".equals(d.statementId())) {
-                    Assert.assertEquals("p>=3&&q<=-1?\"tuv\":null", d.currentValue().toString());
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals("p<=2?q>=5?\"abc\":\"xyz\":q<=-1?\"tuv\":null", d.currentValue().toString());
                 }
             }
         };
@@ -412,7 +424,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 if ("1.1.0".equals(d.statementId())) {
                     Assert.assertEquals("p>=3?q<=-1?\"tuv\":\"zzz\":<empty>", d.currentValue().toString());
                 }
-                if("1".equals(d.statementId())) {
+                if ("1".equals(d.statementId())) {
                     Assert.assertEquals("p<=2?q>=5?\"abc\":\"xyz\":q<=-1?\"tuv\":\"zzz\"", d.currentValue().toString());
                 }
             }
