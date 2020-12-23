@@ -100,9 +100,6 @@ public interface VariableInfoContainer {
     // explicit freezing (DONE at the end of statement analyser): forbid any future writing
     void freeze();
 
-    // at end of 1st iteration, only at last statement in each block where a local variable has been defined
-    void freezeAssignmentsInLoop();
-
     // writing operations
     void setValueOnAssignment(int level, Expression value, Map<VariableProperty, Integer> propertiesToSet);
 
@@ -160,13 +157,10 @@ public interface VariableInfoContainer {
 
     void setStatementTime(int level, int statementTime);
 
-    VariableInfoContainer getFirstOccurrence();
-
     boolean isLocalVariableInLoopDefinedOutside();
-
-    boolean assignmentsInLoopAreFrozen();
-
-    Stream<String> streamAssignmentsInLoop();
-
-    void addAssignmentInLoop(String assignmentId);
+    /*
+    Variables defined at level 2 only exist in their block; they are not propagated to the next statement, nor are they
+    merged into level 4
+     */
+    boolean isDefinedAtLevel2();
 }

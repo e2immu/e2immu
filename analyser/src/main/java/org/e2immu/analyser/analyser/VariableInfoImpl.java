@@ -64,7 +64,6 @@ class VariableInfoImpl implements VariableInfo {
         if (statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
             this.statementTime.set(statementTime);
         }
-        assert !value.isSet() || stateOnAssignment.isSet() : "Have state " + getStateOnAssignment() + ", value " + getValue();
     }
 
     VariableInfoImpl(VariableInfoImpl previous) {

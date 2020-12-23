@@ -244,12 +244,6 @@ public class Test_01_Loops extends CommonTestRunner {
     public void test7() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (!"method".equals(d.methodInfo().name)) return;
-            if ("i".equals(d.variableName()) && "1.0.0".equals(d.statementId())) {
-                if (d.iteration() > 0) {
-                    Assert.assertEquals("1.0.1:3", d.variableInfoContainer().getFirstOccurrence()
-                            .streamAssignmentsInLoop().collect(Collectors.joining()));
-                }
-            }
             if ("k".equals(d.variableName()) && "1.0.0".equals(d.statementId())) {
                 String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$1.0.1:3";
                 Assert.assertEquals(expect, d.currentValue().toString());
@@ -257,11 +251,17 @@ public class Test_01_Loops extends CommonTestRunner {
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if (!"method".equals(d.methodInfo().name)) return;
+            if ("1".equals(d.statementId())) {
+                Assert.assertTrue(d.statementAnalysis().localVariablesAssignedInThisLoop.isFrozen());
+                Assert.assertEquals("i", d.statementAnalysis().localVariablesAssignedInThisLoop.stream().collect(Collectors.joining()));
+            }
             if ("1.0.0".equals(d.statementId())) {
-                Assert.assertEquals("n>=1", d.state().toString());
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "n>=i$0";
+                Assert.assertEquals(expect, d.state().toString());
             }
             if ("1.0.1".equals(d.statementId())) {
-                Assert.assertEquals("n>=1", d.state().toString());
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "n>=i$0";
+                Assert.assertEquals(expect, d.state().toString());
             }
             if ("1.0.2".equals(d.statementId())) {
                 String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1!=1+i$1.0.1:3&&n>=1";

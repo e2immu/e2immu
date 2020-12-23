@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.util.AddOnceSet;
 import org.e2immu.analyser.util.Freezable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 
@@ -42,8 +40,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     private final VariableInfo[] data = new VariableInfo[LEVELS];
     private int currentLevel;
-    private final VariableInfoContainer firstOccurrence;
-    public final AddOnceSet<String> assignmentsInLoop;
     private final boolean localVariableInLoopDefinedOutside;
 
     public VariableInfoContainerImpl(VariableInfoContainer previous) {
@@ -51,50 +47,22 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         VariableInfo current = previous.current();
         data[LEVEL_0_PREVIOUS] = current;
         currentLevel = LEVEL_0_PREVIOUS;
-        Objects.requireNonNull(previous.getFirstOccurrence());
-        this.firstOccurrence = previous.getFirstOccurrence();
-        this.assignmentsInLoop = null;
         localVariableInLoopDefinedOutside = previous.isLocalVariableInLoopDefinedOutside();
     }
 
     public VariableInfoContainerImpl(Variable variable,
                                      String assignmentIndex,
                                      int statementTime,
-                                     boolean localVariableInLoopDefinedOutside,
-                                     VariableInfoContainer firstOccurrence) {
+                                     boolean localVariableInLoopDefinedOutside) {
         Objects.requireNonNull(variable);
         data[LEVEL_1_INITIALISER] = new VariableInfoImpl(variable, assignmentIndex + ":1", statementTime);
         currentLevel = LEVEL_1_INITIALISER;
-        if (firstOccurrence == null) {
-            this.firstOccurrence = this;
-            this.assignmentsInLoop = new AddOnceSet<>();
-        } else {
-            this.firstOccurrence = firstOccurrence;
-            this.assignmentsInLoop = null;
-        }
         this.localVariableInLoopDefinedOutside = localVariableInLoopDefinedOutside;
     }
 
     @Override
     public boolean isLocalVariableInLoopDefinedOutside() {
         return localVariableInLoopDefinedOutside;
-    }
-
-    @Override
-    public VariableInfoContainer getFirstOccurrence() {
-        return firstOccurrence;
-    }
-
-    @Override
-    public Stream<String> streamAssignmentsInLoop() {
-        assert assignmentsInLoop != null;
-        return assignmentsInLoop.stream();
-    }
-
-    @Override
-    public boolean assignmentsInLoopAreFrozen() {
-        assert assignmentsInLoop != null;
-        return assignmentsInLoop.isFrozen();
     }
 
     @Override
@@ -143,20 +111,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             }
         }
         super.freeze();
-    }
-
-    // should only be called when relevant
-    public void freezeAssignmentsInLoop() {
-        assert assignmentsInLoop != null;
-        assignmentsInLoop.freeze();
-    }
-
-    @Override
-    public void addAssignmentInLoop(String assignmentId) {
-        assert assignmentsInLoop != null;
-        if (!assignmentsInLoop.contains(assignmentId)) {
-            assignmentsInLoop.add(assignmentId);
-        }
     }
 
     /* ******************************* modifying methods related to assignment ************************************** */
@@ -430,5 +384,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Expression andOtherSide = new And(evaluationContext.getPrimitives()).append(evaluationContext,
                 merge.stream().map(VariableInfo::getStateOnAssignment).toArray(Expression[]::new));
         return notOne.equals(andOtherSide);
+    }
+
+    @Override
+    public boolean isDefinedAtLevel2() {
+        return data[LEVEL_2_UPDATER] != null && data[LEVEL_0_PREVIOUS] == null && data[LEVEL_1_INITIALISER] == null;
     }
 }

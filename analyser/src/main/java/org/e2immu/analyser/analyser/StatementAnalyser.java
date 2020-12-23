@@ -371,15 +371,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private AnalysisStatus freezeAssignmentInBlock(SharedState sharedState) {
-        if (statementAnalysis.navigationData.isLastStatementInBlock()) {
-            // last statement in block
-            statementAnalysis.variables.stream().map(Map.Entry::getValue).forEach(vic -> {
-                VariableInfo vi = vic.current();
-                if (vi.variable() instanceof LocalVariableReference && (statementAnalysis.parent == null ||
-                        !statementAnalysis.parent.variables.isSet(vi.name()))) {
-                    vic.getFirstOccurrence().freezeAssignmentsInLoop();
-                }
-            });
+        if (statementAnalysis.statement instanceof LoopStatement) {
+            statementAnalysis.localVariablesAssignedInThisLoop.freeze();
         }
         return DONE; // only in first iteration
     }
@@ -553,7 +546,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     vic.setProperty(level, VariableProperty.ASSIGNED, Math.max(Level.TRUE, assigned + 1));
 
                     if (vic.isLocalVariableInLoopDefinedOutside()) {
-                        vic.getFirstOccurrence().addAssignmentInLoop(index() + ":" + level);
+                        addToAssignmentsInLoop(variable.fullyQualifiedName());
                     }
                 }
                 // simply copy the READ value; nothing has changed here
@@ -610,6 +603,21 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return status;
     }
 
+    // add this variable name to all loop statements until definition of the local variable
+    private void addToAssignmentsInLoop(String fullyQualifiedName) {
+        StatementAnalysis sa = statementAnalysis;
+        while (sa != null) {
+            if (!sa.variables.isSet(fullyQualifiedName)) return;
+            VariableInfoContainer vic = sa.variables.get(fullyQualifiedName);
+            if (!vic.isLocalVariableInLoopDefinedOutside()) return;
+            if (sa.statement instanceof LoopStatement) {
+                if (!sa.localVariablesAssignedInThisLoop.contains(fullyQualifiedName)) {
+                    sa.localVariablesAssignedInThisLoop.add(fullyQualifiedName);
+                }
+            }
+            sa = sa.parent;
+        }
+    }
 
     private Expression bestValue(EvaluationResult.ExpressionChangeData valueChangeData, VariableInfo vi1) {
         if (valueChangeData != null && valueChangeData.value() != NO_VALUE) {
@@ -705,28 +713,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         Structure structure = statementAnalysis.statement.getStructure();
         int statementTime = sharedState.evaluationContext.getInitialStatementTime();
 
-        // part 1: Create a local variable x for(X x: Xs) {...}, or in catch(Exception e)
-        // there is NO initialisation for these
-
-        if (structure.localVariableCreation != null) {
-            LocalVariableReference lvr = new LocalVariableReference(analyserContext, structure.localVariableCreation, List.of());
-            StatementAnalysis firstStatementInBlock = firstStatementFirstBlock();
-            final int l1 = VariableInfoContainer.LEVEL_1_INITIALISER;
-            VariableInfoContainer vic = firstStatementInBlock.findForWriting(analyserContext, lvr, statementTime, false);
-            vic.prepareForValueChange(l1, firstStatementInBlock.index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
-            Map<VariableProperty, Integer> propertiesToSet = new HashMap<>();
-            if (sharedState.forwardAnalysisInfo.inCatch()) {
-                propertiesToSet.put(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
-                propertiesToSet.put(VariableProperty.READ, Level.TRUE);
-                vic.setLinkedVariables(l1, Set.of());
-            } else if (statementAnalysis.statement instanceof ForEachStatement forEach) {
-                // TODO we must set the links after step 3, before going into the block in step 4
-                vic.setLinkedVariables(l1, Set.of());
-            }
-            vic.setStateOnAssignment(l1, new BooleanConstant(statementAnalysis.primitives, true));
-            vic.setValueOnAssignment(l1, new NewObject(statementAnalysis.primitives, lvr.parameterizedType(), ObjectFlow.NO_FLOW),
-                    propertiesToSet);
-        }
 
         // for(int i=0; ...) loop, normal local variable creation
         // part 2: initialisers
@@ -758,17 +744,77 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return navigationData.blocks.get().get(0).map(sa -> sa.statementAnalysis).orElseThrow();
     }
 
-    // for(int i=0 (step2); i<3 (step4); i++ (step3))
-    // IMPROVE check if we really still must do this in the beginning rather than the end?
+    /*
+    Strategy: only for() has real updaters: for(int i=0 (step1); i<3 (step3); i++ (step2))
+    They only matter for (separate) loop analysis, not for the value that the
+    loop variable will take in the statements of the loop.
+    Every loop will start with assignments at level 2 for every local variable updated in the loop: i=i$<loop statement id>
+    In that way the variable will have an "abstract" value (that of a synthetic local variable) that can be manipulated.
+
+    In effect, a for(i=0; i<n; i++) { } will be equivalent to
+    for: level 2: i=i$0; level 3: i$0<n; ... statements ... } (the i=i+1 is ignored, we may append a statement later?)
+
+    An equivalent while loop: int i=0; while(i<n) { ...; i++; ...} becomes
+    int i=0; while: level 2: i=i$0; level 3: i$0<n level 4: { ... i=i$0+1; ... }
+
+    The special thing about creating variables at level 2 in a statement is that they are not transferred to the next statement,
+    nor are they merged into level 4
+     */
     private AnalysisStatus step2_updaters(SharedState sharedState) {
         Structure structure = statementAnalysis.statement.getStructure();
-        boolean haveDelays = false;
-        for (Expression updater : structure.updaters) {
-            EvaluationResult result = updater.evaluate(sharedState.evaluationContext, ForwardEvaluationInfo.DEFAULT);
-            AnalysisStatus status = apply(sharedState, result, statementAnalysis, VariableInfoContainer.LEVEL_2_UPDATER, STEP_2);
-            if (status == DELAYS) haveDelays = true;
+        int statementTime = sharedState.evaluationContext.getInitialStatementTime();
+        final int l2 = VariableInfoContainer.LEVEL_2_UPDATER;
+
+        // part 1: Create a local variable x for(X x: Xs) {...}, or in catch(Exception e)
+        // variable will be set to a NewObject
+
+        if (structure.localVariableCreation != null) {
+            LocalVariableReference lvr = new LocalVariableReference(analyserContext, structure.localVariableCreation, List.of());
+            VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, lvr, statementTime, false);
+            vic.prepareForValueChange(l2, statementAnalysis.index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+            Map<VariableProperty, Integer> propertiesToSet = new HashMap<>();
+            if (sharedState.forwardAnalysisInfo.inCatch()) {
+                propertiesToSet.put(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                propertiesToSet.put(VariableProperty.READ, Level.TRUE); // do not complain if variable not read
+            }
+            vic.setStateOnAssignment(l2, new BooleanConstant(statementAnalysis.primitives, true));
+            vic.setValueOnAssignment(l2, new NewObject(statementAnalysis.primitives, lvr.parameterizedType(), ObjectFlow.NO_FLOW),
+                    propertiesToSet);
+            vic.setLinkedVariables(l2, Set.of());
         }
-        return haveDelays ? DELAYS : DONE;
+
+        // part 2: all local variables assigned to in loop
+
+        if (!(statementAnalysis.statement instanceof LoopStatement)) return DONE;
+        if (!(statementAnalysis.localVariablesAssignedInThisLoop.isFrozen())) return DELAYS; // come back later
+        statementAnalysis.localVariablesAssignedInThisLoop.stream().forEach(fqn -> {
+            VariableInfoContainer vic = statementAnalysis.findForWriting(fqn); // must exist already
+            VariableInfo current = vic.current();
+
+            // assign to local variable that has been created at Level 2 in this statement
+            String newFqn = fqn + "$" + index();
+            LocalVariableReference newLvr;
+            if (!statementAnalysis.variables.isSet(newFqn)) {
+                LocalVariable localVariable = new LocalVariable(Set.of(LocalVariableModifier.FINAL), newFqn,
+                        current.variable().parameterizedType(),
+                        List.of(), myMethodAnalyser.methodInfo.typeInfo);
+                newLvr = new LocalVariableReference(analyserContext, localVariable, List.of());
+                VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD, false);
+                statementAnalysis.variables.put(newFqn, newVic);
+                newVic.prepareForValueChange(l2, statementAnalysis.index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+                Map<VariableProperty, Integer> propertiesToSet = new HashMap<>();
+                vic.setStateOnAssignment(l2, new BooleanConstant(statementAnalysis.primitives, true));
+                vic.setValueOnAssignment(l2, new NewObject(statementAnalysis.primitives, newLvr.parameterizedType(), ObjectFlow.NO_FLOW),
+                        propertiesToSet);
+                vic.setLinkedVariables(l2, Set.of(vic.current().variable()));
+            } else {
+                newLvr = (LocalVariableReference) statementAnalysis.variables.get(newFqn).current().variable();
+            }
+            vic.setStateOnAssignment(l2, new BooleanConstant(statementAnalysis.primitives, true));
+            vic.setValueOnAssignment(l2, new VariableExpression(newLvr), Map.of());
+        });
+
+        return DONE;
     }
 
 

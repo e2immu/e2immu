@@ -69,7 +69,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public final MethodLevelData methodLevelData = new MethodLevelData();
     public final StateData stateData = new StateData();
     public final FlowData flowData = new FlowData();
-
+    public final AddOnceSet<String> localVariablesAssignedInThisLoop;
     public final SetOnce<Boolean> done = new SetOnce<>(); // if not done, there have been delays
 
     public StatementAnalysis(Primitives primitives,
@@ -81,6 +81,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         this.parent = parent;
         this.inSyncBlock = inSyncBlock;
         this.methodAnalysis = Objects.requireNonNull(methodAnalysis);
+        localVariablesAssignedInThisLoop = statement instanceof LoopStatement ? new AddOnceSet<>() : null;
     }
 
     public String toString() {
@@ -307,8 +308,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfo vi = vic.current();
         VariableInfoContainer newVic;
         if (isParent && !vic.isLocalVariableInLoopDefinedOutside() && copyFrom.statement instanceof LoopStatement) {
-            newVic = new VariableInfoContainerImpl(vi.variable(), index, VariableInfoContainer.NOT_A_VARIABLE_FIELD, true,
-                    vic.getFirstOccurrence());
+            newVic = new VariableInfoContainerImpl(vi.variable(), index, VariableInfoContainer.NOT_A_VARIABLE_FIELD, true);
             // copy the properties
             vi.propertyStream().forEach(e -> newVic.setProperty(VariableInfoContainer.LEVEL_3_EVALUATION, e.getKey(), e.getValue()));
             // newVic has a new level 1 vi, without a value at this point
@@ -351,57 +351,59 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         // at best level (we can already have Level 4 vi in this statement, still we need to copy into 1
         // Basics_3; on the other hand, READ needs to be at best level
-        variables.stream().map(Map.Entry::getValue).forEach(vic -> {
-            VariableInfo viLevel1 = vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
-            VariableInfo variableInfo = vic.current();
-            boolean haveValueAt3 = vic.getCurrentLevel() == VariableInfoContainer.LEVEL_3_EVALUATION &&
-                    variableInfo.getValue() != EmptyExpression.NO_VALUE;
-            int destinationLevel = haveValueAt3 ? VariableInfoContainer.LEVEL_3_EVALUATION :
-                    VariableInfoContainer.LEVEL_1_INITIALISER;
+        variables.stream().map(Map.Entry::getValue)
+                .filter(vic -> !vic.isDefinedAtLevel2())
+                .forEach(vic -> {
+                    VariableInfo viLevel1 = vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
+                    VariableInfo variableInfo = vic.current();
+                    boolean haveValueAt3 = vic.getCurrentLevel() == VariableInfoContainer.LEVEL_3_EVALUATION &&
+                            variableInfo.getValue() != EmptyExpression.NO_VALUE;
+                    int destinationLevel = haveValueAt3 ? VariableInfoContainer.LEVEL_3_EVALUATION :
+                            VariableInfoContainer.LEVEL_1_INITIALISER;
 
-            // for all variables present higher up
-            if (copyFrom != null && copyFrom.variables.isSet(variableInfo.name())) {
-                // it is important that we copy from the same level when copying from the parent! (and not use getLatestVariableInfo)
-                VariableInfo previousVariableInfo = copyFrom.variables.get(variableInfo.name()).best(bestLevel);
-                if (previousVariableInfo != null) {
-                    vic.copy(destinationLevel, previousVariableInfo, false, !haveValueAt3);
-                }
-            }
-            // specifically for fields, introduce new data from the field analyser; only at level 1
-            if (variableInfo.variable() instanceof FieldReference fieldReference && destinationLevel == VariableInfoContainer.LEVEL_1_INITIALISER) {
-
-                if (viLevel1.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
-                    // see if we can resolve the delay
-                    FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-                    int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-                    if (effectivelyFinal == Level.TRUE) {
-                        vic.setStatementTime(VariableInfoContainer.LEVEL_1_INITIALISER, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
-                    } else if (effectivelyFinal == Level.FALSE) {
-                        vic.setStatementTime(VariableInfoContainer.LEVEL_1_INITIALISER, flowData.getInitialTime());
-                    }
-                }
-
-                int read = variableInfo.getProperty(READ);
-                if (read >= Level.TRUE && noEarlierAccess(variableInfo.variable(), copyFrom)) {
-                    // this is the first statement in the method where this field occurs
-                    ExpressionAndLinkedVariables initialValue = initialValueOfField(analyserContext, fieldReference);
-                    Map<VariableProperty, Integer> map = propertyMap(analyserContext, fieldReference.fieldInfo);
-                    if (!viLevel1.valueIsSet() && !initialValue.expression.isUnknown()) {
-                        vic.setInitialValueFromAnalyser(initialValue.expression, new BooleanConstant(primitives, true), map);
-                    } else {
-                        map.forEach((k, v) -> vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, k, v, false));
-                    }
-                    if (!viLevel1.linkedVariablesIsSet()) {
-                        if (initialValue.linkedVariables != null) {
-                            vic.setLinkedVariables(VariableInfoContainer.LEVEL_1_INITIALISER, initialValue.linkedVariables);
+                    // for all variables present higher up
+                    if (copyFrom != null && copyFrom.variables.isSet(variableInfo.name())) {
+                        // it is important that we copy from the same level when copying from the parent! (and not use getLatestVariableInfo)
+                        VariableInfo previousVariableInfo = copyFrom.variables.get(variableInfo.name()).best(bestLevel);
+                        if (previousVariableInfo != null) {
+                            vic.copy(destinationLevel, previousVariableInfo, false, !haveValueAt3);
                         }
                     }
-                }
-            }
-        });
+                    // specifically for fields, introduce new data from the field analyser; only at level 1
+                    if (variableInfo.variable() instanceof FieldReference fieldReference && destinationLevel == VariableInfoContainer.LEVEL_1_INITIALISER) {
+
+                        if (viLevel1.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
+                            // see if we can resolve the delay
+                            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+                            int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+                            if (effectivelyFinal == Level.TRUE) {
+                                vic.setStatementTime(VariableInfoContainer.LEVEL_1_INITIALISER, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+                            } else if (effectivelyFinal == Level.FALSE) {
+                                vic.setStatementTime(VariableInfoContainer.LEVEL_1_INITIALISER, flowData.getInitialTime());
+                            }
+                        }
+
+                        int read = variableInfo.getProperty(READ);
+                        if (read >= Level.TRUE && noEarlierAccess(variableInfo.variable(), copyFrom)) {
+                            // this is the first statement in the method where this field occurs
+                            ExpressionAndLinkedVariables initialValue = initialValueOfField(analyserContext, fieldReference);
+                            Map<VariableProperty, Integer> map = propertyMap(analyserContext, fieldReference.fieldInfo);
+                            if (!viLevel1.valueIsSet() && !initialValue.expression.isUnknown()) {
+                                vic.setInitialValueFromAnalyser(initialValue.expression, new BooleanConstant(primitives, true), map);
+                            } else {
+                                map.forEach((k, v) -> vic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, k, v, false));
+                            }
+                            if (!viLevel1.linkedVariablesIsSet()) {
+                                if (initialValue.linkedVariables != null) {
+                                    vic.setLinkedVariables(VariableInfoContainer.LEVEL_1_INITIALISER, initialValue.linkedVariables);
+                                }
+                            }
+                        }
+                    }
+                });
 
         if (copyFrom != null) {
-            copyFrom.variables.stream().forEach(e -> {
+            copyFrom.variables.stream().filter(vic -> !vic.getValue().isDefinedAtLevel2()).forEach(e -> {
                 String fqn = e.getKey();
                 VariableInfoContainer vicFrom = e.getValue();
                 Variable variable = vicFrom.current().variable();
@@ -433,7 +435,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // some blocks are guaranteed to be executed, others are only executed conditionally.
         Stream<Map.Entry<String, VariableInfoContainer>> variableStream = makeVariableStream(lastStatements);
         Set<String> merged = new HashSet<>();
-        variableStream.forEach(e -> {
+        variableStream.filter(vic -> !vic.getValue().isDefinedAtLevel2()).forEach(e -> {
             String fqn = e.getKey();
             VariableInfoContainer vic = e.getValue();
 
@@ -489,7 +491,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         int statementTimeForVariable = statementTimeForVariable(analyserContext, variable, statementTime);
         String assignmentIndex = assignmentIndexAtCreation(variable, isNotAssignmentTarget);
-        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, assignmentIndex, statementTimeForVariable, false, null);
+        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, assignmentIndex, statementTimeForVariable, false);
 
         variables.put(variable.fullyQualifiedName(), vic);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", variable.fullyQualifiedName());
@@ -716,46 +718,58 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (vi.variable() instanceof FieldReference fieldReference && vi.getStatementTime() >= 0) {
                 return variableInfoOfFieldWhenReading(analyserContext, fieldReference, vi, statementTime);
             }
-            if (vic.isLocalVariableInLoopDefinedOutside()) {
-                return variableInfoOfVariableInLoopWhenReading(analyserContext, vic, vi);
+            if (vic.isLocalVariableInLoopDefinedOutside() && !relevantLocalVariablesAssignedInThisLoopAreFrozen()) {
+                return new VariableInfoImpl(variable); // no value, no state
             }
         } // else we need to go to the variable itself
         return vi;
     }
 
-    private VariableInfo variableInfoOfVariableInLoopWhenReading(AnalyserContext analyserContext,
-                                                                 VariableInfoContainer vic,
-                                                                 VariableInfo vi) {
-        if (!vic.getFirstOccurrence().assignmentsInLoopAreFrozen()) return vi;
-        String[] assignmentsInLoop = vic.getFirstOccurrence().streamAssignmentsInLoop()
-                .filter(this::inSameBlock).toArray(String[]::new);
-        LocalVariableReference variableInLoop = (LocalVariableReference) vi.variable();
-        if (assignmentsInLoop.length > 0) {
-            Arrays.sort(assignmentsInLoop, Comparator.comparingInt(String::length));
-            String latestAssignment = assignmentsInLoop[assignmentsInLoop.length - 1];
-            String localVariableFqn = variableInLoop.fullyQualifiedName() + "$" + latestAssignment;
-
-            // the statement time of the field indicates the time of the latest assignment
-            LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), localVariableFqn,
-                    variableInLoop.parameterizedType(), List.of(), methodAnalysis.getMethodInfo().typeInfo);
-            LocalVariableReference lvr = new LocalVariableReference(analyserContext, lv, List.of());
-            VariableInfoContainer lvrVic;
-            if (variables.isSet(lvr.fullyQualifiedName())) {
-                lvrVic = variables.get(lvr.fullyQualifiedName());
-            } else {
-                lvrVic = createVariable(analyserContext, lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD, false);
-                Expression initialValue = new NewObject(primitives, variableInLoop.parameterizedType(), ObjectFlow.NO_FLOW);
-                Map<VariableProperty, Integer> map = new HashMap<>(vi.getProperties());
-                map.put(ASSIGNED, 1);
-                map.put(READ, 2);
-                lvrVic.setInitialValueFromAnalyser(initialValue, vi.getStateOnAssignment(), map);
-                lvrVic.setLinkedVariablesFromAnalyser(Set.of(variableInLoop)); // linked to the reference
+    private boolean relevantLocalVariablesAssignedInThisLoopAreFrozen() {
+        StatementAnalysis sa = this;
+        while (sa != null) {
+            if (sa.statement instanceof LoopStatement) {
+                return sa.localVariablesAssignedInThisLoop.isFrozen();
             }
-            return lvrVic.current();
+            sa = sa.parent;
         }
-        return vi;
+        throw new UnsupportedOperationException();
     }
 
+    /* completely new code in Level 2
+        private VariableInfo variableInfoOfVariableInLoopWhenReading(AnalyserContext analyserContext,
+                                                                     VariableInfoContainer vic,
+                                                                     VariableInfo vi) {
+            if (!vic.getFirstOccurrence().assignmentsInLoopAreFrozen()) return vi;
+            String[] assignmentsInLoop = vic.getFirstOccurrence().streamAssignmentsInLoop()
+                    .filter(this::inSameBlock).toArray(String[]::new);
+            LocalVariableReference variableInLoop = (LocalVariableReference) vi.variable();
+            if (assignmentsInLoop.length > 0) {
+                Arrays.sort(assignmentsInLoop, Comparator.comparingInt(String::length));
+                String latestAssignment = assignmentsInLoop[assignmentsInLoop.length - 1];
+                String localVariableFqn = variableInLoop.fullyQualifiedName() + "$" + latestAssignment;
+
+                // the statement time of the field indicates the time of the latest assignment
+                LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), localVariableFqn,
+                        variableInLoop.parameterizedType(), List.of(), methodAnalysis.getMethodInfo().typeInfo);
+                LocalVariableReference lvr = new LocalVariableReference(analyserContext, lv, List.of());
+                VariableInfoContainer lvrVic;
+                if (variables.isSet(lvr.fullyQualifiedName())) {
+                    lvrVic = variables.get(lvr.fullyQualifiedName());
+                } else {
+                    lvrVic = createVariable(analyserContext, lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD, false);
+                    Expression initialValue = new NewObject(primitives, variableInLoop.parameterizedType(), ObjectFlow.NO_FLOW);
+                    Map<VariableProperty, Integer> map = new HashMap<>(vi.getProperties());
+                    map.put(ASSIGNED, 1);
+                    map.put(READ, 2);
+                    lvrVic.setInitialValueFromAnalyser(initialValue, vi.getStateOnAssignment(), map);
+                    lvrVic.setLinkedVariablesFromAnalyser(Set.of(variableInLoop)); // linked to the reference
+                }
+                return lvrVic.current();
+            }
+            return vi;
+        }
+    */
     private boolean inSameBlock(String assignmentId) {
         if (parent == null) return true;// top level
         int lastDot = index.lastIndexOf('.');
