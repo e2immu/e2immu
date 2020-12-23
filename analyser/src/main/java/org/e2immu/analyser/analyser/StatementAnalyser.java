@@ -529,13 +529,23 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
                 vic.prepareForValueChange(level, index(), statementTimeForVariable);
 
-                // we explicitly check for NO_VALUE, because "<no return value>" is legal!
-                if (value != NO_VALUE) {
-                    log(ANALYSER, "Write value {} to variable {}", value, variable.fullyQualifiedName());
-                    Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(value);
-                    vic.setValueOnAssignment(level, value, propertiesToSet);
+                Expression stateOnAssignment = changeData.stateOnAssignment();
+                if (stateOnAssignment != NO_VALUE) {
+                    vic.setStateOnAssignment(level, stateOnAssignment);
+                    // there cannot be a value set when there is no known state
+
+                    // we explicitly check for NO_VALUE, because "<no return value>" is legal!
+                    if (value != NO_VALUE) {
+                        log(ANALYSER, "Write value {} to variable {}", value, variable.fullyQualifiedName());
+                        Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(value);
+                        vic.setValueOnAssignment(level, value, propertiesToSet);
+                    } else {
+                        log(DELAYED, "Apply of step {} in {}, {} is delayed because of unknown value for {}",
+                                step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
+                        status = DELAYS;
+                    }
                 } else {
-                    log(DELAYED, "Apply of step {} in {}, {} is delayed because of unknown value for {}",
+                    log(DELAYED, "Apply of step {} in {}, {} is delayed because of unknown assignment state for {}",
                             step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
                     status = DELAYS;
                 }
@@ -548,10 +558,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 }
                 // simply copy the READ value; nothing has changed here
                 vic.setProperty(level, VariableProperty.READ, read);
-                Expression stateOnAssignment = changeData.stateOnAssignment();
-                if (stateOnAssignment != NO_VALUE) {
-                    vic.setStateOnAssignment(level, stateOnAssignment);
-                }
+
 
                 if (changeData.linkedVariables() == EvaluationResult.LINKED_VARIABLE_DELAY) {
                     log(DELAYED, "Apply of step {} in {}, {} is delayed because of linked variables of {}",
@@ -716,6 +723,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 // TODO we must set the links after step 3, before going into the block in step 4
                 vic.setLinkedVariables(l1, Set.of());
             }
+            vic.setStateOnAssignment(l1, new BooleanConstant(statementAnalysis.primitives, true));
             vic.setValueOnAssignment(l1, new NewObject(statementAnalysis.primitives, lvr.parameterizedType(), ObjectFlow.NO_FLOW),
                     propertiesToSet);
         }
@@ -842,8 +850,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      * For the return d statement, we should simply return d.
      */
     private void step3_ReturnConditionally(SharedState sharedState, Expression value) {
+        final int l3 = VariableInfoContainer.LEVEL_3_EVALUATION;
         ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
-        Expression currentRV = statementAnalysis.findOrThrow(returnVariable, VariableInfoContainer.LEVEL_3_EVALUATION).getValue();
+        Expression currentRV = statementAnalysis.findOrThrow(returnVariable, l3).getValue();
         InlineConditional inlineConditional;
 
         Expression newInline;
@@ -860,10 +869,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         } else throw new UnsupportedOperationException("? " + currentRV.getClass());
 
         VariableInfoContainer vic = statementAnalysis.findForWriting(returnVariable);
-        vic.prepareForValueChange(VariableInfoContainer.LEVEL_3_EVALUATION, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+        vic.prepareForValueChange(l3, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
         Map<VariableProperty, Integer> properties = sharedState.evaluationContext.getValueProperties(newInline);
-        vic.setValueOnAssignment(VariableInfoContainer.LEVEL_3_EVALUATION, newInline, properties);
-        vic.setLinkedVariables(VariableInfoContainer.LEVEL_3_EVALUATION, newInline.linkedVariables(sharedState.evaluationContext));
+        vic.setStateOnAssignment(l3, localConditionManager.state);
+        vic.setValueOnAssignment(l3, newInline, properties);
+        vic.setLinkedVariables(l3, newInline.linkedVariables(sharedState.evaluationContext));
     }
 
     /**
@@ -1069,8 +1079,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
                 statementAnalysis.flowData.setTimeAfterSubBlocks(maxTime, index());
             }
-            // need timeAfterSubBlocks set already
-            statementAnalysis.copyBackLocalCopies(evaluationContext, lastStatements, atLeastOneBlockExecuted, maxTime);
 
             // compute the escape situation of the sub-blocks
             Expression addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
@@ -1078,6 +1086,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 localConditionManager = localConditionManager.addToState(evaluationContext, addToStateAfterStatement);
                 log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", addToStateAfterStatement);
             }
+
+            // need timeAfterSubBlocks set already
+            statementAnalysis.copyBackLocalCopies(evaluationContext, lastStatements, atLeastOneBlockExecuted, maxTime,
+                    localConditionManager.state);
         } else {
             int maxTime = statementAnalysis.flowData.getTimeAfterExecution();
             if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
@@ -1397,6 +1409,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return statementAnalysis.findOrCreateL1(analyserContext, variable, statementTime, isNotAssignmentTarget);
         }
 
+        private VariableInfo findOrThrow(Variable variable) {
+            if (closure != null && isNotMine(variable)) {
+                return ((EvaluationContextImpl) closure).findOrThrow(variable);
+            }
+            return statementAnalysis.findOrThrow(variable);
+        }
+
         private boolean isNotMine(Variable variable) {
             return getCurrentType() != variable.getOwningType();
         }
@@ -1408,6 +1427,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // important! do not use variable in the next statement, but vi.variable()
             // we could have redirected from a variable field to a local variable copy
             return value instanceof NewObject ? new VariableExpression(vi.variable(), vi.getObjectFlow()) : value;
+        }
+
+        public Expression currentStateOnAssignment(Variable variable) {
+            return findOrThrow(variable).getStateOnAssignment();
         }
 
         @Override

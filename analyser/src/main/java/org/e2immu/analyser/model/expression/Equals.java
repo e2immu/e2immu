@@ -24,8 +24,9 @@ import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.SetUtil;
 
-import java.util.Map;
+import java.util.*;
 
 public class Equals extends BinaryOperator {
 
@@ -56,8 +57,56 @@ public class Equals extends BinaryOperator {
         if (l instanceof ConstantExpression<?> lc && r instanceof ConstantExpression<?> rc) {
             return ConstantExpression.equalsExpression(primitives, lc, rc);
         }
-        return l.compareTo(r) < 0 ? new Equals(primitives, l, r, objectFlow) :
-                new Equals(primitives, r, l, objectFlow);
+        Set<Expression> leftTerms = terms(l);
+        Set<Expression> rightTerms = terms(r);
+        CommonTerms ct = computeCommonTerms(leftTerms, rightTerms);
+
+        if (ct.leftTerms.isEmpty() && ct.rightTerms.isEmpty()) return new BooleanConstant(primitives, true, objectFlow);
+        if (ct.leftTerms.isEmpty() || ct.rightTerms.isEmpty())
+            return new BooleanConstant(primitives, false, objectFlow);
+
+        Expression newLeft = sum(evaluationContext, ct.leftTerms);
+        Expression newRight = sum(evaluationContext, ct.rightTerms);
+
+        if (ct.common.isEmpty()) {
+            return newLeft.compareTo(newRight) < 0 ? new Equals(primitives, newLeft, newRight, objectFlow) :
+                    new Equals(primitives, newRight, newLeft, objectFlow);
+        }
+        // recurse
+        return Equals.equals(evaluationContext, newLeft, newRight, objectFlow);
+    }
+
+
+    private static Expression sum(EvaluationContext evaluationContext, List<Expression> terms) {
+        assert terms.size() > 0;
+        if (terms.size() == 1) return terms.get(0);
+        Collections.sort(terms);
+        return terms.stream().reduce((t1, t2) -> Sum.sum(evaluationContext, t1, t2, ObjectFlow.NO_FLOW)).orElseThrow();
+    }
+
+    private static CommonTerms computeCommonTerms(Set<Expression> leftTerms, Set<Expression> rightTerms) {
+        List<Expression> common = new ArrayList<>(Math.min(leftTerms.size(), rightTerms.size()));
+        List<Expression> left = new ArrayList<>(leftTerms.size());
+        Set<Expression> right = new HashSet<>(rightTerms); // make the copy
+        for (Expression expression : leftTerms) {
+            if (right.contains(expression)) {
+                common.add(expression);
+                right.remove(expression);
+            } else {
+                left.add(expression);
+            }
+        }
+        return new CommonTerms(common, left, new ArrayList<>(right));
+    }
+
+    public record CommonTerms(List<Expression> common, List<Expression> leftTerms, List<Expression> rightTerms) {
+    }
+
+    private static Set<Expression> terms(Expression e) {
+        if (e instanceof Sum sum) {
+            return SetUtil.immutableUnion(terms(sum.lhs), terms(sum.rhs));
+        }
+        return Set.of(e);
     }
 
     @Override

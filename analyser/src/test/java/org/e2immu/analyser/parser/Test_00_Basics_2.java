@@ -23,7 +23,6 @@ import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.NewObject;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,6 +40,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
     private static final String COLLECTION = TYPE + ".add(Collection<String>):0:collection";
     private static final String METHOD_VALUE_ADD = "collection.add(org.e2immu.analyser.testexample.Basics_2.string$0)";
     private static final String RETURN_GET_STRING = TYPE + ".getString()";
+    private static final String ADD = TYPE + ".add(Collection<String>)";
 
     public Test_00_Basics_2() {
         super(true);
@@ -72,7 +72,11 @@ public class Test_00_Basics_2 extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if (COLLECTION.equals(d.variableName()) && "add".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-            Assert.assertTrue("Class is " + d.currentValue().getClass(), d.currentValue() instanceof NewObject);
+            Assert.assertEquals("true", d.variableInfo().getStateOnAssignment().toString());
+            String expect = d.iteration() == 0 ?
+                    "instance type Collection<String>" :
+                    "instance type Collection<String>/*this.contains(org.e2immu.analyser.testexample.Basics_2.string$0)*/";
+            Assert.assertEquals(expect, d.currentValue().toString());
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
         }
@@ -159,10 +163,17 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, p0.parameterAnalysis.get().getProperty(VariableProperty.NOT_NULL));
     };
 
+    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+        if (ADD.equals(d.methodInfo().fullyQualifiedName)) {
+            Assert.assertTrue(d.state().isBoolValueTrue());
+        }
+    };
+
     @Test
     public void test() throws IOException {
         testClass("Basics_2", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)

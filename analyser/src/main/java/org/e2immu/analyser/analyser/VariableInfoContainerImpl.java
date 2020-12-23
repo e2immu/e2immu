@@ -206,34 +206,19 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
         if (value != NO_VALUE) {
+            assert variableInfo.stateOnAssignmentIsSet();
             variableInfo.setValue(value);
         }
         propertiesToSet.forEach(variableInfo::setProperty);
     }
-
-    @Override
-    public void setValueAndStateOnAssignment(int level, Expression value, Expression state, Map<VariableProperty, Integer> propertiesToSet) {
-        ensureNotFrozen();
-        Objects.requireNonNull(value);
-        VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        if (value != NO_VALUE) {
-            variableInfo.setValue(value);
-        }
-        if (state != NO_VALUE && (!variableInfo.stateOnAssignmentIsSet() ||
-                !state.equals(variableInfo.stateOnAssignment.get()))) {
-            variableInfo.stateOnAssignment.set(state);
-        }
-        propertiesToSet.forEach(variableInfo::setProperty);
-    }
-
 
     @Override
     public void setStateOnAssignment(int level, Expression state) {
         ensureNotFrozen();
         Objects.requireNonNull(state);
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        if (state != NO_VALUE && (!variableInfo.stateOnAssignment.isSet() || !state.equals(variableInfo.stateOnAssignment.get()))) {
-            variableInfo.stateOnAssignment.set(state);
+        if (state != NO_VALUE && (!variableInfo.stateOnAssignmentIsSet() || !state.equals(variableInfo.getStateOnAssignment()))) {
+            variableInfo.setStateOnAssignment(state);
         }
     }
 
@@ -256,40 +241,34 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void setInitialValueFromAnalyser(Expression value, Map<VariableProperty, Integer> propertiesToSet) {
-        internalSetValue(LEVEL_1_INITIALISER, value);
+    public void setInitialValueFromAnalyser(Expression value, Expression state, Map<VariableProperty, Integer> propertiesToSet) {
+        internalSetValue(LEVEL_1_INITIALISER, value, state);
         propertiesToSet.forEach((vp, i) -> setProperty(LEVEL_1_INITIALISER, vp, i));
     }
 
-    private void internalSetValue(int level, Expression value) {
-        ensureNotFrozen();
-
+    private void internalSetValue(int level, Expression value, Expression state) {
+        internalSetStateOnAssignment(level, state);
         Objects.requireNonNull(value);
-        if (value == NO_VALUE) {
-            throw new IllegalArgumentException("Value should not be NO_VALUE");
-        }
+        assert value != NO_VALUE;
         int writeLevel = findLevelForWriting(level);
         VariableInfoImpl variableInfo = getAndCast(writeLevel);
         if (!variableInfo.valueIsSet() || !value.equals(variableInfo.getValue())) {
             variableInfo.setValue(value);
-            liftCurrentLevel(writeLevel);
         }
     }
 
     private void internalSetStateOnAssignment(int level, Expression state) {
         ensureNotFrozen();
-
         Objects.requireNonNull(state);
-        if (state == NO_VALUE) {
-            throw new IllegalArgumentException("State should not be NO_VALUE");
-        }
+        assert state != NO_VALUE;
         int writeLevel = findLevelForWriting(level);
         VariableInfoImpl variableInfo = getAndCast(writeLevel);
-        if (!variableInfo.stateOnAssignment.isSet() || !state.equals(variableInfo.stateOnAssignment.get())) {
-            variableInfo.stateOnAssignment.set(state);
+        if (!variableInfo.stateOnAssignmentIsSet() || !state.equals(variableInfo.getStateOnAssignment())) {
+            variableInfo.setStateOnAssignment(state);
             liftCurrentLevel(writeLevel);
         }
     }
+
 
     private int findLevelForWriting(int level) {
         if (level <= 0 || level >= LEVELS) throw new IllegalArgumentException();
@@ -378,12 +357,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public void copy(int level, VariableInfo previousVariableInfo, boolean failWhenTryingToWriteALowerValue, boolean copyValue) {
         previousVariableInfo.propertyStream().forEach(e -> setProperty(level, e.getKey(), e.getValue(), failWhenTryingToWriteALowerValue));
-
-        if (copyValue && previousVariableInfo.valueIsSet()) {
-            internalSetValue(level, previousVariableInfo.getValue());
-        }
-        if (copyValue && previousVariableInfo.stateOnAssignmentIsSet()) {
-            internalSetStateOnAssignment(level, previousVariableInfo.getStateOnAssignment());
+        if (copyValue) {
+            if (previousVariableInfo.valueIsSet()) {
+                internalSetValue(level, previousVariableInfo.getValue(), previousVariableInfo.getStateOnAssignment());
+            } else if (previousVariableInfo.stateOnAssignmentIsSet()) {
+                internalSetStateOnAssignment(level, previousVariableInfo.getStateOnAssignment());
+            }
         }
         if (previousVariableInfo.linkedVariablesIsSet()) {
             internalSetLinkedVariables(level, previousVariableInfo.getLinkedVariables());
@@ -396,13 +375,14 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public void merge(int level,
                       EvaluationContext evaluationContext,
+                      Expression state,
                       boolean existingValuesWillBeOverwritten,
                       List<VariableInfo> merge) {
         Objects.requireNonNull(merge);
         Objects.requireNonNull(evaluationContext);
 
         VariableInfoImpl existing = (VariableInfoImpl) best(level - 1);
-        VariableInfoImpl merged = existing.merge(evaluationContext, (VariableInfoImpl) data[level], existingValuesWillBeOverwritten, merge);
+        VariableInfoImpl merged = existing.merge(evaluationContext, state, (VariableInfoImpl) data[level], existingValuesWillBeOverwritten, merge);
         if (merged != existing) {
             data[level] = merged;
             currentLevel = level;

@@ -31,6 +31,11 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) {
 
 
+    public Expression oneOverwritten(Expression currentValue, VariableInfo variableInfo) {
+        if (variableInfo.getStateOnAssignment().isBoolValueTrue()) return variableInfo.getValue();
+        return inlineConditional(variableInfo.getStateOnAssignment(), variableInfo.getValue(), currentValue);
+    }
+
     public Expression oneNotOverwritten(Expression a, VariableInfo vi) {
         Expression b = vi.getValue();
         Expression x = vi.getStateOnAssignment();
@@ -44,7 +49,11 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     }
 
     // see ConditionalChecks, 5 and 6 for the more elaborate examples
-    
+
+    // FIXME the first if statement gets in the way of the 2nd in the 2nd part
+    // s1 = p>2; s2 = p <=2; while the values already have the state baked in
+    // clash between 1 state across different blocks, or a state per level
+
     public Expression twoOverwritten(VariableInfo vi1, VariableInfo vi2) {
         Expression s1 = vi1.getStateOnAssignment();
         Expression s2 = vi2.getStateOnAssignment();
@@ -165,5 +174,4 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     public Expression noConclusion() {
         return new NewObject(evaluationContext.getPrimitives(), vi.variable().parameterizedType(), vi.getObjectFlow());
     }
-
 }

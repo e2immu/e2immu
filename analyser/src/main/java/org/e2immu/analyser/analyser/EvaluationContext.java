@@ -83,6 +83,11 @@ public interface EvaluationContext {
         return EmptyExpression.NO_VALUE;
     }
 
+    // can only be called when variable is guaranteed to exist (uses findOrThrow rather than findOrCreate)
+    default Expression currentStateOnAssignment(Variable variable) {
+        throw new UnsupportedOperationException();
+    }
+
     default AnalyserContext getAnalyserContext() {
         throw new UnsupportedOperationException();
     }

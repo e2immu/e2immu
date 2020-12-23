@@ -106,8 +106,6 @@ public interface VariableInfoContainer {
     // writing operations
     void setValueOnAssignment(int level, Expression value, Map<VariableProperty, Integer> propertiesToSet);
 
-    void setValueAndStateOnAssignment(int level, Expression value, Expression state, Map<VariableProperty, Integer> propertiesToSet);
-
     void setStateOnAssignment(int level, Expression state);
 
     /**
@@ -116,7 +114,7 @@ public interface VariableInfoContainer {
      *
      * @param initialValue the value coming from the field analyser
      */
-    void setInitialValueFromAnalyser(Expression initialValue, Map<VariableProperty, Integer> propertiesToSet);
+    void setInitialValueFromAnalyser(Expression initialValue, Expression state, Map<VariableProperty, Integer> propertiesToSet);
 
     void setProperty(int level, VariableProperty variableProperty, int value);
 
@@ -154,7 +152,9 @@ public interface VariableInfoContainer {
      */
     void markRead(int level);
 
-    void merge(int level, EvaluationContext evaluationContext,
+    void merge(int level,
+               EvaluationContext evaluationContext,
+               Expression state,
                boolean existingValuesWillBeOverwritten,
                List<VariableInfo> merge);
 

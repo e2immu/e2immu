@@ -19,6 +19,7 @@ package org.e2immu.analyser.model.value;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.Equals;
+import org.e2immu.analyser.model.expression.Sum;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -35,6 +36,30 @@ public class TestEquals extends CommonAbstractValue {
         Expression int3 = newInt(3);
         Expression int5 = newInt(5);
         Assert.assertEquals("false", Equals.equals(minimalEvaluationContext, int3, int5, ObjectFlow.NO_FLOW).toString());
+    }
 
+    @Test
+    public void testCommonTerms() {
+        Expression int3 = newInt(3);
+        Expression int5 = newInt(5);
+        Expression left = Sum.sum(minimalEvaluationContext, int3, i, ObjectFlow.NO_FLOW);
+        Expression right = Sum.sum(minimalEvaluationContext, int5, i, ObjectFlow.NO_FLOW);
+        Assert.assertEquals("false", Equals.equals(minimalEvaluationContext, left, right, ObjectFlow.NO_FLOW).toString());
+    }
+
+    @Test
+    public void testCommonTerms2() {
+        Expression int5 = newInt(5);
+        Expression left = Sum.sum(minimalEvaluationContext, i, int5, ObjectFlow.NO_FLOW);
+        Expression right = Sum.sum(minimalEvaluationContext, int5, i, ObjectFlow.NO_FLOW);
+        Assert.assertEquals("true", Equals.equals(minimalEvaluationContext, left, right, ObjectFlow.NO_FLOW).toString());
+    }
+
+    @Test
+    public void testCommonTerms3() {
+        Expression int5 = newInt(5);
+        Expression left = Sum.sum(minimalEvaluationContext, i, int5, ObjectFlow.NO_FLOW);
+        Expression right = i;
+        Assert.assertEquals("false", Equals.equals(minimalEvaluationContext, left, right, ObjectFlow.NO_FLOW).toString());
     }
 }

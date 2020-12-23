@@ -19,6 +19,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.LocalVariable;
+import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.IntConstant;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -56,6 +57,8 @@ public abstract class CommonVariableInfo {
     protected final IntConstant two = new IntConstant(primitives, 2, ObjectFlow.NO_FLOW);
     protected final IntConstant three = new IntConstant(primitives, 3, ObjectFlow.NO_FLOW);
     protected final IntConstant four = new IntConstant(primitives, 4, ObjectFlow.NO_FLOW);
+
+    protected final BooleanConstant TRUE = new BooleanConstant(primitives, true);
 
     protected final AnalyserContext analyserContext = new AnalyserContext() {
     };

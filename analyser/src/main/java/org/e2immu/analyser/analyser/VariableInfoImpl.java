@@ -44,7 +44,7 @@ class VariableInfoImpl implements VariableInfo {
 
     private final SetOnce<Expression> value = new SetOnce<>(); // value from step 3 (initialisers)
 
-    public final SetOnce<Expression> stateOnAssignment = new SetOnce<>();
+    private final SetOnce<Expression> stateOnAssignment = new SetOnce<>();
 
     public final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
     public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
@@ -64,6 +64,7 @@ class VariableInfoImpl implements VariableInfo {
         if (statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
             this.statementTime.set(statementTime);
         }
+        assert !value.isSet() || stateOnAssignment.isSet() : "Have state " + getStateOnAssignment() + ", value " + getValue();
     }
 
     VariableInfoImpl(VariableInfoImpl previous) {
@@ -73,6 +74,7 @@ class VariableInfoImpl implements VariableInfo {
         this.properties.copyFrom(previous.properties);
         this.value.copy(previous.value);
         this.stateOnAssignment.copy(previous.stateOnAssignment);
+        assert !value.isSet() || stateOnAssignment.isSet() : "Have state " + getStateOnAssignment() + ", value " + getValue();
         this.linkedVariables.copy(previous.linkedVariables);
         this.objectFlow.copy(previous.objectFlow);
         this.statementTime.copy(previous.statementTime);
@@ -143,6 +145,11 @@ class VariableInfoImpl implements VariableInfo {
         return sb.append("]").toString();
     }
 
+    public void setStateOnAssignment(Expression state) {
+        assert state != NO_VALUE;
+        stateOnAssignment.set(state);
+    }
+
     public boolean setProperty(VariableProperty variableProperty, int value) {
         Integer prev = properties.put(variableProperty, value);
         return prev == null || prev < value;
@@ -209,8 +216,11 @@ class VariableInfoImpl implements VariableInfo {
      * As soon as there is a need for overwriting the value or the state, either the provided newObject must be used
      * (where we assume we can write) or a completely new object must be returned. This new object then starts as a copy
      * of this object.
+     * <p>
+     * This method takes the state of assignment into account: a delay arises when one of the states has been delayed.
      */
     public VariableInfoImpl merge(EvaluationContext evaluationContext,
+                                  Expression state,
                                   VariableInfoImpl newObject,
                                   boolean existingValuesWillBeOverwritten,
                                   List<VariableInfo> merge) {
@@ -225,14 +235,15 @@ class VariableInfoImpl implements VariableInfo {
         if (newObject == null) {
             VariableInfoImpl newVi = new VariableInfoImpl(variable, assignmentId, mergedStatementTime);
             if (mergedValue != NO_VALUE) {
+                newVi.setStateOnAssignment(state);
                 newVi.setValue(mergedValue);
-                newVi.stateOnAssignment.copy(stateOnAssignment);
             }
             return newVi;
         }
         assert assignmentId.equals(newObject.assignmentId);
 
         if (mergedValue != NO_VALUE && (!newObject.value.isSet() || !newObject.value.get().equals(mergedValue))) {
+            newObject.setStateOnAssignment(state);
             newObject.setValue(mergedValue); // will cause severe problems if the value already there is different :-)
             assert newObject.statementTime.getOrElse(VariableInfoContainer.VARIABLE_FIELD_DELAY) == mergedStatementTime;
         }
@@ -258,6 +269,7 @@ class VariableInfoImpl implements VariableInfo {
             throw new UnsupportedOperationException("Cannot redirect to myself");
         }
         if (value == NO_VALUE) throw new UnsupportedOperationException("Cannot set NO_VALUE");
+        assert this.stateOnAssignment.isSet();
         if (!this.value.isSet() || !this.value.get().equals(value)) { // crash if different, keep same
             this.value.set(value);
         }
@@ -292,7 +304,7 @@ class VariableInfoImpl implements VariableInfo {
         if (!existingValuesWillBeOverwritten) {
             if (currentValue.isUnknown()) return currentValue;
         }
-        boolean haveANoValue = merge.stream().anyMatch(v -> !v.valueIsSet());
+        boolean haveANoValue = merge.stream().anyMatch(v -> !v.valueIsSet() || !v.stateOnAssignmentIsSet());
         if (haveANoValue) return NO_VALUE;
 
         if (merge.isEmpty()) {
@@ -306,7 +318,9 @@ class VariableInfoImpl implements VariableInfo {
         MergeHelper mergeHelper = new MergeHelper(evaluationContext, this);
 
         if (merge.size() == 1) {
-            if (existingValuesWillBeOverwritten) return merge.get(0).getValue();
+            if (existingValuesWillBeOverwritten) {
+                return mergeHelper.oneOverwritten(currentValue, merge.get(0));
+            }
             Expression result = mergeHelper.oneNotOverwritten(currentValue, merge.get(0));
             if (result != null) return result;
         }

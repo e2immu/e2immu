@@ -103,7 +103,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 // after if(a&&b) return 1
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("a&&b?1:<return value>", d.currentValue().toString());
-                    Assert.assertEquals("true", d.variableInfo().getStateOnAssignment().toString());
+                    Assert.assertEquals("!a||!b", d.variableInfo().getStateOnAssignment().toString());
                 }
                 if ("1.0.0".equals(d.statementId())) {
                     Assert.assertEquals("2", d.currentValue().toString());
@@ -111,19 +111,20 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 // after if (!a && !b) return 2;
                 if ("1".equals(d.statementId())) {
-                    Assert.assertEquals("true", d.variableInfo().getStateOnAssignment().toString());
+                    Assert.assertEquals("(a||b)&&(!a||!b)", d.variableInfo().getStateOnAssignment().toString());
                     // we do NOT expect a regression to the ReturnVariable
                     Assert.assertEquals("!a&&!b?2:a&&b?1:<return value>",
                             d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    Assert.assertEquals("true", d.variableInfo().getStateOnAssignment().toString());
+                    Assert.assertEquals("!a&&b", d.variableInfo().getStateOnAssignment().toString());
                     // we do NOT expect a regression to the ReturnVariable
                     Assert.assertEquals("a&&!b?3:!a&&!b?2:a&&b?1:<return value>",
                             d.currentValue().toString());
                 }
                 if ("3".equals(d.statementId())) {
-                    Assert.assertEquals("true", d.variableInfo().getStateOnAssignment().toString());
+                    // nothing is possible anymore
+                    Assert.assertEquals("false", d.variableInfo().getStateOnAssignment().toString());
                     // we do NOT expect a regression to the ReturnVariable
                     Assert.assertEquals(RETURN_1_VALUE, d.currentValue().toString());
                 }
