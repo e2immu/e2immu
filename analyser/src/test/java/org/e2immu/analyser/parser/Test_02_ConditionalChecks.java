@@ -25,9 +25,9 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         final String RETURN_1_VALUE = "!a&&b?4:a&&!b?3:!a&&!b?2:a&&b?1:<return value>";
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            FlowData.Execution inBlock = d.statementAnalysis().flowData.guaranteedToBeReachedInCurrentBlock.get();
-            FlowData.Execution inMethod = d.statementAnalysis().flowData.guaranteedToBeReachedInMethod.get();
-            Map<InterruptsFlow, FlowData.Execution> interruptsFlow = d.statementAnalysis().flowData.interruptsFlow.getOrElse(null);
+            FlowData.Execution inBlock = d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock();
+            FlowData.Execution inMethod = d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod();
+            Map<InterruptsFlow, FlowData.Execution> interruptsFlow = d.statementAnalysis().flowData.getInterruptsFlow();
 
             if ("method1".equals(d.methodInfo().name)) {
 

@@ -151,7 +151,7 @@ public class Test_01_Loops extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
-                FlowData.Execution execution = d.statementAnalysis().flowData.guaranteedToBeReachedInCurrentBlock.get();
+                FlowData.Execution execution = d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock();
                 if ("2.0.0".equals(d.statementId())) {
                     Assert.assertEquals("false", d.condition().debugOutput());
                     Assert.assertEquals("true", d.state().debugOutput());
@@ -242,36 +242,77 @@ public class Test_01_Loops extends CommonTestRunner {
 
     @Test
     public void test7() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if (!"method".equals(d.methodInfo().name)) return;
+            if ("1".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "n>i$1";
+                Assert.assertEquals(expect, d.evaluationResult().value().toString());
+            }
+        };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (!"method".equals(d.methodInfo().name)) return;
             if ("k".equals(d.variableName()) && "1.0.0".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$1.0.1:3";
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$1";
                 Assert.assertEquals(expect, d.currentValue().toString());
             }
         };
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if (!"method".equals(d.methodInfo().name)) return;
+            if ("0".equals(d.statementId())) {
+                Assert.assertSame(FlowData.Execution.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                Assert.assertSame(FlowData.Execution.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+            }
             if ("1".equals(d.statementId())) {
+                Assert.assertSame(FlowData.Execution.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                Assert.assertSame(FlowData.Execution.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+
                 Assert.assertTrue(d.statementAnalysis().localVariablesAssignedInThisLoop.isFrozen());
                 Assert.assertEquals("i", d.statementAnalysis().localVariablesAssignedInThisLoop.stream().collect(Collectors.joining()));
             }
             if ("1.0.0".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "n>=i$0";
+                FlowData.Execution expectExec = d.iteration() == 0 ? FlowData.Execution.DELAYED_EXECUTION : FlowData.Execution.CONDITIONALLY;
+                Assert.assertSame(expectExec, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                Assert.assertSame(FlowData.Execution.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "n>i$1";
                 Assert.assertEquals(expect, d.state().toString());
             }
             if ("1.0.1".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "n>=i$0";
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "n>i$1";
                 Assert.assertEquals(expect, d.state().toString());
+                String expectInterrupt = "{}";
+                Assert.assertEquals(expectInterrupt, d.statementAnalysis().flowData.getInterruptsFlow().toString());
             }
             if ("1.0.2".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1!=1+i$1.0.1:3&&n>=1";
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "false";
                 Assert.assertEquals(expect, d.state().toString());
+                if (d.iteration() == 0) {
+                    Assert.assertFalse(d.statementAnalysis().flowData.interruptsFlowIsSet());
+                } else {
+                    Assert.assertEquals("{break=CONDITIONALLY}", d.statementAnalysis().flowData.getInterruptsFlow().toString());
+                }
+            }
+            if ("1.0.2.0.0".equals(d.statementId())) {
+                String expect = "{break=ALWAYS}";
+                Assert.assertEquals(expect, d.statementAnalysis().flowData.getInterruptsFlow().toString());
+                if (d.iteration() == 0) {
+                    Assert.assertFalse(d.statementAnalysis().flowData.blockExecution.isSet());
+                } else {
+                    Assert.assertSame(FlowData.Execution.CONDITIONALLY, d.statementAnalysis().flowData.blockExecution.get());
+                }
+            }
+            if ("1.0.3".equals(d.statementId())) {
+                FlowData.Execution expectExec = d.iteration() == 0 ? FlowData.Execution.DELAYED_EXECUTION : FlowData.Execution.NEVER;
+                Assert.assertSame(expectExec, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
             }
         };
 
-        testClass("Loops_7", 1, 0, new DebugConfiguration.Builder()
+        testClass("Loops_7", 2, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

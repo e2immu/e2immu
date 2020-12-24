@@ -297,17 +297,18 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return;
         }
         StatementAnalysis copyFrom = previous == null ? parent : previous;
-        copyFrom.variableEntryStream().forEach(e -> copyVariableFromPrevious(e, copyFrom, previous == null));
+        copyFrom.variableEntryStream().forEach(this::copyVariableFromPrevious);
 
         flowData.initialiseAssignmentIds(copyFrom.flowData);
     }
 
-    private void copyVariableFromPrevious(Map.Entry<String, VariableInfoContainer> entry, StatementAnalysis copyFrom, boolean isParent) {
+    private void copyVariableFromPrevious(Map.Entry<String, VariableInfoContainer> entry) {
         String fqn = entry.getKey();
         VariableInfoContainer vic = entry.getValue();
         VariableInfo vi = vic.current();
         VariableInfoContainer newVic;
-        if (isParent && !vic.isLocalVariableInLoopDefinedOutside() && copyFrom.statement instanceof LoopStatement) {
+        // as we move into a loop statement
+        if (!vic.isLocalVariableInLoopDefinedOutside() && statement instanceof LoopStatement) {
             newVic = new VariableInfoContainerImpl(vi.variable(), index, VariableInfoContainer.NOT_A_VARIABLE_FIELD, true);
             // copy the properties
             vi.propertyStream().forEach(e -> newVic.setProperty(VariableInfoContainer.LEVEL_3_EVALUATION, e.getKey(), e.getValue()));
@@ -346,7 +347,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
         }
         StatementAnalysis copyFrom = previous == null ? parent : previous;
-        int bestLevel = previous == null ? VariableInfoContainer.LEVEL_1_INITIALISER :  // parent
+        int bestLevel = previous == null ? VariableInfoContainer.LEVEL_2_UPDATER :  // parent
                 VariableInfoContainer.LEVEL_4_SUMMARY; // previous statement
 
         // at best level (we can already have Level 4 vi in this statement, still we need to copy into 1
@@ -713,7 +714,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         } else {
             vic = variables.get(fqn);
         }
-        VariableInfo vi = vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
+        VariableInfo vi = vic.best(VariableInfoContainer.LEVEL_2_UPDATER); // including loop assignments
         if (isNotAssignmentTarget) {
             if (vi.variable() instanceof FieldReference fieldReference && vi.getStatementTime() >= 0) {
                 return variableInfoOfFieldWhenReading(analyserContext, fieldReference, vi, statementTime);

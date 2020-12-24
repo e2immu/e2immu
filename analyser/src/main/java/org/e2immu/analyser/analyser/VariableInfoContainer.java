@@ -157,6 +157,10 @@ public interface VariableInfoContainer {
 
     void setStatementTime(int level, int statementTime);
 
+    /*
+    Is true starting from the level 3 main expression of the loop statement, down to all statements in the block.
+    Is true at all times for variables declared in the loop statement's level 2 (for, forEach)
+     */
     boolean isLocalVariableInLoopDefinedOutside();
     /*
     Variables defined at level 2 only exist in their block; they are not propagated to the next statement, nor are they

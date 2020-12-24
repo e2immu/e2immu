@@ -19,17 +19,13 @@ package org.e2immu.analyser.analyser;
 
 import java.util.Objects;
 
-public class InterruptsFlow {
+public record InterruptsFlow(String name, int level, String label) {
     public static final String NO_LABEL = "";
     public static final InterruptsFlow NO = new InterruptsFlow("no interrupt", 0, NO_LABEL);
     public static final InterruptsFlow RETURN = new InterruptsFlow("return", 3, NO_LABEL);
     public static final InterruptsFlow ESCAPE = new InterruptsFlow("escape", 4, NO_LABEL);
 
-    public final int level;
-    public final String label;
-    public final String name;
-
-    private InterruptsFlow(String name, int level, String label) {
+    public InterruptsFlow(String name, int level, String label) {
         this.level = level;
         this.name = name;
         this.label = Objects.requireNonNull(label);

@@ -320,7 +320,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
                 analyserComponents = new AnalyserComponents.Builder<String, SharedState>()
                         .add("checkUnreachableStatement", sharedState -> checkUnreachableStatement(previous,
-                                forwardAnalysisInfo.execution()))
+                                sharedState.forwardAnalysisInfo.execution()))
                         .add("initialiseOrUpdateVariables", this::initialiseOrUpdateVariables)
                         .add("analyseLambdas", this::analyseLambdas)
                         .add("step1_initialisation", this::step1_initialisation)
@@ -328,7 +328,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         .add("step3_evaluationOfMainExpression", this::step3_evaluationOfMainExpression)
                         .add("step4_subBlocks", this::step4_subBlocks)
                         .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previous,
-                                forwardAnalysisInfo.execution()))
+                                sharedState.forwardAnalysisInfo.execution()))
                         .add("freezeAssignmentInBlock", this::freezeAssignmentInBlock)
                         .add("checkNotNullEscapes", this::checkNotNullEscapes)
                         .add("checkPrecondition", this::checkPrecondition)
@@ -456,29 +456,28 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
 
-    // executed only once per statement; we're assuming that the flowData are computed correctly
+    // executed only once per statement, at the very beginning of the loop
+    // we're assuming that the flowData are computed correctly
     private AnalysisStatus checkUnreachableStatement(StatementAnalysis previous,
                                                      FlowData.Execution execution) {
         // if the previous statement was not reachable, we won't reach this one either
-        if (previous != null && previous.flowData.guaranteedToBeReachedInMethod.isSet() &&
-                previous.flowData.guaranteedToBeReachedInMethod.get() == NEVER) {
+        if (previous != null && previous.flowData.getGuaranteedToBeReachedInMethod() == NEVER) {
             statementAnalysis.flowData.setGuaranteedToBeReached(NEVER);
             return DONE_ALL;
         }
-        if (statementAnalysis.flowData.computeGuaranteedToBeReachedReturnUnreachable(statementAnalysis.primitives,
-                previous, execution, localConditionManager.state) &&
+        if (statementAnalysis.flowData.computeGuaranteedToBeReachedReturnUnreachable(previous, execution, localConditionManager.state) &&
                 !statementAnalysis.inErrorState(Message.UNREACHABLE_STATEMENT)) {
             statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNREACHABLE_STATEMENT));
             return DONE_ALL; // means: don't run any of the other steps!!
         }
-        return DONE;
+        return localConditionManager.notInDelayedState() ? DONE : DELAYS;
     }
 
     private boolean isEscapeAlwaysExecutedInCurrentBlock() {
         InterruptsFlow bestAlways = statementAnalysis.flowData.bestAlwaysInterrupt();
         boolean escapes = bestAlways == InterruptsFlow.ESCAPE;
         if (escapes) {
-            return statementAnalysis.flowData.guaranteedToBeReachedInCurrentBlock.get() == FlowData.Execution.ALWAYS;
+            return statementAnalysis.flowData.getGuaranteedToBeReachedInCurrentBlock() == FlowData.Execution.ALWAYS;
         }
         return false;
     }
@@ -762,7 +761,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      */
     private AnalysisStatus step2_updaters(SharedState sharedState) {
         Structure structure = statementAnalysis.statement.getStructure();
-        int statementTime = sharedState.evaluationContext.getInitialStatementTime();
         final int l2 = VariableInfoContainer.LEVEL_2_UPDATER;
 
         // part 1: Create a local variable x for(X x: Xs) {...}, or in catch(Exception e)
@@ -770,8 +768,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         if (structure.localVariableCreation != null) {
             LocalVariableReference lvr = new LocalVariableReference(analyserContext, structure.localVariableCreation, List.of());
-            VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, lvr, statementTime, false);
-            vic.prepareForValueChange(l2, statementAnalysis.index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+            VariableInfoContainer vic = new VariableInfoContainerImpl(lvr, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD, true);
+            vic.prepareForValueChange(l2, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
             Map<VariableProperty, Integer> propertiesToSet = new HashMap<>();
             if (sharedState.forwardAnalysisInfo.inCatch()) {
                 propertiesToSet.put(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
@@ -790,6 +788,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         statementAnalysis.localVariablesAssignedInThisLoop.stream().forEach(fqn -> {
             VariableInfoContainer vic = statementAnalysis.findForWriting(fqn); // must exist already
             VariableInfo current = vic.current();
+            vic.prepareForValueChange(l2, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
 
             // assign to local variable that has been created at Level 2 in this statement
             String newFqn = fqn + "$" + index();
@@ -801,15 +800,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 newLvr = new LocalVariableReference(analyserContext, localVariable, List.of());
                 VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD, false);
                 statementAnalysis.variables.put(newFqn, newVic);
-                newVic.prepareForValueChange(l2, statementAnalysis.index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+                newVic.prepareForValueChange(l2, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
                 Map<VariableProperty, Integer> propertiesToSet = new HashMap<>();
-                vic.setStateOnAssignment(l2, new BooleanConstant(statementAnalysis.primitives, true));
-                vic.setValueOnAssignment(l2, new NewObject(statementAnalysis.primitives, newLvr.parameterizedType(), ObjectFlow.NO_FLOW),
+                newVic.setStateOnAssignment(l2, new BooleanConstant(statementAnalysis.primitives, true));
+                newVic.setValueOnAssignment(l2, new NewObject(statementAnalysis.primitives, newLvr.parameterizedType(), ObjectFlow.NO_FLOW),
                         propertiesToSet);
-                vic.setLinkedVariables(l2, Set.of(vic.current().variable()));
+                newVic.setLinkedVariables(l2, Set.of(vic.current().variable()));
             } else {
                 newLvr = (LocalVariableReference) statementAnalysis.variables.get(newFqn).current().variable();
             }
+
             vic.setStateOnAssignment(l2, new BooleanConstant(statementAnalysis.primitives, true));
             vic.setValueOnAssignment(l2, new VariableExpression(newLvr), Map.of());
         });
