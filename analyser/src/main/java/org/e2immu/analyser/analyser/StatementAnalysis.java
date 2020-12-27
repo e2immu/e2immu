@@ -365,9 +365,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     // for all variables present higher up
                     if (copyFrom != null && copyFrom.variables.isSet(variableInfo.name())) {
                         // it is important that we copy from the same level when copying from the parent! (and not use getLatestVariableInfo)
-                        VariableInfo previousVariableInfo = copyFrom.variables.get(variableInfo.name()).best(bestLevel);
-                        if (previousVariableInfo != null) {
-                            vic.copy(destinationLevel, previousVariableInfo, false, !haveValueAt3);
+                        VariableInfoContainer previousVic = copyFrom.variables.get(variableInfo.name());
+                        if (previousVic != null) {
+                            vic.copy(destinationLevel, previousVic, bestLevel,false, !haveValueAt3);
                         }
                     }
                     // specifically for fields, introduce new data from the field analyser; only at level 1

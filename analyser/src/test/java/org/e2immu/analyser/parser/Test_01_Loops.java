@@ -64,9 +64,9 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals("In " + d.statementId(), expect, inLoop);
                 } else Assert.fail();
             }
-            if("org.e2immu.analyser.testexample.Loops_0.this".equals(d.variableName())) {
-                if("2.0.0".equals(d.statementId())) {
-                    Assert.assertEquals("",  debug(d.variableInfo().getLinkedVariables()));
+            if ("org.e2immu.analyser.testexample.Loops_0.this".equals(d.variableName())) {
+                if ("2.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
                 }
             }
             if ("i".equals(d.variableName())) {
@@ -133,12 +133,12 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2.0.1".equals(d.statementId())) {
                     Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2.0.0:3>=n";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2>=n";
                     Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
                 }
                 if ("3".equals(d.statementId())) {
                     Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1+-i$2.0.0:3+n>0?\"abc\":null";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1+-i$2+n>0?\"abc\":res2$2";
                     Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
                 }
             }
@@ -151,8 +151,24 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
             }
             if ("res2".equals(d.variableName())) {
+                if ("2.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("2", d.variableInfoContainer().getLocalVariableInLoopDefinedOutsideMainIndex());
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "res2$2";
+                    Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
+                }
+                if ("2.0.1.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("2", d.variableInfoContainer().getLocalVariableInLoopDefinedOutsideMainIndex());
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "res2$2";
+                    Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
+                }
+                if ("2.0.1".equals(d.statementId())) {
+                    Assert.assertEquals("2", d.variableInfoContainer().getLocalVariableInLoopDefinedOutsideMainIndex());
+
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "res2$2";
+                    Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
+                }
                 if ("2.0.2".equals(d.statementId())) {
-                    String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1+-i$2.0.0:3+n>0";
+                    String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1+-i$2+n>0";
                     Assert.assertEquals(expectState, d.variableInfo().getStateOnAssignment().toString());
                     String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "\"abc\"";
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
@@ -160,7 +176,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "true";
                     Assert.assertEquals(expectState, d.variableInfo().getStateOnAssignment().toString());
-                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1+-i$2.0.0:3+n>0?\"abc\":null";
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1+-i$2+n>0?\"abc\":res2$2";
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
                 }
             }
@@ -181,15 +197,16 @@ public class Test_01_Loops extends CommonTestRunner {
                     // and not the local condition manager
                     String expectCondition = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "false";
                     Assert.assertEquals(expectCondition, d.condition().debugOutput());
-                    String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1+-i$2.0.0:3+n>0";
+                    String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1+-i$2+n>0";
                     Assert.assertEquals(expectState, d.state().debugOutput());
                 }
                 if ("2.0.2".equals(d.statementId())) {
-                    Assert.assertSame(FlowData.Execution.CONDITIONALLY, execution);
+                    FlowData.Execution expect = d.iteration() == 0 ? FlowData.Execution.DELAYED_EXECUTION : FlowData.Execution.CONDITIONALLY;
+                    Assert.assertSame(expect, execution);
 
                     String expectCondition = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "false";
                     Assert.assertEquals(expectCondition, d.condition().debugOutput());
-                    String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1+-i$2.0.0:3+n>0";
+                    String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1+-i$2+n>0";
                     Assert.assertEquals(expectState, d.state().debugOutput());
                 }
             }

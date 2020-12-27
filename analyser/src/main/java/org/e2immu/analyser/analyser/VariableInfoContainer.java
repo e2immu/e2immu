@@ -25,7 +25,6 @@ import org.e2immu.annotation.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * Container to store different versions of a VariableInfo object, one or more of this list:
@@ -133,12 +132,13 @@ public interface VariableInfoContainer {
      * using the 'setXX' methods.
      *
      * @param level                            the level to write to
-     * @param previousVariableInfo             the source to copy from
+     * @param previousVic                      the source to copy from
+     * @param previousBestLevel                level to copy from
      * @param failWhenTryingToWriteALowerValue if false, we ignore lower values. This happens when e.g. a field is overall nullable while
      *                                         in a particular method it has non-null assigned values; also, when a field not belonging
      *                                         to the type being analysed, is being modified. See test Basics_3
      */
-    void copy(int level, VariableInfo previousVariableInfo, boolean failWhenTryingToWriteALowerValue, boolean copyValue);
+    void copy(int level, VariableInfoContainer previousVic, int previousBestLevel, boolean failWhenTryingToWriteALowerValue, boolean copyValue);
 
     void setObjectFlow(int level, ObjectFlow objectFlow);
 
@@ -162,6 +162,7 @@ public interface VariableInfoContainer {
     Is true at all times for variables declared in the loop statement's level 2 (for, forEach)
      */
     boolean isLocalVariableInLoopDefinedOutside();
+
     /*
     Variables defined at level 2 only exist in their block; they are not propagated to the next statement, nor are they
     merged into level 4
