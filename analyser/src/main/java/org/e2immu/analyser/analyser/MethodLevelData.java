@@ -238,14 +238,13 @@ public class MethodLevelData {
      * @return if any change happened to methodAnalysis
      */
     private AnalysisStatus ensureThisProperties(EvaluationContext evaluationContext, StatementAnalysis statementAnalysis) {
-        if (evaluationContext.getIteration() > 0) return DONE;
-
         VariableInfoContainer thisVi = statementAnalysis.findForWriting(evaluationContext.getAnalyserContext(),
                 new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType()),
                 evaluationContext.getFinalStatementTime(), true);
         thisVi.setProperty(VIC_LEVEL, VariableProperty.ASSIGNED, Level.FALSE);
         thisVi.ensureProperty(VIC_LEVEL, VariableProperty.READ, Level.FALSE);
         thisVi.ensureProperty(VIC_LEVEL, VariableProperty.METHOD_CALLED, Level.FALSE);
+        thisVi.setLinkedVariables(VIC_LEVEL, Set.of());
 
         if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(false);

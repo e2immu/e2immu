@@ -45,9 +45,13 @@ public class Test_01_Loops extends CommonTestRunner {
     @Test
     public void test0() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && "2.0.2".equals(d.statementId())) {
+            if (!"method".equals(d.methodInfo().name)) return;
+            if ("2".equals(d.statementId())) {
+                Assert.assertEquals("true", d.evaluationResult().value().debugOutput());
+            }
+            if ("2.0.2".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$2.0.1:3>=n";
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2>=n";
                 Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
             }
         };
@@ -60,6 +64,11 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals("In " + d.statementId(), expect, inLoop);
                 } else Assert.fail();
             }
+            if("org.e2immu.analyser.testexample.Loops_0.this".equals(d.variableName())) {
+                if("2.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("",  debug(d.variableInfo().getLinkedVariables()));
+                }
+            }
             if ("i".equals(d.variableName())) {
                 if (d.variable() instanceof LocalVariableReference) {
                     boolean expect = d.statementId().startsWith("2");
@@ -69,16 +78,20 @@ public class Test_01_Loops extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals("0", d.currentValue().toString());
                 }
+                if ("2".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2";
+                    Assert.assertEquals(expect, d.currentValue().debugOutput());
+                }
                 if ("2.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2.0.1:3";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$2";
                     Assert.assertEquals(expect, d.currentValue().debugOutput());
                 }
                 if ("2.0.1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2.0.1:3";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2";
                     Assert.assertEquals(expect, d.currentValue().debugOutput());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2.0.1:3";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
             }
@@ -103,7 +116,7 @@ public class Test_01_Loops extends CommonTestRunner {
             }
             // shows that the BREAK statement, always executed in its own block, is dependent on a valid condition
             if ("2.0.2.0.0".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$2.0.1:3>=n";
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2>=n";
                 Assert.assertEquals(expect, d.condition().toString());
             }
         };

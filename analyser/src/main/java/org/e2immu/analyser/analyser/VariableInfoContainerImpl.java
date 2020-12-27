@@ -322,6 +322,14 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     @Override
     public void copy(int level, VariableInfo previousVariableInfo, boolean failWhenTryingToWriteALowerValue, boolean copyValue) {
+        // this may look like a hack, but it is not: we may have been pointing at previous' L1, whilst it also has a L2
+        // from which we need to follow. This happens in the first statement of a loop block; the loop statement itself has
+        // an L1 (from its previous) and and L2 (for the loop variables). (It will probably have an L3 and L4 as well but that is
+        // not relevant here.) Its L2 takes the role of the initialiser here.
+        if (currentLevel == 0) {
+            data[0] = previousVariableInfo;
+        }
+        previousVariableInfo.propertyStream().forEach(e -> setProperty(level, e.getKey(), e.getValue(), failWhenTryingToWriteALowerValue));
         if (copyValue) {
             if (previousVariableInfo.valueIsSet()) {
                 internalSetValue(level, previousVariableInfo.getValue(), previousVariableInfo.getStateOnAssignment());
@@ -329,8 +337,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 internalSetStateOnAssignment(level, previousVariableInfo.getStateOnAssignment());
             }
         }
-        // loops0 gives an example of why properties need copying AFTER the value
-        previousVariableInfo.propertyStream().forEach(e -> setProperty(level, e.getKey(), e.getValue(), failWhenTryingToWriteALowerValue));
         if (previousVariableInfo.linkedVariablesIsSet()) {
             internalSetLinkedVariables(level, previousVariableInfo.getLinkedVariables());
         }
