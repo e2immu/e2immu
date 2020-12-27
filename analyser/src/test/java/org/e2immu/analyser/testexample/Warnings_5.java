@@ -25,6 +25,7 @@ public class Warnings_5 {
             return s + "something" + input;
         }
 
+        // warning! unused input
         public boolean methodMustNotBeStatic2(String input) {
             return (s instanceof String);
         }
@@ -33,6 +34,7 @@ public class Warnings_5 {
             return "something" + input;
         }
 
+        // warning! unused input
         public ChildClass methodMustNotBeStatic3(String input) {
             return this;
         }

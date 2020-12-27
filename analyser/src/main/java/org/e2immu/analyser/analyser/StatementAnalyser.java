@@ -768,7 +768,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         if (structure.localVariableCreation != null) {
             LocalVariableReference lvr = new LocalVariableReference(analyserContext, structure.localVariableCreation, List.of());
-            VariableInfoContainer vic = new VariableInfoContainerImpl(lvr, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD, true);
+            VariableInfoContainer vic = new VariableInfoContainerImpl(lvr, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD,
+                    index()); // index() here means: start a loop
             vic.prepareForValueChange(l2, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
             Map<VariableProperty, Integer> propertiesToSet = new HashMap<>();
             if (sharedState.forwardAnalysisInfo.inCatch()) {
@@ -798,7 +799,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         current.variable().parameterizedType(),
                         List.of(), myMethodAnalyser.methodInfo.typeInfo);
                 newLvr = new LocalVariableReference(analyserContext, localVariable, List.of());
-                VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD, false);
+                VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD, null);
                 statementAnalysis.variables.put(newFqn, newVic);
                 newVic.prepareForValueChange(l2, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
                 Map<VariableProperty, Integer> propertiesToSet = new HashMap<>();

@@ -40,29 +40,44 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     private final VariableInfo[] data = new VariableInfo[LEVELS];
     private int currentLevel;
-    private final boolean localVariableInLoopDefinedOutside;
+    // NOTE: isLocalVariableInLoopDefinedOutside == (localVariableInLoopDefinedOutsideMainIndex != null)
+    private final String localVariableInLoopDefinedOutsideMainIndex;
 
-    public VariableInfoContainerImpl(VariableInfoContainer previous) {
+    public VariableInfoContainerImpl(VariableInfoContainer previous, String statementIndexForLocalVariableInLoop) {
         Objects.requireNonNull(previous);
         VariableInfo current = previous.current();
         data[LEVEL_0_PREVIOUS] = current;
         currentLevel = LEVEL_0_PREVIOUS;
-        localVariableInLoopDefinedOutside = previous.isLocalVariableInLoopDefinedOutside();
+        if (statementIndexForLocalVariableInLoop == null) {
+            localVariableInLoopDefinedOutsideMainIndex = null;
+        } else {
+            String prevStatementId = previous.getLocalVariableInLoopDefinedOutsideMainIndex();
+            if (prevStatementId != null && !statementIndexForLocalVariableInLoop.startsWith(prevStatementId)) {
+                // we go back out
+                localVariableInLoopDefinedOutsideMainIndex = null;
+            } else {
+                localVariableInLoopDefinedOutsideMainIndex = prevStatementId; // stay where we are
+            }
+        }
     }
 
     public VariableInfoContainerImpl(Variable variable,
                                      String assignmentIndex,
                                      int statementTime,
-                                     boolean localVariableInLoopDefinedOutside) {
+                                     String localVariableInLoopDefinedOutsideMainIndex) {
         Objects.requireNonNull(variable);
         data[LEVEL_1_INITIALISER] = new VariableInfoImpl(variable, assignmentIndex + ":1", statementTime);
         currentLevel = LEVEL_1_INITIALISER;
-        this.localVariableInLoopDefinedOutside = localVariableInLoopDefinedOutside;
+        this.localVariableInLoopDefinedOutsideMainIndex = localVariableInLoopDefinedOutsideMainIndex;
     }
 
     @Override
     public boolean isLocalVariableInLoopDefinedOutside() {
-        return localVariableInLoopDefinedOutside;
+        return localVariableInLoopDefinedOutsideMainIndex != null;
+    }
+
+    public String getLocalVariableInLoopDefinedOutsideMainIndex() {
+        return localVariableInLoopDefinedOutsideMainIndex;
     }
 
     @Override
@@ -119,24 +134,21 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public void prepareForValueChange(int level, String assignmentIndex, int statementTime) {
         ensureNotFrozen();
         String assignmentId = assignmentIndex + ":" + level;
-        if (level <= currentLevel) {
-            VariableInfo vi = data[level];
-            if (vi != null) {
-                // the data is already there; only update delays
-                if (vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY &&
-                        statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
-                    ((VariableInfoImpl) vi).statementTime.set(statementTime);
-                } else {
-                    assert statementTime == vi.getStatementTime() :
-                            "New statement time is " + statementTime + ", had " + vi.getStatementTime();
-                    assert assignmentId.equals(vi.getAssignmentId()) :
-                            "New assignment id is " + assignmentId + ", had " + vi.getAssignmentId();
-                }
-                return;
+        VariableInfo vi = data[level];
+        if (vi != null) {
+            // the data is already there; only update delays
+            if (vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY &&
+                    statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
+                ((VariableInfoImpl) vi).statementTime.set(statementTime);
+            } else {
+                assert statementTime == vi.getStatementTime() :
+                        "New statement time is " + statementTime + ", had " + vi.getStatementTime();
+                assert assignmentId.equals(vi.getAssignmentId()) :
+                        "New assignment id is " + assignmentId + ", had " + vi.getAssignmentId();
             }
-            throw new UnsupportedOperationException("In the first iteration, an assignment should start a new level for " +
-                    current().variable().fullyQualifiedName());
+            return;
         }
+        // level > currentLevel
         int assigned = data[currentLevel].getProperty(VariableProperty.ASSIGNED);
         VariableInfoImpl variableInfo = new VariableInfoImpl(data[currentLevel].variable(), assignmentId, statementTime);
         currentLevel = level;
@@ -310,7 +322,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     @Override
     public void copy(int level, VariableInfo previousVariableInfo, boolean failWhenTryingToWriteALowerValue, boolean copyValue) {
-        previousVariableInfo.propertyStream().forEach(e -> setProperty(level, e.getKey(), e.getValue(), failWhenTryingToWriteALowerValue));
         if (copyValue) {
             if (previousVariableInfo.valueIsSet()) {
                 internalSetValue(level, previousVariableInfo.getValue(), previousVariableInfo.getStateOnAssignment());
@@ -318,6 +329,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 internalSetStateOnAssignment(level, previousVariableInfo.getStateOnAssignment());
             }
         }
+        // loops0 gives an example of why properties need copying AFTER the value
+        previousVariableInfo.propertyStream().forEach(e -> setProperty(level, e.getKey(), e.getValue(), failWhenTryingToWriteALowerValue));
         if (previousVariableInfo.linkedVariablesIsSet()) {
             internalSetLinkedVariables(level, previousVariableInfo.getLinkedVariables());
         }

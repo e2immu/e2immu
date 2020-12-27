@@ -39,7 +39,7 @@ public class TestVariableInfoContainer extends CommonVariableInfo {
     public void test1() {
         Variable a = makeLocalIntVar("a");
         VariableInfoContainer vic = new VariableInfoContainerImpl(a, VariableInfoContainer.START_OF_METHOD,
-                VariableInfoContainer.NOT_A_VARIABLE_FIELD, false);
+                VariableInfoContainer.NOT_A_VARIABLE_FIELD, null);
         VariableInfo vi = vic.current();
         Assert.assertFalse(vi.hasProperty(VariableProperty.INDEPENDENT));
         Assert.assertEquals(VariableInfoContainer.LEVEL_1_INITIALISER, vic.getCurrentLevel());
@@ -85,8 +85,8 @@ public class TestVariableInfoContainer extends CommonVariableInfo {
         VariableInfoImpl previous = new VariableInfoImpl(a);
         previous.setProperty(VariableProperty.INDEPENDENT, Level.FALSE);
         VariableInfoContainer previousVic = new VariableInfoContainerImpl(a,
-                VariableInfoContainer.START_OF_METHOD, VariableInfoContainerImpl.NOT_A_VARIABLE_FIELD, false);
-        VariableInfoContainer vic = new VariableInfoContainerImpl(previousVic);
+                VariableInfoContainer.START_OF_METHOD, VariableInfoContainerImpl.NOT_A_VARIABLE_FIELD, null);
+        VariableInfoContainer vic = new VariableInfoContainerImpl(previousVic, null);
         VariableInfo vi = vic.current();
         Assert.assertEquals(VariableInfoContainer.LEVEL_0_PREVIOUS, vic.getCurrentLevel());
         Assert.assertEquals(Level.FALSE, vi.getProperty(VariableProperty.INDEPENDENT));

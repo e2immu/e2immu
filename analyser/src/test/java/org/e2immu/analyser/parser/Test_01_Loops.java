@@ -55,19 +55,23 @@ public class Test_01_Loops extends CommonTestRunner {
             if (!"method".equals(d.methodInfo().name)) return;
             if ("res1".equals(d.variableName())) {
                 if (d.variable() instanceof LocalVariableReference) {
-                    boolean expect = d.statementId().startsWith("2.");
+                    boolean expect = d.statementId().startsWith("2");
                     boolean inLoop = d.variableInfoContainer().isLocalVariableInLoopDefinedOutside();
                     Assert.assertEquals("In " + d.statementId(), expect, inLoop);
                 } else Assert.fail();
             }
             if ("i".equals(d.variableName())) {
                 if (d.variable() instanceof LocalVariableReference) {
-                    boolean expect = d.statementId().startsWith("2.");
+                    boolean expect = d.statementId().startsWith("2");
                     boolean inLoop = d.variableInfoContainer().isLocalVariableInLoopDefinedOutside();
                     Assert.assertEquals("In " + d.statementId(), expect, inLoop);
                 } else Assert.fail();
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals("0", d.currentValue().toString());
+                }
+                if ("2.0.0".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2.0.1:3";
+                    Assert.assertEquals(expect, d.currentValue().debugOutput());
                 }
                 if ("2.0.1".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2.0.1:3";
@@ -93,7 +97,7 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("2.0.0".equals(d.statementId())) {
                 if (d.iteration() == 0) {
                     VariableInfoContainer vic = d.statementAnalysis().variables.get("i");
-                    Assert.assertEquals(1, vic.getCurrentLevel());
+                    //Assert.assertEquals(1, vic.getCurrentLevel());
                     Assert.assertSame(EmptyExpression.NO_VALUE, vic.current().getValue());
                 }
             }

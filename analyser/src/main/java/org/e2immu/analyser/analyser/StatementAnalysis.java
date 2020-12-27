@@ -309,13 +309,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfoContainer newVic;
         // as we move into a loop statement
         if (!vic.isLocalVariableInLoopDefinedOutside() && statement instanceof LoopStatement) {
-            newVic = new VariableInfoContainerImpl(vi.variable(), index, VariableInfoContainer.NOT_A_VARIABLE_FIELD, true);
+            newVic = new VariableInfoContainerImpl(vi.variable(), index, VariableInfoContainer.NOT_A_VARIABLE_FIELD, index);
             // copy the properties
-            vi.propertyStream().forEach(e -> newVic.setProperty(VariableInfoContainer.LEVEL_3_EVALUATION, e.getKey(), e.getValue()));
+            vi.propertyStream().forEach(e -> newVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, e.getKey(), e.getValue()));
             // newVic has a new level 1 vi, without a value at this point
         } else {
-            // make a simple reference copy
-            newVic = new VariableInfoContainerImpl(vic);
+            // make a simple reference copy; potentially resetting localVariableInLoopDefinedOutside
+            newVic = new VariableInfoContainerImpl(vic, index);
         }
         variables.put(fqn, newVic);
     }
@@ -411,7 +411,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 if (!variables.isSet(fqn) && variable instanceof LocalVariableReference) {
                     // other variables that don't exist here and that we do not want to copy: foreign fields,
                     // such as System.out
-                    VariableInfoContainer newVic = new VariableInfoContainerImpl(vicFrom);
+                    VariableInfoContainer newVic = new VariableInfoContainerImpl(vicFrom, null);
                     variables.put(fqn, newVic);
                 }
             });
@@ -492,7 +492,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         int statementTimeForVariable = statementTimeForVariable(analyserContext, variable, statementTime);
         String assignmentIndex = assignmentIndexAtCreation(variable, isNotAssignmentTarget);
-        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, assignmentIndex, statementTimeForVariable, false);
+        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, assignmentIndex, statementTimeForVariable, null);
 
         variables.put(variable.fullyQualifiedName(), vic);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", variable.fullyQualifiedName());

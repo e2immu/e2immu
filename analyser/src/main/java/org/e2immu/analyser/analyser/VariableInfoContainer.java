@@ -167,4 +167,6 @@ public interface VariableInfoContainer {
     merged into level 4
      */
     boolean isDefinedAtLevel2();
+
+    String getLocalVariableInLoopDefinedOutsideMainIndex();
 }
