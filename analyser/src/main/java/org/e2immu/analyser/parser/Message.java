@@ -44,6 +44,7 @@ public class Message {
 
     public static final String EMPTY_LOOP = "Empty loop";
     public static final String LOOP_WITHOUT_MODIFICATION = "Loop without modification";
+    public static final String UNUSED_LOOP_VARIABLE = "Unused loop variable";
 
     public static final String UNREACHABLE_STATEMENT = "Unreachable statement";
 
@@ -99,6 +100,8 @@ public class Message {
         ImmutableMap.Builder<String, Severity> map = new ImmutableMap.Builder<>();
 
         map.put(UNUSED_PARAMETER, Severity.WARN);
+        map.put(UNUSED_LOOP_VARIABLE, Severity.WARN);
+
         map.put(POTENTIAL_NULL_POINTER_EXCEPTION, Severity.WARN);
         map.put(UNNECESSARY_METHOD_CALL, Severity.WARN);
         map.put(IGNORING_RESULT_OF_METHOD_CALL, Severity.WARN);

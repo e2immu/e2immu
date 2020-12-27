@@ -102,18 +102,20 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("checkForEach".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 Assert.assertFalse(d.statementAnalysis().variables.isSet("loopVar")); // created in 1.0.0
             }
-            if ("checkForEach".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
-                Assert.assertEquals("ERROR in M:checkForEach:1.0.0: Unused local variable: loopVar", d.haveError(Message.UNUSED_LOCAL_VARIABLE));
-
-                AnalysisStatus expectAnalysisStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;
-                //   Assert.assertEquals(d.toString(), expectAnalysisStatus, analysisStatus);
+            if ("checkForEach".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
+                Assert.assertEquals("WARN in M:checkForEach:1: Unused loop variable: loopVar", d.haveError(Message.UNUSED_LOOP_VARIABLE));
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("checkForEach".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId()) && "integers".equals(d.variableName())) {
-                // so that we know that integers.iterator() has been called
-                Assert.assertEquals(2, d.getProperty(VariableProperty.READ));
+            if ("checkForEach".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
+                if ("integers".equals(d.variableName())) {
+                    // so that we know that integers.iterator() has been called
+                    Assert.assertEquals(2, d.getProperty(VariableProperty.READ));
+                }
+                if ("loopVar".equals(d.variableName())) {
+                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.READ));
+                }
             }
             if ("method1".equals(d.methodInfo().name) && "s".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
@@ -215,7 +217,7 @@ public class Test_04_Warnings extends CommonTestRunner {
         };
 
 
-        testClass("Warnings_1", 7, 1, new DebugConfiguration.Builder()
+        testClass("Warnings_1", 6, 2, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

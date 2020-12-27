@@ -57,7 +57,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     public static final String ANALYSE_METHOD_LEVEL_DATA = "analyseMethodLevelData";
 
     public static final String STEP_1 = "step1"; // initialisation, variable creation for(X x: xs), int i=1
-    public static final String STEP_2 = "step2"; // updaters (i++ in for)
     public static final String STEP_3 = "step3"; // main evaluation
 
     public final StatementAnalysis statementAnalysis;
@@ -341,6 +340,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         .add("checkUnusedReturnValue", sharedState -> checkUnusedReturnValueOfMethodCall())
                         .add("checkUselessAssignments", sharedState -> checkUselessAssignments())
                         .add("checkUnusedLocalVariables", sharedState -> checkUnusedLocalVariables())
+                        .add("checkUnusedLoopVariables", sharedState -> checkUnusedLoopVariables())
                         .build();
             }
 
@@ -1307,6 +1307,21 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNUSED_LOCAL_VARIABLE, variableInfo.name()));
                 }
             });
+        }
+        return DONE;
+    }
+
+    private AnalysisStatus checkUnusedLoopVariables() {
+        if (statement() instanceof LoopStatement loopStatement) {
+            if (loopStatement.structure.localVariableCreation != null) {
+                String loopVarFqn = loopStatement.structure.localVariableCreation.name();
+                StatementAnalyser first = navigationData.blocks.get().get(0).orElse(null);
+                StatementAnalysis statementAnalysis = first == null ? null : first.lastStatement().statementAnalysis;
+                if (statementAnalysis == null || !statementAnalysis.variables.isSet(loopVarFqn) ||
+                        statementAnalysis.variables.get(loopVarFqn).current().getProperty(VariableProperty.READ) < Level.TRUE) {
+                    this.statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNUSED_LOOP_VARIABLE, loopVarFqn));
+                }
+            }
         }
         return DONE;
     }
