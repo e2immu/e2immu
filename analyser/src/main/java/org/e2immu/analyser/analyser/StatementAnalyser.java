@@ -760,6 +760,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     nor are they merged into level 4
      */
     private AnalysisStatus step2_updaters(SharedState sharedState) {
+        if (statement() instanceof ExplicitConstructorInvocation) {
+            return handleExplicitConstructorInvocation(sharedState);
+        }
         Structure structure = statementAnalysis.statement.getStructure();
         final int l2 = VariableInfoContainer.LEVEL_2_UPDATER;
 
@@ -818,6 +821,20 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return DONE;
     }
 
+    // in a bit of a bind: we've used the updaters as storage for the parameters of the this( ) or super( ) statement
+    // they need evaluating at level 3 (not 2, even if we used them as updaters)
+    private AnalysisStatus handleExplicitConstructorInvocation(SharedState sharedState) {
+        AnalysisStatus overallStatus = DONE;
+        Structure structure = statement().getStructure();
+        for (Expression updater : structure.updaters) {
+            EvaluationResult result = updater.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo);
+
+            AnalysisStatus status = apply(sharedState, result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_3);
+            overallStatus = overallStatus.combine(status);
+        }
+        return overallStatus;
+    }
+
 
     private AnalysisStatus step3_evaluationOfMainExpression(SharedState sharedState) {
         Structure structure = statementAnalysis.statement.getStructure();
@@ -839,7 +856,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 expression = structure.expression;
                 returnConditionally = false;
             }
-
 
             EvaluationResult result = expression.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo);
 
