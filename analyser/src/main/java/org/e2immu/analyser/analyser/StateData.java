@@ -40,6 +40,7 @@ public class StateData {
             BooleanConstant TRUE = new BooleanConstant(evaluationContext.getPrimitives(), true);
             Stream<Expression> fromPrevious = Stream.of(previous == null ? TRUE : previous.stateData.precondition.get());
             Stream<Expression> fromBlocks = statementAnalyser.lastStatementsOfNonEmptySubBlocks().stream()
+                    .filter(sa -> sa.statementAnalysis.flowData.isUnreachable())
                     .map(sa -> sa.statementAnalysis.stateData.precondition.get());
 
             Expression reduced = Stream.concat(fromBlocks, fromPrevious)
@@ -58,14 +59,8 @@ public class StateData {
         return valueOfExpression.getOrElse(EmptyExpression.NO_VALUE);
     }
 
-    public static class RemoveVariableFromState implements StatementAnalysis.StateChange {
-        private final Variable variable;
-        private final EvaluationContext evaluationContext;
-
-        public RemoveVariableFromState(EvaluationContext evaluationContext, Variable variable) {
-            this.variable = variable;
-            this.evaluationContext = evaluationContext;
-        }
+    public static record RemoveVariableFromState(EvaluationContext evaluationContext,
+                                                 Variable variable) implements StatementAnalysis.StateChange {
 
         @Override
         public Expression apply(Expression value) {

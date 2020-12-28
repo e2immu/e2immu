@@ -40,8 +40,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     private final VariableInfo[] data = new VariableInfo[LEVELS];
     private int currentLevel;
+
     // NOTE: isLocalVariableInLoopDefinedOutside == (localVariableInLoopDefinedOutsideMainIndex != null)
     private final String localVariableInLoopDefinedOutsideMainIndex;
+
+    private final String statementIndexOfThisLoopVariable;
 
     public VariableInfoContainerImpl(VariableInfoContainer previous, String statementIndexForLocalVariableInLoop) {
         Objects.requireNonNull(previous);
@@ -59,16 +62,27 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 localVariableInLoopDefinedOutsideMainIndex = prevStatementId; // stay where we are
             }
         }
+        this.statementIndexOfThisLoopVariable = previous.getStatementIndexOfThisLoopVariable();
     }
 
     public VariableInfoContainerImpl(Variable variable,
                                      String assignmentIndex,
                                      int statementTime,
-                                     String localVariableInLoopDefinedOutsideMainIndex) {
+                                     String localVariableInLoopDefinedOutsideMainIndex,
+                                     String statementIndexOfThisLoopVariable) {
         Objects.requireNonNull(variable);
         data[LEVEL_1_INITIALISER] = new VariableInfoImpl(variable, assignmentIndex + ":1", statementTime);
         currentLevel = LEVEL_1_INITIALISER;
         this.localVariableInLoopDefinedOutsideMainIndex = localVariableInLoopDefinedOutsideMainIndex;
+        this.statementIndexOfThisLoopVariable = statementIndexOfThisLoopVariable;
+    }
+
+    public String getStatementIndexOfThisLoopVariable() {
+        return statementIndexOfThisLoopVariable;
+    }
+
+    public boolean isLoopVariable() {
+        return statementIndexOfThisLoopVariable != null;
     }
 
     @Override
@@ -409,7 +423,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public boolean isDefinedAtLevel2() {
-        return data[LEVEL_2_UPDATER] != null && data[LEVEL_0_PREVIOUS] == null && data[LEVEL_1_INITIALISER] == null;
+    public boolean isNotDefinedAtLevel2() {
+        return data[LEVEL_2_UPDATER] == null || data[LEVEL_0_PREVIOUS] != null || data[LEVEL_1_INITIALISER] != null;
     }
 }

@@ -17,11 +17,10 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.FlowData;
-import org.e2immu.analyser.analyser.StatementAnalyser;
-import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -220,30 +219,80 @@ public class Test_01_Loops extends CommonTestRunner {
 
     @Test
     public void test2() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if (!"method".equals(d.methodInfo().name)) return;
+            if ("1".equals(d.statementId())) {
+                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                Assert.assertEquals("{\"a\",\"b\",\"c\"}", d.evaluationResult().value().toString());
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.evaluationResult().value()
+                        .getProperty(d.evaluationResult().evaluationContext(), VariableProperty.NOT_NULL));
+            }
+        };
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if (!"method".equals(d.methodInfo().name)) return;
+            if ("s".equals(d.variableName())) {
+                if ("1.0.0".equals(d.statementId())) {
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                }
+            }
+            if ("res".equals(d.variableName())) {
+                if ("1.0.0".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "s";
+                    Assert.assertEquals(expect, d.currentValue().toString());
+                    int expectNn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    Assert.assertEquals(expectNn, d.getProperty(VariableProperty.NOT_NULL));
+                }
+                if ("2".equals(d.statementId())) {
+                    int expectNn = d.iteration() == 0 ? MultiLevel.NULLABLE : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    Assert.assertEquals(expectNn, d.getProperty(VariableProperty.NOT_NULL));
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "res$1";
+                    Assert.assertEquals(expect, d.currentValue().toString());
+                }
+            }
 
+        };
         testClass("Loops_2", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 
     // explicitly empty loop
     @Test
     public void test3() throws IOException {
-        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("method".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                if (d.statementAnalysis().statement instanceof ForEachStatement forEachStatement) {
-                    FlowData.Execution exec = forEachStatement.structure.statementExecution
-                            .apply(new ArrayInitializer(d.statementAnalysis().primitives, ObjectFlow.NO_FLOW,
-                                    List.of()), d.evaluationContext());
-                    Assert.assertSame(FlowData.Execution.NEVER, exec);
-
-                    StatementAnalysis firstInBlock = d.statementAnalysis().navigationData.blocks.get().get(0).orElseThrow();
-                    Assert.assertTrue(firstInBlock.flowData.isUnreachable());
-
-                    Assert.assertNotNull(d.haveError(Message.EMPTY_LOOP));
-                } else Assert.fail();
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "1".equals(d.statementId()) && "s".equals(d.variableName())) {
+                Assert.assertEquals("1", d.variableInfoContainer().getStatementIndexOfThisLoopVariable());
             }
         };
-        testClass("Loops_3", 0, 0, new DebugConfiguration.Builder()
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name)) {
+                if ("1.0.0".equals(d.statementId())) {
+                    Assert.fail("statement should be unreachable");
+                }
+                if ("1".equals(d.statementId())) {
+                    if (d.statementAnalysis().statement instanceof ForEachStatement forEachStatement) {
+                        FlowData.Execution exec = forEachStatement.structure.statementExecution
+                                .apply(new ArrayInitializer(d.statementAnalysis().primitives, ObjectFlow.NO_FLOW,
+                                        List.of()), d.evaluationContext());
+                        Assert.assertSame(FlowData.Execution.NEVER, exec);
+
+                        StatementAnalysis firstInBlock = d.statementAnalysis().navigationData.blocks.get().get(0).orElseThrow();
+                        Assert.assertEquals("1.0.0", firstInBlock.index);
+                        Assert.assertTrue(firstInBlock.flowData.isUnreachable());
+
+                        Assert.assertNotNull(d.haveError(Message.EMPTY_LOOP));
+                    } else Assert.fail();
+                }
+                if ("2".equals(d.statementId())) {
+                    Assert.assertFalse(d.statementAnalysis().variables.isSet("s"));
+                }
+            }
+        };
+        // empty loop
+        testClass("Loops_3", 1, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }

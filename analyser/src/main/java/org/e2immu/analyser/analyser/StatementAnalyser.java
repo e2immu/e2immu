@@ -227,7 +227,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     // note that there is a clone of this in statementAnalysis
     @Override
     public StatementAnalyser lastStatement() {
-        if (statementAnalysis.flowData.isUnreachable()) {
+        if (statementAnalysis.flowData.isUnreachable() && statementAnalysis.parent == null) {
             throw new UnsupportedOperationException("The first statement can never be unreachable");
         }
         return followReplacements().navigationData.next.get().map(statementAnalyser -> {
@@ -289,7 +289,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private Location getLocation() {
-        return new Location(myMethodAnalyser.methodInfo, statementAnalysis.index);
+        return statementAnalysis.location();
     }
 
     public AnalyserComponents<String, SharedState> getAnalyserComponents() {
@@ -769,10 +769,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         // part 1: Create a local variable x for(X x: Xs) {...}, or in catch(Exception e)
         // variable will be set to a NewObject
 
-        if (structure.localVariableCreation != null) {
+        if (structure.localVariableCreation != null && !statementAnalysis.variables.isSet(structure.localVariableCreation.name())) {
             LocalVariableReference lvr = new LocalVariableReference(analyserContext, structure.localVariableCreation, List.of());
             VariableInfoContainer vic = new VariableInfoContainerImpl(lvr, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD,
-                    index()); // index() here means: start a loop
+                    index(), index()); // index() here means: start a loop
             vic.prepareForValueChange(l2, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
             Map<VariableProperty, Integer> propertiesToSet = new HashMap<>();
             if (sharedState.forwardAnalysisInfo.inCatch()) {
@@ -783,6 +783,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             vic.setValueOnAssignment(l2, new NewObject(statementAnalysis.primitives, lvr.parameterizedType(), ObjectFlow.NO_FLOW),
                     propertiesToSet);
             vic.setLinkedVariables(l2, Set.of());
+            statementAnalysis.variables.put(structure.localVariableCreation.name(), vic);
         }
 
         // part 2: all local variables assigned to in loop
@@ -802,7 +803,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         current.variable().parameterizedType(),
                         List.of(), myMethodAnalyser.methodInfo.typeInfo);
                 newLvr = new LocalVariableReference(analyserContext, localVariable, List.of());
-                VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD, null);
+                VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD, null, null);
                 statementAnalysis.variables.put(newFqn, newVic);
                 newVic.prepareForValueChange(l2, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
                 Map<VariableProperty, Integer> propertiesToSet = new HashMap<>();
@@ -978,24 +979,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     // a special case, which allows us to set not null
-    // IMPROVE this can be generalised, as ArrayValue should have isNotNull1
     private void step3_ForEach(SharedState sharedState, Expression value) {
         Objects.requireNonNull(value);
 
-        ArrayInitializer arrayValue;
-        if (((arrayValue = value.asInstanceOf(ArrayInitializer.class)) != null) &&
-                arrayValue.multiExpression.stream().allMatch(sharedState.evaluationContext::isNotNull0)) {
+        if (value.getProperty(sharedState.evaluationContext, VariableProperty.NOT_NULL) >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL) {
             Structure structure = statementAnalysis.statement.getStructure();
-            LocalVariableReference localVariableReference = new LocalVariableReference(
-                    analyserContext, structure.localVariableCreation, List.of());
-            StatementAnalysis firstStatementInBlock = firstStatementFirstBlock();
-            firstStatementInBlock.addProperty(analyserContext,
-                    VariableInfoContainer.LEVEL_3_EVALUATION,
-                    statementAnalysis.flowData.getTimeAfterExecution(), // cannot compute yet
-                    false,
-                    localVariableReference,
-                    VariableProperty.NOT_NULL,
-                    MultiLevel.EFFECTIVELY_NOT_NULL);
+            VariableInfoContainer vic = statementAnalysis.findForWriting(structure.localVariableCreation.name());
+            vic.setProperty(VariableInfoContainer.LEVEL_2_UPDATER, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         }
     }
 
@@ -1127,6 +1117,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 sharedState.builder.add(result);
                 analysisStatus = analysisStatus.combine(result.analysisStatus);
                 blocksExecuted++;
+            } else if (executionOfBlock.startOfBlock != null) {
+                // ensure that the first statement is unreachable
+                FlowData flowData = executionOfBlock.startOfBlock.statementAnalysis.flowData;
+                flowData.setGuaranteedToBeReached(NEVER);
+
+                if (statement() instanceof LoopStatement) {
+                    statementAnalysis.ensure(Message.newMessage(getLocation(), Message.EMPTY_LOOP));
+                }
             }
         }
 
@@ -1317,27 +1315,30 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (navigationData.next.get().isEmpty()) {
             // at the end of the block, check for variables created in this block
             // READ is set in the first iteration, so there is no reason to expect delays
-            statementAnalysis.variableStream().forEach(variableInfo -> {
-                if (statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name())
-                        && variableInfo.getProperty(VariableProperty.READ) < Level.TRUE) {
-                    statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNUSED_LOCAL_VARIABLE, variableInfo.name()));
-                }
-            });
+            statementAnalysis.variables.stream()
+                    .filter(e -> e.getValue().getStatementIndexOfThisLoopVariable() == null)
+                    .map(e -> e.getValue().current())
+                    .filter(vi -> statementAnalysis.isLocalVariableAndLocalToThisBlock(vi.name())
+                            && vi.getProperty(VariableProperty.READ) < Level.TRUE)
+                    .forEach(vi -> statementAnalysis.ensure(Message.newMessage(getLocation(),
+                            Message.UNUSED_LOCAL_VARIABLE, vi.name())));
         }
         return DONE;
     }
 
     private AnalysisStatus checkUnusedLoopVariables() {
-        if (statement() instanceof LoopStatement loopStatement) {
-            if (loopStatement.structure.localVariableCreation != null) {
-                String loopVarFqn = loopStatement.structure.localVariableCreation.name();
-                StatementAnalyser first = navigationData.blocks.get().get(0).orElse(null);
-                StatementAnalysis statementAnalysis = first == null ? null : first.lastStatement().statementAnalysis;
-                if (statementAnalysis == null || !statementAnalysis.variables.isSet(loopVarFqn) ||
-                        statementAnalysis.variables.get(loopVarFqn).current().getProperty(VariableProperty.READ) < Level.TRUE) {
-                    this.statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNUSED_LOOP_VARIABLE, loopVarFqn));
-                }
-            }
+        if (statement() instanceof LoopStatement && !statementAnalysis.containsMessage(Message.EMPTY_LOOP)) {
+            statementAnalysis.variables.stream()
+                    .filter(e -> index().equals(e.getValue().getStatementIndexOfThisLoopVariable()))
+                    .forEach(e -> {
+                        String loopVarFqn = e.getKey();
+                        StatementAnalyser first = navigationData.blocks.get().get(0).orElse(null);
+                        StatementAnalysis statementAnalysis = first == null ? null : first.lastStatement().statementAnalysis;
+                        if (statementAnalysis == null || !statementAnalysis.variables.isSet(loopVarFqn) ||
+                                statementAnalysis.variables.get(loopVarFqn).current().getProperty(VariableProperty.READ) < Level.TRUE) {
+                            this.statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNUSED_LOOP_VARIABLE, loopVarFqn));
+                        }
+                    });
         }
         return DONE;
     }
