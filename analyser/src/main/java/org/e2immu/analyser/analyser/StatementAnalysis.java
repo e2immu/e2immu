@@ -278,7 +278,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     @Override
     public Location location() {
-       return new Location(methodAnalysis.getMethodInfo(), index);
+        return new Location(methodAnalysis.getMethodInfo(), index);
     }
 
     // ****************************************************************************************
@@ -314,12 +314,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfoContainer newVic;
         // as we move into a loop statement, the index is added to obtain local variable in loop defined outside
         if (!vic.isLocalVariableInLoopDefinedOutside() && statement instanceof LoopStatement && vi.variable().isLocal()) {
-            newVic = new VariableInfoContainerImpl(vi.variable(), index, VariableInfoContainer.NOT_A_VARIABLE_FIELD, index,
-                    vic.getStatementIndexOfThisLoopVariable());
+            newVic = new VariableInfoContainerImpl(vi.variable(), index, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
+                    new VariableInLoop(index, VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE));
             vi.propertyStream().forEach(e -> newVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, e.getKey(), e.getValue()));
             // newVic has a new level 1 vi, without a value at this point
-        } else if (indexOfPrevious != null && indexOfPrevious.equals(vic.getStatementIndexOfThisLoopVariable())) {
-            // this is the very specific situation that the previous statement introduced a loop variable
+        } else if (indexOfPrevious != null && indexOfPrevious.equals(vic.getStatementIndexOfThisLoopOrShadowVariable())) {
+            // this is the very specific situation that the previous statement introduced a loop variable (or a shadow copy)
             // this loop variable should not go beyond the loop statement
             return; // skip
         } else {
@@ -362,7 +362,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // at best level (we can already have Level 4 vi in this statement, still we need to copy into 1
         // Basics_3; on the other hand, READ needs to be at best level
         variables.stream().map(Map.Entry::getValue)
-                .filter(vic -> !index.equals(vic.getStatementIndexOfThisLoopVariable()))
+                //  .filter(vic -> !index.equals(vic.getStatementIndexOfThisLoopVariable())) FIXME why?
                 .forEach(vic -> {
                     VariableInfo viLevel1 = vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
                     VariableInfo variableInfo = vic.current();
@@ -412,9 +412,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                     }
                 });
 
+        // explicitly copy local variables from above or previous
+        // loop variables at the statement are not copied to the next one
         if (copyFrom != null) {
             copyFrom.variables.stream()
-                    .filter(e -> !copyFrom.index.equals(e.getValue().getStatementIndexOfThisLoopVariable()))
+                    .filter(e -> previous == null || !copyFrom.index.equals(e.getValue().getStatementIndexOfThisLoopOrShadowVariable()))
                     .forEach(e -> {
                         String fqn = e.getKey();
                         VariableInfoContainer vicFrom = e.getValue();
@@ -447,26 +449,28 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // some blocks are guaranteed to be executed, others are only executed conditionally.
         Stream<Map.Entry<String, VariableInfoContainer>> variableStream = makeVariableStream(lastStatements);
         Set<String> merged = new HashSet<>();
-        variableStream.filter(vic -> !index.equals(vic.getValue().getStatementIndexOfThisLoopVariable())).forEach(e -> {
-            String fqn = e.getKey();
-            VariableInfoContainer vic = e.getValue();
+        // explicitly ignore loop and shadow loop variables, they should not exist beyond the statement
+        variableStream.filter(vic -> !index.equals(vic.getValue().getStatementIndexOfThisLoopOrShadowVariable()))
+                .forEach(e -> {
+                    String fqn = e.getKey();
+                    VariableInfoContainer vic = e.getValue();
 
-            // the variable stream comes from multiple blocks; we ensure that merging takes place once only
-            if (merged.add(fqn)) {
-                List<VariableInfo> toMerge = lastStatements.stream()
-                        .filter(sa -> sa.statementAnalysis.variables.isSet(fqn))
-                        .map(sa -> sa.statementAnalysis.variables.get(fqn).current())
-                        .collect(Collectors.toList());
-                VariableInfoContainer destination;
-                if (!variables.isSet(fqn)) {
-                    Variable variable = e.getValue().current().variable();
-                    destination = createVariable(evaluationContext.getAnalyserContext(), variable, statementTime, false);
-                } else {
-                    destination = vic;
-                }
-                destination.merge(VariableInfoContainer.LEVEL_4_SUMMARY, evaluationContext, state, atLeastOneBlockExecuted, toMerge);
-            }
-        });
+                    // the variable stream comes from multiple blocks; we ensure that merging takes place once only
+                    if (merged.add(fqn)) {
+                        List<VariableInfo> toMerge = lastStatements.stream()
+                                .filter(sa -> sa.statementAnalysis.variables.isSet(fqn))
+                                .map(sa -> sa.statementAnalysis.variables.get(fqn).current())
+                                .collect(Collectors.toList());
+                        VariableInfoContainer destination;
+                        if (!variables.isSet(fqn)) {
+                            Variable variable = e.getValue().current().variable();
+                            destination = createVariable(evaluationContext.getAnalyserContext(), variable, statementTime, false);
+                        } else {
+                            destination = vic;
+                        }
+                        destination.merge(VariableInfoContainer.LEVEL_4_SUMMARY, evaluationContext, state, atLeastOneBlockExecuted, toMerge);
+                    }
+                });
     }
 
     // return a stream of all variables that need merging up
@@ -503,7 +507,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
         int statementTimeForVariable = statementTimeForVariable(analyserContext, variable, statementTime);
         String assignmentIndex = assignmentIndexAtCreation(variable, isNotAssignmentTarget);
-        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, assignmentIndex, statementTimeForVariable, null, null);
+        VariableInfoContainer vic = new VariableInfoContainerImpl(variable, assignmentIndex, statementTimeForVariable, VariableInLoop.NOT_IN_LOOP);
 
         variables.put(variable.fullyQualifiedName(), vic);
         log(VARIABLE_PROPERTIES, "Added variable to map: {}", variable.fullyQualifiedName());

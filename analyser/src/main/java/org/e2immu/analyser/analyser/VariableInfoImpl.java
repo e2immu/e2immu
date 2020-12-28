@@ -21,11 +21,12 @@ import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.NewObject;
+import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.LoopStatement;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnce;
 
@@ -262,13 +263,22 @@ class VariableInfoImpl implements VariableInfo {
         StatementAnalysis statementAnalysis = evaluationContext.getCurrentStatement().statementAnalysis;
         if (statementAnalysis.statement instanceof LoopStatement && mergeValue != NO_VALUE) {
             Map<Expression, Expression> map = statementAnalysis.variables.stream()
-                    .filter(e -> statementAnalysis.index.equals(e.getValue().getStatementIndexOfThisLoopVariable()))
+                    .filter(e -> statementAnalysis.index.equals(e.getValue().getStatementIndexOfThisShadowVariable()))
                     .collect(Collectors.toUnmodifiableMap(e -> new VariableExpression(e.getValue().current().variable()),
-                            e -> new NewObject(evaluationContext.getPrimitives(), e.getValue().current().variable().parameterizedType(),
-                                    e.getValue().current().getObjectFlow())));
+                            e -> wrap(evaluationContext,
+                                    new NewObject(evaluationContext.getPrimitives(), e.getValue().current().variable().parameterizedType(),
+                                            e.getValue().current().getObjectFlow()),
+                                    e.getValue().current())));
             return mergeValue.reEvaluate(evaluationContext, map).value();
         }
         return mergeValue;
+    }
+
+    private Expression wrap(EvaluationContext evaluationContext, NewObject newObject, VariableInfo vi) {
+        if(Primitives.isPrimitiveExcludingVoid(vi.variable().parameterizedType())) return newObject;
+        Map<VariableProperty, Integer> properties = Map.of(VariableProperty.NOT_NULL,
+                evaluationContext.getProperty(vi.variable(), VariableProperty.NOT_NULL));
+        return PropertyWrapper.propertyWrapperForceProperties(newObject, properties);
     }
 
     private String mergedAssignmentId(EvaluationContext evaluationContext, boolean existingValuesWillBeOverwritten,

@@ -758,19 +758,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (!statementAnalysis.variables.isSet(lvc.localVariable.name())) {
                     LocalVariableReference lvr = new LocalVariableReference(analyserContext, lvc.localVariable, List.of());
                     VariableInfoContainer vic = new VariableInfoContainerImpl(lvr, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD,
-                            index(), index()); // index() here means: start a loop
+                            new VariableInLoop(index(), VariableInLoop.VariableType.LOOP));
                     vic.prepareForValueChange(l2, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
                     Map<VariableProperty, Integer> propertiesToSet = new HashMap<>();
                     if (sharedState.forwardAnalysisInfo.inCatch()) {
                         propertiesToSet.put(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                         propertiesToSet.put(VariableProperty.READ, Level.TRUE); // do not complain if variable not read
                     }
-                    if(statement() instanceof LoopStatement) {
+                    if (statement() instanceof LoopStatement) {
                         statementAnalysis.localVariablesAssignedInThisLoop.add(lvr.fullyQualifiedName());
                     } else {
                         vic.setStateOnAssignment(l2, new BooleanConstant(statementAnalysis.primitives, true));
                         vic.setValueOnAssignment(l2, new NewObject(statementAnalysis.primitives, lvr.parameterizedType(), ObjectFlow.NO_FLOW),
-                                propertiesToSet); // FIXME correct for for() loop?
+                                propertiesToSet);
                     }
                     vic.setLinkedVariables(l2, Set.of());
                     statementAnalysis.variables.put(lvc.localVariable.name(), vic);
@@ -804,6 +804,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             VariableInfoContainer vic = statementAnalysis.findForWriting(fqn); // must exist already
             VariableInfo current = vic.current();
             vic.prepareForValueChange(l2, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+            vic.setStateOnAssignment(l2, new BooleanConstant(statementAnalysis.primitives, true));
 
             // assign to local variable that has been created at Level 2 in this statement
             String newFqn = fqn + "$" + index();
@@ -813,19 +814,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         current.variable().parameterizedType(),
                         List.of(), myMethodAnalyser.methodInfo.typeInfo);
                 newLvr = new LocalVariableReference(analyserContext, localVariable, List.of());
-                VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD, null, null);
+                VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD,
+                        new VariableInLoop(index(), VariableInLoop.VariableType.LOOP_COPY));
                 statementAnalysis.variables.put(newFqn, newVic);
                 newVic.prepareForValueChange(l2, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
-                Map<VariableProperty, Integer> propertiesToSet = new HashMap<>();
                 newVic.setStateOnAssignment(l2, new BooleanConstant(statementAnalysis.primitives, true));
                 newVic.setValueOnAssignment(l2, new NewObject(statementAnalysis.primitives, newLvr.parameterizedType(), ObjectFlow.NO_FLOW),
-                        propertiesToSet);
+                        current.getProperties());
                 newVic.setLinkedVariables(l2, Set.of(vic.current().variable()));
             } else {
                 newLvr = (LocalVariableReference) statementAnalysis.variables.get(newFqn).current().variable();
             }
 
-            vic.setStateOnAssignment(l2, new BooleanConstant(statementAnalysis.primitives, true));
             vic.setValueOnAssignment(l2, new VariableExpression(newLvr), Map.of());
         });
 

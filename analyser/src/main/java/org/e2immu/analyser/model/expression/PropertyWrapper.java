@@ -89,6 +89,10 @@ public class PropertyWrapper implements Expression, ExpressionWrapper {
         return new PropertyWrapper(value, properties, objectFlow);
     }
 
+    public static Expression propertyWrapperForceProperties(Expression value, Map<VariableProperty, Integer> properties) {
+        return new PropertyWrapper(value, properties, value.getObjectFlow());
+    }
+
     @Override
     public ParameterizedType returnType() {
         return expression.returnType();

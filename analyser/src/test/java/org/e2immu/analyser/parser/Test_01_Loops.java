@@ -78,7 +78,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals("0", d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int";
                     Assert.assertEquals(expect, d.currentValue().debugOutput());
                 }
                 if ("2.0.0".equals(d.statementId())) {
@@ -90,7 +90,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals(expect, d.currentValue().debugOutput());
                 }
                 if ("3".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
             }
@@ -128,7 +128,9 @@ public class Test_01_Loops extends CommonTestRunner {
 
     @Test
     public void test1() throws IOException {
-        final String END_RESULT = "-1+-i$2+n>=1?\"abc\":res2$2";
+        // weirdly written but there is no dedicated logic in place
+        final String END_RESULT = "instance type int>=0?\"abc\":instance type String/**/";
+
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2.0.1".equals(d.statementId())) {
@@ -152,17 +154,20 @@ public class Test_01_Loops extends CommonTestRunner {
             }
             if ("res2".equals(d.variableName())) {
                 if ("2.0.0".equals(d.statementId())) {
-                    Assert.assertEquals("2", d.variableInfoContainer().getLocalVariableInLoopDefinedOutsideMainIndex());
+                    Assert.assertEquals("2", d.variableInfoContainer().getVariableInLoop()
+                            .statementId(VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE));
                     String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "res2$2";
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
                 }
                 if ("2.0.1.0.0".equals(d.statementId())) {
-                    Assert.assertEquals("2", d.variableInfoContainer().getLocalVariableInLoopDefinedOutsideMainIndex());
+                    Assert.assertEquals("2", d.variableInfoContainer().getVariableInLoop()
+                            .statementId(VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE));
                     String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "res2$2";
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
                 }
                 if ("2.0.1".equals(d.statementId())) {
-                    Assert.assertEquals("2", d.variableInfoContainer().getLocalVariableInLoopDefinedOutsideMainIndex());
+                    Assert.assertEquals("2", d.variableInfoContainer().getVariableInLoop()
+                            .statementId(VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE));
 
                     String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "res2$2";
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
@@ -178,6 +183,9 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals(expectState, d.variableInfo().getStateOnAssignment().toString());
                     String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : END_RESULT;
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
+                    if (d.iteration() > 0) {
+                        Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL));
+                    }
                 }
             }
         };
@@ -236,6 +244,11 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
                 }
             }
+            if ("s$1".equals(d.variableName())) { // only exists in iteration 1+
+                if ("1.0.0".equals(d.statementId())) {
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                }
+            }
             if ("res".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "s$1";
@@ -246,7 +259,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     int expectNn = d.iteration() == 0 ? MultiLevel.NULLABLE : MultiLevel.EFFECTIVELY_NOT_NULL;
                     Assert.assertEquals(expectNn, d.getProperty(VariableProperty.NOT_NULL));
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type String";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type String/*@NotNull*/";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
             }
@@ -325,7 +338,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     }
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "??";
-                    //    Assert.assertEquals(expect, d.currentValue().toString());
+                        //    Assert.assertEquals(expect, d.currentValue().toString());
                     }
                 }
             }
@@ -346,7 +359,8 @@ public class Test_01_Loops extends CommonTestRunner {
         };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId()) && "i".equals(d.variableName())) {
-                Assert.assertEquals("1", d.variableInfoContainer().getLocalVariableInLoopDefinedOutsideMainIndex());
+                Assert.assertEquals("1", d.variableInfoContainer().getVariableInLoop()
+                        .statementId(VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE));
             }
         };
         testClass("Loops_5", 0, 1, new DebugConfiguration.Builder()

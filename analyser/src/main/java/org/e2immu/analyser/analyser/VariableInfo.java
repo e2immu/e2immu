@@ -99,11 +99,4 @@ public interface VariableInfo {
      */
     String getAssignmentId();
 
-    default boolean isVariableField() {
-        return variable() instanceof FieldReference && getStatementTime() >= 0;
-    }
-
-    default boolean afterSecondAssignment() {
-        return getProperty(VariableProperty.ASSIGNED) > 1;
-    }
 }

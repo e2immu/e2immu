@@ -41,10 +41,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     private final VariableInfo[] data = new VariableInfo[LEVELS];
     private int currentLevel;
 
+    private final VariableInLoop variableInLoop;
     // NOTE: isLocalVariableInLoopDefinedOutside == (localVariableInLoopDefinedOutsideMainIndex != null)
-    private final String localVariableInLoopDefinedOutsideMainIndex;
-
-    private final String statementIndexOfThisLoopVariable;
 
     public VariableInfoContainerImpl(VariableInfoContainer previous, String statementIndexForLocalVariableInLoop) {
         Objects.requireNonNull(previous);
@@ -52,42 +50,32 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         data[LEVEL_0_PREVIOUS] = current;
         currentLevel = LEVEL_0_PREVIOUS;
         if (statementIndexForLocalVariableInLoop == null) {
-            localVariableInLoopDefinedOutsideMainIndex = null;
+            variableInLoop = previous.getVariableInLoop();
         } else {
-            String prevStatementId = previous.getLocalVariableInLoopDefinedOutsideMainIndex();
+            String prevStatementId = previous.getVariableInLoop().variableType() == VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE ?
+                    previous.getVariableInLoop().statementId() : null;
             if (prevStatementId != null && !statementIndexForLocalVariableInLoop.startsWith(prevStatementId)) {
                 // we go back out
-                localVariableInLoopDefinedOutsideMainIndex = null;
+                variableInLoop = VariableInLoop.NOT_IN_LOOP;
             } else {
-                localVariableInLoopDefinedOutsideMainIndex = prevStatementId; // stay where we are
+                variableInLoop = previous.getVariableInLoop();
             }
         }
-        this.statementIndexOfThisLoopVariable = previous.getStatementIndexOfThisLoopVariable();
     }
 
     public VariableInfoContainerImpl(Variable variable,
                                      String assignmentIndex,
                                      int statementTime,
-                                     String localVariableInLoopDefinedOutsideMainIndex,
-                                     String statementIndexOfThisLoopVariable) {
+                                     VariableInLoop variableInLoop) {
         Objects.requireNonNull(variable);
         data[LEVEL_1_INITIALISER] = new VariableInfoImpl(variable, assignmentIndex + ":1", statementTime);
         currentLevel = LEVEL_1_INITIALISER;
-        this.localVariableInLoopDefinedOutsideMainIndex = localVariableInLoopDefinedOutsideMainIndex;
-        this.statementIndexOfThisLoopVariable = statementIndexOfThisLoopVariable;
-    }
-
-    public String getStatementIndexOfThisLoopVariable() {
-        return statementIndexOfThisLoopVariable;
+        this.variableInLoop = variableInLoop;
     }
 
     @Override
-    public boolean isLocalVariableInLoopDefinedOutside() {
-        return localVariableInLoopDefinedOutsideMainIndex != null;
-    }
-
-    public String getLocalVariableInLoopDefinedOutsideMainIndex() {
-        return localVariableInLoopDefinedOutsideMainIndex;
+    public VariableInLoop getVariableInLoop() {
+        return variableInLoop;
     }
 
     @Override

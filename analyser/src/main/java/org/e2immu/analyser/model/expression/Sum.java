@@ -58,6 +58,9 @@ public class Sum extends BinaryOperator {
         if (l instanceof Numeric ln && r instanceof Numeric rn)
             return IntConstant.intOrDouble(primitives, ln.doubleValue() + rn.doubleValue(), objectFlow);
 
+        if (l.isInstanceOf(NewObject.class)) return l;
+        if (r.isInstanceOf(NewObject.class)) return r; // 1+instance type int === instance type int
+
         // any unknown lingering
         if (l.isUnknown() || r.isUnknown()) return l.combineUnknown(r);
 

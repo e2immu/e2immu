@@ -161,13 +161,24 @@ public interface VariableInfoContainer {
     Is true starting from the level 3 main expression of the loop statement, down to all statements in the block.
     Is true at all times for variables declared in the loop statement's level 2 (for, forEach)
      */
-    boolean isLocalVariableInLoopDefinedOutside();
-
-    String getLocalVariableInLoopDefinedOutsideMainIndex();
+    default boolean isLocalVariableInLoopDefinedOutside() {
+        return getVariableInLoop().variableType() == VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE;
+    }
 
     /*
-    A loop variable is explicitly defined in level 2; this index indicates the index of the defining statement.
+    Never null, points to NOT_IN_LOOP otherwise
      */
-    String getStatementIndexOfThisLoopVariable();
+    VariableInLoop getVariableInLoop();
 
+    default String getStatementIndexOfThisLoopOrShadowVariable() {
+        return getVariableInLoop().statementId(VariableInLoop.VariableType.LOOP, VariableInLoop.VariableType.LOOP_COPY);
+    }
+
+    default String getStatementIndexOfThisShadowVariable() {
+        return getVariableInLoop().statementId(VariableInLoop.VariableType.LOOP_COPY);
+    }
+
+    default String getStatementIndexOfThisLoopVariable() {
+        return getVariableInLoop().statementId(VariableInLoop.VariableType.LOOP);
+    }
 }
