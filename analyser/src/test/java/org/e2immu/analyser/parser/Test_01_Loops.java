@@ -311,9 +311,21 @@ public class Test_01_Loops extends CommonTestRunner {
                     }
                 }
                 if ("org.e2immu.analyser.testexample.Loops_4.method()".equals(d.variableName())) {
+                    if ("0.0.0.0.0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "4";
+                        Assert.assertEquals(expect, d.currentValue().toString());
+                    }
+                    if ("0.0.0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1==i$0?4:<return value>";
+                        Assert.assertEquals(expect, d.currentValue().toString());
+                    }
+                    if ("0".equals(d.statementId())) {
+                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int<=9?1==instance type int?4:<return value>:<return value>";
+                        Assert.assertEquals(expect, d.currentValue().toString());
+                    }
                     if ("1".equals(d.statementId())) {
                         String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "??";
-                        Assert.assertEquals(expect, d.currentValue().toString());
+                    //    Assert.assertEquals(expect, d.currentValue().toString());
                     }
                 }
             }
@@ -337,7 +349,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 Assert.assertEquals("1", d.variableInfoContainer().getLocalVariableInLoopDefinedOutsideMainIndex());
             }
         };
-        testClass("Loops_5", 0, 0, new DebugConfiguration.Builder()
+        testClass("Loops_5", 0, 1, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());

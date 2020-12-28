@@ -4,9 +4,14 @@ import org.e2immu.annotation.Constant;
 
 public class Loops_4 {
 
-    // important here is that i==0 is not a constant expression, because i is a loop variable
-    // the interesting value to check here is 1, because the i++ is evaluated BEFORE the i<10 and the i++
-    // at the moment
+    /*
+    Depending on increasing fidelity, the analyser first produces
+
+    - constant 0 (as there is no "state" after the for-loop)
+    - then some mix between 0 and 4 (not realising that the if is not conditional given the loop)
+    - finally constant 4 (when realising that the inner if will potentially be true)
+
+     */
     @Constant(absent = true)
     public static int method() {
         for (int i = 0; i < 10; i++) {

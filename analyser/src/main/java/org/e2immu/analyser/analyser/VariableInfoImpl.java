@@ -260,7 +260,7 @@ class VariableInfoImpl implements VariableInfo {
      */
     private Expression replaceLocalVariables(EvaluationContext evaluationContext, Expression mergeValue) {
         StatementAnalysis statementAnalysis = evaluationContext.getCurrentStatement().statementAnalysis;
-        if (statementAnalysis.statement instanceof LoopStatement && variable instanceof LocalVariableReference) {
+        if (statementAnalysis.statement instanceof LoopStatement && mergeValue != NO_VALUE) {
             Map<Expression, Expression> map = statementAnalysis.variables.stream()
                     .filter(e -> statementAnalysis.index.equals(e.getValue().getStatementIndexOfThisLoopVariable()))
                     .collect(Collectors.toUnmodifiableMap(e -> new VariableExpression(e.getValue().current().variable()),
