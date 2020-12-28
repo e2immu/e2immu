@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.statement.LoopStatement;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.IncrementalMap;
@@ -243,7 +244,8 @@ class VariableInfoImpl implements VariableInfo {
             }
             return newVi;
         }
-        assert assignmentId.equals(newObject.assignmentId);
+        assert assignmentId.equals(newObject.assignmentId) :
+                "Merged to " + assignmentId + ", newObject had " + newObject.assignmentId + " for variable " + name;
 
         if (mergedValue != NO_VALUE && (!newObject.value.isSet() || !newObject.value.get().equals(mergedValue))) {
             newObject.setStateOnAssignment(state);
@@ -258,7 +260,7 @@ class VariableInfoImpl implements VariableInfo {
      */
     private Expression replaceLocalVariables(EvaluationContext evaluationContext, Expression mergeValue) {
         StatementAnalysis statementAnalysis = evaluationContext.getCurrentStatement().statementAnalysis;
-        if (statementAnalysis.statement instanceof LoopStatement) {
+        if (statementAnalysis.statement instanceof LoopStatement && variable instanceof LocalVariableReference) {
             Map<Expression, Expression> map = statementAnalysis.variables.stream()
                     .filter(e -> statementAnalysis.index.equals(e.getValue().getStatementIndexOfThisLoopVariable()))
                     .collect(Collectors.toUnmodifiableMap(e -> new VariableExpression(e.getValue().current().variable()),

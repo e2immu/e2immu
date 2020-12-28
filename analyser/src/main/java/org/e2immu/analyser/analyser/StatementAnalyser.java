@@ -765,9 +765,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         propertiesToSet.put(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                         propertiesToSet.put(VariableProperty.READ, Level.TRUE); // do not complain if variable not read
                     }
-                    vic.setStateOnAssignment(l2, new BooleanConstant(statementAnalysis.primitives, true));
-                    vic.setValueOnAssignment(l2, new NewObject(statementAnalysis.primitives, lvr.parameterizedType(), ObjectFlow.NO_FLOW),
-                            propertiesToSet);
+                    if(statement() instanceof LoopStatement) {
+                        statementAnalysis.localVariablesAssignedInThisLoop.add(lvr.fullyQualifiedName());
+                    } else {
+                        vic.setStateOnAssignment(l2, new BooleanConstant(statementAnalysis.primitives, true));
+                        vic.setValueOnAssignment(l2, new NewObject(statementAnalysis.primitives, lvr.parameterizedType(), ObjectFlow.NO_FLOW),
+                                propertiesToSet); // FIXME correct for for() loop?
+                    }
                     vic.setLinkedVariables(l2, Set.of());
                     statementAnalysis.variables.put(lvc.localVariable.name(), vic);
                 }
@@ -785,7 +789,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         // part 2: all local variables assigned to in loop
 
         if (!(statementAnalysis.statement instanceof LoopStatement)) return DONE;
-        if (!(statementAnalysis.localVariablesAssignedInThisLoop.isFrozen())) return DELAYS; // come back later
+        if (!(statementAnalysis.localVariablesAssignedInThisLoop.isFrozen())) {
+            for (Expression expression : statementAnalysis.statement.getStructure().updaters()) {
+                if (expression instanceof Assignment assignment &&
+                        assignment.target instanceof VariableExpression ve &&
+                        !statementAnalysis.localVariablesAssignedInThisLoop.contains(ve.name())) {
+                    statementAnalysis.localVariablesAssignedInThisLoop.add(ve.name());
+                }
+            }
+            return DELAYS; // come back later
+        }
+
         statementAnalysis.localVariablesAssignedInThisLoop.stream().forEach(fqn -> {
             VariableInfoContainer vic = statementAnalysis.findForWriting(fqn); // must exist already
             VariableInfo current = vic.current();

@@ -81,10 +81,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         return statementIndexOfThisLoopVariable;
     }
 
-    public boolean isLoopVariable() {
-        return statementIndexOfThisLoopVariable != null;
-    }
-
     @Override
     public boolean isLocalVariableInLoopDefinedOutside() {
         return localVariableInLoopDefinedOutsideMainIndex != null;
@@ -420,10 +416,5 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Expression andOtherSide = new And(evaluationContext.getPrimitives()).append(evaluationContext,
                 merge.stream().map(VariableInfo::getStateOnAssignment).toArray(Expression[]::new));
         return notOne.equals(andOtherSide);
-    }
-
-    @Override
-    public boolean isNotDefinedAtLevel2() {
-        return data[LEVEL_2_UPDATER] == null || data[LEVEL_0_PREVIOUS] != null || data[LEVEL_1_INITIALISER] != null;
     }
 }

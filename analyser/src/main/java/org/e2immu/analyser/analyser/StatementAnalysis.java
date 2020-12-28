@@ -313,7 +313,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfo vi = vic.current();
         VariableInfoContainer newVic;
         // as we move into a loop statement, the index is added to obtain local variable in loop defined outside
-        if (!vic.isLocalVariableInLoopDefinedOutside() && statement instanceof LoopStatement) {
+        if (!vic.isLocalVariableInLoopDefinedOutside() && statement instanceof LoopStatement && vi.variable().isLocal()) {
             newVic = new VariableInfoContainerImpl(vi.variable(), index, VariableInfoContainer.NOT_A_VARIABLE_FIELD, index,
                     vic.getStatementIndexOfThisLoopVariable());
             vi.propertyStream().forEach(e -> newVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, e.getKey(), e.getValue()));
@@ -362,7 +362,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // at best level (we can already have Level 4 vi in this statement, still we need to copy into 1
         // Basics_3; on the other hand, READ needs to be at best level
         variables.stream().map(Map.Entry::getValue)
-                .filter(vic -> vic.isNotDefinedAtLevel2())
+                .filter(vic -> !index.equals(vic.getStatementIndexOfThisLoopVariable()))
                 .forEach(vic -> {
                     VariableInfo viLevel1 = vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
                     VariableInfo variableInfo = vic.current();
@@ -447,7 +447,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // some blocks are guaranteed to be executed, others are only executed conditionally.
         Stream<Map.Entry<String, VariableInfoContainer>> variableStream = makeVariableStream(lastStatements);
         Set<String> merged = new HashSet<>();
-        variableStream.filter(vic -> vic.getValue().isNotDefinedAtLevel2()).forEach(e -> {
+        variableStream.filter(vic -> !index.equals(vic.getValue().getStatementIndexOfThisLoopVariable())).forEach(e -> {
             String fqn = e.getKey();
             VariableInfoContainer vic = e.getValue();
 

@@ -163,19 +163,11 @@ public interface VariableInfoContainer {
      */
     boolean isLocalVariableInLoopDefinedOutside();
 
-    /*
-    Variables defined at level 2 only exist in their block; they are not propagated to the next statement, nor are they
-    merged into level 4
-     */
-    boolean isNotDefinedAtLevel2();
-
     String getLocalVariableInLoopDefinedOutsideMainIndex();
 
     /*
     A loop variable is explicitly defined in level 2; this index indicates the index of the defining statement.
      */
     String getStatementIndexOfThisLoopVariable();
-
-    boolean isLoopVariable();
 
 }
