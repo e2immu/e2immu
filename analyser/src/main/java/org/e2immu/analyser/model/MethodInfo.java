@@ -393,6 +393,6 @@ public class MethodInfo implements WithInspectionAndAnalysis {
     }
 
     public boolean hasStatements() {
-        return methodInspection.get().getMethodBody().structure.statements.size() > 0;
+        return methodInspection.get().getMethodBody().structure.statements().size() > 0;
     }
 }

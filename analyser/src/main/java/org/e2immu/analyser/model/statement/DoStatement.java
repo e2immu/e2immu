@@ -45,17 +45,17 @@ public class DoStatement extends LoopStatement {
     @Override
     public Statement translate(TranslationMap translationMap) {
         return new DoStatement(label, translationMap.translateExpression(expression),
-                translationMap.translateBlock(structure.block));
+                translationMap.translateBlock(structure.block()));
     }
 
 
     @Override
     public OutputBuilder output(StatementAnalysis statementAnalysis) {
         return new OutputBuilder().add(new Text("do"))
-                .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)))
+                .add(structure.block().output(StatementAnalysis.startOfBlock(statementAnalysis, 0)))
                 .add(new Text("while"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(structure.expression.output())
+                .add(structure.expression().output())
                 .add(Symbol.RIGHT_PARENTHESIS);
     }
 }

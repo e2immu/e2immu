@@ -22,8 +22,12 @@ import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
-import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.Statement;
+import org.e2immu.analyser.model.TranslationMap;
+import org.e2immu.analyser.model.TypeInfo;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
+import org.e2immu.analyser.model.expression.LocalVariableCreation;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -32,15 +36,17 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
 
+import java.util.List;
+
 public class ForEachStatement extends LoopStatement {
     public ForEachStatement(String label,
-                            LocalVariable localVariable,
+                            LocalVariableCreation localVariableCreation,
                             Expression expression,
                             Block block) {
         super(new Structure.Builder()
                 .setStatementExecution(ForEachStatement::computeExecution)
                 .setForwardEvaluationInfo(ForwardEvaluationInfo.NOT_NULL)
-                .setLocalVariableCreation(localVariable)
+                .addInitialisers(List.of(localVariableCreation))
                 .setExpression(expression)
                 .setBlock(block).build(), label);
     }
@@ -61,16 +67,16 @@ public class ForEachStatement extends LoopStatement {
     @Override
     public Statement translate(TranslationMap translationMap) {
         return new ForEachStatement(label,
-                translationMap.translateLocalVariable(structure.localVariableCreation),
+                (LocalVariableCreation) translationMap.translateExpression(structure.initialisers().get(0)),
                 translationMap.translateExpression(expression),
-                translationMap.translateBlock(structure.block));
+                translationMap.translateBlock(structure.block()));
     }
 
     @Override
     public UpgradableBooleanMap<TypeInfo> typesReferenced() {
         return UpgradableBooleanMap.of(expression.typesReferenced(),
-                structure.block.typesReferenced(),
-                structure.localVariableCreation.parameterizedType().typesReferenced(true));
+                structure.block().typesReferenced(),
+                structure.initialisers().get(0).returnType().typesReferenced(true));
     }
 
 
@@ -80,14 +86,15 @@ public class ForEachStatement extends LoopStatement {
         if (label != null) {
             outputBuilder.add(new Text(label)).add(Symbol.COLON_LABEL);
         }
+        LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
         return outputBuilder.add(new Text("for"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(structure.localVariableCreation.parameterizedType().output())
+                .add(lvc.returnType().output())
                 .add(Space.ONE)
-                .add(new Text(structure.localVariableCreation.name()))
+                .add(new Text(lvc.localVariable.name()))
                 .add(Symbol.COLON)
-                .add(structure.expression.output())
+                .add(structure.expression().output())
                 .add(Symbol.RIGHT_PARENTHESIS)
-                .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+                .add(structure.block().output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 }

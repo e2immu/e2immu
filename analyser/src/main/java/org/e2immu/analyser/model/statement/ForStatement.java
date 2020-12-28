@@ -34,10 +34,10 @@ public class ForStatement extends LoopStatement {
     @Override
     public Statement translate(TranslationMap translationMap) {
         return new ForStatement(label,
-                structure.initialisers.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
+                structure.initialisers().stream().map(translationMap::translateExpression).collect(Collectors.toList()),
                 translationMap.translateExpression(expression),
-                structure.updaters.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                translationMap.translateBlock(structure.block));
+                structure.updaters().stream().map(translationMap::translateExpression).collect(Collectors.toList()),
+                translationMap.translateBlock(structure.block()));
     }
 
     @Override
@@ -48,20 +48,20 @@ public class ForStatement extends LoopStatement {
         }
         return outputBuilder.add(new Text("for"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(structure.initialisers.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                .add(structure.initialisers().stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
                 .add(Symbol.SEMICOLON)
-                .add(structure.expression.output())
+                .add(structure.expression().output())
                 .add(Symbol.SEMICOLON)
-                .add(structure.updaters.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                .add(structure.updaters().stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
                 .add(Symbol.RIGHT_PARENTHESIS)
-                .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+                .add(structure.block().output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 
     @Override
     public List<? extends Element> subElements() {
-        return ListUtil.immutableConcat(structure.initialisers,
+        return ListUtil.immutableConcat(structure.initialisers(),
                 List.of(expression),
-                structure.updaters,
-                List.of(structure.block));
+                structure.updaters(),
+                List.of(structure.block()));
     }
 }

@@ -40,7 +40,7 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new ExplicitConstructorInvocation(structure.updaters.stream()
+        return new ExplicitConstructorInvocation(structure.updaters().stream()
                 .map(translationMap::translateExpression)
                 .collect(Collectors.toList()));
     }
@@ -48,11 +48,11 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
     @Override
     public OutputBuilder output(StatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("this"));
-        if (structure.updaters.isEmpty()) {
+        if (structure.updaters().isEmpty()) {
             outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
         } else {
             outputBuilder.add(Symbol.LEFT_PARENTHESIS)
-                    .add(structure.updaters.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                    .add(structure.updaters().stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
                     .add(Symbol.RIGHT_PARENTHESIS);
         }
         return outputBuilder.add(Symbol.SEMICOLON);
@@ -60,6 +60,6 @@ public class ExplicitConstructorInvocation extends StatementWithStructure {
 
     @Override
     public List<? extends Element> subElements() {
-        return structure.updaters;
+        return structure.updaters();
     }
 }

@@ -22,9 +22,9 @@ public class TestFunctionalInterfaceModified1 extends CommonTestRunner {
         if ("getAndAdd".equals(fieldInfo.name) || "getAndAdd2".equals(fieldInfo.name) || "getAndAdd3".equals(fieldInfo.name)) {
             MethodInfo sam = fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
             Block block = sam.methodInspection.get().getMethodBody();
-            Assert.assertEquals(1, block.structure.statements.size());
-            ReturnStatement returnStatement = (ReturnStatement) block.structure.statements.get(0);
-            Assert.assertEquals("myCounter.add(t)", returnStatement.structure.expression.minimalOutput());
+            Assert.assertEquals(1, block.structure.statements().size());
+            ReturnStatement returnStatement = (ReturnStatement) block.structure.statements().get(0);
+            Assert.assertEquals("myCounter.add(t)", returnStatement.structure.expression().minimalOutput());
         }
 
         if("getAndAdd".equals(fieldInfo.name)) {
@@ -40,9 +40,9 @@ public class TestFunctionalInterfaceModified1 extends CommonTestRunner {
         if ("getAndIncrement".equals(fieldInfo.name)) {
             MethodInfo sam = fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();
             Block block = sam.methodInspection.get().getMethodBody();
-            Assert.assertEquals(1, block.structure.statements.size());
-            ReturnStatement returnStatement = (ReturnStatement) block.structure.statements.get(0);
-            Assert.assertEquals("myCounter.increment()", returnStatement.structure.expression.minimalOutput());
+            Assert.assertEquals(1, block.structure.statements().size());
+            ReturnStatement returnStatement = (ReturnStatement) block.structure.statements().get(0);
+            Assert.assertEquals("myCounter.increment()", returnStatement.structure.expression().minimalOutput());
         }
         if ("explicitGetAndIncrement".equals(fieldInfo.name)) {
             MethodInfo get = fieldInfo.fieldInspection.get().getFieldInitialiser().implementationOfSingleAbstractMethod();

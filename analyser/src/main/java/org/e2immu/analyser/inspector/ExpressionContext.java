@@ -262,7 +262,7 @@ public class ExpressionContext {
                 }
                 boolean java12Style = switchEntry.getType() != com.github.javaparser.ast.stmt.SwitchEntry.Type.STATEMENT_GROUP;
                 return new SwitchEntry.StatementsEntry(typeContext.getPrimitives(),
-                        switchVariableAsExpression, java12Style, labels, blockBuilder.build().structure.statements);
+                        switchVariableAsExpression, java12Style, labels, blockBuilder.build().structure.statements());
             }
             case BLOCK -> {
                 Block block = parseBlockOrStatement(switchEntry.getStatements().get(0));
@@ -322,7 +322,8 @@ public class ExpressionContext {
             LocalVariable localVariable = new LocalVariable.LocalVariableBuilder()
                     .setOwningType(enclosingType)
                     .setName(name).setParameterizedType(typeOfVariable).build();
-            TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(localVariable, unionOfTypes);
+            LocalVariableCreation lvc = new LocalVariableCreation(typeContext, localVariable);
+            TryStatement.CatchParameter catchParameter = new TryStatement.CatchParameter(lvc, unionOfTypes);
             ExpressionContext catchExpressionContext = newVariableContext("catch-clause");
             catchExpressionContext.variableContext.add(typeContext, localVariable, List.of());
             Block block = catchExpressionContext.parseBlockOrStatement(catchClause.getBody());
@@ -378,7 +379,8 @@ public class ExpressionContext {
         org.e2immu.analyser.model.Expression expression = parseExpression(forEachStmt.getIterable());
         newVariableContext.add(typeContext, localVariable, List.of(expression));
         Block block = newVariableContext(newVariableContext, "for-loop").parseBlockOrStatement(forEachStmt.getBody());
-        return new ForEachStatement(label, localVariable, expression, block);
+        LocalVariableCreation lvc = new LocalVariableCreation(typeContext, localVariable);
+        return new ForEachStatement(label, lvc, expression, block);
     }
 
     private org.e2immu.analyser.model.Statement ifThenElseStatement(IfStmt statement) {

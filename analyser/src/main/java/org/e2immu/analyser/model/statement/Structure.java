@@ -20,7 +20,6 @@ package org.e2immu.analyser.model.statement;
 import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.model.Statement;
 import org.e2immu.analyser.model.StatementExecution;
 import org.e2immu.analyser.model.expression.EmptyExpression;
@@ -43,38 +42,27 @@ import java.util.stream.Stream;
  *     <li>try: EEE - B - [E-B E-B True-B]</li>
  * </ul>
  */
-public class Structure {
+public record Structure(List<Expression> initialisers,
+                        Expression expression,
+                        ForwardEvaluationInfo forwardEvaluationInfo,
+                        List<Expression> updaters,
+                        Block block,
+                        List<Statement> statements,
+                        @NotNull StatementExecution statementExecution,
+                        List<Structure> subStatements,
+                        boolean createVariablesInsideBlock, boolean expressionIsCondition) {
 
-    public final List<Expression> initialisers; // try, for   (example: int i=0; )
-    public final LocalVariable localVariableCreation; // forEach, catch (int i,  Exception e)
-    public final Expression expression; // for, forEach, while, do, return, expression statement, switch primary  (typically, the condition); OR condition for switch entry
-    public final ForwardEvaluationInfo forwardEvaluationInfo; // info on the expression to be evaluated
-    public final List<Expression> updaters; // for, explicit constructor invocation
-
-    public final List<Statement> statements;
-    public final Block block;
-
-    @NotNull
-    public final StatementExecution statementExecution;
-
-    public final List<Structure> subStatements; // catches, finally, switch entries
-
-    public final boolean createVariablesInsideBlock;
-    public final boolean expressionIsCondition;
-
-    private Structure(@NotNull List<Expression> initialisers,
-                      LocalVariable localVariableCreation,
-                      @NotNull Expression expression,
-                      @NotNull ForwardEvaluationInfo forwardEvaluationInfo,
-                      @NotNull List<Expression> updaters,
-                      Block block,
-                      List<Statement> statements,
-                      @NotNull StatementExecution statementExecution,
-                      List<Structure> subStatements,
-                      boolean createVariablesInsideBlock,
-                      boolean expressionIsCondition) {
+    public Structure(@NotNull List<Expression> initialisers,
+                     @NotNull Expression expression,
+                     @NotNull ForwardEvaluationInfo forwardEvaluationInfo,
+                     @NotNull List<Expression> updaters,
+                     Block block,
+                     List<Statement> statements,
+                     @NotNull StatementExecution statementExecution,
+                     List<Structure> subStatements,
+                     boolean createVariablesInsideBlock,
+                     boolean expressionIsCondition) {
         this.initialisers = Objects.requireNonNull(initialisers);
-        this.localVariableCreation = localVariableCreation;
         this.expression = Objects.requireNonNull(expression);
         this.forwardEvaluationInfo = Objects.requireNonNull(forwardEvaluationInfo);
         this.updaters = Objects.requireNonNull(updaters);
@@ -113,13 +101,8 @@ public class Structure {
         return statements != null && !statements.isEmpty();
     }
 
-    public boolean haveNonEmptyBlock() {
-        return block != null && block != Block.EMPTY_BLOCK;
-    }
-
     public static class Builder {
         private final List<Expression> initialisers = new ArrayList<>(); // try, for   (example: int i=0; )
-        private LocalVariable localVariableCreation; // forEach, catch (int i,  Exception e)
         private Expression expression; // for, forEach, while, do, return, expression statement, switch primary  (typically, the condition); OR condition for switch entry
         private ForwardEvaluationInfo forwardEvaluationInfo;
         private final List<Expression> updaters = new ArrayList<>(); // for
@@ -155,11 +138,6 @@ public class Structure {
             return this;
         }
 
-        public Builder setLocalVariableCreation(LocalVariable localVariableCreation) {
-            this.localVariableCreation = localVariableCreation;
-            return this;
-        }
-
         public Builder setStatements(List<Statement> statements) {
             this.statements = statements;
             return this;
@@ -188,7 +166,6 @@ public class Structure {
         @NotNull
         public Structure build() {
             return new Structure(ImmutableList.copyOf(initialisers),
-                    localVariableCreation,
                     expression == null ? EmptyExpression.EMPTY_EXPRESSION : expression,
                     forwardEvaluationInfo == null ? ForwardEvaluationInfo.DEFAULT : forwardEvaluationInfo,
                     ImmutableList.copyOf(updaters),

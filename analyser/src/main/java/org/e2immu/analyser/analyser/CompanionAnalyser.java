@@ -91,7 +91,7 @@ public class CompanionAnalyser {
             computeRemapParameters(!mainMethod.isConstructor && modifyingMainMethod == Level.TRUE);
 
             ReturnStatement returnStatement = (ReturnStatement) companionMethod.methodInspection.get()
-                    .getMethodBody().structure.statements.get(0);
+                    .getMethodBody().structure.statements().get(0);
             EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, new ConditionManager(analyserContext.getPrimitives()));
             EvaluationResult evaluationResult = returnStatement.expression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
             if (evaluationResult.value() == EmptyExpression.NO_VALUE) {

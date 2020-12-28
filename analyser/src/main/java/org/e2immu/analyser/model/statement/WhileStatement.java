@@ -47,7 +47,7 @@ public class WhileStatement extends LoopStatement {
     @Override
     public Statement translate(TranslationMap translationMap) {
         return new WhileStatement(label, translationMap.translateExpression(expression),
-                translationMap.translateBlock(structure.block));
+                translationMap.translateBlock(structure.block()));
     }
 
 
@@ -55,8 +55,8 @@ public class WhileStatement extends LoopStatement {
     public OutputBuilder output(StatementAnalysis statementAnalysis) {
         return new OutputBuilder().add(new Text("while"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(structure.expression.output())
+                .add(structure.expression().output())
                 .add(Symbol.RIGHT_PARENTHESIS)
-                .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+                .add(structure.block().output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 }

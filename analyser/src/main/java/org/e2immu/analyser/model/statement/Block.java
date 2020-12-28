@@ -81,8 +81,8 @@ public class Block extends StatementWithStructure {
         }
         outputBuilder.add(Symbol.LEFT_BRACE);
         if (statementAnalysis == null) {
-            if (!structure.statements.isEmpty()) {
-                outputBuilder.add(structure.statements.stream()
+            if (!structure.statements().isEmpty()) {
+                outputBuilder.add(structure.statements().stream()
                         .map(s -> s.output(null))
                         .collect(OutputBuilder.joining(Space.NONE, Guide.generatorForBlock())));
             }
@@ -144,13 +144,13 @@ public class Block extends StatementWithStructure {
 
     @Override
     public List<? extends Element> subElements() {
-        return structure.statements;
+        return structure.statements();
     }
 
     @Override
     public Statement translate(TranslationMap translationMap) {
         if (this == EMPTY_BLOCK) return this;
-        return new Block(structure.statements.stream()
+        return new Block(structure.statements().stream()
                 .flatMap(st -> translationMap.translateStatement(st).stream())
                 .collect(Collectors.toList()), label);
     }

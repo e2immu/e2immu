@@ -46,6 +46,12 @@ public class LocalVariableCreation implements Expression {
 
     public LocalVariableCreation(
             @NotNull InspectionProvider inspectionProvider,
+            @NotNull LocalVariable localVariable) {
+        this(inspectionProvider, localVariable, EmptyExpression.EMPTY_EXPRESSION);
+    }
+
+    public LocalVariableCreation(
+            @NotNull InspectionProvider inspectionProvider,
             @NotNull LocalVariable localVariable,
             @NotNull Expression expression) {
         this.localVariable = Objects.requireNonNull(localVariable);

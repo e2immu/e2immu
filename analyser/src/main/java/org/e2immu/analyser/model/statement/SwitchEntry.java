@@ -120,7 +120,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
             return new StatementsEntry(primitives, translationMap.translateExpression(switchVariableAsExpression),
                     java12Style,
                     labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                    structure.statements.stream()
+                    structure.statements().stream()
                             .flatMap(st -> translationMap.translateStatement(st).stream()).collect(Collectors.toList()));
         }
 
@@ -149,7 +149,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
 
         @Override
         public List<? extends Element> subElements() {
-            return ListUtil.immutableConcat(labels, structure.statements);
+            return ListUtil.immutableConcat(labels, structure.statements());
         }
     }
 
@@ -168,7 +168,7 @@ public abstract class SwitchEntry extends StatementWithStructure {
         public Statement translate(TranslationMap translationMap) {
             return new BlockEntry(primitives, translationMap.translateExpression(switchVariableAsExpression),
                     labels.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                    translationMap.translateBlock(structure.block));
+                    translationMap.translateBlock(structure.block()));
         }
 
         @Override
@@ -185,13 +185,13 @@ public abstract class SwitchEntry extends StatementWithStructure {
         public OutputBuilder output(Guide.GuideGenerator guideGenerator, StatementAnalysis statementAnalysis) {
             OutputBuilder outputBuilder = new OutputBuilder();
             appendLabels(outputBuilder, true, guideGenerator);
-            outputBuilder.add(structure.block.output(statementAnalysis));
+            outputBuilder.add(structure.block().output(statementAnalysis));
             return outputBuilder;
         }
 
         @Override
         public List<? extends Element> subElements() {
-            return ListUtil.immutableConcat(labels, List.of(structure.block));
+            return ListUtil.immutableConcat(labels, List.of(structure.block()));
         }
     }
 }

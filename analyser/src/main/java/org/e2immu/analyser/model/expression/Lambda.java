@@ -99,8 +99,8 @@ public class Lambda implements Expression {
     }
 
     private Expression singleExpression() {
-        if (block.structure.statements.size() != 1) return null;
-        Statement statement = block.structure.statements.get(0);
+        if (block.structure.statements().size() != 1) return null;
+        Statement statement = block.structure.statements().get(0);
         if (!(statement instanceof ReturnStatement returnStatement)) return null;
         return returnStatement.expression;
     }

@@ -202,7 +202,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             MethodInfo appendInt = stringBuilder.typeInspection.get().methods().stream().filter(methodInfo -> "append".equals(methodInfo.name) &&
                     intTypeInfo == methodInfo.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
             MethodInfo appendIntCompanion = appendInt.methodInspection.get().getCompanionMethods().values().stream().findFirst().orElseThrow();
-            ReturnStatement returnStatement = (ReturnStatement) appendIntCompanion.methodInspection.get().getMethodBody().structure.statements.get(0);
+            ReturnStatement returnStatement = (ReturnStatement) appendIntCompanion.methodInspection.get().getMethodBody().structure.statements().get(0);
             Assert.assertEquals("return post==prev+Integer.toString(i).length();", returnStatement.minimalOutput());
 
             TypeInfo string = typeMap.getPrimitives().stringTypeInfo;
@@ -230,7 +230,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             MethodInfo appendStr = stringBuilder.typeInspection.get().methods().stream().filter(methodInfo -> "append".equals(methodInfo.name) &&
                     string == methodInfo.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo).findFirst().orElseThrow();
             MethodInfo appendStringCompanion = appendStr.methodInspection.get().getCompanionMethods().values().stream().findFirst().orElseThrow();
-            ReturnStatement returnStatementStr = (ReturnStatement) appendStringCompanion.methodInspection.get().getMethodBody().structure.statements.get(0);
+            ReturnStatement returnStatementStr = (ReturnStatement) appendStringCompanion.methodInspection.get().getMethodBody().structure.statements().get(0);
             Assert.assertEquals("return post==prev+(str==null?4:str.length());", returnStatementStr.minimalOutput());
 
             MethodInfo sbToString = stringBuilder.findUniqueMethod("toString", 0);

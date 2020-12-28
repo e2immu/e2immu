@@ -39,21 +39,21 @@ public class SynchronizedStatement extends StatementWithExpression {
 
     @Override
     public Statement translate(TranslationMap translationMap) {
-        return new SynchronizedStatement(translationMap.translateExpression(structure.expression),
-                translationMap.translateBlock(structure.block));
+        return new SynchronizedStatement(translationMap.translateExpression(structure.expression()),
+                translationMap.translateBlock(structure.block()));
     }
 
     @Override
     public OutputBuilder output(StatementAnalysis statementAnalysis) {
         return new OutputBuilder().add(new Text("synchronized"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(structure.expression.output())
+                .add(structure.expression().output())
                 .add(Symbol.RIGHT_PARENTHESIS)
-                .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+                .add(structure.block().output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
     }
 
     @Override
     public List<? extends Element> subElements() {
-        return List.of(structure.expression, structure.block);
+        return List.of(structure.expression(), structure.block());
     }
 }

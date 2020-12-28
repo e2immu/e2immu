@@ -196,16 +196,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             Structure structure = statement.getStructure();
             if (structure.haveStatements()) {
                 StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
-                        structure.statements, iPlusSt + "." + blockIndex, true, newInSyncBlock);
+                        structure.statements(), iPlusSt + "." + blockIndex, true, newInSyncBlock);
                 analysisBlocks.add(Optional.of(subStatementAnalysis));
             } else {
                 analysisBlocks.add(Optional.empty());
             }
             blockIndex++;
-            for (Structure subStatements : structure.subStatements) {
+            for (Structure subStatements : structure.subStatements()) {
                 if (subStatements.haveStatements()) {
                     StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
-                            subStatements.statements, iPlusSt + "." + blockIndex, true, newInSyncBlock);
+                            subStatements.statements(), iPlusSt + "." + blockIndex, true, newInSyncBlock);
                     analysisBlocks.add(Optional.of(subStatementAnalysis));
                 } else {
                     analysisBlocks.add(Optional.empty());

@@ -100,7 +100,7 @@ public class Test_01_Loops extends CommonTestRunner {
             if (!"method".equals(d.methodInfo().name)) return;
             if ("2".equals(d.statementId())) {
                 if (d.statementAnalysis().statement instanceof WhileStatement whileStatement) {
-                    FlowData.Execution exec = whileStatement.structure.statementExecution
+                    FlowData.Execution exec = whileStatement.structure.statementExecution()
                             .apply(new BooleanConstant(d.statementAnalysis().primitives, true),
                                     d.evaluationContext());
                     Assert.assertSame(FlowData.Execution.ALWAYS, exec);
@@ -274,7 +274,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     if (d.statementAnalysis().statement instanceof ForEachStatement forEachStatement) {
-                        FlowData.Execution exec = forEachStatement.structure.statementExecution
+                        FlowData.Execution exec = forEachStatement.structure.statementExecution()
                                 .apply(new ArrayInitializer(d.statementAnalysis().primitives, ObjectFlow.NO_FLOW,
                                         List.of()), d.evaluationContext());
                         Assert.assertSame(FlowData.Execution.NEVER, exec);
@@ -300,8 +300,15 @@ public class Test_01_Loops extends CommonTestRunner {
 
     @Test
     public void test4() throws IOException {
-
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if("method".equals(d.methodInfo().name)) {
+                if("i".equals(d.variableName())) {
+                    Assert.assertEquals("0", d.variableInfoContainer().getStatementIndexOfThisLoopVariable());
+                }
+            }
+        };
         testClass("Loops_4", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

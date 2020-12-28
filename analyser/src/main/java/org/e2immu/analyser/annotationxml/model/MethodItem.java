@@ -88,7 +88,7 @@ public class MethodItem extends HasAnnotations implements Comparable<MethodItem>
 
     private static Expression extractExpression(MethodInfo companionMethod) {
         Block block = companionMethod.methodInspection.get().getMethodBody();
-        List<Statement> statements = block.structure.statements;
+        List<Statement> statements = block.structure.statements();
         if (statements == null || statements.isEmpty()) return EmptyExpression.EMPTY_EXPRESSION;
         assert statements.size() == 1;
         if (statements.get(0) instanceof ReturnStatement ret) {

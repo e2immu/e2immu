@@ -116,7 +116,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             firstStatementAnalyser = null;
         } else {
             firstStatementAnalyser = StatementAnalyser.recursivelyCreateAnalysisObjects(analyserContext,
-                    this, null, block.structure.statements, "", true,
+                    this, null, block.structure.statements(), "", true,
                     methodInfo.isSynchronized() || methodInfo.isConstructor ||
                             methodInfo.methodResolution.get().partOfConstruction() == MethodResolution.CallStatus.PART_OF_CONSTRUCTION);
             methodAnalysis.setFirstStatement(firstStatementAnalyser.statementAnalysis);

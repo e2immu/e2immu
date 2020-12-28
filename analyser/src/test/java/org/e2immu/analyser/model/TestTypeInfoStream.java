@@ -152,11 +152,12 @@ public class TestTypeInfoStream {
                                 )
                                 .addStatement(
                                         new ForEachStatement(null,
-                                                new LocalVariable.LocalVariableBuilder()
-                                                        .setOwningType(testTypeInfo)
-                                                        .setName("entry")
-                                                        .setParameterizedType(new ParameterizedType(mapEntry, List.of(primitives.stringParameterizedType, typeT)))
-                                                        .build(),
+                                                new LocalVariableCreation(inspectionProvider,
+                                                        new LocalVariable.LocalVariableBuilder()
+                                                                .setOwningType(testTypeInfo)
+                                                                .setName("entry")
+                                                                .setParameterizedType(new ParameterizedType(mapEntry, List.of(primitives.stringParameterizedType, typeT)))
+                                                                .build()),
                                                 new VariableExpression(new LocalVariableReference(inspectionProvider,
                                                         mapLocalVariable, List.of(creationExpression))),
                                                 new Block.BlockBuilder()

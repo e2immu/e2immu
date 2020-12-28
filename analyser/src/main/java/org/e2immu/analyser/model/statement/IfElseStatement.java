@@ -69,7 +69,7 @@ public class IfElseStatement extends StatementWithExpression {
     public Statement translate(TranslationMap translationMap) {
         return new IfElseStatement(
                 translationMap.translateExpression(expression),
-                translationMap.translateBlock(structure.block),
+                translationMap.translateBlock(structure.block()),
                 translationMap.translateBlock(elseBlock));
     }
 
@@ -77,10 +77,10 @@ public class IfElseStatement extends StatementWithExpression {
     public OutputBuilder output(StatementAnalysis statementAnalysis) {
         OutputBuilder outputBuilder = new OutputBuilder().add(new Text("if"))
                 .add(Symbol.LEFT_PARENTHESIS)
-                .add(structure.expression.output())
+                .add(structure.expression().output())
                 .add(Symbol.RIGHT_PARENTHESIS)
                 .addIfNotNull(messageComment(statementAnalysis))
-                .add(structure.block.output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
+                .add(structure.block().output(StatementAnalysis.startOfBlock(statementAnalysis, 0)));
         if (elseBlock != Block.EMPTY_BLOCK) {
             outputBuilder.add(new Text("else"))
                     .add(elseBlock.output(StatementAnalysis.startOfBlock(statementAnalysis, 1)));
@@ -90,7 +90,7 @@ public class IfElseStatement extends StatementWithExpression {
 
     @Override
     public SideEffect sideEffect(EvaluationContext evaluationContext) {
-        SideEffect blocksSideEffect = structure.block.sideEffect(evaluationContext);
+        SideEffect blocksSideEffect = structure.block().sideEffect(evaluationContext);
         if (elseBlock != Block.EMPTY_BLOCK) {
             blocksSideEffect = blocksSideEffect.combine(elseBlock.sideEffect(evaluationContext));
         }
@@ -103,8 +103,8 @@ public class IfElseStatement extends StatementWithExpression {
     @Override
     public List<? extends Element> subElements() {
         if (elseBlock == Block.EMPTY_BLOCK) {
-            return List.of(expression, structure.block);
+            return List.of(expression, structure.block());
         }
-        return List.of(expression, structure.block, elseBlock);
+        return List.of(expression, structure.block(), elseBlock);
     }
 }
