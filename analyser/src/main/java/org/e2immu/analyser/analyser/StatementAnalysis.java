@@ -748,47 +748,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         throw new UnsupportedOperationException();
     }
 
-    /* completely new code in Level 2
-        private VariableInfo variableInfoOfVariableInLoopWhenReading(AnalyserContext analyserContext,
-                                                                     VariableInfoContainer vic,
-                                                                     VariableInfo vi) {
-            if (!vic.getFirstOccurrence().assignmentsInLoopAreFrozen()) return vi;
-            String[] assignmentsInLoop = vic.getFirstOccurrence().streamAssignmentsInLoop()
-                    .filter(this::inSameBlock).toArray(String[]::new);
-            LocalVariableReference variableInLoop = (LocalVariableReference) vi.variable();
-            if (assignmentsInLoop.length > 0) {
-                Arrays.sort(assignmentsInLoop, Comparator.comparingInt(String::length));
-                String latestAssignment = assignmentsInLoop[assignmentsInLoop.length - 1];
-                String localVariableFqn = variableInLoop.fullyQualifiedName() + "$" + latestAssignment;
-
-                // the statement time of the field indicates the time of the latest assignment
-                LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), localVariableFqn,
-                        variableInLoop.parameterizedType(), List.of(), methodAnalysis.getMethodInfo().typeInfo);
-                LocalVariableReference lvr = new LocalVariableReference(analyserContext, lv, List.of());
-                VariableInfoContainer lvrVic;
-                if (variables.isSet(lvr.fullyQualifiedName())) {
-                    lvrVic = variables.get(lvr.fullyQualifiedName());
-                } else {
-                    lvrVic = createVariable(analyserContext, lvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD, false);
-                    Expression initialValue = new NewObject(primitives, variableInLoop.parameterizedType(), ObjectFlow.NO_FLOW);
-                    Map<VariableProperty, Integer> map = new HashMap<>(vi.getProperties());
-                    map.put(ASSIGNED, 1);
-                    map.put(READ, 2);
-                    lvrVic.setInitialValueFromAnalyser(initialValue, vi.getStateOnAssignment(), map);
-                    lvrVic.setLinkedVariablesFromAnalyser(Set.of(variableInLoop)); // linked to the reference
-                }
-                return lvrVic.current();
-            }
-            return vi;
-        }
-    */
-    private boolean inSameBlock(String assignmentId) {
-        if (parent == null) return true;// top level
-        int lastDot = index.lastIndexOf('.');
-        String withoutLastDot = index.substring(0, lastDot);
-        return assignmentId.startsWith(withoutLastDot);
-    }
-
     private VariableInfo variableInfoOfFieldWhenReading(AnalyserContext analyserContext,
                                                         FieldReference fieldReference,
                                                         VariableInfo vi,

@@ -128,6 +128,7 @@ public class Test_01_Loops extends CommonTestRunner {
 
     @Test
     public void test1() throws IOException {
+        final String END_RESULT = "-1+-i$2+n>=1?\"abc\":res2$2";
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2.0.1".equals(d.statementId())) {
@@ -137,7 +138,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
                 if ("3".equals(d.statementId())) {
                     Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1+-i$2+n>0?\"abc\":res2$2";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : END_RESULT;
                     Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
                 }
             }
@@ -175,7 +176,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "true";
                     Assert.assertEquals(expectState, d.variableInfo().getStateOnAssignment().toString());
-                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1+-i$2+n>0?\"abc\":res2$2";
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : END_RESULT;
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
                 }
             }
@@ -245,7 +246,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     int expectNn = d.iteration() == 0 ? MultiLevel.NULLABLE : MultiLevel.EFFECTIVELY_NOT_NULL;
                     Assert.assertEquals(expectNn, d.getProperty(VariableProperty.NOT_NULL));
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "res$1";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type String";
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
             }

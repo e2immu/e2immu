@@ -20,7 +20,9 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.IncrementalMap;
@@ -28,6 +30,7 @@ import org.e2immu.analyser.util.SetOnce;
 
 import java.util.*;
 import java.util.function.IntBinaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
@@ -223,7 +226,8 @@ class VariableInfoImpl implements VariableInfo {
                                   VariableInfoImpl newObject,
                                   boolean existingValuesWillBeOverwritten,
                                   List<VariableInfo> merge) {
-        Expression mergedValue = mergeValue(evaluationContext, existingValuesWillBeOverwritten, merge);
+        Expression mergedValue = replaceLocalVariables(evaluationContext,
+                mergeValue(evaluationContext, existingValuesWillBeOverwritten, merge));
         Expression currentValue = getValue();
         if (currentValue.equals(mergedValue)) {
             return newObject == null ? this : newObject; // no need to create
@@ -247,6 +251,22 @@ class VariableInfoImpl implements VariableInfo {
             assert newObject.statementTime.getOrElse(VariableInfoContainer.VARIABLE_FIELD_DELAY) == mergedStatementTime;
         }
         return newObject;
+    }
+
+    /*
+    Any loop variable available in the block but not outside needs replacing
+     */
+    private Expression replaceLocalVariables(EvaluationContext evaluationContext, Expression mergeValue) {
+        StatementAnalysis statementAnalysis = evaluationContext.getCurrentStatement().statementAnalysis;
+        if (statementAnalysis.statement instanceof LoopStatement) {
+            Map<Expression, Expression> map = statementAnalysis.variables.stream()
+                    .filter(e -> statementAnalysis.index.equals(e.getValue().getStatementIndexOfThisLoopVariable()))
+                    .collect(Collectors.toUnmodifiableMap(e -> new VariableExpression(e.getValue().current().variable()),
+                            e -> new NewObject(evaluationContext.getPrimitives(), e.getValue().current().variable().parameterizedType(),
+                                    e.getValue().current().getObjectFlow())));
+            return mergeValue.reEvaluate(evaluationContext, map).value();
+        }
+        return mergeValue;
     }
 
     private String mergedAssignmentId(EvaluationContext evaluationContext, boolean existingValuesWillBeOverwritten,
@@ -300,9 +320,8 @@ class VariableInfoImpl implements VariableInfo {
                                   boolean existingValuesWillBeOverwritten,
                                   List<VariableInfo> merge) {
         Expression currentValue = getValue();
-        if (!existingValuesWillBeOverwritten) {
-            if (currentValue.isUnknown()) return currentValue;
-        }
+        if (!existingValuesWillBeOverwritten && currentValue.isUnknown()) return currentValue;
+
         boolean haveANoValue = merge.stream().anyMatch(v -> !v.valueIsSet() || !v.stateOnAssignmentIsSet());
         if (haveANoValue) return NO_VALUE;
 
