@@ -69,13 +69,13 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
                 ccr = new And.CommonComponentResult(TRUE(), s1, s2);
             }
             // common component example: if(a) { if(b) { } else { } }
-            // results in a?b?x:empty and a?b?empty:y
-            if (not(ccr.rest1()).equals(ccr.rest2())) {
+            // results in a?b?x:empty and a?b?empty:y==a?!b?y:empty
+            // in the middle layers, we need to avoid the situation where the state and the value have an inline with the same
+            // parts
+            if (not(ccr.rest1()).equals(ccr.rest2()) && isNotPartOf(ccr.rest1(), vi1.getValue()) && isNotPartOf(ccr.rest2(), vi2.getValue())) {
                 Expression inner = inlineConditional(ccr.rest1(), vi1.getValue(), vi2.getValue());
                 if (ccr.common().isBoolValueTrue()) return inner;
                 return inlineConditional(ccr.common(), inner, EmptyExpression.EMPTY_EXPRESSION);
-            } else {
-                throw new UnsupportedOperationException("? impossible situation");
             }
         }
 
@@ -113,6 +113,21 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
             }
         }
         return noConclusion();
+    }
+
+    private boolean isNotPartOf(Expression condition, Expression value) {
+        if (value instanceof InlineConditional inline) {
+            And.CommonComponentResult ccr;
+            if (condition instanceof And i1And) {
+                ccr = i1And.findCommon(evaluationContext, inline.condition);
+            } else if (inline.condition instanceof And i2And) {
+                ccr = i2And.findCommon(evaluationContext, condition);
+            } else {
+                return !condition.equals(inline.condition);
+            }
+            return ccr.common().isBoolValueTrue();
+        }
+        return true;
     }
 
     private Expression joinInlineWithEmpty(InlineConditional i1, InlineConditional i2) {

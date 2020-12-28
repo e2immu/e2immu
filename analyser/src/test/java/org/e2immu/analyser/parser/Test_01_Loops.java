@@ -238,7 +238,7 @@ public class Test_01_Loops extends CommonTestRunner {
             }
             if ("res".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "s";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "s$1";
                     Assert.assertEquals(expect, d.currentValue().toString());
                     int expectNn = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     Assert.assertEquals(expectNn, d.getProperty(VariableProperty.NOT_NULL));
