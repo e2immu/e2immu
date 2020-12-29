@@ -19,11 +19,11 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
-import org.e2immu.analyser.model.expression.ArrayInitializer;
-import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.statement.ForEachStatement;
 import org.e2immu.analyser.model.statement.WhileStatement;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -33,6 +33,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Test_01_Loops extends CommonTestRunner {
@@ -183,7 +184,26 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals(expectState, d.variableInfo().getStateOnAssignment().toString());
                     String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : END_RESULT;
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
+
+                    // first, understanding how this works...
+                    Primitives primitives = d.evaluationContext().getCurrentStatement().statementAnalysis.primitives;
+                    NewObject string1 = new NewObject(primitives, primitives.stringParameterizedType);
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, string1.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL));
+                    Map<VariableProperty, Integer> map = Map.of(VariableProperty.NOT_NULL, MultiLevel.NULLABLE);
+                    Expression string1Wrapped = PropertyWrapper.propertyWrapperForceProperties(string1, map);
+                    Assert.assertEquals(MultiLevel.NULLABLE, string1Wrapped.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL));
+                    Expression inline = EvaluateInlineConditional.conditionalValueConditionResolved(d.evaluationContext(),
+                            GreaterThanZero.greater(d.evaluationContext(), new NewObject(primitives, primitives.intParameterizedType),
+                                    new IntConstant(primitives, 0), true),
+                            new StringConstant(primitives, "abc"),
+                            string1Wrapped, ObjectFlow.NO_FLOW).value();
+                    Assert.assertEquals(END_RESULT, inline.toString());
+                    Assert.assertEquals(MultiLevel.NULLABLE, inline.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL));
+
+                    // so...
                     if (d.iteration() > 0) {
+                        Assert.assertEquals(MultiLevel.NULLABLE, d.currentValue().getProperty(d.evaluationContext(), VariableProperty.NOT_NULL));
+
                         Assert.assertEquals(MultiLevel.NULLABLE, d.getProperty(VariableProperty.NOT_NULL));
                     }
                 }
@@ -219,6 +239,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
             }
         };
+
         testClass("Loops_1", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)

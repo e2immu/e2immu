@@ -28,6 +28,23 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
+/*
+Different situations but they need to be dealt with in more or less the same way.
+Each time we have two triples of (value, state on assignment, assignment id): (s1, v1, a1), (s2, v2, a2)
+
+Using a1, a2 we can compute if the assignment of 1 comes either before or at the same time as 2.
+
+If 1 comes before 2, then 1 already is the summary of all previous assignments to the variable: there is
+no third to look at.
+If 1 is at the same time as 2, we are in an if(s) {1} else {2} situation, with an assignment in both cases.
+There are no other situations!
+
+The state on assignment reflects both situations. In the latter, we expect to find s and !s in the state,
+and potentially already in the value as well. In the former, the state of 1 should be contained in the state of 2.
+
+
+
+ */
 public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) {
 
 
