@@ -272,13 +272,13 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             if ("method5".equals(d.methodInfo().name)) {
                 // the escape mechanism does NOT kick in!
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals("o!=this", d.state().toString());
+                    Assert.assertEquals("o!=this", d.absoluteState().toString());
                 } else if ("0.0.0".equals(d.statementId())) {
-                    Assert.assertEquals("o==this", d.state().toString());
+                    Assert.assertEquals("o==this", d.absoluteState().toString());
                 } else if ("1.0.0".equals(d.statementId())) {
-                    Assert.assertEquals("o!=this&&(null==o||o.getClass()!=this.getClass())", d.state().toString());
+                    Assert.assertEquals("o!=this&&(null==o||o.getClass()!=this.getClass())", d.absoluteState().toString());
                 } else {
-                    Assert.assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.state().toString());
+                    Assert.assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.absoluteState().toString());
                 }
                 if ("3".equals(d.statementId())) {
                     AnalysisStatus expectStatus = d.iteration() == 0 ? AnalysisStatus.PROGRESS : AnalysisStatus.DONE;

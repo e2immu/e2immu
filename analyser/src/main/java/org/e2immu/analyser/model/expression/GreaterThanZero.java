@@ -69,22 +69,22 @@ public record GreaterThanZero(ParameterizedType booleanParameterizedType,
 
     // NOT (x >= 0) == x < 0  == (not x) > 0
     // NOT (x > 0)  == x <= 0 == (not x) >= 0
-    // note that this one does not solve the int-problem where we always want to maintain allowEquals == True
     public Expression negate(EvaluationContext evaluationContext) {
+        IntConstant zero = new IntConstant(evaluationContext.getPrimitives(), 0);
         if (expression instanceof Sum sum) {
             if (sum.lhs instanceof Numeric ln && sum.lhs.isDiscreteType()) {
                 // NOT (-3 + x >= 0) == NOT (x >= 3) == x < 3 == x <= 2 == 2 + -x >= 0
                 // NOT (3 + x >= 0) == NOT (x >= -3) == x < -3 == x <= -4 == -4 + -x >= 0
                 Expression minusSumPlusOne = IntConstant.intOrDouble(evaluationContext.getPrimitives(),
                         -(ln.doubleValue() + 1.0), sum.lhs.getObjectFlow());
-                return new GreaterThanZero(booleanParameterizedType,
+                return GreaterThanZero.greater(evaluationContext,
                         Sum.sum(evaluationContext, minusSumPlusOne,
                                 Negation.negate(evaluationContext, sum.rhs),
-                                expression.getObjectFlow()), true, getObjectFlow());
+                                expression.getObjectFlow()), zero, true, getObjectFlow());
             }
         }
-        return new GreaterThanZero(booleanParameterizedType,
-                Negation.negate(evaluationContext, expression),
+        return GreaterThanZero.greater(evaluationContext,
+                Negation.negate(evaluationContext, expression), zero,
                 !allowEquals, getObjectFlow());
     }
 

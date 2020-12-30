@@ -228,6 +228,6 @@ public class TestComparisons extends CommonAbstractValue {
         Expression or1 = newOrAppend(iLt0, jGe0);
         Assert.assertEquals("i<=2||j>=0", or1.toString());
         Expression notOr1 = negate(or1);
-        Assert.assertEquals("i>=3||j<=-1", notOr1.toString());
+        Assert.assertEquals("i>=3&&j<=-1", notOr1.toString());
     }
 }

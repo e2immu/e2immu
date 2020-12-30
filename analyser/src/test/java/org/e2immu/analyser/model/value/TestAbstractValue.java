@@ -104,26 +104,27 @@ public class TestAbstractValue extends CommonAbstractValue {
                         e -> e.getValue() instanceof Equals Equals && Equals.lhs == NullConstant.NULL_CONSTANT));
     }
 
+    // note: van and vbn are nullable, va and vb are NOT (see CommonAbstractValue)
     @Test
     public void testIsNull() {
-        Expression v = Equals.equals(minimalEvaluationContext, a, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
-        Assert.assertEquals("null==a", v.toString());
+        Expression v = Equals.equals(minimalEvaluationContext, an, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
+        Assert.assertEquals("null==an", v.toString());
         Map<Variable, Boolean> nullClauses = nullClauses(v, Filter.FilterMode.ACCEPT);
         Assert.assertEquals(1, nullClauses.size());
-        Assert.assertEquals(true, nullClauses.get(va));
+        Assert.assertEquals(true, nullClauses.get(van));
 
-        Expression v2 = Equals.equals(minimalEvaluationContext, b, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
-        Assert.assertEquals("null==b", v2.toString());
+        Expression v2 = Equals.equals(minimalEvaluationContext, bn, NullConstant.NULL_CONSTANT, ObjectFlow.NO_FLOW);
+        Assert.assertEquals("null==bn", v2.toString());
         Map<Variable, Boolean> nullClauses2 = nullClauses(v2, Filter.FilterMode.ACCEPT);
         Assert.assertEquals(1, nullClauses2.size());
-        Assert.assertEquals(true, nullClauses2.get(vb));
+        Assert.assertEquals(true, nullClauses2.get(vbn));
 
         Expression orValue = newOrAppend(v, negate(v2));
-        Assert.assertEquals("null==a||null!=b", orValue.toString());
+        Assert.assertEquals("null==an||null!=bn", orValue.toString());
         Map<Variable, Boolean> nullClausesAnd = nullClauses(orValue, Filter.FilterMode.REJECT);
         Assert.assertEquals(2, nullClausesAnd.size());
-        Assert.assertEquals(true, nullClausesAnd.get(va));
-        Assert.assertEquals(false, nullClausesAnd.get(vb));
+        Assert.assertEquals(true, nullClausesAnd.get(van));
+        Assert.assertEquals(false, nullClausesAnd.get(vbn));
     }
 
     @Test

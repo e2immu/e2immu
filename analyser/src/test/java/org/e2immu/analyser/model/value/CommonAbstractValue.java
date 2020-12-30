@@ -46,10 +46,14 @@ public abstract class CommonAbstractValue {
 
     protected static Variable va;
     protected static Variable vb;
+    protected static Variable van;
+    protected static Variable vbn;
     protected static Variable vc;
     protected static Variable vd;
     protected static VariableExpression a;
     protected static VariableExpression b;
+    protected static VariableExpression an; // nullable
+    protected static VariableExpression bn; // nullable
     protected static VariableExpression c;
     protected static VariableExpression d;
 
@@ -81,16 +85,20 @@ public abstract class CommonAbstractValue {
         b = new VariableExpression(vb);
         c = new VariableExpression(vc);
         d = new VariableExpression(vd);
+        van = createVariable("an");
+        vbn = createVariable("bn");
+        an = new VariableExpression(van);
+        bn = new VariableExpression(vbn);
 
         vi = createVariable("i");
         vj = createVariable("j");
         i = new VariableExpression(vi);
         j = new VariableExpression(vj);
 
-        vs = createVariable("s");
+        vs = createVariable("s"); // nullable
         s = new VariableExpression(vs);
 
-        vp = createParameter("p");
+        vp = createParameter("p"); // nullable
         p = new VariableExpression(vp);
     }
 
@@ -221,7 +229,9 @@ public abstract class CommonAbstractValue {
 
         @Override
         public int getProperty(Expression value, VariableProperty variableProperty) {
-            if (value instanceof VariableExpression && variableProperty == VariableProperty.NOT_NULL) {
+            if (value instanceof VariableExpression ve && variableProperty == VariableProperty.NOT_NULL) {
+                if (ve.variable().simpleName().endsWith("n") || ve.variable().simpleName().compareTo("p") >= 0)
+                    return MultiLevel.NULLABLE;
                 return MultiLevel.EFFECTIVELY_NOT_NULL;
             }
             return value.getProperty(minimalEvaluationContext, variableProperty);
