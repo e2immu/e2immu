@@ -81,7 +81,11 @@ public record VariableExpression(Variable variable,
 
     @Override
     public int internalCompareTo(Expression v) {
-        VariableExpression variableValue = (VariableExpression) v;
+        VariableExpression variableValue;
+        if (v instanceof InlineConditional inlineConditional)
+            variableValue = (VariableExpression) inlineConditional.condition;
+        else if (v instanceof VariableExpression ve) variableValue = ve;
+        else throw new UnsupportedOperationException();
         return name.compareTo(variableValue.name);
     }
 

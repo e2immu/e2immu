@@ -457,11 +457,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             VariableInfoContainer vic = e.getValue();
 
             // the variable stream comes from multiple blocks; we ensure that merging takes place once only
+            // linkedHashMap to ensure consistency in tests
             if (merged.add(fqn)) {
                 Map<Expression, VariableInfo> toMerge = lastStatements.entrySet().stream()
                         .filter(e2 -> e2.getValue().statementAnalysis.variables.isSet(fqn))
-                        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
-                                e2 -> e2.getValue().statementAnalysis.variables.get(fqn).current()));
+                        .collect(Collectors.toMap(Map.Entry::getKey,
+                                e2 -> e2.getValue().statementAnalysis.variables.get(fqn).current(),
+                                (e1, e2)-> { throw new UnsupportedOperationException(); }, LinkedHashMap::new));
                 VariableInfoContainer destination;
                 if (!variables.isSet(fqn)) {
                     Variable variable = e.getValue().current().variable();

@@ -339,7 +339,7 @@ class VariableInfoImpl implements VariableInfo {
 
         if (merge.size() == 1) {
             Map.Entry<Expression, VariableInfo> e = merge.entrySet().stream().findFirst().orElseThrow();
-            Expression result = mergeHelper.one(e.getValue(), e.getKey());
+            Expression result = mergeHelper.one(e.getValue(), stateOfDestination, e.getKey());
             if (result != null) return result;
         }
 

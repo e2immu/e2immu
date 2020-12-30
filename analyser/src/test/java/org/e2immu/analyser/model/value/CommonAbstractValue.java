@@ -221,7 +221,10 @@ public abstract class CommonAbstractValue {
 
         @Override
         public int getProperty(Expression value, VariableProperty variableProperty) {
-            return 0;
+            if (value instanceof VariableExpression && variableProperty == VariableProperty.NOT_NULL) {
+                return MultiLevel.EFFECTIVELY_NOT_NULL;
+            }
+            return value.getProperty(minimalEvaluationContext, variableProperty);
         }
     }
 

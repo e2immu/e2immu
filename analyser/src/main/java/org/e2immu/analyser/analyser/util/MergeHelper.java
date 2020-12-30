@@ -115,8 +115,17 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     } --> ret v
     */
 
-    public Expression one(VariableInfo vi1, Expression condition) {
-        if (condition.isBoolValueTrue()) return vi1.getValue(); // so we by-pass the "safe"
+    public Expression one(VariableInfo vi1, Expression stateOfParent, Expression condition) {
+        if (condition.isBoolValueTrue()) {
+
+            // this if-statement replays the code in level 3 return statement:
+            // it is identical to do if(x) return a; return b or if(x) return a; if(!x) return b;
+            if (vi.variable() instanceof ReturnVariable) {
+                if (stateOfParent.isBoolValueTrue()) return vi1.getValue();
+                return inlineConditional(stateOfParent, vi1.getValue(), vi.getValue());
+            }
+            return vi1.getValue(); // so we by-pass the "safe"
+        }
         return inlineConditional(condition, vi1.getValue(), vi.getValue());
     }
 

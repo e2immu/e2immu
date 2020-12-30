@@ -356,8 +356,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("4.0.0.0.0".equals(d.statementId()) && d.iteration() > 0) {
-                Assert.assertEquals(I1 + "==" + I2, d.state().toString());
-                Assert.assertEquals(I1 + "==" + I2, d.condition().toString());
+                Assert.assertEquals(I1 + "==" + I2, d.absoluteState().toString());
             }
         };
 

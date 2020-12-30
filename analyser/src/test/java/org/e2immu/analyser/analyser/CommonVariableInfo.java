@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.LocalVariable;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.IntConstant;
+import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -77,7 +78,7 @@ public abstract class CommonVariableInfo {
 
         @Override
         public boolean isNotNull0(Expression value) {
-            return false; // no opinion
+            return !(value instanceof NullConstant); // no opinion
         }
 
         @Override

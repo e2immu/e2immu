@@ -199,4 +199,35 @@ public class TestComparisons extends CommonAbstractValue {
         Assert.assertEquals("false", newAndAppend(iLt0, iGe0).toString());
         Assert.assertEquals("false", newAndAppend(iGe0, iLt0).toString());
     }
+
+    // (p>=3||p<=2)&&(p>=3||q>=5)&&(p<=2||q<=-1)&&(p<=2||q<0) &&( q>=5||q<=-1) && (q>=5||q<0)
+    // problem seems to be that q<0 should never arise -> see second test!
+    @Test
+    public void testCC7() {
+        Expression iLt0 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(0), false);
+        Expression iLeM1 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(-1), true);
+        Assert.assertEquals(iLt0, iLeM1);
+
+        Expression jGt5 = GreaterThanZero.greater(minimalEvaluationContext, j, newInt(5), true);
+
+        Expression or1 = newOrAppend(iLt0, jGt5);
+        Assert.assertEquals("i<=-1||j>=5", or1.toString());
+        Expression or2 = newOrAppend(iLeM1, jGt5);
+        Assert.assertEquals("i<=-1||j>=5", or2.toString());
+
+        Assert.assertEquals(or1, or2);
+
+        Expression negOr1 = negate(or1);
+        Assert.assertEquals("j<=4&&i>=0", negOr1.toString());
+    }
+
+    @Test
+    public void testCC7_2() {
+        Expression iLt0 = GreaterThanZero.less(minimalEvaluationContext, i, newInt(2), true);
+        Expression jGe0 = GreaterThanZero.greater(minimalEvaluationContext, j, newInt(0), true);
+        Expression or1 = newOrAppend(iLt0, jGe0);
+        Assert.assertEquals("i<=2||j>=0", or1.toString());
+        Expression notOr1 = negate(or1);
+        Assert.assertEquals("i>=3||j<=-1", notOr1.toString());
+    }
 }

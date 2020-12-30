@@ -57,6 +57,16 @@ public class Equals extends BinaryOperator {
         if (l instanceof ConstantExpression<?> lc && r instanceof ConstantExpression<?> rc) {
             return ConstantExpression.equalsExpression(primitives, lc, rc);
         }
+
+        if (l instanceof InlineConditional inlineConditional) {
+            Expression result = tryToRewriteConstantEqualsInline(evaluationContext, r, inlineConditional);
+            if (result != null) return result;
+        }
+        if (r instanceof InlineConditional inlineConditional) {
+            Expression result = tryToRewriteConstantEqualsInline(evaluationContext, l, inlineConditional);
+            if (result != null) return result;
+        }
+
         Set<Expression> leftTerms = terms(l);
         Set<Expression> rightTerms = terms(r);
         CommonTerms ct = computeCommonTerms(leftTerms, rightTerms);
@@ -74,6 +84,66 @@ public class Equals extends BinaryOperator {
         }
         // recurse
         return Equals.equals(evaluationContext, newLeft, newRight, objectFlow);
+    }
+
+    // null == a ? null: b with guaranteed b != null --> a
+    // see test ConditionalChecks_7
+    private static Expression tryToRewriteConstantEqualsInline(EvaluationContext evaluationContext,
+                                                               Expression c,
+                                                               InlineConditional inlineConditional) {
+        if (c instanceof InlineConditional inline2) {
+            // silly check a1?b1:c1 == a1?b2:c2 === b1 == b2 && c1 == c2
+            if (inline2.condition.equals(inlineConditional.condition)) {
+                return new And(evaluationContext.getPrimitives()).append(evaluationContext,
+                        Equals.equals(evaluationContext, inlineConditional.ifTrue, inline2.ifTrue, ObjectFlow.NO_FLOW),
+                        Equals.equals(evaluationContext, inlineConditional.ifFalse, inline2.ifFalse, ObjectFlow.NO_FLOW));
+            }
+            return null;
+        }
+        Expression recursively1;
+        if (inlineConditional.ifTrue instanceof InlineConditional inlineTrue) {
+            recursively1 = tryToRewriteConstantEqualsInline(evaluationContext, c, inlineTrue);
+        } else recursively1 = null;
+
+        Expression recursively2;
+        if (inlineConditional.ifFalse instanceof InlineConditional inlineFalse) {
+            recursively2 = tryToRewriteConstantEqualsInline(evaluationContext, c, inlineFalse);
+        } else recursively2 = null;
+
+        Expression notC = Negation.negate(evaluationContext, inlineConditional.condition);
+
+        boolean equalsToIfTrue;
+        boolean equalsToIfFalse;
+
+        if (c instanceof NullConstant) {
+            // if recursivelyX is not null, isNotNull0 will always be true
+            equalsToIfTrue = recursively1 == null && !evaluationContext.isNotNull0(inlineConditional.ifTrue);
+            equalsToIfFalse = recursively2 == null && !evaluationContext.isNotNull0(inlineConditional.ifFalse);
+        } else {
+            equalsToIfTrue = c.equals(inlineConditional.ifTrue);
+            equalsToIfFalse = c.equals(inlineConditional.ifFalse);
+        }
+        if (equalsToIfTrue) {
+            if (recursively2 != null)
+                return new Or(evaluationContext.getPrimitives()).append(evaluationContext, inlineConditional.condition, recursively2);
+            if (!equalsToIfFalse) return inlineConditional.condition;
+        }
+        if (equalsToIfFalse) {
+            if (recursively1 != null)
+                return new Or(evaluationContext.getPrimitives()).append(evaluationContext, notC, recursively1);
+            if (!equalsToIfTrue) return notC;
+        }
+        List<Expression> ors = new ArrayList<>();
+        if (recursively1 != null) {
+            ors.add(new And(evaluationContext.getPrimitives()).append(evaluationContext, inlineConditional.condition, recursively1));
+        }
+        if (recursively2 != null) {
+            ors.add(new And(evaluationContext.getPrimitives()).append(evaluationContext, notC, recursively2));
+        }
+        if (!ors.isEmpty()) {
+            return new Or(evaluationContext.getPrimitives()).append(evaluationContext, ors.toArray(Expression[]::new));
+        }
+        return null;
     }
 
 

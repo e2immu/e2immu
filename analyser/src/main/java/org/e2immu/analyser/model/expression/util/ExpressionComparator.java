@@ -50,6 +50,8 @@ public class ExpressionComparator implements Comparator<Expression> {
     public static final int ORDER_COMBINED = 67;
     public static final int ORDER_TYPE = 68;
     public static final int ORDER_NO_VALUE = 69;
+    // we use the order of the conditional,but as a consequence, all internalOrders need to be able to deal
+    // with an inline conditional
     //public static final int ORDER_CONDITIONAL = 70;
     public static final int ORDER_SWITCH = 71;
 

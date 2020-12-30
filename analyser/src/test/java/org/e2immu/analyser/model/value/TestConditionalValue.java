@@ -110,4 +110,45 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression and2 = new And(PRIMITIVES).append(minimalEvaluationContext, negate(a), cv1);
         Assert.assertEquals("!a&&c", and2.toString());
     }
+
+    @Test
+    public void test5() {
+        Expression cv1 = inline(a, b, c);
+        Expression eq = Equals.equals(minimalEvaluationContext, b, cv1, ObjectFlow.NO_FLOW);
+        Assert.assertSame(a, eq);
+    }
+
+    @Test
+    public void test6() {
+        Expression cv1 = inline(a, b, NullConstant.NULL_CONSTANT);
+        Expression eq = Equals.equals(minimalEvaluationContext, NullConstant.NULL_CONSTANT, cv1, ObjectFlow.NO_FLOW);
+        Assert.assertEquals(Negation.negate(minimalEvaluationContext, a), eq);
+    }
+
+    @Test
+    public void test7() {
+        Expression cv1 = inline(a, inline(b, newInt(3), newInt(4)), inline(c, newInt(2), newInt(5)));
+        Expression eq2 = Equals.equals(minimalEvaluationContext, newInt(2), cv1, ObjectFlow.NO_FLOW);
+        Assert.assertEquals("!a&&c", eq2.toString());
+        Expression eq3 = Equals.equals(minimalEvaluationContext, newInt(3), cv1, ObjectFlow.NO_FLOW);
+        Assert.assertEquals("a&&b", eq3.toString());
+        Expression eq4 = Equals.equals(minimalEvaluationContext, newInt(4), cv1, ObjectFlow.NO_FLOW);
+        Assert.assertEquals("a&&!b", eq4.toString());
+        Expression eq5 = Equals.equals(minimalEvaluationContext, newInt(5), cv1, ObjectFlow.NO_FLOW);
+        Assert.assertEquals("!a&&!c", eq5.toString());
+    }
+
+
+    @Test
+    public void test8() {
+        Expression cv1 = inline(a, inline(b, newInt(3), NullConstant.NULL_CONSTANT), inline(c, NullConstant.NULL_CONSTANT, newInt(5)));
+        Expression eqNull = Equals.equals(minimalEvaluationContext, NullConstant.NULL_CONSTANT, cv1, ObjectFlow.NO_FLOW);
+        Assert.assertEquals("(a||c)&&(!a||!b)&&(!b||c)", eqNull.toString());
+        Expression eq3 = Equals.equals(minimalEvaluationContext, newInt(3), cv1, ObjectFlow.NO_FLOW);
+        Assert.assertEquals("a&&b", eq3.toString());
+        Expression eq4 = Equals.equals(minimalEvaluationContext, newInt(4), cv1, ObjectFlow.NO_FLOW);
+        Assert.assertEquals("4==(a?b?3:null:c?null:5)", eq4.toString());
+        Expression eq5 = Equals.equals(minimalEvaluationContext, newInt(5), cv1, ObjectFlow.NO_FLOW);
+        Assert.assertEquals("!a&&!c", eq5.toString());
+    }
 }

@@ -1093,9 +1093,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (blocksExecuted > 0) {
             boolean atLeastOneBlockExecuted = atLeastOneBlockExecuted(executions);
 
+            // linkedHashMap to ensure consistency in tests
             Map<Expression, StatementAnalyser> lastStatements = executions.stream()
                     .filter(ex -> !ex.startOfBlock.statementAnalysis.flowData.isUnreachable())
-                    .collect(Collectors.toUnmodifiableMap(ex -> ex.condition, ex -> ex.startOfBlock.lastStatement()));
+                    .collect(Collectors.toMap(ex -> ex.condition, ex -> ex.startOfBlock.lastStatement(),
+                            (sa1, sa2) -> {
+                                throw new UnsupportedOperationException();
+                            }, LinkedHashMap::new));
             int maxTime = lastStatements.values().stream().mapToInt(sa -> sa.statementAnalysis.flowData.getTimeAfterSubBlocks())
                     .max().orElseThrow();
             if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
