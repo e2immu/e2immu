@@ -20,7 +20,6 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Equals;
 import org.e2immu.analyser.model.expression.NullConstant;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -54,13 +53,10 @@ public abstract class AbstractEvaluationContextImpl implements EvaluationContext
 
     @Override
     public boolean isNotNull0(Expression value) {
-        if (conditionManager.haveNonEmptyState() && value != EmptyExpression.NO_VALUE) {
-            // do not use Equals.equalsValue because that results in an infinite loop
-            Expression valueIsNull = new Equals(getPrimitives(), NullConstant.NULL_CONSTANT, value, ObjectFlow.NO_FLOW);
-            ConditionManager newCm = conditionManager.addCondition(this, valueIsNull);
-            if (newCm.condition instanceof BooleanConstant boolValue) {
-                return boolValue.constant();
-            }
+        Expression valueIsNull = new Equals(getPrimitives(), NullConstant.NULL_CONSTANT, value, ObjectFlow.NO_FLOW);
+        Expression combined = conditionManager.evaluate(this, valueIsNull);
+        if (combined instanceof BooleanConstant boolValue) {
+            return boolValue.constant();
         }
         return MultiLevel.isEffectivelyNotNull(getProperty(value, VariableProperty.NOT_NULL));
     }

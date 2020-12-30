@@ -102,15 +102,13 @@ public interface VariableInfoContainer {
     // writing operations
     void setValueOnAssignment(int level, Expression value, Map<VariableProperty, Integer> propertiesToSet);
 
-    void setStateOnAssignment(int level, Expression state);
-
     /**
      * Typically in the 1st iteration for effectively final fields, this method
      * is called when the field's final value has been established.
      *
      * @param initialValue the value coming from the field analyser
      */
-    void setInitialValueFromAnalyser(Expression initialValue, Expression state, Map<VariableProperty, Integer> propertiesToSet);
+    void setInitialValueFromAnalyser(Expression initialValue, Map<VariableProperty, Integer> propertiesToSet);
 
     void setProperty(int level, VariableProperty variableProperty, int value);
 
@@ -128,7 +126,7 @@ public interface VariableInfoContainer {
     void setLinkedVariablesFromAnalyser(Set<Variable> variables);
 
     /**
-     * aggregation method that copies value, properties, state, object flow, and linked variables
+     * aggregation method that copies value, properties, object flow, and linked variables
      * using the 'setXX' methods.
      *
      * @param level                            the level to write to
@@ -151,8 +149,8 @@ public interface VariableInfoContainer {
 
     void merge(int level,
                EvaluationContext evaluationContext,
-               Expression state,
-               boolean existingValuesWillBeOverwritten,
+               ConditionManager conditionManager,
+               boolean atLeastOneBlockExecuted,
                List<VariableInfo> merge);
 
     void setStatementTime(int level, int statementTime);

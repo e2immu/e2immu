@@ -11,130 +11,118 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /*
-Default value for condition is FALSE
-Default value for state is TRUE
+condition = the condition in the parent statement that leads to this block. Default: true
+
+state = the cumulative state in the current block, before execution of the statement (level 1-2, not 3).
+The state is carried over to the next statement unless there is some interrupt in the flow (break, return, throw...)
+
+In a recursion of inline conditionals, the state remains true, and the condition equals the condition of each inline.
+
  */
-public class ConditionManager {
+public record ConditionManager(Expression condition, Expression state, ConditionManager parent) {
 
-    public static final ConditionManager DELAYED = new ConditionManager(EmptyExpression.NO_VALUE, EmptyExpression.NO_VALUE);
-
-    public final Expression condition;
-    public final Expression state;
-
-    public ConditionManager(Primitives primitives) {
-        this(new BooleanConstant(primitives, false), new BooleanConstant(primitives, true));
-    }
-
-    public ConditionManager(Expression condition, Expression state) {
-        this.condition = checkBooleanOrUnknown(Objects.requireNonNull(condition));
-        this.state = checkBooleanOrUnknown(Objects.requireNonNull(state));
+    public ConditionManager {
+        checkBooleanOrUnknown(Objects.requireNonNull(condition));
+        checkBooleanOrUnknown(Objects.requireNonNull(state));
     }
 
     /*
     EMPTY -> some value, no clue which one, we'll never know
     NO_VALUE -> delay
      */
-    private static Expression checkBooleanOrUnknown(Expression v) {
+    private static void checkBooleanOrUnknown(Expression v) {
         if (!v.isUnknown() && Primitives.isNotBooleanOrBoxedBoolean(v.returnType())) {
             throw new UnsupportedOperationException("Need an unknown or boolean value in the condition manager; got " + v);
         }
-        return v;
     }
 
-    /*
-     adding a value to the condition always adds that value to the state as well
-     */
-    public ConditionManager addCondition(EvaluationContext evaluationContext, Expression value) {
-        Objects.requireNonNull(value);
-        if (value.isBoolValueTrue()) return this; // adding TRUE has no effect (it renders the condition useless)
-        if (value.isBoolValueFalse()) return new ConditionManager(condition, value); // adding false -> unreachable code
-        return new ConditionManager(combineWithCondition(evaluationContext, value), combineWithState(evaluationContext, value));
+    public static final ConditionManager DELAYED = new ConditionManager(EmptyExpression.NO_VALUE, EmptyExpression.NO_VALUE, null);
+
+    public static ConditionManager initialConditionManager(Primitives primitives) {
+        return new ConditionManager(new BooleanConstant(primitives, true),
+                new BooleanConstant(primitives, true), null);
     }
 
-    /*
-     adds to state only, leaves the condition the way it is
-     */
-    public ConditionManager addToState(EvaluationContext evaluationContext, Expression value) {
-        if (value.isBoolValueTrue()) return this; // adding TRUE to the state has no effect
-        if (value.isBoolValueFalse()) {
-            // adding false to the state -> unreachable code
-            return new ConditionManager(condition, value);
+    public ConditionManager newAtStartOfNewBlock(Primitives primitives, Expression condition) {
+        return new ConditionManager(condition, new BooleanConstant(primitives, true), this);
+    }
+
+    public ConditionManager newForNextStatement(EvaluationContext evaluationContext, Expression addToState) {
+        Objects.requireNonNull(addToState);
+        if (addToState.isBoolValueTrue()) return this;
+        return new ConditionManager(condition, combine(evaluationContext, state, addToState), parent);
+    }
+
+    public Expression absoluteState(EvaluationContext evaluationContext) {
+        Expression[] expressions;
+        if (parent == null) {
+            expressions = new Expression[]{state};
+        } else {
+            expressions = new Expression[]{condition, state, parent.absoluteState(evaluationContext)};
         }
-        return new ConditionManager(condition, combineWithState(evaluationContext, value));
+        return new And(evaluationContext.getPrimitives()).append(evaluationContext, expressions);
     }
 
     /**
-     * Used in evaluation of the `if` statement's expression, to obtain the 'real' restriction.
+     * Evaluate an expression in the context of the absolute state.
      *
-     * @param value the restriction given by the program
-     * @return the computed, real restriction
+     * @param value the expression to be evaluated
+     * @return The boolean constant 'true' if adding the expression to the state does not change the state; an unknown
+     * value if either is unknown, or the combined expression if the expression is not true given the state. The
+     * latter can be the boolean constant 'false' if an inconsistency is reported.
      */
-    public Expression evaluateWithCondition(EvaluationContext evaluationContext, Expression value) {
-        if (condition.isBoolValueFalse()) return value;
-        return evaluateWith(evaluationContext, condition, value);
-    }
-
-    public Expression evaluateWithState(EvaluationContext evaluationContext, Expression value) {
-        return evaluateWith(evaluationContext, state, value);
-    }
-
-    private static Expression evaluateWith(EvaluationContext evaluationContext, Expression condition, Expression value) {
-        if (condition.isUnknown() || value.isUnknown()) return condition.combineUnknown(value); // allow to go delayed
-
-        // we take the condition as a given, and see if the value agrees
+    public Expression evaluate(EvaluationContext evaluationContext, Expression value) {
+        Expression absoluteState = absoluteState(evaluationContext);
+        if (absoluteState.isUnknown() || value.isUnknown())
+            return absoluteState.combineUnknown(value); // allow to go delayed
 
         // this one solves boolean problems; in a boolean context, there is no difference
         // between the value and the condition
         Expression result = new And(evaluationContext.getPrimitives(), value.getObjectFlow())
-                .append(evaluationContext, condition, value);
-        if (result.equals(condition)) {
+                .append(evaluationContext, absoluteState, value);
+        if (result.equals(absoluteState)) {
             // constant true: adding the value has no effect at all
             return new BooleanConstant(evaluationContext.getPrimitives(), true);
         }
         return result;
     }
 
-    public Expression combineWithCondition(EvaluationContext evaluationContext, Expression value) {
-        // FALSE is the default state for condition, but including it in an AND doesn't work
-        if (condition.isBoolValueFalse()) return value;
-        return combineWith(evaluationContext, condition, value);
-    }
-
-    public Expression combineWithState(EvaluationContext evaluationContext, Expression value) {
-        return combineWith(evaluationContext, state, value);
-    }
-
-    public static Expression combineWith(EvaluationContext evaluationContext, Expression e1, Expression e2) {
+    private static Expression combine(EvaluationContext evaluationContext, Expression e1, Expression e2) {
         Objects.requireNonNull(e2);
         if (e1.isUnknown() || e2.isUnknown()) return e1.combineUnknown(e2); // allow to go delayed
         return new And(evaluationContext.getPrimitives(), e2.getObjectFlow()).append(evaluationContext, e1, e2);
     }
 
     /**
-     * Extract NOT_NULL properties from the current condition
+     * Extract NOT_NULL properties from the current absolute state, seen as a disjunction (filter mode REJECT)
      *
      * @return individual variables that appear in a top-level disjunction as variable == null
      */
     public Set<Variable> findIndividualNullInCondition(EvaluationContext evaluationContext, boolean requireEqualsNull) {
-        return findIndividualNull(condition, evaluationContext, Filter.FilterMode.REJECT, requireEqualsNull);
+        Expression absoluteState = absoluteState(evaluationContext);
+        return findIndividualNull(absoluteState, evaluationContext, Filter.FilterMode.REJECT, requireEqualsNull);
     }
 
     /**
-     * Extract NOT_NULL properties from the current condition
+     * Extract NOT_NULL properties from the current absolute state, seen as a conjunction (filter mode ACCEPT)
      *
-     * @return individual variables that appear in a top-level disjunction as variable == null
+     * @return individual variables that appear in the conjunction as variable == null
      */
     public Set<Variable> findIndividualNullInState(EvaluationContext evaluationContext, boolean requireEqualsNull) {
-        return findIndividualNull(state, evaluationContext, Filter.FilterMode.ACCEPT, requireEqualsNull);
+        Expression absoluteState = absoluteState(evaluationContext);
+        return findIndividualNull(absoluteState, evaluationContext, Filter.FilterMode.ACCEPT, requireEqualsNull);
 
     }
 
     /**
      * Extract NOT_NULL properties from the current condition
      *
-     * @return individual variables that appear in a top-level disjunction as variable == null
+     * @return individual variables that appear in a top-level conjunction or disjunction as variable == null
      */
-    private static Set<Variable> findIndividualNull(Expression value, EvaluationContext evaluationContext, Filter.FilterMode filterMode, boolean requireEqualsNull) {
+    private static Set<Variable> findIndividualNull(Expression value,
+                                                    EvaluationContext evaluationContext,
+                                                    Filter.FilterMode filterMode,
+                                                    boolean requireEqualsNull) {
         if (value.isUnknown()) {
             return Set.of();
         }
@@ -146,21 +134,10 @@ public class ConditionManager {
                 .map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 
-    public boolean haveNonEmptyState() {
-        return !state.isBoolValueTrue();
-    }
-
-    // we need a system to be able to delay conditionals, when they are based on the value of fields
-    public boolean delayedCondition() {
-        return isDelayed(condition);
-    }
-
-    public boolean notInDelayedState() {
-        return !isDelayed(state);
-    }
-
-    static boolean isDelayed(Expression value) {
-        return value == EmptyExpression.NO_VALUE;
+    public boolean isDelayed() {
+        if (condition == EmptyExpression.NO_VALUE || state == EmptyExpression.NO_VALUE) return true;
+        if (parent == null) return false;
+        return parent.isDelayed();
     }
 
     private static Filter.FilterResult<Variable> removeVariableFilter(Expression defaultRest,
@@ -207,14 +184,15 @@ public class ConditionManager {
     // return that part of the conditional that is NOT covered by @NotNull (individual not null clauses)
     public EvaluationResult escapeCondition(EvaluationContext evaluationContext) {
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
+        Expression absoluteState = absoluteState(evaluationContext);
 
-        if (condition.isUnknown()) {
-            return builder.setExpression(condition).build();
+        if (absoluteState.isUnknown()) {
+            return builder.setExpression(absoluteState).build();
         }
 
         // TRUE: parameters only FALSE: preconditionSide; OR of 2 filters
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.REJECT);
-        Filter.FilterResult<ParameterInfo> filterResult = filter.filter(condition, filter.individualNullOrNotNullClauseOnParameter());
+        Filter.FilterResult<ParameterInfo> filterResult = filter.filter(absoluteState, filter.individualNullOrNotNullClauseOnParameter());
         // those parts that have nothing to do with individual clauses
         if (filterResult.rest().isBoolValueFalse()) {
             return builder.setExpression(filterResult.rest()).build();
@@ -248,7 +226,9 @@ public class ConditionManager {
     // note: very similar to remove, except that here we're interested in the actual value
     public Expression individualStateInfo(EvaluationContext evaluationContext, Variable variable) {
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
-        Filter.FilterResult<Variable> filterResult = filter.filter(state, value -> obtainVariableFilter(filter.getDefaultRest(), variable, value));
+        Expression absoluteState = absoluteState(evaluationContext);
+        Filter.FilterResult<Variable> filterResult = filter.filter(absoluteState,
+                value -> obtainVariableFilter(filter.getDefaultRest(), variable, value));
         return filterResult.accepted().getOrDefault(variable, filter.getDefaultRest());
     }
 }

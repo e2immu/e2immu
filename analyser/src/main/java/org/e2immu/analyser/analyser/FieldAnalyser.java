@@ -150,7 +150,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
             List<FieldAnalyserVisitor> visitors = analyserContext.getConfiguration().debugConfiguration.afterFieldAnalyserVisitors;
             if (!visitors.isEmpty()) {
-                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, new ConditionManager(analyserContext.getPrimitives()));
+                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
                 for (FieldAnalyserVisitor fieldAnalyserVisitor : visitors) {
                     fieldAnalyserVisitor.visit(new FieldAnalyserVisitor.Data(iteration, evaluationContext, fieldInfo, fieldAnalysis, analyserComponents.getStatusesAsMap()));
                 }
@@ -172,7 +172,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (fieldInspection.fieldInitialiserIsSet()) {
             FieldInspection.FieldInitialiser fieldInitialiser = fieldInspection.getFieldInitialiser();
             if (fieldInitialiser.initialiser() != EmptyExpression.EMPTY_EXPRESSION) {
-                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, new ConditionManager(analyserContext.getPrimitives()));
+                EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
                 EvaluationResult evaluationResult = fieldInitialiser.initialiser().evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
                 Expression initialiserValue = evaluationResult.value();
                 if (initialiserValue != NO_VALUE) {
@@ -377,7 +377,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         // we can make this very efficient with streams, but it becomes pretty hard to debug
         List<Integer> values = new ArrayList<>();
         EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
-                new ConditionManager(analyserContext.getPrimitives()));
+                ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
         allMethodsAndConstructors.stream().flatMap(m -> m.getFieldAsVariableStream(fieldInfo))
                 .forEach(vi -> {
                     Expression value = vi.getValue();
@@ -702,7 +702,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     }
 
     public EvaluationContext createEvaluationContext() {
-        return new EvaluationContextImpl(0, new ConditionManager(analyserContext.getPrimitives()));
+        return new EvaluationContextImpl(0, ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl {
@@ -747,7 +747,8 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         @Override
         public EvaluationContext child(Expression condition) {
-            return FieldAnalyser.this.new EvaluationContextImpl(iteration, conditionManager.addCondition(this, condition));
+            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition);
+            return FieldAnalyser.this.new EvaluationContextImpl(iteration, cm);
         }
 
         @Override

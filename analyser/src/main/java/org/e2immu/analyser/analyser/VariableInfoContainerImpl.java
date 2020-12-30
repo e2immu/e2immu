@@ -170,20 +170,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(value);
         VariableInfoImpl variableInfo = currentLevelForWriting(level);
         if (value != NO_VALUE) {
-            assert variableInfo.stateOnAssignmentIsSet();
             variableInfo.setValue(value);
         }
         propertiesToSet.forEach(variableInfo::setProperty);
-    }
-
-    @Override
-    public void setStateOnAssignment(int level, Expression state) {
-        ensureNotFrozen();
-        Objects.requireNonNull(state);
-        VariableInfoImpl variableInfo = currentLevelForWriting(level);
-        if (state != NO_VALUE && (!variableInfo.stateOnAssignmentIsSet() || !state.equals(variableInfo.getStateOnAssignment()))) {
-            variableInfo.setStateOnAssignment(state);
-        }
     }
 
     /* ******************************* modifying methods unrelated to assignment ************************************ */
@@ -205,13 +194,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void setInitialValueFromAnalyser(Expression value, Expression state, Map<VariableProperty, Integer> propertiesToSet) {
-        internalSetValue(LEVEL_1_INITIALISER, value, state);
+    public void setInitialValueFromAnalyser(Expression value,  Map<VariableProperty, Integer> propertiesToSet) {
+        internalSetValue(LEVEL_1_INITIALISER, value);
         propertiesToSet.forEach((vp, i) -> setProperty(LEVEL_1_INITIALISER, vp, i));
     }
 
-    private void internalSetValue(int level, Expression value, Expression state) {
-        internalSetStateOnAssignment(level, state);
+    private void internalSetValue(int level, Expression value) {
         Objects.requireNonNull(value);
         assert value != NO_VALUE;
         int writeLevel = findLevelForWriting(level);
@@ -220,19 +208,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             variableInfo.setValue(value);
         }
     }
-
-    private void internalSetStateOnAssignment(int level, Expression state) {
-        ensureNotFrozen();
-        Objects.requireNonNull(state);
-        assert state != NO_VALUE;
-        int writeLevel = findLevelForWriting(level);
-        VariableInfoImpl variableInfo = getAndCast(writeLevel);
-        if (!variableInfo.stateOnAssignmentIsSet() || !state.equals(variableInfo.getStateOnAssignment())) {
-            variableInfo.setStateOnAssignment(state);
-            liftCurrentLevel(writeLevel);
-        }
-    }
-
 
     private int findLevelForWriting(int level) {
         if (level <= 0 || level >= LEVELS) throw new IllegalArgumentException();
@@ -333,9 +308,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         previousVariableInfo.propertyStream().forEach(e -> setProperty(level, e.getKey(), e.getValue(), failWhenTryingToWriteALowerValue));
         if (copyValue) {
             if (previousVariableInfo.valueIsSet()) {
-                internalSetValue(level, previousVariableInfo.getValue(), previousVariableInfo.getStateOnAssignment());
-            } else if (previousVariableInfo.stateOnAssignmentIsSet()) {
-                internalSetStateOnAssignment(level, previousVariableInfo.getStateOnAssignment());
+                internalSetValue(level, previousVariableInfo.getValue());
             }
         }
         if (previousVariableInfo.linkedVariablesIsSet()) {
@@ -349,60 +322,20 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public void merge(int level,
                       EvaluationContext evaluationContext,
-                      Expression state,
-                      boolean existingValuesWillBeOverwritten,
+                      ConditionManager conditionManager,
+                      boolean atLeastOneBlockExecuted,
                       List<VariableInfo> merge) {
         Objects.requireNonNull(merge);
         Objects.requireNonNull(evaluationContext);
 
         VariableInfoImpl existing = (VariableInfoImpl) best(level - 1);
-        VariableInfoImpl merged = existing.merge(evaluationContext, state, (VariableInfoImpl) data[level], existingValuesWillBeOverwritten, merge);
+        VariableInfoImpl merged = existing.merge(evaluationContext, conditionManager,
+                (VariableInfoImpl) data[level], atLeastOneBlockExecuted, merge);
         if (merged != existing) {
             data[level] = merged;
             currentLevel = level;
         }
-        Expression mergedValue = merged.getValue();
 
-        /*
-         the following condition explicitly catches a situation with merging return value objects:
-
-         if(x) return a;
-         return b;
-
-         The first statement produces a return value of retVal1 = x?a:<return value>
-         After the first statement, the state is !x. The assignment to the return value takes this into account,
-         The second statement should be read as: if(!x) retVal2 = b, or retVal2 = !x?b:<return value>
-         Merging the two gives the correct result, but <return value> keeps lingering, which has a nefarious effect on properties.
-         */
-        if (!mergedValue.isUnknown() && !existingValuesWillBeOverwritten &&
-                notExistingStateEqualsAndMergeStates(evaluationContext, existing, merge)) {
-            VariableProperty.VALUE_PROPERTIES.forEach(vp -> merged.setProperty(vp, mergedValue.getProperty(evaluationContext, vp)));
-        } else {
-            try {
-                merged.mergeProperties(existingValuesWillBeOverwritten, existing, merge);
-            } catch (RuntimeException rte) {
-                LOGGER.warn("Caught exception while merging overwrite? {} variable: {}",
-                        existingValuesWillBeOverwritten, current().variable().fullyQualifiedName());
-                LOGGER.warn("Properties at different levels: ");
-                for (int i = 0; i < data.length; i++) {
-                    LOGGER.warn("level {}: {}", i, data[i]);
-                }
-                throw rte;
-            }
-        }
-
-        merged.mergeLinkedVariables(existingValuesWillBeOverwritten, existing, merge);
-    }
-
-    private static boolean notExistingStateEqualsAndMergeStates(EvaluationContext evaluationContext, VariableInfo oneSide, List<VariableInfo> merge) {
-        if (!oneSide.stateOnAssignmentIsSet() || oneSide.getStateOnAssignment().isBoolValueTrue()) return false;
-        if (merge.stream().anyMatch(vi -> !vi.stateOnAssignmentIsSet() || vi.getStateOnAssignment().isBoolValueTrue()))
-            return false;
-
-        Expression notOne = Negation.negate(evaluationContext, oneSide.getStateOnAssignment());
-
-        Expression andOtherSide = new And(evaluationContext.getPrimitives()).append(evaluationContext,
-                merge.stream().map(VariableInfo::getStateOnAssignment).toArray(Expression[]::new));
-        return notOne.equals(andOtherSide);
+        merged.mergeLinkedVariables(atLeastOneBlockExecuted, existing, merge);
     }
 }

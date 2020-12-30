@@ -92,7 +92,8 @@ public class CompanionAnalyser {
 
             ReturnStatement returnStatement = (ReturnStatement) companionMethod.methodInspection.get()
                     .getMethodBody().structure.statements().get(0);
-            EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, new ConditionManager(analyserContext.getPrimitives()));
+            EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
+                    ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
             EvaluationResult evaluationResult = returnStatement.expression.evaluate(evaluationContext, ForwardEvaluationInfo.DEFAULT);
             if (evaluationResult.value() == EmptyExpression.NO_VALUE) {
                 log(DELAYED, "Delaying companion analysis of {} of {}, delay in evaluation",
@@ -209,7 +210,8 @@ public class CompanionAnalyser {
 
         @Override
         public EvaluationContext child(Expression condition) {
-            return new EvaluationContextImpl(iteration, conditionManager.addCondition(this, condition));
+            ConditionManager cm = conditionManager.newAtStartOfNewBlock(getPrimitives(), condition);
+            return new EvaluationContextImpl(iteration, cm);
         }
 
         @Override

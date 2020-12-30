@@ -19,7 +19,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
@@ -49,14 +48,6 @@ public interface VariableInfo {
         return getValue() != EmptyExpression.NO_VALUE;
     }
 
-    /**
-     * Shortcut for checking preconditions for @Mark and @Only; describes the full state at the moment of assignment.
-     * EMPTY when no info (empty state), NO_VALUE when not set
-     *
-     * @return Returns NO_VALUE when not yet set.
-     */
-    Expression getStateOnAssignment();
-
     int getProperty(VariableProperty variableProperty);
 
     int getProperty(VariableProperty variableProperty, int defaultValue);
@@ -74,10 +65,6 @@ public interface VariableInfo {
     boolean hasProperty(VariableProperty variableProperty);
 
     Stream<Map.Entry<VariableProperty, Integer>> propertyStream();
-
-    default boolean stateOnAssignmentIsSet() {
-        return getStateOnAssignment() != EmptyExpression.NO_VALUE;
-    }
 
     default boolean objectFlowIsSet() {
         return getObjectFlow() != null;

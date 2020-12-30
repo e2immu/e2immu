@@ -62,7 +62,8 @@ public class EvaluateMethodCall {
             if (boolValue.constant()) {
                 Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
                 // isKnown(true) -> return BoolValue.TRUE or BoolValue.FALSE, depending on state
-                Filter.FilterResult<Expression> res = filter.filter(evaluationContext.getConditionManager().state,
+                Expression absoluteState = evaluationContext.getConditionManager().absoluteState(evaluationContext);
+                Filter.FilterResult<Expression> res = filter.filter(absoluteState,
                         new Filter.ExactValue(filter.getDefaultRest(), clause));
                 boolean isKnown = !res.accepted().isEmpty();
                 Expression result = new BooleanConstant(evaluationContext.getPrimitives(), isKnown);

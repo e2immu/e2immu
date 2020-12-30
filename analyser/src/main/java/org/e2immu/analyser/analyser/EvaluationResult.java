@@ -82,14 +82,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
      * The stateOnAssignment can also still be NO_VALUE while the value is known, and vice versa.
      */
     public record ExpressionChangeData(Expression value,
-                                       Expression stateOnAssignment,
+                                       boolean stateIsDelayed,
                                        boolean markAssignment,
                                        boolean isNotAssignmentTarget,
                                        Set<Variable> linkedVariables) {
         public ExpressionChangeData {
             Objects.requireNonNull(value);
-            Objects.requireNonNull(stateOnAssignment);
-            assert value == NO_VALUE || stateOnAssignment != NO_VALUE : "Have state " + stateOnAssignment + ", value" + value;
+            assert value == NO_VALUE : "Have value" + value + "; state delayed? " + stateIsDelayed;
         }
 
         public ExpressionChangeData merge(ExpressionChangeData other) {
@@ -308,15 +307,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return currentExpression.value;
         }
 
-        public Expression currentStateOnAssignment(Variable variable) {
-            ExpressionChangeData currentExpression = valueChanges.get(variable);
-            if (currentExpression == null || currentExpression.stateOnAssignment == NO_VALUE) {
-                assert evaluationContext != null;
-                return evaluationContext.currentStateOnAssignment(variable);
-            }
-            return currentExpression.stateOnAssignment;
-        }
-
         public NewObject currentInstance(Variable variable, ObjectFlow objectFlowForCreation, Expression stateFromPreconditions) {
             ExpressionChangeData currentExpression = valueChanges.get(variable);
             if (currentExpression != null && currentExpression.value instanceof NewObject instance) return instance;
@@ -340,10 +330,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ExpressionChangeData current = valueChanges.get(variable);
             ExpressionChangeData newVcd;
             if (current == null) {
-                Expression currentStateOnAssignment = currentStateOnAssignment(variable);
-                newVcd = new ExpressionChangeData(instance, currentStateOnAssignment, false, true, linkedVariables);
+                boolean stateIsDelayed = evaluationContext.getConditionManager().isDelayed();
+                newVcd = new ExpressionChangeData(instance, stateIsDelayed, false, true, linkedVariables);
             } else {
-                newVcd = new ExpressionChangeData(instance, current.stateOnAssignment, current.markAssignment, true, linkedVariables);
+                newVcd = new ExpressionChangeData(instance, current.stateIsDelayed, current.markAssignment, true, linkedVariables);
             }
             valueChanges.put(variable, newVcd);
         }
@@ -402,11 +392,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                   Set<Variable> linkedVariables,
                                   int iteration) {
             assert evaluationContext != null;
-            Expression state = evaluationContext.getConditionManager().state;
+            boolean isDelayed = evaluationContext.getConditionManager().isDelayed();
 
             ExpressionChangeData valueChangeData = new ExpressionChangeData(
-                    state == NO_VALUE ? NO_VALUE : resultOfExpression,
-                    state,
+                    isDelayed ? NO_VALUE : resultOfExpression,
+                    isDelayed,
                     iteration == 0 && assignmentToNonEmptyExpression,
                     false,
                     linkedVariables);

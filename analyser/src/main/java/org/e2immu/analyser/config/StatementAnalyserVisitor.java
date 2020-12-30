@@ -12,7 +12,11 @@ public interface StatementAnalyserVisitor {
                 int iteration,
                 EvaluationContext evaluationContext,
                 MethodInfo methodInfo, StatementAnalysis statementAnalysis,
-                String statementId, Expression condition, Expression state, Map<String, AnalysisStatus> statusesAsMap) {
+                String statementId,
+                Expression condition,
+                Expression state,
+                Expression absoluteState,
+                Map<String, AnalysisStatus> statusesAsMap) {
 
         // shortcut
 

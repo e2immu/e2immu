@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
@@ -427,7 +428,8 @@ public class TypeAnalyser extends AbstractAnalyser {
     }
 
     private void handlePrecondition(@NotModified MethodAnalyser methodAnalyser, Expression precondition, Map<String, Expression> tempApproved, int iteration) {
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, new ConditionManager(analyserContext.getPrimitives()));
+        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
+                ConditionManager.initialConditionManager(analyserContext.getPrimitives()));
         Expression negated = Negation.negate(evaluationContext, precondition);
         String label = labelOfPreconditionForMarkAndOnly(precondition);
         Expression inMap = tempApproved.get(label);
@@ -461,7 +463,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                 log(MARK, "Field {} is assigned in {}? {}", variable.fullyQualifiedName(),
                         methodAnalyser.methodInfo.distinguishingName(), assigned);
 
-                Expression state = tv.getStateOnAssignment();
+                Expression state = EmptyExpression.NO_VALUE; // FIXME tv.getStateOnAssignment();
                 if (assigned && state != null && isCompatible(evaluationContext, state, precondition)) {
                     log(MARK, "We checked, and found the state {} compatible with the precondition {}", state, precondition);
                     return false;

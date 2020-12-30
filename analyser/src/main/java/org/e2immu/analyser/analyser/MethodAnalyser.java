@@ -278,7 +278,8 @@ public class MethodAnalyser extends AbstractAnalyser {
     // called from statement analyser
     public AnalysisStatus analyse(int iteration, EvaluationContext closure) {
         log(ANALYSER, "Analysing method {}", methodInfo.fullyQualifiedName());
-        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration, new ConditionManager(analyserContext.getPrimitives()), closure);
+        EvaluationContext evaluationContext = new EvaluationContextImpl(iteration,
+                ConditionManager.initialConditionManager(analyserContext.getPrimitives()), closure);
         SharedState sharedState = new SharedState(evaluationContext);
 
         try {

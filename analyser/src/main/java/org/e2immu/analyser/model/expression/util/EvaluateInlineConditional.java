@@ -30,9 +30,7 @@ import org.e2immu.analyser.parser.Primitives;
 public class EvaluateInlineConditional {
 
     public static EvaluationResult conditionalValueCurrentState(EvaluationContext evaluationContext, Expression conditionBeforeState, Expression ifTrue, Expression ifFalse, ObjectFlow objectFlow) {
-        Expression condition = checkState(evaluationContext,
-                evaluationContext.getPrimitives(),
-                evaluationContext.getConditionManager().state, conditionBeforeState);
+        Expression condition = evaluationContext.getConditionManager().evaluate(evaluationContext, conditionBeforeState);
         return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalse, objectFlow);
     }
 
@@ -76,16 +74,6 @@ public class EvaluateInlineConditional {
         // TODO more advanced! if a "large" part of ifTrue or ifFalse appears in condition, we should create a temp variable
     }
 
-    private static Expression checkState(EvaluationContext evaluationContext, Primitives primitives, Expression state, Expression condition) {
-        if (state.isBoolValueTrue()) return condition;
-        Expression and = new And(primitives).append(evaluationContext, state, condition);
-        if (and.equals(condition)) {
-            return new BooleanConstant(primitives, true);
-        }
-        if (and instanceof BooleanConstant) return and;
-        return condition;
-    }
-
     private static Expression edgeCases(EvaluationContext evaluationContext, Primitives primitives,
                                         Expression condition, Expression ifTrue, Expression ifFalse) {
         // x ? a : a == a
@@ -113,7 +101,7 @@ public class EvaluateInlineConditional {
             return new And(primitives).append(evaluationContext, condition, ifTrue);
         }
 
-        // x ? a : a --> a, but only if x is not modifying FIXME
+        // x ? a : a --> a, but only if x is not modifying TODO needs implementing!!
         if (ifTrue.equals(ifFalse)) {// && evaluationContext.getProperty(condition, VariableProperty.MODIFIED) == Level.FALSE) {
             return ifTrue;
         }
@@ -133,8 +121,8 @@ public class EvaluateInlineConditional {
 
     private static boolean inState(EvaluationContext evaluationContext, Expression expression) {
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.ACCEPT);
-        Filter.FilterResult<Expression> res = filter.filter(evaluationContext.getConditionManager().state,
-                new Filter.ExactValue(filter.getDefaultRest(), expression));
+        Expression absoluteState = evaluationContext.getConditionManager().absoluteState(evaluationContext);
+        Filter.FilterResult<Expression> res = filter.filter(absoluteState, new Filter.ExactValue(filter.getDefaultRest(), expression));
         return !res.accepted().isEmpty();
     }
 
