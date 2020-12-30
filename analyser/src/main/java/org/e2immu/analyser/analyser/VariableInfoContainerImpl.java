@@ -18,13 +18,9 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Freezable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -34,15 +30,11 @@ import java.util.Set;
 import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 
 public class VariableInfoContainerImpl extends Freezable implements VariableInfoContainer {
-    private final static Logger LOGGER = LoggerFactory.getLogger(VariableInfoContainerImpl.class);
-
     public static final int LEVELS = 5;
 
     private final VariableInfo[] data = new VariableInfo[LEVELS];
-    private int currentLevel;
-
     private final VariableInLoop variableInLoop;
-    // NOTE: isLocalVariableInLoopDefinedOutside == (localVariableInLoopDefinedOutsideMainIndex != null)
+    private int currentLevel;
 
     public VariableInfoContainerImpl(VariableInfoContainer previous, String statementIndexForLocalVariableInLoop) {
         Objects.requireNonNull(previous);
@@ -322,20 +314,20 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public void merge(int level,
                       EvaluationContext evaluationContext,
-                      ConditionManager conditionManager,
+                      Expression stateOfDestination,
                       boolean atLeastOneBlockExecuted,
-                      List<VariableInfo> merge) {
+                      Map<Expression, VariableInfo> merge) {
         Objects.requireNonNull(merge);
         Objects.requireNonNull(evaluationContext);
 
         VariableInfoImpl existing = (VariableInfoImpl) best(level - 1);
-        VariableInfoImpl merged = existing.merge(evaluationContext, conditionManager,
+        VariableInfoImpl merged = existing.merge(evaluationContext, stateOfDestination,
                 (VariableInfoImpl) data[level], atLeastOneBlockExecuted, merge);
         if (merged != existing) {
             data[level] = merged;
             currentLevel = level;
         }
-
+        merged.mergeProperties(atLeastOneBlockExecuted, existing, merge.values());
         merged.mergeLinkedVariables(atLeastOneBlockExecuted, existing, merge);
     }
 }

@@ -69,14 +69,16 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             if ("setS1".equals(d.methodInfo().name) && S.equals(d.variableName())) {
                 if("0.0.1".equals(d.statementId())) {
                     Assert.assertEquals("\"xyz\"", d.currentValue().debugOutput());
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
                 }
                 if("0.1.0".equals(d.statementId())) {
                     Assert.assertEquals("\"abc\"", d.currentValue().debugOutput());
-                }
-                if ("1".equals(d.statementId())) {
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                }
+                if ("1".equals(d.statementId()) || "0".equals(d.statementId())) {
                     Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
                     Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
+                    Assert.assertEquals("At "+d.statementId(), Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
                 }
             }
             if ("setS2".equals(d.methodInfo().name) && S.equals(d.variableName())) {
@@ -110,6 +112,9 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertEquals("0:1", flowData.assignmentIdOfStatementTime.get(0));
                     Assert.assertEquals("0:3", flowData.assignmentIdOfStatementTime.get(1));
                     Assert.assertEquals("0.0.0:3", flowData.assignmentIdOfStatementTime.get(2));
+                    Assert.assertEquals("true", d.state().toString());
+                    Assert.assertEquals("input1.contains(\"a\")", d.condition().toString());
+                    Assert.assertEquals("input1.contains(\"a\")", d.absoluteState().toString());
                 }
                 if ("0.0.1".equals(d.statementId())) { // first assignment
                     Assert.assertEquals(2, time1);
@@ -125,6 +130,9 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertEquals(1, time4);
                     Assert.assertEquals("0:1", flowData.assignmentIdOfStatementTime.get(0));
                     Assert.assertEquals("0:3", flowData.assignmentIdOfStatementTime.get(1));
+                    Assert.assertEquals("true", d.state().toString());
+                    Assert.assertEquals("!input1.contains(\"a\")", d.condition().toString());
+                    Assert.assertEquals("!input1.contains(\"a\")", d.absoluteState().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals(2, time1);

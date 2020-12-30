@@ -19,9 +19,12 @@ package org.e2immu.analyser.analyser.util;
 
 // assignment in if and else block
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.EvaluationContext;
+import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.ReturnVariable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -112,14 +115,21 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     } --> ret v
     */
 
-    public Expression one(VariableInfo vi1, ConditionManager conditionManagerOfParent) {
-        return inlineConditional(conditionManagerOfParent.condition(), vi1.getValue(), vi.getValue());
+    public Expression one(VariableInfo vi1, Expression condition) {
+        if (condition.isBoolValueTrue()) return vi1.getValue(); // so we by-pass the "safe"
+        return inlineConditional(condition, vi1.getValue(), vi.getValue());
     }
 
-    public Expression two(VariableInfo vi1, ConditionManager conditionManagerOfParent, VariableInfo vi2) {
-        Expression two = inlineConditional(conditionManagerOfParent.condition(), vi1.getValue(), vi2.getValue());
+    public Expression two(VariableInfo vi1, Expression stateOfParent, Expression firstCondition, VariableInfo vi2) {
+        Expression two;
+        if (firstCondition.isBoolValueTrue()) two = vi1.getValue(); // to bypass the error check on "safe"
+        else if (firstCondition.isBoolValueFalse()) two = vi2.getValue();
+        else two = inlineConditional(firstCondition, vi1.getValue(), vi2.getValue());
+
         if (vi.variable() instanceof ReturnVariable) {
-            return inlineConditional(conditionManagerOfParent.state(), two, vi.getValue());
+            if (stateOfParent.isBoolValueTrue()) return two;
+            if (stateOfParent.isBoolValueFalse()) throw new UnsupportedOperationException(); // unreachable statement
+            return inlineConditional(stateOfParent, two, vi.getValue());
         }
         return two;
     }

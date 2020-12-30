@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -149,9 +148,9 @@ public interface VariableInfoContainer {
 
     void merge(int level,
                EvaluationContext evaluationContext,
-               ConditionManager conditionManager,
+               Expression stateOfDestination,
                boolean atLeastOneBlockExecuted,
-               List<VariableInfo> merge);
+               Map<Expression, VariableInfo> merge);
 
     void setStatementTime(int level, int statementTime);
 

@@ -862,7 +862,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     // and in the next one 3 needs to exist
                     VariableInfoContainer variableInfo = findReturnAsVariableForWriting();
                     variableInfo.prepareForValueChange(VariableInfoContainer.LEVEL_3_EVALUATION, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
-                    // all the rest in the new variableInfo object stays on DELAY
+                    variableInfo.setProperty(VariableInfoContainer.LEVEL_3_EVALUATION, VariableProperty.ASSIGNED, Level.TRUE);
                 }
                 log(DELAYED, "Step 3 in statement {}, {} is delayed, apply", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
                 return DELAYS;
@@ -916,32 +916,34 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         vic.prepareForValueChange(l3, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
         Map<VariableProperty, Integer> properties = sharedState.evaluationContext.getValueProperties(newReturnValue);
         vic.setValueOnAssignment(l3, newReturnValue, properties);
-        vic.setLinkedVariables(l3, newReturnValue.linkedVariables(sharedState.evaluationContext));
+        vic.setProperty(l3, VariableProperty.ASSIGNED, Level.TRUE);
+        vic.setLinkedVariables(l3, sharedState.evaluationContext.linkedVariables(level3EvaluationResult));
     }
-/*
-    private boolean conditionIsNotExactOpposite(Expression expression, EvaluationContext evaluationContext) {
-        InlineConditional inlineConditional;
-        And and;
-        Or or;
-        if ((inlineConditional = expression.asInstanceOf(InlineConditional.class)) != null) {
-            // the inline conditional swaps if it has a negation in the condition
-            boolean negate = inlineConditional.ifFalse.isInitialReturnExpression();
-            Expression notCondition = negate ? Negation.negate(evaluationContext, inlineConditional.condition) : inlineConditional.condition;
-            return !evaluationContext.getConditionManager().state.equals(notCondition);
-        } else if ((and = expression.asInstanceOf(And.class)) != null) {
-            throw new UnsupportedOperationException();
-        } else if ((or = expression.asInstanceOf(Or.class)) != null) {
-            Expression negatedOrWithoutReturnExpression = Negation.negate(evaluationContext,
-                    new Or(or.primitives()).append(evaluationContext,
-                            or.expressions().stream().filter(e -> !e.isInitialReturnExpression()).toArray(Expression[]::new)));
-            Expression combined = evaluationContext.getConditionManager().combineWithState(evaluationContext, negatedOrWithoutReturnExpression);
-            boolean exactOpposite = combined instanceof BooleanConstant bc && bc.constant() ||
-                    combined.equals(evaluationContext.getConditionManager().state);
-            return !exactOpposite;
+
+    /*
+        private boolean conditionIsNotExactOpposite(Expression expression, EvaluationContext evaluationContext) {
+            InlineConditional inlineConditional;
+            And and;
+            Or or;
+            if ((inlineConditional = expression.asInstanceOf(InlineConditional.class)) != null) {
+                // the inline conditional swaps if it has a negation in the condition
+                boolean negate = inlineConditional.ifFalse.isInitialReturnExpression();
+                Expression notCondition = negate ? Negation.negate(evaluationContext, inlineConditional.condition) : inlineConditional.condition;
+                return !evaluationContext.getConditionManager().state.equals(notCondition);
+            } else if ((and = expression.asInstanceOf(And.class)) != null) {
+                throw new UnsupportedOperationException();
+            } else if ((or = expression.asInstanceOf(Or.class)) != null) {
+                Expression negatedOrWithoutReturnExpression = Negation.negate(evaluationContext,
+                        new Or(or.primitives()).append(evaluationContext,
+                                or.expressions().stream().filter(e -> !e.isInitialReturnExpression()).toArray(Expression[]::new)));
+                Expression combined = evaluationContext.getConditionManager().combineWithState(evaluationContext, negatedOrWithoutReturnExpression);
+                boolean exactOpposite = combined instanceof BooleanConstant bc && bc.constant() ||
+                        combined.equals(evaluationContext.getConditionManager().state);
+                return !exactOpposite;
+            }
+            return true;
         }
-        return true;
-    }
-*/
+    */
     // a special case, which allows us to set not null
     private void step3_ForEach(SharedState sharedState, Expression value) {
         Objects.requireNonNull(value);
@@ -1045,8 +1047,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return analysisStatus;
     }
 
-    private record ExecutionOfBlock(FlowData.Execution execution, StatementAnalyser startOfBlock,
-                                    ConditionManager conditionManager, Expression condition, boolean isDefault,
+    private record ExecutionOfBlock(FlowData.Execution execution,
+                                    StatementAnalyser startOfBlock,
+                                    ConditionManager conditionManager,
+                                    Expression condition,
+                                    boolean isDefault,
                                     boolean inCatch) {
         public boolean escapesAlways() {
             return execution != NEVER && startOfBlock != null && startOfBlock.statementAnalysis.flowData.interruptStatus() == ALWAYS;
@@ -1088,18 +1093,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         if (blocksExecuted > 0) {
             boolean atLeastOneBlockExecuted = atLeastOneBlockExecuted(executions);
 
-            List<StatementAnalyser> lastStatements = executions.stream().map(ExecutionOfBlock::startOfBlock)
-                    .filter(statementAnalyser -> !statementAnalyser.statementAnalysis.flowData.isUnreachable())
-                    .map(StatementAnalyser::lastStatement)
-                    .collect(Collectors.toList());
-            int maxTime = lastStatements.stream().mapToInt(sa -> sa.statementAnalysis.flowData.getTimeAfterSubBlocks())
+            Map<Expression, StatementAnalyser> lastStatements = executions.stream()
+                    .filter(ex -> !ex.startOfBlock.statementAnalysis.flowData.isUnreachable())
+                    .collect(Collectors.toUnmodifiableMap(ex -> ex.condition, ex -> ex.startOfBlock.lastStatement()));
+            int maxTime = lastStatements.values().stream().mapToInt(sa -> sa.statementAnalysis.flowData.getTimeAfterSubBlocks())
                     .max().orElseThrow();
             if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
                 statementAnalysis.flowData.setTimeAfterSubBlocks(maxTime, index());
             }
 
             // need timeAfterSubBlocks set already
-            statementAnalysis.copyBackLocalCopies(evaluationContext, localConditionManager, lastStatements,
+            statementAnalysis.copyBackLocalCopies(evaluationContext, localConditionManager.state(), lastStatements,
                     atLeastOneBlockExecuted, maxTime);
 
             // compute the escape situation of the sub-blocks
@@ -1179,9 +1183,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         FlowData.Execution firstBlockStatementsExecution = structure.statementExecution().apply(value, evaluationContext);
         FlowData.Execution firstBlockExecution = statementAnalysis.flowData.execution(firstBlockStatementsExecution);
 
-        ConditionManager cm = firstBlockExecution == NEVER ? null : structure.expressionIsCondition() ?
-                localConditionManager.newAtStartOfNewBlock(statementAnalysis.primitives, value) : localConditionManager;
-        executions.add(new ExecutionOfBlock(firstBlockExecution, startOfBlocks.get(0).orElse(null), cm, value, false, false));
+        executions.add(makeExecutionOfBlock(firstBlockExecution, startOfBlocks, value));
 
         for (int count = 1; count < startOfBlocks.size(); count++) {
             Structure subStatements = structure.subStatements().get(count - 1);
@@ -1213,6 +1215,26 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         return executions;
+    }
+
+    private ExecutionOfBlock makeExecutionOfBlock(FlowData.Execution firstBlockExecution,
+                                                  List<Optional<StatementAnalyser>> startOfBlocks,
+                                                  Expression value) {
+        Structure structure = statementAnalysis.statement.getStructure();
+        Expression condition;
+        ConditionManager cm;
+        if (firstBlockExecution == NEVER) {
+            cm = null;
+            condition = null;
+        } else if (structure.expressionIsCondition()) {
+            cm = localConditionManager.newAtStartOfNewBlock(statementAnalysis.primitives, value);
+            condition = value;
+        } else {
+            cm = localConditionManager;
+            condition = new BooleanConstant(statementAnalysis.primitives, true);
+        }
+        return new ExecutionOfBlock(firstBlockExecution, startOfBlocks.get(0).orElse(null), cm, condition,
+                false, false);
     }
 
     private Expression defaultCondition(EvaluationContext evaluationContext, List<ExecutionOfBlock> executions) {

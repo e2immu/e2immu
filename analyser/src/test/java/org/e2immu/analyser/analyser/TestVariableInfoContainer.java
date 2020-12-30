@@ -82,10 +82,12 @@ public class TestVariableInfoContainer extends CommonVariableInfo {
     @Test
     public void test2() {
         Variable a = makeLocalIntVar("a");
-        VariableInfoImpl previous = new VariableInfoImpl(a);
-        previous.setProperty(VariableProperty.INDEPENDENT, Level.FALSE);
+
         VariableInfoContainer previousVic = new VariableInfoContainerImpl(a,
                 VariableInfoContainer.START_OF_METHOD, VariableInfoContainerImpl.NOT_A_VARIABLE_FIELD, VariableInLoop.NOT_IN_LOOP);
+        VariableInfoImpl previous = (VariableInfoImpl) previousVic.current();
+        previous.setProperty(VariableProperty.INDEPENDENT, Level.FALSE);
+
         VariableInfoContainer vic = new VariableInfoContainerImpl(previousVic, null);
         VariableInfo vi = vic.current();
         Assert.assertEquals(VariableInfoContainer.LEVEL_0_PREVIOUS, vic.getCurrentLevel());

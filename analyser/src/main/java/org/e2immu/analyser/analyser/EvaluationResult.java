@@ -88,7 +88,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                        Set<Variable> linkedVariables) {
         public ExpressionChangeData {
             Objects.requireNonNull(value);
-            assert value == NO_VALUE : "Have value" + value + "; state delayed? " + stateIsDelayed;
         }
 
         public ExpressionChangeData merge(ExpressionChangeData other) {

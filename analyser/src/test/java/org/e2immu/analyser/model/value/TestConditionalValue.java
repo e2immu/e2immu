@@ -48,6 +48,7 @@ public class TestConditionalValue extends CommonAbstractValue {
         return EvaluateInlineConditional.conditionalValueConditionResolved(minimalEvaluationContext,
                 c, t, f, ObjectFlow.NO_FLOW).value();
     }
+
     @Test
     public void test2() {
         Expression cv1 = inline(a, TRUE, b);
@@ -76,12 +77,16 @@ public class TestConditionalValue extends CommonAbstractValue {
         Assert.assertSame(b, cv1);
 
         EvaluationContext child = minimalEvaluationContext.child(a);
-        Assert.assertSame(a, child.getConditionManager().state());
+        Assert.assertTrue(child.getConditionManager().state().isBoolValueTrue());
+        Assert.assertEquals("a", child.getConditionManager().condition().toString());
         Expression cv2 = EvaluateInlineConditional.conditionalValueConditionResolved(child, isFactA, a, b, ObjectFlow.NO_FLOW).value();
         Assert.assertSame(a, cv2);
 
         EvaluationContext child2 = minimalEvaluationContext.child(new And(PRIMITIVES).append(minimalEvaluationContext, a, b));
-        Assert.assertEquals("a&&b", child2.getConditionManager().state().toString());
+        Assert.assertEquals("a&&b", child2.getConditionManager().condition().toString());
+        Assert.assertTrue(child.getConditionManager().state().isBoolValueTrue());
+        Assert.assertEquals("a&&b", child2.getConditionManager().absoluteState(child2).toString());
+
         Expression cv3 = EvaluateInlineConditional.conditionalValueConditionResolved(child2, isFactA, a, b, ObjectFlow.NO_FLOW).value();
         Assert.assertSame(a, cv3);
 
@@ -91,7 +96,7 @@ public class TestConditionalValue extends CommonAbstractValue {
         EvaluationContext child3 = minimalEvaluationContext.child(
                 new Or(PRIMITIVES).append(minimalEvaluationContext, c,
                         new And(PRIMITIVES).append(minimalEvaluationContext, a, b)));
-        Assert.assertEquals("(a||c)&&(b||c)", child3.getConditionManager().state().toString());
+        Assert.assertEquals("(a||c)&&(b||c)", child3.getConditionManager().absoluteState(child3).toString());
         Expression cv4 = EvaluateInlineConditional.conditionalValueConditionResolved(child3, isFactA, a, b, ObjectFlow.NO_FLOW).value();
         Assert.assertSame(b, cv4);
     }

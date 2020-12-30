@@ -442,14 +442,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param statementTime           the statement time of subBlocks
      */
     public void copyBackLocalCopies(EvaluationContext evaluationContext,
-                                    ConditionManager conditionManager,
-                                    List<StatementAnalyser> lastStatements,
+                                    Expression stateOfConditionManagerBeforeExecution,
+                                    Map<Expression, StatementAnalyser> lastStatements,
                                     boolean atLeastOneBlockExecuted,
                                     int statementTime) {
 
         // we need to make a synthesis of the variable state of fields, local copies, etc.
         // some blocks are guaranteed to be executed, others are only executed conditionally.
-        Stream<Map.Entry<String, VariableInfoContainer>> variableStream = makeVariableStream(lastStatements);
+        Stream<Map.Entry<String, VariableInfoContainer>> variableStream = makeVariableStream(lastStatements.values());
         Set<String> merged = new HashSet<>();
         // explicitly ignore loop and shadow loop variables, they should not exist beyond the statement
         variableStream.filter(vic -> !index.equals(vic.getValue().getStatementIndexOfThisLoopOrShadowVariable())).forEach(e -> {
@@ -458,10 +458,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
             // the variable stream comes from multiple blocks; we ensure that merging takes place once only
             if (merged.add(fqn)) {
-                List<VariableInfo> toMerge = lastStatements.stream()
-                        .filter(sa -> sa.statementAnalysis.variables.isSet(fqn))
-                        .map(sa -> sa.statementAnalysis.variables.get(fqn).current())
-                        .collect(Collectors.toList());
+                Map<Expression, VariableInfo> toMerge = lastStatements.entrySet().stream()
+                        .filter(e2 -> e2.getValue().statementAnalysis.variables.isSet(fqn))
+                        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey,
+                                e2 -> e2.getValue().statementAnalysis.variables.get(fqn).current()));
                 VariableInfoContainer destination;
                 if (!variables.isSet(fqn)) {
                     Variable variable = e.getValue().current().variable();
@@ -469,7 +469,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 } else {
                     destination = vic;
                 }
-                destination.merge(VariableInfoContainer.LEVEL_4_SUMMARY, evaluationContext, conditionManager,
+                destination.merge(VariableInfoContainer.LEVEL_4_SUMMARY, evaluationContext, stateOfConditionManagerBeforeExecution,
                         atLeastOneBlockExecuted, toMerge);
             }
         });
@@ -477,7 +477,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     // return a stream of all variables that need merging up
     // note: .distinct() may not work
-    private Stream<Map.Entry<String, VariableInfoContainer>> makeVariableStream(List<StatementAnalyser> lastStatements) {
+    private Stream<Map.Entry<String, VariableInfoContainer>> makeVariableStream(Collection<StatementAnalyser> lastStatements) {
         return Stream.concat(variables.stream(), lastStatements.stream().flatMap(st ->
                 st.statementAnalysis.variables.stream().filter(e -> {
                     VariableInfo vi = e.getValue().current();

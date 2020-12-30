@@ -259,6 +259,13 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     Assert.assertEquals(1, time4);
                 }
             }
+            if ("increment3".equals(d.methodInfo().name)) {
+                if (d.statementId().startsWith("1.0")) {
+                    Assert.assertEquals("true", d.state().toString());
+                    Assert.assertEquals("true", d.condition().toString());
+                    Assert.assertEquals("true", d.absoluteState().toString());
+                }
+            }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {

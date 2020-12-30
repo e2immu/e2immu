@@ -73,7 +73,6 @@ public class Negation extends UnaryOperator implements ExpressionWrapper {
             return negatable.negate();
         }
         if (v.isUnknown()) return v;
-        if (v.isInstanceOf(NewObject.class)) return v;
 
         if (v instanceof Negation negation) return negation.expression;
         if (v instanceof Or or) {

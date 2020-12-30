@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.expression.VariableExpression;
@@ -165,7 +166,8 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     // we essentially compute the union
-    public void mergeLinkedVariables(boolean existingValuesWillBeOverwritten, VariableInfoImpl existing, List<VariableInfo> merge) {
+    public void mergeLinkedVariables(boolean existingValuesWillBeOverwritten, VariableInfoImpl existing,
+                                     Map<Expression, VariableInfo> merge) {
         Set<Variable> merged = new HashSet<>();
         if (!existingValuesWillBeOverwritten) {
             if (existing.linkedVariablesIsSet()) {
@@ -174,7 +176,7 @@ class VariableInfoImpl implements VariableInfo {
             // typical situation: int a; if(x) { a = 5; }. Existing has not been assigned
             // this will end up an error when the variable is read before being assigned
         }
-        for (VariableInfo vi : merge) {
+        for (VariableInfo vi : merge.values()) {
             if (!vi.linkedVariablesIsSet()) return;
             merged.addAll(vi.getLinkedVariables());
         }
@@ -210,12 +212,12 @@ class VariableInfoImpl implements VariableInfo {
      * This method takes the state of assignment into account: a delay arises when one of the states has been delayed.
      */
     public VariableInfoImpl merge(EvaluationContext evaluationContext,
-                                  ConditionManager conditionManager,
+                                  Expression stateOfDestination,
                                   VariableInfoImpl newObject,
                                   boolean atLeastOneBlockExecuted,
-                                  List<VariableInfo> merge) {
+                                  Map<Expression, VariableInfo> merge) {
         Expression mergedValue = replaceLocalVariables(evaluationContext,
-                mergeValue(evaluationContext, conditionManager, atLeastOneBlockExecuted, merge));
+                mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, merge));
         Expression currentValue = getValue();
         if (currentValue.equals(mergedValue)) {
             return newObject == null ? this : newObject; // no need to create
@@ -268,10 +270,12 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     private String mergedAssignmentId(EvaluationContext evaluationContext, boolean existingValuesWillBeOverwritten,
-                                      List<VariableInfo> merge) {
-        String currentStatementId = (evaluationContext.getCurrentStatement() == null ? "" : evaluationContext.getCurrentStatement().index()) + ":4";
+                                      Map<Expression, VariableInfo> merge) {
+        // null current statement in tests
+        String currentStatementId = (evaluationContext.getCurrentStatement() == null ? "" :
+                evaluationContext.getCurrentStatement().index()) + ":4";
         boolean assignmentInSubBlocks = existingValuesWillBeOverwritten ||
-                merge.stream().anyMatch(vi -> vi.getAssignmentId().compareTo(currentStatementId) > 0);
+                merge.values().stream().anyMatch(vi -> vi.getAssignmentId().compareTo(currentStatementId) > 0);
         return assignmentInSubBlocks ? currentStatementId : assignmentId;
     }
 
@@ -291,7 +295,7 @@ class VariableInfoImpl implements VariableInfo {
         }
     }
 
-    public void mergeProperties(boolean existingValuesWillBeOverwritten, VariableInfo previous, List<VariableInfo> merge) {
+    public void mergeProperties(boolean existingValuesWillBeOverwritten, VariableInfo previous, Collection<VariableInfo> merge) {
         VariableInfo[] list = merge
                 .stream().filter(vi -> vi.getValue().isComputeProperties())
                 .toArray(n -> new VariableInfo[n + 1]);
@@ -314,13 +318,13 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     private Expression mergeValue(EvaluationContext evaluationContext,
-                                  ConditionManager conditionManager,
+                                  Expression stateOfDestination,
                                   boolean atLeastOneBlockExecuted,
-                                  List<VariableInfo> merge) {
+                                  Map<Expression, VariableInfo> merge) {
         Expression currentValue = getValue();
         if (!atLeastOneBlockExecuted && currentValue.isUnknown()) return currentValue;
 
-        boolean haveANoValue = merge.stream().anyMatch(v -> !v.valueIsSet());
+        boolean haveANoValue = merge.values().stream().anyMatch(v -> !v.valueIsSet());
         if (haveANoValue) return NO_VALUE;
 
         if (merge.isEmpty()) {
@@ -328,19 +332,25 @@ class VariableInfoImpl implements VariableInfo {
             return currentValue;
         }
 
-        boolean allValuesIdentical = merge.stream().allMatch(v -> currentValue.equals(v.getValue()));
+        boolean allValuesIdentical = merge.values().stream().allMatch(v -> currentValue.equals(v.getValue()));
         if (allValuesIdentical) return currentValue;
 
         MergeHelper mergeHelper = new MergeHelper(evaluationContext, this);
 
         if (merge.size() == 1) {
-            Expression result = mergeHelper.one(merge.get(0), conditionManager);
+            Map.Entry<Expression, VariableInfo> e = merge.entrySet().stream().findFirst().orElseThrow();
+            Expression result = mergeHelper.one(e.getValue(), e.getKey());
             if (result != null) return result;
         }
 
-        if (merge.size() == 2 && atLeastOneBlockExecuted) {
-            Expression result = mergeHelper.two(merge.get(0), conditionManager, merge.get(1));
-            if (result != null) return result;
+        if (merge.size() == 2) {
+            Map.Entry<Expression, VariableInfo> e = merge.entrySet().stream().findFirst().orElseThrow();
+            Expression negated = Negation.negate(evaluationContext, e.getKey());
+            VariableInfo vi2 = merge.get(negated);
+            if (vi2 != null) {
+                Expression result = mergeHelper.two(e.getValue(), stateOfDestination, e.getKey(), vi2);
+                if (result != null) return result;
+            }
         }
 
         // all the rest is the territory of switch statements, not yet implemented
