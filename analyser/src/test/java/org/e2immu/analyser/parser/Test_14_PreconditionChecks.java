@@ -43,7 +43,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("either".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 Assert.assertEquals("null!=e1||null!=e2",
-                        d.statementAnalysis().stateData.conditionManager.get().state.toString());
+                        d.statementAnalysis().stateData.conditionManager.get().state().toString());
                 Assert.assertEquals("null!=e1||null!=e2",
                         d.statementAnalysis().stateData.precondition.get().toString());
             }

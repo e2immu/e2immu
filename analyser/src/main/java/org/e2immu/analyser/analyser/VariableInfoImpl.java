@@ -75,7 +75,6 @@ class VariableInfoImpl implements VariableInfo {
         this.variable = previous.variable;
         this.properties.copyFrom(previous.properties);
         this.value.copy(previous.value);
-        assert !value.isSet() : "Have value " + getValue();
         this.linkedVariables.copy(previous.linkedVariables);
         this.objectFlow.copy(previous.objectFlow);
         this.statementTime.copy(previous.statementTime);
@@ -245,17 +244,19 @@ class VariableInfoImpl implements VariableInfo {
     Any loop variable available in the block but not outside needs replacing
      */
     private Expression replaceLocalVariables(EvaluationContext evaluationContext, Expression mergeValue) {
-        StatementAnalysis statementAnalysis = evaluationContext.getCurrentStatement().statementAnalysis;
-        if (statementAnalysis.statement instanceof LoopStatement && mergeValue != NO_VALUE) {
-            Map<Expression, Expression> map = statementAnalysis.variables.stream()
-                    .filter(e -> statementAnalysis.index.equals(e.getValue().getStatementIndexOfThisShadowVariable()))
-                    .collect(Collectors.toUnmodifiableMap(e -> new VariableExpression(e.getValue().current().variable()),
-                            e -> wrap(evaluationContext,
-                                    new NewObject(evaluationContext.getPrimitives(), e.getValue().current().variable().parameterizedType(),
-                                            e.getValue().current().getObjectFlow()),
-                                    e.getValue().current())));
-            return mergeValue.reEvaluate(evaluationContext, map).value();
-        }
+        if (evaluationContext.getCurrentStatement() != null) {
+            StatementAnalysis statementAnalysis = evaluationContext.getCurrentStatement().statementAnalysis;
+            if (statementAnalysis.statement instanceof LoopStatement && mergeValue != NO_VALUE) {
+                Map<Expression, Expression> map = statementAnalysis.variables.stream()
+                        .filter(e -> statementAnalysis.index.equals(e.getValue().getStatementIndexOfThisShadowVariable()))
+                        .collect(Collectors.toUnmodifiableMap(e -> new VariableExpression(e.getValue().current().variable()),
+                                e -> wrap(evaluationContext,
+                                        new NewObject(evaluationContext.getPrimitives(), e.getValue().current().variable().parameterizedType(),
+                                                e.getValue().current().getObjectFlow()),
+                                        e.getValue().current())));
+                return mergeValue.reEvaluate(evaluationContext, map).value();
+            }
+        } // in some tests there is no current statement
         return mergeValue;
     }
 
@@ -268,7 +269,7 @@ class VariableInfoImpl implements VariableInfo {
 
     private String mergedAssignmentId(EvaluationContext evaluationContext, boolean existingValuesWillBeOverwritten,
                                       List<VariableInfo> merge) {
-        String currentStatementId = evaluationContext.getCurrentStatement().index() + ":4";
+        String currentStatementId = (evaluationContext.getCurrentStatement() == null ? "" : evaluationContext.getCurrentStatement().index()) + ":4";
         boolean assignmentInSubBlocks = existingValuesWillBeOverwritten ||
                 merge.stream().anyMatch(vi -> vi.getAssignmentId().compareTo(currentStatementId) > 0);
         return assignmentInSubBlocks ? currentStatementId : assignmentId;

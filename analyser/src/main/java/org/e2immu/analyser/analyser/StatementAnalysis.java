@@ -445,8 +445,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                     ConditionManager conditionManager,
                                     List<StatementAnalyser> lastStatements,
                                     boolean atLeastOneBlockExecuted,
-                                    int statementTime,
-                                    Expression state) {
+                                    int statementTime) {
 
         // we need to make a synthesis of the variable state of fields, local copies, etc.
         // some blocks are guaranteed to be executed, others are only executed conditionally.

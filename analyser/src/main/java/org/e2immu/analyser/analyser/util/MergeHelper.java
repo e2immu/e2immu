@@ -86,7 +86,7 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     if(c) {
       if(a) return zz;
       --> state is !a, ret var = a?zz:<unknown>
-      return x;  --> ret var = a?zz:3 [here the state plays a role, in the assignment!]
+      return x;  --> ret var = a?zz:3 [here the state plays a role, in the level 3 statement analyser/assignment!]
     } --> ret var = c?a?zz:3:<unknown return value>
 
     x = 3; --> ret var = <unknown return value>

@@ -1,6 +1,9 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.StatementAnalyser;
+import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
@@ -75,13 +78,6 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL)); // nothing that points to not null
                 Assert.assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
             }
-            if ("2".equals(d.statementId()) && S2.equals(d.variableName())) {
-                Assert.assertEquals("true", d.variableInfo().getStateOnAssignment().toString());
-            }
-            if ("3".equals(d.statementId()) && S2.equals(d.variableName())) {
-                // stateOnAssignment has to be copied from statement 1
-                Assert.assertEquals("true", d.variableInfo().getStateOnAssignment().toString());
-            }
             if (S5.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
                     VariableInfo vi1 = d.variableInfoContainer().best(VariableInfoContainer.LEVEL_1_INITIALISER);
@@ -143,11 +139,6 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         if (FINAL_CHECKS_FQN.equals(d.methodInfo().fullyQualifiedName()) && "0".equals(d.statementId())) {
             Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
             Assert.assertEquals("true", d.evaluationResult().value().toString());
-        }
-        if (FINAL_CHECKS_FQN.equals(d.methodInfo().fullyQualifiedName()) && "2".equals(d.statementId())) {
-            Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-            EvaluationResult.ExpressionChangeData valueChangeData = d.findValueChange(S2);
-            Assert.assertEquals("true", valueChangeData.stateOnAssignment().toString());
         }
     };
 

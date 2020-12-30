@@ -23,6 +23,7 @@ import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -848,17 +849,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return DONE;
         }
         try {
-            Expression expression;
-            boolean returnConditionally;
-            if (statementAnalysis.statement instanceof ReturnStatement) {
-                expression = step3_prepare_Return(structure, sharedState.evaluationContext);
-                returnConditionally = expression == structure.expression();
-            } else {
-                expression = structure.expression();
-                returnConditionally = false;
-            }
-
-            EvaluationResult result = expression.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
+            EvaluationResult result = structure.expression().evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
 
             if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
                 statementAnalysis.flowData.setTimeAfterExecution(result.statementTime(), index());
@@ -881,13 +872,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             Expression value = result.value();
             boolean delays = value == NO_VALUE;
 
-            if (returnConditionally) {
-                step3_ReturnConditionally(sharedState, value);
-            }
-            if (statementAnalysis.statement instanceof ForEachStatement) {
+            if (statementAnalysis.statement instanceof ReturnStatement) {
+                step3_Return(sharedState, value);
+            } else if (statementAnalysis.statement instanceof ForEachStatement) {
                 step3_ForEach(sharedState, value);
-            }
-            if (statementAnalysis.statement instanceof IfElseStatement ||
+            } else if (statementAnalysis.statement instanceof IfElseStatement ||
                     statementAnalysis.statement instanceof SwitchStatement ||
                     statementAnalysis.statement instanceof AssertStatement) {
                 value = step3_IfElse_Switch_Assert(sharedState.evaluationContext, value);
@@ -905,55 +894,31 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    /**
-     * Simple situation: if(a!=null) return b;  return c;
-     * After the first statement, the expression is a!=null?b:return value; the state is a==null.
-     * We simply substitute.
-     * <p>
-     * More complex situation: if(a!= null) return b; if(x!=null) return d; -->
-     * For the return d statement, we should simply return d.
+    /*
+    modify the value of the return variable according to the evaluation result and the current state
+
+    consider
+    if(x) return a;
+    return b;
+
+    after the if, the state is !x, and the return variable has the value x?a:<return>
+    we should not immediately overwrite, but take the existing return value into account, and return x?a:b
      */
-    private void step3_ReturnConditionally(SharedState sharedState, Expression value) {
+    private void step3_Return(SharedState sharedState, Expression level3EvaluationResult) {
         final int l3 = VariableInfoContainer.LEVEL_3_EVALUATION;
         ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
-        Expression currentRV = statementAnalysis.findOrThrow(returnVariable, l3).getValue();
-        InlineConditional inlineConditional;
 
-        Expression newInline;
-        if ((inlineConditional = currentRV.asInstanceOf(InlineConditional.class)) != null) {
-            if (inlineConditional.ifTrue.isInitialReturnExpression()) {
-                newInline = new InlineConditional(inlineConditional.condition, value, inlineConditional.ifFalse, inlineConditional.objectFlow);
-            } else if (inlineConditional.ifFalse.isInitialReturnExpression()) {
-                newInline = new InlineConditional(inlineConditional.condition, inlineConditional.ifTrue, value, inlineConditional.objectFlow);
-            } else throw new UnsupportedOperationException();
-
-        } else if (currentRV.isInstanceOf(Or.class) || currentRV.isInstanceOf(And.class)) {
-            Map<Expression, Expression> translation = Map.of(new VariableExpression(returnVariable), value);
-            newInline = currentRV.reEvaluate(sharedState.evaluationContext, translation).value();
-        } else throw new UnsupportedOperationException("? " + currentRV.getClass());
+        Expression currentReturnValue = statementAnalysis.findOrThrow(returnVariable, l3).getValue();
+        Expression newReturnValue = EvaluateInlineConditional.conditionalValueConditionResolved(sharedState.evaluationContext,
+                localConditionManager.state(), level3EvaluationResult, currentReturnValue, ObjectFlow.NO_FLOW).getExpression();
 
         VariableInfoContainer vic = statementAnalysis.findForWriting(returnVariable);
         vic.prepareForValueChange(l3, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
-        Map<VariableProperty, Integer> properties = sharedState.evaluationContext.getValueProperties(newInline);
-        vic.setValueOnAssignment(l3, newInline, properties);
-        vic.setLinkedVariables(l3, newInline.linkedVariables(sharedState.evaluationContext));
+        Map<VariableProperty, Integer> properties = sharedState.evaluationContext.getValueProperties(newReturnValue);
+        vic.setValueOnAssignment(l3, newReturnValue, properties);
+        vic.setLinkedVariables(l3, newReturnValue.linkedVariables(sharedState.evaluationContext));
     }
-
-    /**
-     * if we have already seen a return statement before, it must be in a conditional form (otherwise unreachable code).
-     * In that case, we simply evaluate, and re-evaluate the conditional form (in step3_Return)
-     * Otherwise, we do an assignment to the return variable.
-     */
-    private Expression step3_prepare_Return(Structure structure, EvaluationContext evaluationContext) {
-        ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
-        Expression currentRV = statementAnalysis.findOrThrow(returnVariable, VariableInfoContainer.LEVEL_3_EVALUATION).getValue();
-        if (conditionIsNotExactOpposite(currentRV, evaluationContext) || currentRV instanceof EmptyExpression) {
-            VariableExpression returnVariableExpression = new VariableExpression(returnVariable);
-            return new Assignment(statementAnalysis.primitives, returnVariableExpression, structure.expression());
-        }
-        return structure.expression(); // simply evaluate
-    }
-
+/*
     private boolean conditionIsNotExactOpposite(Expression expression, EvaluationContext evaluationContext) {
         InlineConditional inlineConditional;
         And and;
@@ -976,7 +941,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
         return true;
     }
-
+*/
     // a special case, which allows us to set not null
     private void step3_ForEach(SharedState sharedState, Expression value) {
         Objects.requireNonNull(value);
@@ -992,26 +957,18 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private Expression step3_IfElse_Switch_Assert(EvaluationContext evaluationContext, Expression value) {
         Objects.requireNonNull(value);
 
-        Expression previousConditional = localConditionManager.condition;
-        Expression combinedWithCondition = localConditionManager.evaluateWithCondition(evaluationContext, value);
-        Expression combinedWithState = localConditionManager.evaluateWithState(evaluationContext, value);
+        Expression evaluated = localConditionManager.evaluate(evaluationContext, value);
 
-        boolean noEffect = combinedWithCondition != NO_VALUE && combinedWithState != NO_VALUE &&
-                (combinedWithCondition.equals(previousConditional) || combinedWithState.isConstant())
-                || combinedWithCondition.isConstant();
+        boolean noEffect = evaluated.isConstant();
 
         if (noEffect && !statementAnalysis.stateData.statementContributesToPrecondition.isSet()) {
-            Expression constant = combinedWithCondition.equals(previousConditional) ?
-                    new BooleanConstant(analyserContext.getPrimitives(), !combinedWithCondition.isBoolValueFalse())
-                    : combinedWithState.isConstant() ? combinedWithState : combinedWithCondition;
-
             String message;
             List<Optional<StatementAnalysis>> blocks = statementAnalysis.navigationData.blocks.get();
             if (statementAnalysis.statement instanceof IfElseStatement) {
                 message = Message.CONDITION_EVALUATES_TO_CONSTANT;
 
                 blocks.get(0).ifPresent(firstStatement -> {
-                    boolean isTrue = constant.isBoolValueTrue();
+                    boolean isTrue = evaluated.isBoolValueTrue();
                     if (!isTrue) {
                         // important: we register the error on the IfElse rather than the first statement in the block, because that one
                         // really is excluded from all analysis
@@ -1022,7 +979,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 });
                 if (blocks.size() == 2) {
                     blocks.get(1).ifPresent(firstStatement -> {
-                        boolean isTrue = constant.isBoolValueTrue();
+                        boolean isTrue = evaluated.isBoolValueTrue();
                         if (isTrue) {
                             // important: we register the error on the IfElse rather than the first statement in the block, because that one
                             // really is excluded from all analysis
@@ -1033,7 +990,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     });
                 }
             } else if (statementAnalysis.statement instanceof AssertStatement) {
-                boolean isTrue = constant.isBoolValueTrue();
+                boolean isTrue = evaluated.isBoolValueTrue();
                 if (isTrue) {
                     message = Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE;
                 } else {
@@ -1050,14 +1007,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 message = Message.CONDITION_EVALUATES_TO_CONSTANT;
             }
             statementAnalysis.ensure(Message.newMessage(evaluationContext.getLocation(), message));
-            return constant;
+            return evaluated;
         }
         return value;
     }
 
     private AnalysisStatus step4_subBlocks(SharedState sharedState) {
         List<Optional<StatementAnalyser>> startOfBlocks = navigationData.blocks.get();
-        AnalysisStatus analysisStatus = localConditionManager.notInDelayedState() ? DONE : DELAYS;
+        AnalysisStatus analysisStatus = localConditionManager.isDelayed() ? DELAYS : DONE;
 
         if (!startOfBlocks.isEmpty()) {
             analysisStatus = step4_haveSubBlocks(sharedState, startOfBlocks).combine(analysisStatus);
@@ -1065,7 +1022,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (statementAnalysis.statement instanceof AssertStatement) {
                 if (statementAnalysis.stateData.valueOfExpression.isSet()) {
                     Expression assertion = statementAnalysis.stateData.valueOfExpression.get();
-                    localConditionManager = localConditionManager.addToState(sharedState.evaluationContext, assertion);
+                    localConditionManager = localConditionManager.newForNextStatement(sharedState.evaluationContext, assertion);
                     boolean atLeastFieldOrParameterInvolved = assertion.variables().stream()
                             .anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
                     if (atLeastFieldOrParameterInvolved) {
@@ -1082,7 +1039,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 statementAnalysis.flowData.copyTimeAfterSubBlocksFromTimeAfterExecution();
             }
         }
-        if (localConditionManager.notInDelayedState() && !statementAnalysis.stateData.conditionManager.isSet()) {
+        if (!localConditionManager.isDelayed() && !statementAnalysis.stateData.conditionManager.isSet()) {
             statementAnalysis.stateData.conditionManager.set(localConditionManager);
         }
         return analysisStatus;
@@ -1141,16 +1098,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 statementAnalysis.flowData.setTimeAfterSubBlocks(maxTime, index());
             }
 
+            // need timeAfterSubBlocks set already
+            statementAnalysis.copyBackLocalCopies(evaluationContext, localConditionManager, lastStatements,
+                    atLeastOneBlockExecuted, maxTime);
+
             // compute the escape situation of the sub-blocks
             Expression addToStateAfterStatement = addToStateAfterStatement(evaluationContext, executions);
             if (!addToStateAfterStatement.isBoolValueTrue()) {
-                localConditionManager = localConditionManager.addToState(evaluationContext, addToStateAfterStatement);
+                localConditionManager = localConditionManager.newForNextStatement(evaluationContext, addToStateAfterStatement);
                 log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", addToStateAfterStatement);
             }
-
-            // need timeAfterSubBlocks set already
-            statementAnalysis.copyBackLocalCopies(evaluationContext, lastStatements, atLeastOneBlockExecuted, maxTime,
-                    localConditionManager.state);
         } else {
             int maxTime = statementAnalysis.flowData.getTimeAfterExecution();
             if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
@@ -1223,7 +1180,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         FlowData.Execution firstBlockExecution = statementAnalysis.flowData.execution(firstBlockStatementsExecution);
 
         ConditionManager cm = firstBlockExecution == NEVER ? null : structure.expressionIsCondition() ?
-                localConditionManager.addCondition(evaluationContext, value) : localConditionManager;
+                localConditionManager.newAtStartOfNewBlock(statementAnalysis.primitives, value) : localConditionManager;
         executions.add(new ExecutionOfBlock(firstBlockExecution, startOfBlocks.get(0).orElse(null), cm, value, false, false));
 
         for (int count = 1; count < startOfBlocks.size(); count++) {
@@ -1249,7 +1206,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             FlowData.Execution execution = statementAnalysis.flowData.execution(statementsExecution);
 
-            ConditionManager subCm = execution == NEVER ? null : localConditionManager.addCondition(evaluationContext, conditionForSubStatement);
+            ConditionManager subCm = execution == NEVER ? null :
+                    localConditionManager.newAtStartOfNewBlock(statementAnalysis.primitives, conditionForSubStatement);
             boolean inCatch = statement() instanceof TryStatement && !subStatements.initialisers().isEmpty(); // otherwise, it is finally
             executions.add(new ExecutionOfBlock(execution, startOfBlocks.get(count).orElse(null), subCm, conditionForSubStatement, isDefault, inCatch));
         }

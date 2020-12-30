@@ -47,7 +47,6 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("increment".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 if (I.equals(d.variableName())) {
-                    Assert.assertTrue(d.variableInfo().getStateOnAssignment().isBoolValueTrue());
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
                             "1+org.e2immu.analyser.testexample.Basics_4.i$0";
                     Assert.assertEquals(expect, d.currentValue().toString());

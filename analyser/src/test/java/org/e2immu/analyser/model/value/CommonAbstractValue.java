@@ -196,12 +196,12 @@ public abstract class CommonAbstractValue {
         }
 
         EvaluationContextImpl() {
-            super(0, new ConditionManager(PRIMITIVES), null);
+            super(0, ConditionManager.initialConditionManager(PRIMITIVES), null);
         }
 
         @Override
         public EvaluationContext child(Expression condition) {
-            return new EvaluationContextImpl(conditionManager.addCondition(this, condition));
+            return new EvaluationContextImpl(conditionManager.newAtStartOfNewBlock(PRIMITIVES, condition));
         }
 
         @Override

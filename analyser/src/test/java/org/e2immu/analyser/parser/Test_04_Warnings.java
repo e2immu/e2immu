@@ -160,7 +160,6 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("method5".equals(d.methodInfo().name) && "a".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
                     Assert.assertEquals("5", d.currentValue().toString());
-                    Assert.assertEquals("x", d.variableInfo().getStateOnAssignment().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     Assert.assertEquals("6", d.currentValue().toString());

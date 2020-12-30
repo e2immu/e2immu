@@ -87,7 +87,7 @@ public abstract class CommonVariableInfo {
 
         @Override
         public ConditionManager getConditionManager() {
-            return  new ConditionManager(primitives);
+            return ConditionManager.initialConditionManager(primitives);
         }
     };
 

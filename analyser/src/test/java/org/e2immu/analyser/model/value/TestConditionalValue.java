@@ -71,17 +71,17 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression isFactB = new MethodCall(new TypeExpression(annotatedAPIPt, ObjectFlow.NO_FLOW), isFact, List.of(b), ObjectFlow.NO_FLOW);
         Assert.assertEquals("AnnotatedAPI.isFact(b)", isFactB.toString());
 
-        Assert.assertTrue(minimalEvaluationContext.getConditionManager().state.isBoolValueTrue());
+        Assert.assertTrue(minimalEvaluationContext.getConditionManager().state().isBoolValueTrue());
         Expression cv1 = inline(isFactA, a, b);
         Assert.assertSame(b, cv1);
 
         EvaluationContext child = minimalEvaluationContext.child(a);
-        Assert.assertSame(a, child.getConditionManager().state);
+        Assert.assertSame(a, child.getConditionManager().state());
         Expression cv2 = EvaluateInlineConditional.conditionalValueConditionResolved(child, isFactA, a, b, ObjectFlow.NO_FLOW).value();
         Assert.assertSame(a, cv2);
 
         EvaluationContext child2 = minimalEvaluationContext.child(new And(PRIMITIVES).append(minimalEvaluationContext, a, b));
-        Assert.assertEquals("a&&b", child2.getConditionManager().state.toString());
+        Assert.assertEquals("a&&b", child2.getConditionManager().state().toString());
         Expression cv3 = EvaluateInlineConditional.conditionalValueConditionResolved(child2, isFactA, a, b, ObjectFlow.NO_FLOW).value();
         Assert.assertSame(a, cv3);
 
@@ -91,7 +91,7 @@ public class TestConditionalValue extends CommonAbstractValue {
         EvaluationContext child3 = minimalEvaluationContext.child(
                 new Or(PRIMITIVES).append(minimalEvaluationContext, c,
                         new And(PRIMITIVES).append(minimalEvaluationContext, a, b)));
-        Assert.assertEquals("(a||c)&&(b||c)", child3.getConditionManager().state.toString());
+        Assert.assertEquals("(a||c)&&(b||c)", child3.getConditionManager().state().toString());
         Expression cv4 = EvaluateInlineConditional.conditionalValueConditionResolved(child3, isFactA, a, b, ObjectFlow.NO_FLOW).value();
         Assert.assertSame(b, cv4);
     }

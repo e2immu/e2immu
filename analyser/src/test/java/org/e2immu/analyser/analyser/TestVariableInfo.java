@@ -265,7 +265,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         ConditionManager cm = new ConditionManager(unknown, TRUE, null);
         VariableInfoImpl viC2 = viC.merge(minimalEvaluationContext, cm, null, false, List.of(viB));
         Assert.assertNotSame(viA, viC2);
-        Assert.assertEquals("<empty>?4:instance type int", viC2.getValue().toString());
+        Assert.assertEquals("<no idea>?4:instance type int", viC2.getValue().toString());
 
         viC2.mergeProperties(false, viA, List.of(viB));
         Assert.assertEquals(MultiLevel.MUTABLE, viC2.getProperty(VariableProperty.NOT_NULL));

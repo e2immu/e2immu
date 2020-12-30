@@ -72,7 +72,6 @@ public class Test_00_Basics_2 extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if (COLLECTION.equals(d.variableName()) && "add".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-            Assert.assertEquals("true", d.variableInfo().getStateOnAssignment().toString());
             String expect = d.iteration() == 0 ?
                     "instance type Collection<String>" :
                     "instance type Collection<String>/*this.contains(org.e2immu.analyser.testexample.Basics_2.string$0)*/";
