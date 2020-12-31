@@ -20,10 +20,7 @@ package org.e2immu.analyser.model.expression.util;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
-import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.Filter;
-import org.e2immu.analyser.model.expression.NullConstant;
-import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
@@ -148,7 +145,7 @@ public class EvaluateParameters {
         if (methodInfo != null) {
             MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
             Expression precondition = methodAnalysis.getPrecondition();
-            if (precondition != null && precondition.isBoolValueTrue()) {
+            if (precondition != null && !(precondition instanceof BooleanConstant)) {
                 // there is a precondition, and we have a list of values... let's see what we can learn
                 // the precondition is using parameter info's as variables so we'll have to substitute
                 Map<Expression, Expression> translationMap = translationMap(methodInfo, parameterValues);
@@ -164,13 +161,14 @@ public class EvaluateParameters {
                         filter.individualNullOrNotNullClauseOnParameter());
                 Map<ParameterInfo, Expression> individualNullClauses = filterResult.accepted();
                 for (Map.Entry<ParameterInfo, Expression> nullClauseEntry : individualNullClauses.entrySet()) {
-                    if (nullClauseEntry.getValue() != NullConstant.NULL_CONSTANT) {
+                    if (!nullClauseEntry.getValue().equalsNull()) {
                         builder.setProperty(nullClauseEntry.getKey(), VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                     }
                 }
 
                 // all the rest: preconditions
                 // TODO: also weed out conditions that are not on parameters, and not on `this`
+                // FIXME work here now
                 Expression rest = filterResult.rest();
                 if (rest.isBoolValueTrue()) {
                     builder.addPrecondition(rest);
