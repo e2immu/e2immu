@@ -24,7 +24,10 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.FlipSwitch;
 import org.e2immu.analyser.util.SetOnce;
+import org.e2immu.analyser.util.SetOnceMapOverwriteNoValue;
 
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 public class StateData {
@@ -34,6 +37,12 @@ public class StateData {
     public final SetOnce<ConditionManager> conditionManager = new SetOnce<>(); // the state as it is after evaluating the statement
     public final SetOnce<Expression> valueOfExpression = new SetOnce<>();
     public final FlipSwitch statementContributesToPrecondition = new FlipSwitch();
+
+    public final SetOnceMapOverwriteNoValue<String> statesOfInterrupts;
+
+    public StateData(boolean isLoop) {
+        statesOfInterrupts = isLoop ? new SetOnceMapOverwriteNoValue<>() : null;
+    }
 
     public AnalysisStatus copyPrecondition(StatementAnalyser statementAnalyser, StatementAnalysis previous, EvaluationContext evaluationContext) {
         if (!precondition.isSet()) {
@@ -57,6 +66,14 @@ public class StateData {
 
     public Expression getValueOfExpression() {
         return valueOfExpression.getOrElse(EmptyExpression.NO_VALUE);
+    }
+
+    public void addStateOfInterrupt(String index, Expression expression) {
+        statesOfInterrupts.put(index, expression);
+    }
+
+    public Stream<Expression> statesOfInterruptsStream() {
+        return statesOfInterrupts.stream().map(Map.Entry::getValue);
     }
 
     public static record RemoveVariableFromState(EvaluationContext evaluationContext,

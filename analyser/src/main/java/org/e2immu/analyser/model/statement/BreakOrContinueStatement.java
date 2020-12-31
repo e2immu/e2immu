@@ -6,4 +6,8 @@ public abstract class BreakOrContinueStatement extends StatementWithStructure {
     public BreakOrContinueStatement(String label) {
         this.label = label;
     }
+
+    public boolean hasALabel() {
+        return label != null;
+    }
 }

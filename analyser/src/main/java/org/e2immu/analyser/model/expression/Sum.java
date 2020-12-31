@@ -22,6 +22,8 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.objectflow.ObjectFlow;
+import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.Map;
@@ -109,6 +111,17 @@ public class Sum extends BinaryOperator {
     @Override
     public boolean isNumeric() {
         return true;
+    }
+
+
+    @Override
+    public OutputBuilder output() {
+        OutputBuilder outputBuilder = new OutputBuilder().add(outputInParenthesis(precedence(), lhs));
+        boolean ignoreOperator = rhs instanceof Negation || rhs instanceof Sum sum2 && (sum2.lhs instanceof Negation);
+        if (!ignoreOperator) {
+            outputBuilder.add(Symbol.binaryOperator(operator.name));
+        }
+        return outputBuilder.add(outputInParenthesis(precedence(), rhs));
     }
 
 }

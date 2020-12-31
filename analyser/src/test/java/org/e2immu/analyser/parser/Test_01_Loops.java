@@ -58,11 +58,14 @@ public class Test_01_Loops extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (!"method".equals(d.methodInfo().name)) return;
             if ("res1".equals(d.variableName())) {
-                if (d.variable() instanceof LocalVariableReference) {
-                    boolean expect = d.statementId().startsWith("2");
-                    boolean inLoop = d.variableInfoContainer().isLocalVariableInLoopDefinedOutside();
-                    Assert.assertEquals("In " + d.statementId(), expect, inLoop);
-                } else Assert.fail();
+                Assert.assertTrue(d.variable() instanceof LocalVariableReference);
+                boolean expect = d.statementId().startsWith("2");
+                boolean inLoop = d.variableInfoContainer().isLocalVariableInLoopDefinedOutside();
+                Assert.assertEquals("In " + d.statementId(), expect, inLoop);
+
+                if ("2.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("\"abc\"", d.currentValue().toString());
+                }
             }
             if ("org.e2immu.analyser.testexample.Loops_0.this".equals(d.variableName())) {
                 if ("2.0.0".equals(d.statementId())) {
@@ -106,6 +109,8 @@ public class Test_01_Loops extends CommonTestRunner {
                                     d.evaluationContext());
                     Assert.assertSame(FlowData.Execution.ALWAYS, exec);
                 } else Assert.fail();
+                String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+instance type int>=n";
+                Assert.assertEquals(expectState, d.state().toString());
             }
             if ("2.0.0".equals(d.statementId())) {
                 if (d.iteration() == 0) {
@@ -130,7 +135,8 @@ public class Test_01_Loops extends CommonTestRunner {
     @Test
     public void test1() throws IOException {
         // weirdly written but there is no dedicated logic in place
-        final String END_RESULT = "instance type int>=0?\"abc\":instance type String/**/";
+        final String END_RESULT = "-1-(instance type int)+n>=1?\"abc\":instance type String/**/";
+        final String END_RESULT_NO_OPERATIONS = "instance type int>=0?\"abc\":instance type String/**/";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
@@ -169,7 +175,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
                 }
                 if ("2.0.2".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "\"abc\"";
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1-i$2+n>=1?\"abc\":res2$2";
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
@@ -188,7 +194,7 @@ public class Test_01_Loops extends CommonTestRunner {
                                     new IntConstant(primitives, 0), true),
                             new StringConstant(primitives, "abc"),
                             string1Wrapped, ObjectFlow.NO_FLOW).value();
-                    Assert.assertEquals(END_RESULT, inline.toString());
+                    Assert.assertEquals(END_RESULT_NO_OPERATIONS, inline.toString());
                     Assert.assertEquals(MultiLevel.NULLABLE, inline.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL));
 
                     // so...
@@ -216,7 +222,7 @@ public class Test_01_Loops extends CommonTestRunner {
                     // and not the local condition manager
                     String expectCondition = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "true";
                     Assert.assertEquals(expectCondition, d.condition().debugOutput());
-                    String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1+-i$2+n>=1";
+                    String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1-i$2+n>=1";
                     Assert.assertEquals(expectState, d.absoluteState().debugOutput());
                 }
                 if ("2.0.2".equals(d.statementId())) {
@@ -225,7 +231,7 @@ public class Test_01_Loops extends CommonTestRunner {
 
                     String expectCondition = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "true";
                     Assert.assertEquals(expectCondition, d.condition().debugOutput());
-                    String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1+-i$2+n>=1";
+                    String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "-1-i$2+n>=1";
                     Assert.assertEquals(expectState, d.absoluteState().debugOutput());
                 }
             }
@@ -254,6 +260,8 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("s".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                    Assert.assertEquals("java.lang.String", d.variableInfo().variable()
+                            .parameterizedType().typeInfo.fullyQualifiedName);
                 }
             }
             if ("s$1".equals(d.variableName())) { // only exists in iteration 1+
@@ -275,7 +283,12 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertEquals(expect, d.currentValue().toString());
                 }
             }
-
+            if ("org.e2immu.analyser.testexample.Loops_2.method()".equals(d.variableName())) {
+                if ("2".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type String/*@NotNull*/";
+                    Assert.assertEquals(expect, d.currentValue().toString());
+                }
+            }
         };
         testClass("Loops_2", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
@@ -325,6 +338,13 @@ public class Test_01_Loops extends CommonTestRunner {
 
     @Test
     public void test4() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("method".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int>=10";
+                Assert.assertEquals(expect, d.state().toString());
+            }
+        };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("i".equals(d.variableName())) {
@@ -337,25 +357,26 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
                 if ("org.e2immu.analyser.testexample.Loops_4.method()".equals(d.variableName())) {
                     if ("0.0.0.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "4";
+                        String expect = d.iteration() == 0 ? "<return value>" : "4";
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1==i$0?4:<return value>";
+                        String expect = d.iteration() == 0 ? "<return value>" : "1==i$0?4:<return value>";
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                     if ("0".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int<=9?1==instance type int?4:<return value>:<return value>";
+                        String expect = d.iteration() == 0 ? "<return value>" : "instance type int<=9?1==instance type int?4:<return value>:<return value>";
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                     if ("1".equals(d.statementId())) {
-                        String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "??";
+                        String expect = d.iteration() == 0 ? "<return value>" : "instance type int>=10?0:instance type int<=9?1==instance type int?4:<return value>:<return value>";
                         Assert.assertEquals(expect, d.currentValue().toString());
                     }
                 }
             }
         };
         testClass("Loops_4", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }

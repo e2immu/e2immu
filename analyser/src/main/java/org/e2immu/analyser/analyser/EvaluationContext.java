@@ -225,4 +225,6 @@ public interface EvaluationContext {
     default boolean allowedToIncrementStatementTime() {
         return true;
     }
+
+    default Expression replaceLocalVariables(Expression mergeValue) { throw new UnsupportedOperationException(); }
 }

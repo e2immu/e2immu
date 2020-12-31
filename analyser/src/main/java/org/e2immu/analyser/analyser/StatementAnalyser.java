@@ -516,8 +516,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             int assigned = vi.getProperty(VariableProperty.ASSIGNED);
             VariableInfo vi1 = vic.best(1);
             Expression value = bestValue(changeData, vi1);
+            Expression valueToWrite = maybeValueNeedsState(sharedState.evaluationContext, vic, vi1, value);
 
-            boolean goAhead = value != NO_VALUE || level >= vic.getCurrentLevel();
+            boolean goAhead = valueToWrite != NO_VALUE || level >= vic.getCurrentLevel();
             if (goAhead) {
                 int statementTimeForVariable = statementAnalysis.statementTimeForVariable(analyserContext, variable,
                         statementAnalysis.statementTime(level));
@@ -525,10 +526,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 vic.prepareForValueChange(level, index(), statementTimeForVariable);
 
                 // we explicitly check for NO_VALUE, because "<no return value>" is legal!
-                if (value != NO_VALUE) {
-                    log(ANALYSER, "Write value {} to variable {}", value, variable.fullyQualifiedName());
-                    Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(value);
-                    vic.setValueOnAssignment(level, value, propertiesToSet);
+                if (valueToWrite != NO_VALUE) {
+                    log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
+                    Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(valueToWrite);
+                    vic.setValueOnAssignment(level, valueToWrite, propertiesToSet);
                 } else {
                     log(DELAYED, "Apply of step {} in {}, {} is delayed because of unknown value for {}",
                             step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
@@ -594,6 +595,47 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         return status;
+    }
+
+    /*
+    See among others Loops_1: when a variable is assigned in a loop, it is possible that interrupts (break, etc.) have
+    caused a state. If this variable is defined outside the loop, it'll have to have a value when coming out of the loop.
+    The added state helps to avoid unconditional assignments.
+    In i=3; while(c) { if(x) break; i=5; }, we return x?3:5; x will most likely be dependent on the loop and, be
+    turned into some generic integer
+
+    In i=3; while(c) { i=5; if(x) break; }, we return c?5:3, as soon as c has a value
+
+    Q: what is the best place for this piece of code? EvalResult?? This here seems to late
+     */
+    private Expression maybeValueNeedsState(EvaluationContext evaluationContext, VariableInfoContainer vic, VariableInfo vi1, Expression value) {
+        if (value != NO_VALUE
+                && vic.getVariableInLoop().variableType() == VariableInLoop.VariableType.IN_LOOP_DEFINED_OUTSIDE) {
+            if (localConditionManager.isDelayed()) return NO_VALUE;
+            Expression state;
+            if (!localConditionManager.state().isBoolValueTrue()) {
+                state = localConditionManager.state();
+            } else if (!localConditionManager.condition().isBoolValueTrue()) {
+                state = localConditionManager.condition();
+            } else {
+                state = null;
+            }
+            if (state != null) {
+                return EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext, state, value,
+                        vi1.getValue(), ObjectFlow.NO_FLOW).value();
+            }
+        }
+        return value;
+    }
+
+    private boolean atThisLevel(String assignmentId) {
+        int indexDot = index().lastIndexOf('.');
+        int assignmentDot = assignmentId.lastIndexOf('.');
+        if (indexDot != assignmentDot) return false;
+        if (indexDot < 0) return true;
+        String mySub = index().substring(0, indexDot);
+        String assignmentIdSub = assignmentId.substring(0, assignmentDot);
+        return mySub.equals(assignmentIdSub);
     }
 
     // add this variable name to all loop statements until definition of the local variable
@@ -842,9 +884,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         Structure structure = statementAnalysis.statement.getStructure();
         if (structure.expression() == EmptyExpression.EMPTY_EXPRESSION) {
             // try-statement has no main expression
-            statementAnalysis.stateData.valueOfExpression.set(EmptyExpression.EMPTY_EXPRESSION);
+            if (!statementAnalysis.stateData.valueOfExpression.isSet()) {
+                statementAnalysis.stateData.valueOfExpression.set(EmptyExpression.EMPTY_EXPRESSION);
+            }
             if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
                 statementAnalysis.flowData.copyTimeAfterExecutionFromInitialTime();
+            }
+            if (statementAnalysis.statement instanceof BreakStatement breakStatement) {
+                StatementAnalysis.FindLoopResult correspondingLoop = statementAnalysis.findLoopByLabel(breakStatement);
+                Expression state = localConditionManager.stateUpTo(sharedState.evaluationContext, correspondingLoop.steps());
+                correspondingLoop.statementAnalysis().stateData.addStateOfInterrupt(index(), state);
+                if (state == NO_VALUE) return DELAYS;
             }
             return DONE;
         }
@@ -855,8 +905,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 statementAnalysis.flowData.setTimeAfterExecution(result.statementTime(), index());
             }
 
-            AnalysisStatus status = apply(sharedState, result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_3);
-            if (status == DELAYS) {
+            AnalysisStatus statusApply = apply(sharedState, result, statementAnalysis, VariableInfoContainer.LEVEL_3_EVALUATION, STEP_3);
+            if (statusApply == DELAYS) {
                 if (statementAnalysis.statement instanceof ReturnStatement) {
                     // we still need to ensure that there is a level 3 present, because a 4 could be written in this iteration,
                     // and in the next one 3 needs to exist
@@ -870,10 +920,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             // the evaluation system should be pretty good at always returning NO_VALUE when a NO_VALUE has been encountered
             Expression value = result.value();
-            boolean delays = value == NO_VALUE;
+            AnalysisStatus statusPost = value == NO_VALUE ? DELAYS : DONE;
 
             if (statementAnalysis.statement instanceof ReturnStatement) {
-                step3_Return(sharedState, value);
+                statusPost = step3_Return(sharedState, value).combine(statusPost);
             } else if (statementAnalysis.statement instanceof ForEachStatement) {
                 step3_ForEach(sharedState, value);
             } else if (statementAnalysis.statement instanceof IfElseStatement ||
@@ -881,13 +931,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     statementAnalysis.statement instanceof AssertStatement) {
                 value = step3_IfElse_Switch_Assert(sharedState.evaluationContext, value);
             }
-            if (!value.isUnknown()) {
+
+            if (statusPost == DELAYS) {
+                log(DELAYED, "Step 3 in statement {}, {} is delayed, value", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+            } else if (!value.isUnknown()) {
                 statementAnalysis.stateData.valueOfExpression.set(value);
             }
-            if (delays) {
-                log(DELAYED, "Step 3 in statement {}, {} is delayed, value", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
-            }
-            return delays ? DELAYS : DONE;
+
+            return statusPost;
         } catch (RuntimeException rte) {
             LOGGER.warn("Failed to evaluate main expression (step 3) in statement {}", statementAnalysis.index);
             throw rte;
@@ -904,13 +955,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     after the if, the state is !x, and the return variable has the value x?a:<return>
     we should not immediately overwrite, but take the existing return value into account, and return x?a:b
      */
-    private void step3_Return(SharedState sharedState, Expression level3EvaluationResult) {
+    private AnalysisStatus step3_Return(SharedState sharedState, Expression level3EvaluationResult) {
         final int l3 = VariableInfoContainer.LEVEL_3_EVALUATION;
         ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
 
         Expression currentReturnValue = statementAnalysis.findOrThrow(returnVariable, l3).getValue();
+        // do NOT check for delays on currentReturnValue, we need to make the VIC
+
         Expression newReturnValue;
-        if (localConditionManager.state().isBoolValueTrue()) {
+        if (localConditionManager.isDelayed()) return DELAYS;
+        // no state, or no previous return statements
+        if (localConditionManager.state().isBoolValueTrue() || currentReturnValue instanceof UnknownExpression) {
             newReturnValue = level3EvaluationResult;
         } else if (myMethodAnalyser.methodInfo.returnType().equals(statementAnalysis.primitives.booleanParameterizedType)) {
             newReturnValue = new And(statementAnalysis.primitives).append(sharedState.evaluationContext, localConditionManager.state(),
@@ -925,32 +980,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         vic.setValueOnAssignment(l3, newReturnValue, properties);
         vic.setProperty(l3, VariableProperty.ASSIGNED, Level.TRUE);
         vic.setLinkedVariables(l3, sharedState.evaluationContext.linkedVariables(level3EvaluationResult));
+        return DONE;
     }
 
-    /*
-        private boolean conditionIsNotExactOpposite(Expression expression, EvaluationContext evaluationContext) {
-            InlineConditional inlineConditional;
-            And and;
-            Or or;
-            if ((inlineConditional = expression.asInstanceOf(InlineConditional.class)) != null) {
-                // the inline conditional swaps if it has a negation in the condition
-                boolean negate = inlineConditional.ifFalse.isInitialReturnExpression();
-                Expression notCondition = negate ? Negation.negate(evaluationContext, inlineConditional.condition) : inlineConditional.condition;
-                return !evaluationContext.getConditionManager().state.equals(notCondition);
-            } else if ((and = expression.asInstanceOf(And.class)) != null) {
-                throw new UnsupportedOperationException();
-            } else if ((or = expression.asInstanceOf(Or.class)) != null) {
-                Expression negatedOrWithoutReturnExpression = Negation.negate(evaluationContext,
-                        new Or(or.primitives()).append(evaluationContext,
-                                or.expressions().stream().filter(e -> !e.isInitialReturnExpression()).toArray(Expression[]::new)));
-                Expression combined = evaluationContext.getConditionManager().combineWithState(evaluationContext, negatedOrWithoutReturnExpression);
-                boolean exactOpposite = combined instanceof BooleanConstant bc && bc.constant() ||
-                        combined.equals(evaluationContext.getConditionManager().state);
-                return !exactOpposite;
-            }
-            return true;
-        }
-    */
     // a special case, which allows us to set not null
     private void step3_ForEach(SharedState sharedState, Expression value) {
         Objects.requireNonNull(value);
@@ -1177,6 +1209,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return new And(evaluationContext.getPrimitives()).append(evaluationContext, components);
         }
         // TODO SwitchExpressions?
+
+        /*
+        loop statements: result should be !condition || <any exit of exactly this loop, no return> ...
+        forEach loop does not have a condition.
+         */
+        if (statementAnalysis.statement instanceof LoopStatement &&
+                !(statementAnalysis.statement instanceof ForEachStatement)) {
+            List<Expression> ors = new ArrayList<>();
+            statementAnalysis.stateData.statesOfInterruptsStream().forEach(stateOnInterrupt ->
+                    ors.add(evaluationContext.replaceLocalVariables(stateOnInterrupt)));
+            ors.add(evaluationContext.replaceLocalVariables(Negation.negate(evaluationContext, list.get(0).condition)));
+            return new Or(statementAnalysis.primitives).append(evaluationContext, ors);
+        }
         return TRUE;
     }
 
@@ -1570,6 +1615,26 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         @Override
         public int getFinalStatementTime() {
             return statementAnalysis.flowData.getTimeAfterSubBlocks();
+        }
+
+        @Override
+        public Expression replaceLocalVariables(Expression mergeValue) {
+            if (statementAnalysis.statement instanceof LoopStatement && mergeValue != NO_VALUE) {
+                Map<Expression, Expression> map = statementAnalysis.variables.stream()
+                        .filter(e -> statementAnalysis.index.equals(e.getValue().getStatementIndexOfThisShadowVariable()))
+                        .collect(Collectors.toUnmodifiableMap(e -> new VariableExpression(e.getValue().current().variable()),
+                                e -> wrap(new NewObject(getPrimitives(), e.getValue().current().variable().parameterizedType(),
+                                        e.getValue().current().getObjectFlow()), e.getValue().current())));
+                return mergeValue.reEvaluate(this, map).value();
+            }
+            return mergeValue;
+        }
+
+        private Expression wrap(NewObject newObject, VariableInfo vi) {
+            if (Primitives.isPrimitiveExcludingVoid(vi.variable().parameterizedType())) return newObject;
+            Map<VariableProperty, Integer> properties = Map.of(VariableProperty.NOT_NULL,
+                    getProperty(vi.variable(), VariableProperty.NOT_NULL));
+            return PropertyWrapper.propertyWrapperForceProperties(newObject, properties);
         }
 
     }

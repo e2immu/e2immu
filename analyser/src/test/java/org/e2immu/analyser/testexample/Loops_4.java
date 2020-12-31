@@ -9,7 +9,7 @@ public class Loops_4 {
 
     - constant 0 (as there is no "state" after the for-loop)
     - then some mix between 0 and 4 (not realising that the if is not conditional given the loop)
-    - finally constant 4 (when realising that the inner if will potentially be true)
+    - finally constant 4 (when realising that the inner if will eventually be true)
 
      */
     @Constant(absent = true)

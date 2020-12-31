@@ -216,7 +216,7 @@ class VariableInfoImpl implements VariableInfo {
                                   VariableInfoImpl newObject,
                                   boolean atLeastOneBlockExecuted,
                                   Map<Expression, VariableInfo> merge) {
-        Expression mergedValue = replaceLocalVariables(evaluationContext,
+        Expression mergedValue = evaluationContext.replaceLocalVariables(
                 mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, merge));
         Expression currentValue = getValue();
         if (currentValue.equals(mergedValue)) {
@@ -240,33 +240,6 @@ class VariableInfoImpl implements VariableInfo {
             assert newObject.statementTime.getOrElse(VariableInfoContainer.VARIABLE_FIELD_DELAY) == mergedStatementTime;
         }
         return newObject;
-    }
-
-    /*
-    Any loop variable available in the block but not outside needs replacing
-     */
-    private Expression replaceLocalVariables(EvaluationContext evaluationContext, Expression mergeValue) {
-        if (evaluationContext.getCurrentStatement() != null) {
-            StatementAnalysis statementAnalysis = evaluationContext.getCurrentStatement().statementAnalysis;
-            if (statementAnalysis.statement instanceof LoopStatement && mergeValue != NO_VALUE) {
-                Map<Expression, Expression> map = statementAnalysis.variables.stream()
-                        .filter(e -> statementAnalysis.index.equals(e.getValue().getStatementIndexOfThisShadowVariable()))
-                        .collect(Collectors.toUnmodifiableMap(e -> new VariableExpression(e.getValue().current().variable()),
-                                e -> wrap(evaluationContext,
-                                        new NewObject(evaluationContext.getPrimitives(), e.getValue().current().variable().parameterizedType(),
-                                                e.getValue().current().getObjectFlow()),
-                                        e.getValue().current())));
-                return mergeValue.reEvaluate(evaluationContext, map).value();
-            }
-        } // in some tests there is no current statement
-        return mergeValue;
-    }
-
-    private Expression wrap(EvaluationContext evaluationContext, NewObject newObject, VariableInfo vi) {
-        if (Primitives.isPrimitiveExcludingVoid(vi.variable().parameterizedType())) return newObject;
-        Map<VariableProperty, Integer> properties = Map.of(VariableProperty.NOT_NULL,
-                evaluationContext.getProperty(vi.variable(), VariableProperty.NOT_NULL));
-        return PropertyWrapper.propertyWrapperForceProperties(newObject, properties);
     }
 
     private String mergedAssignmentId(EvaluationContext evaluationContext, boolean existingValuesWillBeOverwritten,

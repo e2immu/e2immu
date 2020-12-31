@@ -63,6 +63,18 @@ public record ConditionManager(Expression condition, Expression state, Condition
         return new And(evaluationContext.getPrimitives()).append(evaluationContext, expressions);
     }
 
+    public Expression stateUpTo(EvaluationContext evaluationContext, int recursions) {
+        Expression[] expressions;
+        if (parent == null) {
+            expressions = new Expression[]{state};
+        } else if (recursions == 0) {
+            expressions = new Expression[]{condition};
+        } else {
+            expressions = new Expression[]{condition, state, parent.stateUpTo(evaluationContext, recursions - 1)};
+        }
+        return new And(evaluationContext.getPrimitives()).append(evaluationContext, expressions);
+    }
+
     /**
      * Evaluate an expression in the context of the absolute state.
      *

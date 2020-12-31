@@ -94,7 +94,7 @@ public record Or(Primitives primitives,
             // STEP 4b: observations
 
             for (Expression value : concat) {
-                if (value instanceof BooleanConstant bc  && bc.constant()) {
+                if (value instanceof BooleanConstant bc && bc.constant()) {
                     log(CNF, "Return TRUE in Or, found TRUE");
                     return new BooleanConstant(primitives, true);
                 }
@@ -147,14 +147,20 @@ public record Or(Primitives primitives,
         // FINAL STEP: check for unknowns (if there was a TRUE somewhere, we never get here)
 
         Expression unknown = null;
-        for(Expression value: finalValues) {
-            if(value.isUnknown()) {
-                if(unknown == null) unknown = value; else unknown = unknown.combineUnknown(value);
+        for (Expression value : finalValues) {
+            if (value.isUnknown()) {
+                if (unknown == null) unknown = value;
+                else unknown = unknown.combineUnknown(value);
             }
         }
-        if(unknown != null) {
-            log(CNF, "Return unknown value in Or, order "+unknown.order());
+        if (unknown != null) {
+            log(CNF, "Return unknown value in Or, order " + unknown.order());
             return unknown;
+        }
+
+        if (finalValues.isEmpty()) {
+            log(CNF, "Empty disjuction returned as false");
+            return new BooleanConstant(primitives, false);
         }
 
         return new Or(primitives, finalValues, objectFlow);

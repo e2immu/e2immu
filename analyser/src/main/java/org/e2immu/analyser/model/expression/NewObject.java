@@ -245,6 +245,11 @@ public class NewObject implements HasParameterExpressions {
     }
 
     @Override
+    public boolean isNumeric() {
+        return parameterizedType.isType() && Primitives.isNumeric(parameterizedType.typeInfo);
+    }
+
+    @Override
     public ObjectFlow getObjectFlow() {
         return objectFlow;
     }
@@ -272,13 +277,15 @@ public class NewObject implements HasParameterExpressions {
             if(!returnType().parameters.isEmpty()) {
                 outputBuilder.add(Symbol.DIAMOND); // TODO there are situations where diamond is not good enough
             }
-            if (parameterExpressions.isEmpty()) {
-                outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
-            } else {
-                outputBuilder
-                        .add(Symbol.LEFT_PARENTHESIS)
-                        .add(parameterExpressions.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
-                        .add(Symbol.RIGHT_PARENTHESIS);
+            if(arrayInitializer == null) {
+                if (parameterExpressions.isEmpty()) {
+                    outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
+                } else {
+                    outputBuilder
+                            .add(Symbol.LEFT_PARENTHESIS)
+                            .add(parameterExpressions.stream().map(Expression::output).collect(OutputBuilder.joining(Symbol.COMMA)))
+                            .add(Symbol.RIGHT_PARENTHESIS);
+                }
             }
         } else {
             outputBuilder.add(new Text("instance type")).add(Space.ONE).add(parameterizedType.output());

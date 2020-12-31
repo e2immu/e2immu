@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
+import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
 import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.statement.Structure;
 import org.e2immu.analyser.model.statement.SynchronizedStatement;
@@ -67,7 +68,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public final AddOnceSet<ObjectFlow> internalObjectFlows = new AddOnceSet<>();
 
     public final MethodLevelData methodLevelData = new MethodLevelData();
-    public final StateData stateData = new StateData();
+    public final StateData stateData;
     public final FlowData flowData = new FlowData();
     public final AddOnceSet<String> localVariablesAssignedInThisLoop;
     public final SetOnce<Boolean> done = new SetOnce<>(); // if not done, there have been delays
@@ -82,6 +83,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         this.inSyncBlock = inSyncBlock;
         this.methodAnalysis = Objects.requireNonNull(methodAnalysis);
         localVariablesAssignedInThisLoop = statement instanceof LoopStatement ? new AddOnceSet<>() : null;
+        stateData = new StateData(statement instanceof LoopStatement);
     }
 
     public String toString() {
@@ -364,7 +366,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         // at best level (we can already have Level 4 vi in this statement, still we need to copy into 1
         // Basics_3; on the other hand, READ needs to be at best level
         variables.stream().map(Map.Entry::getValue)
-                //  .filter(vic -> !index.equals(vic.getStatementIndexOfThisLoopVariable())) FIXME why?
                 .forEach(vic -> {
                     VariableInfo viLevel1 = vic.best(VariableInfoContainer.LEVEL_1_INITIALISER);
                     VariableInfo variableInfo = vic.current();
@@ -463,7 +464,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         .filter(e2 -> e2.getValue().statementAnalysis.variables.isSet(fqn))
                         .collect(Collectors.toMap(Map.Entry::getKey,
                                 e2 -> e2.getValue().statementAnalysis.variables.get(fqn).current(),
-                                (e1, e2)-> { throw new UnsupportedOperationException(); }, LinkedHashMap::new));
+                                (e1, e2) -> {
+                                    throw new UnsupportedOperationException();
+                                }, LinkedHashMap::new));
                 VariableInfoContainer destination;
                 if (!variables.isSet(fqn)) {
                     Variable variable = e.getValue().current().variable();
@@ -752,6 +755,40 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 return sa.localVariablesAssignedInThisLoop.isFrozen();
             }
             sa = sa.parent;
+        }
+        throw new UnsupportedOperationException();
+    }
+
+
+    public record FindLoopResult(StatementAnalysis statementAnalysis, int steps) {
+    }
+
+    /*
+    We've encountered a break or continue statement, and need to find the corresponding loop...
+     */
+    public FindLoopResult findLoopByLabel(BreakOrContinueStatement breakOrContinue) {
+        StatementAnalysis sa = this;
+        int cnt = 0;
+        while (sa != null) {
+            if (sa.statement instanceof LoopStatement loop &&
+                    (!breakOrContinue.hasALabel() || loop.label != null && loop.label.equals(breakOrContinue.label))) {
+                return new FindLoopResult(sa, cnt);
+            }
+            sa = sa.parent;
+            cnt++;
+        }
+        throw new UnsupportedOperationException();
+    }
+
+    public FindLoopResult findLoop() {
+        StatementAnalysis sa = this;
+        int cnt = 0;
+        while (sa != null) {
+            if (sa.statement instanceof LoopStatement) {
+                return new FindLoopResult(sa, cnt);
+            }
+            sa = sa.parent;
+            cnt++;
         }
         throw new UnsupportedOperationException();
     }
