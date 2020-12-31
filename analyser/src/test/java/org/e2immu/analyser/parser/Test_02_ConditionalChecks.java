@@ -13,8 +13,6 @@ import java.util.Map;
 
 public class Test_02_ConditionalChecks extends CommonTestRunner {
 
-    public static final String CONDITIONAL_CHECKS = "conditionalChecks";
-
     public Test_02_ConditionalChecks() {
         super(false);
     }
@@ -237,6 +235,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         final String O5 = RETURN5 + ":0:o";
         final String I = TYPE + ".i";
         final String CC_I = TYPE + ".i#" + O5;
+        final String CONDITIONAL_CHECKS = "conditionalChecks";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
@@ -248,9 +247,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         Assert.assertEquals("<return value>||o==this", d.currentValue().toString());
                     }
                 }
-
-                if (CONDITIONAL_CHECKS.equals(d.variableName())) {
-                    if ("2".equals(d.statementId())) {
+                if ("2".equals(d.statementId())) {
+                    if (CONDITIONAL_CHECKS.equals(d.variableName())) {
                         Assert.assertEquals("o", d.currentValue().toString());
                     }
                 }
@@ -260,7 +258,8 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                     }
                     if (RETURN5.equals(d.variableName())) {
-                        String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i==o.i";
+                        String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
+                                "null!=o&&o.getClass()==this.getClass()&&i==o.i&&o!=this";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
                         Assert.assertEquals(VariableInfoContainer.LEVEL_3_EVALUATION, d.variableInfoContainer().getCurrentLevel());
                     }
@@ -278,6 +277,9 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 } else if ("1.0.0".equals(d.statementId())) {
                     Assert.assertEquals("o!=this&&(null==o||o.getClass()!=this.getClass())", d.absoluteState().toString());
                 } else {
+                    Assert.assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.absoluteState().toString());
+                }
+                if ("2".equals(d.statementId())) {
                     Assert.assertEquals("null!=o&&o.getClass()==this.getClass()&&o!=this", d.absoluteState().toString());
                 }
                 if ("3".equals(d.statementId())) {
@@ -359,7 +361,7 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
     public void test5() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                Assert.assertEquals("null!=(p<=2?q>=5?\"abc\":\"xyz\":q<=-1?\"tuv\":null)", d.evaluationResult().value().toString());
+                Assert.assertEquals("p<=2||q<=-1", d.evaluationResult().value().toString());
             }
         };
 

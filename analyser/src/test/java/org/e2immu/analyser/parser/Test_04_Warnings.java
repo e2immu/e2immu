@@ -65,10 +65,10 @@ public class Test_04_Warnings extends CommonTestRunner {
                     //TODO  Assert.assertEquals(d.toString(), AnalysisStatus.DONE, analysisStatus);
                 }
                 if ("1".equals(d.statementId())) {
-                    Assert.assertEquals("t.length()>=19", d.state().toString());
+                    Assert.assertEquals("t.length()>=19", d.absoluteState().toString());
                 }
                 if ("1.0.0".equals(d.statementId())) {
-                    Assert.assertEquals("t.length()<=18", d.state().toString());
+                    Assert.assertEquals("t.length()<=18", d.absoluteState().toString());
                 }
                 // ERROR: t.trim() result is not used
                 if ("2".equals(d.statementId())) {

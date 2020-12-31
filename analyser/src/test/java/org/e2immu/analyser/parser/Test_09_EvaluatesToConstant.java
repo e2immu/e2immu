@@ -30,7 +30,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
 
         if ("method3".equals(d.methodInfo().name)) {
             if ("1.0.0".equals(d.statementId())) {
-                Assert.assertEquals("param.contains(\"a\")", d.state().toString());
+                Assert.assertEquals("param.contains(\"a\")", d.absoluteState().toString());
 
                 if (d.iteration() >= 1) {
                     Expression value = d.statementAnalysis().stateData.valueOfExpression.get();
@@ -39,7 +39,7 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
                 }
             }
             if ("1.0.1".equals(d.statementAnalysis().index)) {
-                Assert.assertEquals("param.contains(\"a\")", d.state().toString());
+                Assert.assertEquals("param.contains(\"a\")", d.absoluteState().toString());
                 if (d.iteration() >= 1) {
                     Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
                 }

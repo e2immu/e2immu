@@ -151,4 +151,10 @@ public class TestConditionalValue extends CommonAbstractValue {
         Expression eq5 = Equals.equals(minimalEvaluationContext, newInt(5), cv1, ObjectFlow.NO_FLOW);
         Assert.assertEquals("!a&&!c", eq5.toString());
     }
+
+    @Test
+    public void testIfStatements2() {
+        Expression e1 = inline(a, newInt(3), inline(a, newInt(4), newInt(5)));
+        Assert.assertEquals("a?3:5", e1.toString());
+    }
 }

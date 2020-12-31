@@ -59,9 +59,15 @@ public class EvaluateInlineConditional {
         }
 
         InlineConditional secondCv;
-        // x ? (x? a: b): c == x ? a : c
+        // x ? (x? a: b): c === x ? a : c
         if ((secondCv = ifTrue.asInstanceOf(InlineConditional.class)) != null && secondCv.condition.equals(condition)) {
             return conditionalValueConditionResolved(evaluationContext, condition, secondCv.ifTrue, ifFalse, objectFlow);
+        }
+        // x? a: (x? b:c) === x?a:c
+        InlineConditional secondCv2;
+        // x ? (x? a: b): c === x ? a : c
+        if ((secondCv2 = ifFalse.asInstanceOf(InlineConditional.class)) != null && secondCv2.condition.equals(condition)) {
+            return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, secondCv2.ifFalse, objectFlow);
         }
 
         Expression edgeCase = edgeCases(evaluationContext, evaluationContext.getPrimitives(), condition, ifTrue, ifFalse);

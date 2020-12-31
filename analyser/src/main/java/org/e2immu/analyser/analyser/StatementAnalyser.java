@@ -909,9 +909,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
 
         Expression currentReturnValue = statementAnalysis.findOrThrow(returnVariable, l3).getValue();
-        Expression newReturnValue = EvaluateInlineConditional.conditionalValueConditionResolved(sharedState.evaluationContext,
-                localConditionManager.state(), level3EvaluationResult, currentReturnValue, ObjectFlow.NO_FLOW).getExpression();
-
+        Expression newReturnValue;
+        if (localConditionManager.state().isBoolValueTrue()) {
+            newReturnValue = level3EvaluationResult;
+        } else if (myMethodAnalyser.methodInfo.returnType().equals(statementAnalysis.primitives.booleanParameterizedType)) {
+            newReturnValue = new And(statementAnalysis.primitives).append(sharedState.evaluationContext, localConditionManager.state(),
+                    level3EvaluationResult);
+        } else {
+            newReturnValue = EvaluateInlineConditional.conditionalValueConditionResolved(sharedState.evaluationContext,
+                    localConditionManager.state(), level3EvaluationResult, currentReturnValue, ObjectFlow.NO_FLOW).getExpression();
+        }
         VariableInfoContainer vic = statementAnalysis.findForWriting(returnVariable);
         vic.prepareForValueChange(l3, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD);
         Map<VariableProperty, Integer> properties = sharedState.evaluationContext.getValueProperties(newReturnValue);

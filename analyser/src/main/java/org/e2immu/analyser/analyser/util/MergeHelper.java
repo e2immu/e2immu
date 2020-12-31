@@ -24,6 +24,7 @@ import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.model.Expression;
+import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -122,9 +123,12 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
             // it is identical to do if(x) return a; return b or if(x) return a; if(!x) return b;
             if (vi.variable() instanceof ReturnVariable) {
                 if (stateOfParent.isBoolValueTrue()) return vi1.getValue();
+                if (vi.variable().parameterizedType().equals(evaluationContext.getPrimitives().booleanParameterizedType)) {
+                    return and(stateOfParent, vi1.getValue());
+                }
                 return inlineConditional(stateOfParent, vi1.getValue(), vi.getValue());
             }
-            return vi1.getValue(); // so we by-pass the "safe"
+            return vi1.getValue(); // so we by-pass the "safe" in inlineConditional
         }
         return inlineConditional(condition, vi1.getValue(), vi.getValue());
     }
@@ -141,6 +145,10 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
             return inlineConditional(stateOfParent, two, vi.getValue());
         }
         return two;
+    }
+
+    private Expression and(Expression... expressions) {
+        return new And(evaluationContext.getPrimitives()).append(evaluationContext, expressions);
     }
 
     private Expression inlineConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
