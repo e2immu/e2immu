@@ -333,8 +333,8 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             // @Precondition
             if (precondition.isSet()) {
                 Expression value = precondition.get();
-                if (!value.isBoolValueTrue()) {
-                    // generate a companion method
+                if (!(value instanceof BooleanConstant)) {
+                    // generate a companion method, but only when the precondition is non-trivial
                     new CreatePreconditionCompanion(InspectionProvider.defaultFrom(primitives), analysisProvider)
                             .addPreconditionCompanion(methodInfo, this, value);
                 }

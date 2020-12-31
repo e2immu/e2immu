@@ -55,12 +55,12 @@ public class ListUtil {
         return 0;
     }
 
-    public static <K> Stream<Pair<K, K>> joinLists(List<K> list1, List<K> list2) {
-        Stream.Builder<Pair<K, K>> builder = Stream.builder();
-        Iterator<K> it2 = list2.iterator();
+    public static <K, L> Stream<Pair<K, L>> joinLists(List<K> list1, List<L> list2) {
+        Stream.Builder<Pair<K, L>> builder = Stream.builder();
+        Iterator<L> it2 = list2.iterator();
         for (K t1 : list1) {
             if (!it2.hasNext()) break;
-            K t2 = it2.next();
+            L t2 = it2.next();
             builder.accept(new Pair<>(t1, t2));
         }
         return builder.build();

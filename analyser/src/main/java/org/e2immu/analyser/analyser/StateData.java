@@ -21,18 +21,26 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.e2immu.analyser.model.expression.Or;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.FlipSwitch;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMapOverwriteNoValue;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class StateData {
 
-    // precondition = conditions that cause an escape
+    /*
+     precondition = conditions that cause an escape
+     they are generated in the throws statement
+     are copied upwards, and to the next statement
+     */
+
     public final SetOnce<Expression> precondition = new SetOnce<>(); // set on statements of depth 1, ie., 0, 1, 2,..., not 0.0.0, 1.0.0
     public final SetOnce<ConditionManager> conditionManager = new SetOnce<>(); // the state as it is after evaluating the statement
     public final SetOnce<Expression> valueOfExpression = new SetOnce<>();
@@ -46,16 +54,13 @@ public class StateData {
 
     public AnalysisStatus copyPrecondition(StatementAnalyser statementAnalyser, StatementAnalysis previous, EvaluationContext evaluationContext) {
         if (!precondition.isSet()) {
-            BooleanConstant TRUE = new BooleanConstant(evaluationContext.getPrimitives(), true);
-            Stream<Expression> fromPrevious = Stream.of(previous == null ? TRUE : previous.stateData.precondition.get());
-            Stream<Expression> fromBlocks = statementAnalyser.lastStatementsOfNonEmptySubBlocks().stream()
-                    .filter(sa -> sa.statementAnalysis.flowData.isUnreachable())
-                    .map(sa -> sa.statementAnalysis.stateData.precondition.get());
-
-            Expression reduced = Stream.concat(fromBlocks, fromPrevious)
-                    .reduce(TRUE, (v1, v2) -> v1.isBoolValueTrue() ? v2 : v2.isBoolValueTrue() ? v1 :
-                            new And(evaluationContext.getPrimitives()).append(evaluationContext, v1, v2));
-            precondition.set(reduced);
+            List<Expression> fromPrevious = previous == null ? List.of() : List.of(previous.stateData.precondition.get());
+            List<Expression> fromBlocks = statementAnalyser.lastStatementsOfNonEmptySubBlocks().stream()
+                    .map(sa -> sa.statementAnalysis.stateData.precondition.get())
+                    .collect(Collectors.toUnmodifiableList());
+            List<Expression> all = ListUtil.immutableConcat(fromBlocks, fromPrevious);
+            Expression or = new Or(evaluationContext.getPrimitives()).append(evaluationContext, all);
+            precondition.set(or);
         }
         return AnalysisStatus.DONE;
     }

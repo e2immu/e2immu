@@ -4,10 +4,12 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.Variable;
-import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /*
@@ -209,22 +211,9 @@ public record ConditionManager(Expression condition, Expression state, Condition
         if (filterResult.rest().isBoolValueFalse()) {
             return builder.setExpression(filterResult.rest()).build();
         }
-        // replace all VariableValues in the rest by VVPlaceHolders
-        Map<Expression, Expression> translation = new HashMap<>();
-        filterResult.rest().visit(v -> {
-            VariableExpression variableValue;
-            if ((variableValue = v.asInstanceOf(VariableExpression.class)) != null) {
-                // null evalContext -> do not copy properties (the condition+state may hold a not null, which can
-                // be copied in the property, which can reEvaluate later to constant true/false
-                Variable variable = variableValue.variable();
-                translation.put(v, new VariableExpression(variable, ObjectFlow.NO_FLOW));
-            }
-            return true;
-        });
-
-        // and negate. This will become the precondition or "initial state"
-        EvaluationResult reRest = filterResult.rest().reEvaluate(evaluationContext, translation);
-        return builder.compose(reRest).setExpression(Negation.negate(evaluationContext, reRest.value())).build();
+        Expression rest = filterResult.rest();
+        Expression negatedRest = Negation.negate(new EvaluationContextImpl(evaluationContext.getPrimitives()), rest);
+        return builder.setExpression(negatedRest).build();
     }
 
     private static Filter.FilterResult<Variable> obtainVariableFilter(Expression defaultRest, Variable variable, Expression value) {
@@ -242,5 +231,20 @@ public record ConditionManager(Expression condition, Expression state, Condition
         Filter.FilterResult<Variable> filterResult = filter.filter(absoluteState,
                 value -> obtainVariableFilter(filter.getDefaultRest(), variable, value));
         return filterResult.accepted().getOrDefault(variable, filter.getDefaultRest());
+    }
+
+
+    private static class EvaluationContextImpl extends AbstractEvaluationContextImpl {
+        private final Primitives primitives;
+
+        protected EvaluationContextImpl(Primitives primitives) {
+            super(0, ConditionManager.initialConditionManager(primitives), null);
+            this.primitives = primitives;
+        }
+
+        @Override
+        public Primitives getPrimitives() {
+            return primitives;
+        }
     }
 }

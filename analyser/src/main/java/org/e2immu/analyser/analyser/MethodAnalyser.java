@@ -239,7 +239,8 @@ public class MethodAnalyser extends AbstractAnalyser {
         // opposites
         check(Dependent.class, e2.dependent);
 
-        CheckPrecondition.checkPrecondition(messages, methodInfo, methodAnalysis);
+        CheckPrecondition.checkPrecondition(messages, methodInfo, methodAnalysis, companionAnalyses);
+
         CheckOnly.checkOnly(messages, methodInfo, methodAnalysis);
         CheckOnly.checkMark(messages, methodInfo, methodAnalysis);
 

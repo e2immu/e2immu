@@ -41,11 +41,17 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
     @Test
     public void test0() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if ("either".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                Assert.assertEquals("null!=e1||null!=e2",
-                        d.statementAnalysis().stateData.conditionManager.get().state().toString());
-                Assert.assertEquals("null!=e1||null!=e2",
-                        d.statementAnalysis().stateData.precondition.get().toString());
+            if ("either".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("null!=e1||null!=e2",
+                            d.statementAnalysis().stateData.precondition.get().toString());
+                }
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals("null!=e1||null!=e2",
+                            d.statementAnalysis().stateData.conditionManager.get().state().toString());
+                    Assert.assertEquals("null!=e1||null!=e2",
+                            d.statementAnalysis().stateData.precondition.get().toString());
+                }
             }
         };
 
@@ -63,11 +69,15 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
             }
         };
 
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
+            Assert.assertEquals(4, d.typeInfo().typeInspection.get().methods().size());
+        };
 
         testClass("PreconditionChecks_0", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addAfterTypePropertyComputationsVisitor(typeAnalyserVisitor)
                 .build());
     }
 
