@@ -966,7 +966,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         final int l3 = VariableInfoContainer.LEVEL_3_EVALUATION;
         ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
 
-        Expression currentReturnValue = statementAnalysis.findOrThrow(returnVariable, l3).getValue();
+        Expression currentReturnValue = statementAnalysis.findOrThrow(returnVariable, VariableInfoContainer.LEVEL_1_INITIALISER).getValue();
         // do NOT check for delays on currentReturnValue, we need to make the VIC
 
         Expression newReturnValue;
@@ -1228,6 +1228,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     ors.add(evaluationContext.replaceLocalVariables(stateOnInterrupt)));
             ors.add(evaluationContext.replaceLocalVariables(Negation.negate(evaluationContext, list.get(0).condition)));
             return new Or(statementAnalysis.primitives).append(evaluationContext, ors);
+        }
+
+        if(statementAnalysis.statement instanceof SynchronizedStatement && list.get(0).startOfBlock != null) {
+            Expression lastState = list.get(0).startOfBlock.lastStatement().statementAnalysis.stateData.getConditionManager().state();
+            return evaluationContext.replaceLocalVariables(lastState);
         }
         return TRUE;
     }

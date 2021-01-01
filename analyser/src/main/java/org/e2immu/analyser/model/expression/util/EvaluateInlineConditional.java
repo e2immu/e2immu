@@ -31,6 +31,8 @@ public class EvaluateInlineConditional {
 
     public static EvaluationResult conditionalValueCurrentState(EvaluationContext evaluationContext, Expression conditionBeforeState, Expression ifTrue, Expression ifFalse, ObjectFlow objectFlow) {
         Expression condition = evaluationContext.getConditionManager().evaluate(evaluationContext, conditionBeforeState);
+        if (condition == EmptyExpression.NO_VALUE) return new EvaluationResult.Builder()
+                .setExpression(EmptyExpression.NO_VALUE).build(); // delay
         return conditionalValueConditionResolved(evaluationContext, condition, ifTrue, ifFalse, objectFlow);
     }
 

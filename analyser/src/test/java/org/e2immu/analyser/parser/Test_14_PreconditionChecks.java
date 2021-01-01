@@ -25,6 +25,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodAnalysis;
+import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.junit.Assert;
 import org.junit.Test;
@@ -139,6 +140,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
     public void test3() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.PreconditionChecks_3";
         final String INTEGER = TYPE + ".integer";
+        final String RETURN_VAR = TYPE + ".setInteger(int)";
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("integer".equals(d.fieldInfo().name)) {
@@ -151,7 +153,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
             String name = d.methodInfo().name;
             if ("setInteger".equals(name)) {
                 if (d.iteration() > 0) {
-                    Assert.assertEquals("(null == this.integer and ii >= 0)", d.methodAnalysis().getPrecondition().toString());
+                    Assert.assertEquals("null==integer&&ii>=0", d.methodAnalysis().getPrecondition().toString());
                 }
             }
         };
@@ -172,18 +174,37 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                     }
                 }
             }
+            if (RETURN_VAR.equals(d.variableName())) {
+                if (d.statementId().startsWith("0")) {
+                    Assert.assertEquals("<return value>", d.currentValue().toString());
+                }
+                if ("1".equals(d.statementId())) {
+                    if (d.iteration() == 0) {
+                        Assert.assertEquals("<no value>", d.currentValue().toString());
+                    } else {
+                        Assert.assertEquals("ii", d.currentValue().toString());
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
+                    }
+                }
+            }
         };
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setInteger".equals(d.methodInfo().name)) {
                 if ("0.0.1".equals(d.statementId())) {
                     Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "null!=integer";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
+                            "null!=org.e2immu.analyser.testexample.PreconditionChecks_3.integer$0";
                     Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("0.0.2".equals(d.statementId())) {
                     Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                     Assert.assertEquals("ii", d.evaluationResult().value().toString());
+                }
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "ii";
+                    Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
             }
         };
@@ -195,7 +216,8 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                     Assert.assertEquals("ii>=0", d.state().toString());
                 }
                 if ("0.0.1".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "null==integer&&ii>=0";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
+                            "null==org.e2immu.analyser.testexample.PreconditionChecks_3.integer$0&&ii>=0";
                     Assert.assertEquals(expect, d.state().toString());
                 }
                 if ("0.0.2".equals(d.statementId())) {
@@ -203,8 +225,16 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                     VariableInfo variableInfo = d.getFieldAsVariable(integer);
                     Assert.assertEquals(Level.TRUE, variableInfo.getProperty(VariableProperty.ASSIGNED));
 
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "null==integer&&ii>=0";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
+                            "null==org.e2immu.analyser.testexample.PreconditionChecks_3.integer$0&&ii>=0";
                     Assert.assertEquals(expect, d.state().toString());
+
+                    if (d.iteration() == 0) {
+                        Assert.assertNull(d.statementAnalysis().methodLevelData.getCombinedPrecondition());
+                    } else {
+                        Assert.assertEquals("null==integer&&ii>=0",
+                                d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
+                    }
                 }
                 if ("0".equals(d.statementId())) {
                     // the synchronized block
@@ -212,7 +242,8 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                     VariableInfo variableInfo = d.getFieldAsVariable(integer);
                     Assert.assertEquals(Level.TRUE, variableInfo.getProperty(VariableProperty.ASSIGNED));
 
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "null==integer&&ii>=0";
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
+                            "null==org.e2immu.analyser.testexample.PreconditionChecks_3.integer$0&&ii>=0";
                     Assert.assertEquals(expect, d.state().toString());
                 }
                 if ("1".equals(d.statementId())) {
@@ -221,7 +252,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                     Assert.assertEquals(Level.TRUE, variableInfo.getProperty(VariableProperty.ASSIGNED));
 
                     if (d.iteration() > 0) {
-                        Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT)); // TODO
+                        Assert.assertNotNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
                     }
                 }
             }

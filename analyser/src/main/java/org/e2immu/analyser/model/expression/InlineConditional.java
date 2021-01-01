@@ -238,7 +238,7 @@ public class InlineConditional implements Expression {
         // TODO ObjectFlow
         EvaluationResult cv = EvaluateInlineConditional.conditionalValueCurrentState(evaluationContext,
                 c, t, f, ObjectFlow.NO_FLOW);
-        return builder.setExpression(cv.value()).compose(cv).build();
+        return builder.compose(cv).build();
     }
 
     @Override
