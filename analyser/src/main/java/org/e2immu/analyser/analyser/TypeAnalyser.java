@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.config.TypeAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Negation;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.DependentVariable;
@@ -458,12 +457,14 @@ public class TypeAnalyser extends AbstractAnalyser {
         for (Variable variable : variables) {
             FieldInfo fieldInfo = ((FieldReference) variable).fieldInfo;
             // fieldSummaries are set after the first iteration
-            return methodAnalyser.getFieldAsVariableStream(fieldInfo).anyMatch(tv -> {
-                boolean assigned = tv.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE;
+            return methodAnalyser.getFieldAsVariableStream(fieldInfo, false).anyMatch(variableInfo -> {
+                boolean assigned = variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE;
                 log(MARK, "Field {} is assigned in {}? {}", variable.fullyQualifiedName(),
                         methodAnalyser.methodInfo.distinguishingName(), assigned);
 
-                Expression state = EmptyExpression.NO_VALUE; // FIXME tv.getStateOnAssignment();
+                String index = variableInfo.getAssignmentId().substring(0, variableInfo.getAssignmentId().indexOf(':'));
+                StatementAnalysis statementAnalysis = methodAnalyser.findStatementAnalysis(index);
+                Expression state = statementAnalysis.methodLevelData.getCombinedPrecondition();
                 if (assigned && state != null && isCompatible(evaluationContext, state, precondition)) {
                     log(MARK, "We checked, and found the state {} compatible with the precondition {}", state, precondition);
                     return false;

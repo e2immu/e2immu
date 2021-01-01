@@ -130,7 +130,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
     // combined
     @Test
     public void test2() throws IOException {
-        testClass("PreconditionChecks_2", 0, 0, new DebugConfiguration.Builder()
+        testClass("PreconditionChecks_2", 1, 0, new DebugConfiguration.Builder()
                 .build());
     }
 

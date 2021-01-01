@@ -468,7 +468,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 VariableInfo set6VariableInfo = d.getFieldAsVariable(set6);
                 Assert.assertNull(set6VariableInfo); // this variable does not occur!
 
-                List<VariableInfo> vis = d.methodAnalysis().getLastStatement().latestInfoOfVariablesReferringTo(set6);
+                List<VariableInfo> vis = d.methodAnalysis().getLastStatement().latestInfoOfVariablesReferringTo(set6, false);
                 Assert.assertEquals(1, vis.size());
                 VariableInfo vi = vis.get(0);
                 if (d.iteration() > 0)

@@ -258,18 +258,36 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return variables.get(variableName).current();
     }
 
-    public Stream<VariableInfo> streamOfLatestInfoOfVariablesReferringTo(FieldInfo fieldInfo) {
+    public Stream<VariableInfo> streamOfLatestInfoOfVariablesReferringTo(FieldInfo fieldInfo, boolean allowLocalCopies) {
         return variables.stream()
                 .map(e -> e.getValue().current())
-                .filter(v -> v.variable() instanceof FieldReference fieldReference && fieldReference.fieldInfo == fieldInfo);
+                .filter(v -> v.variable() instanceof FieldReference fieldReference && fieldReference.fieldInfo == fieldInfo ||
+                        allowLocalCopies && v.variable() instanceof LocalVariableReference lvr &&
+                                lvr.variable.isLocalCopyOf() instanceof FieldReference fr && fr.fieldInfo == fieldInfo
+                );
     }
 
-    public List<VariableInfo> latestInfoOfVariablesReferringTo(FieldInfo fieldInfo) {
-        return streamOfLatestInfoOfVariablesReferringTo(fieldInfo).collect(Collectors.toUnmodifiableList());
+    public List<VariableInfo> latestInfoOfVariablesReferringTo(FieldInfo fieldInfo, boolean allowLocalCopies) {
+        return streamOfLatestInfoOfVariablesReferringTo(fieldInfo, allowLocalCopies).collect(Collectors.toUnmodifiableList());
     }
 
     public boolean containsMessage(String messageString) {
         return messages.stream().anyMatch(message -> message.message.contains(messageString) && message.location.equals(location()));
+    }
+
+    public StatementAnalysis navigateTo(String index) {
+        if (this.index.equals(index)) return this;
+        if (index.startsWith(this.index)) {
+            // go into sub-block
+            int n = this.index.length();
+            int blockIndex = Integer.parseInt(index.substring(n + 1, index.indexOf('.', n + 1)));
+            return navigationData.blocks.get().get(blockIndex)
+                    .orElseThrow(() -> new UnsupportedOperationException("Looking for " + index + ", block " + blockIndex));
+        }
+        if (this.index.compareTo(index) < 0 && navigationData.next.get().isPresent()) {
+            return navigationData.next.get().get().navigateTo(index);
+        }
+        throw new UnsupportedOperationException("? have index " + this.index + ", looking for " + index);
     }
 
     public interface StateChange extends Function<Expression, Expression> {

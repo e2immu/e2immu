@@ -948,17 +948,17 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
     }
 
-    public List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo) {
+    public List<VariableInfo> getFieldAsVariable(FieldInfo fieldInfo, boolean includeLocalCopies) {
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
         return lastStatement == null ? List.of() :
-                methodAnalysis.getLastStatement().latestInfoOfVariablesReferringTo(fieldInfo);
+                methodAnalysis.getLastStatement().latestInfoOfVariablesReferringTo(fieldInfo, includeLocalCopies);
     }
 
     // occurs as often in a flatMap as not, so a stream version is useful
-    public Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo) {
+    public Stream<VariableInfo> getFieldAsVariableStream(FieldInfo fieldInfo, boolean includeLocalCopies) {
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
         return lastStatement == null ? Stream.empty() :
-                methodAnalysis.getLastStatement().streamOfLatestInfoOfVariablesReferringTo(fieldInfo);
+                methodAnalysis.getLastStatement().streamOfLatestInfoOfVariablesReferringTo(fieldInfo, includeLocalCopies);
     }
 
     public VariableInfo getThisAsVariable() {
@@ -969,6 +969,10 @@ public class MethodAnalyser extends AbstractAnalyser {
         StatementAnalysis lastStatement = methodAnalysis.getLastStatement();
         assert lastStatement != null; // either constructor, and then we shouldn't ask; or compilation error
         return lastStatement.getLatestVariableInfo(methodInfo.fullyQualifiedName());
+    }
+
+    public StatementAnalysis findStatementAnalysis(String index) {
+        return firstStatementAnalyser.statementAnalysis.navigateTo(index);
     }
 
     private class EvaluationContextImpl extends AbstractEvaluationContextImpl implements EvaluationContext {
