@@ -653,8 +653,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return NO_VALUE;
     }
 
-    // whatever that has not been picked up by the notNull and the size escapes
-    // + preconditions by calling other methods with preconditions!
+    /*
+     whatever that has not been picked up by the notNull + preconditions by calling other methods with preconditions!
+     */
 
     private AnalysisStatus checkPrecondition(SharedState sharedState) {
         Boolean escapeAlwaysExecuted = isEscapeAlwaysExecutedInCurrentBlock();
@@ -681,13 +682,17 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 return DONE;
             }
         }
-        if(!statementAnalysis.stateData.preconditionIsSet()) {
+        if (!statementAnalysis.stateData.preconditionIsSet()) {
             // it could have been set from the assert (step4) or apply via a method call
             statementAnalysis.stateData.setPrecondition(new BooleanConstant(statementAnalysis.primitives, true));
         }
         return DONE;
     }
 
+    /*
+    Not-null escapes should not contribute to preconditions.
+    
+     */
     private AnalysisStatus checkNotNullEscapes(SharedState sharedState) {
         Boolean escapeAlwaysExecuted = isEscapeAlwaysExecutedInCurrentBlock();
         if (escapeAlwaysExecuted == null || !statementAnalysis.stateData.conditionManagerIsSet()) {
@@ -720,12 +725,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     This will cause a @NotNull on the parameter, which in turn renders parameter == null equal to "false", which causes errors.
     The switch avoids raising this error
 
-    IMPROVE: check that the parent is the if-statement (there could be garbage in-between)
      */
     private void disableErrorsOnIfStatement() {
-        if (!statementAnalysis.parent.stateData.statementContributesToPrecondition.isSet()) {
-            log(VARIABLE_PROPERTIES, "Disable errors on if-statement");
-            statementAnalysis.parent.stateData.statementContributesToPrecondition.set();
+        StatementAnalysis sa = statementAnalysis.enclosingConditionalStatement();
+        if (!sa.stateData.statementContributesToPrecondition.isSet()) {
+            log(VARIABLE_PROPERTIES, "Disable errors on enclosing if-statement {}", sa.index);
+            sa.stateData.statementContributesToPrecondition.set();
         }
     }
 
@@ -1230,7 +1235,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return new Or(statementAnalysis.primitives).append(evaluationContext, ors);
         }
 
-        if(statementAnalysis.statement instanceof SynchronizedStatement && list.get(0).startOfBlock != null) {
+        if (statementAnalysis.statement instanceof SynchronizedStatement && list.get(0).startOfBlock != null) {
             Expression lastState = list.get(0).startOfBlock.lastStatement().statementAnalysis.stateData.getConditionManager().state();
             return evaluationContext.replaceLocalVariables(lastState);
         }
@@ -1538,13 +1543,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 return ((EvaluationContextImpl) closure).findOrCreateL1(variable, statementTime, isNotAssignmentTarget);
             }
             return statementAnalysis.findOrCreateL1(analyserContext, variable, statementTime, isNotAssignmentTarget);
-        }
-
-        private VariableInfo findOrThrow(Variable variable) {
-            if (closure != null && isNotMine(variable)) {
-                return ((EvaluationContextImpl) closure).findOrThrow(variable);
-            }
-            return statementAnalysis.findOrThrow(variable);
         }
 
         private boolean isNotMine(Variable variable) {

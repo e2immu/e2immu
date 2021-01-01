@@ -21,10 +21,7 @@ import com.google.common.collect.ImmutableList;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
-import org.e2immu.analyser.model.statement.BreakOrContinueStatement;
-import org.e2immu.analyser.model.statement.LoopStatement;
-import org.e2immu.analyser.model.statement.Structure;
-import org.e2immu.analyser.model.statement.SynchronizedStatement;
+import org.e2immu.analyser.model.statement.*;
 import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.objectflow.Access;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -288,6 +285,19 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return navigationData.next.get().get().navigateTo(index);
         }
         throw new UnsupportedOperationException("? have index " + this.index + ", looking for " + index);
+    }
+
+    /*
+    we can have a simple { } block between the throws statement and the enclosing if
+     */
+
+    public StatementAnalysis enclosingConditionalStatement() {
+        if (parent == null) throw new UnsupportedOperationException();
+        if (parent.statement instanceof IfElseStatement || parent.statement instanceof SwitchStatement ||
+                parent.statement instanceof SwitchEntry) {
+            return parent;
+        }
+        return parent.enclosingConditionalStatement();
     }
 
     public interface StateChange extends Function<Expression, Expression> {

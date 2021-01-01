@@ -94,7 +94,7 @@ public record FieldAccess(Expression expression,
 
     @Override
     public OutputBuilder output() {
-        return new OutputBuilder().add(outputInParenthesis(precedence(), expression)).add(Symbol.DOT).add(variable.output());
+        return new OutputBuilder().add(variable.output());
     }
 
     @Override
@@ -123,14 +123,6 @@ public record FieldAccess(Expression expression,
             newVar = variable;
         }
         EvaluationResult evaluationResult = VariableExpression.evaluate(evaluationContext, forwardEvaluationInfo, newVar);
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(scopeResult, evaluationResult);
-
-        if (scopeResult.value() instanceof NullConstant) {
-            builder.raiseError(Message.NULL_POINTER_EXCEPTION);
-        } else if (scopeResult.value() != EmptyExpression.NO_VALUE && !builder.isNotNull0(scopeResult.value())) {
-            builder.raiseError(Message.POTENTIAL_NULL_POINTER_EXCEPTION, "Scope " + scopeResult.value());
-        }
-
-        return builder.build();
+        return new EvaluationResult.Builder(evaluationContext).compose(scopeResult, evaluationResult).build();
     }
 }

@@ -113,8 +113,7 @@ public record ConditionManager(Expression condition, Expression state, Condition
      * @return individual variables that appear in a top-level disjunction as variable == null
      */
     public Set<Variable> findIndividualNullInCondition(EvaluationContext evaluationContext, boolean requireEqualsNull) {
-        Expression absoluteState = absoluteState(evaluationContext);
-        return findIndividualNull(absoluteState, evaluationContext, Filter.FilterMode.REJECT, requireEqualsNull);
+        return findIndividualNull(condition, evaluationContext, Filter.FilterMode.REJECT, requireEqualsNull);
     }
 
     /**

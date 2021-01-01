@@ -173,6 +173,10 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
             if ("method3".equals(d.methodInfo().name)) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(1).getProperty(VariableProperty.NOT_NULL));
+
+                Assert.assertEquals(0, d.methodAnalysis().getCompanionAnalyses().size());
+                Assert.assertEquals(0, d.methodAnalysis().getComputedCompanions().size());
+                Assert.assertTrue(d.methodAnalysis().getPrecondition().isBoolValueTrue());
             }
         };
 
@@ -183,17 +187,29 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         Assert.assertEquals("true", d.condition().toString());
                         Assert.assertEquals("null!=a", d.state().toString());
                         Assert.assertTrue(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
+                        // goes into not-null on parameters
+                        Assert.assertEquals("true", d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
                     }
                     if ("0.0.0".equals(d.statementId())) {
                         Assert.assertEquals("null==a", d.condition().toString());
                         Assert.assertEquals("null==a", d.absoluteState().toString());
                         Assert.assertTrue(d.haveSetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
                         Assert.assertFalse(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
+                        // not-null does not contribute to the precondition
+                        Assert.assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
                     }
                     if ("1".equals(d.statementId())) {
                         Assert.assertEquals("true", d.condition().toString());
                         Assert.assertEquals("null!=a&&null!=b", d.state().toString());
                         Assert.assertTrue(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
+                        Assert.assertEquals("true", d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        Assert.assertEquals("null==b", d.condition().toString());
+                        Assert.assertEquals("null!=a&&null==b", d.absoluteState().toString());
+                        Assert.assertTrue(d.haveSetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
+                        Assert.assertEquals("true", d.statementAnalysis().stateData.getPrecondition().toString());
+                        Assert.assertFalse(d.statementAnalysis().stateData.statementContributesToPrecondition.isSet());
                     }
                 }
             }
