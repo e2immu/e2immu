@@ -9,9 +9,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.List;
-import java.util.Set;
-
 public class TestAssignment {
 
     @BeforeClass
@@ -22,9 +19,17 @@ public class TestAssignment {
     private final Primitives primitives = new Primitives();
     private final InspectionProvider inspectionProvider = InspectionProvider.defaultFrom(primitives);
 
+    private LocalVariable makeLocalVariableInt() {
+        return new LocalVariable.Builder()
+                .setName("i")
+                .setParameterizedType(primitives.intParameterizedType)
+                .setOwningType(primitives.stringTypeInfo)
+                .build();
+    }
+
     @Test
     public void testNormal() {
-        LocalVariable lvi = new LocalVariable(Set.of(), "i", primitives.intParameterizedType, List.of(), primitives.stringTypeInfo);
+        LocalVariable lvi = makeLocalVariableInt();
         LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0));
         Expression iPlusEquals1 = new Assignment(primitives,
                 new VariableExpression(i.localVariableReference), new IntConstant(primitives, 1));
@@ -33,7 +38,7 @@ public class TestAssignment {
 
     @Test
     public void testPlusEqualsOne() {
-        LocalVariable lvi = new LocalVariable(Set.of(), "i", primitives.intParameterizedType, List.of(), primitives.stringTypeInfo);
+        LocalVariable lvi = makeLocalVariableInt();
         LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0));
         Expression iPlusEquals1 = new Assignment(primitives, new VariableExpression(i.localVariableReference),
                 new IntConstant(primitives, 1), primitives.assignPlusOperatorInt, null);
@@ -50,7 +55,7 @@ public class TestAssignment {
 
     @Test
     public void testPlusPlus() {
-        LocalVariable lvi = new LocalVariable(Set.of(), "i", primitives.intParameterizedType, List.of(), primitives.stringTypeInfo);
+        LocalVariable lvi = makeLocalVariableInt();
         LocalVariableCreation i = new LocalVariableCreation(inspectionProvider, lvi, new IntConstant(primitives, 0));
 
         Expression iPlusPlus = new UnaryOperator(primitives.postfixIncrementOperatorInt,

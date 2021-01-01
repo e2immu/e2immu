@@ -43,13 +43,15 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("either".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("null==e1&&null==e2",
+                            d.statementAnalysis().stateData.getConditionManager().condition().toString());
                     Assert.assertEquals("null!=e1||null!=e2",
                             d.statementAnalysis().stateData.getPrecondition().toString());
                 }
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("null!=e1||null!=e2",
-                            d.statementAnalysis().stateData.conditionManager.get().state().toString());
-                    Assert.assertNull(d.statementAnalysis().stateData.getPrecondition());
+                            d.statementAnalysis().stateData.getConditionManager().state().toString());
+                    Assert.assertTrue(d.statementAnalysis().stateData.getPrecondition().isBoolValueTrue());
                     Assert.assertEquals("null!=e1||null!=e2",
                             d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
                 }
@@ -93,14 +95,12 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                     if (d.iteration() == 0) {
                         Assert.assertSame(EmptyExpression.NO_VALUE, d.condition());
                         Assert.assertSame(EmptyExpression.NO_VALUE, d.state());
+                        Assert.assertNull(d.statementAnalysis().stateData.getPrecondition());
+                        Assert.assertNull(d.statementAnalysis().methodLevelData.getCombinedPrecondition());
                     } else if (d.iteration() == 1) {
-                        Assert.assertEquals("((-1) + (-this.i)) >= 0", d.condition().toString());
-                        Assert.assertEquals("((-1) + (-this.i)) >= 0", d.state().toString());
-                    } else if (d.iteration() > 1) {
-                        Assert.assertEquals("((-1) + (-this.i)) >= 0", d.condition().toString());
-                        // the precondition is now fed into the initial state, results in
-                        // (((-1) + (-this.i)) >= 0 and this.i >= 0) which should resolve to false
-                        Assert.assertEquals("false", d.state().toString());
+                        Assert.assertEquals("org.e2immu.analyser.testexample.PreconditionChecks_1.i$0<=-1", d.condition().toString());
+                        Assert.assertEquals("i>=0", d.statementAnalysis().stateData.getPrecondition().toString());
+                        Assert.assertEquals("i>=0", d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
                     }
                 }
                 if ("0".equals(d.statementId())) {
@@ -108,25 +108,22 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                         Assert.assertSame(EmptyExpression.NO_VALUE, d.condition()); // condition is EMPTY, but because state is NO_VALUE, not written
                         Assert.assertSame(EmptyExpression.NO_VALUE, d.state());
                     } else {
-                        Assert.assertSame(EmptyExpression.EMPTY_EXPRESSION, d.condition());
-                        Assert.assertEquals("this.i >= 0", d.state().toString());
+                        Assert.assertTrue(d.condition().isBoolValueTrue());
+                        Assert.assertEquals("org.e2immu.analyser.testexample.PreconditionChecks_1.i$0>=0", d.state().toString());
+                    }
+                }
+                if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
+                    if (d.iteration() == 0) {
+                        Assert.assertNull("Statement " + d.statementId(), d.statementAnalysis().methodLevelData.getCombinedPrecondition());
+                    } else {
+                        Assert.assertEquals("i>=0", d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
                     }
                 }
             }
         };
 
-        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            String name = d.methodInfo().name;
-            if ("either".equals(name)) {
-                MethodAnalysis methodAnalysis = d.methodAnalysis();
-                Assert.assertEquals("null!=e1||null!=e2", methodAnalysis.getPrecondition().toString());
-            }
-        };
-
-
         testClass("PreconditionChecks_1", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

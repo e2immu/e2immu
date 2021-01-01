@@ -227,4 +227,8 @@ public interface EvaluationContext {
     }
 
     default Expression replaceLocalVariables(Expression mergeValue) { throw new UnsupportedOperationException(); }
+
+    default Expression acceptAndTranslatePrecondition(Expression rest) {
+        return null;
+    }
 }

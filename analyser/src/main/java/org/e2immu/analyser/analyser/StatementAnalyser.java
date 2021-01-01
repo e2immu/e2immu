@@ -472,8 +472,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return localConditionManager.isDelayed() ? DELAYS : DONE;
     }
 
-    private boolean isEscapeAlwaysExecutedInCurrentBlock() {
+    private Boolean isEscapeAlwaysExecutedInCurrentBlock() {
         InterruptsFlow bestAlways = statementAnalysis.flowData.bestAlwaysInterrupt();
+        if (bestAlways == InterruptsFlow.DELAYED) return null;
         boolean escapes = bestAlways == InterruptsFlow.ESCAPE;
         if (escapes) {
             return statementAnalysis.flowData.getGuaranteedToBeReachedInCurrentBlock() == FlowData.Execution.ALWAYS;
@@ -555,8 +556,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 .forEach(mod -> mod.accept(new ModificationData(sharedState.builder, statusBeforeModificationStream == DONE
                         ? level : VariableInfoContainer.LEVEL_1_INITIALISER)));
 
-        if(status == DONE && evaluationResult.precondition() != null) {
-            if(evaluationResult.precondition() == NO_VALUE) {
+        if (status == DONE && evaluationResult.precondition() != null) {
+            if (evaluationResult.precondition() == NO_VALUE) {
                 log(DELAYED, "Apply of step {} in {}, delayed because of precondition", step, index());
                 status = DELAYS;
             } else {
@@ -622,16 +623,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return value;
     }
 
-    private boolean atThisLevel(String assignmentId) {
-        int indexDot = index().lastIndexOf('.');
-        int assignmentDot = assignmentId.lastIndexOf('.');
-        if (indexDot != assignmentDot) return false;
-        if (indexDot < 0) return true;
-        String mySub = index().substring(0, indexDot);
-        String assignmentIdSub = assignmentId.substring(0, assignmentDot);
-        return mySub.equals(assignmentIdSub);
-    }
-
     // add this variable name to all loop statements until definition of the local variable
     private void addToAssignmentsInLoop(String fullyQualifiedName) {
         StatementAnalysis sa = statementAnalysis;
@@ -666,25 +657,43 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     // + preconditions by calling other methods with preconditions!
 
     private AnalysisStatus checkPrecondition(SharedState sharedState) {
-        if (isEscapeAlwaysExecutedInCurrentBlock() && !statementAnalysis.stateData.preconditionIsSet()) {
+        Boolean escapeAlwaysExecuted = isEscapeAlwaysExecutedInCurrentBlock();
+        if (escapeAlwaysExecuted == null) {
+            log(DELAYED, "Delaying check precondition of statement {}, interrupt condition unknown", index());
+            return DELAYS;
+        }
+        if (!statementAnalysis.stateData.conditionManagerIsSet()) {
+            log(DELAYED, "Delaying check precondition of statement {}, no condition manager", index());
+            return DELAYS;
+        }
+        if (escapeAlwaysExecuted) {
             EvaluationResult er = statementAnalysis.stateData.getConditionManager().escapeCondition(sharedState.evaluationContext);
             Expression precondition = er.value();
-            if (!precondition.isBoolValueTrue()) {
-                boolean atLeastFieldOrParameterInvolved = precondition.variables().stream()
-                        .anyMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
-                if (atLeastFieldOrParameterInvolved) {
-                    log(VARIABLE_PROPERTIES, "Escape with precondition {}", precondition);
-
-                    statementAnalysis.stateData.setPrecondition(precondition);
-                    disableErrorsOnIfStatement();
-                }
+            if (precondition == NO_VALUE) {
+                log(DELAYED, "Delaying check precondition of statement {}, escape condition delayed", index());
+                return DELAYS;
             }
+            Expression translated = sharedState.evaluationContext.acceptAndTranslatePrecondition(precondition);
+            if (translated != null) {
+                log(VARIABLE_PROPERTIES, "Escape with precondition {}", translated);
+                statementAnalysis.stateData.setPrecondition(translated);
+                disableErrorsOnIfStatement();
+                return DONE;
+            }
+        }
+        if(!statementAnalysis.stateData.preconditionIsSet()) {
+            // it could have been set from the assert (step4) or apply via a method call
+            statementAnalysis.stateData.setPrecondition(new BooleanConstant(statementAnalysis.primitives, true));
         }
         return DONE;
     }
 
     private AnalysisStatus checkNotNullEscapes(SharedState sharedState) {
-        if (isEscapeAlwaysExecutedInCurrentBlock()) {
+        Boolean escapeAlwaysExecuted = isEscapeAlwaysExecutedInCurrentBlock();
+        if (escapeAlwaysExecuted == null || !statementAnalysis.stateData.conditionManagerIsSet()) {
+            return DELAYS;
+        }
+        if (escapeAlwaysExecuted) {
             Set<Variable> nullVariables = statementAnalysis.stateData.getConditionManager()
                     .findIndividualNullInCondition(sharedState.evaluationContext, true);
             for (Variable nullVariable : nullVariables) {
@@ -838,9 +847,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             String newFqn = fqn + "$" + index();
             LocalVariableReference newLvr;
             if (!statementAnalysis.variables.isSet(newFqn)) {
-                LocalVariable localVariable = new LocalVariable(Set.of(LocalVariableModifier.FINAL), newFqn,
-                        current.variable().parameterizedType(),
-                        List.of(), myMethodAnalyser.methodInfo.typeInfo);
+                LocalVariable localVariable = new LocalVariable.Builder()
+                        .addModifier(LocalVariableModifier.FINAL)
+                        .setName(newFqn)
+                        .setParameterizedType(current.variable().parameterizedType())
+                        .setOwningType(myMethodAnalyser.methodInfo.typeInfo)
+                        .setIsLocalCopyOf(current.variable())
+                        .build();
                 newLvr = new LocalVariableReference(analyserContext, localVariable, List.of());
                 VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, index(), VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                         new VariableInLoop(index(), VariableInLoop.VariableType.LOOP_COPY));
@@ -1074,8 +1087,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 statementAnalysis.flowData.copyTimeAfterSubBlocksFromTimeAfterExecution();
             }
         }
-        if (!localConditionManager.isDelayed() && !statementAnalysis.stateData.conditionManager.isSet()) {
-            statementAnalysis.stateData.conditionManager.set(localConditionManager);
+        if (!localConditionManager.isDelayed() && !statementAnalysis.stateData.conditionManagerIsSet()) {
+            statementAnalysis.stateData.setConditionManager(localConditionManager);
         }
         return analysisStatus;
     }
@@ -1308,6 +1321,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      */
     private AnalysisStatus checkUselessAssignments() {
         InterruptsFlow bestAlwaysInterrupt = statementAnalysis.flowData.bestAlwaysInterrupt();
+        if (bestAlwaysInterrupt == InterruptsFlow.DELAYED) {
+            log(DELAYED, "Delaying checking useless assignment in {}, because interrupt status unknown", index());
+            return DELAYS;
+        }
         boolean alwaysInterrupts = bestAlwaysInterrupt != InterruptsFlow.NO;
         boolean atEndOfBlock = navigationData.next.get().isEmpty();
         if (atEndOfBlock || alwaysInterrupts) {
@@ -1631,6 +1648,32 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return PropertyWrapper.propertyWrapperForceProperties(newObject, properties);
         }
 
+        /*
+        Need to translate local copies of fields into fields.
+        Should we do only their first appearance? ($0)
+         */
+        @Override
+        public Expression acceptAndTranslatePrecondition(Expression precondition) {
+            if (precondition.isBooleanConstant()) return null;
+            Map<Expression, Expression> translationMap = precondition.variables().stream()
+                    .filter(v -> v instanceof LocalVariableReference lvr &&
+                            lvr.variable.isLocalCopyOf() instanceof FieldReference)
+                    .collect(Collectors.toUnmodifiableMap(VariableExpression::new,
+                            v -> new VariableExpression(((LocalVariableReference) v).variable.isLocalCopyOf())));
+            Expression translated;
+            if (translationMap.isEmpty()) {
+                translated = precondition;
+            } else {
+                // we need an evaluation context that simply translates, but does not interpret stuff
+                EvaluationContext evaluationContext = new ConditionManager.EvaluationContextImpl(getPrimitives());
+                translated = precondition.reEvaluate(evaluationContext, translationMap).getExpression();
+            }
+            if (translated.variables().stream()
+                    .allMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference)) {
+                return translated;
+            }
+            return null;
+        }
     }
 
     public record ModificationData(StatementAnalyserResult.Builder builder, int level) {

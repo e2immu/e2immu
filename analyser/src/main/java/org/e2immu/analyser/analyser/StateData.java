@@ -35,7 +35,7 @@ public class StateData {
      */
 
     private final SetOnce<Expression> precondition = new SetOnce<>();
-    public final SetOnce<ConditionManager> conditionManager = new SetOnce<>(); // the state as it is after evaluating the statement
+    private final SetOnce<ConditionManager> conditionManager = new SetOnce<>(); // the state as it is after evaluating the statement
     public final SetOnce<Expression> valueOfExpression = new SetOnce<>();
     public final FlipSwitch statementContributesToPrecondition = new FlipSwitch();
 
@@ -47,6 +47,14 @@ public class StateData {
 
     public ConditionManager getConditionManager() {
         return conditionManager.getOrElse(ConditionManager.DELAYED);
+    }
+
+    public void setConditionManager(ConditionManager conditionManager) {
+        this.conditionManager.set(conditionManager);
+    }
+
+    public boolean conditionManagerIsSet() {
+        return conditionManager.isSet();
     }
 
     public Expression getValueOfExpression() {

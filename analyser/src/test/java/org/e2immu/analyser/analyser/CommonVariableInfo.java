@@ -31,7 +31,6 @@ import org.e2immu.analyser.parser.InspectionProvider;
 import org.e2immu.analyser.parser.Primitives;
 
 import java.util.List;
-import java.util.Set;
 
 public abstract class CommonVariableInfo {
 
@@ -41,13 +40,19 @@ public abstract class CommonVariableInfo {
     protected Variable makeLocalIntVar(String name) {
         return new LocalVariableReference(inspectionProvider,
                 // owningType is completely arbitrary
-                new LocalVariable(Set.of(), name, primitives.intParameterizedType, List.of(), primitives.stringTypeInfo),
+                new LocalVariable.Builder()
+                        .setName(name)
+                        .setParameterizedType(primitives.intParameterizedType)
+                        .build(),
                 List.of());
     }
 
     protected Variable makeLocalBooleanVar(String name) {
         return new LocalVariableReference(inspectionProvider,
-                new LocalVariable(Set.of(), name, primitives.booleanParameterizedType, List.of(), primitives.stringTypeInfo),
+                new LocalVariable.Builder()
+                        .setName(name)
+                        .setParameterizedType(primitives.booleanParameterizedType)
+                        .setOwningType(primitives.stringTypeInfo).build(),
                 List.of());
     }
 

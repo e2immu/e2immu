@@ -30,7 +30,7 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
             if ("method1".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("null!=a",
-                            d.statementAnalysis().stateData.conditionManager.get().state().toString());
+                            d.statementAnalysis().stateData.getConditionManager().state().toString());
                 }
             }
         };

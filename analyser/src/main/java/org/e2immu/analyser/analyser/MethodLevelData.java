@@ -29,6 +29,7 @@ import org.e2immu.analyser.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -104,14 +105,23 @@ public class MethodLevelData {
     // they are accumulated from the previous statement, and from all child statements
 
     private AnalysisStatus combinePrecondition(SharedState sharedState) {
+        if (sharedState.previous != null && !sharedState.previous.combinedPrecondition.isSet()) {
+            return DELAYS;
+        }
+        List<StatementAnalysis> subBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks();
+        if (subBlocks.stream().anyMatch(sa -> !sa.methodLevelData.combinedPrecondition.isSet())) {
+            return DELAYS;
+        }
+        if (!sharedState.stateData.preconditionIsSet()) {
+            return DELAYS;
+        }
         if (!combinedPrecondition.isSet()) {
             Stream<Expression> fromMyStateData = sharedState.stateData.preconditionIsSet() ?
                     Stream.of(sharedState.stateData.getPrecondition()) : Stream.of();
             Stream<Expression> fromPrevious = sharedState.previous != null ?
                     Stream.of(sharedState.previous.combinedPrecondition.get()) : Stream.of();
             Stream<Expression> fromBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()
-                    .filter(sa -> sa.stateData.preconditionIsSet())
-                    .map(sa -> sa.stateData.getPrecondition());
+                    .map(sa -> sa.methodLevelData.combinedPrecondition.get());
             Expression[] all = Stream.concat(fromMyStateData, Stream.concat(fromBlocks, fromPrevious)).toArray(Expression[]::new);
             Expression and = new And(sharedState.evaluationContext.getPrimitives()).append(sharedState.evaluationContext, all);
             combinedPrecondition.set(and);

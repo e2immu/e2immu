@@ -5,15 +5,12 @@ public class PreconditionChecks_1 {
     private int i;
 
     boolean setPositive1$Precondition() { return i >= 0; }
-    static boolean setPositive1$Postcondition() { return true; } // no meaningful one
-
     public void setPositive1(int j1) {
         if (i < 0) throw new UnsupportedOperationException();
         this.i = j1;
     }
 
     static boolean setPositive2$Precondition(int j1) { return j1 >= 0; }
-    boolean setPositive2$Postcondition() { return i >= 0; } // no meaningful one
     public void setPositive2(int j1) {
         if (j1 < 0) throw new UnsupportedOperationException();
         this.i = j1;

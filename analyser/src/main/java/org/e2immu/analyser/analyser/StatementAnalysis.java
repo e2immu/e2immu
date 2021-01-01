@@ -829,8 +829,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
 
         // the statement time of the field indicates the time of the latest assignment
-        LocalVariable lv = new LocalVariable(Set.of(LocalVariableModifier.FINAL), localVariableFqn,
-                fieldReference.parameterizedType(), List.of(), methodAnalysis.getMethodInfo().typeInfo);
+        LocalVariable lv = new LocalVariable.Builder()
+                .addModifier(LocalVariableModifier.FINAL)
+                .setName(localVariableFqn)
+                .setParameterizedType(fieldReference.parameterizedType())
+                .setIsLocalCopyOf(fieldReference)
+                .setOwningType(methodAnalysis.getMethodInfo().typeInfo)
+                .build();
         LocalVariableReference lvr = new LocalVariableReference(analyserContext, lv, List.of());
         VariableInfoContainer lvrVic;
         if (variables.isSet(lvr.fullyQualifiedName())) {

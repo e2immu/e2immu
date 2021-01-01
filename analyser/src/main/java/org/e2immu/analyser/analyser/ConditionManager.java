@@ -234,17 +234,16 @@ public record ConditionManager(Expression condition, Expression state, Condition
     }
 
 
-    private static class EvaluationContextImpl extends AbstractEvaluationContextImpl {
-        private final Primitives primitives;
-
-        protected EvaluationContextImpl(Primitives primitives) {
-            super(0, ConditionManager.initialConditionManager(primitives), null);
-            this.primitives = primitives;
-        }
+    public static record EvaluationContextImpl(Primitives primitives) implements EvaluationContext {
 
         @Override
         public Primitives getPrimitives() {
             return primitives;
+        }
+
+        @Override
+        public boolean isNotNull0(Expression value) {
+            return false;
         }
     }
 }

@@ -18,29 +18,24 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.annotation.NotNull;
+import org.e2immu.analyser.model.variable.Variable;
 
 import java.util.*;
 
 public record LocalVariable(Set<LocalVariableModifier> modifiers,
-                            @NotNull String name,
+                            String name,
                             ParameterizedType parameterizedType,
                             List<AnnotationExpression> annotations,
-                            TypeInfo owningType) {
-    public LocalVariable(Set<LocalVariableModifier> modifiers,
-                         @NotNull String name,
-                         ParameterizedType parameterizedType,
-                         List<AnnotationExpression> annotations,
-                         TypeInfo owningType) {
-        this.parameterizedType = parameterizedType;
-        this.name = Objects.requireNonNull(name);
-        this.modifiers = modifiers;
-        this.annotations = annotations;
-        this.owningType = Objects.requireNonNull(owningType);
+                            TypeInfo owningType,
+                            Variable isLocalCopyOf) {
+
+    public LocalVariable {
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(owningType);
     }
 
     public LocalVariable translate(TranslationMap translationMap) {
-        return new LocalVariable(modifiers, name, translationMap.translateType(parameterizedType), annotations, owningType);
+        return new LocalVariable(modifiers, name, translationMap.translateType(parameterizedType), annotations, owningType, isLocalCopyOf);
     }
 
     @Override
@@ -61,40 +56,46 @@ public record LocalVariable(Set<LocalVariableModifier> modifiers,
         return "LocalVariable " + name + " of " + parameterizedType;
     }
 
-    public static class LocalVariableBuilder {
+    public static class Builder {
         private final List<AnnotationExpression> annotations = new ArrayList<>();
         private final Set<LocalVariableModifier> modifiers = new HashSet<>();
         private ParameterizedType parameterizedType;
         private String name;
         private TypeInfo owningType;
+        private Variable isLocalCopyOf;
 
-        public LocalVariableBuilder setOwningType(TypeInfo owningType) {
+        public Builder setOwningType(TypeInfo owningType) {
             this.owningType = owningType;
             return this;
         }
 
-        public LocalVariableBuilder setName(String name) {
+        public Builder setName(String name) {
             this.name = name;
             return this;
         }
 
-        public LocalVariableBuilder setParameterizedType(ParameterizedType parameterizedType) {
+        public Builder setParameterizedType(ParameterizedType parameterizedType) {
             this.parameterizedType = parameterizedType;
             return this;
         }
 
-        public LocalVariableBuilder addModifier(LocalVariableModifier modifier) {
+        public Builder addModifier(LocalVariableModifier modifier) {
             this.modifiers.add(modifier);
             return this;
         }
 
-        public LocalVariableBuilder addAnnotation(AnnotationExpression annotationExpression) {
+        public Builder addAnnotation(AnnotationExpression annotationExpression) {
             this.annotations.add(annotationExpression);
             return this;
         }
 
+        public Builder setIsLocalCopyOf(Variable isLocalCopyOf) {
+            this.isLocalCopyOf = isLocalCopyOf;
+            return this;
+        }
+
         public LocalVariable build() {
-            return new LocalVariable(modifiers, name, parameterizedType, annotations, owningType);
+            return new LocalVariable(modifiers, name, parameterizedType, annotations, owningType, isLocalCopyOf);
         }
     }
 }

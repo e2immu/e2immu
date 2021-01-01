@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.Filter;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Logger;
 import org.e2immu.analyser.util.Pair;
@@ -171,12 +170,9 @@ public class EvaluateParameters {
 
                 // all the rest: preconditions
                 Expression rest = filterResult.rest();
-                if (!rest.isBooleanConstant()) {
-                    boolean restrictionIsOnParametersAndFieldsOnly = rest.variables().stream()
-                            .allMatch(v -> v instanceof ParameterInfo || v instanceof FieldReference);
-                    if(restrictionIsOnParametersAndFieldsOnly) {
-                        builder.addPrecondition(rest);
-                    }
+                Expression translated = evaluationContext.acceptAndTranslatePrecondition(rest);
+                if (translated != null) {
+                    builder.addPrecondition(translated);
                 }
             }
         }

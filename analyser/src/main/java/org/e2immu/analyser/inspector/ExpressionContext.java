@@ -319,7 +319,7 @@ public class ExpressionContext {
                 unionOfTypes = List.of(typeOfVariable);
             }
             String name = parameter.getName().asString();
-            LocalVariable localVariable = new LocalVariable.LocalVariableBuilder()
+            LocalVariable localVariable = new LocalVariable.Builder()
                     .setOwningType(enclosingType)
                     .setName(name).setParameterizedType(typeOfVariable).build();
             LocalVariableCreation lvc = new LocalVariableCreation(typeContext, localVariable);
@@ -371,7 +371,7 @@ public class ExpressionContext {
     private org.e2immu.analyser.model.Statement forEachStatement(String label, ForEachStmt forEachStmt) {
         VariableContext newVariableContext = VariableContext.dependentVariableContext(variableContext);
         VariableDeclarationExpr vde = forEachStmt.getVariable();
-        LocalVariable localVariable = new LocalVariable.LocalVariableBuilder()
+        LocalVariable localVariable = new LocalVariable.Builder()
                 .setOwningType(enclosingType)
                 .setName(vde.getVariables().get(0).getNameAsString())
                 .setParameterizedType(ParameterizedTypeFactory.from(typeContext, vde.getVariables().get(0).getType()))
@@ -529,7 +529,7 @@ public class ExpressionContext {
                 VariableDeclarationExpr vde = (VariableDeclarationExpr) expression;
                 VariableDeclarator var = vde.getVariable(0);
                 ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, var.getType());
-                LocalVariable.LocalVariableBuilder localVariable = new LocalVariable.LocalVariableBuilder()
+                LocalVariable.Builder localVariable = new LocalVariable.Builder()
                         .setName(var.getNameAsString())
                         .setParameterizedType(parameterizedType);
                 vde.getAnnotations().forEach(ae -> localVariable.addAnnotation(AnnotationInspector.inspect(this, ae)));
