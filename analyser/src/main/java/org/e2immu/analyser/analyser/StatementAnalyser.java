@@ -331,8 +331,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         .add("freezeAssignmentInBlock", this::freezeAssignmentInBlock)
                         .add("checkNotNullEscapes", this::checkNotNullEscapes)
                         .add("checkPrecondition", this::checkPrecondition)
-                        .add("copyPrecondition", sharedState -> statementAnalysis.stateData.copyPrecondition(this,
-                                previous, sharedState.evaluationContext))
                         .add(ANALYSE_METHOD_LEVEL_DATA, sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
                                 previous == null ? null : previous.methodLevelData,
                                 statementAnalysis.stateData))
@@ -491,18 +489,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                  StatementAnalysis statementAnalysis,
                                  int level,
                                  String step) {
-        /*
-        // state changes get composed into one big operation, applied, and the result is set
-        // the condition is copied from the evaluation context
-        // CURRENTLY only used for removing variables from the state when a modifying operation has been run on them
-        // Tested by: TODO find out which test
-        Function<Expression, Expression> composite = evaluationResult.getStateChangeStream()
-                .reduce(v -> v, (f1, f2) -> v -> f2.apply(f1.apply(v)));
-        Expression reducedState = composite.apply(localConditionManager.state);
-        if (reducedState != localConditionManager.state) {
-            localConditionManager = new ConditionManager(localConditionManager.condition, reducedState);
-        }
-         */
         AnalysisStatus status = evaluationResult.value() == NO_VALUE ? DELAYS : DONE;
 
         for (Map.Entry<Variable, EvaluationResult.ExpressionChangeData> entry : evaluationResult.valueChanges().entrySet()) {
@@ -569,6 +555,14 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 .forEach(mod -> mod.accept(new ModificationData(sharedState.builder, statusBeforeModificationStream == DONE
                         ? level : VariableInfoContainer.LEVEL_1_INITIALISER)));
 
+        if(status == DONE && evaluationResult.precondition() != null) {
+            if(evaluationResult.precondition() == NO_VALUE) {
+                log(DELAYED, "Apply of step {} in {}, delayed because of precondition", step, index());
+                status = DELAYS;
+            } else {
+                statementAnalysis.stateData.setPrecondition(evaluationResult.precondition());
+            }
+        }
         if (status == DONE && !statementAnalysis.methodLevelData.internalObjectFlows.isFrozen()) {
             boolean delays = false;
             for (ObjectFlow objectFlow : evaluationResult.getObjectFlowStream().collect(Collectors.toSet())) {
@@ -672,7 +666,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     // + preconditions by calling other methods with preconditions!
 
     private AnalysisStatus checkPrecondition(SharedState sharedState) {
-        if (isEscapeAlwaysExecutedInCurrentBlock() && !statementAnalysis.stateData.precondition.isSet()) {
+        if (isEscapeAlwaysExecutedInCurrentBlock() && !statementAnalysis.stateData.preconditionIsSet()) {
             EvaluationResult er = statementAnalysis.stateData.getConditionManager().escapeCondition(sharedState.evaluationContext);
             Expression precondition = er.value();
             if (!precondition.isBoolValueTrue()) {
@@ -681,7 +675,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 if (atLeastFieldOrParameterInvolved) {
                     log(VARIABLE_PROPERTIES, "Escape with precondition {}", precondition);
 
-                    statementAnalysis.stateData.precondition.set(precondition);
+                    statementAnalysis.stateData.setPrecondition(precondition);
                     disableErrorsOnIfStatement();
                 }
             }
@@ -1069,7 +1063,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     if (atLeastFieldOrParameterInvolved) {
                         log(VARIABLE_PROPERTIES, "Assertion escape with precondition {}", assertion);
 
-                        statementAnalysis.stateData.precondition.set(assertion);
+                        statementAnalysis.stateData.setPrecondition(assertion);
                         statementAnalysis.stateData.statementContributesToPrecondition.set();
                     }
                 } else {

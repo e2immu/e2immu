@@ -18,6 +18,7 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -43,9 +44,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                int statementTime,
                                Expression value,
                                List<StatementAnalyser.StatementAnalysisModification> modifications,
-                               List<StatementAnalysis.StateChange> stateChanges,
                                List<ObjectFlow> objectFlows,
-                               Map<Variable, ExpressionChangeData> valueChanges) {
+                               Map<Variable, ExpressionChangeData> valueChanges,
+                               Expression precondition) {
 
     public final static Set<Variable> LINKED_VARIABLE_DELAY = Set.of(Variable.fake());
 
@@ -57,10 +58,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
     public Stream<ObjectFlow> getObjectFlowStream() {
         return objectFlows.stream();
-    }
-
-    public Stream<StatementAnalysis.StateChange> getStateChangeStream() {
-        return stateChanges.stream();
     }
 
     public Stream<Map.Entry<Variable, ExpressionChangeData>> getExpressionChangeStream() {
@@ -99,11 +96,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
     public static class Builder {
         private final EvaluationContext evaluationContext;
         private List<StatementAnalyser.StatementAnalysisModification> modifications;
-        private List<StatementAnalysis.StateChange> stateChanges;
         private List<ObjectFlow> objectFlows;
         private Expression value;
         private int statementTime;
         private final Map<Variable, ExpressionChangeData> valueChanges = new HashMap<>();
+        private Expression precondition;
 
         private void addToModifications(StatementAnalyser.StatementAnalysisModification modification) {
             if (modifications == null) modifications = new ArrayList<>();
@@ -159,15 +156,19 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 if (objectFlows == null) objectFlows = new LinkedList<>(evaluationResult.objectFlows);
                 else objectFlows.addAll(evaluationResult.objectFlows);
             }
-            if (!evaluationResult.stateChanges.isEmpty()) {
-                if (stateChanges == null) stateChanges = new LinkedList<>(evaluationResult.stateChanges);
-                else stateChanges.addAll(evaluationResult.stateChanges);
-            }
             for (Map.Entry<Variable, ExpressionChangeData> e : evaluationResult.valueChanges.entrySet()) {
                 valueChanges.merge(e.getKey(), e.getValue(), ExpressionChangeData::merge);
             }
 
             statementTime = Math.max(statementTime, evaluationResult.statementTime);
+
+            if (evaluationResult.precondition != null) {
+                if (precondition == null) {
+                    precondition = evaluationResult.precondition;
+                } else {
+                    precondition = combinePrecondition(precondition, evaluationResult.precondition);
+                }
+            }
         }
 
         public void incrementStatementTime() {
@@ -198,9 +199,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     statementTime,
                     value,
                     modifications == null ? List.of() : modifications,
-                    stateChanges == null ? List.of() : stateChanges,
                     objectFlows == null ? List.of() : objectFlows,
-                    valueChanges);
+                    valueChanges,
+                    precondition);
         }
 
         private StatementAnalyser statementAnalyser(Variable variable) {
@@ -267,11 +268,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
             log(OBJECT_FLOW, "Created internal flow {}", objectFlow);
             return objectFlow;
-        }
-
-        private void add(StatementAnalysis.StateChange modification) {
-            if (stateChanges == null) stateChanges = new LinkedList<>();
-            stateChanges.add(modification);
         }
 
         public Builder raiseError(String messageString) {
@@ -410,8 +406,16 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             addToModifications(statementAnalyser.new SetProperty(variable, property, value));
         }
 
-        public void addPrecondition(Expression rest) {
-            // TODO inheritance of preconditions
+        public void addPrecondition(Expression expression) {
+            if (precondition == null) {
+                precondition = expression;
+            } else {
+                precondition = combinePrecondition(precondition, expression);
+            }
+        }
+
+        private Expression combinePrecondition(Expression e1, Expression e2) {
+            return new And(evaluationContext.getPrimitives()).append(evaluationContext, e1, e2);
         }
 
         public void addCallOut(boolean b, ObjectFlow destination, Expression parameterExpression) {
@@ -423,7 +427,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public void modifyingMethodAccess(Variable variable, NewObject newInstance, Set<Variable> linkedVariables) {
-            add(new StateData.RemoveVariableFromState(evaluationContext, variable));
+            //add(new StateData.RemoveVariableFromState(evaluationContext, variable)); TODO replace by other code
             assignInstanceToVariable(variable, newInstance, linkedVariables);
         }
 

@@ -198,4 +198,8 @@ public interface Expression extends Element, Comparable<Expression> {
         if (other instanceof EmptyExpression expression) return expression;
         throw new UnsupportedOperationException();
     }
+
+    default boolean isBooleanConstant() {
+        return isInstanceOf(BooleanConstant.class);
+    }
 }

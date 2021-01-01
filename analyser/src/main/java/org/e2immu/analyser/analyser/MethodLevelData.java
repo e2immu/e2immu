@@ -19,7 +19,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -33,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.AnalysisStatus.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
@@ -65,6 +65,10 @@ public class MethodLevelData {
     // not for local processing, but so that we know in the method and field analyser that this process has been completed
     public final FlipSwitch linksHaveBeenEstablished = new FlipSwitch();
 
+    public Expression getCombinedPrecondition() {
+        return combinedPrecondition.getOrElse(null);
+    }
+
     record SharedState(StatementAnalyserResult.Builder builder,
                        EvaluationContext evaluationContext,
                        StatementAnalysis statementAnalysis,
@@ -96,29 +100,21 @@ public class MethodLevelData {
         }
     }
 
-    // preconditions come from the precondition object in stateData, and preconditions from method calls; they're accumulated
-    // in the state.precondition field
+    // preconditions come from the precondition expression in stateData
+    // they are accumulated from the previous statement, and from all child statements
 
     private AnalysisStatus combinePrecondition(SharedState sharedState) {
         if (!combinedPrecondition.isSet()) {
-            Expression result;
-
-            if (sharedState.previous == null) {
-                result = sharedState.stateData.precondition.isSet() ? sharedState.stateData.precondition.get() :
-                        new BooleanConstant(sharedState.evaluationContext.getPrimitives(), true);
-            } else {
-                Expression v1 = sharedState.previous.combinedPrecondition.get();
-                Expression v2 = sharedState.stateData.precondition.get();
-                if (v1.isBoolValueTrue()) {
-                    result = v2;
-                } else if (v2.isBoolValueTrue()) {
-                    result = v1;
-                } else {
-                    result = new And(sharedState.evaluationContext.getPrimitives())
-                            .append(sharedState.evaluationContext, v1, v2);
-                }
-            }
-            combinedPrecondition.set(result);
+            Stream<Expression> fromMyStateData = sharedState.stateData.preconditionIsSet() ?
+                    Stream.of(sharedState.stateData.getPrecondition()) : Stream.of();
+            Stream<Expression> fromPrevious = sharedState.previous != null ?
+                    Stream.of(sharedState.previous.combinedPrecondition.get()) : Stream.of();
+            Stream<Expression> fromBlocks = sharedState.statementAnalysis.lastStatementsOfNonEmptySubBlocks().stream()
+                    .filter(sa -> sa.stateData.preconditionIsSet())
+                    .map(sa -> sa.stateData.getPrecondition());
+            Expression[] all = Stream.concat(fromMyStateData, Stream.concat(fromBlocks, fromPrevious)).toArray(Expression[]::new);
+            Expression and = new And(sharedState.evaluationContext.getPrimitives()).append(sharedState.evaluationContext, all);
+            combinedPrecondition.set(and);
         }
         return DONE;
     }

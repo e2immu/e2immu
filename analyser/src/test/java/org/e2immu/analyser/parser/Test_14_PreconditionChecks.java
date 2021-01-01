@@ -44,13 +44,14 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
             if ("either".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals("null!=e1||null!=e2",
-                            d.statementAnalysis().stateData.precondition.get().toString());
+                            d.statementAnalysis().stateData.getPrecondition().toString());
                 }
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("null!=e1||null!=e2",
                             d.statementAnalysis().stateData.conditionManager.get().state().toString());
+                    Assert.assertNull(d.statementAnalysis().stateData.getPrecondition());
                     Assert.assertEquals("null!=e1||null!=e2",
-                            d.statementAnalysis().stateData.precondition.get().toString());
+                            d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
                 }
             }
         };

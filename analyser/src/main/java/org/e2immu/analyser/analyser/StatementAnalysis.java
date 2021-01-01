@@ -147,6 +147,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }).orElse(this);
     }
 
+    public List<StatementAnalysis> lastStatementsOfNonEmptySubBlocks() {
+        return navigationData.blocks.get().stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .filter(sa -> !sa.flowData.isUnreachable())
+                .map(StatementAnalysis::lastStatement)
+                .collect(Collectors.toList());
+    }
+
     @Override
     public StatementAnalysis parent() {
         return parent;

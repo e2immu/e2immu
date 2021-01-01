@@ -68,7 +68,7 @@ public class TestSetOnce extends CommonTestRunner {
 
     StatementAnalyserVisitor statementAnalyserVisitor = d -> {
         if ("set".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId()) && d.iteration() > 0) {
-            Assert.assertEquals("null == this.t", d.statementAnalysis().stateData.precondition.get().toString());
+            Assert.assertEquals("null == this.t", d.statementAnalysis().stateData.getPrecondition().toString());
         }
     };
 

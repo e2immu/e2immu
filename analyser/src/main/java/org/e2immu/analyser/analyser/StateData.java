@@ -18,19 +18,12 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.BooleanConstant;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.Or;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.util.FlipSwitch;
-import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetOnceMapOverwriteNoValue;
 
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class StateData {
@@ -41,7 +34,7 @@ public class StateData {
      are copied upwards, and to the next statement
      */
 
-    public final SetOnce<Expression> precondition = new SetOnce<>(); // set on statements of depth 1, ie., 0, 1, 2,..., not 0.0.0, 1.0.0
+    private final SetOnce<Expression> precondition = new SetOnce<>();
     public final SetOnce<ConditionManager> conditionManager = new SetOnce<>(); // the state as it is after evaluating the statement
     public final SetOnce<Expression> valueOfExpression = new SetOnce<>();
     public final FlipSwitch statementContributesToPrecondition = new FlipSwitch();
@@ -50,19 +43,6 @@ public class StateData {
 
     public StateData(boolean isLoop) {
         statesOfInterrupts = isLoop ? new SetOnceMapOverwriteNoValue<>() : null;
-    }
-
-    public AnalysisStatus copyPrecondition(StatementAnalyser statementAnalyser, StatementAnalysis previous, EvaluationContext evaluationContext) {
-        if (!precondition.isSet()) {
-            List<Expression> fromPrevious = previous == null ? List.of() : List.of(previous.stateData.precondition.get());
-            List<Expression> fromBlocks = statementAnalyser.lastStatementsOfNonEmptySubBlocks().stream()
-                    .map(sa -> sa.statementAnalysis.stateData.precondition.get())
-                    .collect(Collectors.toUnmodifiableList());
-            List<Expression> all = ListUtil.immutableConcat(fromBlocks, fromPrevious);
-            Expression or = new Or(evaluationContext.getPrimitives()).append(evaluationContext, all);
-            precondition.set(or);
-        }
-        return AnalysisStatus.DONE;
     }
 
     public ConditionManager getConditionManager() {
@@ -81,13 +61,18 @@ public class StateData {
         return statesOfInterrupts.stream().map(Map.Entry::getValue);
     }
 
-    public static record RemoveVariableFromState(EvaluationContext evaluationContext,
-                                                 Variable variable) implements StatementAnalysis.StateChange {
-
-        @Override
-        public Expression apply(Expression value) {
-            return ConditionManager.removeClausesInvolving(evaluationContext, value, variable, true);
+    public void setPrecondition(Expression expression) {
+        assert expression != EmptyExpression.NO_VALUE;
+        if (!precondition.isSet() || !expression.equals(precondition.get())) {
+            precondition.set(expression);
         }
     }
 
+    public Expression getPrecondition() {
+        return precondition.getOrElse(null);
+    }
+
+    public boolean preconditionIsSet() {
+        return precondition.isSet();
+    }
 }
