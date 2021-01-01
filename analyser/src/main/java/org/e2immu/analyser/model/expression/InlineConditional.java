@@ -31,7 +31,6 @@ import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
-import org.e2immu.analyser.util.SetUtil;
 
 import java.util.*;
 import java.util.function.Predicate;
@@ -173,7 +172,7 @@ public class InlineConditional implements Expression {
                 result.addAll(links);
             }
         }
-        return result == null ? Set.of(): result;
+        return result == null ? Set.of() : result;
     }
 
     @Override
@@ -211,12 +210,18 @@ public class InlineConditional implements Expression {
         EvaluationResult conditionResult = condition.evaluate(evaluationContext, ForwardEvaluationInfo.NOT_NULL);
         EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext).compose(conditionResult);
 
+        boolean resultIsBoolean = returnType().equals(evaluationContext.getPrimitives().booleanParameterizedType);
+
         // we'll want to evaluate in a different context, but pass on forward evaluation info to both
-        EvaluationContext copyForThen = evaluationContext.child(conditionResult.value());
+        // UNLESS the result is of boolean type. There is sufficient logic in EvaluateInlineConditional to deal
+        // with the boolean case.
+        EvaluationContext copyForThen = resultIsBoolean ? evaluationContext :
+                evaluationContext.child(conditionResult.value());
         EvaluationResult ifTrueResult = ifTrue.evaluate(copyForThen, forwardEvaluationInfo);
         builder.compose(ifTrueResult);
 
-        EvaluationContext copyForElse = evaluationContext.child(Negation.negate(evaluationContext, conditionResult.value()));
+        EvaluationContext copyForElse = resultIsBoolean ? evaluationContext :
+                evaluationContext.child(Negation.negate(evaluationContext, conditionResult.value()));
         EvaluationResult ifFalseResult = ifFalse.evaluate(copyForElse, forwardEvaluationInfo);
         builder.compose(ifFalseResult);
 

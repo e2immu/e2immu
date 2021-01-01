@@ -122,9 +122,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             }
             if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
                 Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
-                Assert.assertTrue(d.haveValueChange(TEST_1_RETURN_VARIABLE));
-                EvaluationResult.ExpressionChangeData valueChangeData = d.findValueChange(TEST_1_RETURN_VARIABLE);
-                Assert.assertEquals("true", valueChangeData.value().toString());
+                Assert.assertEquals("true", d.evaluationResult().value().toString());
             }
         };
 
@@ -267,17 +265,23 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     @Test
     public void test4() throws IOException {
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            if("test".equals(d.methodInfo().name) && "5".equals(d.statementId())){
+            if ("test".equals(d.methodInfo().name) && "5".equals(d.statementId())) {
                 Assert.assertTrue(d.statementAnalysis().flowData.isUnreachable());
             }
         };
         testClass("BasicCompanionMethods_4", 2, 1, new DebugConfiguration.Builder()
-            .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test5() throws IOException {
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("setAddModificationHelper".equals(d.methodInfo().name)) {
+                Assert.assertEquals("AnnotatedAPI.isFact(containsE)?containsE?i==j:1+j==i:AnnotatedAPI.isKnown(true)?1+j==i:1+j>=i&&i>=j",
+                        d.evaluationResult().value().toString());
+            }
+        };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
@@ -300,6 +304,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
 
         testClass("BasicCompanionMethods_5", 0, 7, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 
