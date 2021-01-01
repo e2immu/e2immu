@@ -194,25 +194,24 @@ public record ConditionManager(Expression condition, Expression state, Condition
         return filterResult.rest();
     }
 
-    // return that part of the conditional that is NOT covered by @NotNull (individual not null clauses)
-    public EvaluationResult escapeCondition(EvaluationContext evaluationContext) {
-        EvaluationResult.Builder builder = new EvaluationResult.Builder(evaluationContext);
-        Expression absoluteState = absoluteState(evaluationContext);
-
-        if (absoluteState.isUnknown()) {
-            return builder.setExpression(absoluteState).build();
+    /*
+     return that part of the absolute conditional that is NOT covered by @NotNull (individual not null clauses), as
+     an AND of negations of the remainder after getting rid of != null, == null clauses.
+     */
+    public Expression precondition(EvaluationContext evaluationContext) {
+        if (condition == EmptyExpression.NO_VALUE) {
+            return condition;
         }
-
-        // TRUE: parameters only FALSE: preconditionSide; OR of 2 filters
         Filter filter = new Filter(evaluationContext, Filter.FilterMode.REJECT);
-        Filter.FilterResult<ParameterInfo> filterResult = filter.filter(absoluteState, filter.individualNullOrNotNullClauseOnParameter());
+        Filter.FilterResult<ParameterInfo> filterResult = filter.filter(condition, filter.individualNullOrNotNullClauseOnParameter());
         // those parts that have nothing to do with individual clauses
-        if (filterResult.rest().isBoolValueFalse()) {
-            return builder.setExpression(filterResult.rest()).build();
-        }
         Expression rest = filterResult.rest();
-        Expression negatedRest = Negation.negate(new EvaluationContextImpl(evaluationContext.getPrimitives()), rest);
-        return builder.setExpression(negatedRest).build();
+        Expression mine = rest.isBoolValueTrue() ? rest:
+                Negation.negate(new EvaluationContextImpl(evaluationContext.getPrimitives()), rest);
+
+        if (parent == null) return mine;
+        Expression fromParent = parent.precondition(evaluationContext);
+        return new And(evaluationContext.getPrimitives()).append(evaluationContext, mine, fromParent);
     }
 
     private static Filter.FilterResult<Variable> obtainVariableFilter(Expression defaultRest, Variable variable, Expression value) {

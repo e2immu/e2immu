@@ -28,7 +28,7 @@ public class PreconditionChecks_2 {
 
     // here, the first condition does not disappear, because of the AND rather than the OR
     static boolean combinedPrecondition3$Precondition(int p1, int p2) {
-        return p1 >= 1 && (1 != p1 || p2 >= 1);
+        return p1 >= 1 && (p1 >= 2 || p2 >= 1);
     }
 
     public void combinedPrecondition3(int p1, int p2) {

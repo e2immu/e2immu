@@ -329,8 +329,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         .add("analyseFlowData", sharedState -> statementAnalysis.flowData.analyse(this, previous,
                                 sharedState.forwardAnalysisInfo.execution()))
                         .add("freezeAssignmentInBlock", this::freezeAssignmentInBlock)
-                        .add("checkNotNullEscapes", this::checkNotNullEscapes)
-                        .add("checkPrecondition", this::checkPrecondition)
+                        .add("checkNotNullEscapesAndPreconditions", this::checkNotNullEscapesAndPreconditions)
                         .add(ANALYSE_METHOD_LEVEL_DATA, sharedState -> statementAnalysis.methodLevelData.analyse(sharedState, statementAnalysis,
                                 previous == null ? null : previous.methodLevelData,
                                 statementAnalysis.stateData))
@@ -654,10 +653,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     /*
-     whatever that has not been picked up by the notNull + preconditions by calling other methods with preconditions!
+    Not-null escapes should not contribute to preconditions.
+    All the rest does.
      */
-
-    private AnalysisStatus checkPrecondition(SharedState sharedState) {
+    private AnalysisStatus checkNotNullEscapesAndPreconditions(SharedState sharedState) {
         Boolean escapeAlwaysExecuted = isEscapeAlwaysExecutedInCurrentBlock();
         if (escapeAlwaysExecuted == null) {
             log(DELAYED, "Delaying check precondition of statement {}, interrupt condition unknown", index());
@@ -665,37 +664,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
         if (!statementAnalysis.stateData.conditionManagerIsSet()) {
             log(DELAYED, "Delaying check precondition of statement {}, no condition manager", index());
-            return DELAYS;
-        }
-        if (escapeAlwaysExecuted) {
-            EvaluationResult er = statementAnalysis.stateData.getConditionManager().escapeCondition(sharedState.evaluationContext);
-            Expression precondition = er.value();
-            if (precondition == NO_VALUE) {
-                log(DELAYED, "Delaying check precondition of statement {}, escape condition delayed", index());
-                return DELAYS;
-            }
-            Expression translated = sharedState.evaluationContext.acceptAndTranslatePrecondition(precondition);
-            if (translated != null) {
-                log(VARIABLE_PROPERTIES, "Escape with precondition {}", translated);
-                statementAnalysis.stateData.setPrecondition(translated);
-                disableErrorsOnIfStatement();
-                return DONE;
-            }
-        }
-        if (!statementAnalysis.stateData.preconditionIsSet()) {
-            // it could have been set from the assert (step4) or apply via a method call
-            statementAnalysis.stateData.setPrecondition(new BooleanConstant(statementAnalysis.primitives, true));
-        }
-        return DONE;
-    }
-
-    /*
-    Not-null escapes should not contribute to preconditions.
-    
-     */
-    private AnalysisStatus checkNotNullEscapes(SharedState sharedState) {
-        Boolean escapeAlwaysExecuted = isEscapeAlwaysExecutedInCurrentBlock();
-        if (escapeAlwaysExecuted == null || !statementAnalysis.stateData.conditionManagerIsSet()) {
             return DELAYS;
         }
         if (escapeAlwaysExecuted) {
@@ -713,6 +681,24 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     disableErrorsOnIfStatement();
                 }
             }
+            // escapeCondition should filter out all != null, == null clauses
+            Expression precondition = statementAnalysis.stateData.getConditionManager().precondition(sharedState.evaluationContext);
+            if (precondition == NO_VALUE) {
+                log(DELAYED, "Delaying check precondition of statement {}, escape condition delayed", index());
+                return DELAYS;
+            }
+            Expression translated = sharedState.evaluationContext.acceptAndTranslatePrecondition(precondition);
+            if (translated != null) {
+                log(VARIABLE_PROPERTIES, "Escape with precondition {}", translated);
+                statementAnalysis.stateData.setPrecondition(translated);
+                disableErrorsOnIfStatement();
+                return DONE;
+            }
+        }
+
+        if (!statementAnalysis.stateData.preconditionIsSet()) {
+            // it could have been set from the assert (step4) or apply via a method call
+            statementAnalysis.stateData.setPrecondition(new BooleanConstant(statementAnalysis.primitives, true));
         }
         return DONE;
     }
