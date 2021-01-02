@@ -219,14 +219,21 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (value == NO_VALUE) {
                 if (variable instanceof ParameterInfo) {
                     // we will mark this, so that the parameter analyser knows that it should wait
-                    addToModifications(statementAnalyser(variable).new SetProperty(variable, VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.FALSE));
+                    addToModifications(statementAnalyser(variable).new SetProperty(variable,
+                            VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.FALSE));
                 }
                 return; // not yet
             }
             if (variable instanceof This) return; // nothing to be done here
             if (variable instanceof ParameterInfo) {
                 // the opposite of the previous one
-                addToModifications(statementAnalyser(variable).new SetProperty(variable, VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.TRUE));
+                addToModifications(statementAnalyser(variable).new SetProperty(variable,
+                        VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.TRUE));
+            }
+            if (value instanceof VariableExpression redirect && redirect.variable() instanceof ParameterInfo) {
+                // the opposite of the previous one
+                addToModifications(statementAnalyser(redirect.variable()).new SetProperty(redirect.variable(),
+                        VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.TRUE));
             }
 
             // if we already know that the variable is NOT @NotNull, then we'll raise an error
@@ -238,6 +245,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             } else if (notNull == MultiLevel.DELAY) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
                 addToModifications(statementAnalyser(variable).new SetProperty(variable, VariableProperty.NOT_NULL, notNullRequired));
+                if(value instanceof VariableExpression redirect) {
+                    addToModifications(statementAnalyser(redirect.variable())
+                            .new SetProperty(redirect.variable(), VariableProperty.NOT_NULL, notNullRequired));
+                }
             }
         }
 

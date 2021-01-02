@@ -2,7 +2,7 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.NotNull;
 
-public class PreconditionChecks_3 {
+public class Precondition_3 {
     private Integer integer;
 
     boolean setInteger$Precondition(int ii) { return this.integer == null && ii >= 0; }

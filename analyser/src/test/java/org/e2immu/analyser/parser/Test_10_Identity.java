@@ -14,14 +14,14 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 
-public class Test_10_IdentityChecks extends CommonTestRunner {
-    public Test_10_IdentityChecks() {
+public class Test_10_Identity extends CommonTestRunner {
+    public Test_10_Identity() {
         super(true);
     }
 
-    private static final String IDEM = "org.e2immu.analyser.testexample.IdentityChecks.idem(String)";
+    private static final String IDEM = "org.e2immu.analyser.testexample.Identity_0.idem(String)";
     private static final String IDEM_S = IDEM + ":0:s";
-    private static final String IDEM3 = "org.e2immu.analyser.testexample.IdentityChecks.idem3(String)";
+    private static final String IDEM3 = "org.e2immu.analyser.testexample.Identity_0.idem3(String)";
     private static final String IDEM3_S = IDEM3 + ":0:s";
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
@@ -119,7 +119,7 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-        if ("LOGGER".equals(d.fieldInfo().name) && "IdentityChecks".equals(d.fieldInfo().owner.simpleName)) {
+        if ("LOGGER".equals(d.fieldInfo().name) && "Identity_0".equals(d.fieldInfo().owner.simpleName)) {
             if (d.iteration() == 0) {
                 Assert.assertNull(d.fieldAnalysis().getLinkedVariables());
             } else {
@@ -143,7 +143,7 @@ public class Test_10_IdentityChecks extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("IdentityChecks", 0, 0, new DebugConfiguration.Builder()
+        testClass("Identity_0", 0, 0, new DebugConfiguration.Builder()
                         .addStatementAnalyserVisitor(statementAnalyserVisitor)
                         .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                         .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

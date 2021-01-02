@@ -97,7 +97,8 @@ public class TypeContext implements InspectionProvider {
         }
         if (namedType == null && parentContext == null) {
             if (name.contains(".")) {
-                throw new UnsupportedOperationException("We should not get FQNs or Type.SubType here, there's other methods for that");
+                // we were not expecting an FQN here, but still we come across one
+                return getFullyQualified(name, true);
             }
             namedType = typeMapBuilder.get("java.lang." + name);
         }

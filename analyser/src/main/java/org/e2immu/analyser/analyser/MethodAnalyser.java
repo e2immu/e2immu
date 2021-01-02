@@ -553,8 +553,9 @@ public class MethodAnalyser extends AbstractAnalyser {
             methodAnalysis.objectFlow.set(objectFlow);
         }
 
+        // try to compute the dynamic immutable status of value
         Expression valueBeforeInlining = value;
-        int immutable = Level.DELAY;
+        int immutable;
         if (value.isConstant()) {
             immutable = MultiLevel.EFFECTIVELY_E2IMMUTABLE;
         } else {
@@ -568,7 +569,11 @@ public class MethodAnalyser extends AbstractAnalyser {
                 if (applicability != InlinedMethod.Applicability.NONE) {
                     value = new InlinedMethod(methodInfo, value, applicability);
                     immutable = methodAnalysis.getProperty(VariableProperty.IMMUTABLE);
+                } else {
+                    immutable = MultiLevel.MUTABLE; // no idea
                 }
+            } else {
+                immutable = MultiLevel.MUTABLE; // no idea
             }
         }
 
@@ -897,10 +902,6 @@ public class MethodAnalyser extends AbstractAnalyser {
         if (methodAnalysis.singleReturnValue.isSet()) {
             int imm = methodAnalysis.singleReturnValueImmutable.get();
             int dynamicE2ImmutableStatusOfReturnType = MultiLevel.value(imm, MultiLevel.E2IMMUTABLE);
-            if (dynamicE2ImmutableStatusOfReturnType == MultiLevel.DELAY) {
-                log(DELAYED, "Have dynamic return type, no idea if E2Immutable: {}", methodInfo.distinguishingName());
-                return null;
-            }
             if (dynamicE2ImmutableStatusOfReturnType >= MultiLevel.EVENTUAL) {
                 log(INDEPENDENT, "Method {} is independent, dynamic return type is E2Immutable", methodInfo.distinguishingName());
                 return true;

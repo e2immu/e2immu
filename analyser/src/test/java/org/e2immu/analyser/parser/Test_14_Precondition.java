@@ -32,9 +32,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class Test_14_PreconditionChecks extends CommonTestRunner {
+public class Test_14_Precondition extends CommonTestRunner {
 
-    public Test_14_PreconditionChecks() {
+    public Test_14_Precondition() {
         super(false);
     }
 
@@ -73,11 +73,9 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
             }
         };
 
-        TypeAnalyserVisitor typeAnalyserVisitor = d -> {
-            Assert.assertEquals(4, d.typeInfo().typeInspection.get().methods().size());
-        };
+        TypeAnalyserVisitor typeAnalyserVisitor = d -> Assert.assertEquals(4, d.typeInfo().typeInspection.get().methods().size());
 
-        testClass("PreconditionChecks_0", 0, 0, new DebugConfiguration.Builder()
+        testClass("Precondition_0", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)
@@ -99,7 +97,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                         Assert.assertNull(d.statementAnalysis().stateData.getPrecondition());
                         Assert.assertNull(d.statementAnalysis().methodLevelData.getCombinedPrecondition());
                     } else if (d.iteration() == 1) {
-                        Assert.assertEquals("org.e2immu.analyser.testexample.PreconditionChecks_1.i$0<=-1", d.condition().toString());
+                        Assert.assertEquals("org.e2immu.analyser.testexample.Precondition_1.i$0<=-1", d.condition().toString());
                         Assert.assertEquals("i>=0", d.statementAnalysis().stateData.getPrecondition().toString());
                         Assert.assertEquals("i>=0", d.statementAnalysis().methodLevelData.getCombinedPrecondition().toString());
                     }
@@ -110,7 +108,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                         Assert.assertSame(EmptyExpression.NO_VALUE, d.state());
                     } else {
                         Assert.assertTrue(d.condition().isBoolValueTrue());
-                        Assert.assertEquals("org.e2immu.analyser.testexample.PreconditionChecks_1.i$0>=0", d.state().toString());
+                        Assert.assertEquals("org.e2immu.analyser.testexample.Precondition_1.i$0>=0", d.state().toString());
                     }
                 }
                 if ("0".equals(d.statementId()) || "1".equals(d.statementId())) {
@@ -123,7 +121,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
             }
         };
 
-        testClass("PreconditionChecks_1", 0, 0, new DebugConfiguration.Builder()
+        testClass("Precondition_1", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
@@ -131,14 +129,14 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
     // combined
     @Test
     public void test2() throws IOException {
-        testClass("PreconditionChecks_2", 1, 0, new DebugConfiguration.Builder()
+        testClass("Precondition_2", 1, 0, new DebugConfiguration.Builder()
                 .build());
     }
 
     // integer
     @Test
     public void test3() throws IOException {
-        final String TYPE = "org.e2immu.analyser.testexample.PreconditionChecks_3";
+        final String TYPE = "org.e2immu.analyser.testexample.Precondition_3";
         final String INTEGER = TYPE + ".integer";
         final String RETURN_VAR = TYPE + ".setInteger(int)";
 
@@ -194,7 +192,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                 if ("0.0.1".equals(d.statementId())) {
                     Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
-                            "null!=org.e2immu.analyser.testexample.PreconditionChecks_3.integer$0";
+                            "null!=org.e2immu.analyser.testexample.Precondition_3.integer$0";
                     Assert.assertEquals(expect, d.evaluationResult().value().toString());
                 }
                 if ("0.0.2".equals(d.statementId())) {
@@ -217,7 +215,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                 }
                 if ("0.0.1".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
-                            "null==org.e2immu.analyser.testexample.PreconditionChecks_3.integer$0&&ii>=0";
+                            "null==org.e2immu.analyser.testexample.Precondition_3.integer$0&&ii>=0";
                     Assert.assertEquals(expect, d.state().toString());
                 }
                 if ("0.0.2".equals(d.statementId())) {
@@ -226,7 +224,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                     Assert.assertEquals(Level.TRUE, variableInfo.getProperty(VariableProperty.ASSIGNED));
 
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
-                            "null==org.e2immu.analyser.testexample.PreconditionChecks_3.integer$0&&ii>=0";
+                            "null==org.e2immu.analyser.testexample.Precondition_3.integer$0&&ii>=0";
                     Assert.assertEquals(expect, d.state().toString());
 
                     if (d.iteration() == 0) {
@@ -243,7 +241,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
                     Assert.assertEquals(Level.TRUE, variableInfo.getProperty(VariableProperty.ASSIGNED));
 
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
-                            "null==org.e2immu.analyser.testexample.PreconditionChecks_3.integer$0&&ii>=0";
+                            "null==org.e2immu.analyser.testexample.Precondition_3.integer$0&&ii>=0";
                     Assert.assertEquals(expect, d.state().toString());
                 }
                 if ("1".equals(d.statementId())) {
@@ -258,7 +256,7 @@ public class Test_14_PreconditionChecks extends CommonTestRunner {
             }
         };
 
-        testClass("PreconditionChecks_3", 1, 0, new DebugConfiguration.Builder()
+        testClass("Precondition_3", 1, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)

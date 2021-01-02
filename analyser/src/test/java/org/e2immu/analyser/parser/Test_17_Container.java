@@ -12,9 +12,10 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Set;
 
-public class TestContainerChecks extends CommonTestRunner {
-    public TestContainerChecks() {
+public class Test_17_Container extends CommonTestRunner {
+    public Test_17_Container() {
         super(true);
     }
 
@@ -129,31 +130,98 @@ public class TestContainerChecks extends CommonTestRunner {
         }
     };
 
-    TypeMapVisitor typeMapVisitor = typeMap -> {
-        TypeInfo collection = typeMap.get(Collection.class);
-        MethodInfo forEach = collection.typeInspection.get().methods().stream().filter(m -> "forEach".equals(m.name)).findAny().orElseThrow();
-        Assert.assertSame(typeMap.getPrimitives().voidTypeInfo, forEach.returnType().typeInfo);
-
-        TypeInfo hashSet = typeMap.get(HashSet.class);
-        MethodInfo constructor1 = hashSet.typeInspection.get().constructors().stream()
-                .filter(m -> m.methodInspection.get().getParameters().size() == 1)
-                .filter(m -> m.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo == collection)
-                .findAny().orElseThrow();
-        ParameterInfo param1Constructor1 = constructor1.methodInspection.get().getParameters().get(0);
-        Assert.assertEquals(Level.FALSE, param1Constructor1.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
-    };
-
 
     @Test
-    public void test() throws IOException {
+    public void test_0() throws IOException {
+        final String TYPE = "org.e2immu.analyser.testexample.Container_0";
+        final String S = TYPE + ".s";
+        final String P = TYPE + ".setS(Set<String>,String):0:p";
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("setS".equals(d.methodInfo().name)) {
+                if (P.equals(d.variableName()) && "0".equals(d.statementId())) {
+                    Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
+                }
+                if (P.equals(d.variableName()) && "1".equals(d.statementId())) {
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
+                }
+                if (S.equals(d.variableName()) && "1".equals(d.statementId())) {
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
+                }
+            }
+        };
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("s".equals(d.fieldInfo().name)) {
+                int expect = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+                Assert.assertEquals(expect, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+            }
+        };
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo set = typeMap.get(Set.class);
+            Assert.assertEquals(MultiLevel.MUTABLE, set.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+        };
+
         // warning to expect: the potential null pointer exception of strings2
-        testClass("ContainerChecks", 0, 1, new DebugConfiguration.Builder()
+        testClass("Container_0", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
+
+    @Test
+    public void test_1() throws IOException {
+        // warning to expect: the potential null pointer exception of strings2
+        testClass("Container_1", 0, 0, new DebugConfiguration.Builder()
+
+                .build());
+    }
+
+    @Test
+    public void test_2() throws IOException {
+        // warning to expect: the potential null pointer exception of strings2
+        testClass("Container_2", 0, 0, new DebugConfiguration.Builder()
+
+                .build());
+    }
+
+    @Test
+    public void test_3() throws IOException {
+        // warning to expect: the potential null pointer exception of strings2
+        testClass("Container_3", 0, 0, new DebugConfiguration.Builder()
+
+                .build());
+    }
+
+    @Test
+    public void test_4() throws IOException {
+        // warning to expect: the potential null pointer exception of strings2
+        testClass("Container_4", 0, 0, new DebugConfiguration.Builder()
+
+                .build());
+    }
+
+    @Test
+    public void test_5() throws IOException {
+
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo collection = typeMap.get(Collection.class);
+            MethodInfo forEach = collection.findUniqueMethod("forEach", 1);
+            Assert.assertSame(typeMap.getPrimitives().voidTypeInfo, forEach.returnType().typeInfo);
+
+            TypeInfo hashSet = typeMap.get(HashSet.class);
+            MethodInfo constructor1 = hashSet.typeInspection.get().constructors().stream()
+                    .filter(m -> m.methodInspection.get().getParameters().size() == 1)
+                    .filter(m -> m.methodInspection.get().getParameters().get(0).parameterizedType.typeInfo == collection)
+                    .findAny().orElseThrow();
+            ParameterInfo param1Constructor1 = constructor1.methodInspection.get().getParameters().get(0);
+            Assert.assertEquals(Level.FALSE, param1Constructor1.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        };
+
+        // warning to expect: the potential null pointer exception of strings2
+        testClass("Container_5", 0, 0, new DebugConfiguration.Builder()
+                .addTypeMapVisitor(typeMapVisitor)
+                .build());
+    }
+
 
 }

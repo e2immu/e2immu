@@ -3,7 +3,7 @@ package org.e2immu.analyser.testexample;
 import org.e2immu.annotation.NotNull;
 import org.e2immu.annotation.Nullable;
 
-public class PreconditionChecks_0 {
+public class Precondition_0 {
 
     public static boolean either$Precondition(String e1, String e2) { return e1 != null || e2 != null; }
     public static String either(String e1, String e2) {

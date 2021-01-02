@@ -1,6 +1,6 @@
 package org.e2immu.analyser.testexample;
 
-public class PreconditionChecks_2 {
+public class Precondition_2 {
 
     private int i;
 
