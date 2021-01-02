@@ -38,6 +38,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractAnalysisBuilder.class);
 
     public final SetOnceMap<AnnotationExpression, Boolean> annotations = new SetOnceMap<>();
+    public final SetOnceMap<AnnotationExpression, AnnotationCheck> annotationChecks = new SetOnceMap<>();
+
     public final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
     public final String simpleName; // for debugging purposes
     public final Primitives primitives;
@@ -73,13 +75,16 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
     }
 
     @Override
-    public Stream<Map.Entry<AnnotationExpression, Boolean>> getAnnotationStream() {
-        return annotations.stream();
+    public Stream<Map.Entry<AnnotationExpression, AnnotationCheck>> getAnnotationStream() {
+        return annotationChecks.stream();
     }
 
     @Override
-    public Boolean getAnnotation(AnnotationExpression annotationExpression) {
-        return annotations.getOrDefault(annotationExpression, null);
+    public AnnotationCheck getAnnotation(AnnotationExpression annotationExpression) {
+        if (!annotationChecks.isSet(annotationExpression)) {
+            throw new UnsupportedOperationException("Cannot find annotation " + annotationExpression.output());
+        }
+        return annotationChecks.get(annotationExpression);
     }
 
     public abstract void transferPropertiesToAnnotations(AnalysisProvider analysisProvider,

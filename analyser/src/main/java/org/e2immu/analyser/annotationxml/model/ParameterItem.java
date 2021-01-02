@@ -37,7 +37,7 @@ public class ParameterItem extends HasAnnotations implements Comparable<Paramete
         index = parameterInfo.index;
         addAnnotations(parameterInfo.parameterInspection.isSet() ? parameterInfo.parameterInspection.get().getAnnotations() : List.of(),
                 parameterInfo.parameterAnalysis.isSet() ?
-                        parameterInfo.parameterAnalysis.get().getAnnotationStream().filter(e -> e.getValue() == Boolean.TRUE)
+                        parameterInfo.parameterAnalysis.get().getAnnotationStream().filter(e -> e.getValue().isPresent())
                                 .map(Map.Entry::getKey)
                                 .collect(Collectors.toList()) : List.of());
         freeze();

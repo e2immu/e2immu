@@ -98,7 +98,7 @@ public class FieldInfo implements WithInspectionAndAnalysis {
                         .flatMap(a -> a.typesReferenced().stream()).collect(UpgradableBooleanMap.collector())
                         : UpgradableBooleanMap.of(),
                 hasBeenAnalysed() ? fieldAnalysis.get().getAnnotationStream()
-                        .filter(Map.Entry::getValue)
+                        .filter(e -> e.getValue().isVisible())
                         .flatMap(e -> e.getKey().typesReferenced().stream())
                         .collect(UpgradableBooleanMap.collector()) : UpgradableBooleanMap.of(),
                 fieldInspection.isSet() && fieldInspection.get().fieldInitialiserIsSet() ?

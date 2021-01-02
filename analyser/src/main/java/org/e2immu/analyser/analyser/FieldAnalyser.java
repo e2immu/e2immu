@@ -69,6 +69,7 @@ public class FieldAnalyser extends AbstractAnalyser {
     private final boolean fieldCanBeWrittenFromOutsideThisType;
     private final AnalyserComponents<String, Integer> analyserComponents;
     private final CheckConstant checkConstant;
+    private final CheckLinks checkLinks;
     private final boolean haveInitialiser;
 
     // set at initialisation time
@@ -85,7 +86,9 @@ public class FieldAnalyser extends AbstractAnalyser {
                          MethodAnalyser sam,
                          AnalyserContext analyserContext) {
         super("Field " + fieldInfo.name, analyserContext);
-        this.checkConstant = new CheckConstant(analyserContext.getPrimitives());
+        this.checkConstant = new CheckConstant(analyserContext.getPrimitives(), analyserContext.getE2ImmuAnnotationExpressions());
+        this.checkLinks = new CheckLinks(analyserContext.getPrimitives(), analyserContext.getE2ImmuAnnotationExpressions());
+
         this.fieldInfo = fieldInfo;
         fieldInspection = fieldInfo.fieldInspection.get();
         fieldAnalysis = new FieldAnalysisImpl.Builder(analyserContext.getPrimitives(), analyserContext, fieldInfo, ownerTypeAnalysis);
@@ -538,7 +541,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         // explicitly adding the annotation here; it will not be inspected.
         E2ImmuAnnotationExpressions e2 = analyserContext.getE2ImmuAnnotationExpressions();
-        AnnotationExpression linkAnnotation = new CheckLinks(analyserContext.getPrimitives()).createLinkAnnotation(e2, linkedVariables);
+        AnnotationExpression linkAnnotation = checkLinks.createLinkAnnotation(e2, linkedVariables);
         fieldAnalysis.annotations.put(linkAnnotation, !linkedVariables.isEmpty());
         return DONE;
     }
@@ -673,8 +676,6 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         log(ANALYSER, "Checking field {}", fieldInfo.fullyQualifiedName());
 
-        // TODO check the correct field name in @Linked(to="")
-        check(Linked.class, e2.linked);
         check(NotModified.class, e2.notModified);
         check(NotNull.class, e2.notNull);
         check(Final.class, e2.effectivelyFinal);
@@ -694,7 +695,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         check(Modified.class, e2.modified);
         check(Nullable.class, e2.nullable);
 
-        new CheckLinks(analyserContext.getPrimitives()).checkLinksForFields(messages, fieldInfo, fieldAnalysis);
+        checkLinks.checkLinksForFields(messages, fieldInfo, fieldAnalysis);
         checkConstant.checkConstantForFields(messages, fieldInfo, fieldAnalysis);
     }
 

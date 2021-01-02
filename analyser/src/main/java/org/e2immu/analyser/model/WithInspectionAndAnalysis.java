@@ -21,6 +21,7 @@ package org.e2immu.analyser.model;
 import org.e2immu.analyser.analyser.AbstractAnalysisBuilder;
 import org.e2immu.analyser.analyser.AnnotationParameters;
 import org.e2immu.analyser.output.OutputBuilder;
+import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.analyser.output.TypeName;
 import org.e2immu.analyser.util.UpgradableBooleanMap;
@@ -52,29 +53,33 @@ public interface WithInspectionAndAnalysis {
             return getInspection().getAnnotations().stream()
                     .anyMatch(ae -> ae.typeInfo().fullyQualifiedName.equals(annotation.typeInfo().fullyQualifiedName));
         }
-        return analysis.getAnnotation(annotation);
+        return analysis.getAnnotation(annotation).isPresent();
     }
 
     default Optional<Boolean> error(AbstractAnalysisBuilder analysisBuilder, Class<?> annotation, AnnotationExpression expression) {
         Optional<Boolean> mustBeAbsent = hasInspectedAnnotation(annotation).map(AnnotationExpression::e2ImmuAnnotationParameters).map(AnnotationParameters::isVerifyAbsent);
-        if (mustBeAbsent.isEmpty()) return Optional.empty(); // no error, no check!
         Boolean actual = analysisBuilder.annotations.getOtherwiseNull(expression);
-        if (actual == null && !mustBeAbsent.get() || mustBeAbsent.get() == actual) {
-            return mustBeAbsent; // error!!!
+        if (mustBeAbsent.isEmpty()) {
+            analysisBuilder.annotationChecks.put(expression, actual == Boolean.TRUE ? Analysis.AnnotationCheck.COMPUTED :
+                    Analysis.AnnotationCheck.OK_ABSENT);
+            return Optional.empty(); // no error, because no check!
         }
-        return Optional.empty(); // no error
-    }
-
-    default Optional<Boolean> error(AbstractAnalysisBuilder analysisBuilder, Class<?> annotation, List<AnnotationExpression> expressions) {
-        Optional<Boolean> mustBeAbsent = hasInspectedAnnotation(annotation).map(AnnotationExpression::e2ImmuAnnotationParameters).map(AnnotationParameters::isVerifyAbsent);
-        if (mustBeAbsent.isEmpty()) return Optional.empty(); // no error, no check!
-        for (AnnotationExpression expression : expressions) {
-            Boolean actual = analysisBuilder.annotations.getOtherwiseNull(expression);
-            if (actual != null) {
-                return mustBeAbsent.get() == actual ? mustBeAbsent : Optional.empty();
+        if (!mustBeAbsent.get()) {
+            // we expect the annotation to be present
+            if (actual == null || !actual) {
+                analysisBuilder.annotationChecks.put(expression, Analysis.AnnotationCheck.MISSING);
+                return mustBeAbsent; // error!!!
             }
+            analysisBuilder.annotationChecks.put(expression, Analysis.AnnotationCheck.OK);
+            return Optional.empty(); // no error
         }
-        return mustBeAbsent.get() ? Optional.empty() : mustBeAbsent;
+        // we expect the annotation to be absent
+        if (actual == Boolean.TRUE) {
+            analysisBuilder.annotationChecks.put(expression, Analysis.AnnotationCheck.PRESENT);
+            return mustBeAbsent; // error
+        }
+        analysisBuilder.annotationChecks.put(expression, Analysis.AnnotationCheck.OK_ABSENT);
+        return Optional.empty(); // no error, annotation is not there
     }
 
     String fullyQualifiedName();
@@ -86,25 +91,36 @@ public interface WithInspectionAndAnalysis {
     boolean hasBeenAnalysed();
 
     default Stream<OutputBuilder> buildAnnotationOutput() {
-        Set<TypeInfo> annotationsSeen = new HashSet<>();
+        Set<AnnotationExpression> annotationDuplicateChecks = new HashSet<>();
+        List<AnnotationExpression> annotations = new LinkedList<>();
         List<OutputBuilder> perAnnotation = new ArrayList<>();
-        boolean hasBeenAnalysed = hasBeenAnalysed();
-        List<AnnotationExpression> annotations = hasBeenInspected() ? getInspection().getAnnotations() : List.of();
-        for (AnnotationExpression annotation : annotations) {
-            OutputBuilder outputBuilder = new OutputBuilder().add(annotation.output());
-            if (hasBeenAnalysed) {
-                outputBuilder.add(getAnalysis().peekIntoAnnotations(annotation, annotationsSeen));
-            }
-            perAnnotation.add(outputBuilder);
+
+        if (hasBeenAnalysed()) {
+            // computed annotations get priority; they'll be commented on
+            getAnalysis().getAnnotationStream()
+                    .filter(e -> e.getValue().hasBeenComputed())
+                    .forEach(e -> annotations.add(e.getKey()));
+            annotationDuplicateChecks.addAll(annotations);
         }
-        if (hasBeenAnalysed) {
-            getAnalysis().getAnnotationStream().forEach(entry -> {
-                boolean present = entry.getValue();
-                AnnotationExpression annotation = entry.getKey();
-                if (present && !annotationsSeen.contains(annotation.typeInfo())) {
-                    perAnnotation.add(new OutputBuilder().add(annotation.output()));
+        if (hasBeenInspected()) {
+            // ignoring those that are already present; note that in the inspection, there can be multiple
+            // annotations of the same type; they are definitely not ours, not computed.
+            for (AnnotationExpression annotation : getInspection().getAnnotations()) {
+                if (!annotationDuplicateChecks.contains(annotation)) {
+                    annotations.add(annotation);
                 }
-            });
+            }
+        }
+        for (AnnotationExpression annotation : annotations) {
+            Analysis.AnnotationCheck annotationCheck = getAnalysis().getAnnotation(annotation);
+            if (annotationCheck != Analysis.AnnotationCheck.ABSENT) {
+                OutputBuilder outputBuilder = new OutputBuilder().add(annotation.output());
+                if (annotationCheck.writeComment()) {
+                    outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT).add(new Text(annotationCheck.toString()))
+                            .add(Symbol.RIGHT_BLOCK_COMMENT);
+                }
+                perAnnotation.add(outputBuilder);
+            }
         }
         if (perAnnotation.size() > 1) {
             perAnnotation.sort(Comparator.comparing(a -> ((TypeName) a.get(1)).simpleName()));

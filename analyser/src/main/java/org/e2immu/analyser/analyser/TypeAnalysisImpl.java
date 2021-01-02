@@ -43,7 +43,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
 
     private TypeAnalysisImpl(TypeInfo typeInfo,
                              Map<VariableProperty, Integer> properties,
-                             Map<AnnotationExpression, Boolean> annotations,
+                             Map<AnnotationExpression, AnnotationCheck> annotations,
                              Set<ObjectFlow> objectFlows,
                              Map<String, Expression> approvedPreconditions,
                              Set<ParameterizedType> implicitlyImmutableDataTypes,
@@ -191,7 +191,7 @@ public class TypeAnalysisImpl extends AnalysisImpl implements TypeAnalysis {
         public TypeAnalysis build() {
             return new TypeAnalysisImpl(typeInfo,
                     properties.toImmutableMap(),
-                    annotations.toImmutableMap(),
+                    annotationChecks.toImmutableMap(),
                     constantObjectFlows.toImmutableSet(),
                     approvedPreconditions.toImmutableMap(),
                     implicitlyImmutableDataTypes.isSet() ? implicitlyImmutableDataTypes.get() : Set.of(),

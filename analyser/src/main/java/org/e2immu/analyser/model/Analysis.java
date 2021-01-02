@@ -30,12 +30,50 @@ import java.util.stream.Stream;
 
 public interface Analysis {
 
-    default Stream<Map.Entry<AnnotationExpression, Boolean>> getAnnotationStream() {
+    default Stream<Map.Entry<AnnotationExpression, AnnotationCheck>> getAnnotationStream() {
         return Stream.empty();
     }
 
-    default Boolean getAnnotation(AnnotationExpression annotationExpression) {
-        return null;
+    /*
+    three states of computed:
+    (1) present computed correctly
+    (2) present, computed wrongly
+    (3) explicitly absent, or absent because not computed
+     */
+    enum AnnotationCheck {
+        OK, // expected present, and computed correctly;
+        OK_ABSENT, //  expected absent, and computed absent
+        WRONG, // expected present, computed, but not correctly
+        MISSING, // expected present, not computed or explicitly absent
+        PRESENT, // expected absent, but still computed (correctly or not, we cannot know)
+
+        CONTRACTED, // demanded to be present, no point in computing
+        CONTRACTED_ABSENT, // demanded to be absent, no point in computing
+
+        ABSENT, // computed to be absent, not in inspection; fully invisible
+        COMPUTED, // computed to be present, not in inspection
+
+        NO_INFORMATION; // not one of our annotations, no need to comment upon
+
+        public boolean hasBeenComputed() {
+            return this == OK || this == WRONG || this == PRESENT || this == COMPUTED;
+        }
+
+        public Boolean isPresent() {
+            return this == OK || this == WRONG || this == PRESENT || this == NO_INFORMATION || this == CONTRACTED || this == COMPUTED;
+        }
+
+        public boolean isVisible() {
+            return this != ABSENT;
+        }
+
+        public boolean writeComment() {
+            return this != CONTRACTED && this != CONTRACTED_ABSENT && this != NO_INFORMATION && this != COMPUTED;
+        }
+    }
+
+    default AnnotationCheck getAnnotation(AnnotationExpression annotationExpression) {
+        return AnnotationCheck.NO_INFORMATION;
     }
 
     default int getProperty(VariableProperty variableProperty) {
@@ -53,26 +91,16 @@ public interface Analysis {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (parameters != null) {
             if (!parameters.contract()) {
-                outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT);
-                // so we have one of our own annotations, and we know its type
-                Boolean verified = getAnnotation(annotation);
-                if (verified != null) {
-                    boolean ok = verified && !parameters.absent() || !verified && parameters.absent();
+                AnnotationCheck annotationCheck = getAnnotation(annotation);
+                outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT)
+                        .add(new Text(annotationCheck.toString()))
+                        .add(Symbol.RIGHT_BLOCK_COMMENT);
+                if (annotationCheck.hasBeenComputed()) {
+                    // no need to add our computed value
                     annotationsSeen.add(annotation.typeInfo());
-                    if (ok) {
-                        outputBuilder.add(new Text("OK"));
-                    } else {
-                        outputBuilder.add(new Text("FAIL"));
-                    }
-                } else {
-                    if (!parameters.absent()) {
-                        outputBuilder.add(new Text("FAIL:DELAYED"));
-                    } else {
-                        outputBuilder.add(new Text("OK:DELAYED"));
-                    }
                 }
-                outputBuilder.add(Symbol.RIGHT_BLOCK_COMMENT);
             } else {
+                // contract, not absent -> no need to add our computed value
                 if (!parameters.absent()) annotationsSeen.add(annotation.typeInfo());
             }
         }

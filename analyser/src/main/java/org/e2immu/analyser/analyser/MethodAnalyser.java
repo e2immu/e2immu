@@ -87,7 +87,7 @@ public class MethodAnalyser extends AbstractAnalyser {
                           boolean isSAM,
                           AnalyserContext analyserContext) {
         super("Method " + methodInfo.name, analyserContext);
-        this.checkConstant = new CheckConstant(analyserContext.getPrimitives());
+        this.checkConstant = new CheckConstant(analyserContext.getPrimitives(), analyserContext.getE2ImmuAnnotationExpressions());
         this.methodInfo = methodInfo;
         methodInspection = methodInfo.methodInspection.get();
 

@@ -55,7 +55,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                               Expression initialValue,
                               Expression stateOfEffectivelyFinalValue,
                               Map<VariableProperty, Integer> properties,
-                              Map<AnnotationExpression, Boolean> annotations) {
+                              Map<AnnotationExpression, AnnotationCheck> annotations) {
         super(properties, annotations);
         this.fieldInfo = fieldInfo;
         this.isOfImplicitlyImmutableDataType = isOfImplicitlyImmutableDataType;
@@ -231,7 +231,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     getInitialValue(),
                     getStateOfEffectivelyFinalValue(),
                     properties.toImmutableMap(),
-                    annotations.toImmutableMap());
+                    annotationChecks.toImmutableMap());
         }
 
         @Override

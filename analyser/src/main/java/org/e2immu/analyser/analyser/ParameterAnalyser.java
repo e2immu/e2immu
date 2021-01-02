@@ -65,8 +65,8 @@ public class ParameterAnalyser {
         log(ANALYSER, "Checking parameter {}", parameterInfo.fullyQualifiedName());
 
         check(NotModified.class, e2.notModified);
-        check(NotNull.class, List.of(e2.notNull, e2.notNull1, e2.notNull2));
-        check(NotNull1.class, List.of(e2.notNull1, e2.notNull2));
+        check(NotNull.class, e2.notNull);
+        check(NotNull1.class, e2.notNull1);
         check(NotNull2.class, e2.notNull2);
         check(NotModified1.class, e2.notModified1);
 
@@ -97,14 +97,6 @@ public class ParameterAnalyser {
                 }
             }
         }
-    }
-
-    private void check(Class<?> annotation, List<AnnotationExpression> annotationExpressions) {
-        parameterInfo.error(parameterAnalysis, annotation, annotationExpressions).ifPresent(mustBeAbsent -> {
-            Message error = Message.newMessage(new Location(parameterInfo),
-                    mustBeAbsent ? Message.ANNOTATION_UNEXPECTEDLY_PRESENT : Message.ANNOTATION_ABSENT, annotation.getSimpleName());
-            messages.add(error);
-        });
     }
 
     private void check(Class<?> annotation, AnnotationExpression annotationExpression) {

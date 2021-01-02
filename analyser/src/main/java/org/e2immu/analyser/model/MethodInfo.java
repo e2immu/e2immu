@@ -153,7 +153,7 @@ public class MethodInfo implements WithInspectionAndAnalysis {
                 inspection.getAnnotations().stream().flatMap(ae -> ae.typesReferenced().stream()).collect(UpgradableBooleanMap.collector());
         UpgradableBooleanMap<TypeInfo> analysedAnnotationTypes =
                 hasBeenAnalysed()? methodAnalysis.get().getAnnotationStream()
-                        .filter(Map.Entry::getValue)
+                        .filter(e -> e.getValue().isVisible())
                         .flatMap(e -> e.getKey().typesReferenced().stream())
                         .collect(UpgradableBooleanMap.collector()): UpgradableBooleanMap.of();
         UpgradableBooleanMap<TypeInfo> exceptionTypes =

@@ -41,7 +41,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
 
     private ParameterAnalysisImpl(ParameterInfo parameterInfo,
                                   Map<VariableProperty, Integer> properties,
-                                  Map<AnnotationExpression, Boolean> annotations,
+                                  Map<AnnotationExpression, AnnotationCheck> annotations,
                                   ObjectFlow objectFlow,
                                   Map<FieldInfo, AssignedOrLinked> assignedToField) {
         super(properties, annotations);
@@ -129,7 +129,7 @@ public class ParameterAnalysisImpl extends AnalysisImpl implements ParameterAnal
         @Override
         public Analysis build() {
             return new ParameterAnalysisImpl(parameterInfo, properties.toImmutableMap(),
-                    annotations.toImmutableMap(), getObjectFlow(), getAssignedToField());
+                    annotationChecks.toImmutableMap(), getObjectFlow(), getAssignedToField());
         }
 
         @Override

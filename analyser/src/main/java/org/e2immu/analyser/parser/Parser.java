@@ -208,16 +208,16 @@ public class Parser {
             throw rte;
         }
         try {
+            primaryTypeAnalyser.check();
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Caught runtime exception while checking type {}", sortedType.primaryType().fullyQualifiedName);
+            throw rte;
+        }
+        try {
             primaryTypeAnalyser.write();
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught runtime exception while making analysis immutable for type {}",
                     sortedType.primaryType().fullyQualifiedName);
-            throw rte;
-        }
-        try {
-            primaryTypeAnalyser.check();
-        } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while checking type {}", sortedType.primaryType().fullyQualifiedName);
             throw rte;
         }
         messages.addAll(primaryTypeAnalyser.getMessageStream());

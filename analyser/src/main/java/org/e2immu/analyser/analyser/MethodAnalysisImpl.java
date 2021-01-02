@@ -72,7 +72,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                                boolean complainedAboutApprovedPreconditions,
                                Expression precondition,
                                Map<VariableProperty, Integer> properties,
-                               Map<AnnotationExpression, Boolean> annotations,
+                               Map<AnnotationExpression, AnnotationCheck> annotations,
                                Map<CompanionMethodName, CompanionAnalysis> companionAnalyses,
                                Map<CompanionMethodName, MethodInfo> computedCompanions) {
         super(properties, annotations);
@@ -281,7 +281,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
                     complainedAboutApprovedPreconditions.getOrElse(false),
                     getPrecondition(),
                     properties.toImmutableMap(),
-                    annotations.toImmutableMap(),
+                    annotationChecks.toImmutableMap(),
                     getCompanionAnalyses(),
                     getComputedCompanions());
         }

@@ -19,13 +19,11 @@
 package org.e2immu.analyser.annotationxml.model;
 
 import org.e2immu.analyser.model.FieldInfo;
-import org.e2immu.annotation.E2Immutable;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@E2Immutable(after = "freeze")
 public class FieldItem extends HasAnnotations implements Comparable<FieldItem> {
     public final String name;
 
@@ -33,14 +31,13 @@ public class FieldItem extends HasAnnotations implements Comparable<FieldItem> {
         this.name = name;
     }
 
-    //@Mark("freeze")
     public FieldItem(FieldInfo fieldInfo) {
         this.name = fieldInfo.name;
         addAnnotations(fieldInfo.fieldInspection.isSet() ? fieldInfo.fieldInspection.get().getAnnotations() : List.of(),
                 fieldInfo.fieldAnalysis.isSet() ?
-                fieldInfo.fieldAnalysis.get().getAnnotationStream().filter(e -> e.getValue() == Boolean.TRUE)
-                        .map(Map.Entry::getKey)
-                        .collect(Collectors.toList()): List.of());
+                        fieldInfo.fieldAnalysis.get().getAnnotationStream().filter(e -> e.getValue().isPresent())
+                                .map(Map.Entry::getKey)
+                                .collect(Collectors.toList()) : List.of());
         freeze();
     }
 

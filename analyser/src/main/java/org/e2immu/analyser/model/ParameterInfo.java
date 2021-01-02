@@ -155,7 +155,7 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
         }
         if (parameterAnalysis.isSet()) {
             parameterAnalysis.get().getAnnotationStream().forEach(entry -> {
-                boolean present = entry.getValue();
+                boolean present = entry.getValue().isPresent();
                 AnnotationExpression annotation = entry.getKey();
                 if (present && !annotationsSeen.contains(annotation.typeInfo())) {
                     outputBuilder.add(annotation.output());

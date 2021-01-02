@@ -16,12 +16,7 @@ import org.e2immu.annotation.Linked;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class CheckLinks {
-    private final Primitives primitives;
-
-    public CheckLinks(Primitives primitives) {
-        this.primitives = Objects.requireNonNull(primitives);
-    }
+public record CheckLinks(Primitives primitives, E2ImmuAnnotationExpressions e2) {
 
     public AnnotationExpression createLinkAnnotation(E2ImmuAnnotationExpressions typeContext, Set<Variable> links) {
         List<Expression> linkNameList = links.stream().map(variable -> new StringConstant(primitives,
@@ -32,6 +27,9 @@ public class CheckLinks {
     }
 
     public void checkLinksForFields(Messages messages, FieldInfo fieldInfo, FieldAnalysisImpl.Builder fieldAnalysis) {
+        fieldAnalysis.annotationChecks.put(new AnnotationExpressionImpl(e2.linked.typeInfo(), List.of()), Analysis.AnnotationCheck.COMPUTED);
+        // FIXME
+        
         Optional<AnnotationExpression> linkedOpt = fieldInfo.fieldInspection.get().getAnnotations().stream()
                 .filter(ae -> ae.typeInfo().fullyQualifiedName.equals(Linked.class.getName())).findFirst();
         if (linkedOpt.isEmpty()) return;

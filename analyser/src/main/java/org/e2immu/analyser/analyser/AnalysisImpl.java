@@ -30,20 +30,24 @@ import java.util.stream.Stream;
 public abstract class AnalysisImpl implements Analysis {
 
     public final Map<VariableProperty, Integer> properties;
-    private final Map<AnnotationExpression, Boolean> annotations;
+    private final Map<AnnotationExpression, AnnotationCheck> annotations;
 
-    protected AnalysisImpl(Map<VariableProperty, Integer> properties, Map<AnnotationExpression, Boolean> annotations) {
+    protected AnalysisImpl(Map<VariableProperty, Integer> properties, Map<AnnotationExpression, AnnotationCheck> annotations) {
         this.annotations = annotations;
         this.properties = properties;
     }
 
     @Override
-    public Boolean getAnnotation(AnnotationExpression annotationExpression) {
-        return annotations.get(annotationExpression);
+    public AnnotationCheck getAnnotation(AnnotationExpression annotationExpression) {
+        AnnotationCheck annotationCheck = annotations.get(annotationExpression);
+        if (annotationCheck == null) {
+            throw new UnsupportedOperationException("Cannot find annotation " + annotationExpression.output() + " in analysis");
+        }
+        return annotationCheck;
     }
 
     @Override
-    public Stream<Map.Entry<AnnotationExpression, Boolean>> getAnnotationStream() {
+    public Stream<Map.Entry<AnnotationExpression, AnnotationCheck>> getAnnotationStream() {
         return annotations.entrySet().stream();
     }
 
