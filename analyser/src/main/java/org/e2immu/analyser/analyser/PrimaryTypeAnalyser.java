@@ -185,10 +185,11 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
     }
 
     public void write() {
-        analysers.forEach(analyser -> {
-            analyser.write();
-            analyser.getMember().setAnalysis(analyser.getAnalysis().build());
-        });
+        analysers.forEach(Analyser::write);
+    }
+
+    public void makeImmutable() {
+        analysers.forEach(analyser -> analyser.getMember().setAnalysis(analyser.getAnalysis().build()));
     }
 
     public TypeInfo getPrimaryType() {

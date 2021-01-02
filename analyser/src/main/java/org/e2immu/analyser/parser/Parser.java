@@ -114,7 +114,7 @@ public class Parser {
         urls.entrySet().stream().sorted(Comparator.comparing(e -> e.getValue().toString())).forEach(e ->
                 input.globalTypeContext().getTypeInspection(e.getKey()));
 
-        if(!shallowResolver) {
+        if (!shallowResolver) {
             typeMapBuilder.makeParametersImmutable();
         }
         // phase 2: resolve methods and fields
@@ -208,15 +208,22 @@ public class Parser {
             throw rte;
         }
         try {
+            primaryTypeAnalyser.write();
+        } catch (RuntimeException rte) {
+            LOGGER.warn("Caught runtime exception while writing out annotations for type {}",
+                    sortedType.primaryType().fullyQualifiedName);
+            throw rte;
+        }
+        try {
             primaryTypeAnalyser.check();
         } catch (RuntimeException rte) {
             LOGGER.warn("Caught runtime exception while checking type {}", sortedType.primaryType().fullyQualifiedName);
             throw rte;
         }
         try {
-            primaryTypeAnalyser.write();
+            primaryTypeAnalyser.makeImmutable();
         } catch (RuntimeException rte) {
-            LOGGER.warn("Caught runtime exception while making analysis immutable for type {}",
+            LOGGER.warn("Caught runtime exception while making analysis of type {} immutable",
                     sortedType.primaryType().fullyQualifiedName);
             throw rte;
         }

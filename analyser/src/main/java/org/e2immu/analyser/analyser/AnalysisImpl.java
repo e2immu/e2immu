@@ -41,7 +41,7 @@ public abstract class AnalysisImpl implements Analysis {
     public AnnotationCheck getAnnotation(AnnotationExpression annotationExpression) {
         AnnotationCheck annotationCheck = annotations.get(annotationExpression);
         if (annotationCheck == null) {
-            throw new UnsupportedOperationException("Cannot find annotation " + annotationExpression.output() + " in analysis");
+           return AnnotationCheck.NO_INFORMATION;
         }
         return annotationCheck;
     }

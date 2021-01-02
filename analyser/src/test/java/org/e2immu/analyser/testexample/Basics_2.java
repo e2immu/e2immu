@@ -25,7 +25,6 @@ public class Basics_2 {
     }
 
     @Nullable(absent = true)
-    @NotNull(absent = true)
     @NotModified
     public void add(@Modified @NotNull Collection<String> collection) {
         collection.add(string); // expect potential null pointer exception here

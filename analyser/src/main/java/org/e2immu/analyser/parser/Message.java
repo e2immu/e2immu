@@ -60,7 +60,7 @@ public class Message {
     public static final String PRECONDITION_ABSENT = "Precondition missing";
     public static final String ANNOTATION_ABSENT = "Annotation missing";
     public static final String ANNOTATION_UNEXPECTEDLY_PRESENT = "Annotation should be absent";
-    public static final String WRONG_CONSTANT = "@Constant annotation, wrong value";
+    public static final String WRONG_ANNOTATION_PARAMETER = "Wrong annotation parameter";
     public static final String PRIVATE_FIELD_NOT_READ = "Private field not read outside constructors";
     public static final String NON_PRIVATE_FIELD_NOT_FINAL = "Non-private field is not effectively final (@Final)";
     public static final String EFFECTIVELY_FINAL_FIELD_NOT_RECORD = "Effectively final field is not allowed to be of a record type";

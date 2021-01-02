@@ -27,7 +27,7 @@ import java.util.Set;
 public class Container_4 {
 
     @NotNull1
-    @Linked
+    @Linked(to = { "Container_4:p"})
     private final Set<String> s;
 
     public Container_4(@NotNull Set<String> p) {
@@ -51,7 +51,7 @@ public class Container_4 {
     }
 
     // we link the set 'out' to the set 'in', but who cares about this? how can we use this linkage later?
-    public static void crossModify(@NotNull @NotModified Set<String> in, @NotNull @NotModified(absent = true) Set<String> out) {
+    public static void crossModify(@NotNull1 @NotModified Set<String> in, @NotNull @NotModified(absent = true) Set<String> out) {
         out.addAll(in);
     }
 }
