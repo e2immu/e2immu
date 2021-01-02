@@ -162,8 +162,11 @@ public class EvaluateMethodCall {
                             List<ParameterAnalysis> parameterAnalyses = evaluationContext
                                     .getParameterAnalyses(ovNo.constructor).collect(Collectors.toList());
                             for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
-                                if (parameterAnalysis.getAssignedToField() == fieldInfo) {
-                                    return builder.setExpression(ovNo.getParameterExpressions().get(i)).build();
+                                Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
+                                for (Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : assigned.entrySet()) {
+                                    if (e.getKey() == fieldInfo && e.getValue() == ParameterAnalysis.AssignedOrLinked.ASSIGNED) {
+                                        return builder.setExpression(ovNo.getParameterExpressions().get(i)).build();
+                                    }
                                 }
                                 i++;
                             }

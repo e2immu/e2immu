@@ -115,7 +115,6 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         parameterAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
         parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         parameterAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
-        parameterAnalysis.isAssignedToAField.set(false);
 
         List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(false, getPrimitives(), this, methodInfo, parameterAnalyses);
@@ -140,7 +139,6 @@ public class ShallowTypeAnalyser implements AnalyserContext {
         parameterAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
         parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
         parameterAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
-        parameterAnalysis.isAssignedToAField.set(false);
 
         List<ParameterAnalysis> parameterAnalyses = List.of((ParameterAnalysis) parameterAnalysis.build());
         MethodAnalysisImpl.Builder builder = new MethodAnalysisImpl.Builder(false, getPrimitives(), this, methodInfo, parameterAnalyses);

@@ -21,13 +21,16 @@ package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
+import org.e2immu.analyser.model.FieldInfo;
 import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.ParameterAnalysis;
 import org.e2immu.analyser.model.ParameterInfo;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public class TestModificationGraph extends CommonTestRunner {
 
@@ -56,9 +59,12 @@ public class TestModificationGraph extends CommonTestRunner {
         if ("C2".equals(name)) {
             ParameterInfo c1 = d.methodInfo().methodInspection.get().getParameters().get(1);
             if (d.iteration() > 0) {
-                Assert.assertEquals("c1", c1.parameterAnalysis.get().getAssignedToField().name);
+                Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> entry = c1.parameterAnalysis.get()
+                        .getAssignedToField().entrySet().stream().findFirst().orElseThrow();
+                Assert.assertEquals("c1", entry.getKey().name);
+                Assert.assertEquals("c1", entry.getKey().name);
                 if (d.iteration() > 1) {
-                    Assert.assertTrue(c1.parameterAnalysis.get().isCopiedFromFieldToParameters());
+                    Assert.assertTrue(c1.parameterAnalysis.get().isAssignedToFieldDelaysResolved());
                 }
             }
         }

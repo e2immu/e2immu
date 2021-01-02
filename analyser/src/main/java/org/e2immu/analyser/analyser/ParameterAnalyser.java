@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -28,10 +29,11 @@ import org.e2immu.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.AnalysisStatus.DELAYS;
-import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
+import static org.e2immu.analyser.analyser.AnalysisStatus.*;
+import static org.e2immu.analyser.model.ParameterAnalysis.AssignedOrLinked.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.ANALYSER;
 import static org.e2immu.analyser.util.Logger.log;
 
@@ -118,6 +120,98 @@ public class ParameterAnalyser {
      * Does not apply to variable fields.
      */
     public AnalysisStatus analyse() {
+        if (checkUnusedParameter()) return DONE;
+
+        boolean changed = false;
+        boolean delays = false;
+        // find a field that's linked to me; bail out when not all field's values are set.
+        for (FieldInfo fieldInfo : parameterInfo.owner.typeInfo.typeInspection.get().fields()) {
+            FieldAnalysis fieldAnalysis = analysisProvider.getFieldAnalysis(fieldInfo);
+            int effFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+            if (effFinal == Level.DELAY) {
+                delays = true;
+            } else if (effFinal == Level.TRUE) {
+                Expression effectivelyFinal = fieldAnalysis.getEffectivelyFinalValue();
+                if (effectivelyFinal == null) {
+                    delays = true;
+                } else {
+                    VariableExpression variableValue;
+                    ParameterAnalysis.AssignedOrLinked assignedOrLinked;
+                    if ((variableValue = effectivelyFinal.asInstanceOf(VariableExpression.class)) != null
+                            && variableValue.variable() == parameterInfo) {
+                        assignedOrLinked = ASSIGNED;
+                    } else {
+                        assignedOrLinked = NO;
+                    }
+                    if (parameterAnalysis.addAssignedToField(fieldInfo, assignedOrLinked)) {
+                        changed |= assignedOrLinked == ASSIGNED;
+                    }
+                }
+            } else {
+                // variable field
+                Set<Variable> linked = fieldAnalysis.getLinkedVariables();
+                if (linked == null) {
+                    delays = true;
+                } else {
+                    ParameterAnalysis.AssignedOrLinked assignedOrLinked = linked.contains(parameterInfo) ? LINKED : NO;
+                    if (parameterAnalysis.addAssignedToField(fieldInfo, assignedOrLinked)) {
+                        changed |= assignedOrLinked == LINKED;
+                    }
+                }
+            }
+        }
+        if (delays) {
+            return changed ? PROGRESS : DELAYS;
+        }
+
+        Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> map = parameterAnalysis.getAssignedToField();
+        if (checkNotLinkedOrAssigned(map)) return DONE;
+
+        for (Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : map.entrySet()) {
+            FieldInfo fieldInfo = e.getKey();
+            Set<VariableProperty> propertiesToCopy = e.getValue() == ASSIGNED ? VariableProperty.FROM_FIELD_TO_PARAMETER :
+                    Set.of(VariableProperty.MODIFIED);
+            FieldAnalysis fieldAnalysis = fieldAnalysers.get(fieldInfo).fieldAnalysis;
+
+            for (VariableProperty variableProperty : propertiesToCopy) {
+                int inField = fieldAnalysis.getProperty(variableProperty);
+                if (inField != Level.DELAY) {
+                    int inParameter = parameterAnalysis.getProperty(variableProperty);
+                    if (inField > inParameter) {
+                        log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
+                                fieldInfo.fullyQualifiedName(), parameterInfo.fullyQualifiedName(), variableProperty);
+                        parameterAnalysis.setProperty(variableProperty, inField);
+                        changed = true;
+                    }
+                } else {
+                    log(ANALYSER, "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
+                    delays = true;
+                }
+            }
+        }
+        if (!delays) {
+            log(ANALYSER, "No delays anymore on copying from field to parameter");
+            parameterAnalysis.resolveFieldDelays();
+            return DONE;
+        }
+        return changed ? AnalysisStatus.PROGRESS : AnalysisStatus.DELAYS;
+    }
+
+    private boolean checkNotLinkedOrAssigned(Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> map) {
+        if (map.values().stream().allMatch(v -> v == NO)) {
+            StatementAnalysis lastStatementAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner).getLastStatement();
+            VariableInfo vi = lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.LEVEL_4_SUMMARY);
+            int notNullDelayResolved = vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED);
+            if (notNullDelayResolved != Level.FALSE && parameterAnalysis.getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
+                parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
+            }
+            parameterAnalysis.resolveFieldDelays();
+            return true;
+        }
+        return false;
+    }
+
+    private boolean checkUnusedParameter() {
         StatementAnalysis lastStatementAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner).getLastStatement();
         VariableInfo vi = lastStatementAnalysis == null ? null :
                 lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.LEVEL_4_SUMMARY);
@@ -126,90 +220,19 @@ public class ParameterAnalyser {
             parameterAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
             parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.NULLABLE);
             parameterAnalysis.setProperty(VariableProperty.NOT_MODIFIED_1, Level.FALSE);
-            parameterAnalysis.isAssignedToAField.set(false);
 
             if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()) {
                 messages.add(Message.newMessage(new Location(parameterInfo.owner), Message.UNUSED_PARAMETER, parameterInfo.simpleName()));
             }
-
-            return DONE;
-        } else {
-            // sanity check
-            int read = vi.getProperty(VariableProperty.READ);
-            int assigned = vi.getProperty(VariableProperty.ASSIGNED);
-            if (read == Level.DELAY && assigned == Level.DELAY) {
-                throw new UnsupportedOperationException("How possible? we haven't seen it, still it has been created");
-            }
+            return true;
         }
-
-        boolean changed = false;
-        if (!parameterAnalysis.isAssignedToAField.isSet()) {
-            boolean delays = false;
-            // find a field that's linked to me; bail out when not all field's values are set.
-            for (FieldInfo fieldInfo : parameterInfo.owner.typeInfo.typeInspection.get().fields()) {
-                FieldAnalysis fieldAnalysis = analysisProvider.getFieldAnalysis(fieldInfo);
-                int effFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-                if (effFinal == Level.DELAY) {
-                    delays = true;
-                } else if (effFinal == Level.TRUE) {
-                    Expression effectivelyFinal = fieldAnalysis.getEffectivelyFinalValue();
-                    if (effectivelyFinal == null) {
-                        delays = true;
-                    } else {
-                        VariableExpression variableValue;
-                        if ((variableValue = effectivelyFinal.asInstanceOf(VariableExpression.class)) != null
-                                && variableValue.variable() == parameterInfo) {
-                            // we have a hit
-                            parameterAnalysis.assignedToField.set(fieldInfo);
-                            changed = true;
-                        }
-                    }
-                }
-            }
-            if (!changed && delays) {
-                return DELAYS;
-            }
-            parameterAnalysis.isAssignedToAField.set(parameterAnalysis.assignedToField.isSet());
+        // sanity check
+        int read = vi.getProperty(VariableProperty.READ);
+        int assigned = vi.getProperty(VariableProperty.ASSIGNED);
+        if (read == Level.DELAY && assigned == Level.DELAY) {
+            throw new UnsupportedOperationException("How possible? we haven't seen it, still it has been created");
         }
-
-        boolean delays = false;
-        // the copiedFromFieldToParameters field is necessary to know  in the type analyser
-        // when the copying has finished without delays
-        if (!parameterAnalysis.copiedFromFieldToParameters.isSet()) {
-            if (parameterAnalysis.assignedToField.isSet()) {
-                FieldInfo fieldInfo = parameterAnalysis.assignedToField.get();
-                FieldAnalysis fieldAnalysis = fieldAnalysers.get(fieldInfo).fieldAnalysis;
-                for (VariableProperty variableProperty : VariableProperty.FROM_FIELD_TO_PARAMETER) {
-                    int inField = fieldAnalysis.getProperty(variableProperty);
-                    if (inField != Level.DELAY) {
-                        int inParameter = parameterAnalysis.getProperty(variableProperty);
-                        if (inField > inParameter) {
-                            log(ANALYSER, "Copying value {} from field {} to parameter {} for property {}", inField,
-                                    fieldInfo.fullyQualifiedName(), parameterInfo.fullyQualifiedName(), variableProperty);
-                            parameterAnalysis.setProperty(variableProperty, inField);
-                            changed = true;
-                        }
-                    } else {
-                        log(ANALYSER, "Still delaying copiedFromFieldToParameters because of {}", variableProperty);
-                        delays = true;
-                    }
-                }
-                if (!delays) {
-                    log(ANALYSER, "No delays anymore on copying from field to parameter");
-                    parameterAnalysis.copiedFromFieldToParameters.set();
-                    changed = true;
-                }
-            } else {
-                if (parameterAnalysis.isAssignedToAField.isSet()) { // not assigned to a field, we're sure
-                    int notNullDelayResolved = vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED);
-                    if (notNullDelayResolved != Level.FALSE && parameterAnalysis.getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
-                        parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
-                    }
-                }
-            }
-        }
-
-        return delays ? (changed ? AnalysisStatus.PROGRESS : AnalysisStatus.DELAYS) : DONE;
+        return false;
     }
 
     public Stream<Message> getMessageStream() {

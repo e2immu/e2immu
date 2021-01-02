@@ -20,17 +20,6 @@ public class Test_17_Container extends CommonTestRunner {
     }
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-        if ("setStrings1".equals(d.methodInfo().name)) {
-            if ("strings1param".equals(d.variableName()) && "0".equals(d.statementId())) {
-                Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
-            }
-            if ("strings1param".equals(d.variableName()) && "1".equals(d.statementId())) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
-            }
-            if ("Container1.this.strings1".equals(d.variableName()) && "1".equals(d.statementId())) {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
-            }
-        }
         if ("setStrings3".equals(d.methodInfo().name)) {
             if ("strings3param".equals(d.variableName()) && "0".equals(d.statementId())) {
                 Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
@@ -61,12 +50,7 @@ public class Test_17_Container extends CommonTestRunner {
                 Assert.assertEquals("not (null == org.e2immu.analyser.testexample.ContainerChecks.Container2b.strings2b)", d.condition().toString());
             }
         }
-        // POTENTIAL NULL POINTER EXCEPTION
-        if ("add2".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-            if (d.iteration() > 0) {
-                Assert.assertNotNull(d.haveError(Message.NULL_POINTER_EXCEPTION));
-            }
-        }
+
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
@@ -159,8 +143,6 @@ public class Test_17_Container extends CommonTestRunner {
             TypeInfo set = typeMap.get(Set.class);
             Assert.assertEquals(MultiLevel.MUTABLE, set.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
         };
-
-        // warning to expect: the potential null pointer exception of strings2
         testClass("Container_0", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
@@ -170,15 +152,51 @@ public class Test_17_Container extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        // warning to expect: the potential null pointer exception of strings2
-        testClass("Container_1", 0, 0, new DebugConfiguration.Builder()
+        final String TYPE = "org.e2immu.analyser.testexample.Container_1";
+        final String S = TYPE + ".s";
 
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("s".equals(d.fieldInfo().name) && "Container_1".equals(d.fieldInfo().owner.simpleName)) {
+                int expectFinal = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
+                Assert.assertEquals(expectFinal, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectModified, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if (S.equals(d.variableName()) && "addToS".equals(d.methodInfo().name)) {
+                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+            }
+        };
+
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            // POTENTIAL NULL POINTER EXCEPTION
+            if ("addToS".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                if (d.iteration() > 0) {
+                    Assert.assertNotNull(d.haveError(Message.POTENTIAL_NULL_POINTER_EXCEPTION));
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("addToS".equals(d.methodInfo().name)) {
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+            }
+        };
+
+        // warning to expect: the potential null pointer exception of s
+        testClass("Container_1", 0, 1, new DebugConfiguration.Builder()
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 
     @Test
     public void test_2() throws IOException {
-        // warning to expect: the potential null pointer exception of strings2
         testClass("Container_2", 0, 0, new DebugConfiguration.Builder()
 
                 .build());
@@ -186,7 +204,6 @@ public class Test_17_Container extends CommonTestRunner {
 
     @Test
     public void test_3() throws IOException {
-        // warning to expect: the potential null pointer exception of strings2
         testClass("Container_3", 0, 0, new DebugConfiguration.Builder()
 
                 .build());
@@ -194,7 +211,6 @@ public class Test_17_Container extends CommonTestRunner {
 
     @Test
     public void test_4() throws IOException {
-        // warning to expect: the potential null pointer exception of strings2
         testClass("Container_4", 0, 0, new DebugConfiguration.Builder()
 
                 .build());
@@ -216,8 +232,6 @@ public class Test_17_Container extends CommonTestRunner {
             ParameterInfo param1Constructor1 = constructor1.methodInspection.get().getParameters().get(0);
             Assert.assertEquals(Level.FALSE, param1Constructor1.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
         };
-
-        // warning to expect: the potential null pointer exception of strings2
         testClass("Container_5", 0, 0, new DebugConfiguration.Builder()
                 .addTypeMapVisitor(typeMapVisitor)
                 .build());

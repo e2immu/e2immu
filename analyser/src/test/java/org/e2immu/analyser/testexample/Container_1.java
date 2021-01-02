@@ -20,29 +20,33 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.*;
 
-import java.util.*;
+import java.util.Set;
+
+/*
+Tests transfer of @Modified from method to field to parameter of setter
+ */
 
 @Container(absent = true)
 public class Container_1 {
 
-        @Linked(to = "p")
-        @Modified
-        @Nullable
-        private Set<String> s;
+    @Linked(to = "p")
+    @Variable // which trumps @Modified (we only show modification on @Final fields)
+    @Nullable
+    private Set<String> s;
 
-        @Modified
-        public void setS(@Modified @Nullable Set<String> p) {
-            this.s = p;
-        }
-
-        @NotModified
-        public Set<String> getS() {
-            return s;
-        }
-
-        // this method breaks the contract, in a roundabout way
-        @Modified
-        public void addToS(@NotNull String p2) {
-            s.add(p2);
-        } // WARNING potential null pointer exception
+    @Modified
+    public void setS(@Modified @Nullable Set<String> p) {
+        this.s = p;
     }
+
+    @NotModified
+    public Set<String> getS() {
+        return s;
+    }
+
+    // this method breaks the contract, in a roundabout way
+    @Modified
+    public void addToS(@NotNull String p2) {
+        s.add(p2);
+    } // WARNING potential null pointer exception
+}

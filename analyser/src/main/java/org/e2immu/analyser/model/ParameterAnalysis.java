@@ -23,6 +23,7 @@ import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 
+import java.util.Map;
 import java.util.stream.IntStream;
 
 public interface ParameterAnalysis extends Analysis {
@@ -38,19 +39,28 @@ public interface ParameterAnalysis extends Analysis {
         return ObjectFlow.NO_FLOW;
     }
 
+    enum AssignedOrLinked {
+        ASSIGNED, LINKED, NO;
+
+        public boolean isAssignedOrLinked() {
+            return this == ASSIGNED || this == LINKED;
+        }
+    }
+
     /**
-     * @return Null means: not assigned to a field.
+     * The map is valid when isAssignedToFieldDelaysResolved() is true.
+     *
+     * @return If a parameter is assigned to a field, a map containing at least the entry (fieldInfo, ASSIGNED) is returned.
+     * This is the case of an effectively final field.
+     * If a parameter is linked to one or more fields (implying the parameter is variable), the map contains pairs (fieldInfo, LINKED).
+     * At any time, the map can contain (fieldInfo, NO) tuples.
      */
-    default FieldInfo getAssignedToField() {
+    default Map<FieldInfo, AssignedOrLinked> getAssignedToField() {
         return null;
     }
 
-    default boolean isCopiedFromFieldToParameters() {
-        return false;
-    }
-
-    default Boolean getIsAssignedToAField() {
-        return null;
+    default boolean isAssignedToFieldDelaysResolved() {
+        return true;
     }
 
     // the reason the following methods sit here, is that they are shared by ParameterAnalysisImpl and ParameterAnalysisImpl.Builder
@@ -117,7 +127,7 @@ public interface ParameterAnalysis extends Analysis {
                 TypeInfo bestType = parameterInfo.parameterizedType.bestTypeInfo();
                 int immutableFromType;
                 if (bestType != null) {
-                   TypeAnalysis bestTypeAnalysis =  analysisProvider.getTypeAnalysis(bestType);
+                    TypeAnalysis bestTypeAnalysis = analysisProvider.getTypeAnalysis(bestType);
                     int immutable = bestTypeAnalysis.getProperty(VariableProperty.IMMUTABLE);
                     boolean objectFlowCondition = parameterInfo.owner.isPrivate() &&
                             objectFlow != null && objectFlow.getPrevious().allMatch(of -> of.conditionsMetForEventual(bestTypeAnalysis));

@@ -570,13 +570,13 @@ public class Test_16_Modification extends CommonTestRunner {
                 ParameterAnalysis set3 = d.parameterAnalyses().get(1);
 
                 if (iteration == 0) {
-                    Assert.assertNull(list.getAssignedToField());
+                    Assert.assertFalse(list.isAssignedToFieldDelaysResolved());
                 } else {
-                    Assert.assertNotNull(list.getAssignedToField());
+                    Assert.assertTrue(list.getAssignedToField().isEmpty());
                 }
                 if (iteration >= 2) {
                     Assert.assertEquals(0, list.getProperty(VariableProperty.MODIFIED));
-                    Assert.assertNotNull(set3.getAssignedToField());
+                    Assert.assertTrue(!set3.getAssignedToField().isEmpty());
                    // Assert.assertEquals(1, set3.getProperty(VariableProperty.MODIFIED)); // directly assigned to s0
                 }
             }

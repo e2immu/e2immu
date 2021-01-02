@@ -206,26 +206,27 @@ public class MethodLevelData {
                         }
                     } else if (dependentVariable instanceof ParameterInfo) {
                         ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getParameterAnalysis((ParameterInfo) dependentVariable);
-                        FieldInfo assigned = parameterAnalysis.getAssignedToField();
-                        if (assigned != null) {
-                            log(NOT_MODIFIED, "Parameter {} is assigned to field {}, not setting @NotModified {} directly",
-                                    dependentVariable.fullyQualifiedName(), assigned.fullyQualifiedName(), summary);
+                        //  Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
+                        //  if (!assigned.isEmpty() && assigned.values().stream().anyMatch(ParameterAnalysis.AssignedOrLinked::isAssignedOrLinked)) {
+                        //      log(NOT_MODIFIED, "Parameter {} is assigned or linked to field: {}, not setting @NotModified {} directly",
+                        //              dependentVariable.fullyQualifiedName(), assigned, summary);
+                        //  } else {
+                        // FIXME I'd rather try to overwrite
+                        if (summary == Level.DELAY) {
+                            log(DELAYED, "Delay marking {} as @NotModified in {}", dependentVariable.fullyQualifiedName(), logLocation);
+                            analysisStatus.set(DELAYS);
                         } else {
-                            if (summary == Level.DELAY) {
-                                log(DELAYED, "Delay marking {} as @NotModified in {}", dependentVariable.fullyQualifiedName(), logLocation);
-                                analysisStatus.set(DELAYS);
-                            } else {
-                                log(NOT_MODIFIED, "Mark {} as {} in {}", dependentVariable.fullyQualifiedName(),
-                                        summary == Level.TRUE ? "@Modified" : "@NotModified", logLocation);
-                                int currentModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
-                                if (currentModified == Level.DELAY) {
-                                    // we can safely cast here to the builder
-                                    ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
-                                    sharedState.builder.add(builder.new SetProperty(VariableProperty.MODIFIED, summary));
-                                    progress.set(true);
-                                }
+                            log(NOT_MODIFIED, "Mark {} as {} in {}", dependentVariable.fullyQualifiedName(),
+                                    summary == Level.TRUE ? "@Modified" : "@NotModified", logLocation);
+                            int currentModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
+                            if (currentModified == Level.DELAY) {
+                                // we can safely cast here to the builder
+                                ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
+                                sharedState.builder.add(builder.new SetProperty(VariableProperty.MODIFIED, summary));
+                                progress.set(true);
                             }
                         }
+                        //  }
                     }
                 }
             }

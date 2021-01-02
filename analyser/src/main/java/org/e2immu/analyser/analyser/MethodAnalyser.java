@@ -197,8 +197,7 @@ public class MethodAnalyser extends AbstractAnalyser {
 
     public boolean fromFieldToParametersIsDone() {
         return !hasCode() || getParameterAnalysers().stream().allMatch(parameterAnalyser ->
-                parameterAnalyser.getParameterAnalysis().getIsAssignedToAField() == Boolean.FALSE ||
-                        parameterAnalyser.parameterAnalysis.copiedFromFieldToParameters.isSet());
+                parameterAnalyser.getParameterAnalysis().isAssignedToFieldDelaysResolved());
     }
 
     public boolean hasCode() {
