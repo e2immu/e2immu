@@ -224,6 +224,8 @@ public class ParameterAnalyser {
             if (lastStatementAnalysis != null && parameterInfo.owner.isNotOverridingAnyOtherMethod()) {
                 messages.add(Message.newMessage(new Location(parameterInfo.owner), Message.UNUSED_PARAMETER, parameterInfo.simpleName()));
             }
+
+            parameterAnalysis.resolveFieldDelays();
             return true;
         }
         // sanity check
