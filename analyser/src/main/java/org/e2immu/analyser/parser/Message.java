@@ -53,7 +53,6 @@ public class Message {
     public static final String POTENTIAL_SIZE_PROBLEM = "Potential size problem";
     public static final String UNNECESSARY_METHOD_CALL = "Unnecessary method call";
 
-    public static final String CANNOT_FIND_METHOD_IN_SUPER_TYPE = "Cannot find method in super type";
     public static final String PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO = "Parameter should not be assigned to";
     public static final String METHOD_SHOULD_BE_MARKED_STATIC = "Method should be marked static";
     public static final String ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE = "Assigning to field outside the primary type";
@@ -69,7 +68,6 @@ public class Message {
     public static final String IGNORING_RESULT_OF_METHOD_CALL = "Ignoring result of method call";
     public static final String UNUSED_LOCAL_VARIABLE = "Unused local variable";
     public static final String USELESS_ASSIGNMENT = "Useless assignment";
-    public static final String METHOD_EVALUATES_TO_CONSTANT = "Method evaluates to constant";
 
     public static final String PART_OF_EXPRESSION_EVALUATES_TO_CONSTANT = "Part of short-circuit expression evaluates to constant";
 
@@ -91,6 +89,7 @@ public class Message {
     public static final String UNUSED_PARAMETER = "Unused parameter";
 
     public static final String CONTRADICTING_ANNOTATIONS = "Contradicting annotations";
+    public static final String WRONG_LINKS = "Contradicting linked variable information";
 
     @NotNull1
     @E2Container

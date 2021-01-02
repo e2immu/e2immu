@@ -109,5 +109,11 @@ public interface Variable {
     /*
     Used to determine which evaluation context the variable belongs to: the normal one, or a closure?
      */
-    default TypeInfo getOwningType() { return null; }
+    default TypeInfo getOwningType() {
+        return null;
+    }
+
+    default String nameInLinkedAnnotation() {
+        return simpleName();
+    }
 }

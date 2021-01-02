@@ -27,7 +27,7 @@ import java.util.Set;
 @E1Immutable
 public class Container_2 {
 
-    @Linked(to = "strings2param")
+    @Linked(to = "Container_2:p")
     @Modified
     @Nullable
     private final Set<String> s;

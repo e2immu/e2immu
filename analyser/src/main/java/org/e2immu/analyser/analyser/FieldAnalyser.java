@@ -282,7 +282,6 @@ public class FieldAnalyser extends AbstractAnalyser {
                                 .filter(m -> !(m.methodInfo.isConstructor && m.methodInfo.typeInfo == fieldInfo.owner)) // not my own constructors
                                 .map(m -> m.methodInfo.fullyQualifiedName() + ": " + maxReadOfFieldInMethod(m))
                                 .collect(Collectors.joining("; "));
-                ; // delay should not be possible
                 boolean notRead = readInMethods == Level.FALSE;
                 fieldAnalysis.fieldError.set(notRead);
                 if (notRead) {
@@ -695,6 +694,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         check(Modified.class, e2.modified);
         check(Nullable.class, e2.nullable);
 
+        new CheckLinks(analyserContext.getPrimitives()).checkLinksForFields(messages, fieldInfo, fieldAnalysis);
         checkConstant.checkConstantForFields(messages, fieldInfo, fieldAnalysis);
     }
 

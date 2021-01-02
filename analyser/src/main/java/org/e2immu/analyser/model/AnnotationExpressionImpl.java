@@ -120,7 +120,7 @@ public record AnnotationExpressionImpl(TypeInfo typeInfo,
         // it is always possible that the return type is an array, but only one value is present...
 
         if (expression instanceof ArrayInitializer arrayInitializer) {
-            Object[] array = createArray(arrayInitializer.returnType(), arrayInitializer.multiExpression.expressions().length);
+            Object[] array = createArray(returnType, arrayInitializer.multiExpression.expressions().length);
             int i = 0;
             for (Expression element : arrayInitializer.multiExpression.expressions()) {
                 array[i++] = returnValueOfNonArrayExpression(arrayInitializer.returnType(), element);

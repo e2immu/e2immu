@@ -295,12 +295,15 @@ public class JavaUtil extends AnnotatedAPI {
         // content is known
         boolean HashSet$Modification$Size(int post) { return post == 0; }
         boolean HashSet$Postcondition() { return org.e2immu.annotatedapi.AnnotatedAPI.isKnown(false); }
+
+        @Independent
         public HashSet$() {
         }
 
         // content is not known
         boolean HashSet$Modification$Size(int post, Collection<? extends  E> c) { return post == c.size(); }
-        public HashSet$(Collection<? extends  E> c) {
+        @Independent
+        public HashSet$(@NotNull1 Collection<? extends  E> c) {
         }
     }
 

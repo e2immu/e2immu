@@ -187,7 +187,8 @@ public class MethodLevelData {
                         // NOTE: not redirecting to "raw" field, via fieldReference.fieldInfo.fullyQualifiedName
                         VariableInfo vi = sharedState.statementAnalysis.getLatestVariableInfo(fieldReference.fullyQualifiedName());
                         int modified = vi.getProperty(VariableProperty.MODIFIED);
-                        if (modified == Level.DELAY) {
+                        // the second condition is there because fields start with modified 0 in a method
+                        if (modified == Level.DELAY || modified < summary) {
                             // break the delay in case the variable is not even read
                             int fieldModified;
                             if (summary == Level.DELAY && vi.getProperty(VariableProperty.READ) < Level.TRUE) {

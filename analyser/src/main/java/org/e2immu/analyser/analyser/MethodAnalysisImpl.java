@@ -442,7 +442,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
             preconditionForMarkAndOnly.set(List.of());
             if (!methodInfo.isAbstract()) {
                 setProperty(VariableProperty.MODIFIED, Level.FALSE);
-                setProperty(VariableProperty.INDEPENDENT, Level.TRUE);
+                setProperty(VariableProperty.INDEPENDENT, MultiLevel.EFFECTIVE);
                 setProperty(VariableProperty.FLUENT, Level.FALSE);
                 setProperty(VariableProperty.IDENTITY, Level.FALSE);
             }

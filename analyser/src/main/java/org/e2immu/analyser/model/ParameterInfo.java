@@ -98,6 +98,11 @@ public class ParameterInfo implements Variable, WithInspectionAndAnalysis, Compa
         return owner.fullyQualifiedName() + ":" + index + ":" + name;
     }
 
+    @Override
+    public String nameInLinkedAnnotation() {
+        return owner.name + ":" + name;
+    }
+
     public boolean hasBeenInspected() {
         return parameterInspection.isSet();
     }

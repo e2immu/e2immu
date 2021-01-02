@@ -77,6 +77,11 @@ public class FieldReference extends VariableWithConcreteReturnType {
     }
 
     @Override
+    public String nameInLinkedAnnotation() {
+        return fieldInfo.owner.simpleName + "." + fieldInfo.name;
+    }
+
+    @Override
     public String fullyQualifiedName() {
         if (scope == null || scope instanceof This) {
             return fieldInfo.fullyQualifiedName();

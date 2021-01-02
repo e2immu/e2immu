@@ -29,13 +29,15 @@ public class Container_3 {
     // third example: independent, so this one works
     // this is not a @Container @Final @NotModified, because strings can be set multiple times, and can be modified
 
+    // important: not linked to p
+    @Linked(to = {})
     @NotModified(absent = true)
-    @Modified
     @Variable
     @Nullable
     private Set<String> s;
 
-    public void setS(Set<String> p) {
+    @Modified
+    public void setS(@NotModified @NotNull Set<String> p) {
         this.s = new HashSet<>(p);
     }
 
@@ -43,7 +45,7 @@ public class Container_3 {
         return s;
     }
 
-    // String is @NotModified because it is a context class
+    @Modified
     public void add(String s3) {
         Set<String> set3 = s;
         if (set3 != null) set3.add(s3);
