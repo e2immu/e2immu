@@ -296,8 +296,7 @@ public class TypeInspector {
         }
     }
 
-    public void inspectLocalClassDeclaration(ExpressionContext expressionContext, TypeInfo localType, ClassOrInterfaceDeclaration cid) {
-        TypeInspectionImpl.Builder builder = new TypeInspectionImpl.Builder(localType, STARTING_JAVA_PARSER);
+    public void inspectLocalClassDeclaration(ExpressionContext expressionContext, ClassOrInterfaceDeclaration cid) {
         builder.setParentClass(expressionContext.typeContext.getPrimitives().objectParameterizedType);
         doClassOrInterfaceDeclaration(expressionContext, cid);
         continueInspection(expressionContext, cid.getMembers(), false, false, null);

@@ -37,28 +37,30 @@ import java.util.Map;
 
 public class ParseObjectCreationExpr {
     public static Expression parse(ExpressionContext expressionContext, ObjectCreationExpr objectCreationExpr, MethodTypeParameterMap singleAbstractMethod) {
-        ParameterizedType parameterizedType = ParameterizedTypeFactory.from(expressionContext.typeContext, objectCreationExpr.getType());
+        TypeContext typeContext  = expressionContext.typeContext;
+
+        ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
 
         if (objectCreationExpr.getAnonymousClassBody().isPresent()) {
             // TODO parameterizedType can be Iterator<>, we will need to detect the correct type from context if needed
             TypeInfo anonymousType = new TypeInfo(expressionContext.enclosingType, expressionContext.topLevel.newIndex(expressionContext.enclosingType));
-            TypeInspector typeInspector = new TypeInspector(expressionContext.typeContext.typeMapBuilder, anonymousType, true);
+            typeContext.typeMapBuilder.ensureTypeAndInspection(anonymousType, TypeInspectionImpl.InspectionState.STARTING_JAVA_PARSER);
+            TypeInspector typeInspector = new TypeInspector(typeContext.typeMapBuilder, anonymousType, true);
             typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
-            anonymousType.typeInspection.set(typeInspector.build());
             expressionContext.addNewlyCreatedType(anonymousType);
-            return new NewObject(expressionContext.typeContext.getPrimitives(), parameterizedType, anonymousType);
+            return new NewObject(typeContext.getPrimitives(), parameterizedType, anonymousType);
         }
 
-        Map<NamedType, ParameterizedType> typeMap = parameterizedType.initialTypeParameterMap(expressionContext.typeContext);
-        List<TypeContext.MethodCandidate> methodCandidates = expressionContext.typeContext.resolveConstructor(parameterizedType, objectCreationExpr.getArguments().size(), typeMap);
+        Map<NamedType, ParameterizedType> typeMap = parameterizedType.initialTypeParameterMap(typeContext);
+        List<TypeContext.MethodCandidate> methodCandidates = typeContext.resolveConstructor(parameterizedType, objectCreationExpr.getArguments().size(), typeMap);
         List<Expression> newParameterExpressions = new ArrayList<>();
-        MethodTypeParameterMap method = new ParseMethodCallExpr(expressionContext.typeContext)
+        MethodTypeParameterMap method = new ParseMethodCallExpr(typeContext)
                 .chooseCandidateAndEvaluateCall(expressionContext, methodCandidates, objectCreationExpr.getArguments(),
                         newParameterExpressions, singleAbstractMethod, new HashMap<>(), "constructor",
                         parameterizedType, objectCreationExpr.getBegin().orElseThrow());
         if (method == null) return new UnevaluatedMethodCall(parameterizedType.detailedString() + "::new");
         return new NewObject(method.methodInspection.getMethodInfo(), parameterizedType, newParameterExpressions,
-                new BooleanConstant(expressionContext.typeContext.getPrimitives(), true), ObjectFlow.NO_FLOW);
+                new BooleanConstant(typeContext.getPrimitives(), true), ObjectFlow.NO_FLOW);
     }
 }

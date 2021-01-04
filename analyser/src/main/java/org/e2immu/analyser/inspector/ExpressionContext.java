@@ -353,11 +353,14 @@ public class ExpressionContext {
 
     private org.e2immu.analyser.model.Statement localClassDeclaration(LocalClassDeclarationStmt statement) {
         String localName = statement.getClassDeclaration().getNameAsString();
-        TypeInfo typeInfo = new TypeInfo("", localName); // IMPROVE
+        String primaryTypeSimpleName = enclosingType.primaryType().simpleName;
+        String typeName = primaryTypeSimpleName + "$" + localName + "$" + topLevel.newIndex(enclosingType);
+        TypeInfo typeInfo = new TypeInfo(enclosingType.packageName(), typeName);
+        typeContext.typeMapBuilder.ensureTypeAndInspection(typeInfo, TypeInspectionImpl.InspectionState.STARTING_JAVA_PARSER);
         TypeInspector typeInspector = new TypeInspector(typeContext.typeMapBuilder, typeInfo, true);
-        typeInspector.inspectLocalClassDeclaration(this, typeInfo, statement.getClassDeclaration());
-        typeInfo.typeInspection.set(typeInspector.build());
-        typeContext.addToContext(typeInfo);
+        typeInspector.inspectLocalClassDeclaration(this, statement.getClassDeclaration());
+
+        typeContext.addToContext(localName, typeInfo, true);
         addNewlyCreatedType(typeInfo);
         return new LocalClassDeclaration(typeInfo);
     }

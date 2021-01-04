@@ -18,12 +18,17 @@
 
 package org.e2immu.analyser.testexample;
 
+/*
+ method-local class; the analyser recognises them, but that's just about it.
+ I do not really see their reason for existence.
+*/
+
 public class SubTypes_1 {
 
     protected static String methodWithSubType() {
 
         class KV {
-            String key;
+            private final String key;
             String value;
 
             KV(String key, String value) {
@@ -36,8 +41,36 @@ public class SubTypes_1 {
                 return "KV=(" + key + "," + value + ")";
             }
         }
+
         KV kv1 = new KV("a", "BC");
         return kv1.toString();
     }
 
+    /*
+     IMPROVE
+
+     Note that scoping rules for local variables accessible as final fields in the sub-type have not
+     yet been implemented. The method inspector will crash on "+ s" in the KV constructor.
+
+    protected static String methodWithSubType2() {
+        String s = "abc";
+
+        class KV {
+            String key;
+            String value;
+
+            KV(String key, String value) {
+                this.key = key;
+                this.value = value + s;
+            }
+
+            @Override
+            public String toString() {
+                return "KV=(" + key + "," + value + ")";
+            }
+        }
+        KV kv1 = new KV("a", "BC");
+        return kv1.toString();
+    }
+    */
 }

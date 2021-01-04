@@ -452,7 +452,7 @@ public class MethodAnalysisImpl extends AnalysisImpl implements MethodAnalysis {
     private static Set<MethodAnalysis> overrides(AnalysisProvider analysisProvider, MethodInfo methodInfo, MethodAnalysis methodAnalysis) {
         try {
             return methodInfo.methodResolution.get().overrides().stream()
-                    .map(mi -> mi == methodInfo ? methodAnalysis : analysisProvider.getMethodAnalysis(methodInfo))
+                    .map(mi -> mi == methodInfo ? methodAnalysis : analysisProvider.getMethodAnalysis(mi))
                     .collect(Collectors.toSet());
         } catch (RuntimeException rte) {
             LOGGER.error("Cannot compute method analysis of {}", methodInfo.distinguishingName());

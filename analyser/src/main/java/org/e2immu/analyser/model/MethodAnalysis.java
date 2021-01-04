@@ -115,7 +115,7 @@ public interface MethodAnalysis extends Analysis {
         return null;
     }
 
-    default  Map<CompanionMethodName, MethodInfo> getComputedCompanions() {
+    default Map<CompanionMethodName, MethodInfo> getComputedCompanions() {
         return null;
     }
 
@@ -184,7 +184,8 @@ public interface MethodAnalysis extends Analysis {
     }
 
     default int valueFromOverrides(AnalysisProvider analysisProvider, VariableProperty variableProperty) {
-        return getOverrides(analysisProvider).stream()
+        Set<MethodAnalysis> overrides = getOverrides(analysisProvider);
+        return overrides.stream()
                 .mapToInt(ma -> ma.getPropertyAsIs(variableProperty)).max().orElse(Level.DELAY);
     }
 
@@ -207,7 +208,8 @@ public interface MethodAnalysis extends Analysis {
 
     // the name refers to the @Mark and @Only annotations. It is the data for this annotation.
 
-    record MarkAndOnly(List<Expression> preconditions,String markLabel, boolean mark,Boolean after) { // null for a @Mark without @Only
+    record MarkAndOnly(List<Expression> preconditions, String markLabel, boolean mark,
+                       Boolean after) { // null for a @Mark without @Only
 
         @Override
         public String toString() {
