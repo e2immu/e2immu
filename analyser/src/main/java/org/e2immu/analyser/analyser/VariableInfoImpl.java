@@ -21,19 +21,14 @@ import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.expression.Negation;
-import org.e2immu.analyser.model.expression.NewObject;
-import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.statement.LoopStatement;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
-import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnce;
 
 import java.util.*;
 import java.util.function.IntBinaryOperator;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;

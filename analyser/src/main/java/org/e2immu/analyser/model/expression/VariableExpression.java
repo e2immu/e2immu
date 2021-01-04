@@ -129,7 +129,7 @@ public record VariableExpression(Variable variable,
         }
         int modified = forwardEvaluationInfo.getProperty(VariableProperty.MODIFIED);
         if (modified != Level.DELAY) {
-            builder.markContentModified(variable, modified);
+            builder.markContentModified(variable, currentValue, modified);
         }
 
         int notModified1 = forwardEvaluationInfo.getProperty(VariableProperty.NOT_MODIFIED_1);

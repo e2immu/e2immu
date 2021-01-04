@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -29,6 +30,7 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.util.SetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +90,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public ExpressionChangeData merge(ExpressionChangeData other) {
-            return other; //  should we merge? don't think so
+            Set<Variable> combinedLinkedVariables = SetUtil.immutableUnion(linkedVariables, other.linkedVariables);
+            if (combinedLinkedVariables.equals(other.linkedVariables)) {
+                return other; //  should we merge? don't think so
+            }
+            return new ExpressionChangeData(other.value, other.stateIsDelayed, other.markAssignment,
+                    other.isNotAssignmentTarget, combinedLinkedVariables);
         }
     }
 
@@ -245,7 +252,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             } else if (notNull == MultiLevel.DELAY) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
                 addToModifications(statementAnalyser(variable).new SetProperty(variable, VariableProperty.NOT_NULL, notNullRequired));
-                if(value instanceof VariableExpression redirect) {
+                if (value instanceof VariableExpression redirect) {
                     addToModifications(statementAnalyser(redirect.variable())
                             .new SetProperty(redirect.variable(), VariableProperty.NOT_NULL, notNullRequired));
                 }
@@ -304,13 +311,36 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
+        /* when evaluating a variable field, a new local copy of the variable may be created
+           when this happens, we need to link the field to this local copy
+           this linking takes place in the value changes map, so that the linked variables can be set once, correctly.
+         */
         public Expression currentExpression(Variable variable, boolean isNotAssignmentTarget) {
             ExpressionChangeData currentExpression = valueChanges.get(variable);
             if (currentExpression == null || currentExpression.value == NO_VALUE) {
                 assert evaluationContext != null;
-                return evaluationContext.currentValue(variable, statementTime, isNotAssignmentTarget);
+                EvaluationContext.CurrentValueResult cvr = evaluationContext.currentValue(variable, statementTime, isNotAssignmentTarget);
+                if (cvr.newlyCreatedLocalVariableCopyNeedsLinking() != null) {
+                    LocalVariableReference lvr = cvr.newlyCreatedLocalVariableCopyNeedsLinking();
+                    addLink(lvr.variable.isLocalCopyOf(), lvr);
+                }
+                return cvr.value();
             }
             return currentExpression.value;
+        }
+
+        private void addLink(Variable from, Variable to) {
+            ExpressionChangeData current = valueChanges.get(from);
+            ExpressionChangeData newVcd;
+            if (current == null) {
+                newVcd = new ExpressionChangeData(NO_VALUE, false, false, true, Set.of(to));
+            } else {
+                // we simply merge the linkedVariables
+                Set<Variable> linkedVariables = SetUtil.immutableUnion(current.linkedVariables, Set.of(to));
+                newVcd = new ExpressionChangeData(current.value,
+                        current.stateIsDelayed, current.markAssignment, current.isNotAssignmentTarget, linkedVariables);
+            }
+            valueChanges.put(from, newVcd);
         }
 
         public NewObject currentInstance(Variable variable, ObjectFlow objectFlowForCreation, Expression stateFromPreconditions) {
@@ -362,13 +392,21 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
-        public void markContentModified(Variable variable, int modified) {
+        public void markContentModified(Variable variable, Expression value, int modified) {
             assert evaluationContext != null;
             int ignoreContentModifications = evaluationContext.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
             if (ignoreContentModifications != Level.TRUE) {
                 log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.fullyQualifiedName());
                 StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
                 addToModifications(statementAnalyser.new SetProperty(variable, VariableProperty.MODIFIED, modified));
+
+                // modification in MLD via linked variables travels in one direction, but direct assignment also travels
+                // "backwards"
+                if (value instanceof VariableExpression redirect) {
+                    addToModifications(statementAnalyser(redirect.variable()).new SetProperty(redirect.variable(),
+                            VariableProperty.MODIFIED, modified));
+                }
+
             } else {
                 log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.fullyQualifiedName());
             }

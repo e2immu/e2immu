@@ -300,10 +300,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return parent.enclosingConditionalStatement();
     }
 
-    public interface StateChange extends Function<Expression, Expression> {
-        // nothing
-    }
-
     @Override
     public AnnotationMode annotationMode() {
         throw new UnsupportedOperationException();
@@ -755,6 +751,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return variableInfo.getProperty(variableProperty);
     }
 
+    public record FindOrCreateL1Result(VariableInfo variableInfo,
+                                       LocalVariableReference newlyCreatedLocalVariableCopyNeedsLinking) {
+    }
+
     /**
      * Find a variable for reading. Intercepts fields and local variables.
      *
@@ -762,10 +762,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * @param variable        the variable
      * @return the most current variable info object
      */
-    public VariableInfo findOrCreateL1(@NotNull AnalyserContext analyserContext,
-                                       @NotNull Variable variable,
-                                       int statementTime,
-                                       boolean isNotAssignmentTarget) {
+    public FindOrCreateL1Result findOrCreateL1(@NotNull AnalyserContext analyserContext,
+                                               @NotNull Variable variable,
+                                               int statementTime,
+                                               boolean isNotAssignmentTarget) {
         String fqn = variable.fullyQualifiedName();
         VariableInfoContainer vic;
         if (!variables.isSet(fqn)) {
@@ -776,13 +776,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfo vi = vic.best(VariableInfoContainer.LEVEL_2_UPDATER); // including loop assignments
         if (isNotAssignmentTarget) {
             if (vi.variable() instanceof FieldReference fieldReference && vi.getStatementTime() >= 0) {
-                return variableInfoOfFieldWhenReading(analyserContext, fieldReference, vi, statementTime);
+                return variableInfoOfFieldWhenReading(analyserContext, fieldReference, vi, vic, statementTime);
             }
             if (vic.isLocalVariableInLoopDefinedOutside() && !relevantLocalVariablesAssignedInThisLoopAreFrozen()) {
-                return new VariableInfoImpl(variable); // no value, no state
+                return new FindOrCreateL1Result(new VariableInfoImpl(variable), null); // no value, no state
             }
         } // else we need to go to the variable itself
-        return vi;
+        return new FindOrCreateL1Result(vi, null);
     }
 
     private boolean relevantLocalVariablesAssignedInThisLoopAreFrozen() {
@@ -817,23 +817,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         throw new UnsupportedOperationException();
     }
 
-    public FindLoopResult findLoop() {
-        StatementAnalysis sa = this;
-        int cnt = 0;
-        while (sa != null) {
-            if (sa.statement instanceof LoopStatement) {
-                return new FindLoopResult(sa, cnt);
-            }
-            sa = sa.parent;
-            cnt++;
-        }
-        throw new UnsupportedOperationException();
-    }
-
-    private VariableInfo variableInfoOfFieldWhenReading(AnalyserContext analyserContext,
-                                                        FieldReference fieldReference,
-                                                        VariableInfo vi,
-                                                        int statementTime) {
+    private FindOrCreateL1Result variableInfoOfFieldWhenReading(AnalyserContext analyserContext,
+                                                                FieldReference fieldReference,
+                                                                VariableInfo fieldVi,
+                                                                VariableInfoContainer fieldVic,
+                                                                int statementTime) {
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
 
         // a variable field can have any value when first read in a method.
@@ -847,10 +835,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
         Expression initialValue;
         String localVariableFqn;
-        if (statementTime == vi.getStatementTime() && vi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
+        if (statementTime == fieldVi.getStatementTime() && fieldVi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
             // return a local variable with the current field value, numbered as the statement time + assignment ID
-            localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime + "$" + vi.getAssignmentId().replace(".", "_");
-            initialValue = vi.getValue();
+            localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime + "$" + fieldVi.getAssignmentId().replace(".", "_");
+            initialValue = fieldVi.getValue();
         } else {
             localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime;
             initialValue = new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
@@ -868,16 +856,22 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfoContainer lvrVic;
         if (variables.isSet(lvr.fullyQualifiedName())) {
             lvrVic = variables.get(lvr.fullyQualifiedName());
-        } else {
-            lvrVic = createVariable(analyserContext, lvr, statementTime, false);
-            assert initialValue != EmptyExpression.NO_VALUE;
-            lvrVic.setInitialValueFromAnalyser(initialValue, propertyMap(analyserContext, fieldReference.fieldInfo));
-            lvrVic.setLinkedVariablesFromAnalyser(Set.of(fieldReference)); // linked to the reference
-
-            lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, ASSIGNED, 1);
-            lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, READ, 2);
+            return new FindOrCreateL1Result(lvrVic.current(), null);
         }
-        return lvrVic.current();
+
+        lvrVic = createVariable(analyserContext, lvr, statementTime, false);
+        assert initialValue != EmptyExpression.NO_VALUE;
+        lvrVic.setInitialValueFromAnalyser(initialValue, propertyMap(analyserContext, fieldReference.fieldInfo));
+        lvrVic.setLinkedVariablesFromAnalyser(Set.of(fieldReference)); // linked to the reference
+
+        lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, ASSIGNED, 1);
+        lvrVic.setProperty(VariableInfoContainer.LEVEL_1_INITIALISER, READ, 2);
+
+        // a modification on the local variable copy needs to travel towards the field... so we must make the field
+        // dependent on the local variable!
+        //fieldVic.addLinkedVariable(VariableInfoContainer.LEVEL_2_UPDATER, lvr);
+
+        return new FindOrCreateL1Result(lvrVic.current(), lvr);
     }
 
     // either go next, or go down

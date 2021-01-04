@@ -1,11 +1,9 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.expression.PropertyWrapper;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -148,7 +146,8 @@ public class Test_17_Container extends CommonTestRunner {
                 if (S.equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId()) || "1".equals(d.statementId())) {
                         if (d.iteration() > 0) {
-                            Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
+                            Assert.assertEquals("org.e2immu.analyser.testexample.Container_3.s$0",
+                                    debug(d.variableInfo().getLinkedVariables()));
                             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                         }
                     }
@@ -170,24 +169,44 @@ public class Test_17_Container extends CommonTestRunner {
             }
         };
 
-        TypeMapVisitor typeMapVisitor = typeMap -> {
-            TypeInfo set = typeMap.get(HashSet.class);
-
-           // Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, param0.getProperty(VariableProperty.IMMUTABLE));
-        };
-
         testClass("Container_3", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
-                .addTypeMapVisitor(typeMapVisitor)
                 .build());
     }
 
     @Test
     public void test_4() throws IOException {
-        testClass("Container_4", 0, 0, new DebugConfiguration.Builder()
+        TypeMapVisitor typeMapVisitor = typeMap -> {
+            TypeInfo set = typeMap.get(Set.class);
+            MethodInfo addAll = set.findUniqueMethod("addAll", 1);
+            ParameterInfo param0 = addAll.methodInspection.get().getParameters().get(0);
+            Assert.assertEquals(Level.FALSE, param0.parameterAnalysis.get().getProperty(VariableProperty.MODIFIED));
+        };
 
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            final String TYPE = "org.e2immu.analyser.testexample.Container_4";
+            final String IN = TYPE + ".crossModify(Set<String>,Set<String>):0:in";
+
+            if ("crossModify".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                if (IN.equals(d.variableName())) {
+                    Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("crossModify".equals(d.methodInfo().name)) {
+                ParameterAnalysis p0 = d.parameterAnalyses().get(0);
+                Assert.assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED));
+            }
+        };
+
+        testClass("Container_4", 0, 0, new DebugConfiguration.Builder()
+                .addTypeMapVisitor(typeMapVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .build());
     }
 

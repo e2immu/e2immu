@@ -422,10 +422,10 @@ public class TypeInfo implements NamedType, WithInspectionAndAnalysis {
         return typeInspection.get().modifiers().contains(TypeModifier.PRIVATE);
     }
 
-    public boolean isAnEnclosingTypeOf(TypeInfo typeInfo) {
+    public boolean isEnclosedIn(TypeInfo typeInfo) {
         if (typeInfo == this) return true;
         if (packageNameOrEnclosingType.isLeft()) return false;
-        return isAnEnclosingTypeOf(typeInfo.packageNameOrEnclosingType.getRight());
+        return packageNameOrEnclosingType.getRight().isEnclosedIn(typeInfo);
     }
 
     public boolean isRecord() {

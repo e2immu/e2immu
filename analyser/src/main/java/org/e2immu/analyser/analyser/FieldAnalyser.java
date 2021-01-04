@@ -26,6 +26,7 @@ import org.e2immu.analyser.config.FieldAnalyserVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -535,6 +536,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
                 .filter(VariableInfo::linkedVariablesIsSet)
                 .flatMap(vi -> vi.getLinkedVariables().stream())
+                .filter(v -> !(v instanceof LocalVariableReference)) // especially local variable copies of the field itself
                 .collect(Collectors.toSet());
         fieldAnalysis.linkedVariables.set(ImmutableSet.copyOf(linkedVariables));
         log(LINKED_VARIABLES, "FA: Set links of {} to [{}]", fieldInfo.fullyQualifiedName(), Variable.fullyQualifiedName(linkedVariables));
@@ -563,7 +565,7 @@ public class FieldAnalyser extends AbstractAnalyser {
         } else {
             int isAssignedOutsideConstructors = allMethodsAndConstructors.stream()
                     .filter(m -> m.methodInfo.methodResolution.get().partOfConstruction().accessibleFromTheOutside())
-                    .flatMap(m -> m.getFieldAsVariableStream(fieldInfo,  false))
+                    .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
                     .mapToInt(vi -> vi.getProperty(VariableProperty.ASSIGNED))
                     .max().orElse(Level.DELAY);
             isFinal = isAssignedOutsideConstructors < Level.TRUE;
@@ -763,7 +765,9 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         @Override
         public ObjectFlow getObjectFlow(Variable variable, int statementTime) {
-            return currentValue(variable, statementTime, true).getObjectFlow();
+            CurrentValueResult cvr = currentValue(variable, statementTime, true);
+            assert cvr.newlyCreatedLocalVariableCopyNeedsLinking() == null;
+            return cvr.value().getObjectFlow();
         }
 
         @Override
@@ -785,12 +789,12 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+        public CurrentValueResult currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
             if (variable instanceof FieldReference) {
-                return getVariableValue(variable);
+                return new CurrentValueResult(getVariableValue(variable), null);
             }
             if (variable instanceof This) {
-                return myTypeAnalyser.getVariableValue(variable);
+                return new CurrentValueResult(myTypeAnalyser.getVariableValue(variable), null);
             }
             throw new UnsupportedOperationException("Variable of " + variable.getClass() + " not implemented here");
         }

@@ -196,8 +196,9 @@ public class EvaluateParameters {
     public static Boolean tryToDetectUndeclared(EvaluationContext evaluationContext, int statementTime, Expression scope) {
         if (scope instanceof VariableExpression variableExpression) {
             if (variableExpression.variable() instanceof ParameterInfo) return true;
-            Expression value = evaluationContext.currentValue(variableExpression.variable(), statementTime, true);
-            if (value == EmptyExpression.NO_VALUE) return null; // delay
+            EvaluationContext.CurrentValueResult cvr = evaluationContext.currentValue(variableExpression.variable(), statementTime, true);
+            assert cvr.newlyCreatedLocalVariableCopyNeedsLinking() == null;
+            if (cvr.value() == EmptyExpression.NO_VALUE) return null; // delay
             // TODO
             return true;
         }

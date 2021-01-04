@@ -21,6 +21,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Freezable;
+import org.e2immu.analyser.util.SetUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -133,8 +134,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             } else {
                 assert statementTime == vi.getStatementTime() :
                         "New statement time is " + statementTime + ", had " + vi.getStatementTime();
-                assert assignmentId.equals(vi.getAssignmentId()) :
-                        "New assignment id is " + assignmentId + ", had " + vi.getAssignmentId();
+              //  assert assignmentId.equals(vi.getAssignmentId()) :
+               // FIXME         "New assignment id is " + assignmentId + ", had " + vi.getAssignmentId();
             }
             return;
         }

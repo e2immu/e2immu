@@ -23,51 +23,30 @@ import org.e2immu.annotation.ExtensionClass;
 import org.e2immu.annotation.NotModified;
 import org.e2immu.annotation.UtilityClass;
 
+@UtilityClass(absent = true)
 @ExtensionClass(of = String.class)
 @E2Container
-public class UtilityClassChecks {
+public class UtilityClass_2 {
 
     @NotModified
     static void print(@NotModified(absent = true) String toPrint) {
         System.out.println(toPrint);
     }
 
-    @UtilityClass
-    @ExtensionClass(of = String.class)
-    @E2Container
-    static class UtilityClass1 {
-
-        @NotModified
-        static void hello(String s) {
-            UtilityClassChecks.print(s);
-        }
-
-        private UtilityClass1() {
-            // nothing here
-            throw new UnsupportedOperationException();
-        }
-    }
 
     @UtilityClass(absent = true)
     static class NotAUtilityClass {
         static void hello(String s) {
             print(s);
         }
-    }
 
-    @UtilityClass(absent = true)
-    static class NotAUtilityClass2 {
-        static void hello(String s) {
-            print(s);
-        }
-
-        private NotAUtilityClass2() {
+        private NotAUtilityClass() {
             // nothing here
             print("?");
         }
 
         static void createInstance() {
-            new NotAUtilityClass2();
+            new NotAUtilityClass();
         }
     }
 

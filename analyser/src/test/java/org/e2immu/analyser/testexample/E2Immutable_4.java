@@ -18,16 +18,29 @@
 
 package org.e2immu.analyser.testexample;
 
-import static java.lang.System.out;
-import static java.util.Arrays.stream;
-import static org.junit.Assert.assertEquals;
+import com.google.common.collect.ImmutableMap;
+import org.e2immu.annotation.E2Container;
+import org.e2immu.annotation.Linked;
 
-public class StaticImports {
+import java.util.HashMap;
+import java.util.Map;
 
-    public static void test1() {
-        int[] integers = {1, 2, 3};
-        int sum = stream(integers).sum();
-        out.println("Sum is " + sum);
-        assertEquals(6, sum);
+@E2Container
+public class E2Immutable_4 {
+
+    @Linked(absent = true)
+    private final Map<String, String> map4;
+
+    public E2Immutable_4(Map<String, String> map4Param) {
+        map4 = new HashMap<>(map4Param); // not linked
+    }
+
+    public String get4(String input) {
+        return map4.get(input);
+    }
+
+    @E2Container
+    public Map<String, String> getMap4() {
+        return ImmutableMap.copyOf(map4);
     }
 }

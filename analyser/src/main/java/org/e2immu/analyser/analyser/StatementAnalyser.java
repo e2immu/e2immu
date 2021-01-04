@@ -1524,7 +1524,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return notNullVariablesInCondition.contains(variable);
         }
 
-        private VariableInfo findOrCreateL1(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+        private StatementAnalysis.FindOrCreateL1Result findOrCreateL1(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
             if (closure != null && isNotMine(variable)) {
                 return ((EvaluationContextImpl) closure).findOrCreateL1(variable, statementTime, isNotAssignmentTarget);
             }
@@ -1535,19 +1535,23 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return getCurrentType() != variable.getOwningType();
         }
 
+        // we pass on the information about the potential newly created local variable copy
         @Override
-        public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
-            VariableInfo vi = findOrCreateL1(variable, statementTime, isNotAssignmentTarget);
-            Expression value = vi.getValue();
+        public CurrentValueResult currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+            StatementAnalysis.FindOrCreateL1Result res = findOrCreateL1(variable, statementTime, isNotAssignmentTarget);
+            Expression value = res.variableInfo().getValue();
             // important! do not use variable in the next statement, but vi.variable()
             // we could have redirected from a variable field to a local variable copy
-            return value instanceof NewObject ? new VariableExpression(vi.variable(), vi.getObjectFlow()) : value;
+            Expression toReturn = value instanceof NewObject ?
+                    new VariableExpression(res.variableInfo().variable(), res.variableInfo().getObjectFlow()) : value;
+            return new CurrentValueResult(toReturn, res.newlyCreatedLocalVariableCopyNeedsLinking());
         }
 
         @Override
         public NewObject currentInstance(Variable variable, int statementTime) {
-            VariableInfo vi = findOrCreateL1(variable, statementTime, true);
-            Expression value = vi.getValue();
+            StatementAnalysis.FindOrCreateL1Result res = findOrCreateL1(variable, statementTime, true);
+            Expression value = res.variableInfo().getValue();
+            assert res.newlyCreatedLocalVariableCopyNeedsLinking() == null; // we'll have asked for the value first!
 
             // redirect to other variable
             if (value instanceof VariableExpression variableValue) {
@@ -1732,7 +1736,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void accept(ModificationData modificationData) {
-            statementAnalysis.ensure(Message.newMessage(location, Message.ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
+            statementAnalysis.ensure(Message.newMessage(location, Message.ADVISE_AGAINST_ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
         }
 
         @Override

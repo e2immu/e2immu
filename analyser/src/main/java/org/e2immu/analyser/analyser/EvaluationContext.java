@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -79,8 +80,11 @@ public interface EvaluationContext {
         return child(condition);
     }
 
-    default Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
-        return EmptyExpression.NO_VALUE;
+    record CurrentValueResult(Expression value, LocalVariableReference newlyCreatedLocalVariableCopyNeedsLinking) {
+    }
+
+    default CurrentValueResult currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+        return new CurrentValueResult(EmptyExpression.NO_VALUE, null);
     }
 
     default AnalyserContext getAnalyserContext() {
@@ -123,7 +127,9 @@ public interface EvaluationContext {
     }
 
     default ObjectFlow getObjectFlow(Variable variable, int statementTime) {
-        return currentValue(variable, statementTime, true).getObjectFlow();
+        CurrentValueResult cvr = currentValue(variable, statementTime, true);
+        assert cvr.newlyCreatedLocalVariableCopyNeedsLinking == null;
+        return cvr.value.getObjectFlow();
     }
 
     default int getProperty(Expression value, VariableProperty variableProperty) {
@@ -226,7 +232,9 @@ public interface EvaluationContext {
         return true;
     }
 
-    default Expression replaceLocalVariables(Expression mergeValue) { throw new UnsupportedOperationException(); }
+    default Expression replaceLocalVariables(Expression mergeValue) {
+        throw new UnsupportedOperationException();
+    }
 
     default Expression acceptAndTranslatePrecondition(Expression rest) {
         return null;

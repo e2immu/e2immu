@@ -218,8 +218,8 @@ public abstract class CommonAbstractValue {
         }
 
         @Override
-        public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
-            return new VariableExpression(variable);
+        public CurrentValueResult currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+            return new CurrentValueResult(new VariableExpression(variable), null);
         }
 
         @Override

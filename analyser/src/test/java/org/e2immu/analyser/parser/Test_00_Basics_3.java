@@ -67,18 +67,39 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setS1".equals(d.methodInfo().name) && S.equals(d.variableName())) {
-                if("0.0.1".equals(d.statementId())) {
+                if ("0.0.0".equals(d.statementId())) {
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type String";
+                    Assert.assertEquals(expectValue, d.currentValue().debugOutput());
+                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.ASSIGNED));
+                    if (d.iteration() == 0) {
+                        Assert.assertNull(d.variableInfo().getLinkedVariables());
+                    } else {
+                        // s is linked to s$1
+                        Assert.assertEquals("org.e2immu.analyser.testexample.Basics_3.s$1", debug(d.variableInfo().getLinkedVariables()));
+                    }
+                }
+                if ("0.0.1".equals(d.statementId())) {
                     Assert.assertEquals("\"xyz\"", d.currentValue().debugOutput());
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                    // FIXME why is linked the empty set? it should always be s$1 --> assignment overrides?? or not?
+                    String expectedLinked = d.iteration() == 0 ? "" : "org.e2immu.analyser.testexample.Basics_3.s$1";
+                    Assert.assertEquals(expectedLinked, debug(d.variableInfo().getLinkedVariables()));
                 }
-                if("0.1.0".equals(d.statementId())) {
+                if ("0.1.0".equals(d.statementId())) {
                     Assert.assertEquals("\"abc\"", d.currentValue().debugOutput());
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
-                }
-                if ("1".equals(d.statementId()) || "0".equals(d.statementId())) {
-                    Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
                     Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
-                    Assert.assertEquals("At "+d.statementId(), Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                }
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
+                    String expectedLinked = d.iteration() == 0 ? "" : "org.e2immu.analyser.testexample.Basics_3.s$1";
+                    Assert.assertEquals(expectedLinked, debug(d.variableInfo().getLinkedVariables()));
+                    Assert.assertEquals("At " + d.statementId(), Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                }
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
+                    Assert.assertEquals("org.e2immu.analyser.testexample.Basics_3.s$2$0:4", debug(d.variableInfo().getLinkedVariables()));
+                    Assert.assertEquals("At " + d.statementId(), Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
                 }
             }
             if ("setS2".equals(d.methodInfo().name) && S.equals(d.variableName())) {

@@ -236,7 +236,7 @@ public class Assignment implements Expression {
             FieldInfo fieldInfo = ((FieldReference) at).fieldInfo;
 
             // check illegal assignment into nested type
-            if (checkIllegalAssignmentIntoNestedType(at, fieldInfo, evaluationContext.getCurrentType())) {
+            if (checkIllAdvisedAssignment(at, fieldInfo, evaluationContext.getCurrentType())) {
                 builder.addErrorAssigningToFieldOutsideType(fieldInfo);
             }
 
@@ -260,7 +260,7 @@ public class Assignment implements Expression {
 
     }
 
-    private static boolean checkIllegalAssignmentIntoNestedType(Variable at, FieldInfo fieldInfo, TypeInfo currentType) {
+    private static boolean checkIllAdvisedAssignment(Variable at, FieldInfo fieldInfo, TypeInfo currentType) {
         TypeInfo owner = fieldInfo.owner;
         if (owner.primaryType() != currentType.primaryType()) return true; // outside primary type
         if (owner == currentType) { // in the same type
@@ -268,6 +268,6 @@ public class Assignment implements Expression {
             return !(((FieldReference) at).scope instanceof This);
         }
         // outside current type, but inside primary type, only records
-        return !(owner.isRecord() && currentType.isAnEnclosingTypeOf(owner));
+        return !(owner.isRecord() && owner.isEnclosedIn(currentType));
     }
 }

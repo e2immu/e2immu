@@ -137,6 +137,7 @@ public class MethodLevelData {
         final AtomicReference<AnalysisStatus> analysisStatus = new AtomicReference<>(DONE);
         final DependencyGraph<Variable> dependencyGraph = new DependencyGraph<>();
 
+        // delays in dependency graph
         sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
             Set<Variable> linkedVariables = variableInfo.getLinkedVariables();
             if (linkedVariables == null && variableInfo.getValue() instanceof VariableExpression redirect) {
@@ -166,70 +167,70 @@ public class MethodLevelData {
 
         sharedState.statementAnalysis.safeVariableStream().forEach(variableInfo -> {
             Variable baseVariable = variableInfo.variable();
-            Set<Variable> dependentVariables = SetUtil.immutableUnion(Set.of(baseVariable), dependencyGraph.dependencies(baseVariable));
-            boolean containsDelayVar = dependentVariables.stream().anyMatch(v -> v == DELAY_VAR);
+            Set<Variable> variablesBaseLinksTo = SetUtil.immutableUnion(Set.of(baseVariable), dependencyGraph.dependencies(baseVariable));
+            boolean containsDelayVar = variablesBaseLinksTo.stream().anyMatch(v -> v == DELAY_VAR);
             if (!containsDelayVar) {
                 // we cannot write to variables if they don't exist (that's a shortcut to avoid burdening many methods
                 // with the necessary arguments)
                 // therefore we check that all linked variables (such as a parameter of a different method linked to a field) exist
                 // we exclude the base variable itself, (a) because it does exist already, but (b) in case of a variable field,
                 // it generates an unnecessary copy
-                dependentVariables
+                variablesBaseLinksTo
                         .stream()
                         .filter(v -> !v.equals(baseVariable))
                         .forEach(sharedState.evaluationContext::ensureVariableAtTimeOfSubBlocks);
 
-                int summary = sharedState.evaluationContext.summarizeModification(dependentVariables);
+                int summary = sharedState.evaluationContext.summarizeModification(variablesBaseLinksTo);
                 String logLocation = sharedState.logLocation;
 
-                for (Variable dependentVariable : dependentVariables) {
-                    if (dependentVariable instanceof FieldReference fieldReference) {
-                        // NOTE: not redirecting to "raw" field, via fieldReference.fieldInfo.fullyQualifiedName
-                        VariableInfo vi = sharedState.statementAnalysis.getLatestVariableInfo(fieldReference.fullyQualifiedName());
-                        int modified = vi.getProperty(VariableProperty.MODIFIED);
-                        // the second condition is there because fields start with modified 0 in a method
-                        if (modified == Level.DELAY || modified < summary) {
-                            // break the delay in case the variable is not even read
-                            int fieldModified;
-                            if (summary == Level.DELAY && vi.getProperty(VariableProperty.READ) < Level.TRUE) {
-                                fieldModified = Level.FALSE;
-                            } else fieldModified = summary;
-                            if (fieldModified == Level.DELAY) {
-                                log(DELAYED, "Delay marking {} as @NotModified in {}", dependentVariable.fullyQualifiedName(), logLocation);
-                                analysisStatus.set(DELAYS);
-                            } else {
-                                log(NOT_MODIFIED, "Mark {} " + (fieldModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
-                                        dependentVariable.fullyQualifiedName(), logLocation);
-                                VariableInfoContainer vic = sharedState.statementAnalysis.findForWriting(vi.name());
-                                vic.setProperty(VIC_LEVEL, VariableProperty.MODIFIED, fieldModified);
-                                progress.set(true);
-                            }
-                        }
-                    } else if (dependentVariable instanceof ParameterInfo) {
-                        ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getParameterAnalysis((ParameterInfo) dependentVariable);
-                        //  Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
-                        //  if (!assigned.isEmpty() && assigned.values().stream().anyMatch(ParameterAnalysis.AssignedOrLinked::isAssignedOrLinked)) {
-                        //      log(NOT_MODIFIED, "Parameter {} is assigned or linked to field: {}, not setting @NotModified {} directly",
-                        //              dependentVariable.fullyQualifiedName(), assigned, summary);
-                        //  } else {
-                        // FIXME I'd rather try to overwrite
-                        if (summary == Level.DELAY) {
-                            log(DELAYED, "Delay marking {} as @NotModified in {}", dependentVariable.fullyQualifiedName(), logLocation);
+                //for (Variable dependentVariable : variablesBaseLinksTo) {
+                if (baseVariable instanceof FieldReference fieldReference) {
+                    // NOTE: not redirecting to "raw" field, via fieldReference.fieldInfo.fullyQualifiedName
+                    VariableInfo vi = sharedState.statementAnalysis.getLatestVariableInfo(fieldReference.fullyQualifiedName());
+                    int modified = vi.getProperty(VariableProperty.MODIFIED);
+                    // the second condition is there because fields start with modified 0 in a method
+                    if (modified == Level.DELAY || modified < summary) {
+                        // break the delay in case the variable is not even read
+                        int fieldModified;
+                        if (summary == Level.DELAY && vi.getProperty(VariableProperty.READ) < Level.TRUE) {
+                            fieldModified = Level.FALSE;
+                        } else fieldModified = summary;
+                        if (fieldModified == Level.DELAY) {
+                            log(DELAYED, "Delay marking {} as @NotModified in {}", baseVariable.fullyQualifiedName(), logLocation);
                             analysisStatus.set(DELAYS);
                         } else {
-                            log(NOT_MODIFIED, "Mark {} as {} in {}", dependentVariable.fullyQualifiedName(),
-                                    summary == Level.TRUE ? "@Modified" : "@NotModified", logLocation);
-                            int currentModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
-                            if (currentModified == Level.DELAY) {
-                                // we can safely cast here to the builder
-                                ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
-                                sharedState.builder.add(builder.new SetProperty(VariableProperty.MODIFIED, summary));
-                                progress.set(true);
-                            }
+                            log(NOT_MODIFIED, "Mark {} " + (fieldModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
+                                    baseVariable.fullyQualifiedName(), logLocation);
+                            VariableInfoContainer vic = sharedState.statementAnalysis.findForWriting(vi.name());
+                            vic.setProperty(VIC_LEVEL, VariableProperty.MODIFIED, fieldModified);
+                            progress.set(true);
                         }
-                        //  }
                     }
+                } else if (baseVariable instanceof ParameterInfo) {
+                    ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getParameterAnalysis((ParameterInfo) baseVariable);
+                    //  Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
+                    //  if (!assigned.isEmpty() && assigned.values().stream().anyMatch(ParameterAnalysis.AssignedOrLinked::isAssignedOrLinked)) {
+                    //      log(NOT_MODIFIED, "Parameter {} is assigned or linked to field: {}, not setting @NotModified {} directly",
+                    //              dependentVariable.fullyQualifiedName(), assigned, summary);
+                    //  } else {
+                    // FIXME I'd rather try to overwrite
+                    if (summary == Level.DELAY) {
+                        log(DELAYED, "Delay marking {} as @NotModified in {}", baseVariable.fullyQualifiedName(), logLocation);
+                        analysisStatus.set(DELAYS);
+                    } else {
+                        log(NOT_MODIFIED, "MethodLevelData: Mark {} as {} in {}", baseVariable.fullyQualifiedName(),
+                                summary == Level.TRUE ? "@Modified" : "@NotModified", logLocation);
+                        int currentModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
+                        if (currentModified == Level.DELAY) {
+                            // we can safely cast here to the builder
+                            ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
+                            sharedState.builder.add(builder.new SetProperty(VariableProperty.MODIFIED, summary));
+                            progress.set(true);
+                        }
+                    }
+                    //  }
                 }
+                //}
             }
         });
         if (analysisStatus.get() == DONE) {
