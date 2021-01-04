@@ -21,9 +21,13 @@ package org.e2immu.analyser.testexample;
 import org.e2immu.annotation.Identity;
 import org.e2immu.annotation.NotModified;
 
-// must be with AnnotatedAPI because @NoModifications on System.out
+/*
+ must be with AnnotatedAPI because @NoModifications on System.out
 
-public class StaticSideEffectsOnlyChecks {
+ this one tests "static side effects only"
+ */
+
+public class SideEffects_0 {
 
     @NotModified
     public static void printStatic(String t) {

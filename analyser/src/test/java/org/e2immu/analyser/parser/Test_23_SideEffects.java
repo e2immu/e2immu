@@ -24,23 +24,15 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class Test_20_CyclicReferences extends CommonTestRunner {
-    public Test_20_CyclicReferences() {
+public class Test_23_SideEffects extends CommonTestRunner {
+    public Test_23_SideEffects() {
         super(true);
     }
 
     @Test
     public void test_0() throws IOException {
-        testClass("CyclicReferences_0", 0, 0, new DebugConfiguration.Builder().build());
+        testClass("SideEffects_0", 0, 0, new DebugConfiguration.Builder().build());
     }
 
-    @Test
-    public void test_1() throws IOException {
-        testClass("CyclicReferences_1", 0, 0, new DebugConfiguration.Builder().build());
-    }
 
-    @Test
-    public void test_2() throws IOException {
-        testClass("CyclicReferences_2", 0, 0, new DebugConfiguration.Builder().build());
-    }
 }

@@ -18,44 +18,7 @@
 
 package org.e2immu.analyser.testexample;
 
-import org.e2immu.annotation.E2Container;
-import org.e2immu.annotation.ExtensionClass;
-import org.e2immu.annotation.NotModified;
-
-import java.util.List;
-
-@E2Container
-@ExtensionClass(of = String.class)
-public class CyclicReferences {
-
-    private String field1;
-    private String field2;
-
-    public CyclicReferences() {
-        this("abc");
-    }
-    public CyclicReferences(String field1) {
-        this(field1, "cde");
-    }
-    public CyclicReferences(String field1, String field2) {
-        this.field1 = field1;
-        this.field2 = field2;
-    }
-
-    public String getField1() {
-        return field1;
-    }
-
-    public String getField2() {
-        return field2;
-    }
-
-    @NotModified
-    public static boolean findTailRecursion(String find, List<String> list) {
-        if (list.isEmpty()) return false;
-        if (list.get(0).equals(find)) return true;
-        return findTailRecursion(find, list.subList(1, list.size()));
-    }
+public class CyclicReferences_2 {
 
     public static boolean methodA(String paramA) {
         if ("b".equals(paramA)) return methodB(paramA);

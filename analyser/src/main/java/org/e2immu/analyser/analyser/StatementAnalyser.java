@@ -985,7 +985,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private void step3_ForEach(SharedState sharedState, Expression value) {
         Objects.requireNonNull(value);
 
-        if (value.getProperty(sharedState.evaluationContext, VariableProperty.NOT_NULL) >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL) {
+        if (sharedState.evaluationContext.getProperty(value, VariableProperty.NOT_NULL) >= MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL) {
             Structure structure = statementAnalysis.statement.getStructure();
             LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
             VariableInfoContainer vic = statementAnalysis.findForWriting(lvc.localVariable.name());

@@ -1,4 +1,3 @@
-
 /*
  * e2immu-analyser: code analyser for effective and eventual immutability
  * Copyright 2020, Bart Naudts, https://www.e2immu.org
@@ -17,30 +16,30 @@
  *
  */
 
-package org.e2immu.analyser.parser;
+package org.e2immu.analyser.testexample;
 
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.junit.Test;
+public class CyclicReferences_0 {
 
-import java.io.IOException;
+    private String field1;
+    private String field2;
 
-public class Test_20_CyclicReferences extends CommonTestRunner {
-    public Test_20_CyclicReferences() {
-        super(true);
+    public CyclicReferences_0() {
+        this("abc");
+    }
+    public CyclicReferences_0(String field1) {
+        this(field1, "cde");
+    }
+    public CyclicReferences_0(String field1, String field2) {
+        this.field1 = field1;
+        this.field2 = field2;
     }
 
-    @Test
-    public void test_0() throws IOException {
-        testClass("CyclicReferences_0", 0, 0, new DebugConfiguration.Builder().build());
+    public String getField1() {
+        return field1;
     }
 
-    @Test
-    public void test_1() throws IOException {
-        testClass("CyclicReferences_1", 0, 0, new DebugConfiguration.Builder().build());
+    public String getField2() {
+        return field2;
     }
 
-    @Test
-    public void test_2() throws IOException {
-        testClass("CyclicReferences_2", 0, 0, new DebugConfiguration.Builder().build());
-    }
 }
