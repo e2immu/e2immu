@@ -277,7 +277,6 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                         String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
                                 "null!=o&&o.getClass()==this.getClass()&&i==o.i&&o!=this";
                         Assert.assertEquals(expectValue, d.currentValue().toString());
-                        Assert.assertEquals(VariableInfoContainer.LEVEL_3_EVALUATION, d.variableInfoContainer().getCurrentLevel());
                     }
                 }
             }

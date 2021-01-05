@@ -61,14 +61,14 @@ public class Test_00_Basics_0 extends CommonTestRunner {
         if (d.methodInfo().name.equals("getExplicitlyFinal")
                 && "0".equals(d.statementId())) {
             if ((TYPE + ".explicitlyFinal").equals(d.variableName())) {
-                Assert.assertFalse(d.hasProperty(VariableProperty.ASSIGNED));
+                Assert.assertFalse(d.variableInfo().isAssigned());
+                Assert.assertTrue(d.variableInfo().isRead());
                 Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
                 Assert.assertEquals(new StringConstant(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
                 return;
             }
             if ((TYPE + ".this").equals(d.variableName())) {
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ)); //
+                Assert.assertTrue(d.variableInfo().isRead());
                 return;
             }
             // the return value

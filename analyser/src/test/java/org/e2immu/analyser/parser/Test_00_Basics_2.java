@@ -80,13 +80,13 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
         }
         if (STRING_FIELD.equals(d.variableName()) && "setString".equals(d.methodInfo().name)) {
-            Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+            Assert.assertTrue(d.variableInfo().isAssigned());
         }
         if (THIS.equals(d.variableName()) && "getString".equals(d.methodInfo().name)) {
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
         }
         if (STRING_FIELD.equals(d.variableName()) && "getString".equals(d.methodInfo().name)) {
-            Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+            Assert.assertTrue(d.variableInfo().isRead());
             int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
             String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type String";
@@ -108,7 +108,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
                 Assert.assertEquals(expectNotNull, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
                 assert fieldAsVariable != null;
-                Assert.assertEquals(Level.TRUE, fieldAsVariable.getProperty(VariableProperty.READ));
+                Assert.assertTrue(fieldAsVariable.isRead());
                 int expectModified = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
                 Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
 
@@ -117,7 +117,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             }
             if ("setString".equals(d.methodInfo().name)) {
                 assert fieldAsVariable != null;
-                Assert.assertEquals(Level.TRUE, fieldAsVariable.getProperty(VariableProperty.ASSIGNED));
+                Assert.assertTrue(fieldAsVariable.isAssigned());
                 Assert.assertEquals(Level.FALSE, fieldModified); // Assigned, but not modified
             }
             if ("add".equals(d.methodInfo().name)) {

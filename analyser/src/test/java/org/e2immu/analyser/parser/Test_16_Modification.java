@@ -31,9 +31,9 @@ public class Test_16_Modification extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("org.e2immu.analyser.testexample.Modification_0.set1".equals(d.variableName())) {
-                Assert.assertEquals(3, d.variableInfoContainer().getCurrentLevel());
+                Assert.assertTrue(d.variableInfoContainer().hasEvaluation() && !d.variableInfoContainer().hasMerge());
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ)); // set at level 1
+                Assert.assertTrue(d.variableInfo().isRead());
             }
         };
 
@@ -171,15 +171,13 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add3".equals(d.methodInfo().name) && "local3".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals(1, d.getProperty(VariableProperty.ASSIGNED));
-                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.READ));
+                    Assert.assertTrue(d.variableInfo().isAssigned());
+                    Assert.assertFalse(d.variableInfo().isRead());
 
                     if (d.iteration() == 0) {
                         Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
                     } else {
-                        Assert.assertEquals(1, d.variableInfoContainer().getCurrentLevel());
-                        VariableInfo variableInfo = d.variableInfoContainer().get(1);
-                        Assert.assertTrue(variableInfo.getValue() instanceof VariableExpression);
+                        Assert.assertTrue(d.variableInfo().getValue() instanceof VariableExpression);
                         VariableExpression variableValue = (VariableExpression) d.currentValue();
                         Assert.assertTrue(variableValue.variable() instanceof FieldReference);
                         Assert.assertEquals("set3", d.currentValue().toString());
@@ -187,13 +185,13 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     //  the READ is written at level 1
-                    Assert.assertEquals(1, d.variableInfoContainer().getCurrentLevel());
-                    Assert.assertEquals(1, d.getProperty(VariableProperty.ASSIGNED));
-                    Assert.assertEquals(2, d.getProperty(VariableProperty.READ));
+                    Assert.assertTrue(d.variableInfo().isAssigned());
+                    Assert.assertTrue(d.variableInfo().isRead());
+                    Assert.assertTrue(d.variableInfo().getReadId().compareTo(d.variableInfo().getAssignmentId()) > 0);
                     if (d.iteration() == 0) {
                         // there is a variable info at levels 0 and 3
                         Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
-                        Assert.assertNotNull(d.variableInfoContainer().best(0));
+                        Assert.assertFalse(d.variableInfoContainer().isInitial());
                     } else {
                         // there is a variable info in level 1, copied from level 1 in statement 0
                         // problem is that there is one in level 3 already, with a NO_VALUE
@@ -214,7 +212,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     }
                 }
                 if ("1".equals(d.statementId())) {
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                    Assert.assertTrue(d.variableInfo().isRead());
 
                     if (d.iteration() == 0) {
                         Assert.assertNull(d.variableInfo().getLinkedVariables());
@@ -549,8 +547,6 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test10() throws IOException {
-        final String TYPE = "org.e2immu.analyser.testexample.Modification_10";
-
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
 
             if ("addAll".equals(d.methodInfo().name) && "d".equals(d.variableName())) {
@@ -563,7 +559,6 @@ public class Test_16_Modification extends CommonTestRunner {
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             int iteration = d.iteration();
-            String name = d.methodInfo().name;
 
             if ("Modification_10".equals(d.methodInfo().name)) {
                 ParameterAnalysis list = d.parameterAnalyses().get(0);
@@ -576,8 +571,8 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
                 if (iteration >= 2) {
                     Assert.assertEquals(0, list.getProperty(VariableProperty.MODIFIED));
-                    Assert.assertTrue(!set3.getAssignedToField().isEmpty());
-                   // Assert.assertEquals(1, set3.getProperty(VariableProperty.MODIFIED)); // directly assigned to s0
+                    Assert.assertFalse(set3.getAssignedToField().isEmpty());
+                    // Assert.assertEquals(1, set3.getProperty(VariableProperty.MODIFIED)); // directly assigned to s0
                 }
             }
         };

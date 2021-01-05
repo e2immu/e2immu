@@ -47,10 +47,11 @@ public class TestFunctionalInterfaceModified4 extends CommonTestRunner {
                 Assert.assertEquals(Level.FALSE, modified);
             }
             FieldInfo ts = d.methodInfo().typeInfo.getFieldByName("ts", true);
-            VariableInfo tv = d.getFieldAsVariable(ts);
-            Assert.assertEquals(Level.TRUE, tv.getProperty(VariableProperty.READ));
+            VariableInfo vi = d.getFieldAsVariable(ts);
+            assert vi != null;
+            Assert.assertTrue(vi.isRead());
             if (iteration > 1) {
-                Assert.assertEquals(Level.FALSE, tv.getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, vi.getProperty(VariableProperty.MODIFIED));
             }
             MethodInfo doTheVisiting = d.methodInfo().typeInfo.findUniqueMethod("doTheVisiting", 2);
             Assert.assertTrue(d.methodAnalysis().methodLevelData().copyModificationStatusFrom.isSet(doTheVisiting));

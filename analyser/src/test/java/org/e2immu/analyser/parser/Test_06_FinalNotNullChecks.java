@@ -46,10 +46,10 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
             if (INPUT.equals(d.variableName())) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
 
-                Assert.assertEquals("null", d.variableInfoContainer().best(VariableInfoContainer.LEVEL_1_INITIALISER).getValue().toString());
-                Assert.assertEquals("param/*@NotNull*/", d.variableInfoContainer().get(VariableInfoContainer.LEVEL_3_EVALUATION).getValue().toString());
+                Assert.assertEquals("null", d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
+                Assert.assertEquals("param/*@NotNull*/", d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION).getValue().toString());
                 Assert.assertEquals("param/*@NotNull*/", d.currentValue().toString());
-                Assert.assertNull(d.variableInfoContainer().get(VariableInfoContainer.LEVEL_4_SUMMARY));
+                Assert.assertFalse(d.variableInfoContainer().hasMerge());
             }
         }
     };
@@ -99,6 +99,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         if (d.methodInfo().name.equals("FinalNotNullChecks")) {
             FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
             VariableInfo vi = d.getFieldAsVariable(input);
+            assert vi != null;
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
             Expression inputValue = vi.getValue();
             int notNull = inputValue.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL);
@@ -108,6 +109,7 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
         if ((d.methodInfo().name.equals("debug") || d.methodInfo().name.equals("toString"))) {
             FieldInfo input = d.methodInfo().typeInfo.getFieldByName("input", true);
             VariableInfo vi = d.getFieldAsVariable(input);
+            assert vi != null;
             if (d.iteration() == 0) {
                 Assert.assertSame(EmptyExpression.NO_VALUE, vi.getValue());
             } else {

@@ -53,10 +53,10 @@ public class TestFirstThen extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("getFirst".equals(d.methodInfo().name) && "FirstThen.this.first".equals(d.variableName())) {
             if ("0".equals(d.statementId())) {
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                Assert.assertTrue(d.variableInfo().isRead());
             }
             if ("1".equals(d.statementId())) {
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                Assert.assertTrue(d.variableInfo().isRead());
             }
         }
         if ("equals".equals(d.methodInfo().name) && "o".equals(d.variableName())) {
@@ -78,14 +78,16 @@ public class TestFirstThen extends CommonTestRunner {
         }
         if ("getFirst".equals(name)) {
             FieldInfo first = d.methodInfo().typeInfo.getFieldByName("first", true);
-            VariableInfo tv = d.getFieldAsVariable(first);
-            Assert.assertEquals(Level.TRUE, tv.getProperty(VariableProperty.READ));
+            VariableInfo vi = d.getFieldAsVariable(first);
+            assert vi != null;
+            Assert.assertTrue(vi.isRead());
         }
         if ("hashCode".equals(name)) {
             FieldInfo first = d.methodInfo().typeInfo.getFieldByName("first", true);
-            VariableInfo tv = d.getFieldAsVariable(first);
-            Assert.assertEquals(Level.TRUE, tv.getProperty(VariableProperty.READ));
-            Assert.assertEquals(Level.DELAY, tv.getProperty(VariableProperty.METHOD_CALLED));
+            VariableInfo vi = d.getFieldAsVariable(first);
+            assert vi != null;
+            Assert.assertTrue(vi.isRead());
+            Assert.assertEquals(Level.DELAY, vi.getProperty(VariableProperty.METHOD_CALLED));
 
             if (d.iteration() > 0) {
                 Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));

@@ -42,7 +42,7 @@ public class TestLazy extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("get".equals(d.methodInfo().name) && "Lazy.this.supplier".equals(d.variableName())) {
-            Assert.assertFalse("Statement: " + d.statementId(), d.hasProperty(VariableProperty.ASSIGNED));
+            Assert.assertFalse("Statement: " + d.statementId(), d.variableInfo().isAssigned());
         }
         if ("get".equals(d.methodInfo().name) && "Lazy.this.t".equals(d.variableName()) && d.iteration() > 0) {
             if ("2.0.0".equals(d.statementId())) {
@@ -81,6 +81,7 @@ public class TestLazy extends CommonTestRunner {
 
         if ("Lazy".equals(d.methodInfo().name)) {
             VariableInfo tv = d.getFieldAsVariable(supplier);
+            assert tv != null;
             Assert.assertNotSame(tv.getValue(), EmptyExpression.NO_VALUE);
 
             ParameterInfo supplierParam = d.methodInfo().methodInspection.get().getParameters().get(0);
@@ -92,7 +93,8 @@ public class TestLazy extends CommonTestRunner {
         }
         if ("get".equals(d.methodInfo().name)) {
             VariableInfo tv = d.getFieldAsVariable(supplier);
-            Assert.assertEquals(Level.DELAY, tv.getProperty(VariableProperty.ASSIGNED));
+            assert tv != null;
+            Assert.assertFalse(tv.isAssigned());
 
 
             VariableInfo ret = d.getReturnAsVariable();

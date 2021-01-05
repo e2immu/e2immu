@@ -47,13 +47,13 @@ public class Test_00_Basics_1 extends CommonTestRunner {
         }
         if (BASICS_1.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
             if (FIELD1.equals(d.variableName())) {
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                Assert.assertTrue(d.variableInfo().isAssigned());
                 Assert.assertEquals("p0", debug(d.variableInfo().getLinkedVariables()));
             }
         }
         if ("getF1".equals(d.methodInfo().name)) {
             if (FIELD1.equals(d.variableName())) {
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                Assert.assertTrue(d.variableInfo().isRead());
                 if(d.iteration() == 0) {
                     Assert.assertNull(d.variableInfo().getLinkedVariables());
                 } else {
@@ -61,7 +61,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 }
             }
             if (GET_F1_RETURN.equals(d.variableName())) {
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                Assert.assertTrue(d.variableInfo().isAssigned());
                 if(d.iteration() == 0) {
                     Assert.assertNull(d.variableInfo().getLinkedVariables());
                 } else {

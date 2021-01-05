@@ -97,27 +97,24 @@ public class TestExampleManualIterator1 extends CommonTestRunner {
                 MethodAnalysis constructorMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(constructor);
                 VariableInfo constructorTv = constructorMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
-                Assert.assertEquals(Level.TRUE, constructorTv.getProperty(VariableProperty.READ));
+                Assert.assertTrue(constructorTv.isRead());
                 Assert.assertEquals(Level.TRUE, constructorTv.getProperty(VariableProperty.MODIFIED));
 
                 MethodInfo visit = fieldInfo.owner.findUniqueMethod("visit", 1);
                 MethodAnalysis visitMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(visit);
                 VariableInfo visitTv = visitMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
-                Assert.assertEquals(Level.TRUE, visitTv.getProperty(VariableProperty.READ));
+                Assert.assertTrue(visitTv.isRead());
                 Assert.assertEquals(Level.FALSE, visitTv.getProperty(VariableProperty.MODIFIED));
 
                 MethodInfo iterator = fieldInfo.owner.findUniqueMethod("iterator", 0);
                 MethodAnalysis iteratorMa = d.evaluationContext().getAnalyserContext().getMethodAnalysis(iterator);
                 VariableInfo iteratorTv = iteratorMa.getLastStatement().getLatestVariableInfo(fieldInfo.fullyQualifiedName());
 
-                Assert.assertEquals(Level.TRUE, iteratorTv.getProperty(VariableProperty.READ));
+                Assert.assertTrue(iteratorTv.isRead());
 
                 if (iteration > 1) {
                     Assert.assertEquals(Level.FALSE, iteratorTv.getProperty(VariableProperty.MODIFIED));
-
-                    // int modified = fieldInfo.fieldAnalysis.get().getProperty(VariableProperty.MODIFIED);
-                    //    Assert.assertEquals(Level.FALSE, modified);
                 }
             }
         }

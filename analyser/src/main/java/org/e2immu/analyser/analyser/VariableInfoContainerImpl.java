@@ -164,6 +164,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
+    public boolean hasMerge() {
+        return merge != null && merge.isSet();
+    }
+
+    @Override
     public VariableInfo ensureEvaluation(String assignmentId, String readId, int statementTime) {
         if (evaluation.isSet()) {
             return evaluation.get();

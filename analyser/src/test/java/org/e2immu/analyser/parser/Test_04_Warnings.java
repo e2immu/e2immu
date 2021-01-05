@@ -111,49 +111,48 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("checkForEach".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
                 if ("integers".equals(d.variableName())) {
                     // so that we know that integers.iterator() has been called
-                    Assert.assertEquals(2, d.getProperty(VariableProperty.READ));
+                    Assert.assertEquals("2", d.variableInfo().getReadId()); // FIXME check value
                 }
                 if ("loopVar".equals(d.variableName())) {
-                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.READ));
+                    Assert.assertFalse(d.variableInfo().isRead());
                 }
             }
             if ("method1".equals(d.methodInfo().name) && "s".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    int assigned = d.properties().getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
-                    Assert.assertEquals(Level.DELAY, assigned);
+                    Assert.assertFalse(d.variableInfo().isAssigned());
                 }
             }
             if ("checkArray2".equals(d.methodInfo().name)) {
-                int read = d.properties().getOrDefault(VariableProperty.READ, Level.DELAY);
-                int assigned = d.properties().getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
+                String read = d.variableInfo().getReadId();
+                String assigned = d.variableInfo().getAssignmentId();
 
                 if ("0".equals(d.statementId()) && "integers".equals(d.variableName())) {
-                    Assert.assertEquals(Level.TRUE, assigned); // integers=, and integers[i]=
-                    Assert.assertEquals(Level.DELAY, read);
+                    Assert.assertEquals("0", assigned); // integers=, and integers[i]= FIXME check
+                    Assert.assertEquals(VariableInfoContainer.NOT_YET_READ, read);
                     Assert.assertEquals("{1,2,3}", d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId()) && "i".equals(d.variableName())) {
-                    Assert.assertEquals(Level.TRUE, assigned); // integers=, and integers[i]=
-                    Assert.assertEquals(Level.DELAY, read);
+                    Assert.assertEquals("0", assigned); // integers=, and integers[i]= FIXME check, ... and more in this test
+                    Assert.assertEquals(VariableInfoContainer.NOT_YET_READ, read);
                     Assert.assertEquals("0", d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     if ("integers".equals(d.variableName())) {
-                        Assert.assertEquals(Level.TRUE, assigned); // integers=, NOT integers[i]=
+                        Assert.assertEquals("0", assigned); // integers=, NOT integers[i]=
                         Assert.assertEquals(assigned + 1, read);
                         Assert.assertEquals("{1,2,3}", d.currentValue().toString());
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL)); // because in scope side
                     } else if ("i".equals(d.variableName())) {
-                        Assert.assertEquals(Level.TRUE, assigned);
+                        Assert.assertEquals("0", assigned);
                         Assert.assertEquals(assigned + 1, read);
 
                         // the standardized name is the evaluation value of expression and index, in this particular case, both constants
                     } else if ("integers[i]".equals(d.variableName())) {
-                        Assert.assertEquals(Level.TRUE, assigned);
-                        Assert.assertTrue(read <= assigned);
+                        Assert.assertEquals("0", assigned);
+                        Assert.assertTrue(read.compareTo(assigned) < 0);
                         Assert.assertEquals("3", d.currentValue().toString());
                     } else if (THIS.equals(d.variableName())) {
-                        Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.READ));
+                        Assert.assertFalse(d.variableInfo().isRead());
                     } else Assert.fail("Variable named " + d.variableName());
                 }
             }
@@ -293,8 +292,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("methodMustNotBeStatic4".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
                 VariableInfoContainer vic = d.statementAnalysis().variables.
                         get("org.e2immu.analyser.testexample.Warnings_5.ChildClass.t");
-                VariableInfo vi = vic.current();
-                Assert.assertEquals(Level.TRUE, vi.getProperty(VariableProperty.READ));
+                Assert.assertTrue(vic.current().isRead());
             }
         };
 

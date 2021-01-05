@@ -303,15 +303,15 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             if ("test1".equals(d.methodInfo().name)) {
                 if ("v".equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
-                        Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                        Assert.assertTrue(d.variableInfo().isAssigned());
                         Assert.assertEquals("l", d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        Assert.assertEquals(2, d.getProperty(VariableProperty.ASSIGNED));
+                        Assert.assertEquals("2", d.variableInfo().getAssignmentId()); // FIXME check
                         Assert.assertEquals("1+l", d.currentValue().toString());
                     }
                     if ("6".equals(d.statementId())) {
-                        Assert.assertEquals(3, d.getProperty(VariableProperty.ASSIGNED));
+                        Assert.assertEquals("3", d.variableInfo().getAssignmentId()); // FIXME check
                         Assert.assertEquals("2+l", d.currentValue().toString());
                     }
                 }

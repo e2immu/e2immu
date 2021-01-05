@@ -43,6 +43,8 @@ public interface VariableInfoContainer {
 
     boolean hasEvaluation();
 
+    boolean hasMerge();
+
     // suffixes in assignment id; these act as the 3 levels for setProperty
     enum Level {
         INITIAL(":I"),

@@ -160,15 +160,15 @@ public class Test_14_Precondition extends CommonTestRunner {
             if ("setInteger".equals(d.methodInfo().name)) {
                 if (INTEGER.equals(d.variableName())) {
                     if ("0.0.1".equals(d.statementId())) {
-                        Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                        Assert.assertTrue(d.variableInfo().isRead());
                     }
                     if ("0.0.2".equals(d.statementId())) {
-                        Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
-                        Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                        Assert.assertTrue(d.variableInfo().isRead());
+                        Assert.assertTrue(d.variableInfo().isAssigned());
                     }
                     if ("1".equals(d.statementId())) {
-                        Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
-                        Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                        Assert.assertTrue(d.variableInfo().isRead());
+                        Assert.assertTrue(d.variableInfo().isAssigned());
                     }
                 }
             }
@@ -221,7 +221,7 @@ public class Test_14_Precondition extends CommonTestRunner {
                 if ("0.0.2".equals(d.statementId())) {
                     Assert.assertTrue(d.statementAnalysis().variables.isSet(INTEGER));
                     VariableInfo variableInfo = d.getFieldAsVariable(integer);
-                    Assert.assertEquals(Level.TRUE, variableInfo.getProperty(VariableProperty.ASSIGNED));
+                    Assert.assertTrue(variableInfo.isAssigned());
 
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
                             "null==org.e2immu.analyser.testexample.Precondition_3.integer$0&&ii>=0";
@@ -238,7 +238,7 @@ public class Test_14_Precondition extends CommonTestRunner {
                     // the synchronized block
                     Assert.assertTrue(d.statementAnalysis().variables.isSet(INTEGER));
                     VariableInfo variableInfo = d.getFieldAsVariable(integer);
-                    Assert.assertEquals(Level.TRUE, variableInfo.getProperty(VariableProperty.ASSIGNED));
+                    Assert.assertTrue(variableInfo.isAssigned());
 
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
                             "null==org.e2immu.analyser.testexample.Precondition_3.integer$0&&ii>=0";
@@ -247,7 +247,7 @@ public class Test_14_Precondition extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     Assert.assertTrue(d.statementAnalysis().variables.isSet(INTEGER));
                     VariableInfo variableInfo = d.getFieldAsVariable(integer);
-                    Assert.assertEquals(Level.TRUE, variableInfo.getProperty(VariableProperty.ASSIGNED));
+                    Assert.assertTrue(variableInfo.isAssigned());
 
                     if (d.iteration() > 0) {
                         Assert.assertNotNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));

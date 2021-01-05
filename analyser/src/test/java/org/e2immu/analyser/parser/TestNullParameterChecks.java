@@ -31,16 +31,14 @@ public class TestNullParameterChecks extends CommonTestRunner {
 
             if ("s".equals(d.variableName())) {
                 LOGGER.info("Properties of s it iteration {} are {}, value {}", d.iteration(), d.properties(), d.currentValue());
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                Assert.assertTrue(d.variableInfo().isRead());
                 Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED)); //FALSE at level 1
                 return;
             }
             if ("NullParameterChecks.this.s".equals(d.variableName())) {
-                int assigned = d.getProperty(VariableProperty.ASSIGNED);
-                int read = d.getProperty(VariableProperty.READ);
-                Assert.assertEquals(Level.TRUE, assigned);
+                Assert.assertTrue(d.variableInfo().isAssigned());
                 Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED));
-                Assert.assertTrue(assigned > read);
+                Assert.assertTrue(d.variableInfo().getAssignmentId().compareTo(d.variableInfo().getReadId()) > 0);
                 return;
             }
         }
@@ -50,10 +48,10 @@ public class TestNullParameterChecks extends CommonTestRunner {
                 if ("s".equals(d.variableName())) {
                     // we should know straight away (without delay) that the strip method on String is "safe"
                     Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.READ));
+                    Assert.assertTrue(d.variableInfo().isRead());
                 } else if ("NullParameterChecks.this.s".equals(d.variableName())) {
                     // we do NOT have assigned 2x here, because the if-statement blocks are not guaranteed to be executed
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                    Assert.assertTrue(d.variableInfo().isAssigned());
                 }
             }
         }

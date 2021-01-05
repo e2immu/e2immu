@@ -137,15 +137,15 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
             if (d.methodInfo().name.equals("method4") && "res".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
                     Assert.assertFalse(d.hasProperty(VariableProperty.MODIFIED));
-                    Assert.assertFalse(d.hasProperty(VariableProperty.READ)); // nothing that points to not null
+                    Assert.assertFalse(d.variableInfo().isRead()); // nothing that points to not null
                 } else if ("1.0.0".equals(d.statementId()) || "1.1.0".equals(d.statementId())) {
-                    Assert.assertEquals(1, d.getProperty(VariableProperty.ASSIGNED));
-                    Assert.assertFalse(d.hasProperty(VariableProperty.READ)); // nothing that points to not null
+                    Assert.assertTrue(d.variableInfo().isAssigned());
+                    Assert.assertFalse(d.variableInfo().isRead()); // nothing that points to not null
                 } else if ("1".equals(d.statementId())) {
-                    Assert.assertEquals(1, d.getProperty(VariableProperty.ASSIGNED));
-                    Assert.assertFalse(d.hasProperty(VariableProperty.READ)); // nothing that points to not null
+                    Assert.assertTrue(d.variableInfo().isAssigned());
+                    Assert.assertFalse(d.variableInfo().isRead()); // nothing that points to not null
                 } else if ("2".equals(d.statementId())) {
-                    Assert.assertEquals(2, d.getProperty(VariableProperty.READ));
+                    Assert.assertTrue(d.variableInfo().isRead()); // twice actually
                 } else Assert.fail("Statement " + d.statementId());
             }
         };

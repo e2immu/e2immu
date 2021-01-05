@@ -50,7 +50,6 @@ public class Test_05_FinalChecks extends CommonTestRunner {
     private static final String FINAL_CHECKS_FQN = "org.e2immu.analyser.testexample.FinalChecks.FinalChecks(String,String)";
 
     private static final String S1 = FinalChecks.class.getCanonicalName() + ".s1";
-    private static final String S2 = FinalChecks.class.getCanonicalName() + ".s2";
     private static final String P4 = FinalChecks.class.getCanonicalName() + ".setS4(String):0:s4";
     private static final String S4 = FinalChecks.class.getCanonicalName() + ".s4";
     private static final String S5 = FinalChecks.class.getCanonicalName() + ".s5";
@@ -65,7 +64,7 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                 Assert.assertFalse(d.hasProperty(VariableProperty.MODIFIED)); // no method was called on parameter s4
                 Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED)); // p4 never came in a not-null context
 
-                Assert.assertEquals(1, d.getProperty(VariableProperty.READ)); // read 1x
+                Assert.assertTrue(d.variableInfo().isRead());
                 int expectNotNull = d.iteration() <= 2 ? Level.DELAY : MultiLevel.NULLABLE;
                 Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL)); // nothing that points to not null
             } else Assert.fail();
@@ -80,16 +79,16 @@ public class Test_05_FinalChecks extends CommonTestRunner {
             }
             if (S5.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    VariableInfo vi1 = d.variableInfoContainer().best(VariableInfoContainer.LEVEL_1_INITIALISER);
+                    VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
                     Assert.assertEquals(Level.DELAY, vi1.getProperty(VariableProperty.IMMUTABLE));
-                    VariableInfo vi4 = d.variableInfoContainer().best(VariableInfoContainer.LEVEL_4_SUMMARY);
+                    VariableInfo vi4 = d.variableInfoContainer().current();
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, vi4.getProperty(VariableProperty.IMMUTABLE));
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals("\"abc\"", d.currentValue().toString());
-                    VariableInfo vi1 = d.variableInfoContainer().best(VariableInfoContainer.LEVEL_1_INITIALISER);
+                    VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
                     Assert.assertEquals(Level.DELAY, vi1.getProperty(VariableProperty.IMMUTABLE));
-                    VariableInfo vi3 = d.variableInfoContainer().best(VariableInfoContainer.LEVEL_3_EVALUATION);
+                    VariableInfo vi3 = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, vi3.getProperty(VariableProperty.IMMUTABLE));
                 }
             }

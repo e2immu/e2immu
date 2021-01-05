@@ -71,7 +71,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if ("0.0.0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type String";
                     Assert.assertEquals(expectValue, d.currentValue().debugOutput());
-                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.ASSIGNED));
+                    Assert.assertFalse(d.variableInfo().isAssigned());
                     if (d.iteration() == 0) {
                         Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
                     } else {
@@ -81,7 +81,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
                 if ("0.0.1".equals(d.statementId())) {
                     Assert.assertEquals("\"xyz\"", d.currentValue().debugOutput());
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                    Assert.assertTrue(d.variableInfo().isAssigned());
                     if (d.iteration() == 0) {
                         Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
                     } else {
@@ -92,7 +92,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
                 if ("0.1.0".equals(d.statementId())) {
                     Assert.assertEquals("\"abc\"", d.currentValue().debugOutput());
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                    Assert.assertTrue(d.variableInfo().isAssigned());
                     if (d.iteration() == 0) {
                         Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
                     } else {
@@ -105,26 +105,26 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     if (d.iteration() == 0) {
                         Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
                     } else {
-                        VariableInfo vi1 = d.variableInfoContainer().best(VariableInfoContainer.LEVEL_1_INITIALISER);
+                        VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
                         Assert.assertEquals(0, vi1.getStatementTime());
                         Assert.assertEquals(2, d.variableInfo().getStatementTime());
 
                         String expectedLinked = "org.e2immu.analyser.testexample.Basics_3.s$1";
                         Assert.assertEquals(expectedLinked, debug(d.variableInfo().getLinkedVariables()));
                     }
-                    Assert.assertEquals("At " + d.statementId(), Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                    Assert.assertTrue("At " + d.statementId(), d.variableInfo().isAssigned());
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
                     if (d.iteration() > 0) {
                         Assert.assertEquals("org.e2immu.analyser.testexample.Basics_3.s$2$0:4", debug(d.variableInfo().getLinkedVariables()));
                     }
-                    Assert.assertEquals("At " + d.statementId(), Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                    Assert.assertTrue("At " + d.statementId(), d.variableInfo().isAssigned());
                 }
             }
             if ("setS2".equals(d.methodInfo().name) && S.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
+                    Assert.assertTrue(d.variableInfo().isAssigned());
                     Assert.assertEquals("input2", d.currentValue().toString());
                     // not linked to input2, @E2Immutable
                     if (d.iteration() == 0) {

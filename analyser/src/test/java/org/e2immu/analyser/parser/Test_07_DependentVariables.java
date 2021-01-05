@@ -1,11 +1,9 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
-import org.e2immu.analyser.model.Level;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -21,32 +19,33 @@ public class Test_07_DependentVariables extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("method1".equals(d.methodInfo().name)) {
 
-            int read = d.properties().getOrDefault(VariableProperty.READ, Level.DELAY);
-            int assigned = d.properties().getOrDefault(VariableProperty.ASSIGNED, Level.DELAY);
+            String read = d.variableInfo().getReadId();
+            String assigned = d.variableInfo().getAssignmentId();
+
             if ("1".equals(d.statementId()) && "array[0]".equals(d.variableName())) {
                 Assert.assertEquals("12", d.currentValue().toString());
             }
             if ("2".equals(d.statementId()) && "array[0]".equals(d.variableName())) {
-                Assert.assertTrue(assigned > read);
+                Assert.assertTrue(assigned.compareTo(read) > 0);
                 Assert.assertEquals("12", d.variableInfo().getValue().toString());
             }
             if ("2".equals(d.statementId()) && "array[1]".equals(d.variableName())) {
                 Assert.assertEquals("13", d.currentValue().toString());
             }
             if ("4".equals(d.statementId()) && "array[0]".equals(d.variableName())) {
-                Assert.assertTrue(assigned < read);
+                Assert.assertTrue(assigned.compareTo(read) < 0);
                 Assert.assertEquals("12", d.variableInfo().getValue().toString());
             }
             if ("4".equals(d.statementId()) && "array[1]".equals(d.variableName())) {
-                Assert.assertTrue(assigned < read);
+                Assert.assertTrue(assigned.compareTo(read) < 0);
                 Assert.assertEquals("13", d.variableInfo().getValue().toString());
             }
             if ("4".equals(d.statementId()) && "array[2]".equals(d.variableName())) {
-                Assert.assertTrue(assigned < read);
+                Assert.assertTrue(assigned.compareTo(read) < 0);
                 Assert.assertEquals("31", d.variableInfo().getValue().toString());
             }
             if ("4".equals(d.statementId()) && "array".equals(d.variableName())) {
-                Assert.assertTrue(read > 1);
+                Assert.assertEquals("xx", read); // FIXME
             }
         }
         if ("method2".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
