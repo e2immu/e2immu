@@ -26,6 +26,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.VariableInfoContainer.*;
+import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.INITIAL;
+
 public interface VariableInfo {
     String name();
 
@@ -80,10 +83,23 @@ public interface VariableInfo {
     int getStatementTime();
 
     /**
-     * @return the empty string if there was no assignment in this method; otherwise the statement id
+     * @return the empty string if has not been an assignment in this method yet; otherwise the statement id
      * of the latest assignment to this variable (field, local variable, dependent variable), followed
-     * by :1, :2 ... :4 depending on the step
+     * by ":E" for evaluation or ":M" for merge
      */
     String getAssignmentId();
 
+    String getReadId();
+
+    default boolean statementTimeIsSet() {
+        return getStatementTime() != VARIABLE_FIELD_DELAY;
+    }
+
+    default boolean isRead() {
+        return !getReadId().equals(NOT_YET_READ);
+    }
+
+    default boolean isAssigned() {
+        return !getAssignmentId().equals(NOT_YET_ASSIGNED) && !getAssignmentId().equals(INITIAL.label);
+    }
 }

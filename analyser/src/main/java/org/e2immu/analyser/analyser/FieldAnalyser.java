@@ -277,18 +277,11 @@ public class FieldAnalyser extends AbstractAnalyser {
         if (fieldInspection.getModifiers().contains(FieldModifier.PRIVATE)) {
             if (!fieldInfo.isStatic()) {
                 if (fieldSummariesNotYetSet) return DELAYS;
-                int readInMethods = allMethodsAndConstructors.stream()
+                boolean readInMethods = allMethodsAndConstructors.stream()
                         .filter(m -> !(m.methodInfo.isConstructor && m.methodInfo.typeInfo == fieldInfo.owner)) // not my own constructors
-                        .mapToInt(this::maxReadOfFieldInMethod)
-                        .max().orElse(Level.FALSE);
-                assert readInMethods >= Level.FALSE : "Max read values: " +
-                        allMethodsAndConstructors.stream()
-                                .filter(m -> !(m.methodInfo.isConstructor && m.methodInfo.typeInfo == fieldInfo.owner)) // not my own constructors
-                                .map(m -> m.methodInfo.fullyQualifiedName() + ": " + maxReadOfFieldInMethod(m))
-                                .collect(Collectors.joining("; "));
-                boolean notRead = readInMethods == Level.FALSE;
-                fieldAnalysis.fieldError.set(notRead);
-                if (notRead) {
+                        .anyMatch(this::isReadInMethod);
+                fieldAnalysis.fieldError.set(!readInMethods);
+                if (!readInMethods) {
                     messages.add(Message.newMessage(new Location(fieldInfo), Message.PRIVATE_FIELD_NOT_READ));
                 }
                 return DONE;
@@ -313,9 +306,8 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private int maxReadOfFieldInMethod(MethodAnalyser methodAnalyser) {
-        return methodAnalyser.getFieldAsVariableStream(fieldInfo, true)
-                .mapToInt(vi -> vi.getProperty(VariableProperty.READ)).max().orElse(Level.FALSE);
+    private boolean isReadInMethod(MethodAnalyser methodAnalyser) {
+        return methodAnalyser.getFieldAsVariableStream(fieldInfo, true).anyMatch(VariableInfo::isRead);
     }
 
     private AnalysisStatus analyseImmutable(int iteration) {
@@ -356,7 +348,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             return  // field is not present in the method
                     variableInfoList.isEmpty() ||
                             // field is not assigned to in the method
-                            variableInfoList.stream().allMatch(vi -> vi.getProperty(VariableProperty.ASSIGNED) < Level.TRUE) ||
+                            variableInfoList.stream().noneMatch(VariableInfo::isAssigned) ||
                             // if it is present, assigned to, it needs to have a value
                             variableInfoList.stream().allMatch(vi -> vi.getValue() != NO_VALUE);
         });
@@ -421,7 +413,7 @@ public class FieldAnalyser extends AbstractAnalyser {
             if (fieldSummariesNotYetSet) return DELAYS;
             for (MethodAnalyser methodAnalyser : myMethodsAndConstructors) {
                 for (VariableInfo vi : methodAnalyser.getFieldAsVariable(fieldInfo, false)) {
-                    if (vi.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) {
+                    if (vi.isAssigned()) {
                         Expression value = vi.getValue();
                         if (value != NO_VALUE) {
                             values.add(value);
@@ -513,7 +505,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .allMatch(m -> {
                     List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, false);
                     return variableInfoList.isEmpty() ||
-                            variableInfoList.stream().allMatch(vi -> vi.getProperty(VariableProperty.ASSIGNED) < Level.TRUE) ||
+                            variableInfoList.stream().noneMatch(VariableInfo::isAssigned) ||
                             variableInfoList.stream().allMatch(VariableInfo::linkedVariablesIsSet);
                 });
         if (!allDefined) {
@@ -524,7 +516,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                                 .filter(m -> {
                                     List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, false);
                                     return !variableInfoList.isEmpty() &&
-                                            variableInfoList.stream().allMatch(vi -> vi.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) &&
+                                            variableInfoList.stream().allMatch(VariableInfo::isAssigned) &&
                                             !variableInfoList.stream().allMatch(VariableInfo::linkedVariablesIsSet);
                                 })
                                 .map(m -> m.methodInfo.name).collect(Collectors.joining(", ")));
@@ -563,12 +555,10 @@ public class FieldAnalyser extends AbstractAnalyser {
             // this means other types can write to the field... not final by definition
             isFinal = false;
         } else {
-            int isAssignedOutsideConstructors = allMethodsAndConstructors.stream()
+            isFinal = allMethodsAndConstructors.stream()
                     .filter(m -> m.methodInfo.methodResolution.get().partOfConstruction().accessibleFromTheOutside())
                     .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
-                    .mapToInt(vi -> vi.getProperty(VariableProperty.ASSIGNED))
-                    .max().orElse(Level.DELAY);
-            isFinal = isAssignedOutsideConstructors < Level.TRUE;
+                    .noneMatch(VariableInfo::isAssigned);
         }
         fieldAnalysis.setProperty(VariableProperty.FINAL, Level.fromBool(isFinal));
         if (isFinal && fieldInfo.type.isRecordType()) {
@@ -612,7 +602,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .allMatch(m -> {
                     List<VariableInfo> variableInfoList = m.getFieldAsVariable(fieldInfo, true);
                     return variableInfoList.isEmpty() ||
-                            variableInfoList.stream().allMatch(vi -> vi.getProperty(VariableProperty.READ) < Level.TRUE) ||
+                            variableInfoList.stream().noneMatch(VariableInfo::isRead) ||
                             m.methodLevelData().linksHaveBeenEstablished.isSet();
                 });
 
@@ -621,7 +611,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     allMethodsAndConstructors.stream()
                             .filter(m -> !m.methodInfo.isConstructor)
                             .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, true))
-                            .filter(vi -> vi.getProperty(VariableProperty.READ) >= Level.TRUE)
+                            .filter(VariableInfo::isRead)
                             .anyMatch(vi -> vi.getProperty(VariableProperty.MODIFIED) == Level.TRUE);
             fieldAnalysis.setProperty(VariableProperty.MODIFIED, Level.fromBool(modified));
             log(NOT_MODIFIED, "Mark field {} as {}", fieldInfo.fullyQualifiedName(), modified ? "@Modified" : "@NotModified");
@@ -632,7 +622,7 @@ public class FieldAnalyser extends AbstractAnalyser {
                     fieldInfo.fullyQualifiedName());
             allMethodsAndConstructors.stream().filter(m -> !m.methodInfo.isConstructor &&
                     !m.getFieldAsVariable(fieldInfo, true).isEmpty() &&
-                    m.getFieldAsVariable(fieldInfo, true).stream().anyMatch(vi -> vi.getProperty(VariableProperty.READ) == Level.TRUE) &&
+                    m.getFieldAsVariable(fieldInfo, true).stream().anyMatch(VariableInfo::isRead) &&
                     !m.methodLevelData().linksHaveBeenEstablished.isSet())
                     .forEach(m -> log(DELAYED, "... method {} reads the field, but we're still waiting on links to be established", m.methodInfo.name));
         }

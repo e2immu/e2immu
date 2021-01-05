@@ -18,7 +18,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
@@ -28,30 +27,42 @@ import java.util.Set;
 
 /**
  * Container to store different versions of a VariableInfo object, one or more of this list:
- * <ol>
- *     <li>0 - reference to previous: simply a reference to a previous version, NEVER written</li>
- *     <li>1 - initialisation phase: assignments like <code>int i=3;</code> or <code>for(i=0; ...)</code></li>
- *     <li>2 - evaluation phase: typically does not contain an assignment, but is possible is in <code>while((line = reader.next()) != null)</code></li>
- *     <li>3 - update phase: only in <code>for(...; i++)</code> constructs</li>
- *     <li>4 - summary phase: information from sub-blocks</li>
- * </ol>
- * <p>
- * Only in very rare situations, all 5 can be present.
- * Generally, outside of the statement analyser, the highest version will be inspected.
- * <p>
- * Can only be created in increasing levels! Will be frozen as soon as the statement analyser goes AnalysisStatus == DONE.
+ * INITIAL OR PREVIOUS: initial if first occurrence of variable
+ * EVALUATION: values of the evaluation
+ * MERGE: created by step 4 in the analyser
  */
 public interface VariableInfoContainer {
-    int LEVEL_0_PREVIOUS = 0;
-    int LEVEL_1_INITIALISER = 1;
-    int LEVEL_2_UPDATER = 2; // IMPROVE at some point, we want updating to take place after evaluation
-    int LEVEL_3_EVALUATION = 3;
-    int LEVEL_4_SUMMARY = 4;
 
     int VARIABLE_FIELD_DELAY = -1;
     int NOT_A_VARIABLE_FIELD = -2;
 
-    String START_OF_METHOD = "-";
+    // prefixes in assignment id
+
+    String NOT_YET_READ = "-";
+    String NOT_YET_ASSIGNED = "-";
+
+    boolean hasEvaluation();
+
+    // suffixes in assignment id; these act as the 3 levels for setProperty
+    enum Level {
+        INITIAL(":I"),
+        EVALUATION(":E"),
+        MERGE(":M");
+        public final String label;
+        Level(String label) {
+            this.label = label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
+    /*
+    explicit freezing (DONE at the end of statement analyser): forbid any future writing
+     */
+    void freeze();
 
     /**
      * General method for obtaining the "most relevant" <code>VariableInfo</code> object describing the state
@@ -63,97 +74,64 @@ public interface VariableInfoContainer {
     @NotNull
     VariableInfo current();
 
-    /**
-     * Return the value at the exact level, for debugging purposes.
-     *
-     * @param level the level
-     * @return null  when there's no object at this level
+    /*
+     * like current, but then with a limit
      */
-    VariableInfo get(int level);
+    VariableInfo best(Level level);
 
     /**
-     * @param level max level
-     * @return the value at the level, or below.
+     * Returns either the current() of the previous VIC, or the initial value if this is the first statement
+     * where this variable occurs.
      */
-    VariableInfo best(int level);
+    @NotNull
+    VariableInfo getPreviousOrInitial();
 
     /**
-     * Mostly for debugging
-     *
-     * @return the highest level for which there is <code>VariableInfo</code> data written.
+     * @return if the variable was created in this statement
      */
-    int getCurrentLevel();
-
-    /**
-     * Prepares for an assignment, which must increase the current level.
-     * Important to note that an assignment is split in multiple methods (markAssigned, setValue, assigned) because
-     * not all data may be available in the same iteration.
-     *
-     * @param level         the level at which the assignment takes place (1, 2, 3, 4, cannot be 0)
-     * @param assignmentId  the statement id of the latest assignment, "" if not yet in this method
-     * @param statementTime the time at which the assignment takes place; it needs to be set ONLY for variable fields;
-     *                      otherwise, it must have value VariableInfoImpl.NOT_A_VARIABLE_FIELD
-     */
-    void prepareForValueChange(int level, String assignmentId, int statementTime);
-
-    // explicit freezing (DONE at the end of statement analyser): forbid any future writing
-    void freeze();
+    boolean isInitial();
 
     // writing operations
-    void setValueOnAssignment(int level, Expression value, Map<VariableProperty, Integer> propertiesToSet);
+    void setValue(Expression value, Map<VariableProperty, Integer> propertiesToSet, boolean initialOrEvaluation);
 
-    /**
-     * Typically in the 1st iteration for effectively final fields, this method
-     * is called when the field's final value has been established.
-     *
-     * @param initialValue the value coming from the field analyser
-     */
-    void setInitialValueFromAnalyser(Expression initialValue, Map<VariableProperty, Integer> propertiesToSet);
-
-    void setProperty(int level, VariableProperty variableProperty, int value);
-
-    void setProperty(int level, VariableProperty variableProperty, int value, boolean failWhenTryingToWriteALowerValue);
-
-    default void ensureProperty(int level, VariableProperty variableProperty, int value) {
-        int current = best(level).getProperty(variableProperty);
-        if (value > current) {
-            setProperty(level, variableProperty, value);
-        }
+    default void setProperty(VariableProperty variableProperty, int value, Level level) {
+        setProperty(variableProperty, value, true, level);
     }
 
-    void setLinkedVariables(int level, Set<Variable> variables);
-
-    void setLinkedVariablesFromAnalyser(Set<Variable> variables);
+    void setProperty(VariableProperty variableProperty, int value, boolean failWhenTryingToWriteALowerValue, Level level);
 
     /**
-     * aggregation method that copies value, properties, object flow, and linked variables
-     * using the 'setXX' methods.
+     * set linked variables
      *
-     * @param level                            the level to write to
-     * @param previousVic                      the source to copy from
-     * @param previousBestLevel                level to copy from
-     * @param failWhenTryingToWriteALowerValue if false, we ignore lower values. This happens when e.g. a field is overall nullable while
-     *                                         in a particular method it has non-null assigned values; also, when a field not belonging
-     *                                         to the type being analysed, is being modified. See test Basics_3
+     * @param variables                         must not be null
+     * @param writeInInitialOtherwiseEvaluation true then written in initial (when the linked variables come from the analyser),
+     *                                          otherwise in evaluation
      */
-    void copy(int level, VariableInfoContainer previousVic, int previousBestLevel, boolean failWhenTryingToWriteALowerValue, boolean copyValue);
+    void setLinkedVariables(Set<Variable> variables, boolean writeInInitialOtherwiseEvaluation);
 
-    void setObjectFlow(int level, ObjectFlow objectFlow);
-
-    /**
-     * should only happen in the first iteration, because it increases the property's value based on that of ASSIGNED
-     *
-     * @param level the level at which the variable is being read
+    /*
+    copy from one statement to the next.
+    this method uses assignmentId and readId to determine which values can be copied, and which values will by set
+    by the apply method in the statement analyser.
      */
-    void markRead(int level);
+    void copy();
 
-    void merge(int level,
-               EvaluationContext evaluationContext,
+    void setObjectFlow(ObjectFlow objectFlow, boolean writeInInitialOtherwiseEvaluation);
+
+    VariableInfo ensureEvaluation(String assignmentId, String readId, int statementTime);
+
+    void merge(EvaluationContext evaluationContext,
                Expression stateOfDestination,
                boolean atLeastOneBlockExecuted,
                Map<Expression, VariableInfo> merge);
 
-    void setStatementTime(int level, int statementTime);
+    /*
+    Statement time is irrelevant for all but variable fields.
+    The correct value comes in a later iteration; it is set in StatementAnalysis based on information
+    from the field analyser.
+
+     */
+    void setStatementTime(int statementTime);
 
     /*
     Is true starting from the level 3 main expression of the loop statement, down to all statements in the block.

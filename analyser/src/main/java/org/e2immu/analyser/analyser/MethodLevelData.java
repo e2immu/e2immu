@@ -46,7 +46,6 @@ import static org.e2immu.analyser.util.Logger.log;
  */
 public class MethodLevelData {
     private static final Logger LOGGER = LoggerFactory.getLogger(MethodLevelData.class);
-    public static final int VIC_LEVEL = VariableInfoContainer.LEVEL_4_SUMMARY;
 
     // part of modification status for methods dealing with SAMs
     private final SetOnce<Boolean> callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod = new SetOnce<>();
@@ -144,8 +143,7 @@ public class MethodLevelData {
                 linkedVariables = sharedState.statementAnalysis.findOrThrow(redirect.variable()).getLinkedVariables();
             }
             if (linkedVariables == null) {
-                if (!(variableInfo.variable() instanceof LocalVariableReference) ||
-                        variableInfo.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE) {
+                if (!(variableInfo.variable() instanceof LocalVariableReference) || variableInfo.isAssigned()) {
                     log(DELAYED, "Delaying content modification in MethodLevelData for {} in {}: linked variables not set",
                             variableInfo.variable().fullyQualifiedName(),
                             sharedState.evaluationContext.getCurrentStatement());
@@ -192,7 +190,7 @@ public class MethodLevelData {
                     if (modified == Level.DELAY || modified < summary) {
                         // break the delay in case the variable is not even read
                         int fieldModified;
-                        if (summary == Level.DELAY && vi.getProperty(VariableProperty.READ) < Level.TRUE) {
+                        if (summary == Level.DELAY && !vi.isRead()) {
                             fieldModified = Level.FALSE;
                         } else fieldModified = summary;
                         if (fieldModified == Level.DELAY) {
@@ -202,7 +200,7 @@ public class MethodLevelData {
                             log(NOT_MODIFIED, "Mark {} " + (fieldModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
                                     baseVariable.fullyQualifiedName(), logLocation);
                             VariableInfoContainer vic = sharedState.statementAnalysis.findForWriting(vi.name());
-                            vic.setProperty(VIC_LEVEL, VariableProperty.MODIFIED, fieldModified);
+                            vic.setProperty(VariableProperty.MODIFIED, fieldModified, false, VariableInfoContainer.Level.MERGE);
                             progress.set(true);
                         }
                     }
@@ -249,11 +247,9 @@ public class MethodLevelData {
     private AnalysisStatus ensureThisProperties(EvaluationContext evaluationContext, StatementAnalysis statementAnalysis) {
         VariableInfoContainer thisVi = statementAnalysis.findForWriting(evaluationContext.getAnalyserContext(),
                 new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType()),
-                evaluationContext.getFinalStatementTime(), true);
-        thisVi.setProperty(VIC_LEVEL, VariableProperty.ASSIGNED, Level.FALSE);
-        thisVi.ensureProperty(VIC_LEVEL, VariableProperty.READ, Level.FALSE);
-        thisVi.ensureProperty(VIC_LEVEL, VariableProperty.METHOD_CALLED, Level.FALSE);
-        thisVi.setLinkedVariables(VIC_LEVEL, Set.of());
+                evaluationContext.getFinalStatementTime(), true, false);
+        thisVi.setProperty(VariableProperty.METHOD_CALLED, Level.FALSE, false, VariableInfoContainer.Level.EVALUATION);
+        thisVi.setLinkedVariables(Set.of(), false);
 
         if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(false);

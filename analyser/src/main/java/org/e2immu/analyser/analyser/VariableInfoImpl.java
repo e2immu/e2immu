@@ -29,15 +29,18 @@ import org.e2immu.analyser.util.IncrementalMap;
 import org.e2immu.analyser.util.SetOnce;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.Stream;
 
+import static org.e2immu.analyser.analyser.VariableInfoContainer.*;
 import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 
 class VariableInfoImpl implements VariableInfo {
 
     private final Variable variable;
     private final String assignmentId;
+    private final String readId;
 
     private final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
     private final SetOnce<Expression> value = new SetOnce<>(); // value from step 3 (initialisers)
@@ -47,35 +50,34 @@ class VariableInfoImpl implements VariableInfo {
 
     // ONLY for testing!
     VariableInfoImpl(Variable variable) {
-        this(variable, VariableInfoContainer.START_OF_METHOD, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+        this(variable, NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD);
     }
 
-    private VariableInfoImpl(Variable variable, String assignmentId) {
+    // used by merge code
+    private VariableInfoImpl(Variable variable, String assignmentId, String readId) {
         this.variable = Objects.requireNonNull(variable);
         this.assignmentId = assignmentId;
+        this.readId = readId;
     }
 
-    VariableInfoImpl(Variable variable, String assignmentId, int statementTime) {
+    // normal one for creating an initial or evaluation
+    VariableInfoImpl(Variable variable, String assignmentId, String readId, int statementTime) {
         this.variable = Objects.requireNonNull(variable);
-        this.assignmentId = assignmentId;
+        this.assignmentId = Objects.requireNonNull(assignmentId);
+        this.readId = Objects.requireNonNull(readId);
         if (statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
             this.statementTime.set(statementTime);
         }
     }
 
-    VariableInfoImpl(VariableInfoImpl previous) {
-        this.assignmentId = previous.assignmentId;
-        this.variable = previous.variable;
-        this.properties.copyFrom(previous.properties);
-        this.value.copy(previous.value);
-        this.linkedVariables.copy(previous.linkedVariables);
-        this.objectFlow.copy(previous.objectFlow);
-        this.statementTime.copy(previous.statementTime);
-    }
-
     @Override
     public String getAssignmentId() {
         return assignmentId;
+    }
+
+    @Override
+    public String getReadId() {
+        return readId;
     }
 
     @Override
@@ -133,44 +135,6 @@ class VariableInfoImpl implements VariableInfo {
         return sb.append("]").toString();
     }
 
-    boolean setProperty(VariableProperty variableProperty, int value) {
-        Integer prev = properties.put(variableProperty, value);
-        return prev == null || prev < value;
-    }
-
-    boolean setObjectFlow(ObjectFlow objectFlow) {
-        if (!this.objectFlow.isSet() || !this.objectFlow.get().equals(objectFlow)) {
-            this.objectFlow.set(objectFlow);
-            return true;
-        }
-        return false;
-    }
-
-    void setStatementTime(int statementTime) {
-        if (!this.statementTime.isSet() || statementTime != this.statementTime.get()) {
-            this.statementTime.set(statementTime);
-        }
-    }
-
-    boolean setLinkedVariables(Set<Variable> merged) {
-        assert merged != null;
-        if (!linkedVariablesIsSet() || !getLinkedVariables().equals(merged)) {
-            linkedVariables.set(ImmutableSet.copyOf(merged));
-            return true;
-        }
-        return false;
-    }
-
-    void setValue(Expression value) {
-        if (value instanceof VariableExpression variableValue && variableValue.variable() == variable) {
-            throw new UnsupportedOperationException("Cannot redirect to myself");
-        }
-        if (value == NO_VALUE) throw new UnsupportedOperationException("Cannot set NO_VALUE");
-        if (!this.value.isSet() || !this.value.get().equals(value)) { // crash if different, keep same
-            this.value.set(value);
-        }
-    }
-
     @Override
     public Map<VariableProperty, Integer> getProperties() {
         return properties.toImmutableMap();
@@ -186,6 +150,43 @@ class VariableInfoImpl implements VariableInfo {
         return properties.isSet(variableProperty);
     }
 
+    // ***************************** NON-INTERFACE CODE: SETTERS ************************
+
+    void setProperty(VariableProperty variableProperty, int value) {
+        properties.put(variableProperty, value);
+    }
+
+    void setObjectFlow(ObjectFlow objectFlow) {
+        if (!this.objectFlow.isSet() || !this.objectFlow.get().equals(objectFlow)) {
+            this.objectFlow.set(objectFlow);
+        }
+    }
+
+    void setStatementTime(int statementTime) {
+        if (!this.statementTime.isSet() || statementTime != this.statementTime.get()) {
+            this.statementTime.set(statementTime);
+        }
+    }
+
+    void setLinkedVariables(Set<Variable> merged) {
+        assert merged != null;
+        if (!linkedVariablesIsSet() || !getLinkedVariables().equals(merged)) {
+            linkedVariables.set(ImmutableSet.copyOf(merged));
+        }
+    }
+
+    void setValue(Expression value) {
+        if (value instanceof VariableExpression variableValue && variableValue.variable() == variable) {
+            throw new UnsupportedOperationException("Cannot redirect to myself");
+        }
+        if (value == NO_VALUE) throw new UnsupportedOperationException("Cannot set NO_VALUE");
+        if (!this.value.isSet() || !this.value.get().equals(value)) { // crash if different, keep same
+            this.value.set(value);
+        }
+    }
+
+    // ***************************** MERGE RELATED CODE *********************************
+
     private record MergeOp(VariableProperty variableProperty, IntBinaryOperator operator, int initial) {
     }
 
@@ -197,9 +198,7 @@ class VariableInfoImpl implements VariableInfo {
             new MergeOp(VariableProperty.IMMUTABLE, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.CONTAINER, Math::min, Integer.MAX_VALUE),
             new MergeOp(VariableProperty.IDENTITY, Math::min, Integer.MAX_VALUE),
-            new MergeOp(VariableProperty.MODIFIED, Math::max, Level.DELAY),
-            new MergeOp(VariableProperty.READ, Math::max, Level.DELAY),
-            new MergeOp(VariableProperty.ASSIGNED, Math::max, Level.DELAY)
+            new MergeOp(VariableProperty.MODIFIED, Math::max, Level.DELAY)
     );
 
     /*
@@ -207,13 +206,16 @@ class VariableInfoImpl implements VariableInfo {
 
      */
     public VariableInfoImpl mergeIntoNewObject(EvaluationContext evaluationContext,
-                                           Expression stateOfDestination,
-                                           boolean atLeastOneBlockExecuted,
-                                           Map<Expression, VariableInfo> mergeSources) {
+                                               Expression stateOfDestination,
+                                               boolean atLeastOneBlockExecuted,
+                                               Map<Expression, VariableInfo> mergeSources) {
 
-        String mergedAssignmentId = mergedAssignmentId(evaluationContext, atLeastOneBlockExecuted, getAssignmentId(), mergeSources);
+        String mergedAssignmentId = mergedId(evaluationContext, atLeastOneBlockExecuted, getAssignmentId(),
+                VariableInfo::getAssignmentId, mergeSources);
+        String mergedReadId = mergedId(evaluationContext, atLeastOneBlockExecuted, getReadId(),
+                VariableInfo::getReadId, mergeSources);
 
-        VariableInfoImpl newObject = new VariableInfoImpl(variable, mergedAssignmentId);
+        VariableInfoImpl newObject = new VariableInfoImpl(variable, mergedAssignmentId, mergedReadId);
         newObject.mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, this, mergeSources);
         return newObject;
     }
@@ -226,7 +228,7 @@ class VariableInfoImpl implements VariableInfo {
         assert atLeastOneBlockExecuted || previous != this;
 
         Expression mergedValue = evaluationContext.replaceLocalVariables(
-                mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources));
+                previous.mergeValue(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, mergeSources));
         if (mergedValue != NO_VALUE) {
             setValue(mergedValue);
         }
@@ -236,16 +238,17 @@ class VariableInfoImpl implements VariableInfo {
         mergeLinkedVariables(atLeastOneBlockExecuted, previous, mergeSources);
     }
 
-    private static String mergedAssignmentId(EvaluationContext evaluationContext,
-                                             boolean existingValuesWillBeOverwritten,
-                                             String previousAssignmentId,
-                                             Map<Expression, VariableInfo> merge) {
+    private static String mergedId(EvaluationContext evaluationContext,
+                                   boolean existingValuesWillBeOverwritten,
+                                   String previousId,
+                                   Function<VariableInfo, String> getter,
+                                   Map<Expression, VariableInfo> merge) {
         // null current statement in tests
         String currentStatementId = (evaluationContext.getCurrentStatement() == null ? "" :
-                evaluationContext.getCurrentStatement().index()) + ":4";
-        boolean assignmentInSubBlocks = existingValuesWillBeOverwritten ||
-                merge.values().stream().anyMatch(vi -> vi.getAssignmentId().compareTo(currentStatementId) > 0);
-        return assignmentInSubBlocks ? currentStatementId : previousAssignmentId;
+                evaluationContext.getCurrentStatement().index()) + ":M";
+        boolean inSubBlocks = existingValuesWillBeOverwritten ||
+                merge.values().stream().anyMatch(vi -> getter.apply(vi).compareTo(currentStatementId) > 0);
+        return inSubBlocks ? currentStatementId : previousId;
     }
 
     /*
@@ -258,8 +261,8 @@ class VariableInfoImpl implements VariableInfo {
         boolean noVariableFieldDelay = (existingValuesWillBeOverwritten || previousStatementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) &&
                 mergeSources.values().stream().noneMatch(vi -> vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY);
         if (noVariableFieldDelay) {
-            int statementTimeToSet = previousStatementTime == VariableInfoContainer.NOT_A_VARIABLE_FIELD ?
-                    VariableInfoContainer.NOT_A_VARIABLE_FIELD : evaluationContext.getFinalStatementTime();
+            int statementTimeToSet = previousStatementTime == NOT_A_VARIABLE_FIELD ?
+                    NOT_A_VARIABLE_FIELD : evaluationContext.getFinalStatementTime();
             setStatementTime(statementTimeToSet);
         }
     }

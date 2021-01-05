@@ -26,7 +26,6 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
 import org.e2immu.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -192,7 +191,7 @@ public class ParameterAnalyser {
     private boolean checkNotLinkedOrAssigned(Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> map) {
         if (map.values().stream().allMatch(v -> v == NO)) {
             StatementAnalysis lastStatementAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner).getLastStatement();
-            VariableInfo vi = lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.LEVEL_4_SUMMARY);
+            VariableInfo vi = lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.Level.MERGE);
             int notNullDelayResolved = vi.getProperty(VariableProperty.NOT_NULL_DELAYS_RESOLVED);
             if (notNullDelayResolved != Level.FALSE && parameterAnalysis.getProperty(VariableProperty.NOT_NULL) == Level.DELAY) {
                 parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
@@ -206,7 +205,7 @@ public class ParameterAnalyser {
     private boolean checkUnusedParameter() {
         StatementAnalysis lastStatementAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner).getLastStatement();
         VariableInfo vi = lastStatementAnalysis == null ? null :
-                lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.LEVEL_4_SUMMARY);
+                lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.Level.MERGE);
         if (vi == null) {
             // unused variable
             parameterAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
@@ -219,12 +218,6 @@ public class ParameterAnalyser {
 
             parameterAnalysis.resolveFieldDelays();
             return true;
-        }
-        // sanity check
-        int read = vi.getProperty(VariableProperty.READ);
-        int assigned = vi.getProperty(VariableProperty.ASSIGNED);
-        if (read == Level.DELAY && assigned == Level.DELAY) {
-            throw new UnsupportedOperationException("How possible? we haven't seen it, still it has been created");
         }
         return false;
     }

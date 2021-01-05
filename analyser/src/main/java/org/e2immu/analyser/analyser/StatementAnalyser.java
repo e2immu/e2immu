@@ -699,8 +699,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
 
                     // as a context property, at the highest level (AFTER summary, but we're simply increasing)
-                    statementAnalysis.addProperty(analyserContext, VariableInfoContainer.LEVEL_4_SUMMARY,
-                            nullVariable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
+                    statementAnalysis.addProperty(analyserContext, nullVariable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                     disableErrorsOnIfStatement();
                 }
             }
@@ -759,7 +758,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (initialiser instanceof LocalVariableCreation lvc) {
                 LocalVariableReference lvr = new LocalVariableReference(analyserContext, lvc.localVariable, List.of());
                 // "touch" the variable
-                statementAnalysis.findOrCreateL1(analyserContext, lvr, statementAnalysis.flowData.getInitialTime(), false);
+                statementAnalysis.findForReading(analyserContext, lvr, statementAnalysis.flowData.getInitialTime(), false);
             }
             try {
                 EvaluationResult result = initialiser.evaluate(sharedState.evaluationContext, ForwardEvaluationInfo.DEFAULT);
@@ -1551,7 +1550,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (closure != null && isNotMine(variable)) {
                 return ((EvaluationContextImpl) closure).findOrCreateL1(variable, statementTime, isNotAssignmentTarget);
             }
-            return statementAnalysis.findOrCreateL1(analyserContext, variable, statementTime, isNotAssignmentTarget);
+            return statementAnalysis.findForReading(analyserContext, variable, statementTime, isNotAssignmentTarget);
         }
 
         private boolean isNotMine(Variable variable) {
@@ -1788,26 +1787,4 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return "ParameterShouldNotBeAssignedTo{parameterInfo=" + parameterInfo + ", location=" + location + '}';
         }
     }
-
-    public class MarkRead implements StatementAnalysisModification {
-        public final Variable variable;
-        public final int statementTime;
-
-        public MarkRead(Variable variable, int statementTime) {
-            this.variable = variable;
-            this.statementTime = statementTime;
-        }
-
-        @Override
-        public void accept(ModificationData modificationData) {
-            statementAnalysis.findForWriting(analyserContext, variable, statementTime, true)
-                    .markRead(modificationData.level);
-        }
-
-        @Override
-        public String toString() {
-            return "MarkRead{variable=" + variable + '}';
-        }
-    }
-
 }

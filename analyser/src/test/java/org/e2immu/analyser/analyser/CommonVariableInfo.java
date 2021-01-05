@@ -43,6 +43,7 @@ public abstract class CommonVariableInfo {
                 new LocalVariable.Builder()
                         .setName(name)
                         .setParameterizedType(primitives.intParameterizedType)
+                        .setOwningType(primitives.stringTypeInfo)
                         .build(),
                 List.of());
     }
@@ -52,7 +53,8 @@ public abstract class CommonVariableInfo {
                 new LocalVariable.Builder()
                         .setName(name)
                         .setParameterizedType(primitives.booleanParameterizedType)
-                        .setOwningType(primitives.stringTypeInfo).build(),
+                        .setOwningType(primitives.stringTypeInfo)
+                        .build(),
                 List.of());
     }
 

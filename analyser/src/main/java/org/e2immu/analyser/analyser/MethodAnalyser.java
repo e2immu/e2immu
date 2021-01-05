@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -141,7 +142,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             };
 
             builder.add(STATEMENT_ANALYSER, statementAnalyser)
-                    .add("obtainMostCompletePrecondition", this::obtainMostCompletePrecondition)
+                    .add("obtainMostCompletePrecondition", (sharedState) -> obtainMostCompletePrecondition())
                     .add("makeInternalObjectFlowsPermanent", this::makeInternalObjectFlowsPermanent)
                     .add("computeModified", (sharedState) -> methodInfo.isConstructor ? DONE : computeModified())
                     .add("computeReturnValue", (sharedState) -> methodInfo.noReturnValue() ? DONE : computeReturnValue())
@@ -314,9 +315,9 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         if (!methodInfo.methodInspection.get().isStatic() && !methodInfo.typeInfo.isInterface() && !methodInfo.isTestMethod()) {
             // we need to check if there's fields being read/assigned/
-            if (absentUnlessStatic(VariableProperty.READ) &&
-                    absentUnlessStatic(VariableProperty.ASSIGNED) &&
-                    (getThisAsVariable().getProperty(VariableProperty.READ, Level.DELAY) < Level.TRUE) &&
+            if (absentUnlessStatic(VariableInfo::isRead) &&
+                    absentUnlessStatic(VariableInfo::isAssigned) &&
+                    !getThisAsVariable().isRead() &&
                     methodInfo.isNotOverridingAnyOtherMethod() &&
                     !methodInfo.methodInspection.get().isDefault()) {
                 MethodResolution methodResolution = methodInfo.methodResolution.get();
@@ -331,14 +332,14 @@ public class MethodAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private boolean absentUnlessStatic(VariableProperty variableProperty) {
+    private boolean absentUnlessStatic(Predicate<VariableInfo> variableProperty) {
         return methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference)
-                .allMatch(vi -> vi.getProperty(variableProperty) < Level.TRUE || vi.variable().isStatic());
+                .allMatch(vi -> !variableProperty.test(vi) || vi.variable().isStatic());
     }
 
     // simply copy from last statement
-    private AnalysisStatus obtainMostCompletePrecondition(SharedState sharedState) {
+    private AnalysisStatus obtainMostCompletePrecondition() {
         assert !methodAnalysis.precondition.isSet();
         MethodLevelData methodLevelData = methodAnalysis.methodLevelData();
         if (!methodLevelData.combinedPrecondition.isSet()) return DELAYS;
@@ -663,7 +664,7 @@ public class MethodAnalyser extends AbstractAnalyser {
         // first step, check field assignments
         boolean fieldAssignments = methodAnalysis.getLastStatement().variableStream()
                 .filter(vi -> vi.variable() instanceof FieldReference)
-                .anyMatch(vi -> vi.getProperty(VariableProperty.ASSIGNED) >= Level.TRUE);
+                .anyMatch(VariableInfo::isAssigned);
         if (fieldAssignments) {
             log(NOT_MODIFIED, "Method {} is @Modified: fields are being assigned", methodInfo.distinguishingName());
             methodAnalysis.setProperty(VariableProperty.MODIFIED, Level.TRUE);

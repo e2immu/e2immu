@@ -31,6 +31,9 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Map;
 
+import static org.e2immu.analyser.analyser.VariableInfoContainer.MERGE;
+import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_A_VARIABLE_FIELD;
+
 public class TestVariableInfo extends CommonVariableInfo {
 
     @BeforeClass
@@ -45,11 +48,10 @@ public class TestVariableInfo extends CommonVariableInfo {
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         VariableInfoImpl vii = viB.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, Map.of());
-        Assert.assertSame(viB, vii);
 
-        Assert.assertSame(four, viB.getValue());
-        viB.mergeProperties(false, viB, List.of());
-        Assert.assertEquals(MultiLevel.MUTABLE, viB.getProperty(VariableProperty.NOT_NULL));
+        Assert.assertSame(four, vii.getValue());
+        vii.mergeProperties(false, viB, List.of());
+        Assert.assertEquals(MultiLevel.MUTABLE, vii.getProperty(VariableProperty.NOT_NULL));
     }
 
     @Test
@@ -107,20 +109,18 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         // situation: boolean x = ...; int c = a; if(x) c = b;
 
-        VariableInfoImpl viC = new VariableInfoImpl(viA);
-        VariableInfoImpl viC2 = viC.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, Map.of(x, viB));
-        Assert.assertNotSame(viC, viC2);
+        VariableInfoImpl viC = viA.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, Map.of(x, viB));
+        Assert.assertNotSame(viA, viC);
 
-        Expression res = viC2.getValue();
+        Expression res = viC.getValue();
         Assert.assertEquals("instance type boolean?4:3", res.toString());
 
-        viC2.mergeProperties(true, viA, List.of(viB));
-        Assert.assertEquals(MultiLevel.MUTABLE, viC2.getProperty(VariableProperty.NOT_NULL));
+        viC.mergeProperties(true, viA, List.of(viB));
+        Assert.assertEquals(MultiLevel.MUTABLE, viC.getProperty(VariableProperty.NOT_NULL));
 
         // in a second iteration, we may encounter:
-
-        VariableInfoImpl viC3 = new VariableInfoImpl(viA);
-        viC3.mergeIntoMe(minimalEvaluationContext, TRUE, false, viC2, Map.of(x, viB));
+        viC.mergeIntoMe(minimalEvaluationContext, TRUE, false, viC, Map.of(x, viB));
+        // this should execute without raising exceptions
     }
 
 
@@ -268,8 +268,8 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;
 
-        VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"), ":4", VariableInfoContainer.NOT_A_VARIABLE_FIELD);
-        viC.mergeIntoMe(minimalEvaluationContext, TRUE,  true, viC,
+        VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"), MERGE, MERGE, NOT_A_VARIABLE_FIELD);
+        viC.mergeIntoMe(minimalEvaluationContext, TRUE, true, viC,
                 Map.of(x, viA, Negation.negate(minimalEvaluationContext, x), viB));
         Assert.assertEquals("instance type boolean?3:4", viC.getValue().toString());
 
@@ -294,7 +294,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;
 
-        VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"), ":4", VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+        VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"), MERGE, MERGE, NOT_A_VARIABLE_FIELD);
 
         viC.mergeIntoMe(minimalEvaluationContext, TRUE, true, viC, Map.of(x, viA,
                 Negation.negate(minimalEvaluationContext, x), viB));

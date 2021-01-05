@@ -25,12 +25,6 @@ import org.e2immu.annotation.AnnotationMode;
 import java.util.Set;
 
 public enum VariableProperty {
-    // can be read multiple times
-    READ("read", true, Level.FALSE, Integer.MAX_VALUE, Level.FALSE, Level.FALSE),
-
-    // assigned multiple times
-    ASSIGNED("assigned", true, Level.FALSE, Integer.MAX_VALUE, Level.FALSE, Level.FALSE),
-
     // in a block, are we guaranteed to reach the last assignment?
     // we focus on last assignment because that is what the 'currentValue' holds
     LAST_ASSIGNMENT_GUARANTEED_TO_BE_REACHED("reached"),
