@@ -169,7 +169,7 @@ public class ArrayAccess implements Expression {
                 builder.variableOccursInNotNullContext(dependentVariable.arrayVariable, array.value(), MultiLevel.EFFECTIVELY_NOT_NULL);
             }
             if (forwardEvaluationInfo.isNotAssignmentTarget()) {
-                builder.markRead(variableTarget, evaluationContext.getIteration());
+                builder.markRead(variableTarget);
                 Expression variableValue = builder.currentExpression(dependentVariable, true);
                 builder.setExpression(variableValue);
             } else {

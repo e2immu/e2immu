@@ -199,19 +199,15 @@ public class MethodLevelData {
                         } else {
                             log(NOT_MODIFIED, "Mark {} " + (fieldModified == Level.TRUE ? "" : "NOT") + " @Modified in {}",
                                     baseVariable.fullyQualifiedName(), logLocation);
-                            VariableInfoContainer vic = sharedState.statementAnalysis.findForWriting(vi.name());
+                            VariableInfoContainer vic = sharedState.statementAnalysis.findForWriting(vi.variable());
+                            vic.ensureEvaluation(sharedState.statementAnalysis.index + VariableInfoContainer.Level.EVALUATION.label,
+                                    VariableInfoContainer.NOT_YET_READ, sharedState.evaluationContext.getInitialStatementTime());
                             vic.setProperty(VariableProperty.MODIFIED, fieldModified, false, VariableInfoContainer.Level.MERGE);
                             progress.set(true);
                         }
                     }
                 } else if (baseVariable instanceof ParameterInfo) {
                     ParameterAnalysis parameterAnalysis = sharedState.evaluationContext.getParameterAnalysis((ParameterInfo) baseVariable);
-                    //  Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
-                    //  if (!assigned.isEmpty() && assigned.values().stream().anyMatch(ParameterAnalysis.AssignedOrLinked::isAssignedOrLinked)) {
-                    //      log(NOT_MODIFIED, "Parameter {} is assigned or linked to field: {}, not setting @NotModified {} directly",
-                    //              dependentVariable.fullyQualifiedName(), assigned, summary);
-                    //  } else {
-                    // FIXME I'd rather try to overwrite
                     if (summary == Level.DELAY) {
                         log(DELAYED, "Delay marking {} as @NotModified in {}", baseVariable.fullyQualifiedName(), logLocation);
                         analysisStatus.set(DELAYS);
@@ -226,9 +222,7 @@ public class MethodLevelData {
                             progress.set(true);
                         }
                     }
-                    //  }
                 }
-                //}
             }
         });
         if (analysisStatus.get() == DONE) {
@@ -245,11 +239,13 @@ public class MethodLevelData {
      * @return if any change happened to methodAnalysis
      */
     private AnalysisStatus ensureThisProperties(EvaluationContext evaluationContext, StatementAnalysis statementAnalysis) {
-        VariableInfoContainer thisVi = statementAnalysis.findForWriting(evaluationContext.getAnalyserContext(),
-                new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType()),
-                evaluationContext.getFinalStatementTime(), true, false);
-        thisVi.setProperty(VariableProperty.METHOD_CALLED, Level.FALSE, false, VariableInfoContainer.Level.EVALUATION);
-        thisVi.setLinkedVariables(Set.of(), false);
+        if (statementAnalysis.methodAnalysis.getMethodInfo().methodInspection.get().isStatic()) return DONE;
+        Variable thisVariable = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
+        VariableInfoContainer thisVic = statementAnalysis.findForWriting(thisVariable);
+        thisVic.ensureEvaluation(statementAnalysis.index + VariableInfoContainer.Level.EVALUATION.label,
+                VariableInfoContainer.NOT_YET_READ, evaluationContext.getInitialStatementTime());
+        thisVic.setProperty(VariableProperty.METHOD_CALLED, Level.FALSE, false, VariableInfoContainer.Level.EVALUATION);
+        thisVic.setLinkedVariables(Set.of(), false);
 
         if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(false);

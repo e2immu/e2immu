@@ -256,7 +256,7 @@ public class Assignment implements Expression {
         } else {
             linked = null;
         }
-        builder.assignment(at, resultOfExpression, true, linked, evaluationContext.getIteration());
+        builder.assignment(at, resultOfExpression, linked);
 
     }
 

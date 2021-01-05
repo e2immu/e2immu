@@ -42,6 +42,27 @@ import static org.e2immu.analyser.util.Logger.LogTarget.DEBUG_MODIFY_CONTENT;
 import static org.e2immu.analyser.util.Logger.LogTarget.OBJECT_FLOW;
 import static org.e2immu.analyser.util.Logger.log;
 
+/*
+Contains all side effects of analysing an expression.
+The 'apply' method of the analyser executes them.
+
+It contains:
+
+- an increased statement time, caused by calls to those methods that increase time
+- the computed result (value)
+- an assembled precondition, gathered from calls to methods that have preconditions
+- a map of value changes
+- a list of modifications
+- a list of object flows (for later)
+
+Critically, the apply method will effect the value changes before executing the modifications.
+Important value changes are:
+- a variable has been read at a given statement time
+- a variable has been assigned a value
+- the linked variables of a variable have been computed
+
+We track delays in state change
+ */
 public record EvaluationResult(EvaluationContext evaluationContext,
                                int statementTime,
                                Expression value,
@@ -83,7 +104,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
     public record ExpressionChangeData(Expression value,
                                        boolean stateIsDelayed,
                                        boolean markAssignment,
-                                       boolean isNotAssignmentTarget,
+                                       Set<Integer> readAtStatementTime,
                                        Set<Variable> linkedVariables) {
         public ExpressionChangeData {
             Objects.requireNonNull(value);
@@ -91,11 +112,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public ExpressionChangeData merge(ExpressionChangeData other) {
             Set<Variable> combinedLinkedVariables = SetUtil.immutableUnion(linkedVariables, other.linkedVariables);
-            if (combinedLinkedVariables.equals(other.linkedVariables)) {
-                return other; //  should we merge? don't think so
-            }
-            return new ExpressionChangeData(other.value, other.stateIsDelayed, other.markAssignment,
-                    other.isNotAssignmentTarget, combinedLinkedVariables);
+            Set<Integer> combinedReadAtStatementTime = SetUtil.immutableUnion(readAtStatementTime, other.readAtStatementTime);
+            return new ExpressionChangeData(other.value, other.stateIsDelayed, other.markAssignment || markAssignment,
+                    combinedReadAtStatementTime, combinedLinkedVariables);
         }
     }
 
@@ -259,16 +278,21 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             }
         }
 
-        public void markRead(Variable variable, int iteration) {
-            StatementAnalyser statementAnalyser = statementAnalyser(variable);
-            if (iteration == 0 && statementAnalyser != null) {
-                addToModifications(statementAnalyser.new MarkRead(variable, statementTime));
+        public void markRead(Variable variable) {
+            ExpressionChangeData ecd = valueChanges.get(variable);
+            ExpressionChangeData newEcd;
+            if (ecd == null) {
+                newEcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(statementTime), null);
+            } else {
+                newEcd = new ExpressionChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
+                        SetUtil.immutableUnion(ecd.readAtStatementTime, Set.of(statementTime)), ecd.linkedVariables);
+            }
+            valueChanges.put(variable, newEcd);
 
-                // we do this because this. is often implicit
-                // when explicit, there may be two MarkRead modifications, which should not bother us too much??
-                if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof This) {
-                    addToModifications(statementAnalyser.new MarkRead(fieldReference.scope, statementTime));
-                }
+            // we do this because this. is often implicit (all other scopes will be marked read explicitly!)
+            // when explicit, there may be two MarkRead modifications, which will eventually be merged
+            if (variable instanceof FieldReference fieldReference && fieldReference.scope instanceof This) {
+                markRead(fieldReference.scope);
             }
         }
 
@@ -333,12 +357,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ExpressionChangeData current = valueChanges.get(from);
             ExpressionChangeData newVcd;
             if (current == null) {
-                newVcd = new ExpressionChangeData(NO_VALUE, false, false, true, Set.of(to));
+                newVcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(), Set.of(to));
             } else {
                 // we simply merge the linkedVariables
                 Set<Variable> linkedVariables = SetUtil.immutableUnion(current.linkedVariables, Set.of(to));
                 newVcd = new ExpressionChangeData(current.value,
-                        current.stateIsDelayed, current.markAssignment, current.isNotAssignmentTarget, linkedVariables);
+                        current.stateIsDelayed, current.markAssignment, current.readAtStatementTime, linkedVariables);
             }
             valueChanges.put(from, newVcd);
         }
@@ -367,9 +391,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ExpressionChangeData newVcd;
             if (current == null) {
                 boolean stateIsDelayed = evaluationContext.getConditionManager().isDelayed();
-                newVcd = new ExpressionChangeData(instance, stateIsDelayed, false, true, linkedVariables);
+                newVcd = new ExpressionChangeData(instance, stateIsDelayed, false, Set.of(), linkedVariables);
             } else {
-                newVcd = new ExpressionChangeData(instance, current.stateIsDelayed, current.markAssignment, true, linkedVariables);
+                newVcd = new ExpressionChangeData(instance, current.stateIsDelayed, current.markAssignment, current.readAtStatementTime, linkedVariables);
             }
             valueChanges.put(variable, newVcd);
         }
@@ -432,17 +456,15 @@ public record EvaluationResult(EvaluationContext evaluationContext,
          */
         public Builder assignment(Variable assignmentTarget,
                                   Expression resultOfExpression,
-                                  boolean assignmentToNonEmptyExpression,
-                                  Set<Variable> linkedVariables,
-                                  int iteration) {
+                                  Set<Variable> linkedVariables) {
             assert evaluationContext != null;
-            boolean isDelayed = evaluationContext.getConditionManager().isDelayed();
+            boolean stateIsDelayed = evaluationContext.getConditionManager().isDelayed();
 
             ExpressionChangeData valueChangeData = new ExpressionChangeData(
-                    isDelayed ? NO_VALUE : resultOfExpression,
-                    isDelayed,
-                    iteration == 0 && assignmentToNonEmptyExpression,
-                    false,
+                    stateIsDelayed ? NO_VALUE : resultOfExpression,
+                    stateIsDelayed,
+                    true,
+                    Set.of(),
                     linkedVariables);
             valueChanges.put(assignmentTarget, valueChangeData);
             return this;
@@ -502,6 +524,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return statementTime;
         }
 
+        // why is this one not used?
         public boolean isNotNull0(Expression expression) {
             assert evaluationContext != null;
             // intercept modifications?

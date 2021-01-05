@@ -26,8 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static org.e2immu.analyser.analyser.VariableInfoContainer.*;
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.INITIAL;
+import static org.e2immu.analyser.analyser.VariableInfoContainer.*;
 
 public interface VariableInfo {
     String name();
@@ -101,5 +101,15 @@ public interface VariableInfo {
 
     default boolean isAssigned() {
         return !getAssignmentId().equals(NOT_YET_ASSIGNED) && !getAssignmentId().equals(INITIAL.label);
+    }
+
+    default boolean isConfirmedVariableField() {
+        return getStatementTime() >= 0;
+    }
+
+    default boolean notReadAfterAssignment() {
+        boolean assigned = isAssigned();
+        boolean read = isRead();
+        return assigned && (!read || getReadId().compareTo(getAssignmentId()) < 0);
     }
 }

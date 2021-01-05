@@ -35,6 +35,7 @@ import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.analyser.util.SetUtil;
+import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -532,8 +533,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 // simply copy the READ value; nothing has changed here
                 vic.setProperty(level, VariableProperty.READ, read);
 
-                Set<Variable> mergedLinkedVariables = writeMergedLinkedVariables(changeData, variable, vi,vi1, level, step);
-                if(mergedLinkedVariables != null) {
+                Set<Variable> mergedLinkedVariables = writeMergedLinkedVariables(changeData, variable, vi, vi1, level, step);
+                if (mergedLinkedVariables != null) {
                     vic.setLinkedVariables(level, mergedLinkedVariables);
                 } else {
                     status = DELAYS;
@@ -1347,9 +1348,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         boolean atEndOfBlock = navigationData.next.get().isEmpty();
         if (atEndOfBlock || alwaysInterrupts) {
             statementAnalysis.variableStream().forEach(variableInfo -> {
-                int assigned = variableInfo.getProperty(VariableProperty.ASSIGNED);
-                int read = variableInfo.getProperty(VariableProperty.READ);
-                if (assigned >= Level.TRUE && read <= assigned) {
+                if (variableInfo.notReadAfterAssignment()) {
                     boolean isLocalAndLocalToThisBlock = statementAnalysis.isLocalVariableAndLocalToThisBlock(variableInfo.name());
                     if (bestAlwaysInterrupt == InterruptsFlow.ESCAPE ||
                             isLocalAndLocalToThisBlock ||
@@ -1365,15 +1364,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
     private boolean localVariableAssignmentInThisBlock(VariableInfo variableInfo) {
         assert variableInfo.variable().isLocal();
-        if (statementAnalysis.parent == null) return true;
-        int assigned = variableInfo.getProperty(VariableProperty.ASSIGNED);
-        String fqn = variableInfo.variable().fullyQualifiedName();
-        if (statementAnalysis.parent.variables.isSet(fqn)) {
-            VariableInfo oneUp = statementAnalysis.parent.variables.get(fqn).best(VariableInfoContainer.LEVEL_3_EVALUATION);
-            int assignedOneUp = oneUp.getProperty(VariableProperty.ASSIGNED);
-            return assignedOneUp < assigned;
-        }
-        return false;
+        if (!variableInfo.isAssigned()) return false;
+        return StringUtil.inSameBlock(variableInfo.getAssignmentId(), index());
     }
 
     private AnalysisStatus checkUnusedLocalVariables() {
@@ -1383,8 +1375,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             statementAnalysis.variables.stream()
                     .filter(e -> e.getValue().getStatementIndexOfThisLoopVariable() == null)
                     .map(e -> e.getValue().current())
-                    .filter(vi -> statementAnalysis.isLocalVariableAndLocalToThisBlock(vi.name())
-                            && vi.getProperty(VariableProperty.READ) < Level.TRUE)
+                    .filter(vi -> statementAnalysis.isLocalVariableAndLocalToThisBlock(vi.name()) && !vi.isRead())
                     .forEach(vi -> statementAnalysis.ensure(Message.newMessage(getLocation(),
                             Message.UNUSED_LOCAL_VARIABLE, vi.name())));
         }
@@ -1400,7 +1391,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         StatementAnalyser first = navigationData.blocks.get().get(0).orElse(null);
                         StatementAnalysis statementAnalysis = first == null ? null : first.lastStatement().statementAnalysis;
                         if (statementAnalysis == null || !statementAnalysis.variables.isSet(loopVarFqn) ||
-                                statementAnalysis.variables.get(loopVarFqn).current().getProperty(VariableProperty.READ) < Level.TRUE) {
+                                !statementAnalysis.variables.get(loopVarFqn).current().isRead()) {
                             this.statementAnalysis.ensure(Message.newMessage(getLocation(), Message.UNUSED_LOOP_VARIABLE, loopVarFqn));
                         }
                     });
@@ -1711,7 +1702,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void accept(ModificationData modificationData) {
-            statementAnalysis.addProperty(analyserContext, modificationData.level, variable, property, value);
+            statementAnalysis.addProperty(variable, property, value);
 
             // some properties need propagation directly to parameters
             if (property == VariableProperty.NOT_NULL && variable instanceof ParameterInfo parameterInfo) {

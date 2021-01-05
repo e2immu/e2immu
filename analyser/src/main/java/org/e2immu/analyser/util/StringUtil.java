@@ -62,4 +62,12 @@ public class StringUtil {
     public static String quote(String s) {
         return "\"" + s.replace("\"", "\\\"") + "\"";
     }
+
+    public static boolean inSameBlock(String index1, String index2) {
+        int lastDot1 = index1.lastIndexOf('.');
+        int lastDot2 = index2.lastIndexOf('.');
+        if (lastDot1 != lastDot2) return false;
+        if (lastDot1 == -1) return true;
+        return index1.substring(0, lastDot1).equals(index2.substring(0, lastDot2));
+    }
 }

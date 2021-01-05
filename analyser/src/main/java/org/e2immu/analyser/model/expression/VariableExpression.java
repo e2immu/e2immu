@@ -120,7 +120,7 @@ public record VariableExpression(Variable variable,
         if (evaluationContext.getCurrentStatement() == null) return builder.build();
 
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
-            builder.markRead(variable, evaluationContext.getIteration());
+            builder.markRead(variable);
         }
 
         int notNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);

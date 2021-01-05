@@ -47,9 +47,8 @@ public interface EvaluationResultVisitor {
         }
 
         public boolean haveMarkRead(String variableName) {
-            return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.MarkRead)
-                    .map(sam -> (StatementAnalyser.MarkRead) sam)
-                    .anyMatch(mr -> variableName.equals(mr.variable.fullyQualifiedName()));
+            return evaluationResult().getExpressionChangeStream().anyMatch(e -> e.getKey().fullyQualifiedName().equals(variableName) &&
+                    !e.getValue().readAtStatementTime().isEmpty());
         }
 
         public boolean haveValueChange(String variableName) {
