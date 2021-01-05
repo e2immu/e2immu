@@ -21,9 +21,7 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.util.Freezable;
-import org.e2immu.analyser.util.SetUtil;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -75,7 +73,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public void setStatementTime(int level, int statementTime) {
         int writeLevel = findLevelForWriting(level);
         VariableInfoImpl variableInfo = getAndCast(writeLevel);
-        variableInfo.statementTime.set(statementTime);
+        variableInfo.setStatementTime(statementTime);
     }
 
     @Override
@@ -130,12 +128,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             // the data is already there; only update delays
             if (vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY &&
                     statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
-                ((VariableInfoImpl) vi).statementTime.set(statementTime);
+                ((VariableInfoImpl) vi).setStatementTime(statementTime);
             } else {
                 assert statementTime == vi.getStatementTime() :
                         "New statement time is " + statementTime + ", had " + vi.getStatementTime();
-              //  assert assignmentId.equals(vi.getAssignmentId()) :
-               // FIXME         "New assignment id is " + assignmentId + ", had " + vi.getAssignmentId();
+                assert assignmentId.equals(vi.getAssignmentId()) :
+                        "New assignment id is " + assignmentId + ", had " + vi.getAssignmentId();
             }
             return;
         }
@@ -180,14 +178,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(variables);
         int writeLevel = findLevelForWriting(level);
         VariableInfoImpl variableInfo = getAndCast(writeLevel);
-        if (!variableInfo.linkedVariables.isSet() || !variables.equals(variableInfo.linkedVariables.get())) {
-            variableInfo.linkedVariables.set(variables);
+        if (variableInfo.setLinkedVariables(variables)) {
             liftCurrentLevel(writeLevel);
         }
     }
 
     @Override
-    public void setInitialValueFromAnalyser(Expression value,  Map<VariableProperty, Integer> propertiesToSet) {
+    public void setInitialValueFromAnalyser(Expression value, Map<VariableProperty, Integer> propertiesToSet) {
         internalSetValue(LEVEL_1_INITIALISER, value);
         propertiesToSet.forEach((vp, i) -> setProperty(LEVEL_1_INITIALISER, vp, i));
     }
@@ -268,8 +265,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(variables);
         int writeLevel = findLevelForWriting(level);
         VariableInfoImpl variableInfo = getAndCast(writeLevel);
-        if (!variableInfo.linkedVariables.isSet() || !variableInfo.linkedVariables.get().equals(variables)) {
-            variableInfo.linkedVariables.set(variables);
+        if (variableInfo.setLinkedVariables(variables)) {
             liftCurrentLevel(writeLevel);
         }
     }
@@ -280,12 +276,15 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(objectFlow);
         int writeLevel = findLevelForWriting(level);
         VariableInfoImpl variableInfo = getAndCast(writeLevel);
-        if (!variableInfo.objectFlow.isSet() || !variableInfo.objectFlow.get().equals(objectFlow)) {
-            variableInfo.objectFlow.set(objectFlow);
+        if (variableInfo.setObjectFlow(objectFlow)) {
             liftCurrentLevel(writeLevel);
         }
     }
 
+    /*
+    level = 1 or 3, destination
+    previousBestLevel = 2 or 4, copy source
+     */
     @Override
     public void copy(int level, VariableInfoContainer previousVic, int previousBestLevel,
                      boolean failWhenTryingToWriteALowerValue, boolean copyValue) {
@@ -303,12 +302,19 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             if (previousVariableInfo.valueIsSet()) {
                 internalSetValue(level, previousVariableInfo.getValue());
             }
+            if (previousVariableInfo.getObjectFlow() != null) {
+                setObjectFlow(level, previousVariableInfo.getObjectFlow());
+            }
+            if (previousVariableInfo.getStatementTime() != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
+                setStatementTime(level, previousVariableInfo.getStatementTime());
+            }
         }
-        if (previousVariableInfo.linkedVariablesIsSet()) {
-            internalSetLinkedVariables(level, previousVariableInfo.getLinkedVariables());
-        }
-        if (previousVariableInfo.getObjectFlow() != null) {
-            setObjectFlow(level, previousVariableInfo.getObjectFlow());
+
+        // we'll not copy statement time and linked variables into level 3
+        if (level == VariableInfoContainer.LEVEL_1_INITIALISER) {
+            if (previousVariableInfo.linkedVariablesIsSet()) {
+                internalSetLinkedVariables(level, previousVariableInfo.getLinkedVariables());
+            }
         }
     }
 
@@ -322,13 +328,13 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         Objects.requireNonNull(evaluationContext);
 
         VariableInfoImpl existing = (VariableInfoImpl) best(level - 1);
-        VariableInfoImpl merged = existing.merge(evaluationContext, stateOfDestination,
-                (VariableInfoImpl) data[level], atLeastOneBlockExecuted, merge);
-        if (merged != existing) {
-            data[level] = merged;
+        VariableInfoImpl destination = (VariableInfoImpl) data[level];
+
+        if (destination == null) {
+            data[level] = existing.mergeIntoNewObject(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, merge);
             currentLevel = level;
+        } else {
+            destination.mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, existing, merge);
         }
-        merged.mergeProperties(atLeastOneBlockExecuted, existing, merge.values());
-        merged.mergeLinkedVariables(atLeastOneBlockExecuted, existing, merge);
     }
 }

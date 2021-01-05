@@ -44,7 +44,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         viB.setValue(four);
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
-        VariableInfoImpl vii = viB.merge(minimalEvaluationContext, TRUE, null, false, Map.of());
+        VariableInfoImpl vii = viB.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, Map.of());
         Assert.assertSame(viB, vii);
 
         Assert.assertSame(four, viB.getValue());
@@ -58,9 +58,9 @@ public class TestVariableInfo extends CommonVariableInfo {
         viB.setValue(four);
         viB.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
-        VariableInfoImpl overwritten = new VariableInfoImpl(viB.variable);
+        VariableInfoImpl overwritten = new VariableInfoImpl(viB.variable());
         try {
-            viB.merge(minimalEvaluationContext, TRUE, overwritten, true, Map.of());
+            overwritten.mergeIntoMe(minimalEvaluationContext, TRUE, true, viB, Map.of());
             Assert.fail();
         } catch (UnsupportedOperationException e) {
             // OK
@@ -82,7 +82,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         // try { ... c = b; } or synchronized(...) { c = b; }
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
-        VariableInfoImpl viC2 = viC.merge(minimalEvaluationContext, TRUE, null, true,
+        VariableInfoImpl viC2 = viC.mergeIntoNewObject(minimalEvaluationContext, TRUE, true,
                 Map.of(TRUE, viB));
 
         Expression res = viC2.getValue();
@@ -94,7 +94,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testOneCisAIfXThenB() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Expression x = new NewObject(primitives, viX.variable.parameterizedType());
+        Expression x = new NewObject(primitives, viX.variable().parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
@@ -108,7 +108,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         // situation: boolean x = ...; int c = a; if(x) c = b;
 
         VariableInfoImpl viC = new VariableInfoImpl(viA);
-        VariableInfoImpl viC2 = viC.merge(minimalEvaluationContext, TRUE, null, false, Map.of(x, viB));
+        VariableInfoImpl viC2 = viC.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, Map.of(x, viB));
         Assert.assertNotSame(viC, viC2);
 
         Expression res = viC2.getValue();
@@ -120,8 +120,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         // in a second iteration, we may encounter:
 
         VariableInfoImpl viC3 = new VariableInfoImpl(viA);
-        VariableInfoImpl viC4 = viC3.merge(minimalEvaluationContext, TRUE, viC2, false, Map.of(x, viB));
-        Assert.assertSame(viC2, viC4);
+        viC3.mergeIntoMe(minimalEvaluationContext, TRUE, false, viC2, Map.of(x, viB));
     }
 
 
@@ -133,7 +132,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         ret.setValue(new UnknownExpression(primitives.booleanParameterizedType, UnknownExpression.RETURN_VALUE));
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Expression x = new NewObject(primitives, viX.variable.parameterizedType());
+        Expression x = new NewObject(primitives, viX.variable().parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
@@ -142,7 +141,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         // situation: if(x) return b;
 
-        VariableInfoImpl ret2 = ret.merge(minimalEvaluationContext, TRUE, null, false, Map.of(x, viB));
+        VariableInfoImpl ret2 = ret.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, Map.of(x, viB));
         Assert.assertNotSame(ret, ret2);
 
         Expression value2 = ret2.getValue();
@@ -172,7 +171,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         ret.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalIntVar("x"));
-        Expression x = new NewObject(primitives, viX.variable.parameterizedType());
+        Expression x = new NewObject(primitives, viX.variable().parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
@@ -182,7 +181,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         // situation: if(x==3) return b;
 
-        VariableInfoImpl ret2 = ret.merge(minimalEvaluationContext, TRUE, null, false,
+        VariableInfoImpl ret2 = ret.mergeIntoNewObject(minimalEvaluationContext, TRUE, false,
                 Map.of(xEquals3, viB));
         Assert.assertNotSame(ret2, ret);
         Assert.assertEquals("3==instance type int?4:<return value:boolean>", ret2.getValue().debugOutput());
@@ -201,7 +200,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         viA.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
 
         Expression state = Negation.negate(minimalEvaluationContext, xEquals3);
-        VariableInfoImpl ret3 = ret2.merge(minimalEvaluationContext, state, null, false,
+        VariableInfoImpl ret3 = ret2.mergeIntoNewObject(minimalEvaluationContext, state, false,
                 Map.of(xEquals4, viA));
         Assert.assertNotSame(ret3, ret2);
         Assert.assertEquals("4==instance type int?3:3==instance type int?4:<return value:boolean>",
@@ -241,10 +240,10 @@ public class TestVariableInfo extends CommonVariableInfo {
         // situation: boolean x = ...; int c = a; if(some obscure condition) c = b;
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
-        viC.setValue(new NewObject(primitives, viA.variable.parameterizedType()));
+        viC.setValue(new NewObject(primitives, viA.variable().parameterizedType()));
 
         Expression unknown = new UnknownExpression(primitives.booleanParameterizedType, "no idea");
-        VariableInfoImpl viC2 = viC.merge(minimalEvaluationContext, TRUE, null, false, Map.of(unknown, viB));
+        VariableInfoImpl viC2 = viC.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, Map.of(unknown, viB));
         Assert.assertNotSame(viA, viC2);
         Assert.assertEquals("<no idea>?4:instance type int", viC2.getValue().toString());
 
@@ -256,7 +255,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testTwoOverwriteCisIfXThenAElseB() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Expression x = new NewObject(primitives, viX.variable.parameterizedType());
+        Expression x = new NewObject(primitives, viX.variable().parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
@@ -270,7 +269,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"), ":4", VariableInfoContainer.NOT_A_VARIABLE_FIELD);
-        viC.merge(minimalEvaluationContext, TRUE, viC, true,
+        viC.mergeIntoMe(minimalEvaluationContext, TRUE,  true, viC,
                 Map.of(x, viA, Negation.negate(minimalEvaluationContext, x), viB));
         Assert.assertEquals("instance type boolean?3:4", viC.getValue().toString());
 
@@ -282,7 +281,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testTwoOverwriteCisIfXThenAElseA() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Expression x = new NewObject(primitives, viX.variable.parameterizedType());
+        Expression x = new NewObject(primitives, viX.variable().parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
@@ -297,9 +296,8 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"), ":4", VariableInfoContainer.NOT_A_VARIABLE_FIELD);
 
-        VariableInfoImpl viC2 = viC.merge(minimalEvaluationContext, TRUE, viC, true, Map.of(x, viA,
+        viC.mergeIntoMe(minimalEvaluationContext, TRUE, true, viC, Map.of(x, viA,
                 Negation.negate(minimalEvaluationContext, x), viB));
-        Assert.assertSame(viC2, viC);
 
         Expression res = viC.getValue();
         Assert.assertEquals("3", res.toString());

@@ -532,15 +532,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 // simply copy the READ value; nothing has changed here
                 vic.setProperty(level, VariableProperty.READ, read);
 
-
-                if (changeData.linkedVariables() == EvaluationResult.LINKED_VARIABLE_DELAY) {
-                    log(DELAYED, "Apply of step {} in {}, {} is delayed because of linked variables of {}",
-                            step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
-                            variable.fullyQualifiedName());
+                Set<Variable> mergedLinkedVariables = writeMergedLinkedVariables(changeData, variable, vi,vi1, level, step);
+                if(mergedLinkedVariables != null) {
+                    vic.setLinkedVariables(level, mergedLinkedVariables);
+                } else {
                     status = DELAYS;
-                } else if (changeData.linkedVariables() != null) {
-                    log(ANALYSER, "Set linked variables of {} to {}", variable, changeData.linkedVariables());
-                    vic.setLinkedVariables(level, changeData.linkedVariables());
                 }
             } else {
                 log(DELAYED, "Apply of step {} in {}, {} is delayed and skipped because of unknown value for {}",
@@ -589,6 +585,33 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         return status;
+    }
+
+    private Set<Variable> writeMergedLinkedVariables(EvaluationResult.ExpressionChangeData changeData,
+                                                     Variable variable,
+                                                     VariableInfo vi,
+                                                     VariableInfo vi1,
+                                                     int level,
+                                                     String step) {
+        if (changeData.linkedVariables() == EvaluationResult.LINKED_VARIABLE_DELAY) {
+            log(DELAYED, "Apply of step {} in {}, {} is delayed because of linked variables of {}",
+                    step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
+                    variable.fullyQualifiedName());
+            return null;
+        }
+        if (changeData.linkedVariables() != null) {
+            if (vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
+                log(DELAYED, "Apply of step {} in {}, {} is delayed because of variable field delay",
+                        step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+                return null;
+            }
+            Set<Variable> previousValue = vi1.getLinkedVariables();
+            Set<Variable> mergedValue = previousValue != null ?
+                    SetUtil.immutableUnion(previousValue, changeData.linkedVariables()) : changeData.linkedVariables();
+            log(ANALYSER, "Set linked variables of {} to {} in level {}", variable, mergedValue, level);
+            return mergedValue;
+        }
+        return null;
     }
 
     /*

@@ -19,9 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.FlowData;
-import org.e2immu.analyser.analyser.StatementAnalyser;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
@@ -67,12 +65,15 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setS1".equals(d.methodInfo().name) && S.equals(d.variableName())) {
+                if (d.iteration() == 0) {
+                    Assert.assertNull(d.statementId(), d.variableInfo().getLinkedVariables());
+                }
                 if ("0.0.0".equals(d.statementId())) {
                     String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type String";
                     Assert.assertEquals(expectValue, d.currentValue().debugOutput());
                     Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.ASSIGNED));
                     if (d.iteration() == 0) {
-                        Assert.assertNull(d.variableInfo().getLinkedVariables());
+                        Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
                     } else {
                         // s is linked to s$1
                         Assert.assertEquals("org.e2immu.analyser.testexample.Basics_3.s$1", debug(d.variableInfo().getLinkedVariables()));
@@ -81,24 +82,43 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if ("0.0.1".equals(d.statementId())) {
                     Assert.assertEquals("\"xyz\"", d.currentValue().debugOutput());
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
-                    // FIXME why is linked the empty set? it should always be s$1 --> assignment overrides?? or not?
-                    String expectedLinked = d.iteration() == 0 ? "" : "org.e2immu.analyser.testexample.Basics_3.s$1";
-                    Assert.assertEquals(expectedLinked, debug(d.variableInfo().getLinkedVariables()));
+                    if (d.iteration() == 0) {
+                        Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
+                    } else {
+                        Assert.assertEquals(2, d.variableInfo().getStatementTime());
+                        String expectedLinked = "org.e2immu.analyser.testexample.Basics_3.s$1";
+                        Assert.assertEquals(expectedLinked, debug(d.variableInfo().getLinkedVariables()));
+                    }
                 }
                 if ("0.1.0".equals(d.statementId())) {
                     Assert.assertEquals("\"abc\"", d.currentValue().debugOutput());
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
-                    Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
+                    if (d.iteration() == 0) {
+                        Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
+                    } else {
+                        Assert.assertEquals(1, d.variableInfo().getStatementTime());
+                        Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
+                    }
                 }
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
-                    String expectedLinked = d.iteration() == 0 ? "" : "org.e2immu.analyser.testexample.Basics_3.s$1";
-                    Assert.assertEquals(expectedLinked, debug(d.variableInfo().getLinkedVariables()));
+                    if (d.iteration() == 0) {
+                        Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
+                    } else {
+                        VariableInfo vi1 = d.variableInfoContainer().best(VariableInfoContainer.LEVEL_1_INITIALISER);
+                        Assert.assertEquals(0, vi1.getStatementTime());
+                        Assert.assertEquals(2, d.variableInfo().getStatementTime());
+
+                        String expectedLinked = "org.e2immu.analyser.testexample.Basics_3.s$1";
+                        Assert.assertEquals(expectedLinked, debug(d.variableInfo().getLinkedVariables()));
+                    }
                     Assert.assertEquals("At " + d.statementId(), Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
-                    Assert.assertEquals("org.e2immu.analyser.testexample.Basics_3.s$2$0:4", debug(d.variableInfo().getLinkedVariables()));
+                    if (d.iteration() > 0) {
+                        Assert.assertEquals("org.e2immu.analyser.testexample.Basics_3.s$2$0:4", debug(d.variableInfo().getLinkedVariables()));
+                    }
                     Assert.assertEquals("At " + d.statementId(), Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
                 }
             }
@@ -107,7 +127,11 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.ASSIGNED));
                     Assert.assertEquals("input2", d.currentValue().toString());
                     // not linked to input2, @E2Immutable
-                    Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
+                    if (d.iteration() == 0) {
+                        Assert.assertNull(d.variableInfo().getLinkedVariables());
+                    } else {
+                        Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
+                    }
                 }
             }
         };
@@ -171,7 +195,9 @@ public class Test_00_Basics_3 extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name) && d.iteration() > 0) {
-                Assert.assertEquals("", debug(d.fieldAnalysis().getLinkedVariables()));
+                if (d.iteration() > 1) {
+                    Assert.assertEquals("", debug(d.fieldAnalysis().getLinkedVariables()));
+                }
                 Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());

@@ -50,11 +50,34 @@ This link tries to save memory when a variable is not touched in the current sta
 Level 1:: the level of the creation of local variables and return variables.
 A field which is read for the first time is introduced at this level.
 
-Level 2:: the level op updaters (currently not implemented.)
+Level 2:: the level of creation of loop variables local to the statement and its block.
 
-Level 3:: the level of the primary expression of the statement. It includes assignments, which store the new value.
+Level 3:: the level of the primary expression of the statement.
+It includes assignments, which store the new value.
 
 Level 4:: the level of synthesis of the sub-blocks.
 
 Information is always copied up the levels, never down.
 
+==== Data stored for a variable
+
+The `VariableInfo` objects hold the following data:
+
+Variable:: the variable being stored.
+Always present from the start.
+Assignment ID:: A marker for when this particular `VariableInfo` object is created.
+It contains the statement index, and the level in the container, separated by a colon.
+This value is present from the creation of the `VariableInfo` object, even though it can vary across `VariableInfo` objects for the same variable.
+Value:: starts off with `NO_VALUE` (not assigned), and becomes immutable when it receives a value.
+Linked variables:: start off with `null`, and becomes immutable when it receives a value.
+Bar one exception, the linked variables come with the assignment of a value, potentially in a later iteration.
+The linked variables of a variable field change when the analyser creates a new local copy for reading, i.e., outside an assignment.
+Properties:: a properties map, with `Level.DELAY` being the default value.
+Statement time:: a constant `NOT_A_VARIABLE_FIELD` for all non-variable fields.
+For fields, starts off with `VARIABLE_FIELD_DELAYED` (not assigned) until we know if the field is variable or not.
+Then, for variable fields, it stores the statement time of the latest assignment.
+Object flow:: generally also set during an assignment.
+The value `NO_FLOW` is used when no value as been set.
+
+All these fields are immutable once they have been set, except the `properties` map, which is incremental.
+The `READ` and `ASSIGNED` properties have the following special behaviour: ... #TODO#
