@@ -63,7 +63,6 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                 Assert.assertEquals(NEW_LIST_SIZE, valueChangeData.value().toString());
             }
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals("false", d.evaluationResult().value().toString());
             }
         };
@@ -109,19 +108,16 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
     public void test1() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertTrue(d.haveValueChange("list")); // because of a modification
                 Assert.assertEquals(INSTANCE_SIZE_1_CONTAINS, d.findValueChange("list").value().toString());
                 Assert.assertTrue(d.haveLinkVariable("list", Set.of()));
             }
             if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
                 Assert.assertTrue(d.haveValueChange("b"));
                 EvaluationResult.ExpressionChangeData valueChangeData = d.findValueChange("b");
                 Assert.assertEquals("true", valueChangeData.value().toString());
             }
             if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals("true", d.evaluationResult().value().toString());
             }
         };
@@ -246,11 +242,9 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals("false", d.evaluationResult().value().toString());
             }
             if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals("true", d.evaluationResult().value().toString());
             }
         };
@@ -387,7 +381,6 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         };
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals("true", d.evaluationResult().value().toString());
             }
         };
@@ -418,11 +411,9 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         };
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
                 Assert.assertEquals("true", d.evaluationResult().value().toString());
             }
             if ("test".equals(d.methodInfo().name) && "7".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals("true", d.evaluationResult().value().toString());
             }
         };
@@ -444,7 +435,6 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
         };
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "8".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals("set.size()", d.evaluationResult().value().toString());
             }
         };

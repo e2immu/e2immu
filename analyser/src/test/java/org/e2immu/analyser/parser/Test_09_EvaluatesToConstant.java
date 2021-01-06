@@ -1,6 +1,5 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -78,21 +77,17 @@ public class Test_09_EvaluatesToConstant extends CommonTestRunner {
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("method2".equals(d.methodInfo().name)) {
             if ("0".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
                 Assert.assertEquals("null==param?\"x\":param", d.evaluationResult().value().toString());
             }
             if ("1".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals("false", d.evaluationResult().value().toString());
             }
         }
         if ("method3".equals(d.methodInfo().name)) {
             if ("1".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals("param.contains(\"a\")", d.evaluationResult().value().toString());
             }
             if ("1.0.0".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
                 Assert.assertEquals("\"xzy\"", d.evaluationResult().value().toString());
             }
         }

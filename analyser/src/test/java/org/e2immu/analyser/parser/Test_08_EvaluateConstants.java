@@ -1,7 +1,6 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.MethodLevelData;
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -22,19 +21,15 @@ import static org.e2immu.analyser.analyser.AnalysisStatus.DONE;
 
 public class Test_08_EvaluateConstants extends CommonTestRunner {
 
-    private static final String EFFECTIVELY_FINAL = "org.e2immu.analyser.testexample.EvaluateConstants.effectivelyFinal";
-
     public Test_08_EvaluateConstants() {
         super(false);
     }
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("print".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-            Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
             Assert.assertEquals("false", d.evaluationResult().value().toString());
         }
         if ("print2".equals(d.methodInfo().name)) {
-            Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
             Assert.assertTrue(d.evaluationResult().value().isInstanceOf(ConstantExpression.class));
             Assert.assertEquals("\"b\"", d.evaluationResult().value().toString());
             Assert.assertEquals(4L, d.evaluationResult().getObjectFlowStream().count());
@@ -92,8 +87,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
             } else Assert.fail();
         }
         if ("EvaluateConstants".equals(d.methodInfo().name)) {
-            boolean expected = true;// d.statementId().compareTo("1") < 0 || d.iteration() != 0;
-            Assert.assertEquals(d.toString(), expected, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+            Assert.assertTrue(d.toString(), d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
         }
     };
 

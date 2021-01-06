@@ -48,7 +48,6 @@ public class Test_00_Basics_3 extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setS1".equals(d.methodInfo().name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                     if (d.iteration() == 0) {
                         Assert.assertSame(EmptyExpression.NO_VALUE, d.evaluationResult().value());
                     } else {
@@ -56,7 +55,6 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     }
                 }
                 if ("1".equals(d.statementId())) {
-                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                     // should not be sth like null != s$2, because statement time has not advanced since the assignments
                     Assert.assertEquals("true", d.evaluationResult().value().debugOutput());
                 }

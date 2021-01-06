@@ -1,6 +1,5 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -113,7 +112,6 @@ public class Test_10_Identity extends CommonTestRunner {
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if ("idem4".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-            Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
             // double property wrapper
             String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "s/*@Immutable,@NotNull*//*@Immutable,@NotNull*/";
             Assert.assertEquals(expect, d.evaluationResult().value().toString());

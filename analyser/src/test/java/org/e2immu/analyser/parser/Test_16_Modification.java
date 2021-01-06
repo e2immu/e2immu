@@ -105,7 +105,6 @@ public class Test_16_Modification extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("getFirst".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals(GET_FIRST_VALUE, d.evaluationResult().value().toString());
             }
         };

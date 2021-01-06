@@ -316,15 +316,12 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method5".equals(d.methodInfo().name)) {
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                     Assert.assertEquals("o==this", d.evaluationResult().value().toString());
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                     Assert.assertEquals("true", d.evaluationResult().value().toString());
                 }
                 if ("1".equals(d.statementId())) {
-                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                     Assert.assertEquals("null==o||o.getClass()!=this.getClass()", d.evaluationResult().value().toString());
                     Assert.assertTrue(d.evaluationResult().getModificationStream().count() > 0);
                     Assert.assertTrue(d.haveMarkRead(O5));
@@ -487,12 +484,10 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("3".equals(d.statementId())) {
-                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                     Assert.assertEquals("(p>=3||p<=2)&&(p>=3||q>=5)&&(p<=2||q<=-1)&&(q>=5||q<=-1)",
                             d.evaluationResult().value().toString());
                 }
                 if ("4".equals(d.statementId())) {
-                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                     Assert.assertEquals("(p>=3||p<=2)&&(p>=3||q>=5)&&(p<=2||q<=-1)&&(q>=5||q<=-1)",
                             d.evaluationResult().value().toString());
                 }

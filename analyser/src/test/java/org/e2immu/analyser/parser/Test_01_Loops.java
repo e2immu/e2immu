@@ -50,7 +50,6 @@ public class Test_01_Loops extends CommonTestRunner {
                 Assert.assertEquals("true", d.evaluationResult().value().debugOutput());
             }
             if ("2.0.2".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2>=n";
                 Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
             }
@@ -141,12 +140,10 @@ public class Test_01_Loops extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
                 if ("2.0.1".equals(d.statementId())) {
-                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2>=n";
                     Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
                 }
                 if ("3".equals(d.statementId())) {
-                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : END_RESULT;
                     Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
                 }
@@ -249,7 +246,6 @@ public class Test_01_Loops extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if (!"method".equals(d.methodInfo().name)) return;
             if ("1".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals("{\"a\",\"b\",\"c\"}", d.evaluationResult().value().toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.evaluationResult().value()
                         .getProperty(d.evaluationResult().evaluationContext(), VariableProperty.NOT_NULL));
@@ -385,7 +381,6 @@ public class Test_01_Loops extends CommonTestRunner {
     public void test5() throws IOException {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1==i$1";
                 Assert.assertEquals(expect, d.evaluationResult().value().toString());
             }
@@ -419,7 +414,6 @@ public class Test_01_Loops extends CommonTestRunner {
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if (!"method".equals(d.methodInfo().name)) return;
             if ("1".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "n>i$1";
                 Assert.assertEquals(expect, d.evaluationResult().value().toString());
             }

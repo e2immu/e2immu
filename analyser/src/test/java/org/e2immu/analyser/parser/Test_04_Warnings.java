@@ -170,23 +170,14 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("checkArray2".equals(d.methodInfo().name)) {
                 // int[] integers = {1, 2, 3};
                 if ("0".equals(d.statementId())) {
-                    Assert.assertEquals(StatementAnalyser.STEP_1, d.step());
                     Assert.assertEquals("{1,2,3}", d.evaluationResult().value().toString());
                     Variable integers = d.evaluationResult().valueChanges().keySet().stream().findFirst().orElseThrow();
                     Assert.assertEquals("integers", integers.fullyQualifiedName());
                     Assert.assertTrue(integers instanceof LocalVariableReference);
                     Assert.assertEquals("{1,2,3}", d.evaluationResult().valueChanges().get(integers).value().toString());
                 }
-                // int i=0;
-
-                // integers[i] = 3
-                if ("2".equals(d.statementId())) {
-                    Assert.assertEquals(StatementAnalyser.STEP_3, d.step()); // just to make sure we're on the correct statement
-                    //Assert.assertEquals(2L, d.evaluationResult().getModificationStream().count());
-                }
             }
             if ("method1".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                Assert.assertEquals(StatementAnalyser.STEP_3, d.step());
                 Assert.assertEquals("t.length()<=18", d.evaluationResult().value().toString());
                 Assert.assertTrue(d.evaluationResult().value().isInstanceOf(GreaterThanZero.class));
             }
