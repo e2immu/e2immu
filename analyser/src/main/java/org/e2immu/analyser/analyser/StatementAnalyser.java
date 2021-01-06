@@ -477,6 +477,31 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return false;
     }
 
+    /* FIXME HAS TO MOVE ELSEWHERE, near apply in statement analyser; then clean-up code
+
+       if (statementTime == fieldVi.getStatementTime() && fieldVi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
+            // return a local variable with the current field value, numbered as the statement time + assignment ID
+            localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime + "$" + fieldVi.getAssignmentId().replace(".", "_");
+            //initialValue = fieldVi.getValue();
+        } else {
+            localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime;
+            //initialValue = new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
+        }
+
+    lvrVic = createVariable(analyserContext, lvr, statementTime);
+    assert initialValue != EmptyExpression.NO_VALUE;
+    lvrVic.setValue(initialValue, propertyMap(analyserContext, fieldReference.fieldInfo), false);
+    // NOT! linked to the reference (its the other way around)
+    lvrVic.setLinkedVariables(Set.of(), false);
+
+
+    // a modification on the local variable copy needs to travel towards the field... so we must make the field
+    // dependent on the local variable!
+    //fieldVic.addLinkedVariable(VariableInfoContainer.LEVEL_2_UPDATER, lvr);
+
+    return new FindOrCreateL1Result(lvrVic.current(), lvr);
+    */
+
     /*
     The main loop calls the apply method with the results of an evaluation.
      */
@@ -947,7 +972,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      */
     private AnalysisStatus step3_Return(SharedState sharedState, Expression level3EvaluationResult) {
         ReturnVariable returnVariable = new ReturnVariable(myMethodAnalyser.methodInfo);
-        Expression currentReturnValue = statementAnalysis.findOrThrow(returnVariable, VariableInfoContainer.Level.INITIAL).getValue();
+        Expression currentReturnValue = statementAnalysis.initialValueOfReturnVariable(returnVariable);
         // do NOT check for delays on currentReturnValue, we need to make the VIC
 
         Expression newReturnValue;
@@ -1506,9 +1531,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return notNullVariablesInCondition.contains(variable);
         }
 
-        private StatementAnalysis.FindOrCreateL1Result findOrCreateL1(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+        private VariableInfo findForReading(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
             if (closure != null && isNotMine(variable)) {
-                return ((EvaluationContextImpl) closure).findOrCreateL1(variable, statementTime, isNotAssignmentTarget);
+                return ((EvaluationContextImpl) closure).findForReading(variable, statementTime, isNotAssignmentTarget);
             }
             return statementAnalysis.findForReading(analyserContext, variable, statementTime, isNotAssignmentTarget);
         }
@@ -1519,21 +1544,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         // we pass on the information about the potential newly created local variable copy
         @Override
-        public CurrentValueResult currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
-            StatementAnalysis.FindOrCreateL1Result res = findOrCreateL1(variable, statementTime, isNotAssignmentTarget);
-            Expression value = res.variableInfo().getValue();
+        public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+            VariableInfo variableInfo = findForReading(variable, statementTime, isNotAssignmentTarget);
+            Expression value = variableInfo.getValue();
             // important! do not use variable in the next statement, but vi.variable()
             // we could have redirected from a variable field to a local variable copy
-            Expression toReturn = value instanceof NewObject ?
-                    new VariableExpression(res.variableInfo().variable(), res.variableInfo().getObjectFlow()) : value;
-            return new CurrentValueResult(toReturn, res.newlyCreatedLocalVariableCopyNeedsLinking());
+            return value instanceof NewObject ?
+                    new VariableExpression(variableInfo.variable(), variableInfo.getObjectFlow()) : value;
         }
 
         @Override
         public NewObject currentInstance(Variable variable, int statementTime) {
-            StatementAnalysis.FindOrCreateL1Result res = findOrCreateL1(variable, statementTime, true);
-            Expression value = res.variableInfo().getValue();
-            assert res.newlyCreatedLocalVariableCopyNeedsLinking() == null; // we'll have asked for the value first!
+            VariableInfo variableInfo = findForReading(variable, statementTime, true);
+            Expression value = variableInfo.getValue();
 
             // redirect to other variable
             if (value instanceof VariableExpression variableValue) {
@@ -1590,7 +1613,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         @Override
         public void ensureVariableAtTimeOfSubBlocks(Variable variable) {
-            findOrCreateL1(variable, statementAnalysis.flowData.getTimeAfterSubBlocks(), false);
+            findForReading(variable, statementAnalysis.flowData.getTimeAfterSubBlocks(), false);
         }
 
         @Override

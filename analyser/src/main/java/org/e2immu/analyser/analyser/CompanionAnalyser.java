@@ -215,13 +215,13 @@ public class CompanionAnalyser {
         }
 
         @Override
-        public CurrentValueResult currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+        public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
             if (variable instanceof ParameterInfo parameterInfo) {
                 Map<String, Expression> remapping = companionAnalysis.remapParameters.getOrElse(null);
-                if (remapping == null) return new CurrentValueResult(EmptyExpression.NO_VALUE, null); // delay!
-                return new CurrentValueResult(Objects.requireNonNull(remapping.get(parameterInfo.name)), null);
+                if (remapping == null) return EmptyExpression.NO_VALUE;
+                return Objects.requireNonNull(remapping.get(parameterInfo.name));
             }
-            return new CurrentValueResult(new VariableExpression(variable), null);
+            return new VariableExpression(variable);
         }
 
         @Override

@@ -755,9 +755,7 @@ public class FieldAnalyser extends AbstractAnalyser {
 
         @Override
         public ObjectFlow getObjectFlow(Variable variable, int statementTime) {
-            CurrentValueResult cvr = currentValue(variable, statementTime, true);
-            assert cvr.newlyCreatedLocalVariableCopyNeedsLinking() == null;
-            return cvr.value().getObjectFlow();
+            return currentValue(variable, statementTime, true).getObjectFlow();
         }
 
         @Override
@@ -779,12 +777,12 @@ public class FieldAnalyser extends AbstractAnalyser {
         }
 
         @Override
-        public CurrentValueResult currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
+        public Expression currentValue(Variable variable, int statementTime, boolean isNotAssignmentTarget) {
             if (variable instanceof FieldReference) {
-                return new CurrentValueResult(getVariableValue(variable), null);
+                return getVariableValue(variable);
             }
             if (variable instanceof This) {
-                return new CurrentValueResult(myTypeAnalyser.getVariableValue(variable), null);
+                return myTypeAnalyser.getVariableValue(variable);
             }
             throw new UnsupportedOperationException("Variable of " + variable.getClass() + " not implemented here");
         }

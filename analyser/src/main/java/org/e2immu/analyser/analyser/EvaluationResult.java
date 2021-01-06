@@ -22,7 +22,6 @@ import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -343,12 +342,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ExpressionChangeData currentExpression = valueChanges.get(variable);
             if (currentExpression == null || currentExpression.value == NO_VALUE) {
                 assert evaluationContext != null;
-                EvaluationContext.CurrentValueResult cvr = evaluationContext.currentValue(variable, statementTime, isNotAssignmentTarget);
-                if (cvr.newlyCreatedLocalVariableCopyNeedsLinking() != null) {
-                    LocalVariableReference lvr = cvr.newlyCreatedLocalVariableCopyNeedsLinking();
-                    addLink(lvr.variable.isLocalCopyOf(), lvr);
-                }
-                return cvr.value();
+                return evaluationContext.currentValue(variable, statementTime, isNotAssignmentTarget);
             }
             return currentExpression.value;
         }
