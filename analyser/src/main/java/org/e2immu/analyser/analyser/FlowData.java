@@ -53,7 +53,7 @@ public class FlowData {
 
     // counts all increases in statement time
     private final SetOnce<Integer> initialTime = new SetOnce<>(); // STEP 1
-    private final SetOnce<Integer> timeAfterExecution = new SetOnce<>(); // STEP 3
+    private final SetOnce<Integer> timeAfterEvaluation = new SetOnce<>(); // STEP 3
     private final SetOnce<Integer> timeAfterSubBlocks = new SetOnce<>(); // STEP 4
 
     public final SetOnceMap<Integer, String> assignmentIdOfStatementTime = new SetOnceMap<>();
@@ -65,31 +65,31 @@ public class FlowData {
     public void setInitialTime(int time, String index) {
         initialTime.set(time);
         if (!assignmentIdOfStatementTime.isSet(time)) {
-            assignmentIdOfStatementTime.put(time, index + ":1");
+            assignmentIdOfStatementTime.put(time, index + VariableInfoContainer.Level.INITIAL);
         }
     }
 
-    public void setTimeAfterExecution(int time, String index) {
-        timeAfterExecution.set(time);
+    public void setTimeAfterEvaluation(int time, String index) {
+        timeAfterEvaluation.set(time);
         if (!assignmentIdOfStatementTime.isSet(time)) {
-            assignmentIdOfStatementTime.put(time, index + ":3");
+            assignmentIdOfStatementTime.put(time, index + VariableInfoContainer.Level.EVALUATION);
         }
     }
 
     public void setTimeAfterSubBlocks(int time, String index) {
         timeAfterSubBlocks.set(time);
         if (!assignmentIdOfStatementTime.isSet(time)) {
-            assignmentIdOfStatementTime.put(time, index + ":4");
+            assignmentIdOfStatementTime.put(time, index + VariableInfoContainer.Level.MERGE);
         }
     }
 
     public void copyTimeAfterExecutionFromInitialTime() {
         int ini = initialTime.get();
-        timeAfterExecution.set(ini);
+        timeAfterEvaluation.set(ini);
     }
 
     public void copyTimeAfterSubBlocksFromTimeAfterExecution() {
-        int exe = timeAfterExecution.get();
+        int exe = timeAfterEvaluation.get();
         timeAfterSubBlocks.set(exe);
     }
 
@@ -98,7 +98,7 @@ public class FlowData {
     }
 
     public boolean timeAfterExecutionNotYetSet() {
-        return !timeAfterExecution.isSet();
+        return !timeAfterEvaluation.isSet();
     }
 
     public boolean timeAfterSubBlocksNotYetSet() {
@@ -109,8 +109,8 @@ public class FlowData {
         return initialTime.get();
     }
 
-    public int getTimeAfterExecution() {
-        return timeAfterExecution.get();
+    public int getTimeAfterEvaluation() {
+        return timeAfterEvaluation.get();
     }
 
     public int getTimeAfterSubBlocks() {

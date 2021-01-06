@@ -21,11 +21,9 @@ package org.e2immu.analyser.analyser.util;
 
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.variable.ReturnVariable;
@@ -155,14 +153,14 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     }
 
     private Expression inlineConditional(Expression condition, Expression ifTrue, Expression ifFalse) {
-        if(condition == NO_VALUE || ifTrue == NO_VALUE || ifFalse == NO_VALUE) return NO_VALUE;
+        if (condition == NO_VALUE || ifTrue == NO_VALUE || ifFalse == NO_VALUE) return NO_VALUE;
 
         return safe(EvaluateInlineConditional.conditionalValueConditionResolved(evaluationContext,
                 condition, ifTrue, ifFalse, ObjectFlow.NO_FLOW));
     }
 
     private Expression safe(EvaluationResult result) {
-        if (result.getModificationStream().anyMatch(m -> m instanceof StatementAnalyser.RaiseErrorMessage)) {
+        if (result.getMessageStream().anyMatch(m -> true)) {
             // something gone wrong, retreat
             return noConclusion();
         }

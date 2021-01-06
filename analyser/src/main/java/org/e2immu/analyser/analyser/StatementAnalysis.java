@@ -515,7 +515,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     create a variable, potentially even assign an initial value and a linked variables set.
     everything is written into the INITIAL level, assignmentId and readId are both NOT_YET...
      */
-    private VariableInfoContainer createVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
+    public VariableInfoContainer createVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
         String fqn = variable.fullyQualifiedName();
         if (variables.isSet(fqn)) throw new UnsupportedOperationException("Already exists");
 
@@ -687,8 +687,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
     }
 
-    public int statementTime(int level) {
-        return level < 3 ? flowData.getInitialTime() : level < 4 ? flowData.getTimeAfterExecution() : flowData.getTimeAfterSubBlocks();
+    public int statementTime(VariableInfoContainer.Level level) {
+        return switch (level) {
+            case INITIAL -> flowData.getInitialTime();
+            case EVALUATION -> flowData.getTimeAfterEvaluation();
+            case MERGE -> flowData.getTimeAfterSubBlocks();
+        };
     }
 
     /**
@@ -737,7 +741,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         VariableInfo vi = vic.getPreviousOrInitial();
         if (isNotAssignmentTarget) {
             if (vi.variable() instanceof FieldReference fieldReference && vi.isConfirmedVariableField()) {
-                return variableInfoOfFieldWhenReading(analyserContext, fieldReference, vi, statementTime);
+                String localVariableFqn = createLocalFieldCopyFQN(vi, fieldReference, statementTime);
+                return variables.get(localVariableFqn).current();
             }
             if (vic.isLocalVariableInLoopDefinedOutside() && !relevantLocalVariablesAssignedInThisLoopAreFrozen()) {
                 return new VariableInfoImpl(variable); // no value, no state
@@ -787,10 +792,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return fieldReference.fullyQualifiedName() + "$" + statementTime;
     }
 
-    private VariableInfo variableInfoOfFieldWhenReading(AnalyserContext analyserContext,
-                                                        FieldReference fieldReference,
-                                                        VariableInfo fieldVi,
-                                                        int statementTime) {
+    public LocalVariableReference variableInfoOfFieldWhenReading(AnalyserContext analyserContext,
+                                                                  FieldReference fieldReference,
+                                                                  VariableInfo fieldVi,
+                                                                  int statementTime) {
         // a variable field can have any value when first read in a method.
         // after statement time goes up, this value may have changed completely
         // therefore we return a new local variable each time we read and statement time has gone up.
@@ -809,9 +814,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 .setIsLocalCopyOf(fieldReference)
                 .setOwningType(methodAnalysis.getMethodInfo().typeInfo)
                 .build();
-        LocalVariableReference lvr = new LocalVariableReference(analyserContext, lv, List.of());
-        VariableInfoContainer lvrVic = variables.get(lvr.fullyQualifiedName());
-        return lvrVic.current();
+        return new LocalVariableReference(analyserContext, lv, List.of());
     }
 
     // either go next, or go down

@@ -18,7 +18,6 @@
 package org.e2immu.analyser.config;
 
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.MethodInfo;
 
@@ -31,11 +30,9 @@ public interface EvaluationResultVisitor {
 
     record Data(int iteration, MethodInfo methodInfo, String statementId, EvaluationResult evaluationResult) {
 
-
         public boolean haveSetProperty(String variableName, VariableProperty variableProperty) {
-            return evaluationResult().getModificationStream().filter(sam -> sam instanceof StatementAnalyser.SetProperty)
-                    .map(sam -> (StatementAnalyser.SetProperty) sam)
-                    .anyMatch(sp -> variableName.equals(sp.variable.fullyQualifiedName()) && variableProperty == sp.property);
+            return evaluationResult().getExpressionChangeStream().anyMatch(e -> e.getKey().fullyQualifiedName().equals(variableName)
+                    && e.getValue().properties().containsKey(variableProperty));
         }
 
         public boolean haveLinkVariable(String fromName, Set<String> toNames) {

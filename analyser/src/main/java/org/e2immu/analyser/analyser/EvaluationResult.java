@@ -17,6 +17,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.NewObject;
@@ -28,6 +29,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.objectflow.access.MethodAccess;
 import org.e2immu.analyser.parser.Message;
+import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.SetUtil;
 import org.slf4j.Logger;
@@ -50,8 +52,8 @@ It contains:
 - an increased statement time, caused by calls to those methods that increase time
 - the computed result (value)
 - an assembled precondition, gathered from calls to methods that have preconditions
-- a map of value changes
-- a list of modifications
+- a map of value changes (and linked var, property, ...)
+- a list of error messages
 - a list of object flows (for later)
 
 Critically, the apply method will effect the value changes before executing the modifications.
@@ -65,17 +67,18 @@ We track delays in state change
 public record EvaluationResult(EvaluationContext evaluationContext,
                                int statementTime,
                                Expression value,
-                               List<StatementAnalyser.StatementAnalysisModification> modifications,
+                               Messages messages,
                                List<ObjectFlow> objectFlows,
                                Map<Variable, ExpressionChangeData> valueChanges,
-                               Expression precondition) {
+                               Expression precondition,
+                               boolean addCircularCallOrUndeclaredFunctionalInterface) {
 
     public final static Set<Variable> LINKED_VARIABLE_DELAY = Set.of(Variable.fake());
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluationResult.class);
 
-    public Stream<StatementAnalyser.StatementAnalysisModification> getModificationStream() {
-        return modifications.stream();
+    public Stream<Message> getMessageStream() {
+        return messages.getMessageStream();
     }
 
     public Stream<ObjectFlow> getObjectFlowStream() {
@@ -104,7 +107,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                        boolean stateIsDelayed,
                                        boolean markAssignment,
                                        Set<Integer> readAtStatementTime,
-                                       Set<Variable> linkedVariables) {
+                                       Set<Variable> linkedVariables,
+                                       Map<VariableProperty, Integer> properties) {
         public ExpressionChangeData {
             Objects.requireNonNull(value);
         }
@@ -112,30 +116,33 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public ExpressionChangeData merge(ExpressionChangeData other) {
             Set<Variable> combinedLinkedVariables = SetUtil.immutableUnion(linkedVariables, other.linkedVariables);
             Set<Integer> combinedReadAtStatementTime = SetUtil.immutableUnion(readAtStatementTime, other.readAtStatementTime);
+            Map<VariableProperty, Integer> combinedProperties = mergeProperties(properties, other.properties);
             return new ExpressionChangeData(other.value, other.stateIsDelayed, other.markAssignment || markAssignment,
-                    combinedReadAtStatementTime, combinedLinkedVariables);
+                    combinedReadAtStatementTime, combinedLinkedVariables, combinedProperties);
         }
+
+    }
+
+    private static Map<VariableProperty, Integer> mergeProperties(Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
+        if (m2.isEmpty()) return m1;
+        if (m1.isEmpty()) return m2;
+        Map<VariableProperty, Integer> map = new HashMap<>(m1);
+        for (Map.Entry<VariableProperty, Integer> e : m2.entrySet()) {
+            map.merge(e.getKey(), e.getValue(), Math::max);
+        }
+        return ImmutableMap.copyOf(map);
     }
 
     // lazy creation of lists
     public static class Builder {
         private final EvaluationContext evaluationContext;
-        private List<StatementAnalyser.StatementAnalysisModification> modifications;
+        private final Messages messages = new Messages();
         private List<ObjectFlow> objectFlows;
         private Expression value;
         private int statementTime;
         private final Map<Variable, ExpressionChangeData> valueChanges = new HashMap<>();
         private Expression precondition;
-
-        private void addToModifications(StatementAnalyser.StatementAnalysisModification modification) {
-            if (modifications == null) modifications = new ArrayList<>();
-            modifications.add(modification);
-        }
-
-        private void addToModifications(Collection<StatementAnalyser.StatementAnalysisModification> modification) {
-            if (modifications == null) modifications = new ArrayList<>();
-            modifications.addAll(modification);
-        }
+        private boolean addCircularCallOrUndeclaredFunctionalInterface;
 
         // for a constant EvaluationResult
         public Builder() {
@@ -174,9 +181,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 value = evaluationResult.value;
             }
 
-            if (!evaluationResult.modifications.isEmpty()) {
-                addToModifications(evaluationResult.modifications);
-            }
+            this.messages.addAll(evaluationResult.getMessageStream());
+
             if (!evaluationResult.objectFlows.isEmpty()) {
                 if (objectFlows == null) objectFlows = new LinkedList<>(evaluationResult.objectFlows);
                 else objectFlows.addAll(evaluationResult.objectFlows);
@@ -220,13 +226,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public EvaluationResult build() {
-            return new EvaluationResult(evaluationContext,
-                    statementTime,
-                    value,
-                    modifications == null ? List.of() : modifications,
-                    objectFlows == null ? List.of() : objectFlows,
-                    valueChanges,
-                    precondition);
+            return new EvaluationResult(evaluationContext, statementTime, value,
+                    messages, objectFlows == null ? List.of() : objectFlows, valueChanges, precondition,
+                    addCircularCallOrUndeclaredFunctionalInterface);
         }
 
         private StatementAnalyser statementAnalyser(Variable variable) {
@@ -238,27 +240,25 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return ec.getCurrentStatement();
         }
 
+
         public void variableOccursInNotNullContext(Variable variable, Expression value, int notNullRequired) {
             assert evaluationContext != null;
 
             if (value == NO_VALUE) {
                 if (variable instanceof ParameterInfo) {
                     // we will mark this, so that the parameter analyser knows that it should wait
-                    addToModifications(statementAnalyser(variable).new SetProperty(variable,
-                            VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.FALSE));
+                    setProperty(variable, VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.FALSE);
                 }
                 return; // not yet
             }
             if (variable instanceof This) return; // nothing to be done here
             if (variable instanceof ParameterInfo) {
                 // the opposite of the previous one
-                addToModifications(statementAnalyser(variable).new SetProperty(variable,
-                        VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.TRUE));
+                setProperty(variable, VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.TRUE);
             }
             if (value instanceof VariableExpression redirect && redirect.variable() instanceof ParameterInfo) {
                 // the opposite of the previous one
-                addToModifications(statementAnalyser(redirect.variable()).new SetProperty(redirect.variable(),
-                        VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.TRUE));
+                setProperty(redirect.variable(), VariableProperty.NOT_NULL_DELAYS_RESOLVED, Level.TRUE);
             }
 
             // if we already know that the variable is NOT @NotNull, then we'll raise an error
@@ -266,13 +266,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (notNull == MultiLevel.FALSE) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.POTENTIAL_NULL_POINTER_EXCEPTION,
                         "Variable: " + variable.simpleName());
-                addToModifications(statementAnalyser(variable).new RaiseErrorMessage(message));
+                messages.add(message);
             } else if (notNull == MultiLevel.DELAY) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
-                addToModifications(statementAnalyser(variable).new SetProperty(variable, VariableProperty.NOT_NULL, notNullRequired));
+                setProperty(variable, VariableProperty.NOT_NULL, notNullRequired);
                 if (value instanceof VariableExpression redirect) {
-                    addToModifications(statementAnalyser(redirect.variable())
-                            .new SetProperty(redirect.variable(), VariableProperty.NOT_NULL, notNullRequired));
+                    setProperty(redirect.variable(), VariableProperty.NOT_NULL, notNullRequired);
                 }
             }
         }
@@ -281,10 +280,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ExpressionChangeData ecd = valueChanges.get(variable);
             ExpressionChangeData newEcd;
             if (ecd == null) {
-                newEcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(statementTime), null);
+                newEcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(statementTime), null,
+                        Map.of());
             } else {
                 newEcd = new ExpressionChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
-                        SetUtil.immutableUnion(ecd.readAtStatementTime, Set.of(statementTime)), ecd.linkedVariables);
+                        SetUtil.immutableUnion(ecd.readAtStatementTime, Set.of(statementTime)), ecd.linkedVariables, Map.of());
             }
             valueChanges.put(variable, newEcd);
 
@@ -316,7 +316,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
             if (statementAnalyser != null) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), messageString);
-                addToModifications(statementAnalyser.new RaiseErrorMessage(message));
+                messages.add(message);
             } else { // e.g. companion analyser
                 LOGGER.warn("Analyser error: {}", messageString);
             }
@@ -328,7 +328,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
             if (statementAnalyser != null) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), messageString, extra);
-                addToModifications(statementAnalyser.new RaiseErrorMessage(message));
+                messages.add(message);
             } else {
                 LOGGER.warn("Analyser error: {}, {}", messageString, extra);
             }
@@ -351,12 +351,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ExpressionChangeData current = valueChanges.get(from);
             ExpressionChangeData newVcd;
             if (current == null) {
-                newVcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(), Set.of(to));
+                newVcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(), Set.of(to), Map.of());
             } else {
                 // we simply merge the linkedVariables
                 Set<Variable> linkedVariables = SetUtil.immutableUnion(current.linkedVariables, Set.of(to));
                 newVcd = new ExpressionChangeData(current.value,
-                        current.stateIsDelayed, current.markAssignment, current.readAtStatementTime, linkedVariables);
+                        current.stateIsDelayed, current.markAssignment, current.readAtStatementTime, linkedVariables, Map.of());
             }
             valueChanges.put(from, newVcd);
         }
@@ -385,15 +385,16 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ExpressionChangeData newVcd;
             if (current == null) {
                 boolean stateIsDelayed = evaluationContext.getConditionManager().isDelayed();
-                newVcd = new ExpressionChangeData(instance, stateIsDelayed, false, Set.of(), linkedVariables);
+                newVcd = new ExpressionChangeData(instance, stateIsDelayed, false, Set.of(), linkedVariables, Map.of());
             } else {
-                newVcd = new ExpressionChangeData(instance, current.stateIsDelayed, current.markAssignment, current.readAtStatementTime, linkedVariables);
+                newVcd = new ExpressionChangeData(instance, current.stateIsDelayed, current.markAssignment,
+                        current.readAtStatementTime, linkedVariables, Map.of());
             }
             valueChanges.put(variable, newVcd);
         }
 
         public void markMethodDelay(Variable variable, int methodDelay) {
-            addToModifications(statementAnalyser(variable).new SetProperty(variable, VariableProperty.METHOD_DELAY, methodDelay));
+            setProperty(variable, VariableProperty.METHOD_DELAY, methodDelay);
         }
 
         public void markMethodCalled(Variable variable, int methodCalled) {
@@ -406,7 +407,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 v = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
             } else v = null;
             if (v != null) {
-                addToModifications(statementAnalyser(v).new SetProperty(v, VariableProperty.METHOD_CALLED, methodCalled));
+                setProperty(v, VariableProperty.METHOD_CALLED, methodCalled);
             }
         }
 
@@ -416,13 +417,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (ignoreContentModifications != Level.TRUE) {
                 log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.fullyQualifiedName());
                 StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
-                addToModifications(statementAnalyser.new SetProperty(variable, VariableProperty.MODIFIED, modified));
+                setProperty(variable, VariableProperty.MODIFIED, modified);
 
                 // modification in MLD via linked variables travels in one direction, but direct assignment also travels
                 // "backwards"
                 if (value instanceof VariableExpression redirect) {
-                    addToModifications(statementAnalyser(redirect.variable()).new SetProperty(redirect.variable(),
-                            VariableProperty.MODIFIED, modified));
+                    setProperty(redirect.variable(), VariableProperty.MODIFIED, modified);
                 }
 
             } else {
@@ -438,10 +438,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             int notModified1 = evaluationContext.getProperty(currentExpression, VariableProperty.NOT_MODIFIED_1);
             if (notModified1 == Level.FALSE) {
                 Message message = Message.newMessage(evaluationContext.getLocation(), Message.MODIFICATION_NOT_ALLOWED, variable.simpleName());
-                addToModifications(statementAnalyser.new RaiseErrorMessage(message));
+                messages.add(message);
             } else if (notModified1 == Level.DELAY) {
                 // we only need to mark this in case of doubt (if we already know, we should not mark)
-                addToModifications(statementAnalyser.new SetProperty(variable, VariableProperty.NOT_MODIFIED_1, Level.TRUE));
+                setProperty(variable, VariableProperty.NOT_MODIFIED_1, Level.TRUE);
             }
         }
 
@@ -454,21 +454,31 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             assert evaluationContext != null;
             boolean stateIsDelayed = evaluationContext.getConditionManager().isDelayed();
 
-            ExpressionChangeData valueChangeData = new ExpressionChangeData(
-                    stateIsDelayed ? NO_VALUE : resultOfExpression,
-                    stateIsDelayed,
-                    true,
-                    Set.of(),
-                    linkedVariables);
-            valueChanges.put(assignmentTarget, valueChangeData);
+            ExpressionChangeData newEcd;
+            ExpressionChangeData ecd = valueChanges.get(assignmentTarget);
+            if (ecd == null) {
+                newEcd = new ExpressionChangeData(stateIsDelayed ? NO_VALUE : resultOfExpression, stateIsDelayed,
+                        true, Set.of(), linkedVariables, Map.of());
+            } else {
+                newEcd = new ExpressionChangeData(stateIsDelayed ? NO_VALUE : resultOfExpression, stateIsDelayed,
+                        true, ecd.readAtStatementTime, linkedVariables, ecd.properties);
+            }
+            valueChanges.put(assignmentTarget, newEcd);
             return this;
         }
 
         // Used in transformation of parameter lists
         public void setProperty(Variable variable, VariableProperty property, int value) {
             assert evaluationContext != null;
-            StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
-            addToModifications(statementAnalyser.new SetProperty(variable, property, value));
+            ExpressionChangeData newEcd;
+            ExpressionChangeData ecd = valueChanges.get(variable);
+            if (ecd == null) {
+                newEcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(), null, Map.of(property, value));
+            } else {
+                newEcd = new ExpressionChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment, ecd.readAtStatementTime, ecd.linkedVariables,
+                        mergeProperties(Map.of(property, value), ecd.properties));
+            }
+            valueChanges.put(variable, newEcd);
         }
 
         public void addPrecondition(Expression expression) {
@@ -498,37 +508,21 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public void addErrorAssigningToFieldOutsideType(FieldInfo fieldInfo) {
             assert evaluationContext != null;
-            addToModifications(evaluationContext.getCurrentStatement()
-                    .new ErrorAssigningToFieldOutsideType(fieldInfo, evaluationContext.getLocation()));
+            messages.add(Message.newMessage(new Location(fieldInfo), Message.ADVISE_AGAINST_ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
         }
 
         public void addParameterShouldNotBeAssignedTo(ParameterInfo parameterInfo) {
             assert evaluationContext != null;
-            addToModifications(evaluationContext.getCurrentStatement()
-                    .new ParameterShouldNotBeAssignedTo(parameterInfo, evaluationContext.getLocation()));
+            messages.add(Message.newMessage(new Location(parameterInfo), Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO,
+                    parameterInfo.fullyQualifiedName()));
         }
 
         public void addCircularCallOrUndeclaredFunctionalInterface() {
-            assert evaluationContext != null;
-            MethodLevelData methodLevelData = evaluationContext.getCurrentStatement().statementAnalysis.methodLevelData;
-            addToModifications(methodLevelData.new SetCircularCallOrUndeclaredFunctionalInterface());
+            addCircularCallOrUndeclaredFunctionalInterface = true;
         }
 
         public int getStatementTime() {
             return statementTime;
-        }
-
-        // why is this one not used?
-        public boolean isNotNull0(Expression expression) {
-            assert evaluationContext != null;
-            // intercept modifications?
-            if (modifications != null && expression instanceof VariableExpression variableExpression) {
-                if (modifications.stream().anyMatch(m -> m instanceof StatementAnalyser.SetProperty setProperty &&
-                        setProperty.property == VariableProperty.NOT_NULL &&
-                        variableExpression.variable().equals(setProperty.variable) &&
-                        setProperty.value >= MultiLevel.EFFECTIVELY_NOT_NULL)) return true;
-            }
-            return evaluationContext.isNotNull0(expression);
         }
     }
 }

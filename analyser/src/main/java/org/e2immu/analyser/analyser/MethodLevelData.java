@@ -69,6 +69,12 @@ public class MethodLevelData {
         return combinedPrecondition.getOrElse(null);
     }
 
+    public void addCircularCallOrUndeclaredFunctionalInterface() {
+        if(!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
+            callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(true);
+        }
+    }
+
     record SharedState(StatementAnalyserResult.Builder builder,
                        EvaluationContext evaluationContext,
                        StatementAnalysis statementAnalysis,
@@ -252,14 +258,5 @@ public class MethodLevelData {
         }
 
         return DONE;
-    }
-
-    public class SetCircularCallOrUndeclaredFunctionalInterface implements StatementAnalyser.StatementAnalysisModification {
-        @Override
-        public void accept(StatementAnalyser.ModificationData modificationData) {
-            if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
-                callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(true);
-            }
-        }
     }
 }

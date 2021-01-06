@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -383,7 +382,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (sharedState.previous != null) {
                 time = sharedState.previous.flowData.getTimeAfterSubBlocks();
             } else if (statementAnalysis.parent != null) {
-                time = statementAnalysis.parent.flowData.getTimeAfterExecution();
+                time = statementAnalysis.parent.flowData.getTimeAfterEvaluation();
             } else {
                 time = 0; // start
             }
@@ -477,58 +476,42 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return false;
     }
 
-    /* FIXME HAS TO MOVE ELSEWHERE, near apply in statement analyser; then clean-up code
-
-       if (statementTime == fieldVi.getStatementTime() && fieldVi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
-            // return a local variable with the current field value, numbered as the statement time + assignment ID
-            localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime + "$" + fieldVi.getAssignmentId().replace(".", "_");
-            //initialValue = fieldVi.getValue();
-        } else {
-            localVariableFqn = fieldReference.fullyQualifiedName() + "$" + statementTime;
-            //initialValue = new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
-        }
-
-    lvrVic = createVariable(analyserContext, lvr, statementTime);
-    assert initialValue != EmptyExpression.NO_VALUE;
-    lvrVic.setValue(initialValue, propertyMap(analyserContext, fieldReference.fieldInfo), false);
-    // NOT! linked to the reference (its the other way around)
-    lvrVic.setLinkedVariables(Set.of(), false);
-
-
-    // a modification on the local variable copy needs to travel towards the field... so we must make the field
-    // dependent on the local variable!
-    //fieldVic.addLinkedVariable(VariableInfoContainer.LEVEL_2_UPDATER, lvr);
-
-    return new FindOrCreateL1Result(lvrVic.current(), lvr);
-    */
-
     /*
     The main loop calls the apply method with the results of an evaluation.
+    For every variable, a number of steps are executed:
+    - it is created, some local copies are created, and it is prepared for EVAL level
+    - values, linked variables are set
+
+    Finally, general modifications are carried out
      */
     private AnalysisStatus apply(SharedState sharedState,
                                  EvaluationResult evaluationResult,
                                  StatementAnalysis statementAnalysis) {
         AnalysisStatus status = evaluationResult.value() == NO_VALUE ? DELAYS : DONE;
 
+        if (evaluationResult.addCircularCallOrUndeclaredFunctionalInterface()) {
+            statementAnalysis.methodLevelData.addCircularCallOrUndeclaredFunctionalInterface();
+        }
+
+
         for (Map.Entry<Variable, EvaluationResult.ExpressionChangeData> entry : evaluationResult.valueChanges().entrySet()) {
+
             Variable variable = entry.getKey();
             EvaluationResult.ExpressionChangeData changeData = entry.getValue();
 
-            VariableInfoContainer vic = statementAnalysis.findForWriting(analyserContext, variable,
-                    statementAnalysis.statementTime(level), changeData.isNotAssignmentTarget());
-            VariableInfo vi = vic.best(level);
-            int read = vi.getProperty(VariableProperty.READ);
-            int assigned = vi.getProperty(VariableProperty.ASSIGNED);
-            VariableInfo vi1 = vic.best(1);
+            Set<Variable> additionalLinks = ensureVariables(sharedState, variable, changeData, evaluationResult.statementTime());
+
+            // we're now guaranteed to find the variable
+            VariableInfoContainer vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
+            VariableInfo vi = vic.best(VariableInfoContainer.Level.EVALUATION);
+            VariableInfo vi1 = vic.getPreviousOrInitial();
+            assert vi != vi1 : "There should already be a different EVALUATION object";
+
             Expression value = bestValue(changeData, vi1);
             Expression valueToWrite = maybeValueNeedsState(sharedState.evaluationContext, vic, vi1, value);
 
             boolean goAhead = valueToWrite != NO_VALUE || level >= vic.getCurrentLevel();
             if (goAhead) {
-                int statementTimeForVariable = statementAnalysis.statementTimeForVariable(analyserContext, variable,
-                        statementAnalysis.statementTime(level));
-
-                vic.prepareForValueChange(level, index(), statementTimeForVariable);
 
                 // we explicitly check for NO_VALUE, because "<no return value>" is legal!
                 if (valueToWrite != NO_VALUE) {
@@ -548,8 +531,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         addToAssignmentsInLoop(variable.fullyQualifiedName());
                     }
                 }
-                // simply copy the READ value; nothing has changed here
-                vic.setProperty(level, VariableProperty.READ, read);
 
                 Set<Variable> mergedLinkedVariables = writeMergedLinkedVariables(changeData, variable, vi, vi1, level, step);
                 if (mergedLinkedVariables != null) {
@@ -558,21 +539,34 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     status = DELAYS;
                 }
             } else {
-                log(DELAYED, "Apply of step {} in {}, {} is delayed and skipped because of unknown value for {}",
-                        step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
+                log(DELAYED, "Apply of {} in {} is delayed and skipped because of unknown value for {}",
+                        index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
                 status = DELAYS;
+            }
+
+            // set properties
+            // there's one that we intercept, to make sure that not-null travels to the parameter analyser asap
+            // via the statement analyser result
+
+            for (Map.Entry<VariableProperty, Integer> e : changeData.properties().entrySet()) {
+                VariableProperty property = e.getKey();
+                int pv = e.getValue();
+
+                vic.setProperty(property, pv, false, VariableInfoContainer.Level.EVALUATION);
+                if (property == VariableProperty.NOT_NULL && variable instanceof ParameterInfo parameterInfo) {
+                    log(VARIABLE_PROPERTIES, "Propagating not-null value of {} to {}", value, variable.fullyQualifiedName());
+                    ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
+                    sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, pv));
+                }
             }
         }
 
-        AnalysisStatus statusBeforeModificationStream = status;
-        evaluationResult.getModificationStream()
-                //        .filter(mod -> status.get() == DONE || mod instanceof MarkRead)
-                .forEach(mod -> mod.accept(new ModificationData(sharedState.builder, statusBeforeModificationStream == DONE
-                        ? level : VariableInfoContainer.LEVEL_1_INITIALISER)));
+        evaluationResult.messages().getMessageStream().forEach(statementAnalysis.messages::add);
 
         if (status == DONE && evaluationResult.precondition() != null) {
             if (evaluationResult.precondition() == NO_VALUE) {
-                log(DELAYED, "Apply of step {} in {}, delayed because of precondition", step, index());
+                log(DELAYED, "Apply of {} in {}, delayed because of precondition", index(),
+                        myMethodAnalyser.methodInfo.fullyQualifiedName);
                 status = DELAYS;
             } else {
                 statementAnalysis.stateData.setPrecondition(evaluationResult.precondition());
@@ -604,6 +598,74 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         return status;
+    }
+
+    /*
+    first of all in 'apply' we need to ensure that all variables exist, and have a proper assignmentId and readId.
+
+    We need to do:
+    - generally ensure a EVALUATION level for each variable occurring, with correct assignmentId, readId
+    - create fields + local copies of variable fields, because they don't exist in the first iteration
+    - link the fields to their local copies (or at least, compute these links)
+
+    Local variables, This, Parameters will already exist, minimally in INITIAL level
+    Fields (and forms of This (super...)) will not exist in the first iteration; they need creating
+     */
+    private Set<Variable> ensureVariables(SharedState sharedState,
+                                          Variable variable,
+                                          EvaluationResult.ExpressionChangeData changeData,
+                                          int newStatementTime) {
+        VariableInfoContainer vic;
+        if (!statementAnalysis.variables.isSet(variable.fullyQualifiedName())) {
+            vic = statementAnalysis.createVariable(analyserContext, variable, statementAnalysis.flowData.getInitialTime());
+        } else {
+            vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
+        }
+        VariableInfo initial = vic.getPreviousOrInitial();
+        Set<Variable> additionalLinksForThisVariable;
+        if (variable instanceof FieldReference fieldReference &&
+                initial.isConfirmedVariableField() && !changeData.readAtStatementTime().isEmpty()) {
+            // ensure all of the local copies
+            additionalLinksForThisVariable =
+                    ensureLocalCopiesOfVariableField(sharedState, changeData.readAtStatementTime(), fieldReference, initial);
+        } else {
+            additionalLinksForThisVariable = Set.of();
+        }
+        String id = index() + VariableInfoContainer.Level.EVALUATION;
+        String assignmentId = changeData.markAssignment() ? id : VariableInfoContainer.NOT_YET_ASSIGNED;
+        String readId = changeData.readAtStatementTime().isEmpty() ? VariableInfoContainer.NOT_YET_ASSIGNED : id;
+        int statementTime = statementAnalysis.statementTimeForVariable(analyserContext, variable, newStatementTime);
+
+        vic.ensureEvaluation(assignmentId, readId, statementTime);
+
+        return additionalLinksForThisVariable;
+    }
+
+    private Set<Variable> ensureLocalCopiesOfVariableField(SharedState sharedState,
+                                                           Set<Integer> statementTimes,
+                                                           FieldReference fieldReference,
+                                                           VariableInfo initial) {
+        FieldAnalysis fieldAnalysis = sharedState.evaluationContext().getFieldAnalysis(fieldReference.fieldInfo);
+        Primitives primitives = sharedState.evaluationContext.getPrimitives();
+        Map<VariableProperty, Integer> propertyMap = VariableProperty.FROM_ANALYSER_TO_PROPERTIES.stream()
+                .collect(Collectors.toUnmodifiableMap(vp -> vp, fieldAnalysis::getProperty));
+
+        Set<Variable> set = new HashSet<>();
+        for (int statementTime : statementTimes) {
+            LocalVariableReference localCopy = statementAnalysis.variableInfoOfFieldWhenReading(analyserContext,
+                    fieldReference, initial, statementTime);
+            if (!statementAnalysis.variables.isSet(localCopy.fullyQualifiedName())) {
+                VariableInfoContainer lvrVic = statementAnalysis.createVariable(analyserContext, localCopy, statementTime);
+                String indexOfStatementTime = statementAnalysis.flowData.assignmentIdOfStatementTime.get(statementTime);
+
+                Expression initialValue = statementTime == initial.getStatementTime() && initial.getAssignmentId().compareTo(indexOfStatementTime) >= 0 ?
+                        initial.getValue() : new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
+                assert initialValue != EmptyExpression.NO_VALUE;
+                lvrVic.setValue(initialValue, propertyMap, false);
+            }
+            set.add(localCopy);
+        }
+        return set;
     }
 
     private Set<Variable> writeMergedLinkedVariables(EvaluationResult.ExpressionChangeData changeData,
@@ -918,7 +980,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             EvaluationResult result = toEvaluate.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
 
             if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
-                statementAnalysis.flowData.setTimeAfterExecution(result.statementTime(), index());
+                statementAnalysis.flowData.setTimeAfterEvaluation(result.statementTime(), index());
             }
 
             AnalysisStatus statusApply = apply(sharedState, result, statementAnalysis);
@@ -1171,7 +1233,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 log(VARIABLE_PROPERTIES, "Continuing beyond default condition with conditional", addToStateAfterStatement);
             }
         } else {
-            int maxTime = statementAnalysis.flowData.getTimeAfterExecution();
+            int maxTime = statementAnalysis.flowData.getTimeAfterEvaluation();
             if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
                 statementAnalysis.flowData.setTimeAfterSubBlocks(maxTime, index());
             }
@@ -1671,103 +1733,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 return translated;
             }
             return null;
-        }
-    }
-
-    public record ModificationData(StatementAnalyserResult.Builder builder, int level) {
-    }
-
-    public interface StatementAnalysisModification extends Consumer<ModificationData> {
-        // nothing extra at the moment
-    }
-
-    public class SetProperty implements StatementAnalysisModification {
-        public final Variable variable;
-        public final VariableProperty property;
-        public final int value;
-
-        public SetProperty(Variable variable, VariableProperty property, int value) {
-            this.value = value;
-            this.property = property;
-            this.variable = variable;
-        }
-
-        @Override
-        public void accept(ModificationData modificationData) {
-            statementAnalysis.addProperty(variable, property, value);
-
-            // some properties need propagation directly to parameters
-            if (property == VariableProperty.NOT_NULL && variable instanceof ParameterInfo parameterInfo) {
-                log(VARIABLE_PROPERTIES, "Propagating not-null value of {} to {}", value, variable.fullyQualifiedName());
-                ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
-                modificationData.builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, value));
-            }
-        }
-
-        @Override
-        public String toString() {
-            return "SetProperty{variable=" + variable + ", property=" + property + ", value=" + value + '}';
-        }
-    }
-
-
-    public class RaiseErrorMessage implements StatementAnalysisModification {
-        private final Message message;
-
-        public RaiseErrorMessage(Message message) {
-            this.message = message;
-        }
-
-        @Override
-        public void accept(ModificationData modificationData) {
-            statementAnalysis.ensure(message);
-        }
-
-        @Override
-        public String toString() {
-            return "RaiseErrorMessage{message=" + message + '}';
-        }
-    }
-
-
-    public class ErrorAssigningToFieldOutsideType implements StatementAnalysisModification {
-        private final FieldInfo fieldInfo;
-        private final Location location;
-
-        public ErrorAssigningToFieldOutsideType(FieldInfo fieldInfo, Location location) {
-            this.fieldInfo = fieldInfo;
-            this.location = location;
-        }
-
-        @Override
-        public void accept(ModificationData modificationData) {
-            statementAnalysis.ensure(Message.newMessage(location, Message.ADVISE_AGAINST_ASSIGNMENT_TO_FIELD_OUTSIDE_TYPE));
-        }
-
-        @Override
-        public String toString() {
-            return "ErrorAssigningToFieldOutsideType{fieldInfo=" + fieldInfo + ", location=" + location + '}';
-        }
-    }
-
-    public class ParameterShouldNotBeAssignedTo implements StatementAnalysisModification {
-        private final ParameterInfo parameterInfo;
-        private final Location location;
-
-        public ParameterShouldNotBeAssignedTo(ParameterInfo parameterInfo, Location location) {
-            this.parameterInfo = parameterInfo;
-            this.location = location;
-        }
-
-        @Override
-        public void accept(ModificationData modificationData) {
-            statementAnalysis.ensure(Message.newMessage(location, Message.PARAMETER_SHOULD_NOT_BE_ASSIGNED_TO,
-                    parameterInfo.fullyQualifiedName()));
-        }
-
-        @Override
-        public String toString() {
-            return "ParameterShouldNotBeAssignedTo{parameterInfo=" + parameterInfo + ", location=" + location + '}';
         }
     }
 }

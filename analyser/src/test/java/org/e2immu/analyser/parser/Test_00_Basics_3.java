@@ -138,7 +138,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
             if ("setS1".equals(d.methodInfo().name)) {
                 FlowData flowData = d.statementAnalysis().flowData;
                 int time1 = flowData.getInitialTime();
-                int time3 = flowData.getTimeAfterExecution();
+                int time3 = flowData.getTimeAfterEvaluation();
                 int time4 = flowData.getTimeAfterSubBlocks();
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals(0, time1);
