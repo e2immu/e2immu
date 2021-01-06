@@ -31,8 +31,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Map;
 
-import static org.e2immu.analyser.analyser.VariableInfoContainer.MERGE;
-import static org.e2immu.analyser.analyser.VariableInfoContainer.NOT_A_VARIABLE_FIELD;
+import static org.e2immu.analyser.analyser.VariableInfoContainer.*;
 
 public class TestVariableInfo extends CommonVariableInfo {
 
@@ -268,7 +267,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;
 
-        VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"), MERGE, MERGE, NOT_A_VARIABLE_FIELD);
+        VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"), NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD);
         viC.mergeIntoMe(minimalEvaluationContext, TRUE, true, viC,
                 Map.of(x, viA, Negation.negate(minimalEvaluationContext, x), viB));
         Assert.assertEquals("instance type boolean?3:4", viC.getValue().toString());
@@ -294,7 +293,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;
 
-        VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"), MERGE, MERGE, NOT_A_VARIABLE_FIELD);
+        VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"), NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD);
 
         viC.mergeIntoMe(minimalEvaluationContext, TRUE, true, viC, Map.of(x, viA,
                 Negation.negate(minimalEvaluationContext, x), viB));

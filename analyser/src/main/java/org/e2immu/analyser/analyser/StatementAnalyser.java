@@ -510,37 +510,28 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             Expression value = bestValue(changeData, vi1);
             Expression valueToWrite = maybeValueNeedsState(sharedState.evaluationContext, vic, vi1, value);
 
-            boolean goAhead = valueToWrite != NO_VALUE || level >= vic.getCurrentLevel();
-            if (goAhead) {
 
-                // we explicitly check for NO_VALUE, because "<no return value>" is legal!
-                if (valueToWrite != NO_VALUE) {
-                    log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
-                    Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(valueToWrite);
-                    vic.setValueOnAssignment(level, valueToWrite, propertiesToSet);
-                } else {
-                    log(DELAYED, "Apply of step {} in {}, {} is delayed because of unknown value for {}",
-                            step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
-                    status = DELAYS;
-                }
-
-                if (changeData.markAssignment()) {
-                    vic.setProperty(level, VariableProperty.ASSIGNED, Math.max(Level.TRUE, assigned + 1));
-
-                    if (vic.isLocalVariableInLoopDefinedOutside()) {
-                        addToAssignmentsInLoop(variable.fullyQualifiedName());
-                    }
-                }
-
-                Set<Variable> mergedLinkedVariables = writeMergedLinkedVariables(changeData, variable, vi, vi1, level, step);
-                if (mergedLinkedVariables != null) {
-                    vic.setLinkedVariables(level, mergedLinkedVariables);
-                } else {
-                    status = DELAYS;
-                }
+            // we explicitly check for NO_VALUE, because "<no return value>" is legal!
+            boolean haveValue = valueToWrite != NO_VALUE;
+            if (haveValue) {
+                log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
+                Map<VariableProperty, Integer> propertiesToSet = VariableInfoImpl.mergeProperties
+                        (sharedState.evaluationContext.getValueProperties(valueToWrite), changeData.properties());
+                vic.setValue(valueToWrite, propertiesToSet, false);
             } else {
-                log(DELAYED, "Apply of {} in {} is delayed and skipped because of unknown value for {}",
+                log(DELAYED, "Apply of {}, {} is delayed because of unknown value for {}",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
+                status = DELAYS;
+            }
+
+            if (changeData.markAssignment() && vic.isLocalVariableInLoopDefinedOutside()) {
+                addToAssignmentsInLoop(variable.fullyQualifiedName());
+            }
+
+            Set<Variable> mergedLinkedVariables = writeMergedLinkedVariables(changeData, variable, vi, vi1, additionalLinks);
+            if (mergedLinkedVariables != null && haveValue) {
+                vic.setLinkedVariables(mergedLinkedVariables, false);
+            } else {
                 status = DELAYS;
             }
 
@@ -672,24 +663,25 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                                      Variable variable,
                                                      VariableInfo vi,
                                                      VariableInfo vi1,
-                                                     int level,
-                                                     String step) {
+                                                     Set<Variable> additionalLinks) {
         if (changeData.linkedVariables() == EvaluationResult.LINKED_VARIABLE_DELAY) {
-            log(DELAYED, "Apply of step {} in {}, {} is delayed because of linked variables of {}",
-                    step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
+            log(DELAYED, "Apply of {}, {} is delayed because of linked variables of {}",
+                    index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
                     variable.fullyQualifiedName());
             return null;
         }
         if (changeData.linkedVariables() != null) {
             if (vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
-                log(DELAYED, "Apply of step {} in {}, {} is delayed because of variable field delay",
-                        step, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+                log(DELAYED, "Apply of step {}, {} is delayed because of variable field delay",
+                        index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
                 return null;
             }
             Set<Variable> previousValue = vi1.getLinkedVariables();
-            Set<Variable> mergedValue = previousValue != null ?
+            Set<Variable> mergedValue1 = previousValue != null ?
                     SetUtil.immutableUnion(previousValue, changeData.linkedVariables()) : changeData.linkedVariables();
-            log(ANALYSER, "Set linked variables of {} to {} in level {}", variable, mergedValue, level);
+            Set<Variable> mergedValue = additionalLinks == null ? mergedValue1 : SetUtil.immutableUnion(mergedValue1, additionalLinks);
+            log(ANALYSER, "Set linked variables of {} to {} in {}, {}",
+                    variable, mergedValue, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
             return mergedValue;
         }
         return null;

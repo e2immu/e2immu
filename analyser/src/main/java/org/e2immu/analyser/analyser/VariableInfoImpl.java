@@ -17,6 +17,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
@@ -314,6 +315,23 @@ class VariableInfoImpl implements VariableInfo {
                 setProperty(mergeOp.variableProperty, commonValue);
             }
         }
+    }
+
+    public static Map<VariableProperty, Integer> mergeProperties(Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
+        if (m2.isEmpty()) return m1;
+        if (m1.isEmpty()) return m2;
+        ImmutableMap.Builder<VariableProperty, Integer> map = new ImmutableMap.Builder<>();
+        for (MergeOp mergeOp : MERGE) {
+
+            int v1 = m1.getOrDefault(mergeOp.variableProperty, Level.DELAY);
+            int v2 = m2.getOrDefault(mergeOp.variableProperty, Level.DELAY);
+
+            int v = mergeOp.operator.applyAsInt(v1, v2);
+            if (v > Level.DELAY) {
+                map.put(mergeOp.variableProperty, v);
+            }
+        }
+        return map.build();
     }
 
     /*

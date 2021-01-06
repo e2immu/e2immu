@@ -111,9 +111,9 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            int time1 = d.statementAnalysis().statementTime(1);
-            int time3 = d.statementAnalysis().statementTime(3);
-            int time4 = d.statementAnalysis().statementTime(4);
+            int time1 = d.statementAnalysis().statementTime(VariableInfoContainer.Level.INITIAL);
+            int time3 = d.statementAnalysis().statementTime(VariableInfoContainer.Level.EVALUATION);
+            int time4 = d.statementAnalysis().statementTime(VariableInfoContainer.Level.MERGE);
 
             if ("test1".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
@@ -236,9 +236,9 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            int time1 = d.statementAnalysis().statementTime(1);
-            int time3 = d.statementAnalysis().statementTime(3);
-            int time4 = d.statementAnalysis().statementTime(4);
+            int time1 = d.statementAnalysis().statementTime(VariableInfoContainer.Level.INITIAL);
+            int time3 = d.statementAnalysis().statementTime(VariableInfoContainer.Level.EVALUATION);
+            int time4 = d.statementAnalysis().statementTime(VariableInfoContainer.Level.MERGE);
 
             // method itself is synchronised, so statement time stands still
             if ("increment".equals(d.methodInfo().name)) {

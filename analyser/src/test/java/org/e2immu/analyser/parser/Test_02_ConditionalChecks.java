@@ -323,7 +323,6 @@ public class Test_02_ConditionalChecks extends CommonTestRunner {
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals("null==o||o.getClass()!=this.getClass()", d.evaluationResult().value().toString());
-                    Assert.assertTrue(d.evaluationResult().getModificationStream().count() > 0);
                     Assert.assertTrue(d.haveMarkRead(O5));
                     Assert.assertFalse(d.haveSetProperty(O5, VariableProperty.NOT_NULL));
                 }

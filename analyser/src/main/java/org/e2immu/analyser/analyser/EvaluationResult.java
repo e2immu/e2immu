@@ -116,21 +116,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public ExpressionChangeData merge(ExpressionChangeData other) {
             Set<Variable> combinedLinkedVariables = SetUtil.immutableUnion(linkedVariables, other.linkedVariables);
             Set<Integer> combinedReadAtStatementTime = SetUtil.immutableUnion(readAtStatementTime, other.readAtStatementTime);
-            Map<VariableProperty, Integer> combinedProperties = mergeProperties(properties, other.properties);
+            Map<VariableProperty, Integer> combinedProperties = VariableInfoImpl.mergeProperties(properties, other.properties);
             return new ExpressionChangeData(other.value, other.stateIsDelayed, other.markAssignment || markAssignment,
                     combinedReadAtStatementTime, combinedLinkedVariables, combinedProperties);
         }
 
-    }
-
-    private static Map<VariableProperty, Integer> mergeProperties(Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
-        if (m2.isEmpty()) return m1;
-        if (m1.isEmpty()) return m2;
-        Map<VariableProperty, Integer> map = new HashMap<>(m1);
-        for (Map.Entry<VariableProperty, Integer> e : m2.entrySet()) {
-            map.merge(e.getKey(), e.getValue(), Math::max);
-        }
-        return ImmutableMap.copyOf(map);
     }
 
     // lazy creation of lists
@@ -230,16 +220,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     messages, objectFlows == null ? List.of() : objectFlows, valueChanges, precondition,
                     addCircularCallOrUndeclaredFunctionalInterface);
         }
-
-        private StatementAnalyser statementAnalyser(Variable variable) {
-            EvaluationContext ec = evaluationContext;
-            assert ec != null; // otherwise current statement also null
-            while (ec.getClosure() != null && ec.getCurrentType() != variable.getOwningType()) {
-                ec = ec.getClosure();
-            }
-            return ec.getCurrentStatement();
-        }
-
 
         public void variableOccursInNotNullContext(Variable variable, Expression value, int notNullRequired) {
             assert evaluationContext != null;
@@ -476,7 +456,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 newEcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(), null, Map.of(property, value));
             } else {
                 newEcd = new ExpressionChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment, ecd.readAtStatementTime, ecd.linkedVariables,
-                        mergeProperties(Map.of(property, value), ecd.properties));
+                        VariableInfoImpl.mergeProperties(Map.of(property, value), ecd.properties));
             }
             valueChanges.put(variable, newEcd);
         }

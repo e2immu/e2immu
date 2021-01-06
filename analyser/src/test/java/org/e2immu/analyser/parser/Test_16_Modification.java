@@ -1,7 +1,6 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -18,6 +17,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class Test_16_Modification extends CommonTestRunner {
@@ -157,12 +157,12 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertSame(EmptyExpression.NO_VALUE, d.evaluationResult().value());
                 } else {
                     Assert.assertEquals("set3.add(v)", d.evaluationResult().value().toString());
-                    StatementAnalyser.SetProperty setProperty = d.evaluationResult().getModificationStream()
-                            .filter(sam -> sam instanceof StatementAnalyser.SetProperty)
-                            .map(sam -> (StatementAnalyser.SetProperty) sam)
-                            .filter(sp -> sp.property == VariableProperty.MODIFIED && sp.variable.fullyQualifiedName().equals("local3"))
+                    int v = d.evaluationResult().valueChanges().entrySet().stream()
+                            .filter(e -> e.getKey().fullyQualifiedName().equals("local3"))
+                            .map(Map.Entry::getValue)
+                            .mapToInt(ecd -> ecd.properties().get(VariableProperty.MODIFIED))
                             .findFirst().orElseThrow();
-                    Assert.assertEquals(Level.TRUE, setProperty.value);
+                    Assert.assertEquals(Level.TRUE, v);
                 }
             }
         };
