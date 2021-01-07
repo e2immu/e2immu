@@ -205,7 +205,7 @@ public class ParameterAnalyser {
         StatementAnalysis lastStatementAnalysis = analysisProvider.getMethodAnalysis(parameterInfo.owner).getLastStatement();
         VariableInfo vi = lastStatementAnalysis == null ? null :
                 lastStatementAnalysis.findOrNull(parameterInfo, VariableInfoContainer.Level.MERGE);
-        if (vi == null) {
+        if (vi == null || !vi.isRead()) {
             // unused variable
             parameterAnalysis.setProperty(VariableProperty.MODIFIED, Level.FALSE);
             parameterAnalysis.setProperty(VariableProperty.NOT_NULL, MultiLevel.NULLABLE);

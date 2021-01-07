@@ -265,7 +265,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData ecd = valueChanges.get(variable);
             ChangeData newEcd;
             if (ecd == null) {
-                newEcd = new ChangeData(NO_VALUE, false, false, Set.of(statementTime),
+                newEcd = new ChangeData(defaultValue(variable), false, false, Set.of(statementTime),
                         LinkedVariables.EMPTY, Map.of());
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
@@ -471,7 +471,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(variable);
             if (ecd == null) {
-                newEcd = new ChangeData(NO_VALUE, false, false, Set.of(),
+                newEcd = new ChangeData(defaultValue(variable), false, false, Set.of(),
                         LinkedVariables.EMPTY, Map.of(property, value));
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
@@ -479,6 +479,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                         VariableInfoImpl.mergeProperties(Map.of(property, value), ecd.properties));
             }
             valueChanges.put(variable, newEcd);
+        }
+
+        private Expression defaultValue(Variable variable) {
+            if(variable instanceof This) {
+                return new NewObject(evaluationContext.getPrimitives(), variable.parameterizedType());
+            }
+            return NO_VALUE;
         }
 
         public void addPrecondition(Expression expression) {

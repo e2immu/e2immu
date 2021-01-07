@@ -197,6 +197,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         assert previousOrInitial.isLeft() : "No point in copying when we are an initial";
         VariableInfo previous = previousOrInitial.getLeft().current();
 
+        assert this.evaluation.isSet();
+
         previous.propertyStream().forEach(e ->
                 setProperty(e.getKey(), e.getValue(), false, Level.EVALUATION));
 
@@ -212,8 +214,6 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             if (previous.statementTimeIsSet()) {
                 evaluation.setStatementTime(previous.getStatementTime());
             }
-            // FIXME this should be slightly more complicated, as modifying method calls also can cause
-            // a change in linked variables
             boolean notReadInThisStatement = previous.getReadId().equals(evaluation.getReadId());
             if (notReadInThisStatement && previous.linkedVariablesIsSet()) {
                 evaluation.setLinkedVariables(previous.getLinkedVariables());

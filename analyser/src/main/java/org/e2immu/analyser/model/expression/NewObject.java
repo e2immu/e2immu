@@ -209,9 +209,14 @@ public class NewObject implements HasParameterExpressions {
             case NOT_NULL: {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
                 if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                return bestType == null ? MultiLevel.EFFECTIVELY_NOT_NULL :
-                        MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
-                                evaluationContext.getTypeAnalysis(bestType).getProperty(VariableProperty.NOT_NULL));
+                if (constructor != null) {
+                    // if the constructor is there, it is really a case of "new X(...)", which is never null
+                    return bestType == null ? MultiLevel.EFFECTIVELY_NOT_NULL :
+                            MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
+                                    evaluationContext.getTypeAnalysis(bestType).getProperty(VariableProperty.NOT_NULL));
+                }
+                // otherwise, we're simply looking at "an" instance which may or may not exist
+                return MultiLevel.NULLABLE;
             }
             case MODIFIED:
             case NOT_MODIFIED_1:

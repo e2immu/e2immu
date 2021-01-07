@@ -32,8 +32,7 @@ public class Test_00_Basics_9 extends CommonTestRunner {
 
     @Test
     public void test() throws IOException {
-        testClass("Basics_9", 0, 0, new DebugConfiguration.Builder()
-
+        testClass("Basics_9", 0, 2, new DebugConfiguration.Builder()
                 .build());
     }
 

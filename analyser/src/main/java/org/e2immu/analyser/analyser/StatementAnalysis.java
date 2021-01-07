@@ -411,7 +411,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
                     // for all variables present higher up
                     if (!vic.isInitial()) {
-                        vic.copy();
+                        if(vic.hasEvaluation()) vic.copy(); //otherwise, variable not assigned, not read
                     } else {
                         // initial, so we need to copy from analysers.
                         // parameters are dealt with in the first part of this method
@@ -615,6 +615,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     private ExpressionAndLinkedVariables initialValueOfField(AnalyserContext analyserContext, FieldReference fieldReference) {
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+        LinkedVariables initialLinkedVariables = LinkedVariables.EMPTY; // rather than fieldAnalysis.getLinkedVariables
 
         boolean inPartOfConstruction = methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction() ==
                 MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
@@ -629,7 +630,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             Map<VariableProperty, Integer> properties = evaluationContext.getValueProperties(initialValue);
             return new ExpressionAndLinkedVariables(PropertyWrapper.propertyWrapper(evaluationContext,
                     new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalyser.fieldAnalysis.getObjectFlow()),
-                    properties, initialValue.getObjectFlow()), fieldAnalysis.getLinkedVariables());
+                    properties, initialValue.getObjectFlow()), initialLinkedVariables);
         }
 
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
@@ -649,14 +650,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
                 NewObject newObject;
                 if ((newObject = efv.asInstanceOf(NewObject.class)) != null) {
-                    return new ExpressionAndLinkedVariables(newObject, fieldAnalysis.getLinkedVariables());
+                    return new ExpressionAndLinkedVariables(newObject, initialLinkedVariables);
                 }
             }
         }
         // variable field, some cases of effectively final field
         return new ExpressionAndLinkedVariables(
                 new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow()),
-                fieldAnalysis.getLinkedVariables());
+                initialLinkedVariables);
     }
 
     private ObjectFlow createObjectFlowForNewVariable(AnalyserContext analyserContext, Variable variable) {

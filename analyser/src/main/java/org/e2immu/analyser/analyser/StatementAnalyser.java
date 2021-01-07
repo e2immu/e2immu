@@ -25,10 +25,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.statement.*;
-import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.LocalVariableReference;
-import org.e2immu.analyser.model.variable.ReturnVariable;
-import org.e2immu.analyser.model.variable.Variable;
+import org.e2immu.analyser.model.variable.*;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
@@ -876,17 +873,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                                     Map.of(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL), null));
                     // so that the variable has always been read, no errors
                 } else if (statement() instanceof LoopStatement) {
-                    if (lvc.expression instanceof Assignment assignment) {
-                        initialiserToEvaluate = assignment.value;
-                    } else {
-                        throw new UnsupportedOperationException();
-                    }
-                } else {
                     initialiserToEvaluate = lvc.expression;
+                } else {
+                    initialiserToEvaluate = lvc; // == expression
                 }
-            } else if (expression instanceof Assignment assignment) {
-                initialiserToEvaluate = assignment.value;
-            } else initialiserToEvaluate = null;
+            } else initialiserToEvaluate = expression;
 
             if (initialiserToEvaluate != null && initialiserToEvaluate != EmptyExpression.EMPTY_EXPRESSION) {
                 expressionsToEvaluate.add(initialiserToEvaluate);
@@ -967,7 +958,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return DONE;
         }
         try {
-            expressionsFromInitAndUpdate.add(structure.expression());
+            if(structure.expression() != EmptyExpression.EMPTY_EXPRESSION) {
+                expressionsFromInitAndUpdate.add(structure.expression());
+            }
             Expression toEvaluate = CommaExpression.comma(sharedState.evaluationContext, expressionsFromInitAndUpdate);
             EvaluationResult result = toEvaluate.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
 
@@ -992,7 +985,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
             if (statusPost == DELAYS) {
                 log(DELAYED, "Step 3 in statement {}, {} is delayed, value", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
-            } else if (!value.isUnknown()) {
+            } else if (value != null && value != NO_VALUE) {
                 statementAnalysis.stateData.valueOfExpression.set(value);
             }
 
@@ -1018,7 +1011,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         Expression currentReturnValue = statementAnalysis.initialValueOfReturnVariable(returnVariable);
         // do NOT check for delays on currentReturnValue, we need to make the VIC
 
-        if(level3EvaluationResult == NO_VALUE) {
+        if (level3EvaluationResult == NO_VALUE) {
             // ensure that the evaluation level is present, even if there is a delay. We must mark assignment!
             VariableInfoContainer vic = findReturnAsVariableForWriting();
             vic.ensureEvaluation(index() + VariableInfoContainer.Level.EVALUATION.label,
