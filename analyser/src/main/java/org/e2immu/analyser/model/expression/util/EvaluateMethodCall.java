@@ -26,9 +26,12 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.ListUtil;
+import org.e2immu.analyser.util.Logger;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.e2immu.analyser.util.Logger.log;
 
 public class EvaluateMethodCall {
 
@@ -182,6 +185,7 @@ public class EvaluateMethodCall {
             }
         } else if (methodAnalysis.isBeingAnalysed()) {
             // we will, at some point, analyse this method
+            log(Logger.LogTarget.DELAYED, "Delaying method value on {}", methodInfo.fullyQualifiedName);
             return builder.setExpression(EmptyExpression.NO_VALUE).build();
         }
 
@@ -197,7 +201,11 @@ public class EvaluateMethodCall {
         if ("equals".equals(methodInfo.name) && parameters.size() == 1) {
             Expression paramValue = parameters.get(0);
             Boolean nonModifying = nonModifying(evaluationContext, paramValue);
-            if (nonModifying == null) return EmptyExpression.NO_VALUE;
+            if (nonModifying == null) {
+                log(Logger.LogTarget.DELAYED, "Delaying method value because @Modified delayed on {}",
+                        methodInfo.fullyQualifiedName);
+                return EmptyExpression.NO_VALUE;
+            }
             if (paramValue.equals(objectValue) && nonModifying) {
                 return new BooleanConstant(evaluationContext.getPrimitives(), true);
             }
@@ -208,7 +216,9 @@ public class EvaluateMethodCall {
     private static Boolean nonModifying(EvaluationContext evaluationContext, Expression expression) {
         if (expression instanceof MethodCall) {
             int modified = evaluationContext.getProperty(expression, VariableProperty.MODIFIED);
-            if (modified == Level.DELAY) return null;
+            if (modified == Level.DELAY) {
+                return null;
+            }
             return modified == Level.FALSE;
         }
         return true;
@@ -364,7 +374,11 @@ public class EvaluateMethodCall {
 
     private static Expression computeFluent(MethodAnalysis methodAnalysis, Expression scope) {
         int fluent = methodAnalysis.getProperty(VariableProperty.FLUENT);
-        if (fluent == Level.DELAY && methodAnalysis.isBeingAnalysed()) return EmptyExpression.NO_VALUE;
+        if (fluent == Level.DELAY && methodAnalysis.isBeingAnalysed()) {
+            log(Logger.LogTarget.DELAYED, "Delaying method value because @Fluent delayed on {}",
+                    methodAnalysis.getMethodInfo().fullyQualifiedName);
+            return EmptyExpression.NO_VALUE;
+        }
         if (fluent != Level.TRUE) return null;
         return scope;
     }
@@ -375,7 +389,11 @@ public class EvaluateMethodCall {
                                               List<Expression> parameters,
                                               ObjectFlow objectFlowOfResult) {
         int identity = methodAnalysis.getProperty(VariableProperty.IDENTITY);
-        if (identity == Level.DELAY && methodAnalysis.isBeingAnalysed()) return EmptyExpression.NO_VALUE; // delay
+        if (identity == Level.DELAY && methodAnalysis.isBeingAnalysed()) {
+            log(Logger.LogTarget.DELAYED, "Delaying method value because @Identity delayed on {}",
+                    methodAnalysis.getMethodInfo().fullyQualifiedName);
+            return EmptyExpression.NO_VALUE; // delay
+        }
         if (identity != Level.TRUE) return null;
 
         Map<VariableProperty, Integer> map = new HashMap<>();

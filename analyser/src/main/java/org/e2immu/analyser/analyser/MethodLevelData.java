@@ -246,15 +246,16 @@ public class MethodLevelData {
      * @return if any change happened to methodAnalysis
      */
     private AnalysisStatus ensureThisProperties(EvaluationContext evaluationContext, StatementAnalysis statementAnalysis) {
-        if (statementAnalysis.methodAnalysis.getMethodInfo().methodInspection.get().isStatic()) return DONE;
-        Variable thisVariable = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
-        VariableInfoContainer thisVic = statementAnalysis.findForWriting(thisVariable);
-        thisVic.ensureEvaluation(statementAnalysis.index + VariableInfoContainer.Level.EVALUATION.label,
-                VariableInfoContainer.NOT_YET_READ, evaluationContext.getInitialStatementTime());
-        thisVic.setProperty(VariableProperty.METHOD_CALLED, Level.FALSE, false, VariableInfoContainer.Level.EVALUATION);
-
         if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(false);
+        }
+
+        if (!statementAnalysis.methodAnalysis.getMethodInfo().methodInspection.get().isStatic()) {
+            Variable thisVariable = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
+            VariableInfoContainer thisVic = statementAnalysis.findForWriting(thisVariable);
+            thisVic.ensureEvaluation(statementAnalysis.index + VariableInfoContainer.Level.EVALUATION.label,
+                    VariableInfoContainer.NOT_YET_READ, evaluationContext.getInitialStatementTime());
+            thisVic.setProperty(VariableProperty.METHOD_CALLED, Level.FALSE, false, VariableInfoContainer.Level.EVALUATION);
         }
 
         return DONE;

@@ -975,11 +975,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 statementAnalysis.flowData.setTimeAfterEvaluation(result.statementTime(), index());
             }
 
-            AnalysisStatus statusApply = apply(sharedState, result, statementAnalysis);
+            AnalysisStatus statusPost = apply(sharedState, result, statementAnalysis);
 
             // the evaluation system should be pretty good at always returning NO_VALUE when a NO_VALUE has been encountered
             Expression value = result.value();
-            AnalysisStatus statusPost = value == NO_VALUE ? DELAYS : DONE;
 
             if (statementAnalysis.statement instanceof ReturnStatement) {
                 statusPost = step3_Return(sharedState, value).combine(statusPost);

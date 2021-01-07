@@ -534,6 +534,11 @@ public class MethodAnalyser extends AbstractAnalyser {
             // and no SRV
             if (noReturnStatementReachable()) {
                 methodAnalysis.singleReturnValue.set(new UnknownExpression(methodInfo.returnType(), "does not return a value"));
+                methodAnalysis.setProperty(VariableProperty.IDENTITY, Level.FALSE);
+                methodAnalysis.setProperty(VariableProperty.FLUENT, Level.FALSE);
+                methodAnalysis.setProperty(VariableProperty.NOT_NULL, VariableProperty.NOT_NULL.best);
+                methodAnalysis.setProperty(VariableProperty.IMMUTABLE, VariableProperty.IMMUTABLE.best);
+                methodAnalysis.setProperty(VariableProperty.CONTAINER, VariableProperty.CONTAINER.best);
                 return DONE;
             }
             log(DELAYED, "Method {} has return value {}, delaying", methodInfo.distinguishingName(), value.debugOutput());
