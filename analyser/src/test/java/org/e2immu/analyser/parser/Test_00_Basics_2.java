@@ -132,7 +132,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(STRING_PARAMETER));
             Assert.assertTrue(d.evaluationResult().toString(), d.haveMarkRead(THIS));
 
-            EvaluationResult.ExpressionChangeData expressionChange = d.findValueChange(STRING_FIELD);
+            EvaluationResult.ChangeData expressionChange = d.findValueChange(STRING_FIELD);
             Assert.assertEquals("string", expressionChange.value().debugOutput());
 
             // link to empty set, because String is E2Immutable

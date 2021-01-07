@@ -436,7 +436,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // update the object of the modifying call
         if (objectValue instanceof VariableExpression variableValue) {
-            LinkedVariables linkedVariables = variablesLinkedToScopeVariableInModifyingMethod(evaluationContext, parameterValues);
+            LinkedVariables linkedVariables = variablesLinkedToScopeVariableInModifyingMethod(evaluationContext, methodInfo, parameterValues);
             builder.modifyingMethodAccess(variableValue.variable(), modifiedInstance, linkedVariables);
         }
         return modifiedInstance;
@@ -476,21 +476,28 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     }
 
     /*
-    Modifying method
+    Modifying method, b.method(c,d)
 
-    list.add(a);
-
-    After this operation, list should be linked to a.
+    After this operation, the generic instance b can be linked to c and d, but only when the parameters are @Modified
 
     Null value means delays, as per convention.
      */
     private static LinkedVariables variablesLinkedToScopeVariableInModifyingMethod(EvaluationContext evaluationContext,
-                                                                                 List<Expression> parameterValues) {
+                                                                                   MethodInfo methodInfo,
+                                                                                   List<Expression> parameterValues) {
         Set<Variable> result = new HashSet<>();
+        int i = 0;
+        int n = methodInfo.methodInspection.get().getParameters().size();
         for (Expression p : parameterValues) {
-            LinkedVariables cd = evaluationContext.linkedVariables(p);
-            if (cd == null) return null;
-            result.addAll(cd.variables());
+            ParameterInfo parameterInfo = methodInfo.methodInspection.get().getParameters().get(Math.min(n - 1, i));
+            int modified = evaluationContext.getAnalyserContext().getParameterAnalysis(parameterInfo).getProperty(VariableProperty.MODIFIED);
+            if (modified == Level.DELAY) return LinkedVariables.DELAY;
+            if (modified == Level.TRUE) {
+                LinkedVariables cd = evaluationContext.linkedVariables(p);
+                if (cd == LinkedVariables.DELAY) return LinkedVariables.DELAY;
+                result.addAll(cd.variables());
+            }
+            i++;
         }
         return new LinkedVariables(result);
     }

@@ -172,6 +172,10 @@ For example,
 Rule 4: in an array access `v = a[index]`, `v` links to `a`.
 ****
 
+Note: links between `b`, `c`, and `d` are possible, but are covered by the {modified} annotation:
+when a parameter is {nm}, no modifications at all are possible, not even indirectly. #TODO more explanation#
+
+
 === Loop statement
 
 In the loop statement `for(T t: ts)`, does the loop variable `t` link to the source `ts`?

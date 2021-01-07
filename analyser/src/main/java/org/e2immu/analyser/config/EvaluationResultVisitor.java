@@ -51,7 +51,7 @@ public interface EvaluationResultVisitor {
             return evaluationResult().getExpressionChangeStream().anyMatch(e -> e.getKey().fullyQualifiedName().equals(variableName));
         }
 
-        public EvaluationResult.ExpressionChangeData findValueChange(String variableName) {
+        public EvaluationResult.ChangeData findValueChange(String variableName) {
             return evaluationResult().getExpressionChangeStream().filter(e -> e.getKey().fullyQualifiedName().equals(variableName))
                     .map(Map.Entry::getValue).findFirst().orElseThrow();
         }

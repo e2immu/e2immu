@@ -449,8 +449,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                 } else {
                                     map.forEach((k, v) -> vic.setProperty(k, v, false, VariableInfoContainer.Level.EVALUATION));
                                 }
-                                // FIXME only copy this when the linked variables will not be set, but how do we know
-                                if (!viEval.linkedVariablesIsSet() && initialValue.linkedVariables != LinkedVariables.DELAY) {
+                                // if the variable has not been read, it is not present in EVAL, so we set a value
+                                if (!viEval.isRead() && !viEval.linkedVariablesIsSet() && initialValue.linkedVariables != LinkedVariables.DELAY) {
                                     vic.setLinkedVariables(initialValue.linkedVariables, false);
                                 }
                             }

@@ -155,7 +155,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertSame(EmptyExpression.NO_VALUE, d.evaluationResult().value());
                 } else {
                     Assert.assertEquals("set3.add(v)", d.evaluationResult().value().toString());
-                    int v = d.evaluationResult().valueChanges().entrySet().stream()
+                    int v = d.evaluationResult().changeData().entrySet().stream()
                             .filter(e -> e.getKey().fullyQualifiedName().equals("local3"))
                             .map(Map.Entry::getValue)
                             .mapToInt(ecd -> ecd.properties().get(VariableProperty.MODIFIED))

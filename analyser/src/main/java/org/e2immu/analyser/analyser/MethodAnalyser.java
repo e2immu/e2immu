@@ -691,7 +691,7 @@ public class MethodAnalyser extends AbstractAnalyser {
             log(NOT_MODIFIED, "Method {} cannot be @NotModified: some fields have content modifications: {}",
                     methodInfo.fullyQualifiedName(), fieldsWithContentModifications);
         }
-        if (!isModified) {
+        if (!isModified && !methodInfo.methodInspection.get().isStatic()) {
             boolean localMethodsCalled = getThisAsVariable().getProperty(VariableProperty.METHOD_CALLED) == Level.TRUE;
             // IMPORTANT: localMethodsCalled only works on "this"; it does not work for static methods (See IdentityChecks)
             if (localMethodsCalled) {

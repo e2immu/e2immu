@@ -58,7 +58,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                EvaluationResult.ExpressionChangeData valueChangeData = d.evaluationResult().getExpressionChangeStream()
+                EvaluationResult.ChangeData valueChangeData = d.evaluationResult().getExpressionChangeStream()
                         .filter(e -> "list".equals(e.getKey().fullyQualifiedName())).map(Map.Entry::getValue).findFirst().orElseThrow();
                 Assert.assertEquals(NEW_LIST_SIZE, valueChangeData.value().toString());
             }
@@ -114,7 +114,7 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
             }
             if ("test".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
                 Assert.assertTrue(d.haveValueChange("b"));
-                EvaluationResult.ExpressionChangeData valueChangeData = d.findValueChange("b");
+                EvaluationResult.ChangeData valueChangeData = d.findValueChange("b");
                 Assert.assertEquals("true", valueChangeData.value().toString());
             }
             if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {

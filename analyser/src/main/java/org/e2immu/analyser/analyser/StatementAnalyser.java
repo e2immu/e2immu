@@ -493,10 +493,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
 
-        for (Map.Entry<Variable, EvaluationResult.ExpressionChangeData> entry : evaluationResult.valueChanges().entrySet()) {
+        for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : evaluationResult.changeData().entrySet()) {
 
             Variable variable = entry.getKey();
-            EvaluationResult.ExpressionChangeData changeData = entry.getValue();
+            EvaluationResult.ChangeData changeData = entry.getValue();
 
             Set<Variable> additionalLinks = ensureVariables(sharedState, variable, changeData, evaluationResult.statementTime());
 
@@ -602,7 +602,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
      */
     private Set<Variable> ensureVariables(SharedState sharedState,
                                           Variable variable,
-                                          EvaluationResult.ExpressionChangeData changeData,
+                                          EvaluationResult.ChangeData changeData,
                                           int newStatementTime) {
         VariableInfoContainer vic;
         if (!statementAnalysis.variables.isSet(variable.fullyQualifiedName())) {
@@ -657,7 +657,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return set;
     }
 
-    private LinkedVariables writeMergedLinkedVariables(EvaluationResult.ExpressionChangeData changeData,
+    private LinkedVariables writeMergedLinkedVariables(EvaluationResult.ChangeData changeData,
                                                        Variable variable,
                                                        VariableInfo vi,
                                                        VariableInfo vi1,
@@ -733,7 +733,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
     }
 
-    private Expression bestValue(EvaluationResult.ExpressionChangeData valueChangeData, VariableInfo vi1) {
+    private Expression bestValue(EvaluationResult.ChangeData valueChangeData, VariableInfo vi1) {
         if (valueChangeData != null && valueChangeData.value() != NO_VALUE) {
             return valueChangeData.value();
         }
@@ -976,16 +976,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             }
 
             AnalysisStatus statusApply = apply(sharedState, result, statementAnalysis);
-            if (statusApply == DELAYS) {
-                if (statementAnalysis.statement instanceof ReturnStatement) {
-                    // ensure that the evaluation level is present, even if there is a delay. We must mark assignment!
-                    VariableInfoContainer vic = findReturnAsVariableForWriting();
-                    vic.ensureEvaluation(index() + VariableInfoContainer.Level.EVALUATION.label,
-                            VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
-                }
-                log(DELAYED, "Evaluation of {}, {} is delayed by apply", index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
-                return DELAYS;
-            }
 
             // the evaluation system should be pretty good at always returning NO_VALUE when a NO_VALUE has been encountered
             Expression value = result.value();
@@ -995,9 +985,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 statusPost = step3_Return(sharedState, value).combine(statusPost);
             } else if (statementAnalysis.statement instanceof ForEachStatement) {
                 step3_ForEach(sharedState, value);
-            } else if (statementAnalysis.statement instanceof IfElseStatement ||
+            } else if (value != NO_VALUE && (statementAnalysis.statement instanceof IfElseStatement ||
                     statementAnalysis.statement instanceof SwitchStatement ||
-                    statementAnalysis.statement instanceof AssertStatement) {
+                    statementAnalysis.statement instanceof AssertStatement)) {
                 value = step3_IfElse_Switch_Assert(sharedState.evaluationContext, value);
             }
 
@@ -1029,6 +1019,13 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         Expression currentReturnValue = statementAnalysis.initialValueOfReturnVariable(returnVariable);
         // do NOT check for delays on currentReturnValue, we need to make the VIC
 
+        if(level3EvaluationResult == NO_VALUE) {
+            // ensure that the evaluation level is present, even if there is a delay. We must mark assignment!
+            VariableInfoContainer vic = findReturnAsVariableForWriting();
+            vic.ensureEvaluation(index() + VariableInfoContainer.Level.EVALUATION.label,
+                    VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+            return DELAYS;
+        }
         Expression newReturnValue;
         if (localConditionManager.isDelayed()) return DELAYS;
         // no state, or no previous return statements
@@ -1065,7 +1062,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     }
 
     private Expression step3_IfElse_Switch_Assert(EvaluationContext evaluationContext, Expression value) {
-        Objects.requireNonNull(value);
+        assert value != null && value != NO_VALUE;
 
         Expression evaluated = localConditionManager.evaluate(evaluationContext, value);
 

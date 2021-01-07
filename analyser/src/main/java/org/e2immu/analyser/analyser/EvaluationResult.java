@@ -68,12 +68,12 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                Expression value,
                                Messages messages,
                                List<ObjectFlow> objectFlows,
-                               Map<Variable, ExpressionChangeData> valueChanges,
+                               Map<Variable, ChangeData> changeData,
                                Expression precondition,
                                boolean addCircularCallOrUndeclaredFunctionalInterface) {
 
     public EvaluationResult {
-        assert valueChanges.values().stream().noneMatch(ecd -> ecd.linkedVariables == null);
+        assert changeData.values().stream().noneMatch(ecd -> ecd.linkedVariables == null);
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluationResult.class);
@@ -86,8 +86,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         return objectFlows.stream();
     }
 
-    public Stream<Map.Entry<Variable, ExpressionChangeData>> getExpressionChangeStream() {
-        return valueChanges.entrySet().stream();
+    public Stream<Map.Entry<Variable, ChangeData>> getExpressionChangeStream() {
+        return changeData.entrySet().stream();
     }
 
     public Expression getExpression() {
@@ -104,22 +104,26 @@ public record EvaluationResult(EvaluationContext evaluationContext,
      * can be used independently: possibly we want to mark assignment, but still have NO_VALUE for the value.
      * The stateOnAssignment can also still be NO_VALUE while the value is known, and vice versa.
      */
-    public record ExpressionChangeData(Expression value,
-                                       boolean stateIsDelayed,
-                                       boolean markAssignment,
-                                       Set<Integer> readAtStatementTime,
-                                       LinkedVariables linkedVariables,
-                                       Map<VariableProperty, Integer> properties) {
-        public ExpressionChangeData {
+    public record ChangeData(Expression value,
+                             boolean stateIsDelayed,
+                             boolean markAssignment,
+                             Set<Integer> readAtStatementTime,
+                             LinkedVariables linkedVariables,
+                             Map<VariableProperty, Integer> properties) {
+        public ChangeData {
             Objects.requireNonNull(value);
         }
 
-        public ExpressionChangeData merge(ExpressionChangeData other) {
+        public ChangeData merge(ChangeData other) {
             LinkedVariables combinedLinkedVariables = linkedVariables.merge(other.linkedVariables);
             Set<Integer> combinedReadAtStatementTime = SetUtil.immutableUnion(readAtStatementTime, other.readAtStatementTime);
             Map<VariableProperty, Integer> combinedProperties = VariableInfoImpl.mergeProperties(properties, other.properties);
-            return new ExpressionChangeData(other.value, other.stateIsDelayed, other.markAssignment || markAssignment,
-                    combinedReadAtStatementTime, combinedLinkedVariables, combinedProperties);
+            return new ChangeData(other.value,
+                    other.stateIsDelayed,
+                    other.markAssignment || markAssignment,
+                    combinedReadAtStatementTime,
+                    combinedLinkedVariables,
+                    combinedProperties);
         }
 
     }
@@ -131,7 +135,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         private List<ObjectFlow> objectFlows;
         private Expression value;
         private int statementTime;
-        private final Map<Variable, ExpressionChangeData> valueChanges = new HashMap<>();
+        private final Map<Variable, ChangeData> valueChanges = new HashMap<>();
         private Expression precondition;
         private boolean addCircularCallOrUndeclaredFunctionalInterface;
 
@@ -178,8 +182,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 if (objectFlows == null) objectFlows = new LinkedList<>(evaluationResult.objectFlows);
                 else objectFlows.addAll(evaluationResult.objectFlows);
             }
-            for (Map.Entry<Variable, ExpressionChangeData> e : evaluationResult.valueChanges.entrySet()) {
-                valueChanges.merge(e.getKey(), e.getValue(), ExpressionChangeData::merge);
+            for (Map.Entry<Variable, ChangeData> e : evaluationResult.changeData.entrySet()) {
+                valueChanges.merge(e.getKey(), e.getValue(), ChangeData::merge);
             }
 
             statementTime = Math.max(statementTime, evaluationResult.statementTime);
@@ -258,13 +262,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         public void markRead(Variable variable) {
-            ExpressionChangeData ecd = valueChanges.get(variable);
-            ExpressionChangeData newEcd;
+            ChangeData ecd = valueChanges.get(variable);
+            ChangeData newEcd;
             if (ecd == null) {
-                newEcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(statementTime),
-                        defaultLinkedVariables(variable), Map.of());
+                newEcd = new ChangeData(NO_VALUE, false, false, Set.of(statementTime),
+                        LinkedVariables.EMPTY, Map.of());
             } else {
-                newEcd = new ExpressionChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
+                newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
                         SetUtil.immutableUnion(ecd.readAtStatementTime, Set.of(statementTime)), ecd.linkedVariables, Map.of());
             }
             valueChanges.put(variable, newEcd);
@@ -320,7 +324,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
            this linking takes place in the value changes map, so that the linked variables can be set once, correctly.
          */
         public Expression currentExpression(Variable variable, boolean isNotAssignmentTarget) {
-            ExpressionChangeData currentExpression = valueChanges.get(variable);
+            ChangeData currentExpression = valueChanges.get(variable);
             if (currentExpression == null || currentExpression.value == NO_VALUE) {
                 assert evaluationContext != null;
                 return evaluationContext.currentValue(variable, statementTime, isNotAssignmentTarget);
@@ -328,23 +332,35 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             return currentExpression.value;
         }
 
-        private void addLink(Variable from, Variable to) {
+        public void addLink(Variable from, Variable to) {
             LinkedVariables linkTo = new LinkedVariables(Set.of(to));
-            ExpressionChangeData current = valueChanges.get(from);
-            ExpressionChangeData newVcd;
+            ChangeData current = valueChanges.get(from);
+            ChangeData newVcd;
             if (current == null) {
-                newVcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(), linkTo, Map.of());
+                newVcd = new ChangeData(NO_VALUE, false, false, Set.of(), linkTo, Map.of());
             } else {
                 // we simply merge the linkedVariables
-               LinkedVariables linkedVariables = current.linkedVariables.merge(linkTo);
-                newVcd = new ExpressionChangeData(current.value,
+                LinkedVariables linkedVariables = current.linkedVariables.merge(linkTo);
+                newVcd = new ChangeData(current.value,
                         current.stateIsDelayed, current.markAssignment, current.readAtStatementTime, linkedVariables, Map.of());
             }
             valueChanges.put(from, newVcd);
         }
 
+        public void delayLink(Variable variable) {
+            ChangeData current = valueChanges.get(variable);
+            ChangeData newVcd;
+            if (current == null) {
+                newVcd = new ChangeData(NO_VALUE, false, false, Set.of(), LinkedVariables.DELAY, Map.of());
+            } else {
+                newVcd = new ChangeData(current.value,
+                        current.stateIsDelayed, current.markAssignment, current.readAtStatementTime, LinkedVariables.DELAY, Map.of());
+            }
+            valueChanges.put(variable, newVcd);
+        }
+
         public NewObject currentInstance(Variable variable, ObjectFlow objectFlowForCreation, Expression stateFromPreconditions) {
-            ExpressionChangeData currentExpression = valueChanges.get(variable);
+            ChangeData currentExpression = valueChanges.get(variable);
             if (currentExpression != null && currentExpression.value instanceof NewObject instance) return instance;
             assert evaluationContext != null;
 
@@ -363,13 +379,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         // called when a new instance is needed because of a modifying method call, or when a variable doesn't have
         // an instance yet. Not called upon assignment.
         private void assignInstanceToVariable(Variable variable, NewObject instance, LinkedVariables linkedVariables) {
-            ExpressionChangeData current = valueChanges.get(variable);
-            ExpressionChangeData newVcd;
+            ChangeData current = valueChanges.get(variable);
+            ChangeData newVcd;
             if (current == null) {
                 boolean stateIsDelayed = evaluationContext.getConditionManager().isDelayed();
-                newVcd = new ExpressionChangeData(instance, stateIsDelayed, false, Set.of(), linkedVariables, Map.of());
+                newVcd = new ChangeData(instance, stateIsDelayed, false, Set.of(), linkedVariables, Map.of());
             } else {
-                newVcd = new ExpressionChangeData(instance, current.stateIsDelayed, current.markAssignment,
+                newVcd = new ChangeData(instance, current.stateIsDelayed, current.markAssignment,
                         current.readAtStatementTime, linkedVariables, Map.of());
             }
             valueChanges.put(variable, newVcd);
@@ -436,13 +452,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             assert evaluationContext != null;
             boolean stateIsDelayed = evaluationContext.getConditionManager().isDelayed();
 
-            ExpressionChangeData newEcd;
-            ExpressionChangeData ecd = valueChanges.get(assignmentTarget);
+            ChangeData newEcd;
+            ChangeData ecd = valueChanges.get(assignmentTarget);
             if (ecd == null) {
-                newEcd = new ExpressionChangeData(stateIsDelayed ? NO_VALUE : resultOfExpression, stateIsDelayed,
+                newEcd = new ChangeData(stateIsDelayed ? NO_VALUE : resultOfExpression, stateIsDelayed,
                         true, Set.of(), linkedVariables, Map.of());
             } else {
-                newEcd = new ExpressionChangeData(stateIsDelayed ? NO_VALUE : resultOfExpression, stateIsDelayed,
+                newEcd = new ChangeData(stateIsDelayed ? NO_VALUE : resultOfExpression, stateIsDelayed,
                         true, ecd.readAtStatementTime, linkedVariables, ecd.properties);
             }
             valueChanges.put(assignmentTarget, newEcd);
@@ -452,13 +468,13 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         // Used in transformation of parameter lists
         public void setProperty(Variable variable, VariableProperty property, int value) {
             assert evaluationContext != null;
-            ExpressionChangeData newEcd;
-            ExpressionChangeData ecd = valueChanges.get(variable);
+            ChangeData newEcd;
+            ChangeData ecd = valueChanges.get(variable);
             if (ecd == null) {
-                newEcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(),
-                        defaultLinkedVariables(variable), Map.of(property, value));
+                newEcd = new ChangeData(NO_VALUE, false, false, Set.of(),
+                        LinkedVariables.EMPTY, Map.of(property, value));
             } else {
-                newEcd = new ExpressionChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
+                newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
                         ecd.readAtStatementTime, ecd.linkedVariables,
                         VariableInfoImpl.mergeProperties(Map.of(property, value), ecd.properties));
             }
@@ -507,10 +523,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public int getStatementTime() {
             return statementTime;
-        }
-
-        private LinkedVariables defaultLinkedVariables(Variable variable) {
-            return variable instanceof This ? LinkedVariables.EMPTY : LinkedVariables.DELAY;
         }
     }
 }

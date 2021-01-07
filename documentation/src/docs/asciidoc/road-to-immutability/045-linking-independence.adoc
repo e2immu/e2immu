@@ -75,7 +75,7 @@ The opposite of linking is independence.
 While the code analyser will not annotate linking, it will annotate independence with `@Independent` on methods and constructors, and, in one specific case, to parameters.
 
 ****
-*Definition*: A method returning a real value (not `void`, not `this`) is *independent* when the object returned does not link to any of the fields of the type.
+*Definition*: A method returning a real value (not `void`, not `this`) is *independent* when the object returned does not link to any of the fields of the type. #nor to any parameter#
 ****
 
 The definition for independence on a constructor is very similar:
