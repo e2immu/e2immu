@@ -178,15 +178,15 @@ public interface EvaluationContext {
         return true;
     }
 
-    default Set<Variable> linkedVariables(Expression value) {
+    default LinkedVariables linkedVariables(Expression value) {
         return value.linkedVariables(this);
     }
 
     /*
     assumes that currentValue has been queried before!
      */
-    default Set<Variable> linkedVariables(Variable variable) {
-        return Set.of();
+    default LinkedVariables linkedVariables(Variable variable) {
+        return LinkedVariables.EMPTY;
     }
 
     default Map<VariableProperty, Integer> getValueProperties(Expression value) {

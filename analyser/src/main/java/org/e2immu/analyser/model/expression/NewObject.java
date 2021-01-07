@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
@@ -150,8 +147,6 @@ public class NewObject implements HasParameterExpressions {
         return minimalOutput();
     }
 
-    private static final Set<Variable> NO_LINKS = Set.of();
-
     /*
      * Rules, assuming the notation b = new B(c, d)
      *
@@ -162,11 +157,11 @@ public class NewObject implements HasParameterExpressions {
      * the default case is a dependence on c and d
      */
     @Override
-    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
+    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
         // RULE 1
-        if (parameterExpressions == null || constructor == null) return NO_LINKS;
+        if (parameterExpressions == null || constructor == null) return LinkedVariables.EMPTY;
         if (parameterExpressions.isEmpty() && constructor.typeInfo.isStatic()) {
-            return NO_LINKS;
+            return LinkedVariables.EMPTY;
         }
 
         // RULE 2, 3
@@ -180,7 +175,7 @@ public class NewObject implements HasParameterExpressions {
 
             if (MultiLevel.isE2Immutable(immutable) || independent == MultiLevel.EFFECTIVE
                     || typeIndependent == MultiLevel.EFFECTIVE) { // RULE 3
-                return NO_LINKS;
+                return LinkedVariables.EMPTY;
             }
             if (independent == Level.DELAY) return null;
             if (immutable == MultiLevel.DELAY) return null;
@@ -190,11 +185,11 @@ public class NewObject implements HasParameterExpressions {
         // default case
         Set<Variable> result = new HashSet<>();
         for (Expression value : parameterExpressions) {
-            Set<Variable> sub = evaluationContext.linkedVariables(value);
-            if (sub == null) return null; // DELAY
-            result.addAll(sub);
+            LinkedVariables sub = evaluationContext.linkedVariables(value);
+            if (sub == LinkedVariables.DELAY) return LinkedVariables.DELAY;
+            result.addAll(sub.variables());
         }
-        return result;
+        return new LinkedVariables(result);
     }
 
     @Override
@@ -213,6 +208,7 @@ public class NewObject implements HasParameterExpressions {
         switch (variableProperty) {
             case NOT_NULL: {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
+                if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
                 return bestType == null ? MultiLevel.EFFECTIVELY_NOT_NULL :
                         MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
                                 evaluationContext.getTypeAnalysis(bestType).getProperty(VariableProperty.NOT_NULL));
@@ -227,6 +223,7 @@ public class NewObject implements HasParameterExpressions {
             case IMMUTABLE:
             case CONTAINER: {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
+                if (Primitives.isPrimitiveExcludingVoid(bestType)) return variableProperty.best;
                 return bestType == null ? variableProperty.falseValue :
                         Math.max(variableProperty.falseValue,
                                 evaluationContext.getTypeAnalysis(bestType).getProperty(variableProperty));
@@ -274,10 +271,10 @@ public class NewObject implements HasParameterExpressions {
         OutputBuilder outputBuilder = new OutputBuilder();
         if (constructor != null) {
             outputBuilder.add(new Text("new")).add(Space.ONE).add(parameterizedType.output());
-            if(!returnType().parameters.isEmpty()) {
+            if (!returnType().parameters.isEmpty()) {
                 outputBuilder.add(Symbol.DIAMOND); // TODO there are situations where diamond is not good enough
             }
-            if(arrayInitializer == null) {
+            if (arrayInitializer == null) {
                 if (parameterExpressions.isEmpty()) {
                     outputBuilder.add(Symbol.OPEN_CLOSE_PARENTHESIS);
                 } else {

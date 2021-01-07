@@ -18,7 +18,6 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.util.MergeHelper;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
@@ -46,7 +45,7 @@ class VariableInfoImpl implements VariableInfo {
     private final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
     private final SetOnce<Expression> value = new SetOnce<>(); // value from step 3 (initialisers)
     private final SetOnce<ObjectFlow> objectFlow = new SetOnce<>();
-    private final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
+    private final SetOnce<LinkedVariables> linkedVariables = new SetOnce<>();
     private final SetOnce<Integer> statementTime = new SetOnce<>();
 
     // ONLY for testing!
@@ -102,8 +101,8 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     @Override
-    public Set<Variable> getLinkedVariables() {
-        return linkedVariables.getOrElse(null);
+    public LinkedVariables getLinkedVariables() {
+        return linkedVariables.getOrElse(LinkedVariables.DELAY);
     }
 
     @Override
@@ -169,10 +168,10 @@ class VariableInfoImpl implements VariableInfo {
         }
     }
 
-    void setLinkedVariables(Set<Variable> merged) {
-        assert merged != null;
-        if (!linkedVariablesIsSet() || !getLinkedVariables().equals(merged)) {
-            linkedVariables.set(ImmutableSet.copyOf(merged));
+    void setLinkedVariables(LinkedVariables linkedVariables) {
+        assert linkedVariables != null && linkedVariables != LinkedVariables.DELAY;
+        if (!linkedVariablesIsSet() || !getLinkedVariables().equals(linkedVariables)) {
+            this.linkedVariables.set(linkedVariables);
         }
     }
 
@@ -278,16 +277,16 @@ class VariableInfoImpl implements VariableInfo {
         Set<Variable> merged = new HashSet<>();
         if (!existingValuesWillBeOverwritten) {
             if (existing.linkedVariablesIsSet()) {
-                merged.addAll(existing.getLinkedVariables());
+                merged.addAll(existing.getLinkedVariables().variables());
             } //else
             // typical situation: int a; if(x) { a = 5; }. Existing has not been assigned
             // this will end up an error when the variable is read before being assigned
         }
         for (VariableInfo vi : merge.values()) {
             if (!vi.linkedVariablesIsSet()) return;
-            merged.addAll(vi.getLinkedVariables());
+            merged.addAll(vi.getLinkedVariables().variables());
         }
-        setLinkedVariables(merged);
+        setLinkedVariables(new LinkedVariables(merged));
     }
 
 

@@ -19,15 +19,14 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
-import org.e2immu.analyser.config.DebugConfiguration;
-import org.e2immu.analyser.config.FieldAnalyserVisitor;
-import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
-import org.e2immu.analyser.config.TypeMapVisitor;
+import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.FieldAnalysis;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.StringConstant;
 import org.junit.Assert;
 import org.junit.Test;
@@ -41,6 +40,13 @@ public class Test_00_Basics_0 extends CommonTestRunner {
         super(false);
     }
 
+    EvaluationResultVisitor evaluationResultVisitor = d -> {
+        if (d.methodInfo().name.equals("getExplicitlyFinal") && "0".equals(d.statementId())) {
+            String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "\"abc\"";
+            Assert.assertEquals(expectValue, d.evaluationResult().value().toString());
+        }
+    };
+
     FieldAnalyserVisitor afterFieldAnalyserVisitor = d -> {
         FieldAnalysis fieldAnalysis = d.fieldAnalysis();
         if ("explicitlyFinal".equals(d.fieldInfo().name)) {
@@ -49,10 +55,12 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                 Assert.assertEquals("\"abc\"", fieldAnalysis.getEffectivelyFinalValue().toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(fieldAnalysis.getEffectivelyFinalValue(),
                         VariableProperty.NOT_NULL));
+                Assert.assertSame(LinkedVariables.DELAY, fieldAnalysis.getLinkedVariables()); // never in first iteration
             }
             if (d.iteration() > 0) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, fieldAnalysis.getProperty(VariableProperty.IMMUTABLE));
+                Assert.assertTrue(fieldAnalysis.getLinkedVariables().isEmpty());
             }
         }
     };
@@ -63,8 +71,8 @@ public class Test_00_Basics_0 extends CommonTestRunner {
             if ((TYPE + ".explicitlyFinal").equals(d.variableName())) {
                 Assert.assertFalse(d.variableInfo().isAssigned());
                 Assert.assertTrue(d.variableInfo().isRead());
-                Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(new StringConstant(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
+                Assert.assertTrue(d.hasProperty(VariableProperty.NOT_NULL));
                 return;
             }
             if ((TYPE + ".this").equals(d.variableName())) {
@@ -73,9 +81,17 @@ public class Test_00_Basics_0 extends CommonTestRunner {
             }
             // the return value
             Assert.assertEquals((TYPE + ".getExplicitlyFinal()"), d.variableName());
-            Assert.assertEquals("\"abc\"", d.currentValue().toString());
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
-            Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+            String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "\"abc\"";
+            Assert.assertEquals(expectValue, d.currentValue().toString());
+
+            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+            Assert.assertEquals(expectNotNull, d.getProperty(VariableProperty.NOT_NULL));
+
+            if (d.iteration() == 0) {
+                Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+            } else {
+                Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+            }
             return;
         }
         Assert.fail("Method name " + d.methodInfo().name + ", iteration " + d.iteration() + ", variable " + d.variableName() +
@@ -94,6 +110,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                 .addAfterFieldAnalyserVisitor(afterFieldAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .build());
     }
 

@@ -42,13 +42,13 @@ public class Test_00_Basics_1 extends CommonTestRunner {
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if (BASICS_1.equals(d.methodInfo().name) && "0".equals(d.statementId())) {
             if ("s1".equals(d.variableName())) {
-                Assert.assertEquals("p0", debug(d.variableInfo().getLinkedVariables()));
+                Assert.assertEquals("p0", d.variableInfo().getLinkedVariables().toString());
             }
         }
         if (BASICS_1.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
             if (FIELD1.equals(d.variableName())) {
                 Assert.assertTrue(d.variableInfo().isAssigned());
-                Assert.assertEquals("p0", debug(d.variableInfo().getLinkedVariables()));
+                Assert.assertEquals("p0", d.variableInfo().getLinkedVariables().toString());
             }
         }
         if ("getF1".equals(d.methodInfo().name)) {
@@ -57,7 +57,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 if(d.iteration() == 0) {
                     Assert.assertNull(d.variableInfo().getLinkedVariables());
                 } else {
-                    Assert.assertEquals("p0", debug(d.variableInfo().getLinkedVariables()));
+                    Assert.assertEquals("p0", d.variableInfo().getLinkedVariables().toString());
                 }
             }
             if (GET_F1_RETURN.equals(d.variableName())) {
@@ -65,7 +65,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 if(d.iteration() == 0) {
                     Assert.assertNull(d.variableInfo().getLinkedVariables());
                 } else {
-                    Assert.assertEquals("p0,this.f1", debug(d.variableInfo().getLinkedVariables()));
+                    Assert.assertEquals("p0,this.f1", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         }
@@ -85,7 +85,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
             if (d.iteration() > 0) {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
                 Assert.assertEquals("p0", d.fieldAnalysis().getEffectivelyFinalValue().output().debug());
-                Assert.assertEquals("p0", debug(d.fieldAnalysis().getLinkedVariables()));
+                Assert.assertEquals("p0", d.fieldAnalysis().getLinkedVariables().toString());
                 if(d.iteration()>1) {
                     Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
                 }

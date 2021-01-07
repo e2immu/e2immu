@@ -2,6 +2,7 @@ package org.e2immu.analyser.analyser.check;
 
 import org.e2immu.analyser.analyser.AbstractAnalysisBuilder;
 import org.e2immu.analyser.analyser.FieldAnalysisImpl;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.ArrayInitializer;
 import org.e2immu.analyser.model.expression.MemberValuePair;
@@ -33,8 +34,8 @@ public record CheckLinks(Primitives primitives, E2ImmuAnnotationExpressions e2) 
             String[] inspected = ae.extract("to", new String[]{});
             return Arrays.stream(inspected).sorted().collect(Collectors.joining(","));
         };
-        Set<Variable> linkedVariables = fieldAnalysis.getLinkedVariables();
-        String computedString = linkedVariables.isEmpty() ? null : linkedVariables.stream()
+        LinkedVariables linkedVariables = fieldAnalysis.getLinkedVariables();
+        String computedString = linkedVariables.isEmpty() ? null : linkedVariables.variables().stream()
                 .map(Variable::nameInLinkedAnnotation)
                 .sorted().collect(Collectors.joining(","));
 

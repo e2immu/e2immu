@@ -225,8 +225,8 @@ public class CompanionAnalyser {
         }
 
         @Override
-        public Set<Variable> linkedVariables(Expression value) {
-            return Set.of(); // not interested
+        public LinkedVariables linkedVariables(Expression value) {
+            return LinkedVariables.EMPTY; // not interested
         }
     }
 }

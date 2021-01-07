@@ -19,6 +19,7 @@
 package org.e2immu.analyser.model;
 
 import org.e2immu.analyser.analyser.AnalysisProvider;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -42,7 +43,7 @@ public interface FieldAnalysis extends Analysis {
     // here, the key of the map are fields; the local variables and parameters are stored in method analysis
     // the values are either other fields (in which case these other fields are not linked to parameters)
     // or parameters
-    Set<Variable> getLinkedVariables();
+    LinkedVariables getLinkedVariables();
 
     Boolean getFieldError();
 

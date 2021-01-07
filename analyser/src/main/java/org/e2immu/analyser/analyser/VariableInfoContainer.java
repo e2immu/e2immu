@@ -23,7 +23,6 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Container to store different versions of a VariableInfo object, one or more of this list:
@@ -105,11 +104,11 @@ public interface VariableInfoContainer {
     /**
      * set linked variables
      *
-     * @param variables                         must not be null
+     * @param linkedVariables                   must not be null, must not be delay
      * @param writeInInitialOtherwiseEvaluation true then written in initial (when the linked variables come from the analyser),
      *                                          otherwise in evaluation
      */
-    void setLinkedVariables(Set<Variable> variables, boolean writeInInitialOtherwiseEvaluation);
+    void setLinkedVariables(LinkedVariables linkedVariables, boolean writeInInitialOtherwiseEvaluation);
 
     /*
     copy from one statement to the next.

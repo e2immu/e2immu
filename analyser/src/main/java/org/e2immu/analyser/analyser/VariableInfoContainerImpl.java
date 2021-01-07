@@ -129,11 +129,11 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public void setLinkedVariables(Set<Variable> variables, boolean initialOrEvaluation) {
+    public void setLinkedVariables(LinkedVariables linkedVariables, boolean initialOrEvaluation) {
         ensureNotFrozen();
-        Objects.requireNonNull(variables);
+        Objects.requireNonNull(linkedVariables);
         VariableInfoImpl variableInfo = initialOrEvaluation ? previousOrInitial.getRight() : evaluation.get();
-        variableInfo.setLinkedVariables(variables);
+        variableInfo.setLinkedVariables(linkedVariables);
     }
 
     @Override
@@ -212,6 +212,8 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             if (previous.statementTimeIsSet()) {
                 evaluation.setStatementTime(previous.getStatementTime());
             }
+            // FIXME this should be slightly more complicated, as modifying method calls also can cause
+            // a change in linked variables
             boolean notReadInThisStatement = previous.getReadId().equals(evaluation.getReadId());
             if (notReadInThisStatement && previous.linkedVariablesIsSet()) {
                 evaluation.setLinkedVariables(previous.getLinkedVariables());

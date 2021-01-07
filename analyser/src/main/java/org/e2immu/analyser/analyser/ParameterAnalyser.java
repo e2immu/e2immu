@@ -20,7 +20,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.VariableExpression;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Messages;
@@ -140,11 +139,11 @@ public class ParameterAnalyser {
                 }
             } else {
                 // variable field
-                Set<Variable> linked = fieldAnalysis.getLinkedVariables();
-                if (linked == null) {
+                LinkedVariables linked = fieldAnalysis.getLinkedVariables();
+                if (linked == LinkedVariables.DELAY) {
                     delays = true;
                 } else {
-                    ParameterAnalysis.AssignedOrLinked assignedOrLinked = linked.contains(parameterInfo) ? LINKED : NO;
+                    ParameterAnalysis.AssignedOrLinked assignedOrLinked = linked.variables().contains(parameterInfo) ? LINKED : NO;
                     if (parameterAnalysis.addAssignedToField(fieldInfo, assignedOrLinked)) {
                         changed |= assignedOrLinked == LINKED;
                     }

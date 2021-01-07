@@ -140,14 +140,14 @@ public class Test_17_Container extends CommonTestRunner {
                     }
                     if (d.iteration() > 0) {
                         Assert.assertEquals("this.s,org.e2immu.analyser.testexample.Container_3.s$0",
-                                debug(d.variableInfo().getLinkedVariables()));
+                                d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if (S.equals(d.variableName())) {
                     if ("1.0.0".equals(d.statementId()) || "1".equals(d.statementId())) {
                         if (d.iteration() > 0) {
                             Assert.assertEquals("org.e2immu.analyser.testexample.Container_3.s$0",
-                                    debug(d.variableInfo().getLinkedVariables()));
+                                    d.variableInfo().getLinkedVariables().toString());
                             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                         }
                     }

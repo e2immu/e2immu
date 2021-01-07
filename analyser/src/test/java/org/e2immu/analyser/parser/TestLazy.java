@@ -18,6 +18,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -102,7 +103,7 @@ public class TestLazy extends CommonTestRunner {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, ret.getProperty(VariableProperty.NOT_NULL));
 
                 Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
-                Set<Variable> linkedToT = d.methodAnalysis().getLastStatement().getLatestVariableInfo(t.fullyQualifiedName())
+                LinkedVariables linkedToT = d.methodAnalysis().getLastStatement().getLatestVariableInfo(t.fullyQualifiedName())
                         .getLinkedVariables();
                 // for now (and I believe it's correct, t will not be linked to supplier)
                 Assert.assertFalse(linkedToT.isEmpty());

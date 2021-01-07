@@ -68,7 +68,7 @@ public class Test_01_Loops extends CommonTestRunner {
             }
             if ("org.e2immu.analyser.testexample.Loops_0.this".equals(d.variableName())) {
                 if ("2.0.0".equals(d.statementId())) {
-                    Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
+                    Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                 }
             }
             if ("i".equals(d.variableName())) {

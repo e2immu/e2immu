@@ -49,7 +49,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     Assert.assertNull(d.fieldAnalysis().getLinkedVariables());
                 } else {
-                    Assert.assertEquals("key", debug(d.fieldAnalysis().getLinkedVariables()));
+                    Assert.assertEquals("key", d.fieldAnalysis().getLinkedVariables().toString());
                 }
             }
         };
@@ -63,7 +63,7 @@ public class Test_22_SubTypes extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("SubTypes_1$KV$1".equals(d.methodInfo().name) && KEY.equals(d.variableName())) {
                 Assert.assertEquals("key", d.currentValue().toString());
-                Assert.assertEquals("xx", debug(d.variableInfo().getLinkedVariables()));
+                Assert.assertEquals("xx", d.variableInfo().getLinkedVariables().toString());
             }
         };
 

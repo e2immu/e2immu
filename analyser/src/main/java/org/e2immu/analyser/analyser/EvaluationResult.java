@@ -17,7 +17,6 @@
 
 package org.e2immu.analyser.analyser;
 
-import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.NewObject;
@@ -73,7 +72,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                Expression precondition,
                                boolean addCircularCallOrUndeclaredFunctionalInterface) {
 
-    public final static Set<Variable> LINKED_VARIABLE_DELAY = Set.of(Variable.fake());
+    public EvaluationResult {
+        assert valueChanges.values().stream().noneMatch(ecd -> ecd.linkedVariables == null);
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EvaluationResult.class);
 
@@ -107,14 +108,14 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                        boolean stateIsDelayed,
                                        boolean markAssignment,
                                        Set<Integer> readAtStatementTime,
-                                       Set<Variable> linkedVariables,
+                                       LinkedVariables linkedVariables,
                                        Map<VariableProperty, Integer> properties) {
         public ExpressionChangeData {
             Objects.requireNonNull(value);
         }
 
         public ExpressionChangeData merge(ExpressionChangeData other) {
-            Set<Variable> combinedLinkedVariables = SetUtil.immutableUnion(linkedVariables, other.linkedVariables);
+            LinkedVariables combinedLinkedVariables = linkedVariables.merge(other.linkedVariables);
             Set<Integer> combinedReadAtStatementTime = SetUtil.immutableUnion(readAtStatementTime, other.readAtStatementTime);
             Map<VariableProperty, Integer> combinedProperties = VariableInfoImpl.mergeProperties(properties, other.properties);
             return new ExpressionChangeData(other.value, other.stateIsDelayed, other.markAssignment || markAssignment,
@@ -260,8 +261,8 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ExpressionChangeData ecd = valueChanges.get(variable);
             ExpressionChangeData newEcd;
             if (ecd == null) {
-                newEcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(statementTime), null,
-                        Map.of());
+                newEcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(statementTime),
+                        defaultLinkedVariables(variable), Map.of());
             } else {
                 newEcd = new ExpressionChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
                         SetUtil.immutableUnion(ecd.readAtStatementTime, Set.of(statementTime)), ecd.linkedVariables, Map.of());
@@ -328,13 +329,14 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         }
 
         private void addLink(Variable from, Variable to) {
+            LinkedVariables linkTo = new LinkedVariables(Set.of(to));
             ExpressionChangeData current = valueChanges.get(from);
             ExpressionChangeData newVcd;
             if (current == null) {
-                newVcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(), Set.of(to), Map.of());
+                newVcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(), linkTo, Map.of());
             } else {
                 // we simply merge the linkedVariables
-                Set<Variable> linkedVariables = SetUtil.immutableUnion(current.linkedVariables, Set.of(to));
+               LinkedVariables linkedVariables = current.linkedVariables.merge(linkTo);
                 newVcd = new ExpressionChangeData(current.value,
                         current.stateIsDelayed, current.markAssignment, current.readAtStatementTime, linkedVariables, Map.of());
             }
@@ -360,7 +362,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         // called when a new instance is needed because of a modifying method call, or when a variable doesn't have
         // an instance yet. Not called upon assignment.
-        private void assignInstanceToVariable(Variable variable, NewObject instance, Set<Variable> linkedVariables) {
+        private void assignInstanceToVariable(Variable variable, NewObject instance, LinkedVariables linkedVariables) {
             ExpressionChangeData current = valueChanges.get(variable);
             ExpressionChangeData newVcd;
             if (current == null) {
@@ -430,7 +432,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
          */
         public Builder assignment(Variable assignmentTarget,
                                   Expression resultOfExpression,
-                                  Set<Variable> linkedVariables) {
+                                  LinkedVariables linkedVariables) {
             assert evaluationContext != null;
             boolean stateIsDelayed = evaluationContext.getConditionManager().isDelayed();
 
@@ -453,9 +455,11 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ExpressionChangeData newEcd;
             ExpressionChangeData ecd = valueChanges.get(variable);
             if (ecd == null) {
-                newEcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(), null, Map.of(property, value));
+                newEcd = new ExpressionChangeData(NO_VALUE, false, false, Set.of(),
+                        defaultLinkedVariables(variable), Map.of(property, value));
             } else {
-                newEcd = new ExpressionChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment, ecd.readAtStatementTime, ecd.linkedVariables,
+                newEcd = new ExpressionChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
+                        ecd.readAtStatementTime, ecd.linkedVariables,
                         VariableInfoImpl.mergeProperties(Map.of(property, value), ecd.properties));
             }
             valueChanges.put(variable, newEcd);
@@ -481,7 +485,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             // TODO part of object flow
         }
 
-        public void modifyingMethodAccess(Variable variable, NewObject newInstance, Set<Variable> linkedVariables) {
+        public void modifyingMethodAccess(Variable variable, NewObject newInstance, LinkedVariables linkedVariables) {
             //add(new StateData.RemoveVariableFromState(evaluationContext, variable)); TODO replace by other code
             assignInstanceToVariable(variable, newInstance, linkedVariables);
         }
@@ -503,6 +507,10 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public int getStatementTime() {
             return statementTime;
+        }
+
+        private LinkedVariables defaultLinkedVariables(Variable variable) {
+            return variable instanceof This ? LinkedVariables.EMPTY : LinkedVariables.DELAY;
         }
     }
 }

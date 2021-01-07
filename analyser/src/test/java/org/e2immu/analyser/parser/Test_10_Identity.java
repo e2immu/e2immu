@@ -123,7 +123,7 @@ public class Test_10_Identity extends CommonTestRunner {
             if (d.iteration() == 0) {
                 Assert.assertNull(d.fieldAnalysis().getLinkedVariables());
             } else {
-                Assert.assertEquals("", debug(d.fieldAnalysis().getLinkedVariables()));
+                Assert.assertTrue(d.fieldAnalysis().getLinkedVariables().isEmpty());
             }
         }
     };

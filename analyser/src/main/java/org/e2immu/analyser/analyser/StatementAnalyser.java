@@ -34,7 +34,6 @@ import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.util.SetOnce;
-import org.e2immu.analyser.util.SetUtil;
 import org.e2immu.analyser.util.StringUtil;
 import org.e2immu.annotation.Container;
 import org.slf4j.Logger;
@@ -372,7 +371,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     // in a separate task, so that it can be skipped when the statement is unreachable
     private AnalysisStatus initialiseOrUpdateVariables(SharedState sharedState) {
         if (sharedState.evaluationContext.getIteration() == 0) {
-            statementAnalysis.initIteration0(analyserContext, sharedState.previous);
+            statementAnalysis.initIteration0(analyserContext, myMethodAnalyser.methodInfo, sharedState.previous);
         } else {
             statementAnalysis.initIteration1Plus(analyserContext, myMethodAnalyser.methodInfo, sharedState.previous);
         }
@@ -512,13 +511,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
 
             // we explicitly check for NO_VALUE, because "<no return value>" is legal!
-            boolean haveValue = valueToWrite != NO_VALUE;
-            if (haveValue) {
+            if (valueToWrite != NO_VALUE) {
                 log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
                 Map<VariableProperty, Integer> propertiesToSet = VariableInfoImpl.mergeProperties
                         (sharedState.evaluationContext.getValueProperties(valueToWrite), changeData.properties());
                 vic.setValue(valueToWrite, propertiesToSet, false);
-            } else {
+            } else if (vi.getValue() == NO_VALUE) {
                 log(DELAYED, "Apply of {}, {} is delayed because of unknown value for {}",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
                 status = DELAYS;
@@ -528,10 +526,10 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 addToAssignmentsInLoop(variable.fullyQualifiedName());
             }
 
-            Set<Variable> mergedLinkedVariables = writeMergedLinkedVariables(changeData, variable, vi, vi1, additionalLinks);
-            if (mergedLinkedVariables != null && haveValue) {
+            LinkedVariables mergedLinkedVariables = writeMergedLinkedVariables(changeData, variable, vi, vi1, additionalLinks);
+            if (mergedLinkedVariables != LinkedVariables.DELAY && vi.getValue() != NO_VALUE) {
                 vic.setLinkedVariables(mergedLinkedVariables, false);
-            } else {
+            } else if (vi.getLinkedVariables() == LinkedVariables.DELAY) {
                 status = DELAYS;
             }
 
@@ -659,32 +657,33 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return set;
     }
 
-    private Set<Variable> writeMergedLinkedVariables(EvaluationResult.ExpressionChangeData changeData,
-                                                     Variable variable,
-                                                     VariableInfo vi,
-                                                     VariableInfo vi1,
-                                                     Set<Variable> additionalLinks) {
-        if (changeData.linkedVariables() == EvaluationResult.LINKED_VARIABLE_DELAY) {
+    private LinkedVariables writeMergedLinkedVariables(EvaluationResult.ExpressionChangeData changeData,
+                                                       Variable variable,
+                                                       VariableInfo vi,
+                                                       VariableInfo vi1,
+                                                       Set<Variable> additionalLinks) {
+        if (changeData.linkedVariables() == LinkedVariables.DELAY) {
             log(DELAYED, "Apply of {}, {} is delayed because of linked variables of {}",
                     index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
                     variable.fullyQualifiedName());
-            return null;
+            return LinkedVariables.DELAY;
         }
-        if (changeData.linkedVariables() != null) {
-            if (vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
-                log(DELAYED, "Apply of step {}, {} is delayed because of variable field delay",
-                        index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
-                return null;
-            }
-            Set<Variable> previousValue = vi1.getLinkedVariables();
-            Set<Variable> mergedValue1 = previousValue != null ?
-                    SetUtil.immutableUnion(previousValue, changeData.linkedVariables()) : changeData.linkedVariables();
-            Set<Variable> mergedValue = additionalLinks == null ? mergedValue1 : SetUtil.immutableUnion(mergedValue1, additionalLinks);
-            log(ANALYSER, "Set linked variables of {} to {} in {}, {}",
-                    variable, mergedValue, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
-            return mergedValue;
+
+        if (vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
+            log(DELAYED, "Apply of step {}, {} is delayed because of variable field delay",
+                    index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+            return LinkedVariables.DELAY;
         }
-        return null;
+        LinkedVariables previousValue = vi1.getLinkedVariables();
+        LinkedVariables mergedValue1 = previousValue != LinkedVariables.DELAY ?
+                previousValue.merge(changeData.linkedVariables()) : changeData.linkedVariables();
+        // note that the null here is actual presence or absence in a map...
+        LinkedVariables mergedValue = mergedValue1.merge(new LinkedVariables(additionalLinks));
+        log(ANALYSER, "Set linked variables of {} to {} in {}, {}",
+                variable, mergedValue, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+
+        assert mergedValue != LinkedVariables.DELAY;
+        return mergedValue;
     }
 
     /*
@@ -913,7 +912,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
         // part 3, iteration 1+: ensure local loop variable copies and their values
 
-        if (statementAnalysis.localVariablesAssignedInThisLoop.isFrozen()) {
+        if (statementAnalysis.localVariablesAssignedInThisLoop != null &&
+                statementAnalysis.localVariablesAssignedInThisLoop.isFrozen()) {
             statementAnalysis.localVariablesAssignedInThisLoop.stream().forEach(fqn -> {
                 assert statement() instanceof LoopStatement;
 
@@ -1639,7 +1639,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public Set<Variable> linkedVariables(Expression value) {
+        public LinkedVariables linkedVariables(Expression value) {
             assert value != null;
             if (value instanceof VariableExpression variableValue) {
                 return linkedVariables(variableValue.variable());
@@ -1648,19 +1648,19 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
 
         @Override
-        public Set<Variable> linkedVariables(Variable variable) {
+        public LinkedVariables linkedVariables(Variable variable) {
             TypeInfo typeInfo = variable.parameterizedType().bestTypeInfo();
             boolean notSelf = typeInfo != getCurrentType();
             if (notSelf) {
                 VariableInfo variableInfo = statementAnalysis.findOrThrow(variable);
                 int immutable = variableInfo.getProperty(VariableProperty.IMMUTABLE);
                 if (immutable == MultiLevel.DELAY) return null;
-                if (MultiLevel.isE2Immutable(immutable)) return Set.of();
+                if (MultiLevel.isE2Immutable(immutable)) return LinkedVariables.EMPTY;
             }
             VariableInfo variableInfo = statementAnalysis.findOrThrow(variable);
             // we've encountered the variable before
             if (variableInfo.linkedVariablesIsSet()) {
-                return SetUtil.immutableUnion(variableInfo.getLinkedVariables(), Set.of(variable));
+                return variableInfo.getLinkedVariables().merge(new LinkedVariables(Set.of(variable)));
             }
             return null; // delay
         }

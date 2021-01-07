@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
@@ -106,8 +103,8 @@ public interface Expression extends Element, Comparable<Expression> {
      */
     @Nullable
     @NotModified
-    default Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
-        return Set.of();
+    default LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
+        return LinkedVariables.EMPTY;
     }
 
     default boolean isNotNull() {

@@ -57,9 +57,9 @@ public class TestSetOnce extends CommonTestRunner {
 
                 VariableInfo tv = d.getReturnAsVariable();
                 Assert.assertTrue(tv.linkedVariablesIsSet());
-                Assert.assertEquals(1, tv.getLinkedVariables().size());
+                Assert.assertEquals(1, tv.getLinkedVariables().variables().size());
                 if (d.iteration() > 1) {
-                    Set<Variable> set = tv.getLinkedVariables();
+                    Set<Variable> set = tv.getLinkedVariables().variables();
                     Assert.assertEquals(2, set.size());
                 }
             }

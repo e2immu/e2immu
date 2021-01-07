@@ -70,7 +70,7 @@ public class MethodLevelData {
     }
 
     public void addCircularCallOrUndeclaredFunctionalInterface() {
-        if(!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
+        if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(true);
         }
     }
@@ -144,11 +144,12 @@ public class MethodLevelData {
 
         // delays in dependency graph
         sharedState.statementAnalysis.variableStream().forEach(variableInfo -> {
-            Set<Variable> linkedVariables = variableInfo.getLinkedVariables();
-            if (linkedVariables == null && variableInfo.getValue() instanceof VariableExpression redirect) {
+            LinkedVariables linkedVariables = variableInfo.getLinkedVariables();
+            if (linkedVariables == LinkedVariables.DELAY &&
+                    variableInfo.getValue() instanceof VariableExpression redirect) {
                 linkedVariables = sharedState.statementAnalysis.findOrThrow(redirect.variable()).getLinkedVariables();
             }
-            if (linkedVariables == null) {
+            if (linkedVariables == LinkedVariables.DELAY) {
                 if (!(variableInfo.variable() instanceof LocalVariableReference) || variableInfo.isAssigned()) {
                     log(DELAYED, "Delaying content modification in MethodLevelData for {} in {}: linked variables not set",
                             variableInfo.variable().fullyQualifiedName(),
@@ -159,7 +160,7 @@ public class MethodLevelData {
                     log(LINKED_VARIABLES, "Local variable {} not yet assigned, so cannot yet be linked");
                 }
             } else {
-                dependencyGraph.addNode(variableInfo.variable(), linkedVariables);
+                dependencyGraph.addNode(variableInfo.variable(), linkedVariables.variables());
             }
         });
         if (analysisStatus.get() == DELAYS) {
@@ -251,7 +252,6 @@ public class MethodLevelData {
         thisVic.ensureEvaluation(statementAnalysis.index + VariableInfoContainer.Level.EVALUATION.label,
                 VariableInfoContainer.NOT_YET_READ, evaluationContext.getInitialStatementTime());
         thisVic.setProperty(VariableProperty.METHOD_CALLED, Level.FALSE, false, VariableInfoContainer.Level.EVALUATION);
-        thisVic.setLinkedVariables(Set.of(), false);
 
         if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(false);

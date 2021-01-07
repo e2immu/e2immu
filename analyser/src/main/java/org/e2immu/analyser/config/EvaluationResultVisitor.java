@@ -38,7 +38,7 @@ public interface EvaluationResultVisitor {
         public boolean haveLinkVariable(String fromName, Set<String> toNames) {
             return evaluationResult().getExpressionChangeStream()
                     .anyMatch(e -> fromName.equals(e.getKey().fullyQualifiedName()) &&
-                            toNames.equals(e.getValue().linkedVariables()
+                            toNames.equals(e.getValue().linkedVariables().variables()
                                     .stream().map(v -> v.fullyQualifiedName()).collect(Collectors.toSet())));
         }
 

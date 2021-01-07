@@ -19,7 +19,6 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.e2immu.analyser.analyser.check.CheckConstant;
 import org.e2immu.analyser.analyser.check.CheckLinks;
 import org.e2immu.analyser.config.FieldAnalyserVisitor;
@@ -527,10 +526,10 @@ public class FieldAnalyser extends AbstractAnalyser {
         Set<Variable> linkedVariables = allMethodsAndConstructors.stream()
                 .flatMap(m -> m.getFieldAsVariableStream(fieldInfo, false))
                 .filter(VariableInfo::linkedVariablesIsSet)
-                .flatMap(vi -> vi.getLinkedVariables().stream())
+                .flatMap(vi -> vi.getLinkedVariables().variables().stream())
                 .filter(v -> !(v instanceof LocalVariableReference)) // especially local variable copies of the field itself
                 .collect(Collectors.toSet());
-        fieldAnalysis.linkedVariables.set(ImmutableSet.copyOf(linkedVariables));
+        fieldAnalysis.linkedVariables.set(new LinkedVariables(linkedVariables));
         log(LINKED_VARIABLES, "FA: Set links of {} to [{}]", fieldInfo.fullyQualifiedName(), Variable.fullyQualifiedName(linkedVariables));
 
         // explicitly adding the annotation here; it will not be inspected.

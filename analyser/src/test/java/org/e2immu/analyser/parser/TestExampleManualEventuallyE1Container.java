@@ -48,10 +48,10 @@ public class TestExampleManualEventuallyE1Container extends CommonTestRunner {
         if ("getIntegers".equals(name)) {
             if (iteration > 0) {
                 VariableInfo tv =d.getReturnAsVariable();
-                Assert.assertEquals(1, tv.getLinkedVariables().size());
+                Assert.assertEquals(1, tv.getLinkedVariables().variables().size());
             }
             if (iteration > 1) {
-                Set<Variable> variables = d.getReturnAsVariable().getLinkedVariables();
+                Set<Variable> variables = d.getReturnAsVariable().getLinkedVariables().variables();
                 Assert.assertEquals(1, variables.size());
                 int independent = d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT);
                 Assert.assertEquals(MultiLevel.FALSE, independent);

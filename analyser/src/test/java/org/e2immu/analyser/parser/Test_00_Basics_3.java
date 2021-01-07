@@ -19,7 +19,10 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.FlowData;
+import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
@@ -74,7 +77,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
                     } else {
                         // s is linked to s$1
-                        Assert.assertEquals("org.e2immu.analyser.testexample.Basics_3.s$1", debug(d.variableInfo().getLinkedVariables()));
+                        Assert.assertEquals("org.e2immu.analyser.testexample.Basics_3.s$1",
+                                d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("0.0.1".equals(d.statementId())) {
@@ -85,7 +89,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     } else {
                         Assert.assertEquals(2, d.variableInfo().getStatementTime());
                         String expectedLinked = "org.e2immu.analyser.testexample.Basics_3.s$1";
-                        Assert.assertEquals(expectedLinked, debug(d.variableInfo().getLinkedVariables()));
+                        Assert.assertEquals(expectedLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                 }
                 if ("0.1.0".equals(d.statementId())) {
@@ -95,7 +99,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
                     } else {
                         Assert.assertEquals(1, d.variableInfo().getStatementTime());
-                        Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
+                        Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                 }
                 if ("0".equals(d.statementId())) {
@@ -108,14 +112,15 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                         Assert.assertEquals(2, d.variableInfo().getStatementTime());
 
                         String expectedLinked = "org.e2immu.analyser.testexample.Basics_3.s$1";
-                        Assert.assertEquals(expectedLinked, debug(d.variableInfo().getLinkedVariables()));
+                        Assert.assertEquals(expectedLinked, d.variableInfo().getLinkedVariables().toString());
                     }
                     Assert.assertTrue("At " + d.statementId(), d.variableInfo().isAssigned());
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
                     if (d.iteration() > 0) {
-                        Assert.assertEquals("org.e2immu.analyser.testexample.Basics_3.s$2$0:4", debug(d.variableInfo().getLinkedVariables()));
+                        Assert.assertEquals("org.e2immu.analyser.testexample.Basics_3.s$2$0:4",
+                                d.variableInfo().getLinkedVariables().toString());
                     }
                     Assert.assertTrue("At " + d.statementId(), d.variableInfo().isAssigned());
                 }
@@ -128,7 +133,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     if (d.iteration() == 0) {
                         Assert.assertNull(d.variableInfo().getLinkedVariables());
                     } else {
-                        Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
+                        Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
                     }
                 }
             }
@@ -194,7 +199,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name) && d.iteration() > 0) {
                 if (d.iteration() > 1) {
-                    Assert.assertEquals("", debug(d.fieldAnalysis().getLinkedVariables()));
+                    Assert.assertTrue(d.fieldAnalysis().getLinkedVariables().isEmpty());
                 }
                 Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));

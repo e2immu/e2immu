@@ -23,7 +23,6 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.INITIAL;
@@ -37,10 +36,10 @@ public interface VariableInfo {
     /**
      * @return null when not yet set
      */
-    Set<Variable> getLinkedVariables();
+    LinkedVariables getLinkedVariables();
 
     default boolean linkedVariablesIsSet() {
-        return getLinkedVariables() != null;
+        return getLinkedVariables() != LinkedVariables.DELAY;
     }
 
     ObjectFlow getObjectFlow();

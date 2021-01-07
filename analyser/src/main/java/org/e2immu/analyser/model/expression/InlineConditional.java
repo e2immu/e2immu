@@ -18,10 +18,7 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
-import org.e2immu.analyser.analyser.EvaluationResult;
-import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.expression.util.MultiExpression;
@@ -159,20 +156,20 @@ public class InlineConditional implements Expression {
     }
 
     @Override
-    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
+    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
         Set<Variable> result = null;
         for (Variable variable : ListUtil.immutableConcat(ifTrue.variables(), ifFalse.variables())) {
-            Set<Variable> links = evaluationContext.linkedVariables(variable);
-            if (links == null) {
-                return null;
+            LinkedVariables links = evaluationContext.linkedVariables(variable);
+            if (links == LinkedVariables.DELAY) {
+                return LinkedVariables.DELAY;
             }
             if (result == null) {
-                result = new HashSet<>(links);
+                result = new HashSet<>(links.variables());
             } else {
-                result.addAll(links);
+                result.addAll(links.variables());
             }
         }
-        return result == null ? Set.of() : result;
+        return result == null ? LinkedVariables.EMPTY : new LinkedVariables(result);
     }
 
     @Override

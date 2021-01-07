@@ -1,6 +1,6 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.EvaluationResult;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -9,7 +9,6 @@ import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.annotation.AnnotationMode;
 import org.junit.Assert;
 import org.junit.Test;
@@ -112,8 +111,7 @@ public class Test_16_Modification extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("org.e2immu.analyser.testexample.Modification_2.Example2ter.getFirst(String)".equals(d.variableName())) {
                 Assert.assertEquals(GET_FIRST_VALUE, d.currentValue().toString());
-                Set<Variable> lv = d.currentValue().linkedVariables(d.evaluationContext());
-                Assert.assertNotSame(EvaluationResult.LINKED_VARIABLE_DELAY, lv);
+                Assert.assertNotSame(LinkedVariables.DELAY, d.currentValue().linkedVariables(d.evaluationContext()));
             }
         };
 
@@ -196,7 +194,7 @@ public class Test_16_Modification extends CommonTestRunner {
                         // problem is that there is one in level 3 already, with a NO_VALUE
                         VariableInfo vi1 = d.variableInfoContainer().current();
                         Assert.assertEquals("set3", vi1.getValue().toString());
-                        Assert.assertEquals("this.set3", debug(vi1.getLinkedVariables()));
+                        Assert.assertEquals("this.set3", vi1.getLinkedVariables().toString());
                         Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                     }
                 }
@@ -206,7 +204,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     if (d.iteration() == 0) Assert.assertNull(d.variableInfo().getLinkedVariables());
                     else {
-                        Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
+                        Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         Assert.assertEquals(SET3_EFV, d.variableInfo().getValue().toString());
                     }
                 }
@@ -218,7 +216,7 @@ public class Test_16_Modification extends CommonTestRunner {
                         // start off with FALSE
                         Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
                     } else {
-                        Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
+                        Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                         Assert.assertEquals("instance type HashSet", d.variableInfo().getValue().toString());
                         Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                     }
@@ -318,7 +316,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 int notNull = d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL);
                 if (iteration == 1) {
                     Assert.assertEquals("in4", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                    Assert.assertEquals("in4", debug(d.fieldAnalysis().getLinkedVariables()));
+                    Assert.assertEquals("in4", d.fieldAnalysis().getLinkedVariables().toString());
                     Assert.assertEquals(Level.DELAY, modified);
                     Assert.assertEquals(Level.DELAY, notNull);
                 }
@@ -435,7 +433,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
                 if (iteration >= 1) {
                     Assert.assertEquals("in6", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                    Assert.assertEquals("in6", debug(d.fieldAnalysis().getLinkedVariables()));
+                    Assert.assertEquals("in6", d.fieldAnalysis().getLinkedVariables().toString());
                 }
                 if (iteration >= 2) {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
@@ -529,7 +527,7 @@ public class Test_16_Modification extends CommonTestRunner {
             }
             if ("add".equals(d.methodInfo().name) && S2.equals(d.variableName())) {
                 if (d.iteration() > 0) {
-                    Assert.assertEquals("", debug(d.variableInfo().getLinkedVariables()));
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };

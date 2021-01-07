@@ -436,7 +436,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         // update the object of the modifying call
         if (objectValue instanceof VariableExpression variableValue) {
-            Set<Variable> linkedVariables = variablesLinkedToScopeVariableInModifyingMethod(evaluationContext, parameterValues);
+            LinkedVariables linkedVariables = variablesLinkedToScopeVariableInModifyingMethod(evaluationContext, parameterValues);
             builder.modifyingMethodAccess(variableValue.variable(), modifiedInstance, linkedVariables);
         }
         return modifiedInstance;
@@ -484,15 +484,15 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
     Null value means delays, as per convention.
      */
-    private static Set<Variable> variablesLinkedToScopeVariableInModifyingMethod(EvaluationContext evaluationContext,
+    private static LinkedVariables variablesLinkedToScopeVariableInModifyingMethod(EvaluationContext evaluationContext,
                                                                                  List<Expression> parameterValues) {
         Set<Variable> result = new HashSet<>();
         for (Expression p : parameterValues) {
-            Set<Variable> cd = evaluationContext.linkedVariables(p);
+            LinkedVariables cd = evaluationContext.linkedVariables(p);
             if (cd == null) return null;
-            result.addAll(cd);
+            result.addAll(cd.variables());
         }
-        return result;
+        return new LinkedVariables(result);
     }
 
     private int notNullRequirementOnScope(int notNullRequirement) {
@@ -661,15 +661,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         return evaluationContext.getMethodAnalysis(methodInfo).getProperty(variableProperty);
     }
 
-
-    private static final Set<Variable> NOT_LINKED = Set.of();
-
     @Override
-    public Set<Variable> linkedVariables(EvaluationContext evaluationContext) {
+    public LinkedVariables linkedVariables(EvaluationContext evaluationContext) {
 
         // RULE 0: void method cannot link
         ParameterizedType returnType = methodInfo.returnType();
-        if (Primitives.isVoid(returnType)) return NOT_LINKED; // no assignment
+        if (Primitives.isVoid(returnType)) return LinkedVariables.EMPTY; // no assignment
 
         MethodAnalysis methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
 
@@ -679,7 +676,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             int immutable = MultiLevel.value(methodAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
             if (immutable == MultiLevel.DELAY) return null;
             if (immutable >= MultiLevel.EVENTUAL) {
-                return NOT_LINKED;
+                return LinkedVariables.EMPTY;
             }
         }
 
@@ -688,9 +685,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         Set<Variable> result = new HashSet<>();
         for (Expression p : parameterExpressions) {
             // the parameter value is not E2IMMU
-            Set<Variable> cd = evaluationContext.linkedVariables(p);
+            LinkedVariables cd = evaluationContext.linkedVariables(p);
             if (cd == null) return null;
-            result.addAll(cd);
+            result.addAll(cd.variables());
         }
 
         // RULE 3: E2IMMU object cannot link
@@ -701,12 +698,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY) return null;
         boolean objectOfSameType = methodInfo.typeInfo == evaluationContext.getCurrentType();
         if (objectOfSameType || (objectE2Immutable < MultiLevel.EVENTUAL_AFTER && independent == MultiLevel.FALSE)) {
-            Set<Variable> b = evaluationContext.linkedVariables(object);
+            Set<Variable> b = evaluationContext.linkedVariables(object).variables();
             if (b == null) return null;
             result.addAll(b);
         }
 
-        return result;
+        return new LinkedVariables(result);
     }
 
     @Override

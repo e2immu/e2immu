@@ -19,7 +19,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.EmptyExpression;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
@@ -40,7 +39,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     public final Set<ObjectFlow> internalObjectFlows;
     public final ObjectFlow objectFlow;
     public final boolean fieldError;
-    public final Set<Variable> variablesLinkedToMe;
+    public final LinkedVariables variablesLinkedToMe;
     public final Expression effectivelyFinalValue;
     public final Expression initialValue;  // value from the initialiser
     public final Expression stateOfEffectivelyFinalValue;
@@ -50,7 +49,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                               ObjectFlow objectFlow,
                               Set<ObjectFlow> internalObjectFlows,
                               boolean fieldError,
-                              Set<Variable> variablesLinkedToMe,
+                              LinkedVariables variablesLinkedToMe,
                               Expression effectivelyFinalValue,
                               Expression initialValue,
                               Expression stateOfEffectivelyFinalValue,
@@ -79,7 +78,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
     }
 
     @Override
-    public Set<Variable> getLinkedVariables() {
+    public LinkedVariables getLinkedVariables() {
         return variablesLinkedToMe;
     }
 
@@ -174,7 +173,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         // here, the key of the map are fields; the local variables and parameters are stored in method analysis
         // the values are either other fields (in which case these other fields are not linked to parameters)
         // or parameters
-        public final SetOnce<Set<Variable>> linkedVariables = new SetOnce<>();
+        public final SetOnce<LinkedVariables> linkedVariables = new SetOnce<>();
 
         public final SetOnce<Boolean> fieldError = new SetOnce<>();
 
@@ -195,8 +194,8 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         }
 
         @Override
-        public Set<Variable> getLinkedVariables() {
-            return linkedVariables.getOrElse(null);
+        public LinkedVariables getLinkedVariables() {
+            return linkedVariables.getOrElse(LinkedVariables.DELAY);
         }
 
         @Override
@@ -226,7 +225,7 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
                     getObjectFlow(),
                     internalObjectFlows.getOrElse(Set.of()),
                     fieldError.getOrElse(false),
-                    linkedVariables.getOrElse(Set.of()),
+                    linkedVariables.getOrElse(LinkedVariables.EMPTY),
                     getEffectivelyFinalValue(),
                     getInitialValue(),
                     getStateOfEffectivelyFinalValue(),

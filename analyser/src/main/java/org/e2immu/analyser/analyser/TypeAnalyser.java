@@ -584,7 +584,7 @@ public class TypeAnalyser extends AbstractAnalyser {
             return DELAYS;
         }
         List<FieldAnalyser> fieldsLinkedToParameters =
-                myFieldAnalysers.stream().filter(fieldAnalyser -> fieldAnalyser.fieldAnalysis.getLinkedVariables()
+                myFieldAnalysers.stream().filter(fieldAnalyser -> fieldAnalyser.fieldAnalysis.getLinkedVariables().variables()
                         .stream().filter(v -> v instanceof ParameterInfo)
                         .map(v -> (ParameterInfo) v).anyMatch(pi -> pi.owner.isConstructor)).collect(Collectors.toList());
 
@@ -636,7 +636,7 @@ public class TypeAnalyser extends AbstractAnalyser {
                             typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);
                     return DELAYS;
                 }
-                boolean safeMethod = Collections.disjoint(variableInfo.getLinkedVariables(), fieldsLinkedToParameters);
+                boolean safeMethod = Collections.disjoint(variableInfo.getLinkedVariables().variables(), fieldsLinkedToParameters);
                 if (!safeMethod) {
                     log(INDEPENDENT, "Type {} cannot be @Independent, method {}'s return values link to some of the fields linked to constructors",
                             typeInfo.fullyQualifiedName, methodAnalyser.methodInfo.name);

@@ -810,14 +810,14 @@ public class MethodAnalyser extends AbstractAnalyser {
 
             boolean allLinkedVariablesSet = methodAnalysis.getLastStatement().variableStream()
                     .filter(vi -> vi.variable() instanceof FieldReference)
-                    .allMatch(vi -> vi.getLinkedVariables() != null);
+                    .allMatch(vi -> vi.getLinkedVariables() != LinkedVariables.DELAY);
             if (!allLinkedVariablesSet) {
                 log(DELAYED, "Delaying @Independent on {}, linked variables not yet known for all field references", methodInfo.distinguishingName());
                 return DELAYS;
             }
             boolean supportDataSet = methodAnalysis.getLastStatement().variableStream()
                     .filter(vi -> vi.variable() instanceof FieldReference)
-                    .flatMap(vi -> vi.getLinkedVariables().stream())
+                    .flatMap(vi -> vi.getLinkedVariables().variables().stream())
                     .allMatch(v -> isImplicitlyImmutableDataTypeSet(v, analyserContext));
             if (!supportDataSet) {
                 log(DELAYED, "Delaying @Independent on {}, support data not yet known for all field references", methodInfo.distinguishingName());
@@ -827,10 +827,10 @@ public class MethodAnalyser extends AbstractAnalyser {
             parametersIndependentOfFields = methodAnalysis.getLastStatement().variableStream()
                     .filter(vi -> vi.variable() instanceof FieldReference)
                     .peek(vi -> {
-                        if (vi.getLinkedVariables() == null)
+                        if (vi.getLinkedVariables() == LinkedVariables.DELAY)
                             LOGGER.warn("Field {} has no linked variables set in {}", vi.name(), methodInfo.distinguishingName());
                     })
-                    .flatMap(vi -> vi.getLinkedVariables().stream())
+                    .flatMap(vi -> vi.getLinkedVariables().variables().stream())
                     .filter(v -> v instanceof ParameterInfo)
                     .map(v -> (ParameterInfo) v)
                     .peek(set -> log(LINKED_VARIABLES, "Remaining linked support variables of {} are {}", methodInfo.distinguishingName(), set))
@@ -862,8 +862,9 @@ public class MethodAnalyser extends AbstractAnalyser {
         }
         // method does not return an implicitly immutable data type
         VariableInfo returnVariable = getReturnAsVariable();
-        Set<Variable> variables = returnVariable.getLinkedVariables();
-        boolean implicitlyImmutableSet = variables != null && variables.stream().allMatch(v -> isImplicitlyImmutableDataTypeSet(v, analyserContext));
+        LinkedVariables linkedVariables = returnVariable.getLinkedVariables();
+        boolean implicitlyImmutableSet = linkedVariables != LinkedVariables.DELAY &&
+                linkedVariables.variables().stream().allMatch(v -> isImplicitlyImmutableDataTypeSet(v, analyserContext));
         if (!implicitlyImmutableSet) {
             log(DELAYED, "Delaying @Independent on {}, implicitly immutable status not known for all field references", methodInfo.distinguishingName());
             return null;
@@ -871,14 +872,14 @@ public class MethodAnalyser extends AbstractAnalyser {
 
         // TODO convert the variables into field analysers
 
-        int e2ImmutableStatusOfFieldRefs = variables.stream()
+        int e2ImmutableStatusOfFieldRefs = linkedVariables.variables().stream()
                 .filter(v -> isFieldNotOfImplicitlyImmutableType(v, analyserContext))
                 .map(v -> analyserContext.getFieldAnalysers().get(((FieldReference) v).fieldInfo))
                 .mapToInt(fa -> MultiLevel.value(fa.fieldAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE))
                 .min().orElse(MultiLevel.EFFECTIVE);
         if (e2ImmutableStatusOfFieldRefs == MultiLevel.DELAY) {
             log(DELAYED, "Have a dependency on a field whose E2Immutable status is not known: {}",
-                    variables.stream()
+                    linkedVariables.variables().stream()
                             .filter(v -> isFieldNotOfImplicitlyImmutableType(v, analyserContext) &&
                                     MultiLevel.value(analyserContext.getFieldAnalysers()
                                                     .get(((FieldReference) v).fieldInfo).fieldAnalysis.getProperty(VariableProperty.IMMUTABLE),

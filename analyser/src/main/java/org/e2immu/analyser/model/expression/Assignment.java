@@ -22,6 +22,7 @@ import com.github.javaparser.ast.expr.AssignExpr;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.DependentVariable;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -247,16 +248,16 @@ public class Assignment implements Expression {
             builder.addParameterShouldNotBeAssignedTo(parameterInfo);
         }
 
-        Set<Variable> linked;
+        LinkedVariables linkedVariables;
         // connect the value to the assignment target
         if (resultOfExpression != NO_VALUE) {
-            linked = evaluationContext.linkedVariables(resultOfExpression);
+            linkedVariables = evaluationContext.linkedVariables(resultOfExpression);
             log(LINKED_VARIABLES, "In assignment, link {} to [{}]", at.fullyQualifiedName(),
-                    Variable.fullyQualifiedName(linked), Variable.fullyQualifiedName(linked));
+                    Variable.fullyQualifiedName(linkedVariables.variables()));
         } else {
-            linked = null;
+            linkedVariables = LinkedVariables.DELAY;
         }
-        builder.assignment(at, resultOfExpression, linked);
+        builder.assignment(at, resultOfExpression, linkedVariables);
 
     }
 

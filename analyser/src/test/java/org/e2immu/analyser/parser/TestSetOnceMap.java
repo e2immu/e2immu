@@ -28,7 +28,6 @@ import org.e2immu.analyser.config.TypeMapVisitor;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.InlinedMethod;
 import org.e2immu.analyser.model.expression.PropertyWrapper;
-import org.e2immu.analyser.model.variable.Variable;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -36,7 +35,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TestSetOnceMap extends CommonTestRunner {
@@ -64,8 +62,7 @@ public class TestSetOnceMap extends CommonTestRunner {
         }
         if ("getOtherwiseNull".equals(name)) {
             if (iteration > 0) {
-                Set<Variable> linkedVariables = d.getReturnAsVariable().getLinkedVariables();
-                Assert.assertEquals("0:k,map", linkedVariables.stream().map(Object::toString).collect(Collectors.joining(",")));
+                Assert.assertEquals("0:k,map", d.getReturnAsVariable().getLinkedVariables().toString());
                 // independent, because does not return a support data type
                 int independent = d.methodAnalysis().getProperty(VariableProperty.INDEPENDENT);
                 Assert.assertEquals(MultiLevel.EFFECTIVE, independent);
