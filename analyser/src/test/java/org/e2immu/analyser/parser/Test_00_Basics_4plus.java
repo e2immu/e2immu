@@ -250,15 +250,29 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
     public void test7() throws IOException {
         final String I = "org.e2immu.analyser.testexample.Basics_7.i";
         final String I0 = I + "$0";
+        final String I1 = I + "$1";
         final String INC3_RETURN_VAR = "org.e2immu.analyser.testexample.Basics_7.increment3()";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("increment".equals(d.methodInfo().name) && "4".equals(d.statementId()) && d.iteration() > 0) {
                 Assert.assertEquals("true", d.evaluationResult().value().toString());
             }
+            if ("increment3".equals(d.methodInfo().name) && "1.0.3".equals(d.statementId()) && d.iteration() > 0) {
+                Assert.assertEquals("true", d.evaluationResult().value().toString());
+            }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("Basics_7".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p && "p".equals(p.name)) {
+                if ("0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals("0.0.0:E", d.variableInfo().getReadId());
+                }
+                if ("0".equals(d.statementId())) {
+                    Assert.assertTrue(d.variableInfoContainer().hasMerge());
+                    Assert.assertEquals("0.0.0:E", d.variableInfo().getReadId());
+                }
+            }
+
             if ("increment".equals(d.methodInfo().name) && I.equals(d.variableName())) {
                 if ("2".equals(d.statementId()) && d.iteration() > 0) {
                     Assert.assertEquals(I0 + "+q", d.currentValue().toString());
@@ -272,6 +286,41 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "true";
                     Assert.assertEquals(expect, d.currentValue().debugOutput());
+                }
+            }
+            if ("increment3".equals(d.methodInfo().name) && "j".equals(d.variableName())) {
+                if ("1.0.0".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() :
+                            "org.e2immu.analyser.testexample.Basics_7.i$1";
+                    Assert.assertEquals(expect, d.currentValue().toString());
+                }
+            }
+            if ("increment3".equals(d.methodInfo().name) && I0.equals(d.variableName())) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertTrue(d.iteration() > 0); // does not exist earlier!
+                    Assert.assertEquals("instance type int", d.currentValue().toString());
+                }
+            }
+            if ("increment3".equals(d.methodInfo().name) && I1.equals(d.variableName())) {
+                if ("1.0.0".equals(d.statementId())) {
+                    Assert.assertTrue(d.iteration() > 0); // does not exist earlier!
+                    Assert.assertEquals("instance type int", d.currentValue().toString());
+                }
+            }
+            if ("increment3".equals(d.methodInfo().name) && I.equals(d.variableName())) {
+                if ("0".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int";
+                    Assert.assertEquals(expect, d.currentValue().toString());
+                    int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
+                    Assert.assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
+                    Assert.assertEquals("[0]", d.variableInfo().getReadAtStatementTimes().toString());
+                }
+                if ("1.0.0".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int";
+                    Assert.assertEquals(expect, d.currentValue().toString());
+                    int expectStatementTime = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 1;
+                    Assert.assertEquals(expectStatementTime, d.variableInfo().getStatementTime());
+                    Assert.assertEquals("[1]", d.variableInfo().getReadAtStatementTimes().toString());
                 }
             }
         };
@@ -347,11 +396,11 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         Assert.assertEquals("l", d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        Assert.assertEquals("2", d.variableInfo().getAssignmentId()); // FIXME check
+                        Assert.assertEquals("3:E", d.variableInfo().getAssignmentId());
                         Assert.assertEquals("1+l", d.currentValue().toString());
                     }
                     if ("6".equals(d.statementId())) {
-                        Assert.assertEquals("3", d.variableInfo().getAssignmentId()); // FIXME check
+                        Assert.assertEquals("6:E", d.variableInfo().getAssignmentId());
                         Assert.assertEquals("2+l", d.currentValue().toString());
                     }
                 }

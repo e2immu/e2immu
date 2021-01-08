@@ -38,16 +38,19 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     private final SetOnce<VariableInfoImpl> evaluation = new SetOnce<>();
     private final SetOnce<VariableInfoImpl> merge;
 
+    private final Level levelForPrevious;
     /*
     constructor for existing variables
      */
     public VariableInfoContainerImpl(VariableInfoContainer previous,
                                      String statementIndexForLocalVariableInLoop,
+                                     boolean previousIsParent,
                                      boolean statementHasSubBlocks) {
         Objects.requireNonNull(previous);
         previousOrInitial = Either.left(previous);
         variableInLoop = computeVariableInLoop(previous, statementIndexForLocalVariableInLoop);
         merge = statementHasSubBlocks ? new SetOnce<>() : null;
+        levelForPrevious = previousIsParent ? Level.EVALUATION: Level.MERGE;
     }
 
     /*
@@ -61,6 +64,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         previousOrInitial = Either.right(initial);
         this.variableInLoop = variableInLoop;
         merge = statementHasSubBlocks ? new SetOnce<>() : null;
+        levelForPrevious = null; // should NOT be used!!!
     }
 
     private static VariableInLoop computeVariableInLoop(VariableInfoContainer previous,
@@ -101,7 +105,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
 
     private VariableInfoImpl currentExcludingMerge() {
         if (evaluation.isSet()) return evaluation.get();
-        if (previousOrInitial.isLeft()) return (VariableInfoImpl) previousOrInitial.getLeft().current();
+        if (previousOrInitial.isLeft()) return (VariableInfoImpl) previousOrInitial.getLeft().best(levelForPrevious);
         return previousOrInitial.getRight();
     }
 
@@ -109,12 +113,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public VariableInfo best(Level level) {
         if (level == Level.MERGE && merge != null && merge.isSet()) return merge.get();
         if ((level == Level.MERGE || level == Level.EVALUATION) && evaluation.isSet()) return evaluation.get();
-        return previousOrInitial.isLeft() ? previousOrInitial.getLeft().current() : previousOrInitial.getRight();
+        return previousOrInitial.isLeft() ? previousOrInitial.getLeft().best(levelForPrevious) : previousOrInitial.getRight();
     }
 
     @Override
     public VariableInfo getPreviousOrInitial() {
-        return previousOrInitial.isLeft() ? previousOrInitial.getLeft().current() : previousOrInitial.getRight();
+        return previousOrInitial.isLeft() ? previousOrInitial.getLeft().best(levelForPrevious) : previousOrInitial.getRight();
     }
 
     @Override
@@ -198,10 +202,9 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     The XXX marks when we can expect linked variable changes.
      */
     @Override
-    public void copy(boolean isParent) {
+    public void copy() {
         assert previousOrInitial.isLeft() : "No point in copying when we are an initial";
-        Level level = isParent ? Level.EVALUATION : Level.MERGE;
-        VariableInfo previous = previousOrInitial.getLeft().best(level);
+        VariableInfo previous = previousOrInitial.getLeft().best(levelForPrevious);
 
         assert this.evaluation.isSet();
 

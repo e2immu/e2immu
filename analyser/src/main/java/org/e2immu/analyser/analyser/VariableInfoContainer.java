@@ -116,7 +116,7 @@ public interface VariableInfoContainer {
     this method uses assignmentId and readId to determine which values can be copied, and which values will by set
     by the apply method in the statement analyser.
      */
-    void copy(boolean isParent);
+    void copy();
 
     void setObjectFlow(ObjectFlow objectFlow, boolean writeInInitialOtherwiseEvaluation);
 

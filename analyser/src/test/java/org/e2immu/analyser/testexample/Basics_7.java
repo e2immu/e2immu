@@ -52,7 +52,7 @@ public class Basics_7 {
             int j = i;
             i++;
             System.out.println("i is " + i);
-            assert j == i - 1;
+            assert j == i - 1; // error, always true (in sync block)
         }
     }
 
@@ -63,7 +63,7 @@ public class Basics_7 {
             int j = i;
             i++;
             System.out.println("i is " + i);
-            return j == i - 1;
+            return j == i - 1; // always true
         }
     }
 }

@@ -348,12 +348,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         copyFrom.variableEntryStream()
                 // never copy a return variable from the parent
                 .filter(e -> previous != null || !(e.getValue().current().variable() instanceof ReturnVariable))
-                .forEach(e -> copyVariableFromPreviousInIteration0(e, previous == null ? null : previous.index));
+                .forEach(e -> copyVariableFromPreviousInIteration0(e, previous == null, previous == null ? null : previous.index));
 
         flowData.initialiseAssignmentIds(copyFrom.flowData);
     }
 
-    private void copyVariableFromPreviousInIteration0(Map.Entry<String, VariableInfoContainer> entry, String indexOfPrevious) {
+    private void copyVariableFromPreviousInIteration0(Map.Entry<String, VariableInfoContainer> entry,
+                                                      boolean previousIsParent,
+                                                      String indexOfPrevious) {
         String fqn = entry.getKey();
         VariableInfoContainer vic = entry.getValue();
         VariableInfo vi = vic.current();
@@ -371,7 +373,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             return; // skip
         } else {
             // make a simple reference copy; potentially resetting localVariableInLoopDefinedOutside
-            newVic = new VariableInfoContainerImpl(vic, index, navigationData.hasSubBlocks());
+            newVic = new VariableInfoContainerImpl(vic, index, previousIsParent, navigationData.hasSubBlocks());
         }
         variables.put(fqn, newVic);
     }
@@ -395,7 +397,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (vic.isInitial()) {
                 fromFieldAnalyserIntoInitial(analyserContext, vic);
             } else {
-                if (vic.hasEvaluation()) vic.copy(previous == null); //otherwise, variable not assigned, not read
+                if (vic.hasEvaluation()) vic.copy(); //otherwise, variable not assigned, not read
             }
             ensureLocalCopiesOfConfirmedVariableFields(analyserContext, vic);
         });
@@ -417,7 +419,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         // other variables that don't exist here and that we do not want to copy: foreign fields,
                         // such as System.out
                         VariableInfoContainer newVic = new VariableInfoContainerImpl(vicFrom,
-                                null, navigationData.hasSubBlocks());
+                                null, copyIsParent, navigationData.hasSubBlocks());
                         variables.put(fqn, newVic);
                     }
                 });
@@ -632,6 +634,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     public int statementTimeForVariable(AnalyserContext analyserContext, Variable variable, int statementTime) {
         if (variable instanceof FieldReference fieldReference) {
+            boolean inPartOfConstruction = methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction() ==
+                    MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
+            if (inPartOfConstruction) return VariableInfoContainer.NOT_A_VARIABLE_FIELD;
+
             int effectivelyFinal = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(VariableProperty.FINAL);
             if (effectivelyFinal == Level.DELAY) {
                 return VariableInfoContainer.VARIABLE_FIELD_DELAY;
