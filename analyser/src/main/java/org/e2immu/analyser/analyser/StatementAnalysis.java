@@ -386,94 +386,141 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public void initIteration1Plus(AnalyserContext analyserContext, MethodInfo currentMethod,
                                    StatementAnalysis previous) {
 
-        // first statement of a method: copy info from parameter analyser to the properties
         if (previous == null && parent == null) {
-            for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().getParameters()) {
-                VariableInfo prevIteration = findOrNull(parameterInfo, VariableInfoContainer.Level.INITIAL);
-                if (prevIteration != null) {
-                    VariableInfoContainer vic = findForWriting(parameterInfo);
-                    ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
-                    for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
-                        int value = parameterAnalysis.getProperty(variableProperty);
-                        vic.setProperty(variableProperty, value, VariableInfoContainer.Level.INITIAL);
-                    }
-                } else {
-                    log(ANALYSER, "Skipping parameter {}, not read, assigned", parameterInfo.fullyQualifiedName());
-                }
-            }
+            init1PlusStartOfMethodDoParametersAndThis(analyserContext, currentMethod);
         }
         StatementAnalysis copyFrom = previous == null ? parent : previous;
 
-        // at best level (we can already have Level 4 vi in this statement, still we need to copy into 1
-        // Basics_3; on the other hand, READ needs to be at best level
-        variables.stream().map(Map.Entry::getValue)
-                .forEach(vic -> {
+        variables.toImmutableMap().values().forEach(vic -> {
+            if (vic.isInitial()) {
+                fromFieldAnalyserIntoInitial(analyserContext, vic);
+            } else {
+                if (vic.hasEvaluation()) vic.copy(); //otherwise, variable not assigned, not read
+            }
+            ensureLocalCopiesOfConfirmedVariableFields(analyserContext, vic);
+        });
+        if (copyFrom != null) {
+            explicitlyPropagateLocalVariables(copyFrom, previous == null);
+        }
+    }
 
-                    // for all variables present higher up
-                    if (!vic.isInitial()) {
-                        if(vic.hasEvaluation()) vic.copy(); //otherwise, variable not assigned, not read
-                    } else {
-                        // initial, so we need to copy from analysers.
-                        // parameters are dealt with in the first part of this method
-                        // here we deal with copying in values from fields
-                        VariableInfo variableInfo = vic.current();
-                        if (variableInfo.variable() instanceof FieldReference fieldReference) {
-                            // see if we can resolve a delay in statement time
-                            if (variableInfo.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
-                                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
-                                int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
-                                vic.setStatementTime(effectivelyFinal == Level.TRUE ?
-                                        VariableInfoContainer.NOT_A_VARIABLE_FIELD : flowData.getInitialTime());
-                            }
-
-                            // this is the first time we see this field (initial)
-                            ExpressionAndLinkedVariables initialValue = initialValueOfField(analyserContext, fieldReference);
-                            Map<VariableProperty, Integer> map = propertyMap(analyserContext, fieldReference.fieldInfo);
-
-                            // copy into initial
-                            VariableInfo viInitial = vic.best(VariableInfoContainer.Level.INITIAL);
-                            if (!viInitial.valueIsSet() && !initialValue.expression.isUnknown()) {
-                                vic.setValue(initialValue.expression, map, true);
-                            } else {
-                                map.forEach((k, v) -> vic.setProperty(k, v, VariableInfoContainer.Level.INITIAL));
-                            }
-                            if (!viInitial.linkedVariablesIsSet() && initialValue.linkedVariables != LinkedVariables.DELAY) {
-                                vic.setLinkedVariables(initialValue.linkedVariables, true);
-                            }
-
-                            // copy into evaluation, but only if there is no assignment
-                            VariableInfo viEval = vic.best(VariableInfoContainer.Level.EVALUATION);
-                            if (viEval != viInitial && !viEval.isAssigned()) {
-                                if (!viEval.valueIsSet() && !initialValue.expression.isUnknown()) {
-                                    vic.setValue(initialValue.expression, map, false);
-                                } else {
-                                    map.forEach((k, v) -> vic.setProperty(k, v, false, VariableInfoContainer.Level.EVALUATION));
-                                }
-                                // if the variable has not been read, it is not present in EVAL, so we set a value
-                                if (!viEval.isRead() && !viEval.linkedVariablesIsSet() && initialValue.linkedVariables != LinkedVariables.DELAY) {
-                                    vic.setLinkedVariables(initialValue.linkedVariables, false);
-                                }
-                            }
-                        }
+    // explicitly copy local variables from above or previous (they cannot be created on demand)
+    // loop variables at the statement are not copied to the next one
+    private void explicitlyPropagateLocalVariables(StatementAnalysis copyFrom, boolean copyIsParent) {
+        copyFrom.variables.stream().filter(e -> copyIsParent ||
+                !copyFrom.index.equals(e.getValue().getStatementIndexOfThisLoopOrShadowVariable()))
+                .forEach(e -> {
+                    String fqn = e.getKey();
+                    VariableInfoContainer vicFrom = e.getValue();
+                    Variable variable = vicFrom.current().variable();
+                    if (!variables.isSet(fqn) && variable instanceof LocalVariableReference) {
+                        // other variables that don't exist here and that we do not want to copy: foreign fields,
+                        // such as System.out
+                        VariableInfoContainer newVic = new VariableInfoContainerImpl(vicFrom,
+                                null, navigationData.hasSubBlocks());
+                        variables.put(fqn, newVic);
                     }
                 });
+    }
 
-        // explicitly copy local variables from above or previous (they cannot be created on demand)
-        // loop variables at the statement are not copied to the next one
-        if (copyFrom != null) {
-            copyFrom.variables.stream()
-                    .filter(e -> previous == null || !copyFrom.index.equals(e.getValue().getStatementIndexOfThisLoopOrShadowVariable()))
-                    .forEach(e -> {
-                        String fqn = e.getKey();
-                        VariableInfoContainer vicFrom = e.getValue();
-                        Variable variable = vicFrom.current().variable();
-                        if (!variables.isSet(fqn) && variable instanceof LocalVariableReference) {
-                            // other variables that don't exist here and that we do not want to copy: foreign fields,
-                            // such as System.out
-                            VariableInfoContainer newVic = new VariableInfoContainerImpl(vicFrom, null, navigationData.hasSubBlocks());
-                            variables.put(fqn, newVic);
-                        }
-                    });
+    private void init1PlusStartOfMethodDoParametersAndThis(AnalyserContext analyserContext, MethodInfo currentMethod) {
+        for (ParameterInfo parameterInfo : currentMethod.methodInspection.get().getParameters()) {
+            VariableInfo prevIteration = findOrNull(parameterInfo, VariableInfoContainer.Level.INITIAL);
+            if (prevIteration != null) {
+                VariableInfoContainer vic = findForWriting(parameterInfo);
+                ParameterAnalysis parameterAnalysis = analyserContext.getParameterAnalysis(parameterInfo);
+                for (VariableProperty variableProperty : FROM_ANALYSER_TO_PROPERTIES) {
+                    int value = parameterAnalysis.getProperty(variableProperty);
+                    vic.setProperty(variableProperty, value, VariableInfoContainer.Level.INITIAL);
+                }
+            } else {
+                log(ANALYSER, "Skipping parameter {}, not read, assigned", parameterInfo.fullyQualifiedName());
+            }
+        }
+        // we keep copying in the properties computed on the type into "this"
+        if (!currentMethod.methodInspection.get().isStatic()) {
+            This thisVariable = new This(analyserContext, currentMethod.typeInfo);
+            VariableInfoContainer vic = findForWriting(thisVariable);
+            propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo).forEach((vp, v) -> {
+                vic.setProperty(vp, v, VariableInfoContainer.Level.INITIAL);
+            });
+        }
+    }
+
+    private void fromFieldAnalyserIntoInitial(AnalyserContext analyserContext, VariableInfoContainer vic) {
+        // initial, so we need to copy from analysers.
+        // parameters are dealt with in the first part of this method
+        // here we deal with copying in values from fields
+        VariableInfo variableInfo = vic.current();
+        if (!(variableInfo.variable() instanceof FieldReference fieldReference)) return;
+
+        // see if we can resolve a delay in statement time
+        if (variableInfo.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY) {
+            FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+            int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
+            if (effectivelyFinal != Level.DELAY) {
+                vic.setStatementTime(effectivelyFinal == Level.TRUE ?
+                        VariableInfoContainer.NOT_A_VARIABLE_FIELD : flowData.getInitialTime());
+            }
+            // so from here on, isConfirmedVariableField may be set
+        }
+
+        // this is the first time we see this field (initial)
+        ExpressionAndLinkedVariables initialValue = initialValueOfField(analyserContext, fieldReference);
+        Map<VariableProperty, Integer> map = propertyMap(analyserContext, fieldReference.fieldInfo);
+
+        // copy into initial
+        VariableInfo viInitial = vic.best(VariableInfoContainer.Level.INITIAL);
+        if (!viInitial.valueIsSet() && !initialValue.expression.isUnknown()) {
+            vic.setValue(initialValue.expression, map, true);
+        } else {
+            map.forEach((k, v) -> vic.setProperty(k, v, VariableInfoContainer.Level.INITIAL));
+        }
+        if (!viInitial.linkedVariablesIsSet() && initialValue.linkedVariables != LinkedVariables.DELAY) {
+            vic.setLinkedVariables(initialValue.linkedVariables, true);
+        }
+
+        // copy into evaluation, but only if there is no assignment
+        VariableInfo viEval = vic.best(VariableInfoContainer.Level.EVALUATION);
+        if (viEval != viInitial && !viEval.isAssigned()) {
+            if (!viEval.valueIsSet() && !initialValue.expression.isUnknown()) {
+                vic.setValue(initialValue.expression, map, false);
+            } else {
+                map.forEach((k, v) -> vic.setProperty(k, v, false, VariableInfoContainer.Level.EVALUATION));
+            }
+            // if the variable has not been read, it is not present in EVAL, so we set a value
+            if (!viEval.isRead() && !viEval.linkedVariablesIsSet() && initialValue.linkedVariables != LinkedVariables.DELAY) {
+                vic.setLinkedVariables(initialValue.linkedVariables, false);
+            }
+        }
+    }
+
+    private void ensureLocalCopiesOfConfirmedVariableFields(AnalyserContext analyserContext, VariableInfoContainer vic) {
+        if (vic.hasEvaluation()) {
+            VariableInfo eval = vic.best(VariableInfoContainer.Level.EVALUATION);
+            VariableInfo initial = vic.getPreviousOrInitial();
+            if (eval.variable() instanceof FieldReference fieldReference &&
+                    eval.isConfirmedVariableField() && !eval.getReadAtStatementTimes().isEmpty()) {
+
+                FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
+                Primitives primitives = analyserContext.getPrimitives();
+                Map<VariableProperty, Integer> propertyMap = VariableProperty.FROM_ANALYSER_TO_PROPERTIES.stream()
+                        .collect(Collectors.toUnmodifiableMap(vp -> vp, fieldAnalysis::getProperty));
+
+                for (int statementTime : eval.getReadAtStatementTimes()) {
+                    LocalVariableReference localCopy = variableInfoOfFieldWhenReading(analyserContext,
+                            fieldReference, initial, statementTime);
+                    if (!variables.isSet(localCopy.fullyQualifiedName())) {
+                        VariableInfoContainer lvrVic = createVariable(analyserContext, localCopy, statementTime);
+                        String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
+
+                        Expression initialValue = statementTime == initial.getStatementTime() && initial.getAssignmentId().compareTo(indexOfStatementTime) >= 0 ?
+                                initial.getValue() : new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
+                        assert initialValue != EmptyExpression.NO_VALUE;
+                        lvrVic.setValue(initialValue, propertyMap, true);
+                    }
+                }
+            }
         }
     }
 
@@ -558,6 +605,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setValue(new NewObject(primitives, variable.parameterizedType(), ObjectFlow.NO_FLOW),
                     propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo), true);
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
+            vic.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
+            vic.setProperty(VariableProperty.METHOD_CALLED, Level.FALSE, false, VariableInfoContainer.Level.INITIAL);
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
             // TODO copy state from known preconditions
@@ -705,7 +754,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             VariableInfoContainer vic2 = variables.get(variable.fullyQualifiedName());
             if (!vic2.hasEvaluation()) {
                 VariableInfo initial = vic2.getPreviousOrInitial();
-                vic2.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime());
+                vic2.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), Set.of());
             }
             vic2.setProperty(variableProperty, value, false, VariableInfoContainer.Level.EVALUATION);
 
@@ -810,13 +859,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         throw new UnsupportedOperationException();
     }
 
+    // FIXME more documentation needed here!
     public String createLocalFieldCopyFQN(VariableInfo fieldVi, FieldReference fieldReference, int statementTime) {
         String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
+        String prefix = fieldReference.fullyQualifiedName() + "$" + statementTime;
         if (statementTime == fieldVi.getStatementTime() && fieldVi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
             // return a local variable with the current field value, numbered as the statement time + assignment ID
-            return fieldReference.fullyQualifiedName() + "$" + statementTime + "$" + fieldVi.getAssignmentId().replace(".", "_");
+            return prefix + "$" + fieldVi.getAssignmentId().replace(".", "_");
         }
-        return fieldReference.fullyQualifiedName() + "$" + statementTime;
+        return prefix;
     }
 
     public LocalVariableReference variableInfoOfFieldWhenReading(AnalyserContext analyserContext,

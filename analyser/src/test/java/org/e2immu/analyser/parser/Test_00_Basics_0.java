@@ -50,14 +50,15 @@ public class Test_00_Basics_0 extends CommonTestRunner {
     FieldAnalyserVisitor afterFieldAnalyserVisitor = d -> {
         FieldAnalysis fieldAnalysis = d.fieldAnalysis();
         if ("explicitlyFinal".equals(d.fieldInfo().name)) {
-            if (d.iteration() == 0) {
+            String expectLinks = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+            Assert.assertEquals(expectLinks, fieldAnalysis.getLinkedVariables().toString()); // never in first iteration
+
+            if (d.iteration() <= 1) {
                 Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
                 Assert.assertEquals("\"abc\"", fieldAnalysis.getEffectivelyFinalValue().toString());
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(fieldAnalysis.getEffectivelyFinalValue(),
                         VariableProperty.NOT_NULL));
-                Assert.assertSame(LinkedVariables.DELAY, fieldAnalysis.getLinkedVariables()); // never in first iteration
-            }
-            if (d.iteration() > 0) {
+            } else {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, fieldAnalysis.getProperty(VariableProperty.IMMUTABLE));
                 Assert.assertTrue(fieldAnalysis.getLinkedVariables().isEmpty());
@@ -71,8 +72,12 @@ public class Test_00_Basics_0 extends CommonTestRunner {
             if ((TYPE + ".explicitlyFinal").equals(d.variableName())) {
                 Assert.assertFalse(d.variableInfo().isAssigned());
                 Assert.assertTrue(d.variableInfo().isRead());
-                Assert.assertEquals(new StringConstant(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
-                Assert.assertTrue(d.hasProperty(VariableProperty.NOT_NULL));
+                if (d.iteration() == 0) {
+                    Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
+                } else {
+                    Assert.assertEquals(new StringConstant(d.evaluationContext().getPrimitives(), "abc"), d.currentValue());
+                    Assert.assertTrue(d.hasProperty(VariableProperty.NOT_NULL));
+                }
                 return;
             }
             if ((TYPE + ".this").equals(d.variableName())) {

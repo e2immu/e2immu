@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.e2immu.analyser.analyser.VariableInfoContainer.Level.INITIAL;
@@ -45,6 +46,8 @@ public interface VariableInfo {
     ObjectFlow getObjectFlow();
 
     Expression getValue();
+
+    Set<Integer> getReadAtStatementTimes();
 
     default boolean valueIsSet() {
         return getValue() != EmptyExpression.NO_VALUE;

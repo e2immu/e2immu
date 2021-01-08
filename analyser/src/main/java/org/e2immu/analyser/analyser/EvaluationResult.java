@@ -17,6 +17,7 @@
 
 package org.e2immu.analyser.analyser;
 
+import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
 import org.e2immu.analyser.model.expression.NewObject;
@@ -112,6 +113,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                              Map<VariableProperty, Integer> properties) {
         public ChangeData {
             Objects.requireNonNull(value);
+            Objects.requireNonNull(linkedVariables);
+            Objects.requireNonNull(readAtStatementTime);
+            Objects.requireNonNull(properties);
         }
 
         public ChangeData merge(ChangeData other) {
@@ -265,7 +269,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData ecd = valueChanges.get(variable);
             ChangeData newEcd;
             if (ecd == null) {
-                newEcd = new ChangeData(defaultValue(variable), false, false, Set.of(statementTime),
+                newEcd = new ChangeData(NO_VALUE, false, false, Set.of(statementTime),
                         LinkedVariables.EMPTY, Map.of());
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
@@ -372,7 +376,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (value.isConstant()) return null;
             NewObject instance = new NewObject(null, variable.parameterizedType(), List.of(),
                     stateFromPreconditions, objectFlowForCreation);
-            assignInstanceToVariable(variable, instance, null); // no change to linked variables
+            assignInstanceToVariable(variable, instance, LinkedVariables.EMPTY);
             return instance;
         }
 
@@ -411,20 +415,24 @@ public record EvaluationResult(EvaluationContext evaluationContext,
 
         public void markContentModified(Variable variable, Expression value, int modified) {
             assert evaluationContext != null;
-            int ignoreContentModifications = evaluationContext.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
-            if (ignoreContentModifications != Level.TRUE) {
-                log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.fullyQualifiedName());
-                StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
-                setProperty(variable, VariableProperty.MODIFIED, modified);
+            if (evaluationContext.isPresent(variable)) {
+                int ignoreContentModifications = evaluationContext.getProperty(variable, VariableProperty.IGNORE_MODIFICATIONS);
+                if (ignoreContentModifications != Level.TRUE) {
+                    log(DEBUG_MODIFY_CONTENT, "Mark method object as content modified {}: {}", modified, variable.fullyQualifiedName());
+                    StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
+                    setProperty(variable, VariableProperty.MODIFIED, modified);
 
-                // modification in MLD via linked variables travels in one direction, but direct assignment also travels
-                // "backwards"
-                if (value instanceof VariableExpression redirect) {
-                    setProperty(redirect.variable(), VariableProperty.MODIFIED, modified);
+                    // modification in MLD via linked variables travels in one direction, but direct assignment also travels
+                    // "backwards"
+                    if (value instanceof VariableExpression redirect) {
+                        setProperty(redirect.variable(), VariableProperty.MODIFIED, modified);
+                    }
+
+                } else {
+                    log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.fullyQualifiedName());
                 }
-
             } else {
-                log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.fullyQualifiedName());
+                log(DEBUG_MODIFY_CONTENT, "Not yet marking {} as content modified, not present", variable.fullyQualifiedName());
             }
         }
 
@@ -471,21 +479,20 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(variable);
             if (ecd == null) {
-                newEcd = new ChangeData(defaultValue(variable), false, false, Set.of(),
+                newEcd = new ChangeData(NO_VALUE, false, false, Set.of(),
                         LinkedVariables.EMPTY, Map.of(property, value));
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
                         ecd.readAtStatementTime, ecd.linkedVariables,
-                        VariableInfoImpl.mergeProperties(Map.of(property, value), ecd.properties));
+                        mergeProperties(ecd.properties, Map.of(property, value)));
             }
             valueChanges.put(variable, newEcd);
         }
 
-        private Expression defaultValue(Variable variable) {
-            if(variable instanceof This) {
-                return new NewObject(evaluationContext.getPrimitives(), variable.parameterizedType());
-            }
-            return NO_VALUE;
+        private Map<VariableProperty, Integer> mergeProperties(Map<VariableProperty, Integer> m1, Map<VariableProperty, Integer> m2) {
+            Map<VariableProperty, Integer> res = new HashMap<>(m1);
+            m2.forEach((vp, v) -> res.merge(vp, v, Math::max));
+            return ImmutableMap.copyOf(res);
         }
 
         public void addPrecondition(Expression expression) {

@@ -119,12 +119,13 @@ public class NewObject implements HasParameterExpressions {
                 parameterExpressions.equals(newObject.parameterExpressions) &&
                 Objects.equals(anonymousClass, newObject.anonymousClass) &&
                 Objects.equals(constructor, newObject.constructor) &&
-                Objects.equals(arrayInitializer, newObject.arrayInitializer);
+                Objects.equals(arrayInitializer, newObject.arrayInitializer) &&
+                Objects.equals(state, newObject.state);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(parameterizedType, parameterExpressions, anonymousClass, constructor, arrayInitializer);
+        return Objects.hash(parameterizedType, parameterExpressions, anonymousClass, constructor, arrayInitializer, state);
     }
 
     @Override

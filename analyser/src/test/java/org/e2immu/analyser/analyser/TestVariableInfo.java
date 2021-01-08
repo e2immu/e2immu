@@ -267,7 +267,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;
 
-        VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"), NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD);
+        VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
         viC.mergeIntoMe(minimalEvaluationContext, TRUE, true, viC,
                 Map.of(x, viA, Negation.negate(minimalEvaluationContext, x), viB));
         Assert.assertEquals("instance type boolean?3:4", viC.getValue().toString());
@@ -293,7 +293,7 @@ public class TestVariableInfo extends CommonVariableInfo {
 
         // situation: boolean x = ...; int c; if(x) c = a; else c = b;
 
-        VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"), NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD);
+        VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
 
         viC.mergeIntoMe(minimalEvaluationContext, TRUE, true, viC, Map.of(x, viA,
                 Negation.negate(minimalEvaluationContext, x), viB));

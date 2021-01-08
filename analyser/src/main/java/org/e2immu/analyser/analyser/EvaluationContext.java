@@ -234,4 +234,8 @@ public interface EvaluationContext {
     default Expression acceptAndTranslatePrecondition(Expression rest) {
         return null;
     }
+
+    default boolean isPresent(Variable variable) {
+        return true;
+    }
 }

@@ -41,6 +41,11 @@ class VariableInfoImpl implements VariableInfo {
     private final Variable variable;
     private final String assignmentId;
     private final String readId;
+    // goal, for now: from iteration 0 to iteration 1, when a field has been read, collect the statement times
+    // it is too early to know if the field will be variable or nor; if variable, new local copies need
+    // creating before iteration 1's evaluation starts
+    // ONLY set to values in iteration 0's evaluation
+    private final Set<Integer> readAtStatementTimes;
 
     private final IncrementalMap<VariableProperty> properties = new IncrementalMap<>(Level::acceptIncrement);
     private final SetOnce<Expression> value = new SetOnce<>(); // value from step 3 (initialisers)
@@ -50,7 +55,7 @@ class VariableInfoImpl implements VariableInfo {
 
     // ONLY for testing!
     VariableInfoImpl(Variable variable) {
-        this(variable, NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD);
+        this(variable, NOT_YET_ASSIGNED, NOT_YET_READ, NOT_A_VARIABLE_FIELD, Set.of());
     }
 
     // used by merge code
@@ -58,16 +63,18 @@ class VariableInfoImpl implements VariableInfo {
         this.variable = Objects.requireNonNull(variable);
         this.assignmentId = assignmentId;
         this.readId = readId;
+        this.readAtStatementTimes = Set.of();
     }
 
     // normal one for creating an initial or evaluation
-    VariableInfoImpl(Variable variable, String assignmentId, String readId, int statementTime) {
+    VariableInfoImpl(Variable variable, String assignmentId, String readId, int statementTime, Set<Integer> readAtStatementTimes) {
         this.variable = Objects.requireNonNull(variable);
         this.assignmentId = Objects.requireNonNull(assignmentId);
         this.readId = Objects.requireNonNull(readId);
         if (statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
             this.statementTime.set(statementTime);
         }
+        this.readAtStatementTimes = Objects.requireNonNull(readAtStatementTimes);
     }
 
     @Override
@@ -148,6 +155,10 @@ class VariableInfoImpl implements VariableInfo {
     @Override
     public boolean hasProperty(VariableProperty variableProperty) {
         return properties.isSet(variableProperty);
+    }
+
+    public Set<Integer> getReadAtStatementTimes() {
+        return readAtStatementTimes;
     }
 
     // ***************************** NON-INTERFACE CODE: SETTERS ************************

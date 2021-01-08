@@ -213,7 +213,7 @@ public class MethodLevelData {
                                             baseVariable.fullyQualifiedName(), logLocation);
                                     VariableInfoContainer vic = sharedState.statementAnalysis.findForWriting(vi.variable());
                                     vic.ensureEvaluation(sharedState.statementAnalysis.index + VariableInfoContainer.Level.EVALUATION.label,
-                                            VariableInfoContainer.NOT_YET_READ, sharedState.evaluationContext.getInitialStatementTime());
+                                            VariableInfoContainer.NOT_YET_READ, sharedState.evaluationContext.getInitialStatementTime(), Set.of());
                                     vic.setProperty(VariableProperty.MODIFIED, fieldModified, false, VariableInfoContainer.Level.MERGE);
                                     progress.set(true);
                                 }
@@ -254,15 +254,14 @@ public class MethodLevelData {
         if (!callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.isSet()) {
             callsUndeclaredFunctionalInterfaceOrPotentiallyCircularMethod.set(false);
         }
-
+/*
         if (!statementAnalysis.methodAnalysis.getMethodInfo().methodInspection.get().isStatic()) {
             Variable thisVariable = new This(evaluationContext.getAnalyserContext(), evaluationContext.getCurrentType());
             VariableInfoContainer thisVic = statementAnalysis.findForWriting(thisVariable);
             thisVic.ensureEvaluation(statementAnalysis.index + VariableInfoContainer.Level.EVALUATION.label,
                     VariableInfoContainer.NOT_YET_READ, evaluationContext.getInitialStatementTime());
-            thisVic.setProperty(VariableProperty.METHOD_CALLED, Level.FALSE, false, VariableInfoContainer.Level.EVALUATION);
         }
-
+*/
         return DONE;
     }
 }

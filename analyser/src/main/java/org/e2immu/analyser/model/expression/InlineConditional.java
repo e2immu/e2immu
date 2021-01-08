@@ -169,7 +169,7 @@ public class InlineConditional implements Expression {
                 result.addAll(links.variables());
             }
         }
-        return result == null ? LinkedVariables.EMPTY : new LinkedVariables(result);
+        return result == null ? LinkedVariables.EMPTY : result.isEmpty() ? LinkedVariables.EMPTY : new LinkedVariables(result);
     }
 
     @Override

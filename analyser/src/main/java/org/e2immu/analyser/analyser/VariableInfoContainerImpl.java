@@ -57,7 +57,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                                      int statementTime,
                                      VariableInLoop variableInLoop,
                                      boolean statementHasSubBlocks) {
-        VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED, NOT_YET_READ, statementTime);
+        VariableInfoImpl initial = new VariableInfoImpl(variable, NOT_YET_ASSIGNED, NOT_YET_READ, statementTime, Set.of());
         previousOrInitial = Either.right(initial);
         this.variableInLoop = variableInLoop;
         merge = statementHasSubBlocks ? new SetOnce<>() : null;
@@ -125,7 +125,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         if (value != NO_VALUE) {
             variableInfo.setValue(value);
         }
-        propertiesToSet.forEach(variableInfo::setProperty);
+        propertiesToSet.forEach((vp, v) -> {
+            int inMap = variableInfo.getProperty(vp, org.e2immu.analyser.model.Level.DELAY);
+            if (v > inMap) variableInfo.setProperty(vp, v);
+        });
     }
 
     @Override
@@ -169,14 +172,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     }
 
     @Override
-    public VariableInfo ensureEvaluation(String assignmentId, String readId, int statementTime) {
-        if (evaluation.isSet()) {
-            return evaluation.get();
+    public void ensureEvaluation(String assignmentId, String readId, int statementTime, Set<Integer> readAtStatementTimes) {
+        if (!evaluation.isSet()) {
+            VariableInfoImpl pi = (VariableInfoImpl) getPreviousOrInitial();
+            VariableInfoImpl eval = new VariableInfoImpl(pi.variable(), assignmentId, readId, statementTime, readAtStatementTimes);
+            evaluation.set(eval);
         }
-        VariableInfoImpl pi = (VariableInfoImpl) getPreviousOrInitial();
-        VariableInfoImpl eval = new VariableInfoImpl(pi.variable(), assignmentId, readId, statementTime);
-        evaluation.set(eval);
-        return eval;
     }
 
     @Override

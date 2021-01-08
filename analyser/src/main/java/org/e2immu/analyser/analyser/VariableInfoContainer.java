@@ -23,6 +23,7 @@ import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Container to store different versions of a VariableInfo object, one or more of this list:
@@ -119,7 +120,7 @@ public interface VariableInfoContainer {
 
     void setObjectFlow(ObjectFlow objectFlow, boolean writeInInitialOtherwiseEvaluation);
 
-    VariableInfo ensureEvaluation(String assignmentId, String readId, int statementTime);
+    void ensureEvaluation(String assignmentId, String readId, int statementTime, Set<Integer> readAtStatementTimes);
 
     void merge(EvaluationContext evaluationContext,
                Expression stateOfDestination,

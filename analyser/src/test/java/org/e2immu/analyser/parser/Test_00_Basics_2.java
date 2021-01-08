@@ -72,18 +72,25 @@ public class Test_00_Basics_2 extends CommonTestRunner {
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if (COLLECTION.equals(d.variableName()) && "add".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-            String expect = d.iteration() == 0 ?
-                    "instance type Collection<String>" :
-                    "instance type Collection<String>/*this.contains(org.e2immu.analyser.testexample.Basics_2.string$0)*/";
-            Assert.assertEquals(expect, d.currentValue().toString());
+
+            if (d.iteration() == 0) {
+                Assert.assertEquals("0:E", d.variableInfo().getReadId());
+                Assert.assertTrue(d.variableInfoContainer().hasEvaluation());
+                Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
+            } else {
+                Assert.assertEquals("instance type Collection<String>/*this.contains(org.e2immu.analyser.testexample.Basics_2.string$0)*/",
+                        d.currentValue().toString());
+            }
             Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+
             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
         }
         if (STRING_FIELD.equals(d.variableName()) && "setString".equals(d.methodInfo().name)) {
             Assert.assertTrue(d.variableInfo().isAssigned());
         }
         if (THIS.equals(d.variableName()) && "getString".equals(d.methodInfo().name)) {
-            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+            int expect = d.iteration() == 0 ? Level.DELAY:MultiLevel.EFFECTIVELY_NOT_NULL;
+            Assert.assertEquals(expect, d.getProperty(VariableProperty.NOT_NULL));
         }
         if (STRING_FIELD.equals(d.variableName()) && "getString".equals(d.methodInfo().name)) {
             Assert.assertTrue(d.variableInfo().isRead());
@@ -113,7 +120,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
                 Assert.assertEquals(expectModified, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
 
                 // property of the field as variable info in the method
-                Assert.assertEquals(Level.FALSE, fieldModified);
+                Assert.assertEquals(expectModified, fieldModified);
             }
             if ("setString".equals(d.methodInfo().name)) {
                 assert fieldAsVariable != null;

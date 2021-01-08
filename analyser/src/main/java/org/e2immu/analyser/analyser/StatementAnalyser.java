@@ -25,7 +25,10 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.expression.util.EvaluateInlineConditional;
 import org.e2immu.analyser.model.statement.*;
-import org.e2immu.analyser.model.variable.*;
+import org.e2immu.analyser.model.variable.FieldReference;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
+import org.e2immu.analyser.model.variable.ReturnVariable;
+import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.parser.Message;
 import org.e2immu.analyser.parser.Primitives;
@@ -503,17 +506,31 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             VariableInfo vi1 = vic.getPreviousOrInitial();
             assert vi != vi1 : "There should already be a different EVALUATION object";
 
-            Expression value = bestValue(changeData, vi1);
-            Expression valueToWrite = maybeValueNeedsState(sharedState.evaluationContext, vic, vi1, value);
+            if(status != DELAYS) {
+                // if the evaluation was not delayed...
+                Expression value = bestValue(changeData, vi1);
+                Expression valueToWrite = maybeValueNeedsState(sharedState.evaluationContext, vic, vi1, value);
 
+                // we explicitly check for NO_VALUE, because "<no return value>" is legal!
+                if (valueToWrite != NO_VALUE) {
+                    log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
+                    // first do the properties that come with the value; later, we'll write the ones in changeData
+                    Map<VariableProperty, Integer> propertiesToSet = sharedState.evaluationContext.getValueProperties(valueToWrite);
+                    vic.setValue(valueToWrite, propertiesToSet, false);
+                }
+                if (!changeData.markAssignment()) {
+                    // we're not assigning (and there is no change in instance because of a modifying method)
+                    // only then we copy from INIT to EVAL
+                    if (vi.getValue() == NO_VALUE && vi1.getValue() != NO_VALUE) {
+                        vic.setValue(vi1.getValue(), vi1.getProperties(), false);
+                    } else {
+                        vi1.getProperties().forEach((vp, v) ->
+                                vic.setProperty(vp, v, false, VariableInfoContainer.Level.EVALUATION));
+                    }
+                }
+            }
 
-            // we explicitly check for NO_VALUE, because "<no return value>" is legal!
-            if (valueToWrite != NO_VALUE) {
-                log(ANALYSER, "Write value {} to variable {}", valueToWrite, variable.fullyQualifiedName());
-                Map<VariableProperty, Integer> propertiesToSet = VariableInfoImpl.mergeProperties
-                        (sharedState.evaluationContext.getValueProperties(valueToWrite), changeData.properties());
-                vic.setValue(valueToWrite, propertiesToSet, false);
-            } else if (vi.getValue() == NO_VALUE) {
+            if (vi.getValue() == NO_VALUE) {
                 log(DELAYED, "Apply of {}, {} is delayed because of unknown value for {}",
                         index(), myMethodAnalyser.methodInfo.fullyQualifiedName, variable);
                 status = DELAYS;
@@ -540,7 +557,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
 
                 vic.setProperty(property, pv, false, VariableInfoContainer.Level.EVALUATION);
                 if (property == VariableProperty.NOT_NULL && variable instanceof ParameterInfo parameterInfo) {
-                    log(VARIABLE_PROPERTIES, "Propagating not-null value of {} to {}", value, variable.fullyQualifiedName());
+                    log(VARIABLE_PROPERTIES, "Propagating not-null value of {} to {}", pv, variable.fullyQualifiedName());
                     ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
                     sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, pv));
                 }
@@ -622,7 +639,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         String readId = changeData.readAtStatementTime().isEmpty() ? VariableInfoContainer.NOT_YET_ASSIGNED : id;
         int statementTime = statementAnalysis.statementTimeForVariable(analyserContext, variable, newStatementTime);
 
-        vic.ensureEvaluation(assignmentId, readId, statementTime);
+        vic.ensureEvaluation(assignmentId, readId, statementTime, changeData.readAtStatementTime());
 
         return additionalLinksForThisVariable;
     }
@@ -640,15 +657,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         for (int statementTime : statementTimes) {
             LocalVariableReference localCopy = statementAnalysis.variableInfoOfFieldWhenReading(analyserContext,
                     fieldReference, initial, statementTime);
-            if (!statementAnalysis.variables.isSet(localCopy.fullyQualifiedName())) {
-                VariableInfoContainer lvrVic = statementAnalysis.createVariable(analyserContext, localCopy, statementTime);
-                String indexOfStatementTime = statementAnalysis.flowData.assignmentIdOfStatementTime.get(statementTime);
-
-                Expression initialValue = statementTime == initial.getStatementTime() && initial.getAssignmentId().compareTo(indexOfStatementTime) >= 0 ?
-                        initial.getValue() : new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
-                assert initialValue != EmptyExpression.NO_VALUE;
-                lvrVic.setValue(initialValue, propertyMap, false);
-            }
             set.add(localCopy);
         }
         return set;
@@ -958,7 +966,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return DONE;
         }
         try {
-            if(structure.expression() != EmptyExpression.EMPTY_EXPRESSION) {
+            if (structure.expression() != EmptyExpression.EMPTY_EXPRESSION) {
                 expressionsFromInitAndUpdate.add(structure.expression());
             }
             Expression toEvaluate = CommaExpression.comma(sharedState.evaluationContext, expressionsFromInitAndUpdate);
@@ -1015,7 +1023,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             // ensure that the evaluation level is present, even if there is a delay. We must mark assignment!
             VariableInfoContainer vic = findReturnAsVariableForWriting();
             vic.ensureEvaluation(index() + VariableInfoContainer.Level.EVALUATION.label,
-                    VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+                    VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
             return DELAYS;
         }
         Expression newReturnValue;
@@ -1032,10 +1040,16 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
         VariableInfoContainer vic = statementAnalysis.findForWriting(returnVariable);
         vic.ensureEvaluation(index() + VariableInfoContainer.Level.EVALUATION.label,
-                VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+                VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
         Map<VariableProperty, Integer> properties = sharedState.evaluationContext.getValueProperties(newReturnValue);
         vic.setValue(newReturnValue, properties, false);
-        vic.setLinkedVariables(sharedState.evaluationContext.linkedVariables(level3EvaluationResult), false);
+        LinkedVariables newLinkedVariables = sharedState.evaluationContext.linkedVariables(level3EvaluationResult);
+        if (newLinkedVariables == LinkedVariables.DELAY) {
+            log(DELAYED, "Delaying evaluation because of linked variables of return statement {} in {}",
+                    index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
+            return DELAYS;
+        }
+        vic.setLinkedVariables(newLinkedVariables, false);
         return DONE;
     }
 
@@ -1048,7 +1062,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             LocalVariableCreation lvc = (LocalVariableCreation) structure.initialisers().get(0);
             VariableInfoContainer vic = statementAnalysis.findForWriting(lvc.localVariable.name());
             vic.ensureEvaluation(index() + VariableInfoContainer.Level.EVALUATION.label,
-                    VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD);
+                    VariableInfoContainer.NOT_YET_READ, VariableInfoContainer.NOT_A_VARIABLE_FIELD, Set.of());
             vic.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, VariableInfoContainer.Level.EVALUATION);
         }
     }
@@ -1643,7 +1657,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (notSelf) {
                 VariableInfo variableInfo = statementAnalysis.findOrThrow(variable);
                 int immutable = variableInfo.getProperty(VariableProperty.IMMUTABLE);
-                if (immutable == MultiLevel.DELAY) return null;
+                if (immutable == MultiLevel.DELAY) return LinkedVariables.DELAY;
                 if (MultiLevel.isE2Immutable(immutable)) return LinkedVariables.EMPTY;
             }
             VariableInfo variableInfo = statementAnalysis.findOrThrow(variable);
@@ -1651,7 +1665,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (variableInfo.linkedVariablesIsSet()) {
                 return variableInfo.getLinkedVariables().merge(new LinkedVariables(Set.of(variable)));
             }
-            return null; // delay
+            return LinkedVariables.DELAY; // delay
         }
 
         @Override
@@ -1714,6 +1728,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 return translated;
             }
             return null;
+        }
+
+        @Override
+        public boolean isPresent(Variable variable) {
+            return statementAnalysis.variables.isSet(variable.fullyQualifiedName());
         }
     }
 }
