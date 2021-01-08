@@ -265,11 +265,11 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("Basics_7".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p && "p".equals(p.name)) {
                 if ("0.0.0".equals(d.statementId())) {
-                    Assert.assertEquals("0.0.0:E", d.variableInfo().getReadId());
+                    Assert.assertEquals("0.0.0" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
                 }
                 if ("0".equals(d.statementId())) {
                     Assert.assertTrue(d.variableInfoContainer().hasMerge());
-                    Assert.assertEquals("0.0.0:E", d.variableInfo().getReadId());
+                    Assert.assertEquals("0" + VariableInfoContainer.Level.MERGE, d.variableInfo().getReadId());
                 }
             }
 
@@ -396,11 +396,11 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         Assert.assertEquals("l", d.currentValue().toString());
                     }
                     if ("3".equals(d.statementId())) {
-                        Assert.assertEquals("3:E", d.variableInfo().getAssignmentId());
+                        Assert.assertEquals("3" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getAssignmentId());
                         Assert.assertEquals("1+l", d.currentValue().toString());
                     }
                     if ("6".equals(d.statementId())) {
-                        Assert.assertEquals("6:E", d.variableInfo().getAssignmentId());
+                        Assert.assertEquals("6" + VariableInfoContainer.Level.EVALUATION, d.variableInfo().getAssignmentId());
                         Assert.assertEquals("2+l", d.currentValue().toString());
                     }
                 }

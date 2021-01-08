@@ -74,7 +74,7 @@ public class Test_00_Basics_2 extends CommonTestRunner {
         if (COLLECTION.equals(d.variableName()) && "add".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
 
             if (d.iteration() == 0) {
-                Assert.assertEquals("0:E", d.variableInfo().getReadId());
+                Assert.assertEquals("0"+ VariableInfoContainer.Level.EVALUATION, d.variableInfo().getReadId());
                 Assert.assertTrue(d.variableInfoContainer().hasEvaluation());
                 Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
             } else {

@@ -255,11 +255,13 @@ class VariableInfoImpl implements VariableInfo {
                                    Function<VariableInfo, String> getter,
                                    Map<Expression, VariableInfo> merge) {
         // null current statement in tests
-        String currentStatementId = (evaluationContext.getCurrentStatement() == null ? "" :
-                evaluationContext.getCurrentStatement().index()) + ":M";
+        String currentStatementIdE = (evaluationContext.getCurrentStatement() == null ? NOT_YET_ASSIGNED :
+                evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.EVALUATION;
+        String currentStatementIdM = (evaluationContext.getCurrentStatement() == null ? NOT_YET_ASSIGNED :
+                evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.MERGE;
         boolean inSubBlocks = existingValuesWillBeOverwritten ||
-                merge.values().stream().anyMatch(vi -> getter.apply(vi).compareTo(currentStatementId) > 0);
-        return inSubBlocks ? currentStatementId : previousId;
+                merge.values().stream().anyMatch(vi -> getter.apply(vi).compareTo(currentStatementIdE) > 0);
+        return inSubBlocks ? currentStatementIdM : previousId;
     }
 
     /*

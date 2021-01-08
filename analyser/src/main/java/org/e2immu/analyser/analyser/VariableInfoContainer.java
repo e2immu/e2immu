@@ -37,6 +37,7 @@ public interface VariableInfoContainer {
     int NOT_A_VARIABLE_FIELD = -2;
 
     // prefixes in assignment id
+    // see TestLevelSuffixes to visually understand the order
 
     String NOT_YET_READ = "-";
     String NOT_YET_ASSIGNED = "-";
@@ -47,9 +48,9 @@ public interface VariableInfoContainer {
 
     // suffixes in assignment id; these act as the 3 levels for setProperty
     enum Level {
-        INITIAL(":I"),
-        EVALUATION(":E"),
-        MERGE(":M");
+        INITIAL("-C"), // C for creation, but essentially, it should be < E
+        EVALUATION("-E"), // the - comes before the digits
+        MERGE(":M"); // the : comes after the digits
         public final String label;
         Level(String label) {
             this.label = label;

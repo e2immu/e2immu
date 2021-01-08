@@ -87,7 +87,7 @@ public interface VariableInfo {
     /**
      * @return the empty string if has not been an assignment in this method yet; otherwise the statement id
      * of the latest assignment to this variable (field, local variable, dependent variable), followed
-     * by ":E" for evaluation or ":M" for merge
+     * by "-E" for evaluation or ":M" for merge (see Level)
      */
     String getAssignmentId();
 
