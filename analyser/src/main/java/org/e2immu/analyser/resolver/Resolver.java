@@ -448,7 +448,8 @@ public class Resolver {
     }
 
 
-    private static void methodResolution(InspectionProvider inspectionProvider, DependencyGraph<WithInspectionAndAnalysis> methodGraph) {
+    private static void methodResolution(InspectionProvider inspectionProvider,
+                                         DependencyGraph<WithInspectionAndAnalysis> methodGraph) {
         // iterate twice, because we partial results on all MethodInfo objects for the setCallStatus computation
         Map<MethodInfo, MethodResolution.Builder> builders = new HashMap<>();
         methodGraph.visit((from, toList) -> {
@@ -464,6 +465,7 @@ public class Resolver {
                     computeStaticMethodCallsOnly(inspectionProvider, methodInfo, methodResolutionBuilder);
                     methodResolutionBuilder.overrides.set(ShallowMethodResolver.overrides(inspectionProvider, methodInfo));
 
+                    computeAllowsInterrupt(inspectionProvider, methodResolutionBuilder, builders, methodInfo, methodsReached, false);
                     builders.put(methodInfo, methodResolutionBuilder);
                 }
             } catch (RuntimeException e) {
@@ -476,9 +478,43 @@ public class Resolver {
                 MethodResolution.Builder builder = builders.get(methodInfo);
                 builder.partOfConstruction.set(computeCallStatus(inspectionProvider, builders, methodInfo));
 
+                // two pass, since we have no order
+                Set<MethodInfo> methodsReached = builder.getMethodsOfOwnClassReached();
+                computeAllowsInterrupt(inspectionProvider, builder, builders, methodInfo, methodsReached, true);
                 methodInfo.methodResolution.set(builder.build());
             }
         });
+    }
+
+    private static void computeAllowsInterrupt(InspectionProvider inspectionProvider,
+                                               MethodResolution.Builder methodResolutionBuilder,
+                                               Map<MethodInfo, MethodResolution.Builder> builders,
+                                               MethodInfo methodInfo,
+                                               Set<MethodInfo> methodsReached,
+                                               boolean doNotDelay) {
+        if (methodResolutionBuilder.allowsInterrupts.isSet()) return;
+
+        // first part of allowsInterrupt computation: look locally
+        boolean allowsInterrupt;
+        boolean delays;
+        if (methodInfo.isPrivate()) {
+            allowsInterrupt = methodsReached.stream().anyMatch(reached -> !reached.isPrivate() ||
+                    methodInfo.methodResolution.isSet() && methodInfo.methodResolution.get().allowsInterrupts() ||
+                    builders.containsKey(reached) && builders.get(reached).allowsInterrupts.getOrElse(false));
+            delays = methodsReached.stream().anyMatch(reached -> reached.isPrivate() &&
+                    builders.containsKey(reached) &&
+                    !builders.get(reached).allowsInterrupts.isSet());
+            if(!allowsInterrupt) {
+                Block body = inspectionProvider.getMethodInspection(methodInfo).getMethodBody();
+                allowsInterrupt = AllowInterruptVisitor.allowInterrupts(body, builders.keySet());
+            }
+        } else {
+            allowsInterrupt = true;
+            delays = false;
+        }
+        if (doNotDelay || !delays || allowsInterrupt) {
+            methodResolutionBuilder.allowsInterrupts.set(allowsInterrupt);
+        }
     }
 
 

@@ -358,6 +358,12 @@ public class NewObject implements HasParameterExpressions {
             instance = initialInstance;
         }
         res.k.setExpression(instance);
+
+        if (constructor != null &&
+                (!constructor.methodResolution.isSet() || constructor.methodResolution.get().allowsInterrupts())) {
+            res.k.incrementStatementTime();
+        }
+
         return res.k.build();
     }
 

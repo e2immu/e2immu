@@ -19,7 +19,6 @@
 
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.StatementAnalyser;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -31,6 +30,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.PrintStream;
 
 public class Test_00_Basics_4plus extends CommonTestRunner {
 
@@ -78,7 +78,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         final String TYPE = "org.e2immu.analyser.testexample.Basics_6";
         final String FIELD = TYPE + ".field";
         final String FIELD_0 = TYPE + ".field$0";
-        final String FIELD_1 = TYPE + ".field$1$1:3";
+        final String FIELD_1 = TYPE + ".field$1";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test1".equals(d.methodInfo().name)) {
@@ -87,7 +87,12 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                         int expect = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
                         Assert.assertEquals(expect, d.variableInfo().getStatementTime());
                     }
+                    if ("1".equals(d.statementId())) {
+                        int expect = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 0;
+                        Assert.assertEquals(expect, d.variableInfo().getStatementTime());
+                    }
                     if ("2".equals(d.statementId())) {
+                        Assert.assertEquals("[1]", d.variableInfo().getReadAtStatementTimes().toString());
                         int expect = d.iteration() == 0 ? VariableInfoContainer.VARIABLE_FIELD_DELAY : 1;
                         Assert.assertEquals(expect, d.variableInfo().getStatementTime());
                     }
@@ -174,6 +179,10 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 }
             }
             if ("test3".equals(d.methodInfo().name)) {
+                Assert.assertEquals(0, time1);
+                Assert.assertEquals(0, time3);
+                Assert.assertEquals(0, time4);
+
                 if ("3".equals(d.statementId()) && d.iteration() > 0) {
                     Assert.assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                 }
@@ -193,6 +202,19 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
             TypeInfo string = typeMap.get(String.class);
             MethodInfo equals = string.findUniqueMethod("equals", 1);
             Assert.assertEquals(Level.FALSE, equals.methodAnalysis.get().getProperty(VariableProperty.MODIFIED));
+
+            MethodInfo toLowerCase = string.findUniqueMethod("toLowerCase", 0);
+            Assert.assertFalse(toLowerCase.methodResolution.get().allowsInterrupts());
+
+            TypeInfo printStream = typeMap.get(PrintStream.class);
+            MethodInfo println = printStream.findUniqueMethod("println", 0);
+            Assert.assertTrue(println.methodResolution.get().allowsInterrupts());
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("someMinorMethod".equals(d.methodInfo().name)) {
+                Assert.assertFalse(d.methodInfo().methodResolution.get().allowsInterrupts());
+            }
         };
 
         testClass("Basics_6", 0, 12, new DebugConfiguration.Builder()
@@ -200,6 +222,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addTypeMapVisitor(typeMapVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
 

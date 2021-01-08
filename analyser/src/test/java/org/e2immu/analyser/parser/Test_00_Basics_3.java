@@ -44,6 +44,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
     public void test() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.Basics_3";
         final String S = TYPE + ".s";
+        final String THIS = TYPE + ".this";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setS1".equals(d.methodInfo().name)) {
@@ -62,6 +63,27 @@ public class Test_00_Basics_3 extends CommonTestRunner {
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("setS1".equals(d.methodInfo().name) && THIS.equals(d.variableName())) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertTrue(d.variableInfoContainer().hasMerge());
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type Basics_3";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                }
+                if ("0.0.0".equals(d.statementId())) {
+                    Assert.assertEquals(VariableInfoContainer.NOT_YET_ASSIGNED, d.variableInfo().getAssignmentId());
+                    Assert.assertEquals("0.0.0:E", d.variableInfo().getReadId());
+                    if (d.iteration() > 0) {
+                        Assert.assertEquals("instance type Basics_3", d.currentValue().toString());
+                    }
+                }
+                if ("0.1.0".equals(d.statementId())) {
+                    Assert.assertEquals(VariableInfoContainer.NOT_YET_ASSIGNED, d.variableInfo().getAssignmentId());
+                    Assert.assertEquals("0.1.0:E", d.variableInfo().getReadId());
+                    if (d.iteration() > 0) {
+                        Assert.assertEquals("instance type Basics_3", d.currentValue().toString());
+                    }
+                }
+            }
             if ("setS1".equals(d.methodInfo().name) && S.equals(d.variableName())) {
                 if (d.iteration() == 0) {
                     Assert.assertSame(d.statementId(), LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());

@@ -26,7 +26,7 @@ public class Basics_6 {
 
     public void test1() {
         String v1 = field;
-        System.out.println(v1);
+        System.out.println(v1); // interrupts!
         String v2 = field;
         assert v1.equals(v2); // most likely true
     }
@@ -60,10 +60,10 @@ public class Basics_6 {
 
     public void test6() {
         String v1 = field;
-        Basics_6 basics_6 = new Basics_6();
+        Integer twentySeven = new Integer(27); // some constructors do not interrupt
         String v2 = field;
-        assert v1.equals(v2); // new object creation does not interrupt
-        assert basics_6.field.equals(v1);
+        assert v1.equals(v2);
+        assert twentySeven == 27;
     }
 
     public String getField() {
@@ -75,7 +75,7 @@ public class Basics_6 {
     }
 
     private static String someMinorMethod(String s) {
-        return s.toUpperCase();
+        return s.toUpperCase(); // not interrupting!
     }
 
     void nonPrivateMethod() {

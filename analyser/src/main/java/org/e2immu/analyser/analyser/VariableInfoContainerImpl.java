@@ -179,7 +179,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             assert !readId.equals(NOT_YET_READ) || !assignmentId.equals(NOT_YET_ASSIGNED) || !pi.isRead();
             VariableInfoImpl eval = new VariableInfoImpl(pi.variable(), assignmentId, readId, statementTime, readAtStatementTimes);
             evaluation.set(eval);
-        } else if(!evaluation.get().statementTimeIsSet() && statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY){
+        } else if (!evaluation.get().statementTimeIsSet() && statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) {
             evaluation.get().setStatementTime(statementTime);
         }
     }
@@ -200,7 +200,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     @Override
     public void copy(boolean isParent) {
         assert previousOrInitial.isLeft() : "No point in copying when we are an initial";
-        Level level = isParent ? Level.EVALUATION: Level.MERGE;
+        Level level = isParent ? Level.EVALUATION : Level.MERGE;
         VariableInfo previous = previousOrInitial.getLeft().best(level);
 
         assert this.evaluation.isSet();
@@ -217,12 +217,15 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
             if (previous.objectFlowIsSet()) {
                 evaluation.setObjectFlow(previous.getObjectFlow());
             }
-            if (previous.statementTimeIsSet()) {
-                evaluation.setStatementTime(previous.getStatementTime());
-            }
             boolean notReadInThisStatement = previous.getReadId().equals(evaluation.getReadId());
             if (notReadInThisStatement && previous.linkedVariablesIsSet()) {
                 evaluation.setLinkedVariables(previous.getLinkedVariables());
+            }
+            if (previous.statementTimeIsSet()) {
+                boolean confirmedNotVariableField = previous.getStatementTime() == NOT_A_VARIABLE_FIELD;
+                if (confirmedNotVariableField || notReadInThisStatement) {
+                    evaluation.setStatementTime(previous.getStatementTime());
+                }
             }
         }
     }

@@ -500,7 +500,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             VariableInfo eval = vic.best(VariableInfoContainer.Level.EVALUATION);
             VariableInfo initial = vic.getPreviousOrInitial();
             if (eval.variable() instanceof FieldReference fieldReference &&
-                    eval.isConfirmedVariableField() && !eval.getReadAtStatementTimes().isEmpty()) {
+                    initial.isConfirmedVariableField() && !eval.getReadAtStatementTimes().isEmpty()) {
 
                 FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
                 Primitives primitives = analyserContext.getPrimitives();

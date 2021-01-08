@@ -21,6 +21,7 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.output.OutputBuilder;
@@ -118,6 +119,8 @@ public record VariableExpression(Variable variable,
 
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
             builder.markRead(variable);
+        } else if(variable instanceof FieldReference fieldReference) {
+            builder.markRead(fieldReference.scope);
         }
 
         int notNull = forwardEvaluationInfo.getProperty(VariableProperty.NOT_NULL);
