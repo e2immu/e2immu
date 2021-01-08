@@ -486,7 +486,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     private AnalysisStatus apply(SharedState sharedState,
                                  EvaluationResult evaluationResult,
                                  StatementAnalysis statementAnalysis) {
-        AnalysisStatus status = evaluationResult.value() == NO_VALUE ? DELAYS : DONE;
+        boolean haveEvaluationResult = evaluationResult.value() != NO_VALUE;
+        AnalysisStatus status = haveEvaluationResult ? DONE : DELAYS;
 
         if (evaluationResult.addCircularCallOrUndeclaredFunctionalInterface()) {
             statementAnalysis.methodLevelData.addCircularCallOrUndeclaredFunctionalInterface();
@@ -506,7 +507,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             VariableInfo vi1 = vic.getPreviousOrInitial();
             assert vi != vi1 : "There should already be a different EVALUATION object";
 
-            if (status != DELAYS) {
+            if (haveEvaluationResult) {
                 // if the evaluation was not delayed...
                 Expression value = bestValue(changeData, vi1);
                 Expression valueToWrite = maybeValueNeedsState(sharedState.evaluationContext, vic, vi1, value);

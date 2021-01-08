@@ -517,7 +517,7 @@ public class Resolver {
                 allowsInterrupt = AllowInterruptVisitor.allowInterrupts(body, builders.keySet());
             }
         } else {
-            allowsInterrupt = !methodInfo.shallowAnalysis();
+            allowsInterrupt = !shallowResolver;
             delays = false;
         }
         if (doNotDelay || !delays || allowsInterrupt) {

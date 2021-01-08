@@ -19,6 +19,7 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -81,6 +82,10 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         final String FIELD_1 = TYPE + ".field$1";
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("setField".equals(d.methodInfo().name) && d.variableInfo().variable() instanceof ParameterInfo) {
+                Assert.assertSame(LinkedVariables.EMPTY, d.variableInfoContainer().getPreviousOrInitial().getLinkedVariables());
+                Assert.assertEquals(LinkedVariables.EMPTY, d.variableInfo().getLinkedVariables());
+            }
             if ("test1".equals(d.methodInfo().name)) {
                 if (FIELD.equals(d.variableName())) {
                     if ("0".equals(d.statementId())) {
@@ -116,36 +121,36 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         };
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-            int time1 = d.statementAnalysis().statementTime(VariableInfoContainer.Level.INITIAL);
-            int time3 = d.statementAnalysis().statementTime(VariableInfoContainer.Level.EVALUATION);
-            int time4 = d.statementAnalysis().statementTime(VariableInfoContainer.Level.MERGE);
+            int timeI = d.statementAnalysis().statementTime(VariableInfoContainer.Level.INITIAL);
+            int timeE = d.statementAnalysis().statementTime(VariableInfoContainer.Level.EVALUATION);
+            int timeM = d.statementAnalysis().statementTime(VariableInfoContainer.Level.MERGE);
 
             if ("test1".equals(d.methodInfo().name)) {
                 if (d.iteration() == 0) {
                     if ("0".equals(d.statementId())) {
                         Assert.assertEquals(3, d.statementAnalysis().variables.size());
-                        Assert.assertEquals(0, time1);
-                        Assert.assertEquals(0, time3);
-                        Assert.assertEquals(0, time4);
+                        Assert.assertEquals(0, timeI);
+                        Assert.assertEquals(0, timeE);
+                        Assert.assertEquals(0, timeM);
                     }
                     if ("1".equals(d.statementId())) {
-                        Assert.assertEquals(0, time1);
-                        Assert.assertEquals(1, time3);
-                        Assert.assertEquals(1, time4);
+                        Assert.assertEquals(0, timeI);
+                        Assert.assertEquals(1, timeE);
+                        Assert.assertEquals(1, timeM);
                         // 4 vars: field, this, v1, out
                         Assert.assertEquals(4, d.statementAnalysis().variables.size());
                     }
                     if ("2".equals(d.statementId())) {
-                        Assert.assertEquals(1, time1);
-                        Assert.assertEquals(1, time3);
-                        Assert.assertEquals(1, time4);
+                        Assert.assertEquals(1, timeI);
+                        Assert.assertEquals(1, timeE);
+                        Assert.assertEquals(1, timeM);
                         // 5 vars: field, this, v1, v2, out
                         Assert.assertEquals(5, d.statementAnalysis().variables.size());
                     }
                     if ("3".equals(d.statementId())) {
-                        Assert.assertEquals(1, time1);
-                        Assert.assertEquals(1, time3);
-                        Assert.assertEquals(1, time4);
+                        Assert.assertEquals(1, timeI);
+                        Assert.assertEquals(1, timeE);
+                        Assert.assertEquals(1, timeM);
                         // 5 vars: field, this, v1, v2, out
                         Assert.assertEquals(5, d.statementAnalysis().variables.size());
                     }
@@ -178,10 +183,20 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     Assert.assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                 }
             }
+            if ("test4".equals(d.methodInfo().name)) {
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals(0, timeI);
+                    Assert.assertEquals(1, timeE);
+                    Assert.assertEquals(1, timeM);
+                }
+                if (d.iteration() > 0) {
+                    Assert.assertNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
+                }
+            }
             if ("test3".equals(d.methodInfo().name)) {
-                Assert.assertEquals(0, time1);
-                Assert.assertEquals(0, time3);
-                Assert.assertEquals(0, time4);
+                Assert.assertEquals(0, timeI);
+                Assert.assertEquals(0, timeE);
+                Assert.assertEquals(0, timeM);
 
                 if ("3".equals(d.statementId()) && d.iteration() > 0) {
                     Assert.assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
@@ -214,6 +229,9 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if ("someMinorMethod".equals(d.methodInfo().name)) {
                 Assert.assertFalse(d.methodInfo().methodResolution.get().allowsInterrupts());
+            }
+            if ("nonPrivateMethod".equals(d.methodInfo().name)) {
+                Assert.assertTrue(d.methodInfo().methodResolution.get().allowsInterrupts());
             }
         };
 
