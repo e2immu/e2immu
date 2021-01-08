@@ -144,8 +144,8 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                     }
                     if ("3".equals(d.statementId())) {
                         Assert.assertEquals(1, time1);
-                        Assert.assertEquals(2, time3);
-                        Assert.assertEquals(2, time4);
+                        Assert.assertEquals(1, time3);
+                        Assert.assertEquals(1, time4);
                         // 5 vars: field, this, v1, v2, out
                         Assert.assertEquals(5, d.statementAnalysis().variables.size());
                     }

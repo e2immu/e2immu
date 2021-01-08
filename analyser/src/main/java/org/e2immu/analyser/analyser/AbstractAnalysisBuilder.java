@@ -245,6 +245,8 @@ public abstract class AbstractAnalysisBuilder implements Analysis {
                     properties.put(VariableProperty.LINKED, trueFalse);
                 } else if (e2ImmuAnnotationExpressions.notModified1.typeInfo() == t) {
                     properties.put(VariableProperty.NOT_MODIFIED_1, trueFalse);
+                } else if (e2ImmuAnnotationExpressions.allowsInterrupt.typeInfo() == t) {
+                    // nothing to be done here -- already in method resolution
                 } else throw new UnsupportedOperationException("TODO: " + t.fullyQualifiedName);
             }
         }

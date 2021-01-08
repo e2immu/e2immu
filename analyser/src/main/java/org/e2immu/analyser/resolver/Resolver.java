@@ -27,13 +27,9 @@ import org.e2immu.analyser.model.expression.*;
 import org.e2immu.analyser.model.statement.Block;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.This;
-import org.e2immu.analyser.parser.InspectionProvider;
-import org.e2immu.analyser.parser.Message;
-import org.e2immu.analyser.parser.Messages;
-import org.e2immu.analyser.parser.Primitives;
+import org.e2immu.analyser.parser.*;
 import org.e2immu.analyser.util.DependencyGraph;
 import org.e2immu.analyser.util.SMapSet;
-import org.e2immu.annotation.NotModified;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,13 +48,19 @@ public class Resolver {
 
     private final Messages messages = new Messages();
     private final boolean shallowResolver;
+    private final E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions;
+    private final InspectionProvider inspectionProvider;
 
     public Stream<Message> getMessageStream() {
         return messages.getMessageStream();
     }
 
-    public Resolver(boolean shallowResolver) {
+    public Resolver(InspectionProvider inspectionProvider,
+                    E2ImmuAnnotationExpressions e2ImmuAnnotationExpressions,
+                    boolean shallowResolver) {
         this.shallowResolver = shallowResolver;
+        this.e2ImmuAnnotationExpressions = e2ImmuAnnotationExpressions;
+        this.inspectionProvider = inspectionProvider;
     }
 
     /**
@@ -69,11 +71,11 @@ public class Resolver {
      * @return A list of sorted primary types, each with their sub-elements (sub-types, fields, methods) sorted.
      */
 
-    public List<SortedType> sortTypes(InspectionProvider inspectionProvider, Map<TypeInfo, TypeContext> inspectedTypes) {
+    public List<SortedType> sortTypes(Map<TypeInfo, TypeContext> inspectedTypes) {
         DependencyGraph<TypeInfo> typeGraph = new DependencyGraph<>();
         Map<TypeInfo, SortedType> toSortedType = new HashMap<>();
         Set<TypeInfo> stayWithin = inspectedTypes.keySet().stream()
-                .flatMap(typeInfo -> typeAndAllSubTypes(inspectionProvider, typeInfo).stream())
+                .flatMap(typeInfo -> typeAndAllSubTypes(typeInfo).stream())
                 .collect(Collectors.toUnmodifiableSet());
 
         for (Map.Entry<TypeInfo, TypeContext> entry : inspectedTypes.entrySet()) {
@@ -89,26 +91,26 @@ public class Resolver {
                 throw rte;
             }
         }
-        List<SortedType> result = sortWarnForCircularDependencies(inspectionProvider, typeGraph).stream().map(toSortedType::get).collect(Collectors.toList());
+        List<SortedType> result = sortWarnForCircularDependencies(typeGraph).stream().map(toSortedType::get).collect(Collectors.toList());
         log(RESOLVE, "Result of type sorting: {}", result);
         return result;
     }
 
-    private static List<TypeInfo> typeAndAllSubTypes(InspectionProvider inspectionProvider, TypeInfo typeInfo) {
+    private List<TypeInfo> typeAndAllSubTypes(TypeInfo typeInfo) {
         List<TypeInfo> result = new ArrayList<>();
-        recursivelyCollectSubTypes(inspectionProvider, typeInfo, result);
+        recursivelyCollectSubTypes(typeInfo, result);
         return ImmutableList.copyOf(result);
     }
 
-    private static void recursivelyCollectSubTypes(InspectionProvider inspectionProvider, TypeInfo typeInfo, List<TypeInfo> result) {
+    private void recursivelyCollectSubTypes(TypeInfo typeInfo, List<TypeInfo> result) {
         result.add(typeInfo);
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(typeInfo);
         for (TypeInfo sub : typeInspection.subTypes()) {
-            recursivelyCollectSubTypes(inspectionProvider, sub, result);
+            recursivelyCollectSubTypes(sub, result);
         }
     }
 
-    private List<TypeInfo> sortWarnForCircularDependencies(InspectionProvider inspectionProvider, DependencyGraph<TypeInfo> typeGraph) {
+    private List<TypeInfo> sortWarnForCircularDependencies(DependencyGraph<TypeInfo> typeGraph) {
         Map<TypeInfo, Set<TypeInfo>> participatesInCycles = new HashMap<>();
         List<TypeInfo> sorted = typeGraph.sorted(typeInfo -> {
             // typeInfo is part of a cycle, dependencies are:
@@ -122,13 +124,12 @@ public class Resolver {
                     typesInCycle.stream().map(t -> t.fullyQualifiedName).collect(Collectors.joining(", "))));
         });
         for (TypeInfo typeInfo : sorted) {
-            computeTypeResolution(inspectionProvider, typeInfo, participatesInCycles);
+            computeTypeResolution(typeInfo, participatesInCycles);
         }
         return sorted;
     }
 
-    private void computeTypeResolution(InspectionProvider inspectionProvider,
-                                       TypeInfo typeInfo,
+    private void computeTypeResolution(TypeInfo typeInfo,
                                        Map<TypeInfo, Set<TypeInfo>> participatesInCycles) {
         Set<TypeInfo> circularDependencies = participatesInCycles.get(typeInfo);
         TypeResolution typeResolution = new TypeResolution(circularDependencies == null ? Set.of() : circularDependencies,
@@ -154,13 +155,13 @@ public class Resolver {
 
         // FROM HERE ON, ALL INSPECTION HAS BEEN SET!
 
-        methodResolution(typeContextOfFile, methodFieldSubTypeGraph);
+        methodResolution(methodFieldSubTypeGraph);
 
         // NOW, ALL METHODS IN THIS PRIMARY TYPE HAVE METHOD RESOLUTION SET
 
         // remove myself and all my enclosing types, and stay within the set of inspectedTypes
         Set<TypeInfo> typeDependencies = shallowResolver ?
-                new HashSet<>(superTypesExcludingJavaLangObject(typeContextOfFile, typeInfo)) :
+                new HashSet<>(superTypesExcludingJavaLangObject(typeContextOfType, typeInfo)) :
                 typeInfo.typesReferenced().stream().map(Map.Entry::getKey).collect(Collectors.toCollection(HashSet::new));
 
         typeDependencies.removeAll(typeAndAllSubTypes);
@@ -214,7 +215,7 @@ public class Resolver {
                             fieldInfo,
                             fieldInfo.isStatic() ? null : new This(typeContext, fieldInfo.owner))));
 
-            List<TypeInfo> typeAndAllSubTypes = typeAndAllSubTypes(typeContextOfType, typeInfo);
+            List<TypeInfo> typeAndAllSubTypes = typeAndAllSubTypes(typeInfo);
             Set<TypeInfo> restrictToType = new HashSet<>(typeAndAllSubTypes);
 
             doFields(typeInspection, expressionContext, methodFieldSubTypeGraph, restrictToType);
@@ -448,8 +449,7 @@ public class Resolver {
     }
 
 
-    private static void methodResolution(InspectionProvider inspectionProvider,
-                                         DependencyGraph<WithInspectionAndAnalysis> methodGraph) {
+    private void methodResolution(DependencyGraph<WithInspectionAndAnalysis> methodGraph) {
         // iterate twice, because we partial results on all MethodInfo objects for the setCallStatus computation
         Map<MethodInfo, MethodResolution.Builder> builders = new HashMap<>();
         methodGraph.visit((from, toList) -> {
@@ -462,10 +462,10 @@ public class Resolver {
                     methodResolutionBuilder.methodsOfOwnClassReached.set(methodsReached);
 
                     methodCreatesObjectOfSelf(methodInfo, methodResolutionBuilder);
-                    computeStaticMethodCallsOnly(inspectionProvider, methodInfo, methodResolutionBuilder);
+                    computeStaticMethodCallsOnly(methodInfo, methodResolutionBuilder);
                     methodResolutionBuilder.overrides.set(ShallowMethodResolver.overrides(inspectionProvider, methodInfo));
 
-                    computeAllowsInterrupt(inspectionProvider, methodResolutionBuilder, builders, methodInfo, methodsReached, false);
+                    computeAllowsInterrupt(methodResolutionBuilder, builders, methodInfo, methodsReached, false);
                     builders.put(methodInfo, methodResolutionBuilder);
                 }
             } catch (RuntimeException e) {
@@ -476,40 +476,48 @@ public class Resolver {
         methodGraph.visit((from, toList) -> {
             if (from instanceof MethodInfo methodInfo) {
                 MethodResolution.Builder builder = builders.get(methodInfo);
-                builder.partOfConstruction.set(computeCallStatus(inspectionProvider, builders, methodInfo));
+                builder.partOfConstruction.set(computeCallStatus(builders, methodInfo));
 
                 // two pass, since we have no order
                 Set<MethodInfo> methodsReached = builder.getMethodsOfOwnClassReached();
-                computeAllowsInterrupt(inspectionProvider, builder, builders, methodInfo, methodsReached, true);
+                computeAllowsInterrupt(builder, builders, methodInfo, methodsReached, true);
                 methodInfo.methodResolution.set(builder.build());
             }
         });
     }
 
-    private static void computeAllowsInterrupt(InspectionProvider inspectionProvider,
-                                               MethodResolution.Builder methodResolutionBuilder,
-                                               Map<MethodInfo, MethodResolution.Builder> builders,
-                                               MethodInfo methodInfo,
-                                               Set<MethodInfo> methodsReached,
-                                               boolean doNotDelay) {
+    private void computeAllowsInterrupt(MethodResolution.Builder methodResolutionBuilder,
+                                        Map<MethodInfo, MethodResolution.Builder> builders,
+                                        MethodInfo methodInfo,
+                                        Set<MethodInfo> methodsReached,
+                                        boolean doNotDelay) {
         if (methodResolutionBuilder.allowsInterrupts.isSet()) return;
+        MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
+        AnnotationExpression allowsInterruptAnnotation = methodInspection.getAnnotations().stream()
+                .filter(ae -> ae.equals(e2ImmuAnnotationExpressions.allowsInterrupt))
+                .findFirst().orElse(null);
+        if (allowsInterruptAnnotation != null) {
+            boolean value = allowsInterruptAnnotation.extract("value", true);
+            methodResolutionBuilder.allowsInterrupts.set(value);
+            return;
+        }
 
         // first part of allowsInterrupt computation: look locally
         boolean allowsInterrupt;
         boolean delays;
-        if (methodInfo.isPrivate()) {
+        if (methodInspection.getModifiers().contains(MethodModifier.PRIVATE)) {
             allowsInterrupt = methodsReached.stream().anyMatch(reached -> !reached.isPrivate() ||
                     methodInfo.methodResolution.isSet() && methodInfo.methodResolution.get().allowsInterrupts() ||
                     builders.containsKey(reached) && builders.get(reached).allowsInterrupts.getOrElse(false));
             delays = methodsReached.stream().anyMatch(reached -> reached.isPrivate() &&
                     builders.containsKey(reached) &&
                     !builders.get(reached).allowsInterrupts.isSet());
-            if(!allowsInterrupt) {
+            if (!allowsInterrupt) {
                 Block body = inspectionProvider.getMethodInspection(methodInfo).getMethodBody();
                 allowsInterrupt = AllowInterruptVisitor.allowInterrupts(body, builders.keySet());
             }
         } else {
-            allowsInterrupt = true;
+            allowsInterrupt = !methodInfo.shallowAnalysis();
             delays = false;
         }
         if (doNotDelay || !delays || allowsInterrupt) {
@@ -531,9 +539,8 @@ public class Resolver {
         methodResolution.createObjectOfSelf.set(createSelf.get());
     }
 
-    private static void computeStaticMethodCallsOnly(InspectionProvider inspectionProvider,
-                                                     @NotModified MethodInfo methodInfo,
-                                                     MethodResolution.Builder methodResolution) {
+    private void computeStaticMethodCallsOnly(MethodInfo methodInfo,
+                                              MethodResolution.Builder methodResolution) {
         MethodInspection methodInspection = inspectionProvider.getMethodInspection(methodInfo);
         if (!methodResolution.staticMethodCallsOnly.isSet()) {
             if (methodInspection.isStatic()) {
@@ -563,10 +570,8 @@ public class Resolver {
      *
      * @return true if there is a non-private method in this class which calls this private method.
      */
-    private static boolean isCalledFromNonPrivateMethod(
-            InspectionProvider inspectionProvider,
-            Map<MethodInfo, MethodResolution.Builder> builders,
-            MethodInfo methodInfo) {
+    private boolean isCalledFromNonPrivateMethod(Map<MethodInfo, MethodResolution.Builder> builders,
+                                                 MethodInfo methodInfo) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
         for (MethodInfo other : typeInspection.methods()) {
             if (!other.isPrivate() && builders.get(other).methodsOfOwnClassReached.get().contains(methodInfo)) {
@@ -585,10 +590,8 @@ public class Resolver {
         return false;
     }
 
-    private static boolean isCalledFromConstructors(
-            InspectionProvider inspectionProvider,
-            Map<MethodInfo, MethodResolution.Builder> builders,
-            MethodInfo methodInfo) {
+    private boolean isCalledFromConstructors(Map<MethodInfo, MethodResolution.Builder> builders,
+                                             MethodInfo methodInfo) {
         TypeInspection typeInspection = inspectionProvider.getTypeInspection(methodInfo.typeInfo);
         for (MethodInfo other : typeInspection.constructors()) {
             if (builders.get(other).methodsOfOwnClassReached.get().contains(methodInfo)) {
@@ -617,19 +620,18 @@ public class Resolver {
     }
 
 
-    private static MethodResolution.CallStatus computeCallStatus(InspectionProvider inspectionProvider,
-                                                                 Map<MethodInfo, MethodResolution.Builder> builders,
-                                                                 MethodInfo methodInfo) {
+    private MethodResolution.CallStatus computeCallStatus(Map<MethodInfo, MethodResolution.Builder> builders,
+                                                          MethodInfo methodInfo) {
         if (methodInfo.isConstructor) {
             return MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         }
         if (!methodInfo.isPrivate()) {
             return MethodResolution.CallStatus.NON_PRIVATE;
         }
-        if (isCalledFromNonPrivateMethod(inspectionProvider, builders, methodInfo)) {
+        if (isCalledFromNonPrivateMethod(builders, methodInfo)) {
             return MethodResolution.CallStatus.CALLED_FROM_NON_PRIVATE_METHOD;
         }
-        if (isCalledFromConstructors(inspectionProvider, builders, methodInfo)) {
+        if (isCalledFromConstructors(builders, methodInfo)) {
             return MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         }
         return MethodResolution.CallStatus.NOT_CALLED_AT_ALL;

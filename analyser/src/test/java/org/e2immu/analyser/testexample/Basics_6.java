@@ -19,6 +19,9 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.Variable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Basics_6 {
 
     @Variable
@@ -47,7 +50,7 @@ public class Basics_6 {
 
     public void test4() {
         String v1 = field;
-        nonPrivateMethod();
+        nonPrivateMethod(); // must interrupt, non-private
         String v2 = field;
         assert v1.equals(v2); // most likely true..."event" in between
     }
@@ -58,12 +61,12 @@ public class Basics_6 {
         assert v1.equals(v2); // most likely true... semantics of toLowerCase
     }
 
-    public void test6() {
+    public List<String> test6() {
         String v1 = field;
-        Integer twentySeven = new Integer(27); // some constructors do not interrupt
+        List<String> twentySeven = new ArrayList<>(27); // some constructors do not interrupt
         String v2 = field;
-        assert v1.equals(v2);
-        assert twentySeven == 27;
+        assert v1.equals(v2); // always true, no interruption
+        return twentySeven;
     }
 
     public String getField() {

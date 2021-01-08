@@ -173,6 +173,7 @@ public class TypeMapImpl implements TypeMap {
             });
 
             // we make a new map, because the resolver will encounter new types (which we will ignore)
+            // all methods not yet resolved, will be resolved here.
             new HashSet<>(typeInspections.keySet()).forEach(typeInfo -> {
                 if (typeInfo.typeInspection.isSet()) {
                     if (!typeInfo.typeResolution.isSet()) {

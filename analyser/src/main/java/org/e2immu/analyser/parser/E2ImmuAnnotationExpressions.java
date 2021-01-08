@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 @E2Container(after = "fields")
 public class E2ImmuAnnotationExpressions {
 
+    public final AnnotationExpression allowsInterrupt = create(AllowsInterrupt.class);
     public final AnnotationExpression beforeMark = create(BeforeMark.class);
     public final AnnotationExpression constant = create(Constant.class);
     public final AnnotationExpression container = create(Container.class);
@@ -51,10 +52,12 @@ public class E2ImmuAnnotationExpressions {
 
     public E2ImmuAnnotationExpressions() {
         ImmutableMap.Builder<String, TypeInfo> builder = new ImmutableMap.Builder<>();
-        add(builder, beforeMark, constant, container, dependent, e1Container, e2Container, extensionClass, e1Immutable, e2Immutable,
-                effectivelyFinal, fluent, identity, ignoreModifications, independent, linked, mark, modified, mutableModifiesArguments);
-        add(builder, notModified, notModified1, notNull, notNull1, notNull2, nullable, only, singleton
-                , utilityClass, variableField);
+        add(builder, allowsInterrupt, beforeMark, constant, container, dependent, e1Container, e2Container,
+                extensionClass, e1Immutable, e2Immutable,
+                effectivelyFinal, fluent, identity, ignoreModifications, independent,
+                linked, mark, modified, mutableModifiesArguments);
+        add(builder, notModified, notModified1, notNull, notNull1, notNull2, nullable, only, singleton,
+                utilityClass, variableField);
         annotationTypes = builder.build();
     }
 
