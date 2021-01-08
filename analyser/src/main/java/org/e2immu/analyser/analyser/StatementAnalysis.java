@@ -744,7 +744,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     }
 
     /*
-    Write a property into a variable. This action should come AFTER all MarkAssignment and MarkRead actions.
+    Write a property into a variable. Currently used after evaluation and merging, so the variable in question will
+    exist. It may not exist in EVAL yet in this statement, though. If it does, we don't mark it assigned, read, etc.
 
     This implies that the occurs in the expression, which in turn implies that an EVALUATION level should already be present!
     Now if the variable points to another variable, that one will get the property as well.
@@ -753,6 +754,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     public void addProperty(Variable variable, VariableProperty variableProperty, int value) {
         Objects.requireNonNull(variable);
         VariableInfoContainer vic = findForWriting(variable);
+        if (!vic.hasEvaluation()) {
+            VariableInfo initial = vic.getPreviousOrInitial();
+            vic.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), Set.of());
+        }
         vic.setProperty(variableProperty, value, VariableInfoContainer.Level.EVALUATION);
 
         Expression currentValue = vic.best(VariableInfoContainer.Level.EVALUATION).getValue();

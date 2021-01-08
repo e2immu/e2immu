@@ -971,7 +971,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (structure.expression() != EmptyExpression.EMPTY_EXPRESSION) {
                 expressionsFromInitAndUpdate.add(structure.expression());
             }
-            Expression toEvaluate = CommaExpression.comma(sharedState.evaluationContext, expressionsFromInitAndUpdate);
+            // Too dangerous to use CommaExpression.comma, because it filters out constants etc.!
+            Expression toEvaluate = expressionsFromInitAndUpdate.size() == 1 ? expressionsFromInitAndUpdate.get(0) :
+                    new CommaExpression(expressionsFromInitAndUpdate);
             EvaluationResult result = toEvaluate.evaluate(sharedState.evaluationContext, structure.forwardEvaluationInfo());
 
             if (statementAnalysis.flowData.timeAfterExecutionNotYetSet()) {
