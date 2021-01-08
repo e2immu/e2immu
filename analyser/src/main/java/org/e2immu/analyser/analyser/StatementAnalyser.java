@@ -506,7 +506,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             VariableInfo vi1 = vic.getPreviousOrInitial();
             assert vi != vi1 : "There should already be a different EVALUATION object";
 
-            if(status != DELAYS) {
+            if (status != DELAYS) {
                 // if the evaluation was not delayed...
                 Expression value = bestValue(changeData, vi1);
                 Expression valueToWrite = maybeValueNeedsState(sharedState.evaluationContext, vic, vi1, value);
@@ -564,7 +564,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             }
         }
 
-        evaluationResult.messages().getMessageStream().forEach(statementAnalysis.messages::add);
+        evaluationResult.messages().getMessageStream().forEach(statementAnalysis::ensure);
 
         if (status == DONE && evaluationResult.precondition() != null) {
             if (evaluationResult.precondition() == NO_VALUE) {
@@ -635,8 +635,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             additionalLinksForThisVariable = Set.of();
         }
         String id = index() + VariableInfoContainer.Level.EVALUATION;
-        String assignmentId = changeData.markAssignment() ? id : VariableInfoContainer.NOT_YET_ASSIGNED;
-        String readId = changeData.readAtStatementTime().isEmpty() ? VariableInfoContainer.NOT_YET_ASSIGNED : id;
+        String assignmentId = changeData.markAssignment() ? id : initial.getAssignmentId();
+        String readId = changeData.readAtStatementTime().isEmpty() ?
+                (changeData.markAssignment() ? VariableInfoContainer.NOT_YET_READ : initial.getReadId()) : id;
         int statementTime = statementAnalysis.statementTimeForVariable(analyserContext, variable, newStatementTime);
 
         vic.ensureEvaluation(assignmentId, readId, statementTime, changeData.readAtStatementTime());

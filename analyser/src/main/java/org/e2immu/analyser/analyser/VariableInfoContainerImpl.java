@@ -175,8 +175,12 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public void ensureEvaluation(String assignmentId, String readId, int statementTime, Set<Integer> readAtStatementTimes) {
         if (!evaluation.isSet()) {
             VariableInfoImpl pi = (VariableInfoImpl) getPreviousOrInitial();
+            assert !assignmentId.equals(NOT_YET_ASSIGNED) || !pi.isAssigned();
+            assert !readId.equals(NOT_YET_READ) || !assignmentId.equals(NOT_YET_ASSIGNED) || !pi.isRead();
             VariableInfoImpl eval = new VariableInfoImpl(pi.variable(), assignmentId, readId, statementTime, readAtStatementTimes);
             evaluation.set(eval);
+        } else if(!evaluation.get().statementTimeIsSet() && statementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY){
+            evaluation.get().setStatementTime(statementTime);
         }
     }
 
@@ -194,9 +198,10 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     The XXX marks when we can expect linked variable changes.
      */
     @Override
-    public void copy() {
+    public void copy(boolean isParent) {
         assert previousOrInitial.isLeft() : "No point in copying when we are an initial";
-        VariableInfo previous = previousOrInitial.getLeft().current();
+        Level level = isParent ? Level.EVALUATION: Level.MERGE;
+        VariableInfo previous = previousOrInitial.getLeft().best(level);
 
         assert this.evaluation.isSet();
 

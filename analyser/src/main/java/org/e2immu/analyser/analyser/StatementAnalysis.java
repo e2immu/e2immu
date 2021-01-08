@@ -395,7 +395,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (vic.isInitial()) {
                 fromFieldAnalyserIntoInitial(analyserContext, vic);
             } else {
-                if (vic.hasEvaluation()) vic.copy(); //otherwise, variable not assigned, not read
+                if (vic.hasEvaluation()) vic.copy(previous == null); //otherwise, variable not assigned, not read
             }
             ensureLocalCopiesOfConfirmedVariableFields(analyserContext, vic);
         });
@@ -518,6 +518,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                 initial.getValue() : new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
                         assert initialValue != EmptyExpression.NO_VALUE;
                         lvrVic.setValue(initialValue, propertyMap, true);
+                        lvrVic.setLinkedVariables(LinkedVariables.EMPTY, true);
                     }
                 }
             }
@@ -576,7 +577,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return Stream.concat(variables.stream(), lastStatements.stream().flatMap(st ->
                 st.statementAnalysis.variables.stream().filter(e -> {
                     VariableInfo vi = e.getValue().current();
-                    return !vi.variable().isLocal();
+                    // we don't copy up local variables, unless they're local copies of fields
+                    return !vi.variable().isLocal() ||
+                            vi.variable() instanceof LocalVariableReference lvr && lvr.variable.isLocalCopyOf() != null;
                 })
         ));
     }
@@ -859,7 +862,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         throw new UnsupportedOperationException();
     }
 
-    // FIXME more documentation needed here!
+    /*
+    Two situations for a variable field. First, when there's consecutive reads after an assignment, each in increasing
+    statement times, we simply use this statement time in the name: $st.
+    Only when statement time hasn't increased, but assignments have, we use the combination $st$assignment id.
+     */
     public String createLocalFieldCopyFQN(VariableInfo fieldVi, FieldReference fieldReference, int statementTime) {
         String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
         String prefix = fieldReference.fullyQualifiedName() + "$" + statementTime;

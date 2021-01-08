@@ -73,6 +73,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     if (d.iteration() == 0) {
                         Assert.assertEquals(VariableInfoContainer.VARIABLE_FIELD_DELAY, d.variableInfo().getStatementTime());
                     } else {
+                        Assert.assertEquals(1, d.variableInfo().getStatementTime());
                         // s is linked to s$1
                         Assert.assertEquals("org.e2immu.analyser.testexample.Basics_3.s$1",
                                 d.variableInfo().getLinkedVariables().toString());
@@ -116,7 +117,8 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if ("1".equals(d.statementId())) {
                     Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
                     if (d.iteration() > 0) {
-                        Assert.assertEquals("org.e2immu.analyser.testexample.Basics_3.s$2$0:M",
+                        // linked to s$1 and s$2$0:M
+                        Assert.assertEquals("org.e2immu.analyser.testexample.Basics_3.s$1,org.e2immu.analyser.testexample.Basics_3.s$2$0:M",
                                 d.variableInfo().getLinkedVariables().toString());
                     }
                     Assert.assertTrue("At " + d.statementId(), d.variableInfo().isAssigned());
