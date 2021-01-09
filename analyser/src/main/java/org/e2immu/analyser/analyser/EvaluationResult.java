@@ -20,6 +20,7 @@ package org.e2immu.analyser.analyser;
 import com.google.common.collect.ImmutableMap;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
@@ -459,15 +460,16 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                                   LinkedVariables linkedVariables) {
             assert evaluationContext != null;
             boolean stateIsDelayed = evaluationContext.getConditionManager().isDelayed();
+            boolean markAssignment = resultOfExpression != EmptyExpression.EMPTY_EXPRESSION;
 
             ChangeData newEcd;
             ChangeData ecd = valueChanges.get(assignmentTarget);
             if (ecd == null) {
                 newEcd = new ChangeData(stateIsDelayed ? NO_VALUE : resultOfExpression, stateIsDelayed,
-                        true, Set.of(), linkedVariables, Map.of());
+                        markAssignment, Set.of(), linkedVariables, Map.of());
             } else {
                 newEcd = new ChangeData(stateIsDelayed ? NO_VALUE : resultOfExpression, stateIsDelayed,
-                        true, ecd.readAtStatementTime, linkedVariables, ecd.properties);
+                        ecd.markAssignment || markAssignment, ecd.readAtStatementTime, linkedVariables, ecd.properties);
             }
             valueChanges.put(assignmentTarget, newEcd);
             return this;

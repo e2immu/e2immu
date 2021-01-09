@@ -101,10 +101,10 @@ public class FieldAnalyser extends AbstractAnalyser {
                 .add(COMPUTE_IMPLICITLY_IMMUTABLE_DATA_TYPE, (iteration) -> computeImplicitlyImmutableDataType())
                 .add(EVALUATE_INITIALISER, this::evaluateInitialiser)
                 .add(ANALYSE_FINAL, (iteration) -> analyseFinal())
+                .add(ANALYSE_MODIFIED, (iteration) -> analyseModified())
                 .add(ANALYSE_FINAL_VALUE, (iteration) -> analyseFinalValue())
                 .add(ANALYSE_DYNAMIC_TYPE_ANNOTATION_IMMUTABLE, this::analyseImmutable)
                 .add(ANALYSE_NOT_NULL, this::analyseNotNull)
-                .add(ANALYSE_MODIFIED, (iteration) -> analyseModified())
                 .add(ANALYSE_NOT_MODIFIED_1, (iteration) -> analyseNotModified1())
                 .add(ANALYSE_LINKED, (iteration) -> analyseLinked())
                 .add(FIELD_ERRORS, (iteration) -> fieldErrors())
@@ -398,6 +398,18 @@ public class FieldAnalyser extends AbstractAnalyser {
         return result;
     }
 
+    /*
+    Nothing gets set before we know (a) the initialiser, if it is there, (b) values in the constructor, and (c)
+    the decision on @Final.
+
+    Even if there is an initialiser and the field is explicitly final (final modifier), that value does NOT
+    necessarily become the final value. Consider Modification_0, where the field is assigned a "new HashSet()"
+    but where a modifying method (add to the set) changes this "new" object into a normal, modified instance.
+
+    Only when the field is @NotModified and not exposed, or @E2Immutable, the initialiser remains.
+    Because @Modified cannot be computed in the first iteration, the effectively final value cannot (generally)
+    be computed in the first iteration either (it can if the type is immediately known to be @E2Immutable, such as for primitives)
+     */
     private AnalysisStatus analyseFinalValue() {
         List<Expression> values = new LinkedList<>();
         if (haveInitialiser) {
@@ -429,13 +441,35 @@ public class FieldAnalyser extends AbstractAnalyser {
             return DONE;
         }
 
+        // checks on @E2Immutable, @Modified
+        boolean downgradeFromNewInstanceWithConstructor;
+        int immutable = fieldAnalysis.getProperty(VariableProperty.IMMUTABLE);
+        if (immutable == Level.DELAY) {
+            log(DELAYED, "Waiting with effectively final value  until decision on @E2Immutable for {}", fieldInfo.fullyQualifiedName());
+            return DELAYS;
+        }
+        int e2immu = MultiLevel.value(immutable, MultiLevel.E2IMMUTABLE);
+        if (e2immu == MultiLevel.EFFECTIVE) {
+            downgradeFromNewInstanceWithConstructor = false;
+        } else {
+            // modified = fieldAnalysis.getProperty(VariableProperty.MODIFIED);
+            //if (modified == Level.DELAY) {
+            //    log(DELAYED, "Waiting with effectively final value  until decision on @Modified for {}", fieldInfo.fullyQualifiedName());
+            //    return DELAYS;
+            //} else if (modified == Level.FALSE && fieldInfo.isPrivate()) {
+            // FIXME wait until all methods with results involving this field are declared @Independent -- CAN WE DO THAT??
+            //downgradeFromNewInstanceWithConstructor = checkReturnValuesIndependentForThisField...;
+            //} else {
+            downgradeFromNewInstanceWithConstructor = true;
+            //}
+        }
         // compute and set the combined value
 
         if (!fieldAnalysis.internalObjectFlows.isSet()) {
             log(DELAYED, "Delaying effectively final value because internal object flows not yet known, {}", fieldInfo.fullyQualifiedName());
             //      return DELAYS; TODO see TestFieldNotRead, but for now waiting until we sort out internalObjectFlows
         }
-        Expression effectivelyFinalValue = determineEffectivelyFinalValue(values);
+        Expression effectivelyFinalValue = determineEffectivelyFinalValue(values, downgradeFromNewInstanceWithConstructor);
 
         ObjectFlow objectFlow = effectivelyFinalValue.getObjectFlow();
         if (objectFlow != ObjectFlow.NO_FLOW && !fieldAnalysis.objectFlow.isSet()) {
@@ -470,21 +504,27 @@ public class FieldAnalyser extends AbstractAnalyser {
         return DONE;
     }
 
-    private Expression determineEffectivelyFinalValue(List<Expression> values) {
-        // suppose there are 2 constructors, and the field gets the same value...
+    private Expression determineEffectivelyFinalValue(List<Expression> values, boolean downgradeFromNewInstanceWithConstructor) {
+        // suppose there are 2 constructors, and the field gets exactly the same value...
         Set<Expression> set = new HashSet<>(values);
         if (set.size() == 1) {
             Expression expression = values.get(0);
-
             BooleanConstant TRUE = new BooleanConstant(analyserContext.getPrimitives(), true);
-            if (expression instanceof NewObject newObject && !newObject.state.isBoolValueTrue()) {
-                // now the state of the new object may survive if there are no modifying methods called,
-                // but that's too early to know now
-                // we'll store it, and
-                fieldAnalysis.setStateOfEffectivelyFinalValue(newObject.state);
-                return new NewObject(newObject, TRUE);
-            }
+            if (expression instanceof NewObject newObject) {
+                NewObject afterDowngrade = downgradeFromNewInstanceWithConstructor ?
+                        new NewObject(null, newObject.parameterizedType, List.of(), newObject.state, newObject.getObjectFlow())
+                        : newObject;
 
+                if (!afterDowngrade.state.isBoolValueTrue()) {
+                    // now the state of the new object may survive if there are no modifying methods called,
+                    // but that's too early to know now
+                    // we'll store it, and
+                    fieldAnalysis.setStateOfEffectivelyFinalValue(afterDowngrade.state);
+                    return new NewObject(afterDowngrade, TRUE);
+                }
+                fieldAnalysis.setStateOfEffectivelyFinalValue(TRUE);
+                return afterDowngrade;
+            }
             fieldAnalysis.setStateOfEffectivelyFinalValue(TRUE);
             return expression;
         }

@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -138,7 +139,7 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
         }
         if ("e".equals(d.fieldInfo().name)) {
             if (d.iteration() == 0) {
-                Assert.assertNull(d.fieldAnalysis().getLinkedVariables());
+                Assert.assertSame(LinkedVariables.DELAY, d.fieldAnalysis().getLinkedVariables());
             } else {
                 Assert.assertTrue(d.fieldAnalysis().getLinkedVariables().isEmpty());
             }

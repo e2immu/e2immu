@@ -1,6 +1,8 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.*;
+import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.inspector.MethodResolution;
 import org.e2immu.analyser.model.*;
@@ -53,6 +55,7 @@ public class Test_04_Warnings extends CommonTestRunner {
     public void test1() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.Warnings_1";
         final String THIS = TYPE + ".this";
+        final String E = VariableInfoContainer.Level.EVALUATION.toString();
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             AnalysisStatus analysisStatus = d.result().analysisStatus;
@@ -111,7 +114,7 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("checkForEach".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
                 if ("integers".equals(d.variableName())) {
                     // so that we know that integers.iterator() has been called
-                    Assert.assertEquals("2", d.variableInfo().getReadId()); // FIXME check value
+                    Assert.assertEquals("1" + E, d.variableInfo().getReadId());
                 }
                 if ("loopVar".equals(d.variableName())) {
                     Assert.assertFalse(d.variableInfo().isRead());
@@ -127,28 +130,28 @@ public class Test_04_Warnings extends CommonTestRunner {
                 String assigned = d.variableInfo().getAssignmentId();
 
                 if ("0".equals(d.statementId()) && "integers".equals(d.variableName())) {
-                    Assert.assertEquals("0", assigned); // integers=, and integers[i]= FIXME check
+                    Assert.assertEquals("0" + E, assigned); // integers=, and integers[i]=
                     Assert.assertEquals(VariableInfoContainer.NOT_YET_READ, read);
                     Assert.assertEquals("{1,2,3}", d.currentValue().toString());
                 }
                 if ("1".equals(d.statementId()) && "i".equals(d.variableName())) {
-                    Assert.assertEquals("0", assigned); // integers=, and integers[i]= FIXME check, ... and more in this test
+                    Assert.assertEquals("1" + E, assigned); // integers=, and integers[i]=
                     Assert.assertEquals(VariableInfoContainer.NOT_YET_READ, read);
                     Assert.assertEquals("0", d.currentValue().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     if ("integers".equals(d.variableName())) {
-                        Assert.assertEquals("0", assigned); // integers=, NOT integers[i]=
-                        Assert.assertEquals(assigned + 1, read);
+                        Assert.assertEquals("0" + E, assigned); // integers=, NOT integers[i]=
+                        Assert.assertEquals("2" + E, read);
                         Assert.assertEquals("{1,2,3}", d.currentValue().toString());
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_CONTENT_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL)); // because in scope side
                     } else if ("i".equals(d.variableName())) {
-                        Assert.assertEquals("0", assigned);
-                        Assert.assertEquals(assigned + 1, read);
+                        Assert.assertEquals("1" + E, assigned);
+                        Assert.assertEquals("2" + E, read);
 
                         // the standardized name is the evaluation value of expression and index, in this particular case, both constants
                     } else if ("integers[i]".equals(d.variableName())) {
-                        Assert.assertEquals("0", assigned);
+                        Assert.assertEquals("2" + E, assigned);
                         Assert.assertTrue(read.compareTo(assigned) < 0);
                         Assert.assertEquals("3", d.currentValue().toString());
                     } else if (THIS.equals(d.variableName())) {
