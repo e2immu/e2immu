@@ -72,8 +72,7 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("field".equals(d.fieldInfo().name)) {
-                int expect = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                Assert.assertEquals(expect, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
             }
         };
         final String TYPE = "org.e2immu.analyser.testexample.Basics_6";

@@ -63,10 +63,8 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             assertSubMap(expect, d.statuses());
         }
         if ("string".equals(d.fieldInfo().name)) {
-            int expectFinal = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-            Assert.assertEquals(expectFinal, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-            Assert.assertEquals(expectNotNull, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+            Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
         }
     };
 
