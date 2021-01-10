@@ -27,12 +27,14 @@ import org.e2immu.analyser.parser.Messages;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.pattern.PatternMatcher;
 import org.e2immu.analyser.resolver.SortedType;
+import org.e2immu.analyser.util.ListUtil;
 import org.e2immu.analyser.util.Pair;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -102,7 +104,7 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
 
         // finally fields, and wire everything together
         ImmutableMap.Builder<FieldInfo, FieldAnalyser> fieldAnalysersBuilder = new ImmutableMap.Builder<>();
-        analysers = sortedType.methodsFieldsSubTypes().stream().flatMap(mfs -> {
+        List<Analyser> allAnalysers = sortedType.methodsFieldsSubTypes().stream().flatMap(mfs -> {
             Analyser analyser;
             if (mfs instanceof FieldInfo fieldInfo) {
                 MethodAnalyser samAnalyser = null;
@@ -129,6 +131,16 @@ public class PrimaryTypeAnalyser implements AnalyserContext {
         }).collect(Collectors.toList());
         fieldAnalysers = fieldAnalysersBuilder.build();
 
+        List<MethodAnalyser> methodAnalysersInOrder = new ArrayList<>(methodAnalysers.size());
+        List<FieldAnalyser> fieldAnalysersInOrder = new ArrayList<>(fieldAnalysers.size());
+        List<TypeAnalyser> typeAnalysersInOrder = new ArrayList<>(typeAnalysers.size());
+        allAnalysers.forEach(analyser -> {
+            if (analyser instanceof MethodAnalyser ma) methodAnalysersInOrder.add(ma);
+            else if (analyser instanceof TypeAnalyser ta) typeAnalysersInOrder.add(ta);
+            else if (analyser instanceof FieldAnalyser fa) fieldAnalysersInOrder.add(fa);
+            else throw new UnsupportedOperationException();
+        });
+        analysers = ListUtil.immutableConcat(methodAnalysersInOrder, fieldAnalysersInOrder, typeAnalysersInOrder);
         // all important fields of the interface have been set.
         analysers.forEach(Analyser::initialize);
     }

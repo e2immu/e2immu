@@ -24,10 +24,12 @@ import org.e2immu.analyser.objectflow.Origin;
 import org.e2immu.analyser.parser.E2ImmuAnnotationExpressions;
 import org.e2immu.analyser.parser.Primitives;
 import org.e2immu.analyser.util.FirstThen;
+import org.e2immu.analyser.util.FlipSwitch;
 import org.e2immu.analyser.util.SetOnce;
 import org.e2immu.annotation.AnnotationMode;
 import org.e2immu.annotation.NotModified;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -132,6 +134,9 @@ public class FieldAnalysisImpl extends AnalysisImpl implements FieldAnalysis {
         private final AnalysisProvider analysisProvider;
         public final SetOnce<Expression> initialValue = new SetOnce<>();
         public Expression stateOfEffectivelyFinalValue;
+
+        public final SetOnce<List<Expression>> values = new SetOnce<>();
+        public final FlipSwitch allLinksHaveBeenEstablished = new FlipSwitch();
 
         public Builder(Primitives primitives, AnalysisProvider analysisProvider, @NotModified FieldInfo fieldInfo, TypeAnalysis typeAnalysisOfOwner) {
             super(primitives, fieldInfo.name);

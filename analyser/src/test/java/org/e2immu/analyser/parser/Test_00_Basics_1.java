@@ -25,6 +25,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.ParameterAnalysis;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -59,8 +60,10 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                 } else {
-                    Assert.assertEquals("",/*p0*/ d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
+                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type Set<String>";
+                Assert.assertEquals(expectValue, d.currentValue().toString());
             }
             if (GET_F1_RETURN.equals(d.variableName())) {
                 Assert.assertTrue(d.variableInfo().isAssigned());
@@ -69,6 +72,8 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 } else {
                     Assert.assertEquals("this.f1", d.variableInfo().getLinkedVariables().toString()); // without p0
                 }
+                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "f1";
+                Assert.assertEquals(expectValue, d.currentValue().toString());
             }
         }
     };
@@ -77,22 +82,22 @@ public class Test_00_Basics_1 extends CommonTestRunner {
         if (BASICS_1.equals(d.methodInfo().name) && "1".equals(d.statementId())) {
             Assert.assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
         }
-        if ("getF1".equals(d.methodInfo().name) && d.iteration() > 0) {
+        if ("getF1".equals(d.methodInfo().name) && d.iteration() > 1) {
             Assert.assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
         }
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("f1".equals(d.fieldInfo().name)) {
-            if (d.iteration() > 0) {
-                Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                Assert.assertEquals("p0", d.fieldAnalysis().getEffectivelyFinalValue().output().debug());
-                Assert.assertEquals("p0", d.fieldAnalysis().getLinkedVariables().toString());
-                if (d.iteration() > 1) {
-                    Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
-                }
+            Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+            Assert.assertEquals("p0", d.fieldAnalysis().getEffectivelyFinalValue().output().debug());
+            Assert.assertEquals("p0", d.fieldAnalysis().getLinkedVariables().toString());
+            if (d.iteration() == 0) {
+                Assert.assertEquals(Level.DELAY, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
+            } else {
+                Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
             }
-            int expectNN = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
+            int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
             Assert.assertEquals(expectNN, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
         }
     };

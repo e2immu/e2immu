@@ -40,6 +40,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
         super(false);
     }
 
+    // value only comes in second iteration
     EvaluationResultVisitor evaluationResultVisitor = d -> {
         if (d.methodInfo().name.equals("getExplicitlyFinal") && "0".equals(d.statementId())) {
             String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "\"abc\"";
@@ -47,28 +48,23 @@ public class Test_00_Basics_0 extends CommonTestRunner {
         }
     };
 
+    // everything in first iteration
     FieldAnalyserVisitor afterFieldAnalyserVisitor = d -> {
         FieldAnalysis fieldAnalysis = d.fieldAnalysis();
         if ("explicitlyFinal".equals(d.fieldInfo().name)) {
-            String expectLinks = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-            Assert.assertEquals(expectLinks, fieldAnalysis.getLinkedVariables().toString()); // never in first iteration
-
-            if (d.iteration() <= 1) {
-                Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
-                Assert.assertEquals("\"abc\"", fieldAnalysis.getEffectivelyFinalValue().toString());
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(fieldAnalysis.getEffectivelyFinalValue(),
-                        VariableProperty.NOT_NULL));
-            } else {
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, fieldAnalysis.getProperty(VariableProperty.NOT_NULL));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, fieldAnalysis.getProperty(VariableProperty.IMMUTABLE));
-                Assert.assertTrue(fieldAnalysis.getLinkedVariables().isEmpty());
-            }
+            Assert.assertEquals("", fieldAnalysis.getLinkedVariables().toString());
+            Assert.assertEquals(Level.TRUE, fieldAnalysis.getProperty(VariableProperty.FINAL));
+            Assert.assertEquals("\"abc\"", fieldAnalysis.getEffectivelyFinalValue().toString());
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(fieldAnalysis.getEffectivelyFinalValue(),
+                    VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, fieldAnalysis.getProperty(VariableProperty.IMMUTABLE));
+            Assert.assertTrue(fieldAnalysis.getLinkedVariables().isEmpty());
         }
     };
 
     StatementAnalyserVariableVisitor statementAnalyserVisitor = d -> {
-        if (d.methodInfo().name.equals("getExplicitlyFinal")
-                && "0".equals(d.statementId())) {
+        if (d.methodInfo().name.equals("getExplicitlyFinal") && "0".equals(d.statementId())) {
+            // the field
             if ((TYPE + ".explicitlyFinal").equals(d.variableName())) {
                 Assert.assertFalse(d.variableInfo().isAssigned());
                 Assert.assertTrue(d.variableInfo().isRead());
@@ -80,6 +76,7 @@ public class Test_00_Basics_0 extends CommonTestRunner {
                 }
                 return;
             }
+            // this.
             if ((TYPE + ".this").equals(d.variableName())) {
                 Assert.assertTrue(d.variableInfo().isRead());
                 return;

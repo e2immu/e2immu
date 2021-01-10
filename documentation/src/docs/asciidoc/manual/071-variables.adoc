@@ -81,3 +81,75 @@ The value `NO_FLOW` is used when no value as been set.
 
 All these fields are immutable once they have been set, except the `properties` map, which is incremental.
 The `READ` and `ASSIGNED` properties have the following special behaviour: ... #TODO#
+
+==== Tests: Basics_0
+
+[source,java]
+----
+private final String effectivelyFinal = "abc";
+public String getEffectivelyFinal() {
+    return effectivelyFinal;
+}
+----
+
+Analysers:
+
+* Statement analyser, iteration 0, statement 0, return statement.
+The field `effectivelyFinal` does not yet exist in the list of variables; the change data yields a `FieldReference` pointing to a value of `NO_VALUE`, and a marker that the variable is read in this statement.
+
+* Method analyser: #TODO#
+
+* Field analyser, iteration 0: it is immediately clear that the field is explicitly final, and that the initialiser is level 2 immutable.
+Therefore, an effectively final value can be assigned: `"abc"`.
+Everything can be concluded.
+
+* Statement analyser, iteration 1: at initialisation, the variable is created, and the effectively final value is filled.
+The main evaluation can therefore return a value.
+The return variable can also be set.
+
+* Method analyser: can conclude all except for the approved pre-conditions, which will remain unresolved?
+
+==== Tests: Basics_1
+
+[source,java]
+----
+public final Set<String> f1;
+
+public Basics_1(Set<String> p0, Set<String> p1, String p2) {
+    Set<String> s1 = p0;
+    this.f1 = s1;
+}
+
+public Set<String> getF1() { return f1; }
+----
+
+Iteration 0, statement analyser for the constructor:
+
+* statement 0: at initialisation, `this` and the three parameters are created as variables, in the `INITIAL` phase.
+The local variable `s1` is created, and assigned to the first parameter.
+Both exist in `EVAL` phase, one with an assignment id, the other with a read id.
+* statement 1: a field reference is created, and assigned the value `p0`.
+The field is linked to this parameter.
+
+Iteration 0, statement analyser for the getter:
+* statement 0: the field does not yet exist in the list of variables.
+It is marked as read during evaluation, and will be created during the initialisation step of the next iteration.
+The return variable has been created at initialisation, but for now has no value.
+
+Iteration 0, field analyser:
+
+* the field is marked as effectively final.
+* because there is no /
+
+
+Iteration 1, statement analyser for getter:
+* the field `f1` has the value `instance type Set<String>`, not linked locally.
+* the return variable points to the field `f1`.
+
+IMPORTANT:: We could also return the value of `f1` in the return statement, but at the moment we don't think it matters that much.
+
+Iteration 1, field analyser:
+Modification is determined, as is nullability.
+
+Iteration 2: parameter analyser: the `@NotNull` of the field travels to the parameter.
+

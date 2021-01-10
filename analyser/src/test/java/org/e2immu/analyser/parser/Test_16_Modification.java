@@ -29,12 +29,14 @@ public class Test_16_Modification extends CommonTestRunner {
     public void test0() throws IOException {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if("add".equals(d.methodInfo().name)) {
+            if ("add".equals(d.methodInfo().name)) {
                 if ("org.e2immu.analyser.testexample.Modification_0.set1".equals(d.variableName())) {
                     Assert.assertTrue(d.variableInfoContainer().hasEvaluation() && !d.variableInfoContainer().hasMerge());
                     Assert.assertTrue(d.variableInfo().isRead());
-                    int expectModified = d.iteration() == 0 ? Level.DELAY: Level.TRUE;
+                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                     Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
@@ -43,7 +45,7 @@ public class Test_16_Modification extends CommonTestRunner {
             if ("set1".equals(d.fieldInfo().name)) {
                 // we'll only know in the 3rd (2) iteration that the field is modified
                 // (it is invisible to it 0 of the
-                int expect = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                int expect = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expect, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
             }
         };
