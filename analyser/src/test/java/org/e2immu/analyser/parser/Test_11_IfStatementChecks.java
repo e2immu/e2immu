@@ -135,13 +135,13 @@ public class Test_11_IfStatementChecks extends CommonTestRunner {
             if (d.methodInfo().name.equals("method4") && "res".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
                     Assert.assertFalse(d.hasProperty(VariableProperty.MODIFIED));
-                    Assert.assertFalse(d.variableInfo().isRead()); // nothing that points to not null
+                    Assert.assertFalse(d.variableInfo().isRead());
                 } else if ("1.0.0".equals(d.statementId()) || "1.1.0".equals(d.statementId())) {
                     Assert.assertTrue(d.variableInfo().isAssigned());
-                    Assert.assertFalse(d.variableInfo().isRead()); // nothing that points to not null
+                    Assert.assertFalse(d.variableInfo().isRead());
                 } else if ("1".equals(d.statementId())) {
                     Assert.assertTrue(d.variableInfo().isAssigned());
-                    Assert.assertFalse(d.variableInfo().isRead()); // nothing that points to not null
+                    Assert.assertFalse(d.variableInfo().isRead());
                 } else if ("2".equals(d.statementId())) {
                     Assert.assertTrue(d.variableInfo().isRead()); // twice actually
                 } else Assert.fail("Statement " + d.statementId());

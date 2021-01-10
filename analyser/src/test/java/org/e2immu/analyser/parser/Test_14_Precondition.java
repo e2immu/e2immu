@@ -142,8 +142,7 @@ public class Test_14_Precondition extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("integer".equals(d.fieldInfo().name)) {
-                int expectFinal = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                Assert.assertEquals(expectFinal, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
             }
         };
 

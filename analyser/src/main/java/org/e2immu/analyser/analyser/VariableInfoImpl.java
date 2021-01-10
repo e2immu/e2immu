@@ -220,12 +220,8 @@ class VariableInfoImpl implements VariableInfo {
                                                Expression stateOfDestination,
                                                boolean atLeastOneBlockExecuted,
                                                Map<Expression, VariableInfo> mergeSources) {
-
-        String mergedAssignmentId = mergedId(evaluationContext, atLeastOneBlockExecuted, getAssignmentId(),
-                VariableInfo::getAssignmentId, mergeSources);
-        String mergedReadId = mergedId(evaluationContext, atLeastOneBlockExecuted, getReadId(),
-                VariableInfo::getReadId, mergeSources);
-
+        String mergedAssignmentId = mergedId(evaluationContext, getAssignmentId(), VariableInfo::getAssignmentId, mergeSources);
+        String mergedReadId = mergedId(evaluationContext, getReadId(), VariableInfo::getReadId, mergeSources);
         VariableInfoImpl newObject = new VariableInfoImpl(variable, mergedAssignmentId, mergedReadId);
         newObject.mergeIntoMe(evaluationContext, stateOfDestination, atLeastOneBlockExecuted, this, mergeSources);
         return newObject;
@@ -250,7 +246,6 @@ class VariableInfoImpl implements VariableInfo {
     }
 
     private static String mergedId(EvaluationContext evaluationContext,
-                                   boolean existingValuesWillBeOverwritten,
                                    String previousId,
                                    Function<VariableInfo, String> getter,
                                    Map<Expression, VariableInfo> merge) {
@@ -259,7 +254,7 @@ class VariableInfoImpl implements VariableInfo {
                 evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.EVALUATION;
         String currentStatementIdM = (evaluationContext.getCurrentStatement() == null ? NOT_YET_ASSIGNED :
                 evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.MERGE;
-        boolean inSubBlocks = existingValuesWillBeOverwritten ||
+        boolean inSubBlocks =
                 merge.values().stream().anyMatch(vi -> getter.apply(vi).compareTo(currentStatementIdE) > 0);
         return inSubBlocks ? currentStatementIdM : previousId;
     }

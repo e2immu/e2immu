@@ -440,7 +440,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
         public void variableOccursInNotModified1Context(Variable variable, Expression currentExpression) {
             if (currentExpression == NO_VALUE) return; // not yet
             assert evaluationContext != null;
-            StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
             // if we already know that the variable is NOT @NotNull, then we'll raise an error
             int notModified1 = evaluationContext.getProperty(currentExpression, VariableProperty.NOT_MODIFIED_1);
             if (notModified1 == Level.FALSE) {

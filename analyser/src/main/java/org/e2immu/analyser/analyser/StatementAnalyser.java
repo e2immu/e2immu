@@ -643,8 +643,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         }
         String id = index() + VariableInfoContainer.Level.EVALUATION;
         String assignmentId = changeData.markAssignment() ? id : initial.getAssignmentId();
-        String readId = changeData.readAtStatementTime().isEmpty() ?
-                (changeData.markAssignment() ? VariableInfoContainer.NOT_YET_READ : initial.getReadId()) : id;
+        // we do not set readId to the empty set when markAssignment... we'd rather keep the old value
+        // we will compare the recency anyway
+        String readId = changeData.readAtStatementTime().isEmpty() ? initial.getReadId() : id;
         int statementTime = statementAnalysis.statementTimeForVariable(analyserContext, variable, newStatementTime);
 
         vic.ensureEvaluation(assignmentId, readId, statementTime, changeData.readAtStatementTime());
