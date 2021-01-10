@@ -49,6 +49,7 @@ import java.util.stream.Stream;
 import static org.e2immu.analyser.analyser.VariableProperty.*;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
+import static org.e2immu.analyser.util.StringUtil.pad;
 
 @Container
 public class StatementAnalysis extends AbstractAnalysisBuilder implements Comparable<StatementAnalysis>, HasNavigationData<StatementAnalysis> {
@@ -188,8 +189,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
         StatementAnalysis first = null;
         StatementAnalysis previous = null;
+
         for (Statement statement : statements) {
-            String iPlusSt = indices + "." + statementIndex;
+            String iPlusSt = indices + "." + pad(statementIndex, statements.size());
             StatementAnalysis statementAnalysis = new StatementAnalysis(primitives, methodAnalysis, statement, parent, iPlusSt, inSyncBlock);
             if (previous != null) {
                 previous.navigationData.next.set(Optional.of(statementAnalysis));
@@ -203,8 +205,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             boolean newInSyncBlock = inSyncBlock || statement instanceof SynchronizedStatement;
             Structure structure = statement.getStructure();
             if (structure.haveStatements()) {
+                String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
                 StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
-                        structure.statements(), iPlusSt + "." + blockIndex, true, newInSyncBlock);
+                        structure.statements(), indexWithBlock, true, newInSyncBlock);
                 analysisBlocks.add(Optional.of(subStatementAnalysis));
             } else {
                 analysisBlocks.add(Optional.empty());
@@ -212,8 +215,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             blockIndex++;
             for (Structure subStatements : structure.subStatements()) {
                 if (subStatements.haveStatements()) {
+                    String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
                     StatementAnalysis subStatementAnalysis = recursivelyCreateAnalysisObjects(primitives, methodAnalysis, parent,
-                            subStatements.statements(), iPlusSt + "." + blockIndex, true, newInSyncBlock);
+                            subStatements.statements(), indexWithBlock, true, newInSyncBlock);
                     analysisBlocks.add(Optional.of(subStatementAnalysis));
                 } else {
                     analysisBlocks.add(Optional.empty());

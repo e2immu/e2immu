@@ -49,6 +49,7 @@ import static org.e2immu.analyser.analyser.FlowData.Execution.*;
 import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.*;
 import static org.e2immu.analyser.util.Logger.log;
+import static org.e2immu.analyser.util.StringUtil.pad;
 
 @Container(builds = StatementAnalysis.class)
 public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
@@ -101,7 +102,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         StatementAnalyser first = null;
         StatementAnalyser previous = null;
         for (Statement statement : statements) {
-            String iPlusSt = indices.isEmpty() ? "" + statementIndex : indices + "." + statementIndex;
+            String padded = pad(statementIndex, statements.size());
+            String iPlusSt = indices.isEmpty() ? "" + padded : indices + "." + padded;
             StatementAnalyser statementAnalyser = new StatementAnalyser(analyserContext, myMethodAnalyser, statement, parent, iPlusSt, inSyncBlock);
             if (previous != null) {
                 previous.statementAnalysis.navigationData.next.set(Optional.of(statementAnalyser.statementAnalysis));
@@ -118,9 +120,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             boolean newInSyncBlock = inSyncBlock || statement instanceof SynchronizedStatement;
 
             if (structure.haveStatements()) {
+                String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
+
                 StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser,
                         statementAnalyser.statementAnalysis, structure.getStatements(),
-                        iPlusSt + "." + blockIndex, true, newInSyncBlock);
+                        indexWithBlock, true, newInSyncBlock);
                 blocks.add(Optional.of(subStatementAnalyser));
                 analysisBlocks.add(Optional.of(subStatementAnalyser.statementAnalysis));
             } else {
@@ -129,9 +133,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             blockIndex++;
             for (Structure subStatements : structure.subStatements()) {
                 if (subStatements.haveStatements()) {
+                    String indexWithBlock = iPlusSt + "." + pad(blockIndex, structure.subStatements().size() + 1);
+
                     StatementAnalyser subStatementAnalyser = recursivelyCreateAnalysisObjects(analyserContext, myMethodAnalyser,
                             statementAnalyser.statementAnalysis, subStatements.getStatements(),
-                            iPlusSt + "." + blockIndex, true, newInSyncBlock);
+                            indexWithBlock, true, newInSyncBlock);
                     blocks.add(Optional.of(subStatementAnalyser));
                     analysisBlocks.add(Optional.of(subStatementAnalyser.statementAnalysis));
                 } else {

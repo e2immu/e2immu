@@ -210,8 +210,11 @@ public class NewObject implements HasParameterExpressions {
             case NOT_NULL: {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
                 if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                if (constructor != null) {
+                if (constructor != null || !(state instanceof BooleanConstant)) {
                     // if the constructor is there, it is really a case of "new X(...)", which is never null
+
+                    // TODO we'll need something better than state != T,F
+                    // if the state is not TRUE nor FALSE, we're talking an object that is really not null
                     return bestType == null ? MultiLevel.EFFECTIVELY_NOT_NULL :
                             MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
                                     evaluationContext.getTypeAnalysis(bestType).getProperty(VariableProperty.NOT_NULL));

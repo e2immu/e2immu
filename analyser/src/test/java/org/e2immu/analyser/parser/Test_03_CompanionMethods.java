@@ -32,6 +32,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Test_03_CompanionMethods extends CommonTestRunner {
@@ -358,29 +360,36 @@ public class Test_03_CompanionMethods extends CommonTestRunner {
                 .build());
     }
 
+    private static final Pattern PATTERN = Pattern.compile("(\\d+)[^\\d]*");
 
     @Test
     public void test8() throws IOException {
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("test".equals(d.methodInfo().name) && "set".equals(d.variableName())) {
-                if ("0".equals(d.statementId())) {
+
+                // there are 10+ statements, so numbers are two digits
+                Matcher matcher = PATTERN.matcher(d.statementId());
+                Assert.assertTrue(matcher.matches());
+                Assert.assertEquals(2, matcher.group(0).length());
+
+                if ("00".equals(d.statementId())) {
                     Assert.assertEquals("new HashSet()/*this.isKnown(true)&&0==this.size()*/",
                             d.currentValue().toString());
                 }
             }
             if ("test".equals(d.methodInfo().name) && "added1".equals(d.variableName())) {
-                if ("2".equals(d.statementId())) {
+                if ("02".equals(d.statementId())) {
                     Assert.assertEquals("true", d.currentValue().toString());
                 }
             }
             if ("test".equals(d.methodInfo().name) && "added3".equals(d.variableName())) {
-                if ("2".equals(d.statementId())) {
+                if ("02".equals(d.statementId())) {
                     Assert.assertEquals("false", d.currentValue().toString());
                 }
             }
         };
         EvaluationResultVisitor evaluationResultVisitor = d -> {
-            if ("test".equals(d.methodInfo().name) && "4".equals(d.statementId())) {
+            if ("test".equals(d.methodInfo().name) && "04".equals(d.statementId())) {
                 Assert.assertEquals("true", d.evaluationResult().value().toString());
             }
         };

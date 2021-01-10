@@ -70,4 +70,24 @@ public class StringUtil {
         if (lastDot1 == -1) return true;
         return index1.substring(0, lastDot1).equals(index2.substring(0, lastDot2));
     }
+
+    /*
+    n <= 10  >> 0..9
+    n <=100  >> 00..99
+    n <=1000 >> 000..999
+     */
+    public static String pad(int i, int n) {
+        String s = Integer.toString(i);
+        if (n <= 10) return s;
+        if (n <= 100) {
+            if (i < 10) return "0" + s;
+            return s;
+        }
+        if (n <= 1000) {
+            if (i < 10) return "00" + s;
+            if (i < 100) return "0" + s;
+            return s;
+        }
+        throw new UnsupportedOperationException("?? awfully long method");
+    }
 }
