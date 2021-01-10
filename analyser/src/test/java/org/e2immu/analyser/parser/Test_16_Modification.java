@@ -36,7 +36,9 @@ public class Test_16_Modification extends CommonTestRunner {
                     int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
                     Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
-                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString(): "instance type HashSet";
+                    Assert.assertEquals(expectValue, d.currentValue().debugOutput());
                 }
             }
         };

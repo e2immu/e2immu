@@ -153,3 +153,23 @@ Modification is determined, as is nullability.
 
 Iteration 2: parameter analyser: the `@NotNull` of the field travels to the parameter.
 
+==== Tests: Modification_0
+
+[source,java]
+----
+public final Set<String> set1 = new HashSet<>();
+
+public void add(@NotNull String v) {
+    set1.add(v);
+}
+----
+
+Iteration 0, statement analyser in `add`, statement 0:
+* the expression evaluates to `NO_VALUE` as `set1` is not a known variable
+
+Iteration 0, field analyser:
+* the field is explicitly final.
+We don't have to wait for modification since the field is public.
+
+Iteration 1, statement analyser in `add`: Value, linked variables, and `@Modified` determined.
+

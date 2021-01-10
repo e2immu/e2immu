@@ -391,7 +391,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 newVcd = new ChangeData(instance, stateIsDelayed, false, Set.of(), linkedVariables, Map.of());
             } else {
                 newVcd = new ChangeData(instance, current.stateIsDelayed, current.markAssignment,
-                        current.readAtStatementTime, linkedVariables, Map.of());
+                        current.readAtStatementTime, linkedVariables, current.properties);
             }
             valueChanges.put(variable, newVcd);
         }
