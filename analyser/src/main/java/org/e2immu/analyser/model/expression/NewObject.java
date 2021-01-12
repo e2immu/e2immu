@@ -45,16 +45,14 @@ import java.util.stream.Collectors;
  Represents first a newly constructed object, then after applying modifying methods, a "used" object
 
  */
-public class NewObject implements HasParameterExpressions {
-    public final MethodInfo constructor;   // ... = new HashSet<>()
-    public final ParameterizedType parameterizedType; // HashSet<String>
-    public final List<Expression> parameterExpressions; // = new HashSet<>(strings)
-    public final TypeInfo anonymousClass;  // ... = new Function<String, String>() { ... }
-    public final ArrayInitializer arrayInitializer; // int[] a = {1, 2, 3}
-    public final Expression state;  // ... information about the object from companion methods
-    public final ObjectFlow objectFlow; // generally a new flow
-    public final boolean canBeNull;
-
+public record NewObject(MethodInfo constructor,
+                        ParameterizedType parameterizedType,
+                        List<Expression> parameterExpressions,
+                        int minimalNotNull,
+                        TypeInfo anonymousClass,
+                        ArrayInitializer arrayInitializer,
+                        Expression state,
+                        ObjectFlow objectFlow) implements HasParameterExpressions {
     // specific construction and copy methods: we explicitly name construction
 
     /*
@@ -67,30 +65,30 @@ public class NewObject implements HasParameterExpressions {
                                                   Expression state,
                                                   ObjectFlow objectFlow) {
         return new NewObject(arrayCreationConstructor, parameterizedType,
-                parameterExpressions, false, null, arrayInitializer, state, objectFlow);
+                parameterExpressions, MultiLevel.EFFECTIVELY_NOT_NULL, null, arrayInitializer, state, objectFlow);
     }
 
     /*
     used in MethodCall and Field analyser (in the former to enrich with, in the latter to get rid of, state)
      */
     public NewObject copyWithNewState(Expression newState) {
-        return new NewObject(constructor, parameterizedType, parameterExpressions, false,
+        return new NewObject(constructor, parameterizedType, parameterExpressions, MultiLevel.EFFECTIVELY_NOT_NULL,
                 anonymousClass, arrayInitializer, newState, objectFlow);
     }
 
     public NewObject copyAfterModifyingMethodOnConstructor(Expression newState) {
-        return new NewObject(null, parameterizedType, List.of(), false, null, null,
+        return new NewObject(null, parameterizedType, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
                 newState, getObjectFlow());
     }
 
     public static NewObject forTesting(Primitives primitives, ParameterizedType parameterizedType) {
-        return new NewObject(null, parameterizedType, List.of(), false, null, null,
+        return new NewObject(null, parameterizedType, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
                 new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
     }
 
     // never null, never more interesting.
     public static NewObject forCatchOrThis(Primitives primitives, ParameterizedType parameterizedType) {
-        return new NewObject(null, parameterizedType, List.of(), false, null, null,
+        return new NewObject(null, parameterizedType, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
                 new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
     }
 
@@ -100,39 +98,48 @@ public class NewObject implements HasParameterExpressions {
      */
 
     public static NewObject localVariableInLoop(Primitives primitives, ParameterizedType parameterizedType) {
-        return new NewObject(null, parameterizedType, List.of(), true, null, null,
+        return new NewObject(null, parameterizedType, List.of(), Level.DELAY, null, null,
                 new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
     }
 
     public static NewObject localCopyOfVariableField(Primitives primitives, ParameterizedType parameterizedType, ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, List.of(), true, null, null,
+        return new NewObject(null, parameterizedType, List.of(), Level.DELAY, null, null,
                 new BooleanConstant(primitives, true), objectFlow);
     }
 
     /*
-    not-null in properties
+    not-null always in properties
      */
     public static NewObject initialValueOfParameter(ParameterizedType parameterizedType, Expression state, ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, List.of(), true, null, null,
+        return new NewObject(null, parameterizedType, List.of(), Level.DELAY, null, null,
                 state, objectFlow);
     }
 
     public static NewObject initialValueOfFieldPartOfConstruction(EvaluationContext evaluationContext, Variable variable, ObjectFlow objectFlow) {
-        boolean canBeNull = !MultiLevel.isEffectivelyNotNull(evaluationContext.getProperty(variable, VariableProperty.NOT_NULL));
-        return new NewObject(null, variable.parameterizedType(), List.of(), canBeNull, null, null,
+        int notNull = evaluationContext.getProperty(variable, VariableProperty.NOT_NULL);
+        return new NewObject(null, variable.parameterizedType(), List.of(), notNull, null, null,
                 new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);
     }
 
-    /* like a local variable in loop */
+    /* like a local variable in loop*/
     public static NewObject initialValueOfField(Primitives primitives, ParameterizedType parameterizedType, ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, List.of(), true, null, null,
+        return new NewObject(null, parameterizedType, List.of(), Level.DELAY, null, null,
+                new BooleanConstant(primitives, true), objectFlow);
+    }
+
+    /* like a local variable in loop*/
+    public static NewObject initialValueOfExternalField(Primitives primitives,
+                                                        ParameterizedType parameterizedType,
+                                                        int minimalNotNull,
+                                                        ObjectFlow objectFlow) {
+        return new NewObject(null, parameterizedType, List.of(), minimalNotNull, null, null,
                 new BooleanConstant(primitives, true), objectFlow);
     }
 
     // null-status derived from variable in evaluation context
     public static NewObject genericMergeResult(EvaluationContext evaluationContext, Variable variable, ObjectFlow objectFlow) {
-        boolean canBeNull = !MultiLevel.isEffectivelyNotNull(evaluationContext.getProperty(variable, VariableProperty.NOT_NULL));
-        return new NewObject(null, variable.parameterizedType(), List.of(), canBeNull, null, null,
+        int notNull = evaluationContext.getProperty(variable, VariableProperty.NOT_NULL);
+        return new NewObject(null, variable.parameterizedType(), List.of(), notNull, null, null,
                 new BooleanConstant(evaluationContext.getPrimitives(), true), objectFlow);
     }
 
@@ -142,7 +149,7 @@ public class NewObject implements HasParameterExpressions {
     public static NewObject withAnonymousClass(Primitives primitives,
                                                @NotNull ParameterizedType parameterizedType,
                                                @NotNull TypeInfo anonymousClass) {
-        return new NewObject(null, parameterizedType, List.of(), false, anonymousClass, null,
+        return new NewObject(null, parameterizedType, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, anonymousClass, null,
                 new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
     }
 
@@ -152,7 +159,7 @@ public class NewObject implements HasParameterExpressions {
     cannot be null, we're applying a method on it.
      */
     public static NewObject forGetInstance(Primitives primitives, ParameterizedType parameterizedType, ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, List.of(), false, null, null,
+        return new NewObject(null, parameterizedType, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
                 new BooleanConstant(primitives, true), objectFlow);
     }
 
@@ -163,7 +170,7 @@ public class NewObject implements HasParameterExpressions {
     cannot be null, we're applying a method on it.
     */
     public static NewObject forGetInstance(ParameterizedType parameterizedType, Expression state, ObjectFlow objectFlow) {
-        return new NewObject(null, parameterizedType, List.of(), false, null, null,
+        return new NewObject(null, parameterizedType, List.of(), MultiLevel.EFFECTIVELY_NOT_NULL, null, null,
                 state, objectFlow);
     }
 
@@ -175,18 +182,18 @@ public class NewObject implements HasParameterExpressions {
                                            ParameterizedType parameterizedType,
                                            List<Expression> parameterExpressions,
                                            ObjectFlow objectFlow) {
-        return new NewObject(constructor, parameterizedType, parameterExpressions, false,
+        return new NewObject(constructor, parameterizedType, parameterExpressions, MultiLevel.EFFECTIVELY_NOT_NULL,
                 null, null, new BooleanConstant(primitives, true), objectFlow);
     }
 
-    private NewObject(MethodInfo constructor,
-                      ParameterizedType parameterizedType,
-                      List<Expression> parameterExpressions,
-                      boolean canBeNull,
-                      TypeInfo anonymousClass,
-                      ArrayInitializer arrayInitializer,
-                      Expression state,
-                      ObjectFlow objectFlow) {
+    public NewObject(MethodInfo constructor,
+                     ParameterizedType parameterizedType,
+                     List<Expression> parameterExpressions,
+                     int minimalNotNull,
+                     TypeInfo anonymousClass,
+                     ArrayInitializer arrayInitializer,
+                     Expression state,
+                     ObjectFlow objectFlow) {
         this.parameterizedType = Objects.requireNonNull(parameterizedType);
         this.parameterExpressions = Objects.requireNonNull(parameterExpressions);
         this.constructor = constructor; // can be null after modification (constructor lost)
@@ -194,9 +201,9 @@ public class NewObject implements HasParameterExpressions {
         this.arrayInitializer = arrayInitializer;
         this.state = Objects.requireNonNull(state);
         this.objectFlow = Objects.requireNonNull(objectFlow);
-        this.canBeNull = canBeNull;
+        this.minimalNotNull = minimalNotNull;
 
-        assert !(constructor != null && canBeNull);
+        assert !(constructor != null && minimalNotNull < MultiLevel.EFFECTIVELY_NOT_NULL);
     }
 
     @Override
@@ -210,12 +217,12 @@ public class NewObject implements HasParameterExpressions {
                 Objects.equals(constructor, newObject.constructor) &&
                 Objects.equals(arrayInitializer, newObject.arrayInitializer) &&
                 Objects.equals(state, newObject.state) &&
-                canBeNull == newObject.canBeNull;
+                minimalNotNull == newObject.minimalNotNull;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(parameterizedType, parameterExpressions, anonymousClass, constructor, arrayInitializer, state, canBeNull);
+        return Objects.hash(parameterizedType, parameterExpressions, anonymousClass, constructor, arrayInitializer, state, minimalNotNull);
     }
 
     @Override
@@ -223,7 +230,7 @@ public class NewObject implements HasParameterExpressions {
         return new NewObject(constructor,
                 translationMap.translateType(parameterizedType),
                 parameterExpressions.stream().map(translationMap::translateExpression).collect(Collectors.toList()),
-                canBeNull,
+                minimalNotNull,
                 anonymousClass, // not translating this yet!
                 TranslationMap.ensureExpressionType(arrayInitializer, ArrayInitializer.class),
                 state, objectFlow);
@@ -302,12 +309,7 @@ public class NewObject implements HasParameterExpressions {
             case NOT_NULL: {
                 TypeInfo bestType = parameterizedType.bestTypeInfo();
                 if (Primitives.isPrimitiveExcludingVoid(bestType)) return MultiLevel.EFFECTIVELY_NOT_NULL;
-                if (canBeNull) return Level.DELAY;
-
-                // if the state is not TRUE nor FALSE, we're talking an object that is really not null
-                return bestType == null ? MultiLevel.EFFECTIVELY_NOT_NULL :
-                        MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
-                                evaluationContext.getTypeAnalysis(bestType).getProperty(VariableProperty.NOT_NULL));
+                return minimalNotNull;
             }
             case MODIFIED:
             case NOT_MODIFIED_1:
@@ -381,7 +383,7 @@ public class NewObject implements HasParameterExpressions {
                 }
             }
         } else {
-            Text text = new Text(canBeNull ? "nullable instance type" : "instance type");
+            Text text = new Text(text() + "instance type");
             outputBuilder.add(text).add(Space.ONE).add(parameterizedType.output());
         }
         if (anonymousClass != null) {
@@ -394,6 +396,14 @@ public class NewObject implements HasParameterExpressions {
             outputBuilder.add(Symbol.LEFT_BLOCK_COMMENT).add(state.output()).add(Symbol.RIGHT_BLOCK_COMMENT);
         }
         return outputBuilder;
+    }
+
+    private String text() {
+        TypeInfo bestType = parameterizedType.bestTypeInfo();
+        if (Primitives.isPrimitiveExcludingVoid(bestType)) return "";
+        if (minimalNotNull == Level.DELAY) return "nullable? ";
+        if (minimalNotNull < MultiLevel.EFFECTIVELY_NOT_NULL) return "nullable ";
+        return "";
     }
 
     @Override

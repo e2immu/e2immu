@@ -279,11 +279,11 @@ public class Resolver {
             boolean artificial;
             if (fieldInfo.type.isFunctionalInterface(subContext.typeContext)) {
                 List<NewObject> newObjects = parsedExpression.collect(NewObject.class);
-                artificial = newObjects.stream().filter(no -> no.parameterizedType.isFunctionalInterface()).count() != 1L;
+                artificial = newObjects.stream().filter(no -> no.parameterizedType().isFunctionalInterface()).count() != 1L;
 
                 if (!artificial) {
-                    NewObject newObject = newObjects.stream().filter(no -> no.parameterizedType.isFunctionalInterface()).findFirst().orElseThrow();
-                    TypeInfo anonymousType = Objects.requireNonNull(newObject.anonymousClass);
+                    NewObject newObject = newObjects.stream().filter(no -> no.parameterizedType().isFunctionalInterface()).findFirst().orElseThrow();
+                    TypeInfo anonymousType = Objects.requireNonNull(newObject.anonymousClass());
                     sam = anonymousType.findOverriddenSingleAbstractMethod();
                 } else {
                     // implicit anonymous type
@@ -421,9 +421,9 @@ public class Resolver {
                 } else if (e instanceof MethodReference methodReference &&
                         restrictToType.contains(methodReference.methodInfo.typeInfo)) {
                     methodsAndFields.add(methodReference.methodInfo);
-                } else if (e instanceof NewObject newObject && newObject.constructor != null &&
-                        restrictToType.contains(newObject.constructor.typeInfo)) {
-                    methodsAndFields.add(newObject.constructor);
+                } else if (e instanceof NewObject newObject && newObject.constructor() != null &&
+                        restrictToType.contains(newObject.constructor().typeInfo)) {
+                    methodsAndFields.add(newObject.constructor());
                 }
             });
         }
@@ -531,7 +531,7 @@ public class Resolver {
         AtomicBoolean createSelf = new AtomicBoolean();
         methodInfo.methodInspection.get().getMethodBody().visit(element -> {
             if (element instanceof NewObject newObject) {
-                if (newObject.parameterizedType.typeInfo == methodInfo.typeInfo) {
+                if (newObject.parameterizedType().typeInfo == methodInfo.typeInfo) {
                     createSelf.set(true);
                 }
             }

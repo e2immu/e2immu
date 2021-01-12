@@ -1579,9 +1579,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 Variable variable = ((VariableExpression) value).variable();
                 if (VariableProperty.NOT_NULL == variableProperty && notNullAccordingToConditionManager(variable)) {
                     return MultiLevel.bestNotNull(MultiLevel.EFFECTIVELY_NOT_NULL,
-                            statementAnalysis.getProperty(variable, variableProperty));
+                            statementAnalysis.getPropertyOfCurrent(variable, variableProperty));
                 }
-                return statementAnalysis.getProperty(variable, variableProperty);
+                return statementAnalysis.getPropertyOfCurrent(variable, variableProperty);
             }
 
             // redirect to Value.getProperty()
@@ -1602,7 +1602,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (closure != null && isNotMine(variable)) {
                 return ((EvaluationContextImpl) closure).findForReading(variable, statementTime, isNotAssignmentTarget);
             }
-            return statementAnalysis.findForReading(analyserContext, variable, statementTime, isNotAssignmentTarget);
+            return statementAnalysis.initialValueForReading(variable, statementTime, isNotAssignmentTarget);
         }
 
         private boolean isNotMine(Variable variable) {
@@ -1676,11 +1676,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 return variableInfo.getLinkedVariables().merge(new LinkedVariables(Set.of(variable)));
             }
             return LinkedVariables.DELAY; // delay
-        }
-
-        @Override
-        public void ensureVariableAtTimeOfSubBlocks(Variable variable) {
-            findForReading(variable, statementAnalysis.flowData.getTimeAfterSubBlocks(), false);
         }
 
         @Override

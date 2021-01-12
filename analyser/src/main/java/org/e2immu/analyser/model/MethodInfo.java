@@ -334,9 +334,9 @@ public class MethodInfo implements WithInspectionAndAnalysis {
 
             // new A() -> A cannot be replaced by unbound type parameter
             if (element instanceof NewObject newObject) {
-                result.add(newObject.parameterizedType);
-                if (newObject.constructor != null) { // can be null, anonymous implementation of interface
-                    addTypesFromParameters(result, newObject.constructor);
+                result.add(newObject.parameterizedType());
+                if (newObject.constructor() != null) { // can be null, anonymous implementation of interface
+                    addTypesFromParameters(result, newObject.constructor());
                 }
             }
 

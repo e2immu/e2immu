@@ -103,12 +103,12 @@ public class Test_00_Basics_4plus extends CommonTestRunner {
                 }
                 if (FIELD_0.equals(d.variableName())) {
                     Assert.assertTrue(d.iteration() > 0);
-                    Assert.assertEquals("instance type String", d.currentValue().toString());
+                    Assert.assertEquals("nullable? instance type String", d.currentValue().toString());
                     Assert.assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
                 }
                 if (FIELD_1.equals(d.variableName())) {
                     Assert.assertTrue(d.iteration() > 0);
-                    Assert.assertEquals("instance type String", d.currentValue().toString());
+                    Assert.assertEquals("nullable? instance type String", d.currentValue().toString());
                     Assert.assertEquals(VariableInfoContainer.NOT_A_VARIABLE_FIELD, d.variableInfo().getStatementTime());
                     Assert.assertTrue("Have " + d.statementId(), "2".compareTo(d.statementId()) <= 0);
                 }

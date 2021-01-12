@@ -163,7 +163,7 @@ public class EvaluateMethodCall {
                         if (fieldAnalysis.getProperty(VariableProperty.FINAL) == Level.TRUE) {
                             int i = 0;
                             List<ParameterAnalysis> parameterAnalyses = evaluationContext
-                                    .getParameterAnalyses(ovNo.constructor).collect(Collectors.toList());
+                                    .getParameterAnalyses(ovNo.constructor()).collect(Collectors.toList());
                             for (ParameterAnalysis parameterAnalysis : parameterAnalyses) {
                                 Map<FieldInfo, ParameterAnalysis.AssignedOrLinked> assigned = parameterAnalysis.getAssignedToField();
                                 for (Map.Entry<FieldInfo, ParameterAnalysis.AssignedOrLinked> e : assigned.entrySet()) {
@@ -268,18 +268,18 @@ public class EvaluateMethodCall {
                         parameterValues, ObjectFlow.NO_FLOW));
         */
         // we might encounter isFact or isKnown, so we add the instance's state to the context
-        EvaluationContext child = evaluationContext.child(instance.state, true);
+        EvaluationContext child = evaluationContext.child(instance.state(), true);
         Expression resultingValue = companionValue.reEvaluate(child, translationMap).value();
         // FIXME
-        if (instance.state != EmptyExpression.EMPTY_EXPRESSION && resultingValue != EmptyExpression.EMPTY_EXPRESSION) {
+        if (instance.state() != EmptyExpression.EMPTY_EXPRESSION && resultingValue != EmptyExpression.EMPTY_EXPRESSION) {
             if (Primitives.isBoolean(methodInfo.returnType().typeInfo)) {
                 // State is: (org.e2immu.annotatedapi.AnnotatedAPI.this.isKnown(true) and 0 == java.util.Collection.this.size())
                 // Resulting value: (java.util.Set.contains(java.lang.Object) and not (0 == java.util.Collection.this.size()))
-                Expression reduced = new And(evaluationContext.getPrimitives()).append(evaluationContext, instance.state, resultingValue);
+                Expression reduced = new And(evaluationContext.getPrimitives()).append(evaluationContext, instance.state(), resultingValue);
                 if (reduced instanceof BooleanConstant) {
                     return reduced;
                 }
-                if (reduced.equals(instance.state)) {
+                if (reduced.equals(instance.state())) {
                     // only truths have been added
                     return new BooleanConstant(evaluationContext.getPrimitives(), true);
                 }
@@ -305,7 +305,7 @@ public class EvaluateMethodCall {
                 .forEach(e -> {
                     // we're assuming the aspects retain their name, but apart from the name we allow them to be different methods
                     CompanionMethodName cmn = e.getKey();
-                    MethodInfo oldAspectMethod = evaluationContext.getTypeAnalysis(instance.parameterizedType.typeInfo)
+                    MethodInfo oldAspectMethod = evaluationContext.getTypeAnalysis(instance.parameterizedType().typeInfo)
                             .getAspects().get(cmn.aspect());
                     Expression oldValue = new MethodCall(
                             new VariableExpression(new This(evaluationContext.getAnalyserContext(), oldAspectMethod.typeInfo)),
@@ -321,7 +321,7 @@ public class EvaluateMethodCall {
                 });
 
         if (translationMap.isEmpty()) return null;
-        Expression newState = instance.state.reEvaluate(evaluationContext, translationMap).value();
+        Expression newState = instance.state().reEvaluate(evaluationContext, translationMap).value();
         // TODO object flow
         return NewObject.forGetInstance(methodInfo.returnType(), newState, ObjectFlow.NO_FLOW);
     }
@@ -339,7 +339,7 @@ public class EvaluateMethodCall {
         if (instance == null) {
             return null;
         }
-        return filter(evaluationContext, methodInfo, instance.state, parameterValues);
+        return filter(evaluationContext, methodInfo, instance.state(), parameterValues);
     }
 
     public static Filter.FilterResult<MethodCall> filter(EvaluationContext evaluationContext,

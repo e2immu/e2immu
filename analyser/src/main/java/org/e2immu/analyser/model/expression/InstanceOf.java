@@ -145,7 +145,7 @@ public record InstanceOf(Primitives primitives,
         }
         if (value instanceof NewObject newObject) {
             EvaluationResult er = BooleanConstant.of(parameterizedType.isAssignableFrom(InspectionProvider.defaultFrom(primitives),
-                    newObject.parameterizedType),
+                    newObject.parameterizedType()),
                     evaluationContext.getLocation(this), evaluationContext, Origin.RESULT_OF_OPERATOR);
             return builder.compose(er).setExpression(er.value()).build();
         }

@@ -180,16 +180,6 @@ public class MethodLevelData {
                     Set<Variable> variablesBaseLinksTo = SetUtil.immutableUnion(Set.of(baseVariable), dependencyGraph.dependencies(baseVariable));
                     boolean containsDelayVar = variablesBaseLinksTo.stream().anyMatch(v -> v == DELAY_VAR);
                     if (!containsDelayVar) {
-                        // we cannot write to variables if they don't exist (that's a shortcut to avoid burdening many methods
-                        // with the necessary arguments)
-                        // therefore we check that all linked variables (such as a parameter of a different method linked to a field) exist
-                        // we exclude the base variable itself, (a) because it does exist already, but (b) in case of a variable field,
-                        // it generates an unnecessary copy
-                        variablesBaseLinksTo
-                                .stream()
-                                .filter(v -> !v.equals(baseVariable))
-                                .forEach(sharedState.evaluationContext::ensureVariableAtTimeOfSubBlocks);
-
                         int summary = sharedState.evaluationContext.summarizeModification(variablesBaseLinksTo);
                         String logLocation = sharedState.logLocation;
 

@@ -486,10 +486,17 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setLinkedVariables(initialValue.linkedVariables, true);
         }
 
-        // copy into evaluation, but only if there is no assignment and no reading
+        /* copy into evaluation, but only if there is no assignment and no reading
+
+        reading can change the value (e.g. when a modifying method call occurs), but we have a dedicated
+        method that reads from INITIAL rather than EVAL so we don't have to copy yet.
+
+        for properties, which are incremental upon reading, we already copy into evaluation,
+        because we don't have explicit code available
+         */
         VariableInfo viEval = vic.best(VariableInfoContainer.Level.EVALUATION);
-        if (viEval != viInitial && !viEval.isAssigned() && !viEval.isRead()) {
-            if (!viEval.valueIsSet() && !initialValue.expression.isUnknown()) {
+        if (viEval != viInitial && !viEval.isAssigned()) {
+            if (!viEval.valueIsSet() && !initialValue.expression.isUnknown() && !viEval.isRead()) {
                 vic.setValue(initialValue.expression, map, false);
             } else {
                 map.forEach((k, v) -> vic.setProperty(k, v, false, VariableInfoContainer.Level.EVALUATION));
@@ -682,13 +689,13 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
     private ExpressionAndLinkedVariables initialValueOfField(AnalyserContext analyserContext, FieldReference fieldReference) {
         FieldAnalysis fieldAnalysis = analyserContext.getFieldAnalysis(fieldReference.fieldInfo);
         LinkedVariables initialLinkedVariables = LinkedVariables.EMPTY; // rather than fieldAnalysis.getLinkedVariables
+        FieldAnalyser fieldAnalyser = analyserContext.getFieldAnalysers().get(fieldReference.fieldInfo);
 
         boolean inPartOfConstruction = methodAnalysis.getMethodInfo().methodResolution.get().partOfConstruction() ==
                 MethodResolution.CallStatus.PART_OF_CONSTRUCTION;
         if (inPartOfConstruction && fieldReference.scope instanceof This thisVariable
                 && thisVariable.typeInfo.equals(methodAnalysis.getMethodInfo().typeInfo)) { // field that must be initialised
             Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();
-            FieldAnalyser fieldAnalyser = analyserContext.getFieldAnalysers().get(fieldReference.fieldInfo);
             if (initialValue.isConstant()) {
                 return new ExpressionAndLinkedVariables(initialValue, LinkedVariables.EMPTY);
             }
@@ -719,7 +726,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
         }
         // variable field, some cases of effectively final field
-        NewObject newObject = NewObject.initialValueOfField(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
+        NewObject newObject;
+        if (fieldAnalyser == null) {
+            // not a local field
+            int minimalNotNull = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getProperty(VariableProperty.NOT_NULL);
+            newObject = NewObject.initialValueOfExternalField(primitives, fieldReference.parameterizedType(), minimalNotNull, ObjectFlow.NO_FLOW);
+        } else {
+            newObject = NewObject.initialValueOfField(primitives, fieldReference.parameterizedType(), fieldAnalyser.fieldAnalysis.getObjectFlow());
+        }
         return new ExpressionAndLinkedVariables(newObject, initialLinkedVariables);
     }
 
@@ -811,7 +825,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return new BooleanConstant(primitives, true);
     }
 
-    public int getProperty(Variable variable, VariableProperty variableProperty) {
+    public int getPropertyOfCurrent(Variable variable, VariableProperty variableProperty) {
         VariableInfo variableInfo = findOrThrow(variable);
         return variableInfo.getProperty(variableProperty);
     }
@@ -820,14 +834,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      * Find a variable for reading. Intercepts variable fields and local variables.
      * This is the general method that must be used by the evaluation context, currentInstance, currentValue
      *
-     * @param analyserContext because we create the variable if it doesn't exist yet (fields)
-     * @param variable        the variable
+     * @param variable the variable
      * @return the most current variable info object
      */
-    public VariableInfo findForReading(@NotNull AnalyserContext analyserContext,
-                                       @NotNull Variable variable,
-                                       int statementTime,
-                                       boolean isNotAssignmentTarget) {
+    public VariableInfo initialValueForReading(@NotNull Variable variable,
+                                               int statementTime,
+                                               boolean isNotAssignmentTarget) {
         String fqn = variable.fullyQualifiedName();
         if (!variables.isSet(fqn)) {
             return new VariableInfoImpl(variable); // no value, no state; will be created by a MarkRead

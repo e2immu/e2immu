@@ -43,8 +43,8 @@ public class AllowInterruptVisitor {
                 if (verify(methodCall.methodInfo, exclude)) allowInterrupts.set(true);
             } else if (e instanceof MethodReference methodReference) {
                 if (verify(methodReference.methodInfo, exclude)) allowInterrupts.set(true);
-            } else if (e instanceof NewObject newObject && newObject.constructor != null) {
-                if (verify(newObject.constructor, exclude)) allowInterrupts.set(true);
+            } else if (e instanceof NewObject newObject && newObject.constructor() != null) {
+                if (verify(newObject.constructor(), exclude)) allowInterrupts.set(true);
             }
         });
         return allowInterrupts.get();
@@ -52,8 +52,6 @@ public class AllowInterruptVisitor {
 
     private static boolean verify(MethodInfo methodInfo, Set<MethodInfo> exclude) {
         if (exclude.contains(methodInfo)) return false;
-        // FIXME temporary hack
-        if ("java.lang.String".equals(methodInfo.typeInfo.fullyQualifiedName)) return false;
 
         return !methodInfo.methodResolution.isSet() || methodInfo.methodResolution.get().allowsInterrupts();
     }

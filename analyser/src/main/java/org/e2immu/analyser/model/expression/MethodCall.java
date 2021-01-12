@@ -375,9 +375,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         }
         Objects.requireNonNull(newObject, "Modifying method on constant or primitive? Impossible: " + objectValue.getClass());
 
-        if (newObject.state == EmptyExpression.NO_VALUE) return null; // DELAY
+        if (newObject.state() == EmptyExpression.NO_VALUE) return null; // DELAY
 
-        AtomicReference<Expression> newState = new AtomicReference<>(newObject.state);
+        AtomicReference<Expression> newState = new AtomicReference<>(newObject.state());
         methodInfo.methodInspection.get().getCompanionMethods().keySet().stream()
                 .filter(e -> CompanionMethodName.MODIFYING_METHOD_OR_CONSTRUCTOR.contains(e.action()))
                 .sorted()

@@ -94,7 +94,12 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
                 } else {
-                    Assert.assertEquals("nullable instance type PrintStream", d.currentValue().toString());
+                    if("0.0.0".equals(d.statementId())) {
+                        // because of the modifying method println
+                        Assert.assertEquals("instance type PrintStream", d.currentValue().toString());
+                    } else if ("0".equals(d.statementId())) {
+                        Assert.assertEquals("input1.contains(\"a\")?instance type PrintStream:nullable instance type PrintStream", d.currentValue().toString());
+                    }
                 }
             }
             if ("setS1".equals(d.methodInfo().name) && S.equals(d.variableName())) {
@@ -102,7 +107,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertSame(d.statementId(), LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "nullable instance type String";
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "nullable? instance type String";
                     Assert.assertEquals(expectValue, d.currentValue().debugOutput());
                     Assert.assertFalse(d.variableInfo().isAssigned());
                     if (d.iteration() == 0) {

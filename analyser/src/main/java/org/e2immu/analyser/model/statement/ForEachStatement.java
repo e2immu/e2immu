@@ -57,7 +57,7 @@ public class ForEachStatement extends LoopStatement {
         }
         if (expression instanceof VariableExpression variableExpression) {
             NewObject newObject = evaluationContext.currentInstance(variableExpression.variable(), evaluationContext.getInitialStatementTime());
-            if (newObject != null && !newObject.state.isBoolValueTrue()) {
+            if (newObject != null && !newObject.state().isBoolValueTrue()) {
                 // TODO we can try to extract a length or size
             }
         }
