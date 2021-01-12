@@ -22,6 +22,7 @@ import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -126,7 +127,7 @@ public interface VariableInfoContainer {
     void merge(EvaluationContext evaluationContext,
                Expression stateOfDestination,
                boolean atLeastOneBlockExecuted,
-               Map<Expression, VariableInfo> merge);
+               List<StatementAnalysis.ConditionAndVariableInfo> mergeSources);
 
     /*
     Statement time is irrelevant for all but variable fields.

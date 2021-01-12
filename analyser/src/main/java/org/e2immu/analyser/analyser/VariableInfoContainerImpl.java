@@ -24,6 +24,7 @@ import org.e2immu.analyser.util.Either;
 import org.e2immu.analyser.util.Freezable;
 import org.e2immu.analyser.util.SetOnce;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -237,7 +238,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     public void merge(EvaluationContext evaluationContext,
                       Expression stateOfDestination,
                       boolean atLeastOneBlockExecuted,
-                      Map<Expression, VariableInfo> mergeSources) {
+                      List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
         Objects.requireNonNull(mergeSources);
         Objects.requireNonNull(evaluationContext);
         assert merge != null;

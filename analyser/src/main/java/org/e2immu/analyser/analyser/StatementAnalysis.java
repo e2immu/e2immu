@@ -541,6 +541,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
     }
 
+    public record ConditionAndLastStatement(Expression condition, StatementAnalyser lastStatement) {}
+    public record ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo) {}
     /**
      * From child blocks into the parent block; determine the value and properties for the current statement
      *
@@ -551,13 +553,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
      */
     public void copyBackLocalCopies(EvaluationContext evaluationContext,
                                     Expression stateOfConditionManagerBeforeExecution,
-                                    Map<Expression, StatementAnalyser> lastStatements,
+                                    List<ConditionAndLastStatement> lastStatements,
                                     boolean atLeastOneBlockExecuted,
                                     int statementTime) {
 
         // we need to make a synthesis of the variable state of fields, local copies, etc.
         // some blocks are guaranteed to be executed, others are only executed conditionally.
-        Stream<Map.Entry<String, VariableInfoContainer>> variableStream = makeVariableStream(lastStatements.values());
+
+        Stream<Map.Entry<String, VariableInfoContainer>> variableStream = makeVariableStream(lastStatements);
         Set<String> merged = new HashSet<>();
         // explicitly ignore loop and shadow loop variables, they should not exist beyond the statement
         variableStream.filter(vic -> !index.equals(vic.getValue().getStatementIndexOfThisLoopOrShadowVariable())).forEach(e -> {
@@ -565,16 +568,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             VariableInfoContainer vic = e.getValue();
 
             // the variable stream comes from multiple blocks; we ensure that merging takes place once only
-            // linkedHashMap to ensure consistency in tests
+            // this goes into a list instead of a map, because the condition can be overall NO_VALUE (both if and !if = else)
+
             if (merged.add(fqn)) {
-                Map<Expression, VariableInfo> toMerge = lastStatements.entrySet().stream()
-                        .filter(e2 -> e2.getValue().statementAnalysis.variables.isSet(fqn))
-                        .collect(Collectors.toMap(Map.Entry::getKey,
-                                e2 -> e2.getValue().statementAnalysis.variables.get(fqn).current(),
-                                (e1, e2) -> {
-                                    throw new UnsupportedOperationException();
-                                },
-                                LinkedHashMap::new));
+                List<ConditionAndVariableInfo> toMerge = lastStatements.stream()
+                        .filter(e2 -> e2.lastStatement.statementAnalysis.variables.isSet(fqn))
+                        .map(e2 -> new ConditionAndVariableInfo(e2.condition,
+                                e2.lastStatement.statementAnalysis.variables.get(fqn).current()))
+                        .collect(Collectors.toUnmodifiableList());
                 VariableInfoContainer destination;
                 if (!variables.isSet(fqn)) {
                     Variable variable = e.getValue().current().variable();
@@ -589,9 +590,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
 
     // return a stream of all variables that need merging up
     // note: .distinct() may not work
-    private Stream<Map.Entry<String, VariableInfoContainer>> makeVariableStream(Collection<StatementAnalyser> lastStatements) {
+    private Stream<Map.Entry<String, VariableInfoContainer>> makeVariableStream(List<ConditionAndLastStatement> lastStatements) {
         return Stream.concat(variables.stream(), lastStatements.stream().flatMap(st ->
-                st.statementAnalysis.variables.stream().filter(e -> {
+                st.lastStatement.statementAnalysis.variables.stream().filter(e -> {
                     VariableInfo vi = e.getValue().current();
                     // we don't copy up local variables, unless they're local copies of fields
                     return !vi.variable().isLocal() ||

@@ -219,7 +219,7 @@ class VariableInfoImpl implements VariableInfo {
     public VariableInfoImpl mergeIntoNewObject(EvaluationContext evaluationContext,
                                                Expression stateOfDestination,
                                                boolean atLeastOneBlockExecuted,
-                                               Map<Expression, VariableInfo> mergeSources) {
+                                               List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
         String mergedAssignmentId = mergedId(evaluationContext, getAssignmentId(), VariableInfo::getAssignmentId, mergeSources);
         String mergedReadId = mergedId(evaluationContext, getReadId(), VariableInfo::getReadId, mergeSources);
         VariableInfoImpl newObject = new VariableInfoImpl(variable, mergedAssignmentId, mergedReadId);
@@ -231,7 +231,7 @@ class VariableInfoImpl implements VariableInfo {
                             Expression stateOfDestination,
                             boolean atLeastOneBlockExecuted,
                             VariableInfoImpl previous,
-                            Map<Expression, VariableInfo> mergeSources) {
+                            List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
         assert atLeastOneBlockExecuted || previous != this;
 
         Expression mergedValue = evaluationContext.replaceLocalVariables(
@@ -241,21 +241,23 @@ class VariableInfoImpl implements VariableInfo {
         }
 
         mergeStatementTime(evaluationContext, atLeastOneBlockExecuted, previous.getStatementTime(), mergeSources);
-        mergeProperties(atLeastOneBlockExecuted, previous, mergeSources.values());
+        mergeProperties(atLeastOneBlockExecuted, previous, mergeSources);
         mergeLinkedVariables(atLeastOneBlockExecuted, previous, mergeSources);
     }
 
     private static String mergedId(EvaluationContext evaluationContext,
                                    String previousId,
                                    Function<VariableInfo, String> getter,
-                                   Map<Expression, VariableInfo> merge) {
+                                   List<StatementAnalysis.ConditionAndVariableInfo> merge) {
         // null current statement in tests
         String currentStatementIdE = (evaluationContext.getCurrentStatement() == null ? NOT_YET_ASSIGNED :
                 evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.EVALUATION;
         String currentStatementIdM = (evaluationContext.getCurrentStatement() == null ? NOT_YET_ASSIGNED :
                 evaluationContext.getCurrentStatement().index()) + VariableInfoContainer.Level.MERGE;
         boolean inSubBlocks =
-                merge.values().stream().anyMatch(vi -> getter.apply(vi).compareTo(currentStatementIdE) > 0);
+                merge.stream()
+                        .map(StatementAnalysis.ConditionAndVariableInfo::variableInfo)
+                        .anyMatch(vi -> getter.apply(vi).compareTo(currentStatementIdE) > 0);
         return inSubBlocks ? currentStatementIdM : previousId;
     }
 
@@ -265,9 +267,11 @@ class VariableInfoImpl implements VariableInfo {
     private void mergeStatementTime(EvaluationContext evaluationContext,
                                     boolean existingValuesWillBeOverwritten,
                                     int previousStatementTime,
-                                    Map<Expression, VariableInfo> mergeSources) {
+                                    List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
         boolean noVariableFieldDelay = (existingValuesWillBeOverwritten || previousStatementTime != VariableInfoContainer.VARIABLE_FIELD_DELAY) &&
-                mergeSources.values().stream().noneMatch(vi -> vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY);
+                mergeSources.stream()
+                        .map(StatementAnalysis.ConditionAndVariableInfo::variableInfo)
+                        .noneMatch(vi -> vi.getStatementTime() == VariableInfoContainer.VARIABLE_FIELD_DELAY);
         if (noVariableFieldDelay) {
             int statementTimeToSet = previousStatementTime == NOT_A_VARIABLE_FIELD ?
                     NOT_A_VARIABLE_FIELD : evaluationContext.getFinalStatementTime();
@@ -281,7 +285,7 @@ class VariableInfoImpl implements VariableInfo {
      */
     void mergeLinkedVariables(boolean existingValuesWillBeOverwritten,
                               VariableInfo existing,
-                              Map<Expression, VariableInfo> merge) {
+                              List<StatementAnalysis.ConditionAndVariableInfo> merge) {
         Set<Variable> merged = new HashSet<>();
         if (!existingValuesWillBeOverwritten) {
             if (existing.linkedVariablesIsSet()) {
@@ -290,7 +294,8 @@ class VariableInfoImpl implements VariableInfo {
             // typical situation: int a; if(x) { a = 5; }. Existing has not been assigned
             // this will end up an error when the variable is read before being assigned
         }
-        for (VariableInfo vi : merge.values()) {
+        for (StatementAnalysis.ConditionAndVariableInfo cav : merge) {
+            VariableInfo vi = cav.variableInfo();
             if (!vi.linkedVariablesIsSet()) return;
             merged.addAll(vi.getLinkedVariables().variables());
         }
@@ -302,9 +307,11 @@ class VariableInfoImpl implements VariableInfo {
     Compute and set or update in this object, the properties resulting from merging previous and merge sources.
     If existingValuesWillBeOverwritten is true, the previous object is ignored.
      */
-    void mergeProperties(boolean existingValuesWillBeOverwritten, VariableInfo previous, Collection<VariableInfo> mergeSources) {
-        VariableInfo[] list = mergeSources
-                .stream().filter(vi -> vi.getValue().isComputeProperties())
+    void mergeProperties(boolean existingValuesWillBeOverwritten, VariableInfo previous,
+                         List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
+        VariableInfo[] list = mergeSources.stream()
+                .map(StatementAnalysis.ConditionAndVariableInfo::variableInfo)
+                .filter(vi -> vi.getValue().isComputeProperties())
                 .toArray(n -> new VariableInfo[n + 1]);
         if (!existingValuesWillBeOverwritten && getValue().isComputeProperties()) {
             list[list.length - 1] = previous;
@@ -348,11 +355,11 @@ class VariableInfoImpl implements VariableInfo {
     private Expression mergeValue(EvaluationContext evaluationContext,
                                   Expression stateOfDestination,
                                   boolean atLeastOneBlockExecuted,
-                                  Map<Expression, VariableInfo> mergeSources) {
+                                  List<StatementAnalysis.ConditionAndVariableInfo> mergeSources) {
         Expression currentValue = getValue();
         if (!atLeastOneBlockExecuted && currentValue.isUnknown()) return currentValue;
 
-        boolean haveANoValue = mergeSources.values().stream().anyMatch(v -> !v.valueIsSet());
+        boolean haveANoValue = mergeSources.stream().anyMatch(cav -> !cav.variableInfo().valueIsSet());
         if (haveANoValue) return NO_VALUE;
 
         if (mergeSources.isEmpty()) {
@@ -360,23 +367,24 @@ class VariableInfoImpl implements VariableInfo {
             return currentValue;
         }
 
-        boolean allValuesIdentical = mergeSources.values().stream().allMatch(v -> currentValue.equals(v.getValue()));
+        boolean allValuesIdentical = mergeSources.stream().allMatch(cav -> currentValue.equals(cav.variableInfo().getValue()));
         if (allValuesIdentical) return currentValue;
 
         MergeHelper mergeHelper = new MergeHelper(evaluationContext, this);
 
         if (mergeSources.size() == 1) {
-            Map.Entry<Expression, VariableInfo> e = mergeSources.entrySet().stream().findFirst().orElseThrow();
-            Expression result = mergeHelper.one(e.getValue(), stateOfDestination, e.getKey());
+            StatementAnalysis.ConditionAndVariableInfo e = mergeSources.stream().findFirst().orElseThrow();
+            Expression result = mergeHelper.one(e.variableInfo(), stateOfDestination, e.condition());
             if (result != null) return result;
         }
 
         if (mergeSources.size() == 2) {
-            Map.Entry<Expression, VariableInfo> e = mergeSources.entrySet().stream().findFirst().orElseThrow();
-            Expression negated = Negation.negate(evaluationContext, e.getKey());
-            VariableInfo vi2 = mergeSources.get(negated);
+            StatementAnalysis.ConditionAndVariableInfo e = mergeSources.stream().findFirst().orElseThrow();
+            Expression negated = Negation.negate(evaluationContext, e.condition());
+            VariableInfo vi2 = mergeSources.stream().filter(cav -> cav.condition().equals(negated))
+                    .map(StatementAnalysis.ConditionAndVariableInfo::variableInfo).findFirst().orElse(null);
             if (vi2 != null) {
-                Expression result = mergeHelper.two(e.getValue(), stateOfDestination, e.getKey(), vi2);
+                Expression result = mergeHelper.two(e.variableInfo(), stateOfDestination, e.condition(), vi2);
                 if (result != null) return result;
             }
         }
