@@ -166,6 +166,6 @@ public class ArrayInitializer implements Expression {
 
     @Override
     public NewObject getInstance(EvaluationResult evaluationContext) {
-        return new NewObject(primitives, returnType(), getObjectFlow());
+        return NewObject.forGetInstance(primitives, returnType(), getObjectFlow());
     }
 }

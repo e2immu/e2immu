@@ -486,9 +486,9 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setLinkedVariables(initialValue.linkedVariables, true);
         }
 
-        // copy into evaluation, but only if there is no assignment
+        // copy into evaluation, but only if there is no assignment and no reading
         VariableInfo viEval = vic.best(VariableInfoContainer.Level.EVALUATION);
-        if (viEval != viInitial && !viEval.isAssigned()) {
+        if (viEval != viInitial && !viEval.isAssigned() && !viEval.isRead()) {
             if (!viEval.valueIsSet() && !initialValue.expression.isUnknown()) {
                 vic.setValue(initialValue.expression, map, false);
             } else {
@@ -520,9 +520,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                         VariableInfoContainer lvrVic = createVariable(analyserContext, localCopy, statementTime);
                         String indexOfStatementTime = flowData.assignmentIdOfStatementTime.get(statementTime);
 
-                        Expression initialValue = statementTime == initial.getStatementTime() && initial.getAssignmentId().compareTo(indexOfStatementTime) >= 0 ?
-                                initial.getValue() : new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
-                        assert initialValue != EmptyExpression.NO_VALUE;
+                        Expression initialValue = statementTime == initial.getStatementTime() &&
+                                initial.getAssignmentId().compareTo(indexOfStatementTime) >= 0 ?
+                                initial.getValue() :
+                                NewObject.localCopyOfVariableField(primitives, fieldReference.parameterizedType(),
+                                        fieldAnalysis.getObjectFlow());
+                        assert initialValue != EmptyExpression.NO_VALUE && initialValue != null;
                         lvrVic.setValue(initialValue, propertyMap, true);
                         lvrVic.setLinkedVariables(LinkedVariables.EMPTY, true);
                     }
@@ -611,7 +614,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             // assignment will be at LEVEL 3
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
         } else if (variable instanceof This) {
-            vic.setValue(new NewObject(primitives, variable.parameterizedType(), ObjectFlow.NO_FLOW),
+            vic.setValue(NewObject.forCatchOrThis(primitives, variable.parameterizedType()),
                     propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo), true);
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
             vic.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
@@ -619,7 +622,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
             // TODO copy state from known preconditions
-            NewObject instance = new NewObject(primitives, parameterInfo.parameterizedType, objectFlow);
+            Expression state = new BooleanConstant(primitives, true);
+            NewObject instance = NewObject.initialValueOfParameter(parameterInfo.parameterizedType, state, objectFlow);
             vic.setValue(instance, propertyMap(analyserContext, parameterInfo), true);
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
         } else if (variable instanceof FieldReference fieldReference) {
@@ -689,10 +693,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 return new ExpressionAndLinkedVariables(initialValue, LinkedVariables.EMPTY);
             }
             EvaluationContext evaluationContext = fieldAnalyser.createEvaluationContext();
-            Map<VariableProperty, Integer> properties = evaluationContext.getValueProperties(initialValue);
-            return new ExpressionAndLinkedVariables(PropertyWrapper.propertyWrapper(evaluationContext,
-                    new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalyser.fieldAnalysis.getObjectFlow()),
-                    properties, initialValue.getObjectFlow()), initialLinkedVariables);
+            NewObject newObject = NewObject.initialValueOfFieldPartOfConstruction(evaluationContext, fieldReference, fieldAnalyser.fieldAnalysis.getObjectFlow());
+            return new ExpressionAndLinkedVariables(newObject, initialLinkedVariables);
         }
 
         int effectivelyFinal = fieldAnalysis.getProperty(VariableProperty.FINAL);
@@ -717,9 +719,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
         }
         // variable field, some cases of effectively final field
-        return new ExpressionAndLinkedVariables(
-                new NewObject(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow()),
-                initialLinkedVariables);
+        NewObject newObject = NewObject.initialValueOfField(primitives, fieldReference.parameterizedType(), fieldAnalysis.getObjectFlow());
+        return new ExpressionAndLinkedVariables(newObject, initialLinkedVariables);
     }
 
     private ObjectFlow createObjectFlowForNewVariable(AnalyserContext analyserContext, Variable variable) {
@@ -836,6 +837,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (isNotAssignmentTarget) {
             if (vi.variable() instanceof FieldReference fieldReference && vi.isConfirmedVariableField()) {
                 String localVariableFqn = createLocalFieldCopyFQN(vi, fieldReference, statementTime);
+                if (!variables.isSet(localVariableFqn)) {
+                    // it is possible that the field has been assigned to, so it exists, but the local copy does not yet
+                    return new VariableInfoImpl(variable);
+                }
                 return variables.get(localVariableFqn).current();
             }
             if (vic.isLocalVariableInLoopDefinedOutside() && !relevantLocalVariablesAssignedInThisLoopAreFrozen()) {

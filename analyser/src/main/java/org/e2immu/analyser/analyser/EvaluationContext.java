@@ -200,7 +200,7 @@ public interface EvaluationContext {
     default NewObject currentInstance(Variable variable, int statementTime) {
         if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
         // always a new one with empty state -- we cannot be bothered here.
-        return new NewObject(getPrimitives(), variable.parameterizedType(), ObjectFlow.NO_FLOW);
+        return NewObject.forTesting(getPrimitives(), variable.parameterizedType());
     }
 
     default boolean disableEvaluationOfMethodCallsUsingCompanionMethods() {

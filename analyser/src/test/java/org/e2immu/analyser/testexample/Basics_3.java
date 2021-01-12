@@ -12,7 +12,7 @@ public class Basics_3 {
     @Modified
     public void setS1(@NotNull String input1) {
         if (input1.contains("a")) {
-            // println modifies out, or not, depending on annotated APIs loaded or not
+            // APIs are not loaded, so should produce a potential null pointer warning
             System.out.println("With a " + s);
             s = "xyz";
         } else {

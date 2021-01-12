@@ -478,19 +478,11 @@ public class FieldAnalyser extends AbstractAnalyser {
             Expression expression = values.get(0);
             BooleanConstant TRUE = new BooleanConstant(analyserContext.getPrimitives(), true);
             if (expression instanceof NewObject newObject) {
-                NewObject afterDowngrade = downgradeFromNewInstanceWithConstructor ?
-                        new NewObject(null, newObject.parameterizedType, List.of(), newObject.state, newObject.getObjectFlow())
-                        : newObject;
-
-                if (!afterDowngrade.state.isBoolValueTrue()) {
-                    // now the state of the new object may survive if there are no modifying methods called,
-                    // but that's too early to know now
-                    // we'll store it, and
-                    fieldAnalysis.setStateOfEffectivelyFinalValue(afterDowngrade.state);
-                    return new NewObject(afterDowngrade, TRUE);
-                }
-                fieldAnalysis.setStateOfEffectivelyFinalValue(TRUE);
-                return afterDowngrade;
+                // now the state of the new object may survive if there are no modifying methods called,
+                // but that's too early to know now
+                fieldAnalysis.setStateOfEffectivelyFinalValue(newObject.state);
+                return downgradeFromNewInstanceWithConstructor ?
+                        newObject.copyAfterModifyingMethodOnConstructor(TRUE) : newObject.copyWithNewState(TRUE);
             }
             fieldAnalysis.setStateOfEffectivelyFinalValue(TRUE);
             return expression;
@@ -764,18 +756,23 @@ public class FieldAnalyser extends AbstractAnalyser {
         public int getProperty(Expression value, VariableProperty variableProperty) {
             if (value instanceof VariableExpression variableValue) {
                 Variable variable = variableValue.variable();
-                if (variable instanceof FieldReference fieldReference) {
-                    return getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
-                }
-                if (variable instanceof This thisVariable) {
-                    return getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
-                }
-                if (variable instanceof ParameterInfo parameterInfo) {
-                    return getParameterAnalysis(parameterInfo).getProperty(variableProperty);
-                }
-                throw new UnsupportedOperationException("?? variable of " + variable.getClass());
+               return getProperty(variable, variableProperty);
             }
             return value.getProperty(this, variableProperty);
+        }
+
+        @Override
+        public int getProperty(Variable variable, VariableProperty variableProperty) {
+            if (variable instanceof FieldReference fieldReference) {
+                return getFieldAnalysis(fieldReference.fieldInfo).getProperty(variableProperty);
+            }
+            if (variable instanceof This thisVariable) {
+                return getTypeAnalysis(thisVariable.typeInfo).getProperty(variableProperty);
+            }
+            if (variable instanceof ParameterInfo parameterInfo) {
+                return getParameterAnalysis(parameterInfo).getProperty(variableProperty);
+            }
+            throw new UnsupportedOperationException("?? variable of " + variable.getClass());
         }
 
         @Override

@@ -886,7 +886,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     initialiserToEvaluate = new Assignment(statementAnalysis.primitives,
                             new VariableExpression(lvr),
                             PropertyWrapper.propertyWrapper(sharedState.evaluationContext,
-                                    new NewObject(statementAnalysis.primitives, lvr.parameterizedType(), ObjectFlow.NO_FLOW),
+                                    NewObject.forCatchOrThis(statementAnalysis.primitives, lvr.parameterizedType()),
                                     Map.of(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL), null));
                     // so that the variable has always been read, no errors
                 } else if (statement() instanceof LoopStatement) {
@@ -943,9 +943,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
                             new VariableInLoop(index(), VariableInLoop.VariableType.LOOP_COPY), true);
                     statementAnalysis.variables.put(newFqn, newVic);
-
                     expressionsToEvaluate.add(new Assignment(statementAnalysis.primitives, new VariableExpression(newLvr),
-                            new NewObject(statementAnalysis.primitives, newLvr.parameterizedType(), ObjectFlow.NO_FLOW)));
+                            NewObject.localVariableInLoop(statementAnalysis.primitives, newLvr.parameterizedType())));
                 }
             });
         }
@@ -1694,24 +1693,25 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             return statementAnalysis.flowData.getTimeAfterSubBlocks();
         }
 
+        /*
+        go from local loop variable to instance when exiting a loop statement;
+        both for merging and for the state
+
+        non-null status to be copied from the variable; delays should/can work but need testing.
+        A positive @NotNull is transferred, a positive @Nullable is replaced by a DELAY...
+         */
         @Override
         public Expression replaceLocalVariables(Expression mergeValue) {
             if (statementAnalysis.statement instanceof LoopStatement && mergeValue != NO_VALUE) {
                 Map<Expression, Expression> map = statementAnalysis.variables.stream()
                         .filter(e -> statementAnalysis.index.equals(e.getValue().getStatementIndexOfThisShadowVariable()))
-                        .collect(Collectors.toUnmodifiableMap(e -> new VariableExpression(e.getValue().current().variable()),
-                                e -> wrap(new NewObject(getPrimitives(), e.getValue().current().variable().parameterizedType(),
-                                        e.getValue().current().getObjectFlow()), e.getValue().current())));
+                        .collect(Collectors.toUnmodifiableMap(
+                                e -> new VariableExpression(e.getValue().current().variable()),
+                                e -> NewObject.genericMergeResult(this, e.getValue().current().variable(),
+                                        e.getValue().current().getObjectFlow())));
                 return mergeValue.reEvaluate(this, map).value();
             }
             return mergeValue;
-        }
-
-        private Expression wrap(NewObject newObject, VariableInfo vi) {
-            if (Primitives.isPrimitiveExcludingVoid(vi.variable().parameterizedType())) return newObject;
-            Map<VariableProperty, Integer> properties = Map.of(VariableProperty.NOT_NULL,
-                    getProperty(vi.variable(), VariableProperty.NOT_NULL));
-            return PropertyWrapper.propertyWrapperForceProperties(newObject, properties);
         }
 
         /*

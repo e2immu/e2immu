@@ -181,13 +181,13 @@ public class Test_01_Loops extends CommonTestRunner {
 
                     // first, understanding how this works...
                     Primitives primitives = d.evaluationContext().getCurrentStatement().statementAnalysis.primitives;
-                    NewObject string1 = new NewObject(primitives, primitives.stringParameterizedType);
+                    NewObject string1 = NewObject.forTesting(primitives, primitives.stringParameterizedType);
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, string1.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL));
                     Map<VariableProperty, Integer> map = Map.of(VariableProperty.NOT_NULL, MultiLevel.NULLABLE);
                     Expression string1Wrapped = PropertyWrapper.propertyWrapperForceProperties(string1, map);
                     Assert.assertEquals(MultiLevel.NULLABLE, string1Wrapped.getProperty(d.evaluationContext(), VariableProperty.NOT_NULL));
                     Expression inline = EvaluateInlineConditional.conditionalValueConditionResolved(d.evaluationContext(),
-                            GreaterThanZero.greater(d.evaluationContext(), new NewObject(primitives, primitives.intParameterizedType),
+                            GreaterThanZero.greater(d.evaluationContext(), NewObject.forTesting(primitives, primitives.intParameterizedType),
                                     new IntConstant(primitives, 0), true),
                             new StringConstant(primitives, "abc"),
                             string1Wrapped, ObjectFlow.NO_FLOW).value();

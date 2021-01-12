@@ -22,6 +22,11 @@ import org.e2immu.annotation.*;
 
 import java.util.Set;
 
+
+// probably more interesting of its @NotNull on p
+// the statement time does not increase going from statement 0 to the reading of s (before add!)
+// the @NotNull on the local copy must be on the field's value as well
+
 @Container(absent = true)
 @MutableModifiesArguments
 public class Container_0 {

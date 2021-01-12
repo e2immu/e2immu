@@ -133,8 +133,8 @@ public class TestTypeInfoStream {
                 .setParameterizedType(new ParameterizedType(map, List.of(primitives.stringParameterizedType, typeT)))
                 .build();
         MethodInfo hashMapConstructor = new MethodInspectionImpl.Builder(hashMap).build(IP).getMethodInfo();
-        Expression creationExpression = new NewObject(hashMapConstructor,
-                hashMapParameterizedType, List.of(), new BooleanConstant(primitives, true), ObjectFlow.NO_FLOW);
+        Expression creationExpression = NewObject.objectCreation(primitives, hashMapConstructor,
+                hashMapParameterizedType, List.of(), ObjectFlow.NO_FLOW);
         ParameterInspectionImpl.Builder p0 = new ParameterInspectionImpl.Builder(typeT, "value", 0);
         MethodInfo put = new MethodInspectionImpl.Builder(testTypeInfo, "put")
                 .setReturnType(typeT)

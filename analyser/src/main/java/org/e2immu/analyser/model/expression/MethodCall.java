@@ -94,7 +94,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
     @Override
     public NewObject getInstance(EvaluationResult evaluationResult) {
         if (Primitives.isPrimitiveExcludingVoid(returnType())) return null;
-        return new NewObject(evaluationResult.evaluationContext().getPrimitives(), returnType(), objectFlow);
+        return NewObject.forGetInstance(evaluationResult.evaluationContext().getPrimitives(), returnType(), objectFlow);
     }
 
     @Override
@@ -371,7 +371,6 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             assert methodInfo.methodInspection.get().isStatic();
             return null; // static method
         } else {
-            // note that we can build multiple times; alt., we make interface and implementation
             newObject = objectValue.getInstance(builder.build());
         }
         Objects.requireNonNull(newObject, "Modifying method on constant or primitive? Impossible: " + objectValue.getClass());
@@ -430,9 +429,9 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         if (containsEmptyExpression(newState.get())) {
             newState.set(new BooleanConstant(evaluationContext.getPrimitives(), true));
         }
-        NewObject modifiedInstance = methodInfo.isConstructor ? new NewObject(newObject, newState.get()) :
+        NewObject modifiedInstance = methodInfo.isConstructor ? newObject.copyWithNewState(newState.get()) :
                 // we clear the constructor and its arguments after calling a modifying method on the object
-                new NewObject(null, newObject.parameterizedType, List.of(), newState.get(), newObject.getObjectFlow());
+                newObject.copyAfterModifyingMethodOnConstructor(newState.get());
 
         // update the object of the modifying call
         if (objectValue instanceof VariableExpression variableValue) {

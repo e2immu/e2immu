@@ -364,6 +364,9 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             valueChanges.put(variable, newVcd);
         }
 
+        /*
+        Used by MethodCall and EvaluateMethodCall
+         */
         public NewObject currentInstance(Variable variable, ObjectFlow objectFlowForCreation, Expression stateFromPreconditions) {
             ChangeData currentExpression = valueChanges.get(variable);
             if (currentExpression != null && currentExpression.value instanceof NewObject instance) return instance;
@@ -375,8 +378,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             if (Primitives.isPrimitiveExcludingVoid(variable.parameterizedType())) return null;
             Expression value = currentExpression(variable, true);
             if (value.isConstant()) return null;
-            NewObject instance = new NewObject(null, variable.parameterizedType(), List.of(),
-                    stateFromPreconditions, objectFlowForCreation);
+            NewObject instance = NewObject.forGetInstance(variable.parameterizedType(), stateFromPreconditions, objectFlowForCreation);
             assignInstanceToVariable(variable, instance, LinkedVariables.EMPTY);
             return instance;
         }

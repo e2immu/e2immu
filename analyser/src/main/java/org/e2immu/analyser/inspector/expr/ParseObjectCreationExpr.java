@@ -24,8 +24,6 @@ import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.NamedType;
 import org.e2immu.analyser.model.ParameterizedType;
 import org.e2immu.analyser.model.TypeInfo;
-import org.e2immu.analyser.model.expression.BooleanConstant;
-import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.NewObject;
 import org.e2immu.analyser.model.expression.UnevaluatedMethodCall;
 import org.e2immu.analyser.objectflow.ObjectFlow;
@@ -37,7 +35,7 @@ import java.util.Map;
 
 public class ParseObjectCreationExpr {
     public static Expression parse(ExpressionContext expressionContext, ObjectCreationExpr objectCreationExpr, MethodTypeParameterMap singleAbstractMethod) {
-        TypeContext typeContext  = expressionContext.typeContext;
+        TypeContext typeContext = expressionContext.typeContext;
 
         ParameterizedType parameterizedType = ParameterizedTypeFactory.from(typeContext, objectCreationExpr.getType());
 
@@ -49,7 +47,7 @@ public class ParseObjectCreationExpr {
             typeInspector.inspectAnonymousType(parameterizedType, expressionContext.newVariableContext("anonymous class body"),
                     objectCreationExpr.getAnonymousClassBody().get());
             expressionContext.addNewlyCreatedType(anonymousType);
-            return new NewObject(typeContext.getPrimitives(), parameterizedType, anonymousType);
+            return NewObject.withAnonymousClass(typeContext.getPrimitives(), parameterizedType, anonymousType);
         }
 
         Map<NamedType, ParameterizedType> typeMap = parameterizedType.initialTypeParameterMap(typeContext);
@@ -60,7 +58,7 @@ public class ParseObjectCreationExpr {
                         newParameterExpressions, singleAbstractMethod, new HashMap<>(), "constructor",
                         parameterizedType, objectCreationExpr.getBegin().orElseThrow());
         if (method == null) return new UnevaluatedMethodCall(parameterizedType.detailedString() + "::new");
-        return new NewObject(method.methodInspection.getMethodInfo(), parameterizedType, newParameterExpressions,
-                new BooleanConstant(typeContext.getPrimitives(), true), ObjectFlow.NO_FLOW);
+        return NewObject.objectCreation(typeContext.getPrimitives(),
+                method.methodInspection.getMethodInfo(), parameterizedType, newParameterExpressions, ObjectFlow.NO_FLOW);
     }
 }

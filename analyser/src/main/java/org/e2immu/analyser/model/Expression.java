@@ -139,6 +139,9 @@ public interface Expression extends Element, Comparable<Expression> {
         return ((boolValue = this.asInstanceOf(BooleanConstant.class)) != null) && !boolValue.getValue();
     }
 
+    /*
+    Construct an initial instance whose state can be enriched by companion methods.
+     */
     default NewObject getInstance(EvaluationResult evaluationResult) {
         return null;
     }

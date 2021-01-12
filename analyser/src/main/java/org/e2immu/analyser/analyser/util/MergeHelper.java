@@ -168,6 +168,6 @@ public record MergeHelper(EvaluationContext evaluationContext, VariableInfo vi) 
     }
 
     public Expression noConclusion() {
-        return new NewObject(evaluationContext.getPrimitives(), vi.variable().parameterizedType(), vi.getObjectFlow());
+        return NewObject.genericMergeResult(evaluationContext, vi.variable(), vi.getObjectFlow());
     }
 }

@@ -62,7 +62,7 @@ public class Test_00_Basics_1 extends CommonTestRunner {
                 } else {
                     Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
-                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type Set<String>";
+                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "nullable instance type Set<String>";
                 Assert.assertEquals(expectValue, d.currentValue().toString());
             }
             if (GET_F1_RETURN.equals(d.variableName())) {

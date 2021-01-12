@@ -18,7 +18,6 @@
 
 package org.e2immu.analyser.model.expression;
 
-import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.ParameterizedType;
@@ -91,8 +90,8 @@ public record StringConstant(Primitives primitives,
     public NewObject getInstance(EvaluationResult evaluationResult) {
         // TODO static flow
         // TODO apply code from method call to produce a decent state
-        return new NewObject(oneParameterConstructor(), primitives.stringParameterizedType,
-                List.of(this), new BooleanConstant(evaluationResult.evaluationContext().getPrimitives(), true), ObjectFlow.NO_FLOW);
+        return NewObject.objectCreation(primitives, oneParameterConstructor(), primitives.stringParameterizedType,
+                List.of(this), ObjectFlow.NO_FLOW);
     }
 
     private MethodInfo oneParameterConstructor() {

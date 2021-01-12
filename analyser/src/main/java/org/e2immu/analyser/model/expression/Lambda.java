@@ -175,11 +175,16 @@ public class Lambda implements Expression {
             }
         }
         if (result == null) {
-            result = new NewObject(evaluationContext.getPrimitives(), parameterizedType, objectFlow);
+            result = NewObject.forGetInstance(evaluationContext.getPrimitives(), parameterizedType, objectFlow);
         }
 
         builder.setExpression(result);
         return builder.build();
+    }
+
+    @Override
+    public NewObject getInstance(EvaluationResult evaluationResult) {
+        return NewObject.forGetInstance(evaluationResult.evaluationContext().getPrimitives(), returnType(), getObjectFlow());
     }
 
     @Override

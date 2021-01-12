@@ -31,8 +31,6 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Map;
 
-import static org.e2immu.analyser.analyser.VariableInfoContainer.*;
-
 public class TestVariableInfo extends CommonVariableInfo {
 
     @BeforeClass
@@ -95,7 +93,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testOneCisAIfXThenB() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Expression x = new NewObject(primitives, viX.variable().parameterizedType());
+        Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
@@ -131,7 +129,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         ret.setValue(new UnknownExpression(primitives.booleanParameterizedType, UnknownExpression.RETURN_VALUE));
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Expression x = new NewObject(primitives, viX.variable().parameterizedType());
+        Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
@@ -170,7 +168,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         ret.setProperty(VariableProperty.NOT_NULL, MultiLevel.MUTABLE);
 
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalIntVar("x"));
-        Expression x = new NewObject(primitives, viX.variable().parameterizedType());
+        Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viB = new VariableInfoImpl(makeLocalIntVar("b"));
@@ -239,7 +237,7 @@ public class TestVariableInfo extends CommonVariableInfo {
         // situation: boolean x = ...; int c = a; if(some obscure condition) c = b;
 
         VariableInfoImpl viC = new VariableInfoImpl(makeLocalIntVar("c"));
-        viC.setValue(new NewObject(primitives, viA.variable().parameterizedType()));
+        viC.setValue(NewObject.forTesting(primitives, viA.variable().parameterizedType()));
 
         Expression unknown = new UnknownExpression(primitives.booleanParameterizedType, "no idea");
         VariableInfoImpl viC2 = viC.mergeIntoNewObject(minimalEvaluationContext, TRUE, false, Map.of(unknown, viB));
@@ -254,7 +252,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testTwoOverwriteCisIfXThenAElseB() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Expression x = new NewObject(primitives, viX.variable().parameterizedType());
+        Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));
@@ -280,7 +278,7 @@ public class TestVariableInfo extends CommonVariableInfo {
     @Test
     public void testTwoOverwriteCisIfXThenAElseA() {
         VariableInfoImpl viX = new VariableInfoImpl(makeLocalBooleanVar("x"));
-        Expression x = new NewObject(primitives, viX.variable().parameterizedType());
+        Expression x = NewObject.forTesting(primitives, viX.variable().parameterizedType());
         viX.setValue(x);
 
         VariableInfoImpl viA = new VariableInfoImpl(makeLocalIntVar("a"));

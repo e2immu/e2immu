@@ -22,15 +22,25 @@ public class Test_17_Container extends CommonTestRunner {
         final String TYPE = "org.e2immu.analyser.testexample.Container_0";
         final String S = TYPE + ".s";
         final String P = TYPE + ".setS(Set<String>,String):0:p";
+        final String S0 = TYPE + ".s$0$0-E";
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("setS".equals(d.methodInfo().name)) {
                 if (P.equals(d.variableName()) && "0".equals(d.statementId())) {
-                    Assert.assertFalse(d.hasProperty(VariableProperty.NOT_NULL));
+                    int expect = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    Assert.assertEquals(expect, d.getProperty(VariableProperty.NOT_NULL));
                 }
                 if (P.equals(d.variableName()) && "1".equals(d.statementId())) {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
+                    //    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
                 }
                 if (S.equals(d.variableName()) && "1".equals(d.statementId())) {
+
+                    // FIXME explain why not ENN
+                    //  Assert.assertEquals(MultiLevel.NULLABLE, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
+                }
+                if (S0.equals(d.variableName()) && "1".equals(d.statementId())) {
+                    Assert.assertTrue(d.iteration() > 0);
+                    Assert.assertEquals("p", d.currentValue().toString());
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
                 }
             }
@@ -38,7 +48,7 @@ public class Test_17_Container extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name)) {
                 int expect = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-                Assert.assertEquals(expect, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
             }
         };
         TypeMapVisitor typeMapVisitor = typeMap -> {

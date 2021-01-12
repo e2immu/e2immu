@@ -33,6 +33,9 @@ import java.io.IOException;
 Aims to catch problems in assigning properties from the field to the variable in statement 0, setS1.
 The values there are a summary of what happened deeper down, which is different from what is in the field.
 (The field cannot be @NotNull but locally we know s will not be null at that point.)
+
+API annotations are not loaded, so we don't know that System.out is never null.
+
  */
 public class Test_00_Basics_3 extends CommonTestRunner {
     private static final String E = VariableInfoContainer.Level.EVALUATION.toString();
@@ -47,6 +50,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
         final String TYPE = "org.e2immu.analyser.testexample.Basics_3";
         final String S = TYPE + ".s";
         final String THIS = TYPE + ".this";
+        final String OUT = "java.lang.System.out";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("setS1".equals(d.methodInfo().name)) {
@@ -73,17 +77,24 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals(VariableInfoContainer.NOT_YET_ASSIGNED, d.variableInfo().getAssignmentId());
-                    Assert.assertEquals("0.0.0"+E, d.variableInfo().getReadId());
+                    Assert.assertEquals("0.0.0" + E, d.variableInfo().getReadId());
                     if (d.iteration() > 0) {
                         Assert.assertEquals("instance type Basics_3", d.currentValue().toString());
                     }
                 }
                 if ("0.1.0".equals(d.statementId())) {
                     Assert.assertEquals(VariableInfoContainer.NOT_YET_ASSIGNED, d.variableInfo().getAssignmentId());
-                    Assert.assertEquals("0.1.0"+E, d.variableInfo().getReadId());
+                    Assert.assertEquals("0.1.0" + E, d.variableInfo().getReadId());
                     if (d.iteration() > 0) {
                         Assert.assertEquals("instance type Basics_3", d.currentValue().toString());
                     }
+                }
+            }
+            if ("setS1".equals(d.methodInfo().name) && OUT.equals(d.variableName())) {
+                if (d.iteration() == 0) {
+                    Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
+                } else {
+                    Assert.assertEquals("nullable instance type PrintStream", d.currentValue().toString());
                 }
             }
             if ("setS1".equals(d.methodInfo().name) && S.equals(d.variableName())) {
@@ -91,7 +102,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertSame(d.statementId(), LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type String";
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "nullable instance type String";
                     Assert.assertEquals(expectValue, d.currentValue().debugOutput());
                     Assert.assertFalse(d.variableInfo().isAssigned());
                     if (d.iteration() == 0) {
@@ -142,7 +153,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertEquals("input1.contains(\"a\")?\"xyz\":\"abc\"", d.currentValue().toString());
                     if (d.iteration() > 0) {
                         // linked to s$1 and s$2$0:M
-                        Assert.assertEquals("org.e2immu.analyser.testexample.Basics_3.s$1,org.e2immu.analyser.testexample.Basics_3.s$2$0"+M,
+                        Assert.assertEquals("org.e2immu.analyser.testexample.Basics_3.s$1,org.e2immu.analyser.testexample.Basics_3.s$2$0" + M,
                                 d.variableInfo().getLinkedVariables().toString());
                     }
                     Assert.assertTrue("At " + d.statementId(), d.variableInfo().isAssigned());
@@ -172,17 +183,17 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertEquals(0, time1);
                     Assert.assertEquals(1, time3);
                     Assert.assertEquals(2, time4); // merge
-                    Assert.assertEquals("0"+C, flowData.assignmentIdOfStatementTime.get(0));
-                    Assert.assertEquals("0"+E, flowData.assignmentIdOfStatementTime.get(1));
-                    Assert.assertEquals("0"+M, flowData.assignmentIdOfStatementTime.get(2));
+                    Assert.assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
+                    Assert.assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
+                    Assert.assertEquals("0" + M, flowData.assignmentIdOfStatementTime.get(2));
                 }
                 if ("0.0.0".equals(d.statementId())) {
                     Assert.assertEquals(1, time1);
                     Assert.assertEquals(2, time3);
                     Assert.assertEquals(2, time4);
-                    Assert.assertEquals("0"+C, flowData.assignmentIdOfStatementTime.get(0));
-                    Assert.assertEquals("0"+E, flowData.assignmentIdOfStatementTime.get(1));
-                    Assert.assertEquals("0.0.0"+E, flowData.assignmentIdOfStatementTime.get(2));
+                    Assert.assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
+                    Assert.assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
+                    Assert.assertEquals("0.0.0" + E, flowData.assignmentIdOfStatementTime.get(2));
                     Assert.assertEquals("true", d.state().toString());
                     Assert.assertEquals("input1.contains(\"a\")", d.condition().toString());
                     Assert.assertEquals("input1.contains(\"a\")", d.absoluteState().toString());
@@ -191,16 +202,16 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertEquals(2, time1);
                     Assert.assertEquals(2, time3);
                     Assert.assertEquals(2, time4);
-                    Assert.assertEquals("0"+C, flowData.assignmentIdOfStatementTime.get(0));
-                    Assert.assertEquals("0"+E, flowData.assignmentIdOfStatementTime.get(1));
-                    Assert.assertEquals("0.0.0"+E, flowData.assignmentIdOfStatementTime.get(2));
+                    Assert.assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
+                    Assert.assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
+                    Assert.assertEquals("0.0.0" + E, flowData.assignmentIdOfStatementTime.get(2));
                 }
                 if ("0.1.0".equals(d.statementId())) { // second assignment
                     Assert.assertEquals(1, time1);
                     Assert.assertEquals(1, time3);
                     Assert.assertEquals(1, time4);
-                    Assert.assertEquals("0"+C, flowData.assignmentIdOfStatementTime.get(0));
-                    Assert.assertEquals("0"+E, flowData.assignmentIdOfStatementTime.get(1));
+                    Assert.assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
+                    Assert.assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
                     Assert.assertEquals("true", d.state().toString());
                     Assert.assertEquals("!input1.contains(\"a\")", d.condition().toString());
                     Assert.assertEquals("!input1.contains(\"a\")", d.absoluteState().toString());
@@ -209,9 +220,9 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                     Assert.assertEquals(2, time1);
                     Assert.assertEquals(2, time3);
                     Assert.assertEquals(2, time4);
-                    Assert.assertEquals("0"+C, flowData.assignmentIdOfStatementTime.get(0));
-                    Assert.assertEquals("0"+E, flowData.assignmentIdOfStatementTime.get(1));
-                    Assert.assertEquals("0"+M, flowData.assignmentIdOfStatementTime.get(2));
+                    Assert.assertEquals("0" + C, flowData.assignmentIdOfStatementTime.get(0));
+                    Assert.assertEquals("0" + E, flowData.assignmentIdOfStatementTime.get(1));
+                    Assert.assertEquals("0" + M, flowData.assignmentIdOfStatementTime.get(2));
                     if (d.iteration() > 0) {
                         Assert.assertNotNull(d.haveError(Message.ASSERT_EVALUATES_TO_CONSTANT_TRUE));
                     }
