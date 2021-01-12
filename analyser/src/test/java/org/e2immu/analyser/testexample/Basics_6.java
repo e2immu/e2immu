@@ -31,20 +31,20 @@ public class Basics_6 {
         String v1 = field;
         System.out.println(v1); // interrupts!
         String v2 = field;
-        assert v1.equals(v2); // most likely true
+        assert v1.equals(v2); // most likely true; Warn: potential null ptr exception 1
     }
 
     public void test2() {
         String v1 = field;
         String v2 = field;
-        assert v1.equals(v2); // always true
+        assert v1.equals(v2); // Warn: always true; + potential null ptr exception, 2, 3
     }
 
     public String test3() {
         String v1 = field;
-        String v3 = someMinorMethod(v1);
+        String v3 = someMinorMethod(v1); // ; + potential null ptr exception, 4
         String v2 = field;
-        assert v1.equals(v2); // always true... nothing "interrupting"
+        assert v1.equals(v2); // always true... nothing "interrupting"; + potential null ptr exception; 5, 6
         return v3;
     }
 
@@ -52,20 +52,20 @@ public class Basics_6 {
         String v1 = field;
         nonPrivateMethod(); // must interrupt, non-private
         String v2 = field;
-        assert v1.equals(v2); // most likely true..."event" in between
+        assert v1.equals(v2); // most likely true..."event" in between; + potential null ptr exception 7
     }
 
     public void test5() {
-        String v1 = field.toLowerCase();
-        String v2 = field.toLowerCase();
-        assert v1.equals(v2); // most likely true... semantics of toLowerCase
+        String v1 = field.toLowerCase(); // ; + potential null ptr exception 8
+        String v2 = field.toLowerCase(); // ; + potential null ptr exception 9
+        assert v1.equals(v2); // most likely true... semantics of toLowerCase  -- NO warning anymore for null ptr
     }
 
     public List<String> test6() {
         String v1 = field;
         List<String> twentySeven = new ArrayList<>(27); // some constructors do not interrupt
         String v2 = field;
-        assert v1.equals(v2); // always true, no interruption
+        assert v1.equals(v2); // always true, no interruption; ; + potential null ptr exception 10, 11
         return twentySeven;
     }
 
