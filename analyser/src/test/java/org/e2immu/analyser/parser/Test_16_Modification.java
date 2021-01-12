@@ -21,6 +21,8 @@ import java.util.Set;
 
 public class Test_16_Modification extends CommonTestRunner {
 
+    public static final String INSTANCE_TYPE_HASH_SET = "instance type HashSet";
+
     public Test_16_Modification() {
         super(true);
     }
@@ -37,7 +39,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
                     String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
                     Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
-                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString(): "instance type HashSet";
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type HashSet";
                     Assert.assertEquals(expectValue, d.currentValue().debugOutput());
                 }
             }
@@ -92,7 +94,7 @@ public class Test_16_Modification extends CommonTestRunner {
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.fieldInfo().name.equals("set2")) {
                 int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
-                if (d.iteration() <= 1) {
+                if (d.iteration() == 0) {
                     Assert.assertEquals(Level.DELAY, modified);
                 } else {
                     Assert.assertEquals(Level.FALSE, modified);
@@ -113,13 +115,16 @@ public class Test_16_Modification extends CommonTestRunner {
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("getFirst".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                Assert.assertEquals(GET_FIRST_VALUE, d.evaluationResult().value().toString());
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : GET_FIRST_VALUE;
+                Assert.assertEquals(expect, d.evaluationResult().value().toString());
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("org.e2immu.analyser.testexample.Modification_2.Example2ter.getFirst(String)".equals(d.variableName())) {
-                Assert.assertEquals(GET_FIRST_VALUE, d.currentValue().toString());
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : GET_FIRST_VALUE;
+
+                Assert.assertEquals(expect, d.currentValue().toString());
                 Assert.assertNotSame(LinkedVariables.DELAY, d.currentValue().linkedVariables(d.evaluationContext()));
             }
         };
@@ -132,16 +137,16 @@ public class Test_16_Modification extends CommonTestRunner {
                 Assert.assertEquals(Level.TRUE, effFinal);
 
                 int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
-                int expectModified = iteration <= 1 ? Level.DELAY : Level.TRUE;
+                int expectModified = iteration == 0 ? Level.DELAY : Level.TRUE;
                 Assert.assertEquals(expectModified, modified);
             }
             if (name.equals("set2bis")) {
                 int effFinal = d.fieldAnalysis().getProperty(VariableProperty.FINAL);
-                int expectFinal = iteration == 0 ? Level.DELAY : Level.FALSE;
+                int expectFinal = Level.FALSE;
                 Assert.assertEquals(expectFinal, effFinal);
 
                 int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
-                int expectModified = iteration == 0 ? Level.DELAY : Level.TRUE;
+                int expectModified = Level.TRUE;
                 Assert.assertEquals(expectModified, modified);
             }
         };
@@ -156,7 +161,6 @@ public class Test_16_Modification extends CommonTestRunner {
 
     @Test
     public void test3() throws IOException {
-        final String SET3_EFV = "new HashSet()";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("add3".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
@@ -188,6 +192,11 @@ public class Test_16_Modification extends CommonTestRunner {
                         Assert.assertTrue(variableValue.variable() instanceof FieldReference);
                         Assert.assertEquals("set3", d.currentValue().toString());
                     }
+                    if (d.iteration() > 1) {
+                        Assert.assertEquals("this.set3", d.variableInfo().getLinkedVariables().toString());
+                    } else {
+                        Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                    }
                 }
                 if ("1".equals(d.statementId())) {
                     //  the READ is written at level 1
@@ -203,32 +212,31 @@ public class Test_16_Modification extends CommonTestRunner {
                         // problem is that there is one in level 3 already, with a NO_VALUE
                         VariableInfo vi1 = d.variableInfoContainer().current();
                         Assert.assertEquals("set3", vi1.getValue().toString());
-                        Assert.assertEquals("this.set3", vi1.getLinkedVariables().toString());
                         Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                    }
+                    if (d.iteration() > 1) {
+                        Assert.assertEquals("this.set3", d.variableInfo().getLinkedVariables().toString());
+                    } else {
+                        Assert.assertSame("It: "+d.iteration(), LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                     }
                 }
             }
             if ("add3".equals(d.methodInfo().name) &&
                     "org.e2immu.analyser.testexample.Modification_3.set3".equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    if (d.iteration() == 0) Assert.assertNull(d.variableInfo().getLinkedVariables());
-                    else {
-                        Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                        Assert.assertEquals(SET3_EFV, d.variableInfo().getValue().toString());
-                    }
+                    String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                    Assert.assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : INSTANCE_TYPE_HASH_SET;
+                    Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
                 }
                 if ("1".equals(d.statementId())) {
                     Assert.assertTrue(d.variableInfo().isRead());
-
-                    if (d.iteration() == 0) {
-                        Assert.assertNull(d.variableInfo().getLinkedVariables());
-                        // start off with FALSE
-                        Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
-                    } else {
-                        Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
-                        Assert.assertEquals("instance type HashSet", d.variableInfo().getValue().toString());
-                        Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
-                    }
+                    String expectLv = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                    Assert.assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : INSTANCE_TYPE_HASH_SET;
+                    Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
+                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                    Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
                 }
             }
         };
@@ -243,11 +251,9 @@ public class Test_16_Modification extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (d.fieldInfo().name.equals("set3")) {
-                if (d.iteration() == 0) {
-                    Assert.assertEquals(Level.DELAY, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                } else {
-                    Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                    Assert.assertEquals(SET3_EFV, d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                if (d.iteration() > 0) {
+                    Assert.assertEquals(INSTANCE_TYPE_HASH_SET, d.fieldAnalysis().getEffectivelyFinalValue().toString());
                     if (d.iteration() > 1) {
                         Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
                     }

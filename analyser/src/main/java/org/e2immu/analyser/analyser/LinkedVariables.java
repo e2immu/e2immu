@@ -18,12 +18,14 @@
 package org.e2immu.analyser.analyser;
 
 import com.google.common.collect.ImmutableSet;
+import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.util.SetUtil;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public record LinkedVariables(Set<Variable> variables) {
 
@@ -53,5 +55,14 @@ public record LinkedVariables(Set<Variable> variables) {
         if (this == DELAY) return DELAY_STRING;
 
         return variables.stream().map(Variable::output).collect(OutputBuilder.joining(Symbol.COMMA)).debug();
+    }
+
+    public LinkedVariables removeAllButLocalCopiesOf(Variable variable) {
+        if (this == DELAY) return DELAY;
+        if (this == EMPTY) return EMPTY;
+        Set<Variable> remaining = variables.stream().filter(v -> v instanceof LocalVariableReference lvr &&
+                variable.equals(lvr.variable.isLocalCopyOf())).collect(Collectors.toSet());
+        if (remaining.isEmpty()) return EMPTY;
+        return new LinkedVariables(remaining);
     }
 }

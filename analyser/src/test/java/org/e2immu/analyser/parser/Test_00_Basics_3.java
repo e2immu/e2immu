@@ -94,7 +94,7 @@ public class Test_00_Basics_3 extends CommonTestRunner {
                 if (d.iteration() == 0) {
                     Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
                 } else {
-                    if("0.0.0".equals(d.statementId())) {
+                    if ("0.0.0".equals(d.statementId())) {
                         // because of the modifying method println
                         Assert.assertEquals("instance type PrintStream", d.currentValue().toString());
                     } else if ("0".equals(d.statementId())) {

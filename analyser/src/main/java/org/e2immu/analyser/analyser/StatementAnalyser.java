@@ -499,13 +499,12 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             statementAnalysis.methodLevelData.addCircularCallOrUndeclaredFunctionalInterface();
         }
 
-
         for (Map.Entry<Variable, EvaluationResult.ChangeData> entry : evaluationResult.changeData().entrySet()) {
 
             Variable variable = entry.getKey();
             EvaluationResult.ChangeData changeData = entry.getValue();
 
-            Set<Variable> additionalLinks = ensureVariables(sharedState, variable, changeData, evaluationResult.statementTime());
+            Set<Variable> additionalLinks = ensureVariables(variable, changeData, evaluationResult.statementTime());
 
             // we're now guaranteed to find the variable
             VariableInfoContainer vic = statementAnalysis.variables.get(variable.fullyQualifiedName());
@@ -621,8 +620,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
     Local variables, This, Parameters will already exist, minimally in INITIAL level
     Fields (and forms of This (super...)) will not exist in the first iteration; they need creating
      */
-    private Set<Variable> ensureVariables(SharedState sharedState,
-                                          Variable variable,
+    private Set<Variable> ensureVariables(Variable variable,
                                           EvaluationResult.ChangeData changeData,
                                           int newStatementTime) {
         VariableInfoContainer vic;
@@ -637,7 +635,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 initial.isConfirmedVariableField() && !changeData.readAtStatementTime().isEmpty()) {
             // ensure all of the local copies
             additionalLinksForThisVariable =
-                    ensureLocalCopiesOfVariableField(sharedState, changeData.readAtStatementTime(), fieldReference, initial);
+                    ensureLocalCopiesOfVariableField(changeData.readAtStatementTime(), fieldReference, initial);
         } else {
             additionalLinksForThisVariable = Set.of();
         }
@@ -653,15 +651,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return additionalLinksForThisVariable;
     }
 
-    private Set<Variable> ensureLocalCopiesOfVariableField(SharedState sharedState,
-                                                           Set<Integer> statementTimes,
+    private Set<Variable> ensureLocalCopiesOfVariableField(Set<Integer> statementTimes,
                                                            FieldReference fieldReference,
                                                            VariableInfo initial) {
-        FieldAnalysis fieldAnalysis = sharedState.evaluationContext().getFieldAnalysis(fieldReference.fieldInfo);
-        Primitives primitives = sharedState.evaluationContext.getPrimitives();
-        Map<VariableProperty, Integer> propertyMap = VariableProperty.FROM_ANALYSER_TO_PROPERTIES.stream()
-                .collect(Collectors.toUnmodifiableMap(vp -> vp, fieldAnalysis::getProperty));
-
         Set<Variable> set = new HashSet<>();
         for (int statementTime : statementTimes) {
             LocalVariableReference localCopy = statementAnalysis.variableInfoOfFieldWhenReading(analyserContext,
@@ -688,11 +680,35 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
             return LinkedVariables.DELAY;
         }
+
+        // no assignment, we need to copy, potentially add to previous value
+
         LinkedVariables previousValue = vi1.getLinkedVariables();
-        LinkedVariables mergedValue1 = previousValue != LinkedVariables.DELAY ?
-                previousValue.merge(changeData.linkedVariables()) : changeData.linkedVariables();
+        LinkedVariables toAddFromPreviousValue;
+        if (changeData.markAssignment()) {
+            if(vi.isConfirmedVariableField()) {
+                if(previousValue == LinkedVariables.DELAY) {
+                    log(DELAYED, "Apply of {}, {} is delayed because of previous value delay of linked variables of variable field {}",
+                            index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
+                            variable.fullyQualifiedName());
+                    return LinkedVariables.DELAY;
+                }
+                toAddFromPreviousValue = previousValue.removeAllButLocalCopiesOf(variable);
+            } else {
+                toAddFromPreviousValue = LinkedVariables.EMPTY;
+            }
+        } else {
+            if (previousValue == LinkedVariables.DELAY) {
+                log(DELAYED, "Apply of {}, {} is delayed because of previous value delay of linked variables of {}",
+                        index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
+                        variable.fullyQualifiedName());
+                return LinkedVariables.DELAY;
+            }
+            toAddFromPreviousValue = previousValue;
+        }
         // note that the null here is actual presence or absence in a map...
-        LinkedVariables mergedValue = mergedValue1.merge(new LinkedVariables(additionalLinks));
+        LinkedVariables mergedValue = toAddFromPreviousValue.merge(changeData.linkedVariables())
+                .merge(new LinkedVariables(additionalLinks));
         log(ANALYSER, "Set linked variables of {} to {} in {}, {}",
                 variable, mergedValue, index(), myMethodAnalyser.methodInfo.fullyQualifiedName);
 
