@@ -686,8 +686,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         LinkedVariables previousValue = vi1.getLinkedVariables();
         LinkedVariables toAddFromPreviousValue;
         if (changeData.markAssignment()) {
-            if(vi.isConfirmedVariableField()) {
-                if(previousValue == LinkedVariables.DELAY) {
+            if (vi.isConfirmedVariableField()) {
+                if (previousValue == LinkedVariables.DELAY) {
                     log(DELAYED, "Apply of {}, {} is delayed because of previous value delay of linked variables of variable field {}",
                             index(), myMethodAnalyser.methodInfo.fullyQualifiedName,
                             variable.fullyQualifiedName());
@@ -800,8 +800,6 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                     ParameterAnalysisImpl.Builder parameterAnalysis = myMethodAnalyser.getParameterAnalyser(parameterInfo).parameterAnalysis;
                     sharedState.builder.add(parameterAnalysis.new SetProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL));
 
-                    // as a context property, at the highest level (AFTER summary, but we're simply increasing)
-                    statementAnalysis.addProperty(nullVariable, VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL);
                     disableErrorsOnIfStatement();
                 }
             }

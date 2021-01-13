@@ -768,40 +768,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return ObjectFlow.NO_FLOW; // will be assigned to soon enough
     }
 
-    /*
-    Write a property into a variable. Currently used after evaluation and merging, so the variable in question will
-    exist. It may not exist in EVAL yet in this statement, though. If it does, we don't mark it assigned, read, etc.
-
-    This implies that the occurs in the expression, which in turn implies that an EVALUATION level should already be present!
-    Now if the variable points to another variable, that one will get the property as well.
-    It should also exist, but it may not exist in EVALUATION yet (as it may not occur in the evaluation itself)
-     */
-    public void addProperty(Variable variable, VariableProperty variableProperty, int value) {
-        Objects.requireNonNull(variable);
-        VariableInfoContainer vic = findForWriting(variable);
-        if (!vic.hasEvaluation()) {
-            VariableInfo initial = vic.getPreviousOrInitial();
-            vic.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), Set.of());
-        }
-        vic.setProperty(variableProperty, value, VariableInfoContainer.Level.EVALUATION);
-
-        Expression currentValue = vic.best(VariableInfoContainer.Level.EVALUATION).getValue();
-        VariableExpression valueWithVariable;
-        if ((valueWithVariable = currentValue.asInstanceOf(VariableExpression.class)) == null) return;
-        Variable other = valueWithVariable.variable();
-        if (!variable.equals(other)) {
-            VariableInfoContainer vic2 = variables.get(variable.fullyQualifiedName());
-            if (!vic2.hasEvaluation()) {
-                VariableInfo initial = vic2.getPreviousOrInitial();
-                vic2.ensureEvaluation(initial.getAssignmentId(), initial.getReadId(), initial.getStatementTime(), Set.of());
-            }
-            vic2.setProperty(variableProperty, value, false, VariableInfoContainer.Level.EVALUATION);
-
-            Expression otherValue = vic2.current().getValue();
-            assert !otherValue.isInstanceOf(VariableExpression.class);
-        }
-    }
-
     public int statementTime(VariableInfoContainer.Level level) {
         return switch (level) {
             case INITIAL -> flowData.getInitialTime();

@@ -7,6 +7,7 @@ import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Expression;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MultiLevel;
+import org.e2immu.analyser.model.ParameterInfo;
 import org.e2immu.analyser.model.expression.ConstantExpression;
 import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.StringConstant;
@@ -28,6 +29,19 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
 
     @Test
     public void test_0() throws IOException {
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("EvaluateConstants_0".equals(d.methodInfo().name)) {
+                if ("0.0.0".equals(d.statementId()) && d.variable() instanceof ParameterInfo in) {
+                    Assert.assertEquals("in", in.name);
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                }
+                if ("0".equals(d.statementId()) && d.variable() instanceof ParameterInfo in) {
+                    Assert.assertEquals("in", in.name);
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                }
+            }
+        };
+
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
                 VariableInfo vi = d.getReturnAsVariable();
@@ -62,21 +76,14 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("effectivelyFinal".equals(d.fieldInfo().name)) {
-                int effectivelyFinal = d.fieldAnalysis().getProperty(VariableProperty.FINAL);
-                Assert.assertEquals(Level.TRUE, effectivelyFinal);
-                int notNull = d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL);
-                int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-                Assert.assertEquals(expectNotNull, notNull);
-
-                if (d.iteration() == 0) {
-                    Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
-                } else {
-                    Assert.assertEquals("in", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                }
+                Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+                Assert.assertEquals("in", d.fieldAnalysis().getEffectivelyFinalValue().toString());
             }
         };
 
         testClass("EvaluateConstants_0", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
