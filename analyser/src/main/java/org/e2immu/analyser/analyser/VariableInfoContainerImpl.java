@@ -40,6 +40,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
     private final SetOnce<VariableInfoImpl> merge;
 
     private final Level levelForPrevious;
+
     /*
     constructor for existing variables
      */
@@ -51,7 +52,7 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
         previousOrInitial = Either.left(previous);
         variableInLoop = computeVariableInLoop(previous, statementIndexForLocalVariableInLoop);
         merge = statementHasSubBlocks ? new SetOnce<>() : null;
-        levelForPrevious = previousIsParent ? Level.EVALUATION: Level.MERGE;
+        levelForPrevious = previousIsParent ? Level.EVALUATION : Level.MERGE;
     }
 
     /*
@@ -213,25 +214,26 @@ public class VariableInfoContainerImpl extends Freezable implements VariableInfo
                 setProperty(e.getKey(), e.getValue(), false, Level.EVALUATION));
 
         VariableInfoImpl evaluation = this.evaluation.get();
-        boolean noAssignmentInThisStatement = previous.getAssignmentId().equals(evaluation.getAssignmentId());
-        if (noAssignmentInThisStatement) {
+        boolean noAssignmentInThisStatement = !isAssignedInThisStatement();
+        boolean notReadInThisStatement = !isReadInThisStatement();
+        if (noAssignmentInThisStatement && notReadInThisStatement) {
             if (previous.valueIsSet()) {
                 evaluation.setValue(previous.getValue());
             }
             if (previous.objectFlowIsSet()) {
                 evaluation.setObjectFlow(previous.getObjectFlow());
             }
-            boolean notReadInThisStatement = previous.getReadId().equals(evaluation.getReadId());
-            if (notReadInThisStatement && previous.linkedVariablesIsSet()) {
+            if (previous.linkedVariablesIsSet()) {
                 evaluation.setLinkedVariables(previous.getLinkedVariables());
             }
-            if (previous.statementTimeIsSet()) {
-                boolean confirmedNotVariableField = previous.getStatementTime() == NOT_A_VARIABLE_FIELD;
-                if (confirmedNotVariableField || notReadInThisStatement) {
-                    evaluation.setStatementTime(previous.getStatementTime());
-                }
+        }
+        if (previous.statementTimeIsSet()) {
+            boolean confirmedNotVariableField = previous.getStatementTime() == NOT_A_VARIABLE_FIELD;
+            if (noAssignmentInThisStatement && (confirmedNotVariableField || notReadInThisStatement)) {
+                evaluation.setStatementTime(previous.getStatementTime());
             }
         }
+
     }
 
     @Override

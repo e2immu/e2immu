@@ -274,7 +274,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                         LinkedVariables.EMPTY, Map.of());
             } else {
                 newEcd = new ChangeData(ecd.value, ecd.stateIsDelayed, ecd.markAssignment,
-                        SetUtil.immutableUnion(ecd.readAtStatementTime, Set.of(statementTime)), ecd.linkedVariables, Map.of());
+                        SetUtil.immutableUnion(ecd.readAtStatementTime, Set.of(statementTime)), ecd.linkedVariables, ecd.properties);
             }
             valueChanges.put(variable, newEcd);
 
@@ -335,33 +335,6 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                 return evaluationContext.currentValue(variable, statementTime, isNotAssignmentTarget);
             }
             return currentExpression.value;
-        }
-
-        public void addLink(Variable from, Variable to) {
-            LinkedVariables linkTo = new LinkedVariables(Set.of(to));
-            ChangeData current = valueChanges.get(from);
-            ChangeData newVcd;
-            if (current == null) {
-                newVcd = new ChangeData(NO_VALUE, false, false, Set.of(), linkTo, Map.of());
-            } else {
-                // we simply merge the linkedVariables
-                LinkedVariables linkedVariables = current.linkedVariables.merge(linkTo);
-                newVcd = new ChangeData(current.value,
-                        current.stateIsDelayed, current.markAssignment, current.readAtStatementTime, linkedVariables, Map.of());
-            }
-            valueChanges.put(from, newVcd);
-        }
-
-        public void delayLink(Variable variable) {
-            ChangeData current = valueChanges.get(variable);
-            ChangeData newVcd;
-            if (current == null) {
-                newVcd = new ChangeData(NO_VALUE, false, false, Set.of(), LinkedVariables.DELAY, Map.of());
-            } else {
-                newVcd = new ChangeData(current.value,
-                        current.stateIsDelayed, current.markAssignment, current.readAtStatementTime, LinkedVariables.DELAY, Map.of());
-            }
-            valueChanges.put(variable, newVcd);
         }
 
         /*
@@ -429,6 +402,7 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     // "backwards"
                     if (value instanceof VariableExpression redirect) {
                         setProperty(redirect.variable(), VariableProperty.MODIFIED, modified);
+                        markRead(redirect.variable()); // because the modification acts on the value to potentially change the instance
                     }
 
                 } else {

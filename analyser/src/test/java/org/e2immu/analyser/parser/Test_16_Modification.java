@@ -217,7 +217,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     if (d.iteration() > 1) {
                         Assert.assertEquals("this.set3", d.variableInfo().getLinkedVariables().toString());
                     } else {
-                        Assert.assertSame("It: "+d.iteration(), LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                        Assert.assertSame("It: " + d.iteration(), LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
                     }
                 }
             }
@@ -283,7 +283,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
     /*
     What happens in each iteration?
-    IT 0: READ, ASSIGNED; set4 FINAL
+    IT 0: READ, ASSIGNED; set4 FINAL in field analyser, gets value and linked variables
     IT 1: set4 gets a value in add4; set4 linked to in4
     IT 2: set4 MODIFIED, NOT_NULL;
      */
@@ -294,17 +294,35 @@ public class Test_16_Modification extends CommonTestRunner {
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add4".equals(d.methodInfo().name) && SET4.equals(d.variableName())) {
-                if ("1".equals(d.statementId())) {
-                    if (d.iteration() == 0) {
-                        Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
-                    } else {
+                if (d.iteration() == 0) {
+                    Assert.assertSame(EmptyExpression.NO_VALUE, d.currentValue());
+                } else {
+                    if ("0".equals(d.statementId())) {
+                        Assert.assertEquals("0-E", d.variableInfo().getReadId());
+                        Assert.assertEquals("nullable? instance type Set<String>", d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        Assert.assertEquals("1-E", d.variableInfo().getReadId());
                         Assert.assertEquals("instance type Set<String>", d.currentValue().toString());
                     }
                 }
             }
-            if ("Modification_4".equals(d.methodInfo().name) && "local4".equals(d.variableName()) && "0".equals(d.statementId())) {
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+
+            if ("add4".equals(d.methodInfo().name) && "local4".equals(d.variableName())) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals(Level.DELAY, d.getProperty(VariableProperty.MODIFIED));
+                    int expectNN = d.iteration() <= 1 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "set4";
+                    Assert.assertEquals(expect, d.currentValue().toString());
+                }
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                    int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                    Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL));
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "set4";
+                    Assert.assertEquals(expect, d.currentValue().toString());
+                }
             }
             if ("Modification_4".equals(d.methodInfo().name) && SET4.equals(d.variableName()) && "0".equals(d.statementId())) {
                 if (d.iteration() == 0) {
@@ -324,21 +342,15 @@ public class Test_16_Modification extends CommonTestRunner {
         };
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-            int iteration = d.iteration();
             if (d.fieldInfo().name.equals("set4")) {
                 Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                int modified = d.fieldAnalysis().getProperty(VariableProperty.MODIFIED);
-                int notNull = d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL);
-                if (iteration == 1) {
-                    Assert.assertEquals("in4", d.fieldAnalysis().getEffectivelyFinalValue().toString());
-                    Assert.assertEquals("in4", d.fieldAnalysis().getLinkedVariables().toString());
-                    Assert.assertEquals(Level.DELAY, modified);
-                    Assert.assertEquals(Level.DELAY, notNull);
-                }
-                if (iteration >= 2) {
-                    Assert.assertEquals(Level.TRUE, modified);
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, notNull);
-                }
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectModified, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
+                int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectNN, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+
+                Assert.assertEquals("in4", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                Assert.assertEquals("in4", d.fieldAnalysis().getLinkedVariables().toString());
             }
         };
 
@@ -530,8 +542,12 @@ public class Test_16_Modification extends CommonTestRunner {
                 if ("2".equals(d.statementId())) {
                     Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                 }
+                if (d.iteration() <= 1) {
+                    Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                } else {
+                    Assert.assertEquals("this.s2", d.variableInfo().getLinkedVariables().toString());
+                }
                 if (d.iteration() > 0) {
-                    Assert.assertNull(d.variableInfo().getLinkedVariables());
                     if (d.currentValue() instanceof VariableExpression ve) {
                         // we read the linkedVariables from s2
                         Assert.assertEquals("s2", ve.variable().simpleName());

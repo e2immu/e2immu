@@ -495,14 +495,15 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         because we don't have explicit code available
          */
         VariableInfo viEval = vic.best(VariableInfoContainer.Level.EVALUATION);
-        if (viEval != viInitial && !viEval.isAssigned()) {
+        // not assigned in this statement
+        if (viEval != viInitial && !vic.isAssignedInThisStatement()) {
             if (!viEval.valueIsSet() && !initialValue.expression.isUnknown() && !viEval.isRead()) {
                 vic.setValue(initialValue.expression, map, false);
             } else {
                 map.forEach((k, v) -> vic.setProperty(k, v, false, VariableInfoContainer.Level.EVALUATION));
             }
             // if the variable has not been read, it is not present in EVAL, so we set a value
-            if (!viEval.isRead() && !viEval.linkedVariablesIsSet() && initialValue.linkedVariables != LinkedVariables.DELAY) {
+            if (!vic.isReadInThisStatement() && !viEval.linkedVariablesIsSet() && initialValue.linkedVariables != LinkedVariables.DELAY) {
                 vic.setLinkedVariables(initialValue.linkedVariables, false);
             }
         }
@@ -541,8 +542,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         }
     }
 
-    public record ConditionAndLastStatement(Expression condition, StatementAnalyser lastStatement) {}
-    public record ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo) {}
+    public record ConditionAndLastStatement(Expression condition, StatementAnalyser lastStatement) {
+    }
+
+    public record ConditionAndVariableInfo(Expression condition, VariableInfo variableInfo) {
+    }
+
     /**
      * From child blocks into the parent block; determine the value and properties for the current statement
      *

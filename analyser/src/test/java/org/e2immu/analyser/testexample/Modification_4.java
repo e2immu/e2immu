@@ -21,6 +21,21 @@ import org.e2immu.annotation.*;
 
 import java.util.Set;
 
+/*
+@Modified travels from local4, statement 1 (A) to its effectively final content locally (B) to the real field (C)
+to the parameter in4 (D).
+
+In the same way, @NotNull travels from local4 to its effectively final content set4 locally, then
+to the field itself, then to the parameter in4.
+
+Effectively final is declared in the field analyser, after iteration 0 in the statement analyser.
+
+In iteration 0, local4 will have a value of NO_VALUE, as set4 is not known.
+The field analyser declares set4 as effectively final, and assigns the value in4, and links it to the parameter.
+
+In iteration 1, therefore, set4 will have a value, and local4 can be assigned to set4
+
+ */
 @E1Immutable
 @Container(absent = true)
 public class Modification_4 {

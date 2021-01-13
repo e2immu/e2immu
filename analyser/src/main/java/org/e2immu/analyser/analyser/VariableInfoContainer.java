@@ -18,7 +18,6 @@
 package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.Expression;
-import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.annotation.NotNull;
 
@@ -47,12 +46,21 @@ public interface VariableInfoContainer {
 
     boolean hasMerge();
 
+    default boolean isAssignedInThisStatement() {
+        return hasEvaluation() && getPreviousOrInitial().getAssignmentId().compareTo(best(Level.EVALUATION).getAssignmentId()) < 0;
+    }
+
+    default boolean isReadInThisStatement() {
+        return hasEvaluation() && getPreviousOrInitial().getReadId().compareTo(best(Level.EVALUATION).getReadId()) < 0;
+    }
+
     // suffixes in assignment id; these act as the 3 levels for setProperty
     enum Level {
         INITIAL("-C"), // C for creation, but essentially, it should be < E
         EVALUATION("-E"), // the - comes before the digits
         MERGE(":M"); // the : comes after the digits
         public final String label;
+
         Level(String label) {
             this.label = label;
         }
