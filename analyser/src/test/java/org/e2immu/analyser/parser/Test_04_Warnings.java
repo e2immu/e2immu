@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.stream.Stream;
 
 public class Test_04_Warnings extends CommonTestRunner {
+
     public Test_04_Warnings() {
         super(true);
     }
@@ -282,11 +283,16 @@ public class Test_04_Warnings extends CommonTestRunner {
             }
         };
 
+        final String T = "org.e2immu.analyser.testexample.Warnings_5.ChildClass.t";
+
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("methodMustNotBeStatic4".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-                VariableInfoContainer vic = d.statementAnalysis().variables.
-                        get("org.e2immu.analyser.testexample.Warnings_5.ChildClass.t");
-                Assert.assertTrue(vic.current().isRead());
+                if (d.iteration() > 0) {
+                    VariableInfoContainer vic = d.statementAnalysis().variables.get(T);
+                    Assert.assertTrue(vic.current().isRead());
+                } else {
+                    Assert.assertFalse(d.statementAnalysis().variables.isSet(T));
+                }
             }
         };
 

@@ -430,10 +430,12 @@ public class Test_16_Modification extends CommonTestRunner {
                 }
 
                 if (EXAMPLE6.equals(d.variableName())) {
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "nullable? instance type Modification_6";
+                    Assert.assertEquals(expect, d.currentValue().toString());
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
                 }
                 if (EXAMPLE6_SET6.equals(d.variableName())) {
-                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                    if (d.iteration() > 0) Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                     if (d.iteration() > 1)
                         Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
                 }
@@ -493,9 +495,10 @@ public class Test_16_Modification extends CommonTestRunner {
                 List<VariableInfo> vis = d.methodAnalysis().getLastStatement().latestInfoOfVariablesReferringTo(set6, false);
                 Assert.assertEquals(1, vis.size());
                 VariableInfo vi = vis.get(0);
-                if (d.iteration() > 0)
+                if (d.iteration() > 0) {
                     Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, vi.getProperty(VariableProperty.NOT_NULL));
-                Assert.assertEquals(Level.TRUE, vi.getProperty(VariableProperty.MODIFIED));
+                    Assert.assertEquals(Level.TRUE, vi.getProperty(VariableProperty.MODIFIED));
+                }
             }
         };
 
@@ -595,7 +598,7 @@ public class Test_16_Modification extends CommonTestRunner {
                 if (iteration == 0) {
                     Assert.assertFalse(list.isAssignedToFieldDelaysResolved());
                 } else {
-                    Assert.assertTrue(list.getAssignedToField().isEmpty());
+                    Assert.assertEquals("{c1=NO, s0=NO, c0=ASSIGNED, s1=NO, l1=NO, l2=NO, l0=NO}", list.getAssignedToField().toString());
                 }
                 if (iteration >= 2) {
                     Assert.assertEquals(0, list.getProperty(VariableProperty.MODIFIED));
