@@ -21,7 +21,6 @@ package org.e2immu.analyser.model.expression;
 import org.e2immu.analyser.analyser.EvaluationContext;
 import org.e2immu.analyser.analyser.EvaluationResult;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.Variable;
@@ -37,7 +36,6 @@ import org.e2immu.annotation.NotNull;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 public class LocalVariableCreation implements Expression {
 
@@ -152,9 +150,8 @@ public class LocalVariableCreation implements Expression {
     @Override
     public EvaluationResult evaluate(EvaluationContext evaluationContext, ForwardEvaluationInfo forwardEvaluationInfo) {
         if (expression == EmptyExpression.EMPTY_EXPRESSION) {
-            return new EvaluationResult.Builder(evaluationContext)
-                    .assignment(localVariableReference, EmptyExpression.EMPTY_EXPRESSION, LinkedVariables.EMPTY)
-                    .setExpression(EmptyExpression.EMPTY_EXPRESSION).build();
+            // don't do anything, especially do not try to set EMPTY_EXPRESSION as a value...
+            return new EvaluationResult.Builder(evaluationContext).build();
         }
         Assignment assignment = new Assignment(evaluationContext.getPrimitives(),
                 new VariableExpression(localVariableReference), expression);
