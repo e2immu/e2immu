@@ -232,7 +232,7 @@ public class MethodLevelData {
                 log(NOT_MODIFIED, "MethodLevelData: Mark {} as {} in {}", linkedVariable.fullyQualifiedName(),
                         summary == Level.TRUE ? "@Modified" : "@NotModified", sharedState.logLocation);
                 int currentModified = parameterAnalysis.getProperty(VariableProperty.MODIFIED);
-                if (currentModified == Level.DELAY) {
+                if (currentModified < summary) {
                     // we can safely cast here to the builder
                     ParameterAnalysisImpl.Builder builder = (ParameterAnalysisImpl.Builder) parameterAnalysis;
                     sharedState.builder.add(builder.new SetProperty(VariableProperty.MODIFIED, summary));

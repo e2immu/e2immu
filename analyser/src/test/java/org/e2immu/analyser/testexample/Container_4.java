@@ -38,14 +38,12 @@ public class Container_4 {
         return s;
     }
 
-    // there should be a link from the field (or the source link, the input parameter 'strings', to 'modified'
-    public void m1(@NotModified(absent = true) @NotNull Set<String> modified) {
+    public void m1(@Modified @NotNull Set<String> modified) {
         Set<String> sourceM1 = s;
         modified.addAll(sourceM1);
     }
 
-    // there should be a link from modified2 to strings
-    public void m2(@NotModified(absent = true) @NotNull Set<String> modified2) {
+    public void m2(@Modified @NotNull Set<String> modified2) {
         Set<String> toModifyM2 = modified2;
         toModifyM2.addAll(s);
     }

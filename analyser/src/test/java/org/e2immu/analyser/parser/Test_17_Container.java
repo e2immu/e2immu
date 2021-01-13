@@ -83,16 +83,15 @@ public class Test_17_Container extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if ("s".equals(d.fieldInfo().name) && "Container_1".equals(d.fieldInfo().owner.simpleName)) {
-                int expectFinal = d.iteration() == 0 ? Level.DELAY : Level.FALSE;
-                Assert.assertEquals(expectFinal, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                Assert.assertEquals(expectModified, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.FALSE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
+                Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
             }
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if (S.equals(d.variableName()) && "addToS".equals(d.methodInfo().name)) {
-                Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
             }
         };
 
@@ -228,7 +227,7 @@ public class Test_17_Container extends CommonTestRunner {
                     if ("0".equals(d.statementId())) {
                         Assert.assertEquals("nullable? instance type Set<String>", d.currentValue().toString());
                     } else if ("1.0.0".equals(d.statementId())) {
-                        Assert.assertEquals("instance type Set<String>", d.currentValue().toString());
+                        Assert.assertEquals("nullable? instance type Set<String>", d.currentValue().toString());
                     } else if ("1".equals(d.statementId())) {
                         Assert.assertEquals("nullable? instance type Set<String>", d.currentValue().toString());
                     }
@@ -274,9 +273,29 @@ public class Test_17_Container extends CommonTestRunner {
                     Assert.assertEquals(Level.FALSE, d.getProperty(VariableProperty.MODIFIED));
                 }
             }
+
+            if ("m1".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p0 && "modified".equals(p0.name)) {
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                }
+            }
+
+            if ("m2".equals(d.methodInfo().name) && "toModifyM2".equals(d.variableName())) {
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                    String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "modified2";
+                    Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                }
+            }
         };
 
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("m1".equals(d.methodInfo().name)) {
+                Assert.assertEquals(d.iteration() > 1, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
+            }
+            if ("m2".equals(d.methodInfo().name)) {
+                Assert.assertEquals(d.iteration() > 0, d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
+            }
             if ("crossModify".equals(d.methodInfo().name)) {
                 ParameterAnalysis p0 = d.parameterAnalyses().get(0);
                 Assert.assertEquals(Level.FALSE, p0.getProperty(VariableProperty.MODIFIED));
