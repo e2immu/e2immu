@@ -235,7 +235,7 @@ public class Test_16_Modification extends CommonTestRunner {
                     Assert.assertEquals(expectLv, d.variableInfo().getLinkedVariables().toString());
                     String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : INSTANCE_TYPE_HASH_SET;
                     Assert.assertEquals(expectValue, d.variableInfo().getValue().toString());
-                    int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
+                    int expectModified = d.iteration() == 0 ? Level.DELAY : d.iteration() == 1 ? Level.FALSE : Level.TRUE;
                     Assert.assertEquals(expectModified, d.getProperty(VariableProperty.MODIFIED));
                 }
             }
@@ -243,7 +243,7 @@ public class Test_16_Modification extends CommonTestRunner {
 
         StatementAnalyserVisitor statementAnalyserVisitor = d -> {
             if ("add3".equals(d.methodInfo().name) && "1".equals(d.statementId())) {
-                if (d.iteration() > 0) {
+                if (d.iteration() > 1) {
                     Assert.assertTrue(d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
                 }
             }

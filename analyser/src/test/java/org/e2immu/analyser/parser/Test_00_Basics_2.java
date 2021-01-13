@@ -123,7 +123,8 @@ public class Test_00_Basics_2 extends CommonTestRunner {
             if ("setString".equals(d.methodInfo().name)) {
                 assert fieldAsVariable != null;
                 Assert.assertTrue(fieldAsVariable.isAssigned());
-                Assert.assertEquals(Level.FALSE, fieldModified); // Assigned, but not modified
+                int expectModified = d.iteration() == 0 ? Level.DELAY: Level.FALSE;
+                Assert.assertEquals(expectModified, fieldModified); // Assigned, but not modified
             }
             if ("add".equals(d.methodInfo().name)) {
                 ParameterAnalysis parameterAnalysis = d.parameterAnalyses().get(0);
