@@ -31,7 +31,6 @@ import org.e2immu.annotation.E2Container;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 @E2Container
 public record VariableExpression(Variable variable,
@@ -119,7 +118,7 @@ public record VariableExpression(Variable variable,
 
         if (forwardEvaluationInfo.isNotAssignmentTarget()) {
             builder.markRead(variable);
-        } else if(variable instanceof FieldReference fieldReference) {
+        } else if (variable instanceof FieldReference fieldReference) {
             builder.markRead(fieldReference.scope);
         }
 
@@ -143,10 +142,16 @@ public record VariableExpression(Variable variable,
         }
 
         int methodDelay = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_DELAY);
-        if (methodDelay != Level.DELAY) {
-            builder.markMethodDelay(variable, methodDelay);
+        if (methodDelay == Level.TRUE) {
+            builder.markMethodDelay(variable);
+        } else if (methodDelay == Level.FALSE) {
+            builder.markMethodDelayResolved(variable);
         }
 
+        int methodDelayResolved = forwardEvaluationInfo.getProperty(VariableProperty.METHOD_DELAY_RESOLVED);
+        if (methodDelayResolved == Level.TRUE) {
+            builder.markMethodDelayResolved(variable);
+        }
         return builder.build();
     }
 

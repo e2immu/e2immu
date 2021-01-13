@@ -82,6 +82,8 @@ public class EvaluateParameters {
 
                 if (map.containsValue(Level.DELAY)) {
                     map.put(VariableProperty.METHOD_DELAY, Level.TRUE);
+                } else {
+                    map.put(VariableProperty.METHOD_DELAY_RESOLVED, Level.TRUE);
                 }
                 if (notModified1Scope != Level.TRUE && methodInfo.isSingleAbstractMethod()) {
                     // we compute on the parameter expression, not the value (chicken and egg)

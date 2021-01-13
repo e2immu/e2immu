@@ -371,8 +371,14 @@ public record EvaluationResult(EvaluationContext evaluationContext,
             valueChanges.put(variable, newVcd);
         }
 
-        public void markMethodDelay(Variable variable, int methodDelay) {
-            setProperty(variable, VariableProperty.METHOD_DELAY, methodDelay);
+        public void markMethodDelay(Variable variable) {
+            setProperty(variable, VariableProperty.METHOD_DELAY, Level.TRUE);
+        }
+
+        public void markMethodDelayResolved(Variable variable) {
+            if (evaluationContext == null || !evaluationContext.isPresent(variable) || evaluationContext.getProperty(variable, VariableProperty.METHOD_DELAY) == Level.TRUE) {
+                setProperty(variable, VariableProperty.METHOD_DELAY_RESOLVED, Level.TRUE);
+            }
         }
 
         public void markMethodCalled(Variable variable, int methodCalled) {

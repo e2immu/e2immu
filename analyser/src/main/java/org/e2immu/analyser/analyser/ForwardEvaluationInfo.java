@@ -25,9 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
 
-public class ForwardEvaluationInfo {
-    public final boolean notAssignmentTarget;
-    public final Map<VariableProperty, Integer> properties;
+public record ForwardEvaluationInfo(Map<VariableProperty, Integer> properties, boolean notAssignmentTarget) {
 
     public ForwardEvaluationInfo(Map<VariableProperty, Integer> properties, boolean notAssignmentTarget) {
         this.properties = ImmutableMap.copyOf(properties);
@@ -49,7 +47,6 @@ public class ForwardEvaluationInfo {
                 .toString();
     }
 
-
     public static ForwardEvaluationInfo DEFAULT = new ForwardEvaluationInfo(Map.of(VariableProperty.NOT_NULL, MultiLevel.NULLABLE), true);
 
     // the FALSE on not-null is because we intend to set it, so it really does not matter what the current value is
@@ -59,11 +56,6 @@ public class ForwardEvaluationInfo {
 
     public static ForwardEvaluationInfo NOT_NULL = new ForwardEvaluationInfo(
             Map.of(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL),
-            true);
-
-    public static ForwardEvaluationInfo NOT_NULL_MODIFIED = new ForwardEvaluationInfo(
-            Map.of(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL,
-                    VariableProperty.MODIFIED, Level.TRUE),
             true);
 
     public ForwardEvaluationInfo copyModificationEnsureNotNull() {

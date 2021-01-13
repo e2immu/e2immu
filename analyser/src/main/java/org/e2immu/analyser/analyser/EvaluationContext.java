@@ -158,9 +158,10 @@ public interface EvaluationContext {
         boolean hasDelays = false;
         for (Variable variable : linkedVariables) {
             int modified = getProperty(variable, VariableProperty.MODIFIED);
-            int methodDelay = getProperty(variable, VariableProperty.METHOD_DELAY);
             if (modified == Level.TRUE) return Level.TRUE;
-            if (methodDelay == Level.TRUE) hasDelays = true;
+            int methodDelay = getProperty(variable, VariableProperty.METHOD_DELAY);
+            int methodDelayResolved = getProperty(variable, VariableProperty.METHOD_DELAY_RESOLVED);
+            if (methodDelay == Level.TRUE && methodDelayResolved != Level.TRUE) hasDelays = true;
         }
         return hasDelays ? Level.DELAY : Level.FALSE;
     }

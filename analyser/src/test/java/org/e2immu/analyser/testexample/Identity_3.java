@@ -24,12 +24,12 @@ import org.e2immu.annotation.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Identity_0 {
+public class Identity_3 {
     /*
     The @NotNull on the idemX methods relies on LOGGER.debug(@NotNull String s) { .. }
      */
     @NotNull
-    static final Logger LOGGER = LoggerFactory.getLogger(Identity_0.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(Identity_3.class);
 
     @Identity
     @NotModified
@@ -39,4 +39,19 @@ public class Identity_0 {
         return s;
     }
 
+    @Identity
+    @NotModified
+    public static String idem2(String s, String t) {
+        LOGGER.debug(s + " " + t);
+        return idem(s);
+    }
+
+    // IMPORTANT: keep the FQN here, tests a case in the inspection code
+    @org.e2immu.annotation.Identity
+    @NotModified
+    @NotNull
+    public static String idem4(String s) {
+        LOGGER.debug(s);
+        return "a".equals(s) ? idem(idem2(s, "abc")) : s;
+    }
 }
