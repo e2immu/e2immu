@@ -227,6 +227,9 @@ class VariableInfoImpl implements VariableInfo {
         return newObject;
     }
 
+    /*
+        We know that in each of the merge sources, the variable is either read or assigned to
+     */
     public void mergeIntoMe(EvaluationContext evaluationContext,
                             Expression stateOfDestination,
                             boolean atLeastOneBlockExecuted,
@@ -290,13 +293,15 @@ class VariableInfoImpl implements VariableInfo {
         if (!existingValuesWillBeOverwritten) {
             if (existing.linkedVariablesIsSet()) {
                 merged.addAll(existing.getLinkedVariables().variables());
-            } //else
+            } else {
+                return; // DELAY
+            }
             // typical situation: int a; if(x) { a = 5; }. Existing has not been assigned
             // this will end up an error when the variable is read before being assigned
         }
         for (StatementAnalysis.ConditionAndVariableInfo cav : merge) {
             VariableInfo vi = cav.variableInfo();
-            if (!vi.linkedVariablesIsSet()) return;
+            if (!vi.linkedVariablesIsSet()) return; // DELAY
             merged.addAll(vi.getLinkedVariables().variables());
         }
         setLinkedVariables(new LinkedVariables(merged));

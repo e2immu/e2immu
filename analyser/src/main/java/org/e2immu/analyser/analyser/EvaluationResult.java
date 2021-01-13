@@ -398,13 +398,15 @@ public record EvaluationResult(EvaluationContext evaluationContext,
                     StatementAnalyser statementAnalyser = evaluationContext.getCurrentStatement();
                     setProperty(variable, VariableProperty.MODIFIED, modified);
 
-                    // modification in MLD via linked variables travels in one direction, but direct assignment also travels
-                    // "backwards"
+                    /*
+                    The following code is not allowed, see Container_3: it typically causes a MarkRead in an iteration>0
+                    which does not play nice with the copying rules that copy when never read/assigned to.
+                    We must rely on normal MethodLevelData linking computation
                     if (value instanceof VariableExpression redirect) {
                         setProperty(redirect.variable(), VariableProperty.MODIFIED, modified);
-                        markRead(redirect.variable()); // because the modification acts on the value to potentially change the instance
+                        markRead(redirect.variable());
                     }
-
+                    */
                 } else {
                     log(DEBUG_MODIFY_CONTENT, "Skip marking method object as content modified: {}", variable.fullyQualifiedName());
                 }

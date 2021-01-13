@@ -535,7 +535,10 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                                         fieldAnalysis.getObjectFlow());
                         assert initialValue != EmptyExpression.NO_VALUE && initialValue != null;
                         lvrVic.setValue(initialValue, propertyMap, true);
-                        lvrVic.setLinkedVariables(LinkedVariables.EMPTY, true);
+                        // we link the local copy to the original, so that modifications on the local copy
+                        // imply that there is a (potential) modification on the variable field.
+                        // the reverse link is also generated
+                        lvrVic.setLinkedVariables(new LinkedVariables(Set.of(fieldReference)), true);
                     }
                 }
             }
@@ -578,6 +581,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (merged.add(fqn)) {
                 List<ConditionAndVariableInfo> toMerge = lastStatements.stream()
                         .filter(e2 -> e2.lastStatement.statementAnalysis.variables.isSet(fqn))
+                 //       .filter(e2 -> assignedOrReadInBlock(e2.lastStatement.statementAnalysis.variables.get(fqn).current()))
                         .map(e2 -> new ConditionAndVariableInfo(e2.condition,
                                 e2.lastStatement.statementAnalysis.variables.get(fqn).current()))
                         .collect(Collectors.toUnmodifiableList());
@@ -591,6 +595,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, atLeastOneBlockExecuted, toMerge);
             }
         });
+    }
+
+    /*
+    we only include a variable in a merge if it is assigned to or read in the block
+     */
+    private boolean assignedOrReadInBlock(VariableInfo vi) {
+        String lowerBound = index + VariableInfoContainer.Level.EVALUATION;
+        return vi.getReadId().compareTo(lowerBound) > 0 || vi.getAssignmentId().compareTo(lowerBound) > 0;
     }
 
     // return a stream of all variables that need merging up

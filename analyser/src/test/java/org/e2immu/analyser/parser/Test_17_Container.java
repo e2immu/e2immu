@@ -1,5 +1,6 @@
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.*;
@@ -140,26 +141,83 @@ public class Test_17_Container extends CommonTestRunner {
     public void test_3() throws IOException {
         final String TYPE = "org.e2immu.analyser.testexample.Container_3";
         final String S = TYPE + ".s";
+        final String S_0 = TYPE + ".s$0";
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("add".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
+                if (d.iteration() == 0) {
+                    Assert.assertSame(EmptyExpression.NO_VALUE, d.evaluationResult().value());
+                } else {
+                    Assert.assertEquals("org.e2immu.analyser.testexample.Container_3.s$0.add(s3)", d.evaluationResult().value().toString());
+                }
+            }
+        };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name)) {
                 if ("set3".equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        if (d.iteration() == 0) {
+                            Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                        } else {
+                            Assert.assertEquals("this.s,org.e2immu.analyser.testexample.Container_3.s$0",
+                                    d.variableInfo().getLinkedVariables().toString());
+                        }
+                    }
                     if ("1.0.0".equals(d.statementId()) || "1".equals(d.statementId())) {
                         Assert.assertEquals("Statement " + d.statementId() + ", variable " + d.variableName(),
                                 Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+
+                        if (d.iteration() == 0) {
+                            Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                        } else {
+                            Assert.assertEquals("this.s,org.e2immu.analyser.testexample.Container_3.s$0",
+                                    d.variableInfo().getLinkedVariables().toString());
+                        }
                     }
-                    if (d.iteration() > 0) {
-                        Assert.assertEquals("this.s,org.e2immu.analyser.testexample.Container_3.s$0",
-                                d.variableInfo().getLinkedVariables().toString());
-                    }
+
                 }
+                // this one tests the linking mechanism from the field into the local copy
                 if (S.equals(d.variableName())) {
-                    if ("1.0.0".equals(d.statementId()) || "1".equals(d.statementId())) {
-                        if (d.iteration() > 0) {
+                    if ("0".equals(d.statementId())) {
+                        Assert.assertEquals("[0]", d.variableInfo().getReadAtStatementTimes().toString());
+                        if (d.iteration() == 0) {
+                            Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                        } else {
+                            Assert.assertEquals("org.e2immu.analyser.testexample.Container_3.s$0",
+                                    d.variableInfo().getLinkedVariables().toString());
+                        }
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        if (d.iteration() == 0) {
+                            Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                        } else {
+                            Assert.assertEquals("org.e2immu.analyser.testexample.Container_3.s$0",
+                                    d.variableInfo().getLinkedVariables().toString());
+                            // set3 -> s$0 -> this.s (-> s$0)
+                            Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                        }
+                    }
+                    if ("1".equals(d.statementId())) {
+                        // here we merge with the info in "0"
+                        if (d.iteration() == 0) {
+                            Assert.assertSame(LinkedVariables.DELAY, d.variableInfo().getLinkedVariables());
+                        } else {
                             Assert.assertEquals("org.e2immu.analyser.testexample.Container_3.s$0",
                                     d.variableInfo().getLinkedVariables().toString());
                             Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
                         }
+                    }
+                }
+                if (S_0.equals(d.variableName())) {
+                    Assert.assertTrue(d.iteration() > 0);
+                    Assert.assertEquals("this.s", d.variableInfo().getLinkedVariables().toString());
+                    if ("0".equals(d.statementId())) {
+                        Assert.assertEquals("nullable? instance type Set<String>", d.currentValue().toString());
+                    } else if ("1.0.0".equals(d.statementId())) {
+                        Assert.assertEquals("instance type Set<String>", d.currentValue().toString());
+                    } else if ("1".equals(d.statementId())) {
+                        Assert.assertEquals("nullable? instance type Set<String>", d.currentValue().toString());
                     }
                 }
             }
@@ -173,13 +231,12 @@ public class Test_17_Container extends CommonTestRunner {
 
         FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
             if (S.equals(d.fieldInfo().fullyQualifiedName())) {
-                int expectModified = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-                Assert.assertEquals("Iteration " + d.iteration(),
-                        expectModified, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
+                Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
             }
         };
 
         testClass("Container_3", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)

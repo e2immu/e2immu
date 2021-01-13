@@ -537,6 +537,13 @@ public class Test_16_Modification extends CommonTestRunner {
         final String S2 = TYPE + ".s2";
         final String ADD = TYPE + ".add(String)";
 
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("add".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals(d.iteration() > 1, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                }
+            }
+        };
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "theSet".equals(d.variableName())) {
                 if ("1".equals(d.statementId())) {
@@ -566,12 +573,13 @@ public class Test_16_Modification extends CommonTestRunner {
             }
         };
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-            if (ADD.equals(d.methodInfo().fullyQualifiedName) && d.iteration() > 0) {
+            if (ADD.equals(d.methodInfo().fullyQualifiedName) && d.iteration() > 1) {
                 Assert.assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
             }
         };
         testClass("Modification_9", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .build());
     }
