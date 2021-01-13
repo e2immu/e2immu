@@ -1,6 +1,5 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.MethodLevelData;
 import org.e2immu.analyser.analyser.VariableInfo;
 import org.e2immu.analyser.analyser.VariableProperty;
@@ -26,21 +25,85 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
         super(false);
     }
 
-    EvaluationResultVisitor evaluationResultVisitor = d -> {
-        if ("print".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
-            Assert.assertEquals("false", d.evaluationResult().value().toString());
-        }
-        if ("print2".equals(d.methodInfo().name)) {
-            Assert.assertTrue(d.evaluationResult().value().isInstanceOf(ConstantExpression.class));
-            Assert.assertEquals("\"b\"", d.evaluationResult().value().toString());
-            Assert.assertEquals(4L, d.evaluationResult().getObjectFlowStream().count());
-            ObjectFlow objectFlow = d.evaluationResult().getObjectFlowStream().findFirst().orElseThrow();
-            // ee modified?
-            if (d.iteration() > 0) {
-                Assert.assertFalse(objectFlow.isDelayed());
+
+    @Test
+    public void test_0() throws IOException {
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
+                VariableInfo vi = d.getReturnAsVariable();
+                int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectNotNull, vi.getProperty(VariableProperty.NOT_NULL));
+                if (d.iteration() == 0) {
+                    Assert.assertSame(EmptyExpression.NO_VALUE, vi.getValue());
+                } else if (d.iteration() == 1) {
+                    Assert.assertEquals("effectivelyFinal", vi.getValue().toString());
+                    Assert.assertSame(DONE, d.result().analysisStatus);
+                } else Assert.fail();
             }
-        }
-    };
+            if ("EvaluateConstants_0".equals(d.methodInfo().name)) {
+                if ("2".equals(d.statementId())) {
+                    Assert.assertTrue(d.toString(), d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                }
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
+                Expression srv = d.methodAnalysis().getSingleReturnValue();
+                if (d.iteration() == 0) {
+                    Assert.assertNull(srv);
+                } else {
+                    Assert.assertEquals("/* inline getEffectivelyFinal */this.effectivelyFinal",
+                            srv.debugOutput());
+                    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+                }
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("effectivelyFinal".equals(d.fieldInfo().name)) {
+                int effectivelyFinal = d.fieldAnalysis().getProperty(VariableProperty.FINAL);
+                Assert.assertEquals(Level.TRUE, effectivelyFinal);
+                int notNull = d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL);
+                int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectNotNull, notNull);
+
+                if (d.iteration() == 0) {
+                    Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
+                } else {
+                    Assert.assertEquals("in", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+                }
+            }
+        };
+
+        testClass("EvaluateConstants_0", 0, 0, new DebugConfiguration.Builder()
+                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
+                .build(), new AnalyserConfiguration.Builder().setSkipTransformations(true).build());
+    }
+
+
+    @Test
+    public void test_1() throws IOException {
+
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("print".equals(d.methodInfo().name) && "0".equals(d.statementId())) {
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "false";
+                Assert.assertEquals(expect, d.evaluationResult().value().toString());
+            }
+            if ("print2".equals(d.methodInfo().name)) {
+                if (d.iteration() > 0) {
+                    Assert.assertTrue(d.evaluationResult().value().isInstanceOf(ConstantExpression.class));
+                    Assert.assertEquals("\"b\"", d.evaluationResult().value().toString());
+                    Assert.assertEquals(4L, d.evaluationResult().getObjectFlowStream().count());
+                    ObjectFlow objectFlow = d.evaluationResult().getObjectFlowStream().findFirst().orElseThrow();
+                    // ee modified?
+
+                    Assert.assertFalse(objectFlow.isDelayed());
+                }
+            }
+        };
 
     /*
     Method ee() becomes @NotModified in iteration 1
@@ -48,107 +111,68 @@ public class Test_08_EvaluateConstants extends CommonTestRunner {
 
      */
 
-    StatementAnalyserVisitor statementAnalyserVisitor = d -> {
-        MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
-        if ("print".equals(d.methodInfo().name)) {
-            if ("0".equals(d.statementId()) && d.iteration() >= 1) {
-                Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
-            }
-            if ("0.0.0".equals(d.statementId())) {
-                Assert.assertNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
-                if (d.iteration() >= 1) {
-                    Assert.assertTrue(d.statementAnalysis().flowData.isUnreachable());
+        StatementAnalyserVisitor statementAnalyserVisitor = d -> {
+            MethodLevelData methodLevelData = d.statementAnalysis().methodLevelData;
+            if ("print".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId()) && d.iteration() >= 1) {
+                    Assert.assertNotNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+                }
+                if ("0.0.0".equals(d.statementId())) {
+                    Assert.assertNull(d.haveError(Message.CONDITION_EVALUATES_TO_CONSTANT));
+                    if (d.iteration() >= 1) {
+                        Assert.assertTrue(d.statementAnalysis().flowData.isUnreachable());
+                    }
                 }
             }
-        }
-        if ("ee".equals(d.methodInfo().name)) {
-            // just says: return e; (e is a field, constant false (rather than linked to c and c, I'd say)
-            if (d.iteration() > 0) {
-                Assert.assertTrue(d.statementAnalysis().variableStream().filter(vi -> vi.variable() instanceof FieldReference)
-                        .allMatch(VariableInfo::linkedVariablesIsSet));
+            if ("ee".equals(d.methodInfo().name)) {
+                // just says: return e; (e is a field, constant false (rather than linked to c and c, I'd say)
+                if (d.iteration() > 0) {
+                    Assert.assertTrue(d.statementAnalysis().variableStream().filter(vi -> vi.variable() instanceof FieldReference)
+                            .allMatch(VariableInfo::linkedVariablesIsSet));
+                    Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
+                }
             }
-            Assert.assertTrue(methodLevelData.linksHaveBeenEstablished.isSet());
-        }
-        if ("print2".equals(d.methodInfo().name)) {
-            if ("0".equals(d.statementId())) {
-                Assert.assertNotNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
-                Assert.assertSame(DONE, d.result().analysisStatus);
-                Assert.assertTrue(methodLevelData.internalObjectFlows.isFrozen()); // by apply
+            if ("print2".equals(d.methodInfo().name)) {
+                if ("0".equals(d.statementId()) && d.iteration() > 0) {
+                    Assert.assertNotNull(d.haveError(Message.INLINE_CONDITION_EVALUATES_TO_CONSTANT));
+                    Assert.assertSame(DONE, d.result().analysisStatus);
+                    Assert.assertTrue(methodLevelData.internalObjectFlows.isFrozen()); // by apply
+                }
             }
-        }
-        if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
-            VariableInfo vi = d.getReturnAsVariable();
-            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-            Assert.assertEquals(expectNotNull, vi.getProperty(VariableProperty.NOT_NULL));
-            if (d.iteration() == 0) {
-                Assert.assertSame(EmptyExpression.NO_VALUE, vi.getValue());
-            } else if (d.iteration() == 1) {
-                Assert.assertEquals("effectivelyFinal", vi.getValue().toString());
-                Assert.assertSame(DONE, d.result().analysisStatus);
-            } else Assert.fail();
-        }
-        if ("EvaluateConstants".equals(d.methodInfo().name)) {
-            Assert.assertTrue(d.toString(), d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
-        }
-    };
+        };
 
-    MethodAnalyserVisitor methodAnalyserVisitor = d -> {
-        if ("ee".equals(d.methodInfo().name)) {
-            // we prove that ee() returns false
-            Expression srv = d.methodAnalysis().getSingleReturnValue();
-            Assert.assertEquals("false", srv.toString());
-            int modified = d.methodAnalysis().getProperty(VariableProperty.MODIFIED);
-            Assert.assertEquals(Level.FALSE, modified);
-        }
-        if ("print".equals(d.methodInfo().name)) {
-            Expression srv = d.methodAnalysis().getSingleReturnValue();
-            Assert.assertEquals("\"b\"", srv.toString());
-        }
-        if ("print2".equals(d.methodInfo().name) && d.iteration() > 2) {
-            MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
-            Assert.assertTrue(methodLevelData.internalObjectFlows.isFrozen());
-            Expression srv = d.methodAnalysis().getSingleReturnValue();
-            Assert.assertTrue(srv instanceof StringConstant); // inline conditional works as advertised
-        }
-        if ("getEffectivelyFinal".equals(d.methodInfo().name)) {
-            Expression srv = d.methodAnalysis().getSingleReturnValue();
-            if (d.iteration() == 0) {
-                Assert.assertNull(srv);
-            } else {
-                Assert.assertEquals("/* inline getEffectivelyFinal */this.effectivelyFinal",
-                        srv.debugOutput());
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.methodAnalysis().getProperty(VariableProperty.NOT_NULL));
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("ee".equals(d.methodInfo().name)) {
+                // we prove that ee() returns false
+                Expression srv = d.methodAnalysis().getSingleReturnValue();
+                if (d.iteration() > 0) {
+                    Assert.assertEquals("false", srv.toString());
+                    int modified = d.methodAnalysis().getProperty(VariableProperty.MODIFIED);
+                    Assert.assertEquals(Level.FALSE, modified);
+                }
             }
-        }
-    };
-
-    FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
-        if ("effectivelyFinal".equals(d.fieldInfo().name)) {
-            int effectivelyFinal = d.fieldAnalysis().getProperty(VariableProperty.FINAL);
-            int expectFinal = d.iteration() == 0 ? Level.DELAY : Level.TRUE;
-            Assert.assertEquals(expectFinal, effectivelyFinal);
-            int notNull = d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL);
-            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
-            Assert.assertEquals(expectNotNull, notNull);
-
-            if (d.iteration() == 0) {
-                Assert.assertNull(d.fieldAnalysis().getEffectivelyFinalValue());
-            } else {
-                Assert.assertEquals("in", d.fieldAnalysis().getEffectivelyFinalValue().toString());
+            if ("print".equals(d.methodInfo().name)) {
+                if (d.iteration() > 0) {
+                    Expression srv = d.methodAnalysis().getSingleReturnValue();
+                    Assert.assertEquals("\"b\"", srv.toString());
+                }
             }
-        }
-        if ("e".equals(d.fieldInfo().name)) {
-            if (d.iteration() == 0) {
-                Assert.assertSame(LinkedVariables.DELAY, d.fieldAnalysis().getLinkedVariables());
-            } else {
+            if ("print2".equals(d.methodInfo().name) && d.iteration() > 2) {
+                MethodLevelData methodLevelData = d.methodAnalysis().methodLevelData();
+                Assert.assertTrue(methodLevelData.internalObjectFlows.isFrozen());
+                Expression srv = d.methodAnalysis().getSingleReturnValue();
+                Assert.assertTrue(srv instanceof StringConstant); // inline conditional works as advertised
+            }
+        };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("e".equals(d.fieldInfo().name)) {
                 Assert.assertTrue(d.fieldAnalysis().getLinkedVariables().isEmpty());
-            }
-        }
-    };
 
-    @Test
-    public void test() throws IOException {
-        testClass("EvaluateConstants", 3, 0, new DebugConfiguration.Builder()
+            }
+        };
+
+        testClass("EvaluateConstants_1", 3, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
                 .addEvaluationResultVisitor(evaluationResultVisitor)

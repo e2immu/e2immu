@@ -20,7 +20,7 @@ package org.e2immu.analyser.testexample;
 
 import org.e2immu.annotation.*;
 
-public class EvaluateConstants {
+public class EvaluateConstants_1 {
 
     final static boolean a = true;
     final static boolean b = false;
@@ -88,32 +88,5 @@ public class EvaluateConstants {
     public int someCalculation(int p) {
         int q = 1 * p + p + 0 * i; // this should be evaluated as 2*p
         return q - p * 2;
-    }
-
-    @NotNull
-    @Final
-    @Linked(absent = true)
-    private String effectivelyFinal;
-
-    @NotNull
-    @Final
-    @Constant("abc")
-    private String constant;
-
-    public EvaluateConstants(@NotNull String in) {
-        if (in == null) throw new UnsupportedOperationException();
-        effectivelyFinal = in;
-        constant = "abc";
-    }
-
-    @NotNull
-    public String getEffectivelyFinal() {
-        return effectivelyFinal;
-    }
-
-    @NotNull
-    @Constant("abc")
-    public String getConstant() {
-        return constant;
     }
 }
