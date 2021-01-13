@@ -124,7 +124,7 @@ public class MethodReference extends ExpressionWithMethodReferenceResolution {
             NewObject initialInstance = NewObject.objectCreation(evaluationContext.getPrimitives(),
                     methodInfo, methodInfo.returnType(), List.of(), objectFlow);
             NewObject instance = MethodCall.checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
-                    methodAnalysis, initialInstance, List.of());
+                    methodAnalysis, scope, initialInstance, List.of());
             builder.setExpression(instance);
         } else {
             // normal method call, very similar to MethodCall.evaluate

@@ -23,6 +23,7 @@ import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.util.EvaluateMethodCall;
 import org.e2immu.analyser.model.expression.util.EvaluateParameters;
 import org.e2immu.analyser.model.expression.util.ExpressionComparator;
+import org.e2immu.analyser.model.variable.This;
 import org.e2immu.analyser.model.variable.Variable;
 import org.e2immu.analyser.objectflow.ObjectFlow;
 import org.e2immu.analyser.objectflow.Origin;
@@ -306,7 +307,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         NewObject modifiedInstance;
         if (modified == Level.TRUE) {
             modifiedInstance = checkCompanionMethodsModifying(builder, evaluationContext, methodInfo,
-                    methodAnalysis, objectValue, parameterValues);
+                    methodAnalysis, object, objectValue, parameterValues);
         } else {
             modifiedInstance = null;
         }
@@ -357,6 +358,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             EvaluationContext evaluationContext,
             MethodInfo methodInfo,
             MethodAnalysis methodAnalysis,
+            Expression object,
             Expression objectValue,
             List<Expression> parameterValues) {
         if (objectValue.isUnknown()) return null; // don't even try
@@ -434,9 +436,17 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 newObject.copyAfterModifyingMethodOnConstructor(newState.get());
 
         // update the object of the modifying call
+        /*
         if (objectValue instanceof VariableExpression variableValue) {
             LinkedVariables linkedVariables = variablesLinkedToScopeVariableInModifyingMethod(evaluationContext, methodInfo, parameterValues);
             builder.modifyingMethodAccess(variableValue.variable(), modifiedInstance, linkedVariables);
+        }
+         */
+        LinkedVariables linkedVariables = variablesLinkedToScopeVariableInModifyingMethod(evaluationContext, methodInfo, parameterValues);
+        if (object instanceof VariableExpression variableValue && !(variableValue.variable() instanceof This)) {
+            builder.modifyingMethodAccess(variableValue.variable(), modifiedInstance, linkedVariables);
+        } else if(object instanceof FieldAccess fieldAccess) {
+            builder.modifyingMethodAccess(fieldAccess.variable(), modifiedInstance, linkedVariables);
         }
         return modifiedInstance;
     }

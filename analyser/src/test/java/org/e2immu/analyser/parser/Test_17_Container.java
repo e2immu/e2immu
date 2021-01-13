@@ -31,8 +31,21 @@ public class Test_17_Container extends CommonTestRunner {
                     int expect = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
                     Assert.assertEquals(expect, d.getProperty(VariableProperty.NOT_NULL));
                 }
-                if (P.equals(d.variableName()) && "1".equals(d.statementId())) {
-                    //    Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
+                if (P.equals(d.variableName())) {
+                    if ("0".equals(d.statementId())) {
+                        Assert.assertEquals("0-E", d.variableInfo().getReadId());
+                        Assert.assertTrue(d.variableInfoContainer().isReadInThisStatement());
+
+                        Assert.assertEquals("nullable? instance type Set<String>", d.currentValue().toString());
+                    }
+                    if ("1".equals(d.statementId())) {
+                        Assert.assertEquals("0-E", d.variableInfo().getReadId());
+                        Assert.assertFalse(d.variableInfoContainer().isReadInThisStatement());
+
+                        Assert.assertEquals("nullable? instance type Set<String>", d.currentValue().toString());
+                        Assert.assertEquals(Level.DELAY, d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL));
+                        Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                    }
                 }
                 if (S.equals(d.variableName()) && "1".equals(d.statementId())) {
 

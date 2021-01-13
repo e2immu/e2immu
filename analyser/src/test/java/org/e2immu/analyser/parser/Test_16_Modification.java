@@ -542,8 +542,12 @@ public class Test_16_Modification extends CommonTestRunner {
                 if ("0".equals(d.statementId())) {
                     Assert.assertEquals(d.iteration() > 1, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
                 }
+                if ("2".equals(d.statementId())) {
+                    Assert.assertEquals(d.iteration() >= 2, d.statementAnalysis().methodLevelData.linksHaveBeenEstablished.isSet());
+                }
             }
         };
+
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
             if ("add".equals(d.methodInfo().name) && "theSet".equals(d.variableName())) {
                 if ("1".equals(d.statementId())) {
@@ -557,30 +561,44 @@ public class Test_16_Modification extends CommonTestRunner {
                 } else {
                     Assert.assertEquals("this.s2", d.variableInfo().getLinkedVariables().toString());
                 }
-                if (d.iteration() > 0) {
-                    if (d.currentValue() instanceof VariableExpression ve) {
-                        // we read the linkedVariables from s2
-                        Assert.assertEquals("s2", ve.variable().simpleName());
-                    } else {
-                        Assert.fail();
-                    }
+                if (d.statementId().equals("1") && d.iteration() > 0) {
+                    Assert.assertEquals("s2", d.currentValue().toString());
+                }
+                if (d.statementId().equals("2") && d.iteration() > 0) {
+                    Assert.assertEquals("instance type HashSet", d.currentValue().toString());
                 }
             }
             if ("add".equals(d.methodInfo().name) && S2.equals(d.variableName())) {
                 if (d.iteration() > 0) {
                     Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
+                if (("2".equals(d.statementId()) || "3".equals(d.statementId())) && d.iteration() > 1) {
+                    Assert.assertEquals(Level.TRUE, d.getProperty(VariableProperty.MODIFIED));
+                }
+                if ("3".equals(d.statementId())) {
+                    Assert.assertTrue(d.variableInfo().isRead());
+                }
             }
         };
+
         MethodAnalyserVisitor methodAnalyserVisitor = d -> {
             if (ADD.equals(d.methodInfo().fullyQualifiedName) && d.iteration() > 1) {
                 Assert.assertTrue(d.methodAnalysis().methodLevelData().linksHaveBeenEstablished.isSet());
             }
         };
+
+        FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
+            if ("s2".equals(d.fieldInfo().name)) {
+                int expectModified = d.iteration() <= 1 ? Level.DELAY : Level.TRUE;
+                Assert.assertEquals(expectModified, d.fieldAnalysis().getProperty(VariableProperty.MODIFIED));
+            }
+        };
+
         testClass("Modification_9", 0, 0, new DebugConfiguration.Builder()
                 .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
                 .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .addAfterFieldAnalyserVisitor(fieldAnalyserVisitor)
                 .build());
     }
 

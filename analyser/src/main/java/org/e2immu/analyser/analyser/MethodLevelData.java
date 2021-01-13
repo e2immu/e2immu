@@ -19,7 +19,6 @@ package org.e2immu.analyser.analyser;
 
 import org.e2immu.analyser.model.*;
 import org.e2immu.analyser.model.expression.And;
-import org.e2immu.analyser.model.expression.VariableExpression;
 import org.e2immu.analyser.model.variable.FieldReference;
 import org.e2immu.analyser.model.variable.LocalVariableReference;
 import org.e2immu.analyser.model.variable.This;
@@ -245,11 +244,12 @@ public class MethodLevelData {
 
     private void ensureEvaluationAndSetModified(SharedState sharedState, VariableInfo vi, int modified) {
         VariableInfoContainer vic = sharedState.statementAnalysis.findForWriting(vi.variable());
-        if(!vic.hasMerge() && !vic.hasEvaluation()) {
-            vic.ensureEvaluation(sharedState.statementAnalysis.index + VariableInfoContainer.Level.EVALUATION.label,
-                    VariableInfoContainer.NOT_YET_READ, sharedState.evaluationContext.getInitialStatementTime(), Set.of());
-            if(vi.valueIsSet()) vic.setValue(vi.getValue(), vi.getProperties(), false);
-            if(vi.linkedVariablesIsSet()) vic.setLinkedVariables(vi.getLinkedVariables(), false);
+        if (!vic.hasMerge() && !vic.hasEvaluation()) {
+            vic.ensureEvaluation(VariableInfoContainer.NOT_YET_ASSIGNED,
+                    sharedState.statementAnalysis.index + VariableInfoContainer.Level.EVALUATION.label,
+                    sharedState.evaluationContext.getInitialStatementTime(), Set.of());
+            if (vi.valueIsSet()) vic.setValue(vi.getValue(), vi.getProperties(), false);
+            if (vi.linkedVariablesIsSet()) vic.setLinkedVariables(vi.getLinkedVariables(), false);
         }
         vic.setProperty(VariableProperty.MODIFIED, modified, false, VariableInfoContainer.Level.MERGE);
     }

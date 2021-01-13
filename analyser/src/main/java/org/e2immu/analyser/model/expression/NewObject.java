@@ -454,7 +454,7 @@ public record NewObject(MethodInfo constructor,
             // check state changes of companion methods
             MethodAnalysis constructorAnalysis = evaluationContext.getMethodAnalysis(constructor);
             instance = MethodCall.checkCompanionMethodsModifying(res.k, evaluationContext, constructor, constructorAnalysis,
-                    initialInstance, res.v);
+                   null, initialInstance, res.v);
         } else {
             instance = initialInstance;
         }
