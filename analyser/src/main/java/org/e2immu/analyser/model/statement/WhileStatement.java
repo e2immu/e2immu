@@ -22,10 +22,10 @@ import org.e2immu.analyser.analyser.FlowData;
 import org.e2immu.analyser.analyser.ForwardEvaluationInfo;
 import org.e2immu.analyser.analyser.StatementAnalysis;
 import org.e2immu.analyser.model.*;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.output.OutputBuilder;
 import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
-import org.e2immu.analyser.util.StringUtil;
 
 public class WhileStatement extends LoopStatement {
 
@@ -34,6 +34,7 @@ public class WhileStatement extends LoopStatement {
                           Block block) {
         super(new Structure.Builder()
                 .setStatementExecution((v, ec) -> {
+                    if(v == EmptyExpression.NO_VALUE) return FlowData.Execution.DELAYED_EXECUTION;
                     if (v.isBoolValueFalse()) return FlowData.Execution.NEVER;
                     if (v.isBoolValueTrue()) return FlowData.Execution.ALWAYS;
                     return FlowData.Execution.CONDITIONALLY;

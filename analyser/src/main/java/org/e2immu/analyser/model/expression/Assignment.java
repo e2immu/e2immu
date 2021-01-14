@@ -36,7 +36,6 @@ import org.e2immu.annotation.NotNull;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import static org.e2immu.analyser.model.expression.EmptyExpression.NO_VALUE;
 import static org.e2immu.analyser.util.Logger.LogTarget.LINKED_VARIABLES;
@@ -216,7 +215,10 @@ public class Assignment implements Expression {
                 resultOfExpression = operationResult.value();
             } else {
                 // i++
-                resultOfExpression = valueResult.value();
+                Expression ve = new VariableExpression(newVariableTarget);
+                EvaluationResult variableOnly = ve.evaluate(evaluationContext, forwardEvaluationInfo);
+                resultOfExpression = variableOnly.value();
+                // not composing, any error will have been raised already
             }
             assignedToTarget = operationResult.value();
         } else {

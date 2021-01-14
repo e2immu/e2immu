@@ -50,11 +50,12 @@ public class Test_01_Loops extends CommonTestRunner {
                 Assert.assertEquals("true", d.evaluationResult().value().debugOutput());
             }
             if ("2.0.1".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2";
+                // NOTE: is i$2, and not i$2+1 because the operation is i++, not ++i
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$2";
                 Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
             }
             if ("2.0.2".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2>=n";
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$2>=n";
                 Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
             }
         };
@@ -115,8 +116,11 @@ public class Test_01_Loops extends CommonTestRunner {
                                     d.evaluationContext());
                     Assert.assertSame(FlowData.Execution.ALWAYS, exec);
                 } else Assert.fail();
-                String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+instance type int>=n";
+                String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int>=n";
                 Assert.assertEquals(expectState, d.state().toString());
+
+                Assert.assertEquals(FlowData.Execution.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                Assert.assertEquals(FlowData.Execution.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
             }
             if ("2.0.0".equals(d.statementId())) {
                 if (d.iteration() == 0) {
@@ -125,9 +129,14 @@ public class Test_01_Loops extends CommonTestRunner {
                     Assert.assertSame(EmptyExpression.NO_VALUE, vic.current().getValue());
                 }
             }
+            if ("2.0.2".equals(d.statementId())) {
+                FlowData.Execution expect = d.iteration() == 0 ? FlowData.Execution.DELAYED_EXECUTION : FlowData.Execution.ALWAYS;
+                Assert.assertEquals(expect, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
+                Assert.assertEquals(expect, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
+            }
             // shows that the BREAK statement, always executed in its own block, is dependent on a valid condition
             if ("2.0.2.0.0".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2>=n";
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$2>=n";
                 Assert.assertEquals(expect, d.condition().toString());
             }
         };

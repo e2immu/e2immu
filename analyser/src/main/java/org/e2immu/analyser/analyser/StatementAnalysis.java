@@ -707,7 +707,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (inPartOfConstruction && fieldReference.scope instanceof This thisVariable
                 && thisVariable.typeInfo.equals(methodAnalysis.getMethodInfo().typeInfo)) { // field that must be initialised
             Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();
-            if(initialValue == EmptyExpression.NO_VALUE || initialValue.isConstant()) {
+            if (initialValue == EmptyExpression.NO_VALUE || initialValue.isConstant()) {
                 return new ExpressionAndLinkedVariables(initialValue, LinkedVariables.EMPTY);
             }
             EvaluationContext evaluationContext = fieldAnalyser.createEvaluationContext();
@@ -832,7 +832,12 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 }
                 return variables.get(localVariableFqn).current();
             }
-            if (vic.isLocalVariableInLoopDefinedOutside() && !relevantLocalVariablesAssignedInThisLoopAreFrozen()) {
+            if (vic.isLocalVariableInLoopDefinedOutside()) {
+                if (relevantLocalVariablesAssignedInThisLoopAreFrozen()) {
+                    String localCopyFqn = vi.name() + "$" + vic.getVariableInLoop().statementId();
+                    VariableInfoContainer newVic = variables.get(localCopyFqn);
+                    return newVic.getPreviousOrInitial();
+                }
                 return new VariableInfoImpl(variable); // no value, no state
             }
         } // else we need to go to the variable itself
