@@ -11,7 +11,7 @@ public class Loops_1 {
         String res2 = null; // = null forced upon us by compiler!
         int i = 0;
         while (true) { // executed at least once, but assignment may not be reachable
-            i++;
+            ++i; // as opposed to Loops_0, which has i++
             if (i >= n) break;
             res2 = "abc";
         }

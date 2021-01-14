@@ -55,7 +55,7 @@ public class Test_01_Loops extends CommonTestRunner {
                 Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
             }
             if ("2.0.2".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$2>=n";
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2>=n";
                 Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
             }
         };
@@ -116,7 +116,7 @@ public class Test_01_Loops extends CommonTestRunner {
                                     d.evaluationContext());
                     Assert.assertSame(FlowData.Execution.ALWAYS, exec);
                 } else Assert.fail();
-                String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type int>=n";
+                String expectState = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+instance type int>=n";
                 Assert.assertEquals(expectState, d.state().toString());
 
                 Assert.assertEquals(FlowData.Execution.ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInMethod());
@@ -136,7 +136,7 @@ public class Test_01_Loops extends CommonTestRunner {
             }
             // shows that the BREAK statement, always executed in its own block, is dependent on a valid condition
             if ("2.0.2.0.0".equals(d.statementId())) {
-                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$2>=n";
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2>=n";
                 Assert.assertEquals(expect, d.condition().toString());
             }
         };
@@ -150,11 +150,15 @@ public class Test_01_Loops extends CommonTestRunner {
     @Test
     public void test1() throws IOException {
         // weirdly written but there is no dedicated logic in place
-        final String END_RESULT = "-1-(instance type int)+n>=1?\"abc\":instance type String/**/";
+        final String END_RESULT = "-1-(instance type int)+n>=1?\"abc\":instance type String";
         final String END_RESULT_NO_OPERATIONS = "instance type int>=0?\"abc\":instance type String/**/";
 
         EvaluationResultVisitor evaluationResultVisitor = d -> {
             if ("method".equals(d.methodInfo().name)) {
+                if ("2.0.0".equals(d.statementId())) {
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2";
+                    Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
+                }
                 if ("2.0.1".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2>=n";
                     Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
@@ -252,8 +256,8 @@ public class Test_01_Loops extends CommonTestRunner {
 
         testClass("Loops_1", 0, 0, new DebugConfiguration.Builder()
                 .addEvaluationResultVisitor(evaluationResultVisitor)
-                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
-                .addStatementAnalyserVisitor(statementAnalyserVisitor)
+                // .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                // .addStatementAnalyserVisitor(statementAnalyserVisitor)
                 .build());
     }
 

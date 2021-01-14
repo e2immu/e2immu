@@ -834,7 +834,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             }
             if (vic.isLocalVariableInLoopDefinedOutside()) {
                 if (relevantLocalVariablesAssignedInThisLoopAreFrozen()) {
-                    String localCopyFqn = vi.name() + "$" + vic.getVariableInLoop().statementId();
+                    String localCopyFqn = createLocalLoopCopyFQN(vic, vi);
                     VariableInfoContainer newVic = variables.get(localCopyFqn);
                     return newVic.getPreviousOrInitial();
                 }
@@ -887,6 +887,16 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (statementTime == fieldVi.getStatementTime() && fieldVi.getAssignmentId().compareTo(indexOfStatementTime) >= 0) {
             // return a local variable with the current field value, numbered as the statement time + assignment ID
             return prefix + "$" + fieldVi.getAssignmentId().replace(".", "_");
+        }
+        return prefix;
+    }
+
+    public String createLocalLoopCopyFQN(VariableInfoContainer vic, VariableInfo vi) {
+        assert vic.isLocalVariableInLoopDefinedOutside();
+
+        String prefix = vi.name() + "$" + vic.getVariableInLoop().statementId();
+        if (vi.getAssignmentId().compareTo(vic.getVariableInLoop().statementId()) > 0) {
+            return prefix + "$" + vi.getAssignmentId().replace(".","_");
         }
         return prefix;
     }
