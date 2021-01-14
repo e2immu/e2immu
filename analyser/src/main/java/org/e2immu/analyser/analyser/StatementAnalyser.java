@@ -1112,7 +1112,8 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                         statementAnalysis.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo, firstStatement.index),
                                 Message.UNREACHABLE_STATEMENT));
                     }
-                    firstStatement.flowData.setGuaranteedToBeReached(isTrue ? ALWAYS : NEVER);
+                    // guaranteed to be reached in block is always ALWAYS because it is the first statement
+                    firstStatement.flowData.setGuaranteedToBeReachedInMethod(isTrue ? ALWAYS : NEVER);
                 });
                 if (blocks.size() == 2) {
                     blocks.get(1).ifPresent(firstStatement -> {
@@ -1123,7 +1124,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                             statementAnalysis.ensure(Message.newMessage(new Location(myMethodAnalyser.methodInfo, firstStatement.index),
                                     Message.UNREACHABLE_STATEMENT));
                         }
-                        firstStatement.flowData.setGuaranteedToBeReached(isTrue ? NEVER : ALWAYS);
+                        firstStatement.flowData.setGuaranteedToBeReachedInMethod(isTrue ? NEVER : ALWAYS);
                     });
                 }
             } else if (statementAnalysis.statement instanceof AssertStatement) {
@@ -1217,7 +1218,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             } else if (executionOfBlock.startOfBlock != null) {
                 // ensure that the first statement is unreachable
                 FlowData flowData = executionOfBlock.startOfBlock.statementAnalysis.flowData;
-                flowData.setGuaranteedToBeReached(NEVER);
+                flowData.setGuaranteedToBeReachedInMethod(NEVER);
 
                 if (statement() instanceof LoopStatement) {
                     statementAnalysis.ensure(Message.newMessage(getLocation(), Message.EMPTY_LOOP));
@@ -1255,6 +1256,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             if (statementAnalysis.flowData.timeAfterSubBlocksNotYetSet()) {
                 statementAnalysis.flowData.setTimeAfterSubBlocks(maxTime, index());
             }
+            statementAnalysis.copyBackLocalCopies(evaluationContext, localConditionManager.state(), List.of(), false, maxTime);
         }
         return analysisStatus;
     }
@@ -1352,6 +1354,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 conditionForSubStatement = defaultCondition(evaluationContext, executions);
                 if (conditionForSubStatement.isBoolValueFalse()) statementsExecution = NEVER;
                 else if (conditionForSubStatement.isBoolValueTrue()) statementsExecution = ALWAYS;
+                else if (conditionForSubStatement == NO_VALUE) statementsExecution = DELAYED_EXECUTION;
                 else statementsExecution = CONDITIONALLY;
             } else if (statementsExecution == ALWAYS) {
                 conditionForSubStatement = new BooleanConstant(statementAnalysis.primitives, true);

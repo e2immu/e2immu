@@ -1,43 +1,22 @@
 package org.e2immu.analyser.parser;
 
-import org.e2immu.analyser.analyser.StatementAnalyser;
-import org.e2immu.analyser.analyser.VariableInfo;
-import org.e2immu.analyser.analyser.VariableInfoContainer;
-import org.e2immu.analyser.analyser.VariableProperty;
+import org.e2immu.analyser.analyser.*;
 import org.e2immu.analyser.config.*;
 import org.e2immu.analyser.model.Level;
 import org.e2immu.analyser.model.MethodInfo;
 import org.e2immu.analyser.model.MultiLevel;
 import org.e2immu.analyser.model.TypeInfo;
+import org.e2immu.analyser.model.expression.EmptyExpression;
 import org.e2immu.analyser.model.expression.StringConcat;
-import org.e2immu.analyser.testexample.FinalChecks;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
 
+import static org.e2immu.analyser.analyser.FlowData.Execution.*;
+
 /*
- How does s4 the parameter of setS4 become nullable?
- In the order of the primary type analyser, field s4 is analysed before method setS4, which is analysed before the constructors.
- Order of analyser visitors is therefore, per iteration:
-  - field analyser for s4 field,
-  - statement analyser for setS4 method
-
- Iteration 0:
-  - the field analyser ignores field s4
-  - the parameter analyser ignores field s4, as the FINAL status of s3 is not known
-
- Iteration 1:
-  - the field analyser sets field s4 to NULLABLE, MUTABLE
-  - the parameter analyser ignores field s4, because the effectivelyFinal value of s1 is not known, s2's FINAL, ...
-
- Iteration 2:
-  - the statement analyser sees that field s4 is NULLABLE, but still does not know about parameter s4
-  - the parameter analyser sets s4 to NULLABLE
-
- Iteration 3:
-  - the statement analyser sees that parameter s4 is nullable
-
+ Aggregate test, interesting for delays in flowData.
  */
 public class Test_05_FinalChecks extends CommonTestRunner {
 
@@ -45,14 +24,17 @@ public class Test_05_FinalChecks extends CommonTestRunner {
         super(false);
     }
 
+    private static final String TYPE = "org.e2immu.analyser.testexample.FinalChecks";
+
     private static final String FINAL_CHECKS = "FinalChecks";
     // there are 2 constructors, with different parameter lists
-    private static final String FINAL_CHECKS_FQN = "org.e2immu.analyser.testexample.FinalChecks.FinalChecks(String,String)";
+    private static final String FINAL_CHECKS_FQN = TYPE + ".FinalChecks(String,String)";
 
-    private static final String S1 = FinalChecks.class.getCanonicalName() + ".s1";
-    private static final String P4 = FinalChecks.class.getCanonicalName() + ".setS4(String):0:s4";
-    private static final String S4 = FinalChecks.class.getCanonicalName() + ".s4";
-    private static final String S5 = FinalChecks.class.getCanonicalName() + ".s5";
+    private static final String S1 = TYPE + ".s1";
+    private static final String P4 = TYPE + ".setS4(String):0:s4";
+    private static final String S4 = TYPE + ".s4";
+    private static final String S5 = TYPE + ".s5";
+    private static final String THIS = TYPE + ".this";
 
     StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
         if ("setS4".equals(d.methodInfo().name) && S4.equals(d.variableName())) {
@@ -70,26 +52,49 @@ public class Test_05_FinalChecks extends CommonTestRunner {
             } else Assert.fail();
         }
 
-        if (FINAL_CHECKS.equals(d.methodInfo().name) && d.methodInfo().methodInspection.get().getParameters().size() == 2) {
+        if (FINAL_CHECKS_FQN.equals(d.methodInfo().fullyQualifiedName)) {
+            if (THIS.equals(d.variableName())) {
+                if ("0".equals(d.statementId())) {
+                    Assert.assertEquals("0:M", d.variableInfo().getReadId());
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type FinalChecks";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                }
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals("1-E", d.variableInfo().getReadId());
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "instance type FinalChecks";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
+                }
+            }
             if (S1.equals(d.variableName())) {
-                Assert.assertEquals("s1+\"abc\"", d.currentValue().toString());
-                Assert.assertEquals(MultiLevel.EFFECTIVE, MultiLevel.value(d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
-                Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL)); // nothing that points to not null
-                Assert.assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
+                String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "s1+\"abc\"";
+                Assert.assertEquals(expectValue, d.currentValue().toString());
+                int expectNNV = d.iteration() == 0 ? MultiLevel.DELAY : MultiLevel.EFFECTIVE;
+                Assert.assertEquals(expectNNV, MultiLevel.value(d.getPropertyOfCurrentValue(VariableProperty.NOT_NULL), MultiLevel.NOT_NULL));
+                int expectNN = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_NOT_NULL;
+                Assert.assertEquals(expectNN, d.getProperty(VariableProperty.NOT_NULL)); // nothing that points to not null
+
+                if (d.iteration() > 0) {
+                    Assert.assertTrue(d.currentValue().isInstanceOf(StringConcat.class));
+                }
             }
             if (S5.equals(d.variableName())) {
                 if ("0".equals(d.statementId())) {
-                    VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
-                    Assert.assertEquals(Level.DELAY, vi1.getProperty(VariableProperty.IMMUTABLE));
-                    VariableInfo vi4 = d.variableInfoContainer().current();
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, vi4.getProperty(VariableProperty.IMMUTABLE));
+                    VariableInfo viC = d.variableInfoContainer().getPreviousOrInitial();
+                    int expectC = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                    Assert.assertEquals(expectC, viC.getProperty(VariableProperty.IMMUTABLE));
+                    VariableInfo viM = d.variableInfoContainer().current();
+                    int expectM = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                    Assert.assertEquals(expectM, viM.getProperty(VariableProperty.IMMUTABLE));
                 }
                 if ("0.0.0".equals(d.statementId())) {
-                    Assert.assertEquals("\"abc\"", d.currentValue().toString());
-                    VariableInfo vi1 = d.variableInfoContainer().getPreviousOrInitial();
-                    Assert.assertEquals(Level.DELAY, vi1.getProperty(VariableProperty.IMMUTABLE));
-                    VariableInfo vi3 = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
-                    Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, vi3.getProperty(VariableProperty.IMMUTABLE));
+                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "\"abc\"";
+                    Assert.assertEquals(expect, d.currentValue().toString());
+                    VariableInfo viC = d.variableInfoContainer().getPreviousOrInitial();
+                    int expectImmutable = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                    Assert.assertEquals(expectImmutable, viC.getProperty(VariableProperty.IMMUTABLE));
+                    VariableInfo viE = d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION);
+                    int expectEval = d.iteration() == 0 ? Level.DELAY : MultiLevel.EFFECTIVELY_E2IMMUTABLE;
+                    Assert.assertEquals(expectEval, viE.getProperty(VariableProperty.IMMUTABLE));
                 }
             }
         }
@@ -106,37 +111,66 @@ public class Test_05_FinalChecks extends CommonTestRunner {
                 Assert.fail(); // statement unreachable
             }
             if ("0".equals(d.statementId())) {
-                Assert.assertTrue(d.statementAnalysis().navigationData.blocks.get().get(1).orElseThrow().flowData.isUnreachable());
+                FlowData fd0 = d.statementAnalysis().navigationData.blocks.get().get(0).orElseThrow().flowData;
+                FlowData fd1 = d.statementAnalysis().navigationData.blocks.get().get(1).orElseThrow().flowData;
+                if (d.iteration() == 0) {
+                    Assert.assertEquals(DELAYED_EXECUTION, fd0.getGuaranteedToBeReachedInMethod());
+                    Assert.assertEquals(DELAYED_EXECUTION, fd1.getGuaranteedToBeReachedInMethod());
+                    Assert.assertEquals(ALWAYS, fd0.getGuaranteedToBeReachedInCurrentBlock());
+                    Assert.assertEquals(ALWAYS, fd1.getGuaranteedToBeReachedInCurrentBlock());
+                } else {
+                    Assert.assertEquals(ALWAYS, fd0.getGuaranteedToBeReachedInMethod());
+                    Assert.assertEquals(NEVER, fd1.getGuaranteedToBeReachedInMethod());
+                    Assert.assertTrue(fd1.isUnreachable());
+                }
             }
             if ("1".equals(d.statementId())) {
-                Assert.assertTrue(d.statementAnalysis().navigationData.blocks.get().get(0).orElseThrow().flowData.isUnreachable());
+                Assert.assertEquals(d.iteration() > 0,
+                        d.statementAnalysis().navigationData.blocks.get().get(0).orElseThrow().flowData.isUnreachable());
             }
         }
     };
 
     MethodAnalyserVisitor methodAnalyserVisitor = d -> {
         TypeInfo stringType = d.evaluationContext().getPrimitives().stringTypeInfo;
-        Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE, stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
+        Assert.assertEquals(MultiLevel.EFFECTIVELY_E2IMMUTABLE,
+                stringType.typeAnalysis.get().getProperty(VariableProperty.IMMUTABLE));
         MethodInfo methodInfo = d.methodInfo();
 
         if ("setS4".equals(methodInfo.name)) {
             // @NotModified decided straight away, @Identity as well
             Assert.assertEquals(Level.FALSE, d.parameterAnalyses().get(0).getProperty(VariableProperty.MODIFIED));
-            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
+            int expectNotNull = d.iteration() <= 1 ? Level.DELAY : MultiLevel.NULLABLE;
             Assert.assertEquals(expectNotNull, d.parameterAnalyses().get(0).getProperty(VariableProperty.NOT_NULL));
         }
     };
 
     FieldAnalyserVisitor fieldAnalyserVisitor = d -> {
         if ("s4".equals(d.fieldInfo().name)) {
-            int expectNotNull = d.iteration() == 0 ? Level.DELAY : MultiLevel.NULLABLE;
-            Assert.assertEquals(expectNotNull, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+            Assert.assertEquals(MultiLevel.NULLABLE, d.fieldAnalysis().getProperty(VariableProperty.NOT_NULL));
+        }
+        if ("s5".equals(d.fieldInfo().name)) {
+            Assert.assertEquals(Level.TRUE, d.fieldAnalysis().getProperty(VariableProperty.FINAL));
         }
     };
 
     EvaluationResultVisitor evaluationResultVisitor = d -> {
-        if (FINAL_CHECKS_FQN.equals(d.methodInfo().fullyQualifiedName()) && "0".equals(d.statementId())) {
-            Assert.assertEquals("true", d.evaluationResult().value().toString());
+        if (FINAL_CHECKS_FQN.equals(d.methodInfo().fullyQualifiedName())) {
+            if ("0".equals(d.statementId())) {
+                // this.s5 == null
+
+                // first, show that THIS is read
+                EvaluationResult.ChangeData changeData = d.findValueChange(THIS);
+                Assert.assertEquals("[0]", changeData.readAtStatementTime().toString());
+
+                // null==s5 should become true because initially, s5 in the constructor IS null
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "true";
+                Assert.assertEquals(expect, d.evaluationResult().value().toString());
+            }
+            if ("3".equals(d.statementId())) {
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "s1+\"abc\"";
+                Assert.assertEquals(expect, d.evaluationResult().value().toString());
+            }
         }
     };
 

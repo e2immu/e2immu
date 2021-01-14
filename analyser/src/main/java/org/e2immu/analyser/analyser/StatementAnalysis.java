@@ -638,12 +638,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             vic.setValue(new UnknownExpression(returnVariable.returnType, UnknownExpression.RETURN_VALUE), Map.of(), true);
             // assignment will be at LEVEL 3
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
+
         } else if (variable instanceof This) {
             vic.setValue(NewObject.forCatchOrThis(primitives, variable.parameterizedType()),
                     propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo), true);
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
             vic.setProperty(VariableProperty.NOT_NULL, MultiLevel.EFFECTIVELY_NOT_NULL, false, VariableInfoContainer.Level.INITIAL);
             vic.setProperty(VariableProperty.METHOD_CALLED, Level.FALSE, false, VariableInfoContainer.Level.INITIAL);
+
         } else if ((variable instanceof ParameterInfo parameterInfo)) {
             ObjectFlow objectFlow = createObjectFlowForNewVariable(analyserContext, variable);
             // TODO copy state from known preconditions
@@ -651,6 +653,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             NewObject instance = NewObject.initialValueOfParameter(parameterInfo.parameterizedType, state, objectFlow);
             vic.setValue(instance, propertyMap(analyserContext, parameterInfo), true);
             vic.setLinkedVariables(LinkedVariables.EMPTY, true);
+
         } else if (variable instanceof FieldReference fieldReference) {
             ExpressionAndLinkedVariables initialValue = initialValueOfField(analyserContext, fieldReference);
             if (!initialValue.expression.isUnknown()) { // both NO_VALUE and EMPTY_EXPRESSION
@@ -714,7 +717,7 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (inPartOfConstruction && fieldReference.scope instanceof This thisVariable
                 && thisVariable.typeInfo.equals(methodAnalysis.getMethodInfo().typeInfo)) { // field that must be initialised
             Expression initialValue = analyserContext.getFieldAnalysis(fieldReference.fieldInfo).getInitialValue();
-            if (initialValue.isConstant()) {
+            if(initialValue == EmptyExpression.NO_VALUE || initialValue.isConstant()) {
                 return new ExpressionAndLinkedVariables(initialValue, LinkedVariables.EMPTY);
             }
             EvaluationContext evaluationContext = fieldAnalyser.createEvaluationContext();

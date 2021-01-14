@@ -60,6 +60,7 @@ public class IfElseStatement extends StatementWithExpression {
     }
 
     private static FlowData.Execution standardExecution(Expression v) {
+        if(v == EmptyExpression.NO_VALUE) return FlowData.Execution.DELAYED_EXECUTION;
         if (v.isBoolValueTrue()) return FlowData.Execution.ALWAYS;
         if (v.isBoolValueFalse()) return FlowData.Execution.NEVER;
         return FlowData.Execution.CONDITIONALLY;

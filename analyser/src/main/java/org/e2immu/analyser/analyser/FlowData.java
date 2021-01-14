@@ -221,8 +221,8 @@ public class FlowData {
             // start of a block is always reached in that block
             setGuaranteedToBeReachedInCurrentBlock(Execution.ALWAYS);
         } else if (previousStatement.flowData.getGuaranteedToBeReachedInMethod() == Execution.NEVER) {
-            guaranteedToBeReachedInCurrentBlock.set(Execution.NEVER);
-            guaranteedToBeReachedInMethod.set(Execution.NEVER);
+            setGuaranteedToBeReachedInCurrentBlock(Execution.NEVER);
+            setGuaranteedToBeReachedInMethod(Execution.NEVER);
             return false; // no more errors
         }
 
@@ -237,7 +237,7 @@ public class FlowData {
 
         if (previousStatement == null) {
             // start of a block, within method
-            guaranteedToBeReachedInMethod.set(blockExecution);
+            setGuaranteedToBeReachedInMethod(blockExecution);
             return false;
         }
 
@@ -249,8 +249,8 @@ public class FlowData {
         Execution execBasedOnState = state.isBoolValueFalse() ? Execution.NEVER : Execution.ALWAYS;
         Execution executionInCurrentBlock = prev.worst(interrupt).worst(execBasedOnState);
 
-        guaranteedToBeReachedInCurrentBlock.set(executionInCurrentBlock);
-        guaranteedToBeReachedInMethod.set(executionInCurrentBlock.worst(blockExecution));
+        setGuaranteedToBeReachedInCurrentBlock(executionInCurrentBlock);
+        setGuaranteedToBeReachedInMethod(executionInCurrentBlock.worst(blockExecution));
         return executionInCurrentBlock == Execution.NEVER; // raise error when NEVER by returning true
     }
 
