@@ -49,6 +49,10 @@ public class Test_01_Loops extends CommonTestRunner {
             if ("2".equals(d.statementId())) {
                 Assert.assertEquals("true", d.evaluationResult().value().debugOutput());
             }
+            if ("2.0.1".equals(d.statementId())) {
+                String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2";
+                Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
+            }
             if ("2.0.2".equals(d.statementId())) {
                 String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+i$2>=n";
                 Assert.assertEquals(expect, d.evaluationResult().value().debugOutput());
@@ -63,12 +67,19 @@ public class Test_01_Loops extends CommonTestRunner {
                 Assert.assertEquals("In " + d.statementId(), expect, inLoop);
 
                 if ("2.0.0".equals(d.statementId())) {
-                    Assert.assertEquals("\"abc\"", d.currentValue().toString());
+                    String expectValue = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "\"abc\"";
+                    Assert.assertEquals(expectValue, d.currentValue().toString());
                 }
             }
             if ("org.e2immu.analyser.testexample.Loops_0.this".equals(d.variableName())) {
                 if ("2.0.0".equals(d.statementId())) {
                     Assert.assertTrue(d.variableInfo().getLinkedVariables().isEmpty());
+                }
+            }
+            if ("i$2".equals(d.variableName())) {
+                if ("2.0.0".equals(d.statementId())) {
+                    Assert.assertTrue(d.iteration() > 0);
+                    Assert.assertEquals("instance type int", d.currentValue().debugOutput());
                 }
             }
             if ("i".equals(d.variableName())) {
@@ -82,10 +93,6 @@ public class Test_01_Loops extends CommonTestRunner {
                 }
                 if ("2".equals(d.statementId())) {
                     String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "1+instance type int";
-                    Assert.assertEquals(expect, d.currentValue().debugOutput());
-                }
-                if ("2.0.0".equals(d.statementId())) {
-                    String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "i$2";
                     Assert.assertEquals(expect, d.currentValue().debugOutput());
                 }
                 if ("2.0.1".equals(d.statementId())) {

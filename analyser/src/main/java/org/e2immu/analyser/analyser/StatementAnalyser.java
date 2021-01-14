@@ -747,7 +747,11 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
         return value;
     }
 
-    // add this variable name to all loop statements until definition of the local variable
+    /*
+     we keep track which local variables are assigned in a loop
+
+     add this variable name to all loop statements until definition of the local variable
+     */
     private void addToAssignmentsInLoop(String fullyQualifiedName) {
         StatementAnalysis sa = statementAnalysis;
         while (sa != null) {
@@ -932,44 +936,60 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
             expressionsToEvaluate.addAll(structure.updaters());
         }
 
+        return expressionsToEvaluate;
+    }
+
+    private List<Expression> localVariablesInLoop() {
+        if (statementAnalysis.localVariablesAssignedInThisLoop == null) {
+            return List.of(); // not for us
+        }
         // part 3, iteration 1+: ensure local loop variable copies and their values
 
-        if (statementAnalysis.localVariablesAssignedInThisLoop != null &&
-                statementAnalysis.localVariablesAssignedInThisLoop.isFrozen()) {
-            statementAnalysis.localVariablesAssignedInThisLoop.stream().forEach(fqn -> {
-                assert statement() instanceof LoopStatement;
-
-                VariableInfoContainer vic = statementAnalysis.findForWriting(fqn); // must exist already
-
-                // assign to local variable that has been created at Level 2 in this statement
-                String newFqn = fqn + "$" + index();
-                LocalVariableReference newLvr;
-                if (!statementAnalysis.variables.isSet(newFqn)) {
-                    Variable loopVariable = vic.current().variable();
-                    LocalVariable localVariable = new LocalVariable.Builder()
-                            .addModifier(LocalVariableModifier.FINAL)
-                            .setName(newFqn)
-                            .setParameterizedType(loopVariable.parameterizedType())
-                            .setOwningType(myMethodAnalyser.methodInfo.typeInfo)
-                            .setIsLocalCopyOf(loopVariable)
-                            .build();
-                    newLvr = new LocalVariableReference(analyserContext, localVariable, List.of());
-                    VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
-                            new VariableInLoop(index(), VariableInLoop.VariableType.LOOP_COPY), true);
-                    statementAnalysis.variables.put(newFqn, newVic);
-                    expressionsToEvaluate.add(new Assignment(statementAnalysis.primitives, new VariableExpression(newLvr),
-                            NewObject.localVariableInLoop(statementAnalysis.primitives, newLvr.parameterizedType())));
-                }
-            });
+        if (!statementAnalysis.localVariablesAssignedInThisLoop.isFrozen()) {
+            return null; // DELAY
         }
+        List<Expression> expressionsToEvaluate = new ArrayList<>();
+        statementAnalysis.localVariablesAssignedInThisLoop.stream().forEach(fqn -> {
+            assert statement() instanceof LoopStatement;
 
+            VariableInfoContainer vic = statementAnalysis.findForWriting(fqn); // must exist already
+
+            // assign to local variable that has been created at Level 2 in this statement
+            String newFqn = fqn + "$" + index();
+            LocalVariableReference newLvr;
+            if (!statementAnalysis.variables.isSet(newFqn)) {
+                Variable loopVariable = vic.current().variable();
+                LocalVariable localVariable = new LocalVariable.Builder()
+                        .addModifier(LocalVariableModifier.FINAL)
+                        .setName(newFqn)
+                        .setParameterizedType(loopVariable.parameterizedType())
+                        .setOwningType(myMethodAnalyser.methodInfo.typeInfo)
+                        .setIsLocalCopyOf(loopVariable)
+                        .build();
+                newLvr = new LocalVariableReference(analyserContext, localVariable, List.of());
+                VariableInfoContainer newVic = new VariableInfoContainerImpl(newLvr, VariableInfoContainer.NOT_A_VARIABLE_FIELD,
+                        new VariableInLoop(index(), VariableInLoop.VariableType.LOOP_COPY), true);
+                statementAnalysis.variables.put(newFqn, newVic);
+                expressionsToEvaluate.add(new Assignment(statementAnalysis.primitives, new VariableExpression(newLvr),
+                        NewObject.localVariableInLoop(statementAnalysis.primitives, newLvr.parameterizedType())));
+            }
+        });
         return expressionsToEvaluate;
     }
 
     private AnalysisStatus evaluationOfMainExpression(SharedState sharedState) {
 
         List<Expression> expressionsFromInitAndUpdate = initialisersAndUpdaters(sharedState);
-
+        List<Expression> expressionsFromLocalVariablesInLoop = localVariablesInLoop();
+        /*
+        if we're in a loop statement and there are delays (localVariablesAssignedInThisLoop not frozen)
+        we have to come back!
+         */
+        AnalysisStatus analysisStatus = expressionsFromLocalVariablesInLoop == null ? DELAYS : DONE;
+        if (expressionsFromLocalVariablesInLoop != null) {
+            expressionsFromInitAndUpdate.addAll(expressionsFromLocalVariablesInLoop);
+        }
+        
         Structure structure = statementAnalysis.statement.getStructure();
         if (structure.expression() == EmptyExpression.EMPTY_EXPRESSION && expressionsFromInitAndUpdate.isEmpty()) {
             // try-statement has no main expression, and it may not have initialisers; break; continue; ...
@@ -985,8 +1005,9 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 correspondingLoop.statementAnalysis().stateData.addStateOfInterrupt(index(), state);
                 if (state == NO_VALUE) return DELAYS;
             }
-            return DONE;
+            return analysisStatus;
         }
+
         try {
             if (structure.expression() != EmptyExpression.EMPTY_EXPRESSION) {
                 expressionsFromInitAndUpdate.add(structure.expression());
@@ -1000,7 +1021,7 @@ public class StatementAnalyser implements HasNavigationData<StatementAnalyser> {
                 statementAnalysis.flowData.setTimeAfterEvaluation(result.statementTime(), index());
             }
 
-            AnalysisStatus statusPost = apply(sharedState, result, statementAnalysis);
+            AnalysisStatus statusPost = apply(sharedState, result, statementAnalysis).combine(analysisStatus);
 
             // the evaluation system should be pretty good at always returning NO_VALUE when a NO_VALUE has been encountered
             Expression value = result.value();

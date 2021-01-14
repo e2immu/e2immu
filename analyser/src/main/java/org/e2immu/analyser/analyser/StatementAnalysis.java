@@ -447,9 +447,8 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         if (!currentMethod.methodInspection.get().isStatic()) {
             This thisVariable = new This(analyserContext, currentMethod.typeInfo);
             VariableInfoContainer vic = findForWriting(thisVariable);
-            propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo).forEach((vp, v) -> {
-                vic.setProperty(vp, v, VariableInfoContainer.Level.INITIAL);
-            });
+            propertyMap(analyserContext, methodAnalysis.getMethodInfo().typeInfo)
+                    .forEach((vp, v) -> vic.setProperty(vp, v, VariableInfoContainer.Level.INITIAL));
         }
     }
 
@@ -581,7 +580,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
             if (merged.add(fqn)) {
                 List<ConditionAndVariableInfo> toMerge = lastStatements.stream()
                         .filter(e2 -> e2.lastStatement.statementAnalysis.variables.isSet(fqn))
-                 //       .filter(e2 -> assignedOrReadInBlock(e2.lastStatement.statementAnalysis.variables.get(fqn).current()))
                         .map(e2 -> new ConditionAndVariableInfo(e2.condition,
                                 e2.lastStatement.statementAnalysis.variables.get(fqn).current()))
                         .collect(Collectors.toUnmodifiableList());
@@ -595,14 +593,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 destination.merge(evaluationContext, stateOfConditionManagerBeforeExecution, atLeastOneBlockExecuted, toMerge);
             }
         });
-    }
-
-    /*
-    we only include a variable in a merge if it is assigned to or read in the block
-     */
-    private boolean assignedOrReadInBlock(VariableInfo vi) {
-        String lowerBound = index + VariableInfoContainer.Level.EVALUATION;
-        return vi.getReadId().compareTo(lowerBound) > 0 || vi.getAssignmentId().compareTo(lowerBound) > 0;
     }
 
     // return a stream of all variables that need merging up
@@ -919,16 +909,6 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 .setOwningType(methodAnalysis.getMethodInfo().typeInfo)
                 .build();
         return new LocalVariableReference(analyserContext, lv, List.of());
-    }
-
-    // either go next, or go down
-    private StatementAnalysis nextStepTowards(StatementAnalysis sa) {
-        for (Optional<StatementAnalysis> maybeDownIntoBlock : sa.navigationData.blocks.get()) {
-            if (maybeDownIntoBlock.isPresent() && index.startsWith(maybeDownIntoBlock.get().index)) {
-                return maybeDownIntoBlock.get();
-            }
-        }
-        return sa.navigationData.next.get().orElseThrow();
     }
 
     /**

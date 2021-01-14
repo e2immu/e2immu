@@ -690,7 +690,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         boolean notSelf = returnType.typeInfo != evaluationContext.getCurrentType();
         if (notSelf) {
             int immutable = MultiLevel.value(methodAnalysis.getProperty(VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
-            if (immutable == MultiLevel.DELAY) return null;
+            if (immutable == MultiLevel.DELAY) return LinkedVariables.DELAY;
             if (immutable >= MultiLevel.EVENTUAL) {
                 return LinkedVariables.EMPTY;
             }
@@ -702,7 +702,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         for (Expression p : parameterExpressions) {
             // the parameter value is not E2IMMU
             LinkedVariables cd = evaluationContext.linkedVariables(p);
-            if (cd == null) return null;
+            if (cd == LinkedVariables.DELAY) return LinkedVariables.DELAY;
             result.addAll(cd.variables());
         }
 
@@ -711,12 +711,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
 
         int independent = methodAnalysis.getProperty(VariableProperty.INDEPENDENT);
         int objectE2Immutable = MultiLevel.value(evaluationContext.getProperty(object, VariableProperty.IMMUTABLE), MultiLevel.E2IMMUTABLE);
-        if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY) return null;
+        if (independent == Level.DELAY || objectE2Immutable == MultiLevel.DELAY) return LinkedVariables.DELAY;
         boolean objectOfSameType = methodInfo.typeInfo == evaluationContext.getCurrentType();
         if (objectOfSameType || (objectE2Immutable < MultiLevel.EVENTUAL_AFTER && independent == MultiLevel.FALSE)) {
-            Set<Variable> b = evaluationContext.linkedVariables(object).variables();
-            if (b == null) return null;
-            result.addAll(b);
+            LinkedVariables b = evaluationContext.linkedVariables(object);
+            if (b == LinkedVariables.DELAY) return LinkedVariables.DELAY;
+            result.addAll(b.variables());
         }
 
         return new LinkedVariables(result);
