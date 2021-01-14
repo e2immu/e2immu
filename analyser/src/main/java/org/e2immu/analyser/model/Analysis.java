@@ -24,6 +24,7 @@ import org.e2immu.analyser.output.Symbol;
 import org.e2immu.analyser.output.Text;
 import org.e2immu.annotation.AnnotationMode;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -111,8 +112,11 @@ public interface Analysis {
         throw new UnsupportedOperationException();
     }
 
+    /*
+    Has to return a (new) modifiable map for efficiency reasons
+     */
     default Map<VariableProperty, Integer> getProperties(Set<VariableProperty> forwardPropertiesOnParameters) {
-        return Map.of();
+        return new HashMap<>();
     }
 
     default int getPropertyAsIs(VariableProperty variableProperty) {

@@ -45,8 +45,9 @@ public class Test_06_FinalNotNullChecks extends CommonTestRunner {
             // the variable has the value of param, which has received a @NotNull
             if (INPUT.equals(d.variableName())) {
                 Assert.assertEquals(MultiLevel.EFFECTIVELY_NOT_NULL, d.getProperty(VariableProperty.NOT_NULL));
+                String expectInitial = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString(): "nullable? instance type String";
+                Assert.assertEquals(expectInitial, d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
 
-                Assert.assertEquals("nullable? instance type String", d.variableInfoContainer().getPreviousOrInitial().getValue().toString());
                 Assert.assertEquals("param/*@NotNull*/", d.variableInfoContainer().best(VariableInfoContainer.Level.EVALUATION).getValue().toString());
                 Assert.assertEquals("param/*@NotNull*/", d.currentValue().toString());
                 Assert.assertFalse(d.variableInfoContainer().hasMerge());

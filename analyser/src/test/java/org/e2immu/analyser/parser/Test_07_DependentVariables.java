@@ -1,6 +1,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.VariableInfo;
+import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.config.DebugConfiguration;
 import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
 import org.e2immu.analyser.config.StatementAnalyserVisitor;
@@ -45,7 +46,7 @@ public class Test_07_DependentVariables extends CommonTestRunner {
                 Assert.assertEquals("31", d.variableInfo().getValue().toString());
             }
             if ("4".equals(d.statementId()) && "array".equals(d.variableName())) {
-                Assert.assertEquals("xx", read); // FIXME
+                Assert.assertEquals("4"+ VariableInfoContainer.Level.EVALUATION, read);
             }
         }
         if ("method2".equals(d.methodInfo().name) && "3".equals(d.statementId())) {
