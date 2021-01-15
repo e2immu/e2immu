@@ -833,10 +833,14 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
                 return variables.get(localVariableFqn).current();
             }
             if (vic.isLocalVariableInLoopDefinedOutside()) {
-                if (relevantLocalVariablesAssignedInThisLoopAreFrozen()) {
-                    String localCopyFqn = createLocalLoopCopyFQN(vic, vi);
-                    VariableInfoContainer newVic = variables.get(localCopyFqn);
-                    return newVic.getPreviousOrInitial();
+                StatementAnalysis relevantLoop = mostEnclosingLoop();
+                if (relevantLoop.localVariablesAssignedInThisLoop.isFrozen()) {
+                    if(relevantLoop.localVariablesAssignedInThisLoop.contains(fqn)) {
+                        String localCopyFqn = createLocalLoopCopyFQN(vic, vi);
+                        VariableInfoContainer newVic = variables.get(localCopyFqn);
+                        return newVic.getPreviousOrInitial();
+                    }
+                    return vi; // we don't participate in the modification process?
                 }
                 return new VariableInfoImpl(variable); // no value, no state
             }
@@ -844,11 +848,11 @@ public class StatementAnalysis extends AbstractAnalysisBuilder implements Compar
         return vi;
     }
 
-    private boolean relevantLocalVariablesAssignedInThisLoopAreFrozen() {
+    private StatementAnalysis mostEnclosingLoop( ) {
         StatementAnalysis sa = this;
         while (sa != null) {
             if (sa.statement instanceof LoopStatement) {
-                return sa.localVariablesAssignedInThisLoop.isFrozen();
+                return sa;//.localVariablesAssignedInThisLoop.isFrozen() && sa.localVariablesAssignedInThisLoop.contains(variableFqn);
             }
             sa = sa.parent;
         }

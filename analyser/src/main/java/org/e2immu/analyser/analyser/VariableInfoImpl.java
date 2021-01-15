@@ -294,7 +294,7 @@ class VariableInfoImpl implements VariableInfo {
         if (!existingValuesWillBeOverwritten) {
             if (existing.linkedVariablesIsSet()) {
                 merged.addAll(existing.getLinkedVariables().variables());
-            } else {
+            } else if(existing.isAssigned()) {
                 return; // DELAY
             }
             // typical situation: int a; if(x) { a = 5; }. Existing has not been assigned

@@ -1,6 +1,7 @@
 package org.e2immu.analyser.parser;
 
 import org.e2immu.analyser.analyser.AnalysisStatus;
+import org.e2immu.analyser.analyser.LinkedVariables;
 import org.e2immu.analyser.analyser.VariableInfoContainer;
 import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.*;
@@ -112,10 +113,20 @@ public class Test_04_Warnings extends CommonTestRunner {
         };
 
         StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
-            if ("checkForEach".equals(d.methodInfo().name) && "1.0.0".equals(d.statementId())) {
+            if ("checkForEach".equals(d.methodInfo().name)) {
                 if ("integers".equals(d.variableName())) {
-                    // so that we know that integers.iterator() has been called
-                    Assert.assertEquals("1" + E, d.variableInfo().getReadId());
+                    if ("0".equals(d.statementId())) {
+                        Assert.assertEquals("{1,2,3}", d.currentValue().toString());
+                        Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                    }
+                    if ("1.0.0".equals(d.statementId())) {
+                        // so that we know that integers.iterator() has been called
+                        Assert.assertEquals("1" + E, d.variableInfo().getReadId());
+
+                        // in iteration 0 we don't know if integers will be assigned to
+                        String expectLinked = d.iteration() == 0 ? LinkedVariables.DELAY_STRING : "";
+                        Assert.assertEquals(expectLinked, d.variableInfo().getLinkedVariables().toString());
+                    }
                 }
                 if ("loopVar".equals(d.variableName())) {
                     Assert.assertFalse(d.variableInfo().isRead());
@@ -163,9 +174,14 @@ public class Test_04_Warnings extends CommonTestRunner {
             if ("method5".equals(d.methodInfo().name) && "a".equals(d.variableName())) {
                 if ("1.0.0".equals(d.statementId())) {
                     Assert.assertEquals("5", d.currentValue().toString());
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+                }
+                if ("1".equals(d.statementId())) {
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
                 if ("2".equals(d.statementId())) {
                     Assert.assertEquals("6", d.currentValue().toString());
+                    Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
                 }
             }
         };
