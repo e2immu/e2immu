@@ -531,11 +531,12 @@ public class Test_01_Loops extends CommonTestRunner {
                 Assert.assertSame(ALWAYS, d.statementAnalysis().flowData.getGuaranteedToBeReachedInCurrentBlock());
 
                 String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "n>i$1";
-                Assert.assertEquals(expect, d.state().toString());
+                Assert.assertEquals(expect, d.absoluteState().toString());
             }
             if ("1.0.1".equals(d.statementId())) {
                 String expect = d.iteration() == 0 ? EmptyExpression.NO_VALUE.toString() : "n>i$1";
-                Assert.assertEquals(expect, d.state().toString());
+                Assert.assertEquals(expect, d.absoluteState().toString());
+                Assert.assertEquals(expect, d.condition().toString());
                 String expectInterrupt = "{}";
                 Assert.assertEquals(expectInterrupt, d.statementAnalysis().flowData.getInterruptsFlow().toString());
             }
