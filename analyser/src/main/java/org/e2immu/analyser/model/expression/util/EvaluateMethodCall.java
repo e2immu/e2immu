@@ -51,6 +51,13 @@ public class EvaluateMethodCall {
 
         Objects.requireNonNull(evaluationContext);
 
+        boolean recursiveCall = evaluationContext.getCurrentMethod() != null &&
+                evaluationContext.getCurrentMethod().methodInfo == methodInfo;
+        if (recursiveCall) {
+            MethodCall methodValue = new MethodCall(objectValue, methodInfo, parameters, objectFlowOfResult);
+            return builder.setExpression(methodValue).build();
+        }
+
         // no value (method call on field that does not have effective value yet)
         if (objectValue == EmptyExpression.NO_VALUE) {
             return builder.setExpression(EmptyExpression.NO_VALUE).build(); // this will delay
@@ -122,7 +129,6 @@ public class EvaluateMethodCall {
             }
         }
 
-
         // @Identity as method annotation
         Expression identity = computeIdentity(evaluationContext, methodAnalysis, parameters, objectFlowOfResult);
         if (identity != null) {
@@ -135,6 +141,7 @@ public class EvaluateMethodCall {
         if (fluent != null) {
             return builder.setExpression(fluent).build();
         }
+
 
         InlinedMethod inlineValue;
         if (methodInfo.typeInfo.typeInspection.get().isFunctionalInterface() &&
@@ -183,7 +190,7 @@ public class EvaluateMethodCall {
             if (srv.isConstant()) {
                 return builder.setExpression(srv).build();
             }
-        } else if (methodAnalysis.isBeingAnalysed()) {
+        } else if (methodAnalysis.isBeingAnalysed() && !recursiveCall) {
             // we will, at some point, analyse this method
             log(Logger.LogTarget.DELAYED, "Delaying method value on {}", methodInfo.fullyQualifiedName);
             return builder.setExpression(EmptyExpression.NO_VALUE).build();

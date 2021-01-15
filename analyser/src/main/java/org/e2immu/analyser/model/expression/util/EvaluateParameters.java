@@ -29,6 +29,7 @@ import org.e2immu.analyser.util.Pair;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -66,12 +67,15 @@ public class EvaluateParameters {
                 } else {
                     parameterInfo = params.get(i);
                 }
-                // NOT_NULL, NOT_MODIFIED, SIZE
+                // NOT_NULL, NOT_MODIFIED
                 Map<VariableProperty, Integer> map;
                 try {
-                    map = evaluationContext.getParameterAnalysis(parameterInfo)
-                            .getProperties(VariableProperty.FORWARD_PROPERTIES_ON_PARAMETERS);
-
+                    if (evaluationContext.getCurrentMethod() != null && evaluationContext.getCurrentMethod().methodInfo == methodInfo) {
+                        map = new HashMap<>(Map.of(VariableProperty.MODIFIED, Level.FALSE, VariableProperty.NOT_NULL, MultiLevel.NULLABLE));
+                    } else {
+                        map = evaluationContext.getParameterAnalysis(parameterInfo)
+                                .getProperties(VariableProperty.FORWARD_PROPERTIES_ON_PARAMETERS);
+                    }
                 } catch (RuntimeException e) {
                     LOGGER.error("Failed to obtain parameter analysis of {}", parameterInfo.fullyQualifiedName());
                     throw e;

@@ -19,7 +19,16 @@
 
 package org.e2immu.analyser.parser;
 
+import org.e2immu.analyser.analyser.LinkedVariables;
+import org.e2immu.analyser.analyser.VariableProperty;
 import org.e2immu.analyser.config.DebugConfiguration;
+import org.e2immu.analyser.config.EvaluationResultVisitor;
+import org.e2immu.analyser.config.MethodAnalyserVisitor;
+import org.e2immu.analyser.config.StatementAnalyserVariableVisitor;
+import org.e2immu.analyser.model.Level;
+import org.e2immu.analyser.model.ParameterInfo;
+import org.e2immu.analyser.model.expression.EmptyExpression;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -36,7 +45,33 @@ public class Test_20_CyclicReferences extends CommonTestRunner {
 
     @Test
     public void test_1() throws IOException {
-        testClass("CyclicReferences_1", 0, 0, new DebugConfiguration.Builder().build());
+        EvaluationResultVisitor evaluationResultVisitor = d -> {
+            if ("findTailRecursion".equals(d.methodInfo().name) && "2".equals(d.statementId())) {
+                Assert.assertEquals("CyclicReferences_1.findTailRecursion(find,list.subList(1,list.size()))",
+                        d.evaluationResult().value().toString());
+            }
+        };
+
+        StatementAnalyserVariableVisitor statementAnalyserVariableVisitor = d -> {
+            if ("findTailRecursion".equals(d.methodInfo().name) && d.variable() instanceof ParameterInfo p && p.name.equals("list")) {
+                Assert.assertEquals("statement " + d.statementId() + ", iteration " + d.iteration(),
+                        "nullable? instance type List<String>" , d.currentValue().toString());
+
+                Assert.assertEquals("", d.variableInfo().getLinkedVariables().toString());
+            }
+        };
+
+        MethodAnalyserVisitor methodAnalyserVisitor = d -> {
+            if ("findTailRecursion".equals(d.methodInfo().name)) {
+                Assert.assertEquals(Level.FALSE, d.methodAnalysis().getProperty(VariableProperty.MODIFIED));
+            }
+        };
+
+        testClass("CyclicReferences_1", 0, 0, new DebugConfiguration.Builder()
+                .addEvaluationResultVisitor(evaluationResultVisitor)
+                .addStatementAnalyserVariableVisitor(statementAnalyserVariableVisitor)
+                .addAfterMethodAnalyserVisitor(methodAnalyserVisitor)
+                .build());
     }
 
     @Test

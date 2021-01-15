@@ -219,6 +219,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         // potential circular reference?
         boolean alwaysModifying;
         boolean delayUndeclared = false;
+        boolean recursiveCall;
 
         if (evaluationContext.getCurrentMethod() != null) {
             TypeInfo currentPrimaryType = evaluationContext.getCurrentType().primaryType();
@@ -240,9 +241,12 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
                 builder.addCircularCallOrUndeclaredFunctionalInterface();
             }
             alwaysModifying = circularCall || undeclaredFunctionalInterface;
+            recursiveCall = evaluationContext.getCurrentMethod().methodInfo == this.methodInfo; // recursive call
         } else {
             alwaysModifying = false;
+            recursiveCall = false;
         }
+
         MethodAnalysis methodAnalysis;
         try {
             methodAnalysis = evaluationContext.getMethodAnalysis(methodInfo);
@@ -251,7 +255,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
             throw e;
         }
         // is the method modifying, do we need to wait?
-        int modified = alwaysModifying ? Level.TRUE : methodAnalysis.getProperty(VariableProperty.MODIFIED);
+        int modified = alwaysModifying ? Level.TRUE : recursiveCall ? Level.FALSE : methodAnalysis.getProperty(VariableProperty.MODIFIED);
         int methodDelay = Level.fromBool(modified == Level.DELAY || delayUndeclared);
 
         // effectively not null is the default, but when we're in a not null situation, we can demand effectively content not null
@@ -278,7 +282,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         builder.compose(objectResult, res.k.build());
 
         // before we return, increment the time, irrespective of NO_VALUE
-        if (!methodInfo.methodResolution.isSet() || methodInfo.methodResolution.get().allowsInterrupts()) {
+        if (!recursiveCall && (!methodInfo.methodResolution.isSet() || methodInfo.methodResolution.get().allowsInterrupts())) {
             builder.incrementStatementTime();
         }
 
@@ -445,7 +449,7 @@ public class MethodCall extends ExpressionWithMethodReferenceResolution implemen
         LinkedVariables linkedVariables = variablesLinkedToScopeVariableInModifyingMethod(evaluationContext, methodInfo, parameterValues);
         if (object instanceof VariableExpression variableValue && !(variableValue.variable() instanceof This)) {
             builder.modifyingMethodAccess(variableValue.variable(), modifiedInstance, linkedVariables);
-        } else if(object instanceof FieldAccess fieldAccess) {
+        } else if (object instanceof FieldAccess fieldAccess) {
             builder.modifyingMethodAccess(fieldAccess.variable(), modifiedInstance, linkedVariables);
         }
         return modifiedInstance;
